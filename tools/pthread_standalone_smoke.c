@@ -404,8 +404,22 @@ int main(void) {
   if (sem_timedwait(&semaphore_edge_cases, &semaphore_invalid_deadline) != 0) return 187;
   if (sem_post(&semaphore_edge_cases) != 0 || sem_timedwait(&semaphore_edge_cases, 0) != 0)
     return 188;
+  if (sem_post(&semaphore_edge_cases) != 0 ||
+      sem_clockwait(&semaphore_edge_cases, CLOCK_MONOTONIC,
+                    &semaphore_invalid_deadline) != 0)
+    return 193;
+  if (sem_post(&semaphore_edge_cases) != 0 ||
+      sem_clockwait(&semaphore_edge_cases, 12345, &expired) != -1 || errno != EINVAL ||
+      sem_trywait(&semaphore_edge_cases) != 0)
+    return 194;
   if (sem_timedwait(&semaphore_edge_cases, &semaphore_invalid_deadline) != -1 || errno != EINVAL)
     return 189;
+  if (sem_clockwait(&semaphore_edge_cases, CLOCK_REALTIME, &expired) != -1 ||
+      errno != ETIMEDOUT)
+    return 195;
+  if (sem_clockwait(&semaphore_edge_cases, CLOCK_MONOTONIC, &expired) != -1 ||
+      errno != ETIMEDOUT)
+    return 196;
   if (sem_destroy(&semaphore_edge_cases) != 0) return 190;
   if (snprintf(named_semaphore_path, sizeof named_semaphore_path,
                "/nelibc-test-sem-%ld", (long)getpid()) < 0)

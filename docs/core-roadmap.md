@@ -169,8 +169,10 @@ matter more for completeness than for the initial common-program target.
   unlinking while mappings remain open; 20 repeated Zig runs passed.
 - Semaphore edge cases now follow POSIX immediate-acquisition rules for
   `sem_timedwait`, accept any nonzero `pshared`, and ignore `sem_open`'s mode
-  and initial value when opening an existing name. `sem_clockwait` from
-  POSIX.1-2024 remains to be implemented.
+  and initial value when opening an existing name. `sem_clockwait` supports
+  `CLOCK_REALTIME` and `CLOCK_MONOTONIC` using absolute futex deadlines.
+  Hybrid builds delegate it to glibc where available; the current musl toolchain
+  does not declare or export it, so that profile remains without the API.
 - Hybrid stdio adapts to host `FILE` implementations in several profiles. The
   standalone `FILE` implementation is Nelua-owned, but full standards and
   edge-case coverage remains a separate conformance task.

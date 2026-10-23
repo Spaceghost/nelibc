@@ -45,10 +45,12 @@ HOST_DELEGATED = {
         "pthread_cond_timedwait", "pthread_cond_signal",
         "pthread_cond_broadcast",
         "sem_init", "sem_destroy", "sem_wait", "sem_timedwait",
+        "sem_clockwait",
         "sem_trywait", "sem_post", "sem_getvalue", "sem_open", "sem_close",
         "sem_unlink",
     )
 }
+HOST_DELEGATED["sem_clockwait"] = {"zig_glibc", "gcc_glibc", "tcc_glibc"}
 SMOKE_GLOBS = ("tools/*_smoke.c", "tools/*_diff.c", "tools/*_smoke.nelua")
 
 

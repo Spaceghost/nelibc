@@ -1021,6 +1021,7 @@ points. `sem_timedwait` is also a cancellation point. Named semaphores use
 `/dev/shm` backing files and support `sem_open`, `sem_close`, and `sem_unlink`.
 Semaphore waits allow immediate acquisition even with an invalid absolute
 timeout, and named opens ignore creation attributes for an existing name.
+`sem_clockwait` supports absolute realtime and monotonic deadlines.
 `nm -u` must be empty.
 The allocator exports only `nelibc_*` names in hybrid builds. The standalone-only wrappers
 in `src/alloc/standalone_exports.nelua` provide standard `malloc`, `calloc`,

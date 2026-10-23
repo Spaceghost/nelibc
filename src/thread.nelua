@@ -1023,7 +1023,8 @@ local function sem_post(sem: *Semaphore): cint <cexport, codename 'sem_post'>
   return 0
 end
 
-local function semaphore_wait(sem: *Semaphore, abstime: *Timespec, timed: boolean): cint
+local function semaphore_wait(sem: *Semaphore, abstime: *Timespec, timed: boolean,
+                              clock_id: cint): cint
   if not semaphore_valid(sem) then
     nelibc_errno_location()[0] = 22; return -1
   end
@@ -1063,7 +1064,8 @@ local function semaphore_wait(sem: *Semaphore, abstime: *Timespec, timed: boolea
     local timeout_pointer: culong = 0_culong
     local mask: culong = 0_culong
     if abstime ~= nilptr then
-      operation = 265_culong
+      operation = 9_culong -- FUTEX_WAIT_BITSET (CLOCK_MONOTONIC)
+      if clock_id == 0_cint then operation = 265_culong end -- FUTEX_CLOCK_REALTIME
       timeout_pointer = (@culong)((@usize)(abstime))
       mask = 0xFFFFFFFF_culong
     end
@@ -1090,11 +1092,20 @@ local function semaphore_wait(sem: *Semaphore, abstime: *Timespec, timed: boolea
 end
 
 local function sem_wait(sem: *Semaphore): cint <cexport, codename 'sem_wait'>
-  return semaphore_wait(sem, nilptr, false)
+  return semaphore_wait(sem, nilptr, false, 0_cint)
 end
 
 local function sem_timedwait(sem: *Semaphore, abstime: *Timespec): cint <cexport, codename 'sem_timedwait'>
-  return semaphore_wait(sem, abstime, true)
+  return semaphore_wait(sem, abstime, true, 0_cint)
+end
+
+local function sem_clockwait(sem: *Semaphore, clock_id: cint,
+                             abstime: *Timespec): cint <cexport, codename 'sem_clockwait'>
+  if clock_id ~= 0_cint and clock_id ~= 1_cint then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  return semaphore_wait(sem, abstime, true, clock_id)
 end
 
 local function sem_getvalue(sem: *Semaphore, value: *[0]cint): cint <cexport, codename 'sem_getvalue'>
