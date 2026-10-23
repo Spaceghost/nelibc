@@ -80,7 +80,8 @@ local PthreadMutexAttr: type = @record{
   kind: cint,
   pshared: cint,
   robust: cint,
-  protocol: cint
+  protocol: cint,
+  prioceiling: cint
 }
 local PthreadCondAttr: type = @record{
   magic: culong,
@@ -1073,6 +1074,7 @@ local function pthread_mutexattr_init(attr: *PthreadMutexAttr): cint <cexport, c
   attr.pshared = 0
   attr.robust = PTHREAD_MUTEX_STALLED
   attr.protocol = PTHREAD_PRIO_NONE
+  attr.prioceiling = 1
   return 0
 end
 
@@ -1138,6 +1140,22 @@ local function pthread_mutexattr_getprotocol(attr: *PthreadMutexAttr,
     protocol: *[0]cint): cint <cexport, codename 'pthread_mutexattr_getprotocol'>
   if not pthread_mutexattr_valid(attr) or protocol == nilptr then return 22 end -- EINVAL
   protocol[0] = attr.protocol
+  return 0
+end
+
+local function pthread_mutexattr_getprioceiling(attr: *PthreadMutexAttr,
+    prioceiling: *[0]cint): cint <cexport, codename 'pthread_mutexattr_getprioceiling'>
+  if not pthread_mutexattr_valid(attr) or prioceiling == nilptr then return 22 end -- EINVAL
+  prioceiling[0] = attr.prioceiling
+  return 0
+end
+
+local function pthread_mutexattr_setprioceiling(attr: *PthreadMutexAttr,
+    prioceiling: cint): cint <cexport, codename 'pthread_mutexattr_setprioceiling'>
+  if not pthread_mutexattr_valid(attr) or prioceiling < 1 or prioceiling > 99 then
+    return 22 -- EINVAL
+  end
+  attr.prioceiling = prioceiling
   return 0
 end
 

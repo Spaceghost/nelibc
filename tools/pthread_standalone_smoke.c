@@ -1107,6 +1107,19 @@ int main(void) {
   pthread_mutex_t robust_mutex;
   pthread_mutexattr_t pi_attributes;
   int protocol = -1;
+  int prioceiling = -1;
+  pthread_mutexattr_t ceiling_attributes;
+  if (pthread_mutexattr_init(&ceiling_attributes) != 0 ||
+      pthread_mutexattr_getprioceiling(&ceiling_attributes, &prioceiling) != 0 ||
+      prioceiling != 1 ||
+      pthread_mutexattr_setprioceiling(&ceiling_attributes, 99) != 0 ||
+      pthread_mutexattr_getprioceiling(&ceiling_attributes, &prioceiling) != 0 ||
+      prioceiling != 99 ||
+      pthread_mutexattr_setprioceiling(&ceiling_attributes, 0) != EINVAL ||
+      pthread_mutexattr_setprioceiling(&ceiling_attributes, 100) != EINVAL ||
+      pthread_mutexattr_getprioceiling(0, &prioceiling) != EINVAL ||
+      pthread_mutexattr_destroy(&ceiling_attributes) != 0)
+    return 250;
   if (pthread_mutexattr_init(&pi_attributes) != 0 ||
       pthread_mutexattr_getprotocol(&pi_attributes, &protocol) != 0 ||
       protocol != PTHREAD_PRIO_NONE ||

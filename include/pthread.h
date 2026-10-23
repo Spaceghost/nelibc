@@ -36,6 +36,7 @@ typedef struct {
   int __pshared;
   int __robust;
   int __protocol;
+  int __prioceiling;
 } pthread_mutexattr_t;
 typedef struct {
   uintptr_t __magic;
@@ -174,6 +175,10 @@ int pthread_mutexattr_setrobust(pthread_mutexattr_t *attr, int robustness);
 int pthread_mutexattr_getrobust(const pthread_mutexattr_t *attr, int *robustness);
 int pthread_mutexattr_setprotocol(pthread_mutexattr_t *attr, int protocol);
 int pthread_mutexattr_getprotocol(const pthread_mutexattr_t *attr, int *protocol);
+int pthread_mutexattr_getprioceiling(const pthread_mutexattr_t *attr,
+                                     int *prioceiling);
+int pthread_mutexattr_setprioceiling(pthread_mutexattr_t *attr,
+                                     int prioceiling);
 int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
 int pthread_mutex_destroy(pthread_mutex_t *mutex);
 int pthread_mutex_lock(pthread_mutex_t *mutex);
