@@ -26,10 +26,10 @@ and checks that the executable contains Nelibc's `memcpy`, `strlen`, `strchr`,
 and `strtol` symbols. Expected output:
 
 ```text
-Nelua allocator + memory/string/strtol/math: nelua-libc:42 -> 42 (13 bytes, sqrt=9 cbrt=3 cbrtf=-0.5 fmod=-1 remainder=-1 min=2 max=5 fdim=5 fdimf=5 modf=9.0+0.5 frexp=0.5*2^4 ldexp=12 scalbnf=-12 scalbln=12 rint=2 rintf=2 nearbyint=-2 nearbyintf=-2 exp=2.71828183 expf=2.71828175 log=0.693147181 logf=0.693147182 log2=3 pow=1024 powf=1024 hypot=5 hypotf=5 sin=0.841470985 cos=0.540302306 sinf=0.841470957 cosf=0.540302277 tan=1.55740772 tanf=1.55740774 sinh=1.17520119 sinhf=1.17520118 cosh=1.54308063 coshf=1.54308069 tanh=0.761594156 tanhf=0.761594176 asinh=0.881373587 asinhf=0.881373584 acosh=1.3169579 acoshf=1.31695795 atanh=0.549306144 atanhf=0.549306154 atan=0.785398163 atanf=0.785398185 atan2=2.35619449 atan2f=2.3561945 nextafter=1.0000000000000002 nexttoward=1.0000000000000002 nexttowardf=1.00000012 ilogb=3 logb=3)
+Nelua allocator + memory/string/strtol/math: nelua-libc:42 -> 42 (13 bytes, sqrt=9 cbrt=3 cbrtf=-0.5 fmod=-1 remainder=-1 min=2 max=5 fdim=5 fdimf=5 modf=9.0+0.5 frexp=0.5*2^4 ldexp=12 scalbnf=-12 scalbln=12 rint=2 rintf=2 nearbyint=-2 nearbyintf=-2 exp=2.71828183 expf=2.71828175 expm1=0.648721271 log=0.693147181 logf=0.693147182 log1p=0.405465108 log2=3 pow=1024 powf=1024 hypot=5 hypotf=5 sin=0.841470985 cos=0.540302306 sinf=0.841470957 cosf=0.540302277 tan=1.55740772 tanf=1.55740774 sinh=1.17520119 sinhf=1.17520118 cosh=1.54308063 coshf=1.54308069 tanh=0.761594156 tanhf=0.761594176 asinh=0.881373587 asinhf=0.881373584 acosh=1.3169579 acoshf=1.31695795 atanh=0.549306144 atanhf=0.549306154 atan=0.785398163 atanf=0.785398185 atan2=2.35619449 atan2f=2.3561945 nextafter=1.0000000000000002 nexttoward=1.0000000000000002 nexttowardf=1.00000012 ilogb=3 logb=3)
 ```
 
-The example allocates through `nelibc_malloc`, uses sixty-two standard functions
+The example allocates through `nelibc_malloc`, uses sixty-four standard functions
 replaced by the archive, and prints through the host's `printf`. This is the
 incremental replacement model: each archive contributes the symbols it owns;
 the host runtime supplies the rest.
@@ -49,7 +49,7 @@ for unrelated host-owned objects.
 
 The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`,
-`log`, `log2`, `exp2`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `hypot`, `sqrt`, `fmod`,
+`log`, `log1p`, `log2`, `exp2`, `expm1`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `hypot`, `sqrt`, `fmod`,
 `remainder`, `fmin`, `fmax`, `fdim`, `cbrt`, `frexp`, `modf`, `ldexp`, `scalbn`,
 `scalbln`, `pow`, `atan`, `atan2`, `asinh`, `acosh`, `atanh`, `ilogb`,
 `logb`, `nextafter`, and `nexttoward`.

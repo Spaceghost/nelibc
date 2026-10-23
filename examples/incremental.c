@@ -59,6 +59,8 @@ int main(void) {
   const double logarithm = log(2.0);
   const float logarithm_float = logf(2.0f);
   const double logarithm_binary = log2(8.0);
+  const double logarithm_one_plus = log1p(0.5);
+  const double exponential_minus_one = expm1(0.5);
   const double hypotenuse = hypot(3.0, 4.0);
   const float hypotenuse_float = hypotf(3.0f, 4.0f);
   const double sine = sin(1.0);
@@ -132,13 +134,15 @@ int main(void) {
       !(quadrant_tangent_float > 2.3561943f && quadrant_tangent_float < 2.3561947f) ||
       power != 1024.0 || power_float != 1024.0f ||
       logarithm_binary != 3.0 ||
+      !(logarithm_one_plus > 0.4054651081081643 && logarithm_one_plus < 0.4054651081081645) ||
+      !(exponential_minus_one > 0.6487212707001279 && exponential_minus_one < 0.6487212707001283) ||
       long_scaled != 12.0 || long_scaled_float != -12.0f) {
     nelibc_free(copy);
     return 4;
   }
 
-  printf("Nelua allocator + memory/string/strtol/math: %s -> %ld (%zu bytes, sqrt=%.0f cbrt=%.0f cbrtf=%.1f fmod=%.0f remainder=%.0f min=%.0f max=%.0f fdim=%.0f fdimf=%.0f modf=%.1f+%.1f frexp=%.1f*2^%d ldexp=%.0f scalbnf=%.0f scalbln=%.0f rint=%.0f rintf=%.0f nearbyint=%.0f nearbyintf=%.0f exp=%.9g expf=%.9g log=%.9g logf=%.9g log2=%.0f pow=%.0f powf=%.0f hypot=%.0f hypotf=%.0f sin=%.9g cos=%.9g sinf=%.9g cosf=%.9g tan=%.9g tanf=%.9g sinh=%.9g sinhf=%.9g cosh=%.9g coshf=%.9g tanh=%.9g tanhf=%.9g asinh=%.9g asinhf=%.9g acosh=%.9g acoshf=%.9g atanh=%.9g atanhf=%.9g atan=%.9g atanf=%.9g atan2=%.9g atan2f=%.9g nextafter=%.17g nexttoward=%.17g nexttowardf=%.9g ilogb=%d logb=%.0f)\n",
-         copy, value, length, root, cube_root, cube_root_float, modulo, rem, low, high, positive_difference, positive_difference_float, integral, fraction, mantissa, exponent, scaled, scaled_float, long_scaled, rounded_current, rounded_current_float, nearby_current, nearby_current_float, exponential, exponential_float, logarithm, logarithm_float, logarithm_binary, power, power_float, hypotenuse, hypotenuse_float, sine, cosine, sine_float, cosine_float, tangent, tangent_float, hyperbolic_sine, hyperbolic_sine_float, hyperbolic_cosine, hyperbolic_cosine_float, hyperbolic_tangent, hyperbolic_tangent_float, inverse_hyperbolic_sine, inverse_hyperbolic_sine_float, inverse_hyperbolic_cosine, inverse_hyperbolic_cosine_float, inverse_hyperbolic_tangent, inverse_hyperbolic_tangent_float, arc_tangent, arc_tangent_float, quadrant_tangent, quadrant_tangent_float, adjacent, toward, toward_float, binary_exponent, extracted_exponent);
+  printf("Nelua allocator + memory/string/strtol/math: %s -> %ld (%zu bytes, sqrt=%.0f cbrt=%.0f cbrtf=%.1f fmod=%.0f remainder=%.0f min=%.0f max=%.0f fdim=%.0f fdimf=%.0f modf=%.1f+%.1f frexp=%.1f*2^%d ldexp=%.0f scalbnf=%.0f scalbln=%.0f rint=%.0f rintf=%.0f nearbyint=%.0f nearbyintf=%.0f exp=%.9g expf=%.9g expm1=%.9g log=%.9g logf=%.9g log1p=%.9g log2=%.0f pow=%.0f powf=%.0f hypot=%.0f hypotf=%.0f sin=%.9g cos=%.9g sinf=%.9g cosf=%.9g tan=%.9g tanf=%.9g sinh=%.9g sinhf=%.9g cosh=%.9g coshf=%.9g tanh=%.9g tanhf=%.9g asinh=%.9g asinhf=%.9g acosh=%.9g acoshf=%.9g atanh=%.9g atanhf=%.9g atan=%.9g atanf=%.9g atan2=%.9g atan2f=%.9g nextafter=%.17g nexttoward=%.17g nexttowardf=%.9g ilogb=%d logb=%.0f)\n",
+         copy, value, length, root, cube_root, cube_root_float, modulo, rem, low, high, positive_difference, positive_difference_float, integral, fraction, mantissa, exponent, scaled, scaled_float, long_scaled, rounded_current, rounded_current_float, nearby_current, nearby_current_float, exponential, exponential_float, exponential_minus_one, logarithm, logarithm_float, logarithm_one_plus, logarithm_binary, power, power_float, hypotenuse, hypotenuse_float, sine, cosine, sine_float, cosine_float, tangent, tangent_float, hyperbolic_sine, hyperbolic_sine_float, hyperbolic_cosine, hyperbolic_cosine_float, hyperbolic_tangent, hyperbolic_tangent_float, inverse_hyperbolic_sine, inverse_hyperbolic_sine_float, inverse_hyperbolic_cosine, inverse_hyperbolic_cosine_float, inverse_hyperbolic_tangent, inverse_hyperbolic_tangent_float, arc_tangent, arc_tangent_float, quadrant_tangent, quadrant_tangent_float, adjacent, toward, toward_float, binary_exponent, extracted_exponent);
   nelibc_free(copy);
   return 0;
 }

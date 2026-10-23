@@ -1099,7 +1099,11 @@ local function cbrtf(value: cfloat): cfloat <cexport, codename 'cbrtf'>
 end
 
 local function log1p_core(value: cdouble): cdouble
-  if fabs(value) >= 0.125_cdouble then return log(1_cdouble + value) end
+  if fabs(value) >= 0.125_cdouble then
+    local adjusted = 1_cdouble + value
+    local correction = (value - (adjusted - 1_cdouble)) / adjusted
+    return log(adjusted) + correction
+  end
   local transformed = value / (2_cdouble + value)
   local square = transformed * transformed
   local polynomial: cdouble = 1_cdouble / 41_cdouble
@@ -1109,6 +1113,53 @@ local function log1p_core(value: cdouble): cdouble
     denominator = denominator - 2_cint
   end
   return 2_cdouble * transformed * (1_cdouble + square * polynomial)
+end
+
+local function log1p(value: cdouble): cdouble <cexport, codename 'log1p'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    if value < 0_cdouble then
+      math_domain_error()
+      return nelibc_log_domain_error_hw()
+    end
+    return value
+  end
+  if value == -1_cdouble then
+    math_range_error()
+    return nelibc_log_pole_hw()
+  end
+  if value < -1_cdouble then
+    math_domain_error()
+    return nelibc_log_domain_error_hw()
+  end
+  return log1p_core(value)
+end
+
+local function log1pf(value: cfloat): cfloat <cexport, codename 'log1pf'>
+  return (@cfloat)(log1p((@cdouble)(value)))
+end
+
+local function expm1(value: cdouble): cdouble <cexport, codename 'expm1'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    if value < 0_cdouble then return -1_cdouble end
+    return value
+  end
+  if fabs(value) >= 1_cdouble then return exp_core(value) - 1_cdouble end
+
+  local term = value
+  local sum = value
+  local n: cint = 2_cint
+  while n <= 22_cint do
+    term = term * value / (@cdouble)(n)
+    sum = sum + term
+    n = n + 1_cint
+  end
+  return sum
+end
+
+local function expm1f(value: cfloat): cfloat <cexport, codename 'expm1f'>
+  return (@cfloat)(expm1((@cdouble)(value)))
 end
 
 
