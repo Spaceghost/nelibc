@@ -1082,6 +1082,39 @@ int main(void) {
       pthread_mutex_destroy(&robust_mutex) != 0)
     return 259;
 
+  if (pthread_mutexattr_init(&mutex_attributes) != 0 ||
+      pthread_mutexattr_setrobust(&mutex_attributes, PTHREAD_MUTEX_ROBUST) != 0 ||
+      pthread_mutexattr_setprotocol(&mutex_attributes, PTHREAD_PRIO_INHERIT) != 0 ||
+      pthread_mutex_init(&robust_mutex, &mutex_attributes) != 0 ||
+      pthread_mutexattr_destroy(&mutex_attributes) != 0)
+    return 260;
+  if (sem_init(&robust_owner_release, 0, 0) != 0) return 261;
+  atomic_store_explicit(&robust_owner_ready, 0, memory_order_relaxed);
+  if (pthread_create(&robust_owner, 0, robust_gated_owner_worker,
+                     &robust_mutex) != 0)
+    return 262;
+  while (atomic_load_explicit(&robust_owner_ready, memory_order_acquire) == 0)
+    sched_yield();
+  if (pthread_create(&recovery_waiter, 0, robust_recovery_waiter,
+                     &robust_mutex) != 0)
+    return 263;
+  int robust_pi_waiter_queued = 0;
+  for (int i = 0; i < 1000000; ++i) {
+    if (robust_mutex.__state < 0) {
+      robust_pi_waiter_queued = 1;
+      break;
+    }
+    sched_yield();
+  }
+  if (!robust_pi_waiter_queued || sem_post(&robust_owner_release) != 0 ||
+      pthread_join(robust_owner, &result) != 0 || result != 0 ||
+      pthread_join(recovery_waiter, &result) != 0 || result != 0 ||
+      sem_destroy(&robust_owner_release) != 0 ||
+      pthread_mutex_lock(&robust_mutex) != 0 ||
+      pthread_mutex_unlock(&robust_mutex) != 0 ||
+      pthread_mutex_destroy(&robust_mutex) != 0)
+    return 264;
+
   struct process_shared_robust_state {
     pthread_mutex_t mutex;
   };
