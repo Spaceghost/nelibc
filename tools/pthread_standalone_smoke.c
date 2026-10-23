@@ -15,6 +15,7 @@ static volatile int pthread_kill_signal;
 static int atfork_order[16];
 static int atfork_order_count;
 static volatile int detached_done;
+static _Atomic int join_release;
 static volatile int mutex_counter;
 static pthread_mutex_t static_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int spin_counter;
@@ -229,6 +230,12 @@ typedef struct {
 static void *return_self(void *argument) {
   (void)argument;
   return (void *)pthread_self();
+}
+
+static void *gated_join_worker(void *argument) {
+  while (!atomic_load_explicit(&join_release, memory_order_acquire)) {
+  }
+  return argument;
 }
 
 static void *exit_with_value(void *argument) {
@@ -912,6 +919,38 @@ int main(void) {
     return 16;
   result = 0;
   if (pthread_join(thread, &result) != 0 || result != exit_value) return 17;
+
+  atomic_store_explicit(&join_release, 0, memory_order_release);
+  if (pthread_create(&thread, 0, gated_join_worker, exit_value) != 0) return 18;
+  if (pthread_tryjoin_np(thread, &result) != EBUSY) return 19;
+  atomic_store_explicit(&join_release, 1, memory_order_release);
+  int tryjoin_result = EBUSY;
+  for (unsigned int i = 0; i < 10000000U && tryjoin_result == EBUSY; ++i)
+    tryjoin_result = pthread_tryjoin_np(thread, &result);
+  if (tryjoin_result != 0 || result != exit_value) return 20;
+
+  atomic_store_explicit(&join_release, 0, memory_order_release);
+  if (pthread_create(&thread, 0, gated_join_worker, exit_value) != 0) return 21;
+  struct timespec join_deadline;
+  struct timespec invalid_join_deadline = {0, 1000000000L};
+  if (pthread_timedjoin_np(thread, &result, &invalid_join_deadline) != EINVAL)
+    return 22;
+  if (clock_gettime(CLOCK_REALTIME, &join_deadline) != 0) return 26;
+  join_deadline.tv_nsec += 20000000L;
+  if (join_deadline.tv_nsec >= 1000000000L) {
+    ++join_deadline.tv_sec;
+    join_deadline.tv_nsec -= 1000000000L;
+  }
+  result = (void *)0x5678;
+  if (pthread_timedjoin_np(thread, &result, &join_deadline) != ETIMEDOUT ||
+      result != (void *)0x5678)
+    return 23;
+  if (clock_gettime(CLOCK_REALTIME, &join_deadline) != 0) return 24;
+  ++join_deadline.tv_sec;
+  atomic_store_explicit(&join_release, 1, memory_order_release);
+  if (pthread_timedjoin_np(thread, &result, &join_deadline) != 0 ||
+      result != exit_value)
+    return 25;
 
   cancel_waiting = 0;
   cancel_cleanup_calls = 0;

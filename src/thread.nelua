@@ -686,7 +686,10 @@ local function nelibc_thread_create(handle: *ThreadHandle, start: function(point
 end
 
 -- Wait for a child, service process-wide credential rendezvous, and release maps.
-local function thread_wait(handle: *ThreadHandle): cint
+-- A non-null deadline is an absolute CLOCK_REALTIME deadline. Keep futex sleeps
+-- short so this waiter continues to service process-wide credential work.
+local function thread_wait_until(handle: *ThreadHandle,
+    deadline: *Timespec): cint
   if handle == nilptr or handle.state ~= 1 then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -696,14 +699,40 @@ local function thread_wait(handle: *ThreadHandle): cint
   -- their shared request state; timed waits let this join service requests
   -- made by any active child, not only the child being joined.
   local timeout: Timespec
-  timeout.tv_sec = 0
-  timeout.tv_nsec = 10000000
   local tid_word: *[0]cint = handle.tid_word
   if tid_word == nilptr then tid_word = &handle.tid end
   while nelibc_thread_tid_load((@pointer)(tid_word)) ~= 0 do
     local expected_tid: cint = nelibc_thread_tid_load((@pointer)(tid_word))
     nelibc_credential_sync_serve()
     if nelibc_thread_tid_load((@pointer)(tid_word)) ~= 0 then
+      timeout.tv_sec = 0
+      timeout.tv_nsec = 10000000
+      if deadline ~= nilptr then
+        local now: Timespec
+        local clock_result = nelibc_raw_syscall3(228_culong, 0_culong,
+            (@culong)((@usize)(&now)), 0_culong) -- clock_gettime(CLOCK_REALTIME)
+        if clock_result < 0 and clock_result >= -4095 then
+          nelibc_errno_location()[0] = (@cint)(-clock_result)
+          return -1
+        end
+        if deadline.tv_sec < now.tv_sec or
+           (deadline.tv_sec == now.tv_sec and deadline.tv_nsec <= now.tv_nsec) then
+          if nelibc_thread_tid_load((@pointer)(tid_word)) ~= 0 then
+            nelibc_errno_location()[0] = 110 -- ETIMEDOUT
+            return -1
+          end
+          continue
+        end
+        local remaining_sec = deadline.tv_sec - now.tv_sec
+        local remaining_nsec = deadline.tv_nsec - now.tv_nsec
+        if remaining_nsec < 0 then
+          remaining_sec = remaining_sec - 1
+          remaining_nsec = remaining_nsec + 1000000000
+        end
+        if remaining_sec == 0 and remaining_nsec < timeout.tv_nsec then
+          timeout.tv_nsec = remaining_nsec
+        end
+      end
       nelibc_raw_syscall6(
         202_culong, (@culong)((@usize)(tid_word)), 0_culong,
         (@culong)(expected_tid), (@culong)((@usize)(&timeout)), 0_culong, 0_culong
@@ -723,6 +752,10 @@ local function thread_wait(handle: *ThreadHandle): cint
   handle.tid_word = nilptr
   handle.state = 2
   return 0
+end
+
+local function thread_wait(handle: *ThreadHandle): cint
+  return thread_wait_until(handle, nilptr)
 end
 
 local function nelibc_thread_join(handle: *ThreadHandle, result: *[0]cint): cint <cexport, codename 'nelibc_thread_join'>
@@ -746,6 +779,17 @@ local function nelibc_thread_run_once(start: function(pointer): cint, arg: point
   return result
 end
 
+local function pthread_join_release_claim(context: *PthreadContext,
+    lifecycle: cint): void
+  if nelibc_atomic_cas_int(&context.lifecycle, 4, lifecycle) == 0 then return end
+  -- The target exited while the nonblocking/timed join held lifecycle 4.
+  -- pthread_finish changes 4 to 7 in that case; retain a joinable-completed
+  -- state after releasing the claim so detach and a later join can clean up.
+  if nelibc_atomic_load_int(&context.lifecycle) == 7 then
+    nelibc_atomic_store_int(&context.lifecycle, 2)
+  end
+end
+
 local function pthread_finish(context: *PthreadContext): void
   while true do
     local lifecycle = nelibc_atomic_load_int(&context.lifecycle)
@@ -753,6 +797,7 @@ local function pthread_finish(context: *PthreadContext): void
       if nelibc_atomic_cas_int(&context.lifecycle, 0, 2) ~= 0 then continue end
       return
     elseif lifecycle == 4 then
+      if nelibc_atomic_cas_int(&context.lifecycle, 4, 7) ~= 0 then continue end
       return
     elseif lifecycle == 1 or lifecycle == 3 then
       if nelibc_atomic_cas_int(&context.lifecycle, lifecycle, 5) ~= 0 then continue end
@@ -2965,13 +3010,41 @@ local function pthread_tryjoin_np(thread: pointer, result: *[0]pointer): cint
     lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
   end
   if nelibc_thread_tid_load((@pointer)(state.handle.tid_word)) ~= 0 then
-    nelibc_atomic_store_int(&state.context.lifecycle, lifecycle)
+    pthread_join_release_claim(&state.context, lifecycle)
     return 16 -- EBUSY: the thread has not terminated
   end
   local tid_word: *[0]cint = state.handle.tid_word
   if thread_wait(&state.handle) ~= 0 then
-    nelibc_atomic_store_int(&state.context.lifecycle, lifecycle)
+    pthread_join_release_claim(&state.context, lifecycle)
     return nelibc_errno_location()[0]
+  end
+  if result ~= nilptr then result[0] = state.context.result end
+  pthread_robust_slot_release(state.context.robust_slot)
+  nelibc_thread_tid_slot_release(tid_word)
+  state.magic = 0
+  nelibc_free(thread)
+  return 0
+end
+
+local function pthread_timedjoin_np(thread: pointer, result: *[0]pointer,
+    abstime: *Timespec): cint <cexport, codename 'pthread_timedjoin_np'>
+  if thread == nilptr then return 3 end -- ESRCH
+  if abstime == nilptr or abstime.tv_nsec < 0 or
+     abstime.tv_nsec >= 1000000000 then return 22 end -- EINVAL
+  if thread == nelibc_thread_current_identity() then return 35 end -- EDEADLK
+  local state = (@*PthreadObject)(thread)
+  if state.magic ~= PTHREAD_OBJECT_MAGIC then return 3 end -- ESRCH
+  local lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
+  while true do
+    if lifecycle ~= 0 and lifecycle ~= 2 then return 22 end -- EINVAL
+    if nelibc_atomic_cas_int(&state.context.lifecycle, lifecycle, 4) == 0 then break end
+    lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
+  end
+  local tid_word: *[0]cint = state.handle.tid_word
+  if thread_wait_until(&state.handle, abstime) ~= 0 then
+    local wait_error = nelibc_errno_location()[0]
+    pthread_join_release_claim(&state.context, lifecycle)
+    return wait_error
   end
   if result ~= nilptr then result[0] = state.context.result end
   pthread_robust_slot_release(state.context.robust_slot)

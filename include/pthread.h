@@ -145,6 +145,8 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
 int pthread_cancel(pthread_t thread);
 int pthread_join(pthread_t thread, void **retval);
 int pthread_tryjoin_np(pthread_t thread, void **retval);
+int pthread_timedjoin_np(pthread_t thread, void **retval,
+                         const struct timespec *abstime);
 int pthread_detach(pthread_t thread);
 int pthread_equal(pthread_t first, pthread_t second);
 pthread_t pthread_self(void);
