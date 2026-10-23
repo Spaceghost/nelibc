@@ -84,7 +84,8 @@ local PthreadMutexAttr: type = @record{
 }
 local PthreadCondAttr: type = @record{
   magic: culong,
-  pshared: cint
+  pshared: cint,
+  clockid: cint
 }
 local PthreadMutex: type = @record{
   magic: culong,
@@ -102,7 +103,8 @@ local PthreadCond: type = @record{
   magic: culong,
   sequence: cint,
   waiters: cint,
-  pshared: cint
+  pshared: cint,
+  clockid: cint
 }
 local PthreadBarrierAttr: type = @record{
   magic: culong,
@@ -174,6 +176,8 @@ local ROBUST_LIST_FUTEX_OFFSET: clong <comptime> = -32
 local ROBUST_SLOT_COUNT: csize <comptime> = 1024
 local PTHREAD_COND_ATTR_MAGIC: culong <comptime> = 0x4E434154545231
 local PTHREAD_COND_MAGIC: culong <comptime> = 0x4E434F4E44
+local CLOCK_REALTIME: cint <comptime> = 0
+local CLOCK_MONOTONIC: cint <comptime> = 1
 local PTHREAD_BARRIER_ATTR_MAGIC: culong <comptime> = 0x4E424154545231
 local PTHREAD_BARRIER_MAGIC: culong <comptime> = 0x4E42415252
 local PTHREAD_RWLOCK_ATTR_MAGIC: culong <comptime> = 0x4E525741545452
@@ -1705,18 +1709,22 @@ local function pthread_spin_unlock(lock: *[0]cint): cint
 end
 
 local function pthread_condattr_valid(attr: *PthreadCondAttr): boolean <inline>
-  return attr ~= nilptr and attr.magic == PTHREAD_COND_ATTR_MAGIC
+  return attr ~= nilptr and attr.magic == PTHREAD_COND_ATTR_MAGIC and
+         (attr.pshared == 0 or attr.pshared == 1) and
+         (attr.clockid == CLOCK_REALTIME or attr.clockid == CLOCK_MONOTONIC)
 end
 
 local function pthread_cond_valid(cond: *PthreadCond): boolean <inline>
   return cond ~= nilptr and cond.magic == PTHREAD_COND_MAGIC and
-         (cond.pshared == 0 or cond.pshared == 1)
+         (cond.pshared == 0 or cond.pshared == 1) and
+         (cond.clockid == CLOCK_REALTIME or cond.clockid == CLOCK_MONOTONIC)
 end
 
 local function pthread_condattr_init(attr: *PthreadCondAttr): cint <cexport, codename 'pthread_condattr_init'>
   if attr == nilptr then return 22 end -- EINVAL
   attr.magic = PTHREAD_COND_ATTR_MAGIC
   attr.pshared = 0
+  attr.clockid = CLOCK_REALTIME
   return 0
 end
 
@@ -1738,16 +1746,34 @@ local function pthread_condattr_getpshared(attr: *PthreadCondAttr, pshared: *[0]
   return 0
 end
 
+local function pthread_condattr_setclock(attr: *PthreadCondAttr, clockid: cint): cint <cexport, codename 'pthread_condattr_setclock'>
+  if not pthread_condattr_valid(attr) or
+     (clockid ~= CLOCK_REALTIME and clockid ~= CLOCK_MONOTONIC) then
+    return 22 -- EINVAL
+  end
+  attr.clockid = clockid
+  return 0
+end
+
+local function pthread_condattr_getclock(attr: *PthreadCondAttr, clockid: *[0]cint): cint <cexport, codename 'pthread_condattr_getclock'>
+  if not pthread_condattr_valid(attr) or clockid == nilptr then return 22 end -- EINVAL
+  clockid[0] = attr.clockid
+  return 0
+end
+
 local function pthread_cond_init(cond: *PthreadCond, attr: *PthreadCondAttr): cint <cexport, codename 'pthread_cond_init'>
   if cond == nilptr then return 22 end -- EINVAL
   local pshared: cint = 0
+  local clockid: cint = CLOCK_REALTIME
   if attr ~= nilptr then
     if not pthread_condattr_valid(attr) then return 22 end -- EINVAL
     pshared = attr.pshared
+    clockid = attr.clockid
   end
   cond.sequence = 0
   cond.waiters = 0
   cond.pshared = pshared
+  cond.clockid = clockid
   cond.magic = PTHREAD_COND_MAGIC
   return 0
 end
@@ -1781,7 +1807,11 @@ local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMut
   local timeout_pointer: culong = 0_culong
   local futex_mask: culong = 0_culong
   if abstime ~= nilptr then
-    wait_operation = 265_culong -- FUTEX_WAIT_BITSET | FUTEX_CLOCK_REALTIME
+    if cond.clockid == CLOCK_MONOTONIC then
+      wait_operation = 9_culong -- FUTEX_WAIT_BITSET uses CLOCK_MONOTONIC
+    else
+      wait_operation = 265_culong -- FUTEX_WAIT_BITSET | FUTEX_CLOCK_REALTIME
+    end
     timeout_pointer = (@culong)((@usize)(abstime))
     futex_mask = 0xFFFFFFFF_culong -- FUTEX_BITSET_MATCH_ANY
   end

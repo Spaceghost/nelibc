@@ -758,10 +758,10 @@ pthread_cond_signal,pthread.h,pthread.h,,host-delegated
 pthread_cond_timedwait,pthread.h,pthread.h,,host-delegated
 pthread_cond_wait,pthread.h,pthread.h,,host-delegated
 pthread_condattr_destroy,pthread.h,pthread.h,,host-delegated
-pthread_condattr_getclock,pthread.h,,,not-declared
+pthread_condattr_getclock,pthread.h,pthread.h,,host-delegated
 pthread_condattr_getpshared,pthread.h,pthread.h,,host-delegated
 pthread_condattr_init,pthread.h,pthread.h,,host-delegated
-pthread_condattr_setclock,pthread.h,,,not-declared
+pthread_condattr_setclock,pthread.h,pthread.h,,host-delegated
 pthread_condattr_setpshared,pthread.h,pthread.h,,host-delegated
 pthread_create,pthread.h,pthread.h,,host-delegated
 pthread_detach,pthread.h,pthread.h,,host-delegated

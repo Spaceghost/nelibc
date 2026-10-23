@@ -999,8 +999,9 @@ Standalone also exports a POSIX thread subset: `pthread_create`,
 caller-provided stack, guard-size, scope, and scheduling attributes,
 normal/recursive/error-checking, robust, and priority-inheritance mutexes,
 recursive-reader read-write locks,
-condition variables, reusable barriers, and detached workers.
-Read-write locks support timed operations and process-shared futexes. Readers
+condition variables with realtime or monotonic timed-wait clocks, reusable
+barriers, and detached workers. Read-write locks support timed operations and
+process-shared futexes. Readers
 may pass queued writers, so a continuous reader stream can starve writers.
 Priority-inheritance mutexes use Linux PI futex operations; priority-protect
 mutexes are unsupported. Thread-specific key values use per-thread storage, key

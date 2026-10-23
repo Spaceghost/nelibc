@@ -43,7 +43,9 @@ _Static_assert(sizeof(pthread_mutexattr_t) == 24 &&
                offsetof(pthread_mutex_t, __robust_next) == 40,
                "standalone pthread robust mutex ABI");
 _Static_assert(sizeof(pthread_condattr_t) == 16 &&
-               sizeof(pthread_cond_t) == 24,
+               offsetof(pthread_condattr_t, __clock) == 12 &&
+               sizeof(pthread_cond_t) == 24 &&
+               offsetof(pthread_cond_t, __clock) == 20,
                "standalone pthread condition ABI");
 _Static_assert(offsetof(struct utsname, machine) == 260 &&
                sizeof(struct utsname) == 390,

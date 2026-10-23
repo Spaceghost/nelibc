@@ -1270,6 +1270,48 @@ int main(void) {
       pthread_mutex_destroy(&condition_mutex) != 0)
     return 54;
 
+  pthread_condattr_t monotonic_attributes;
+  clockid_t selected_clock = -1;
+  if (pthread_condattr_init(&monotonic_attributes) != 0 ||
+      pthread_condattr_getclock(&monotonic_attributes, &selected_clock) != 0 ||
+      selected_clock != CLOCK_REALTIME ||
+      pthread_condattr_setclock(&monotonic_attributes, CLOCK_MONOTONIC_RAW) != EINVAL ||
+      pthread_condattr_getclock(&monotonic_attributes, &selected_clock) != 0 ||
+      selected_clock != CLOCK_REALTIME ||
+      pthread_condattr_setclock(&monotonic_attributes, CLOCK_MONOTONIC) != 0 ||
+      pthread_condattr_getclock(&monotonic_attributes, &selected_clock) != 0 ||
+      selected_clock != CLOCK_MONOTONIC ||
+      pthread_condattr_getclock(&monotonic_attributes, NULL) != EINVAL)
+    return 271;
+  pthread_cond_t monotonic_condition;
+  pthread_mutex_t monotonic_mutex;
+  if (pthread_cond_init(&monotonic_condition, &monotonic_attributes) != 0 ||
+      pthread_condattr_destroy(&monotonic_attributes) != 0 ||
+      pthread_mutex_init(&monotonic_mutex, NULL) != 0 ||
+      pthread_mutex_lock(&monotonic_mutex) != 0)
+    return 272;
+  struct timespec monotonic_start;
+  struct timespec monotonic_deadline;
+  struct timespec monotonic_end;
+  if (clock_gettime(CLOCK_MONOTONIC, &monotonic_start) != 0)
+    return 273;
+  monotonic_deadline = monotonic_start;
+  monotonic_deadline.tv_nsec += 100000000L;
+  if (monotonic_deadline.tv_nsec >= 1000000000L) {
+    ++monotonic_deadline.tv_sec;
+    monotonic_deadline.tv_nsec -= 1000000000L;
+  }
+  if (pthread_cond_timedwait(&monotonic_condition, &monotonic_mutex,
+                             &monotonic_deadline) != ETIMEDOUT ||
+      clock_gettime(CLOCK_MONOTONIC, &monotonic_end) != 0 ||
+      monotonic_end.tv_sec < monotonic_deadline.tv_sec ||
+      (monotonic_end.tv_sec == monotonic_deadline.tv_sec &&
+       monotonic_end.tv_nsec < monotonic_deadline.tv_nsec) ||
+      pthread_mutex_unlock(&monotonic_mutex) != 0 ||
+      pthread_cond_destroy(&monotonic_condition) != 0 ||
+      pthread_mutex_destroy(&monotonic_mutex) != 0)
+    return 274;
+
   pthread_condattr_t condition_attributes;
   if (pthread_condattr_init(&condition_attributes) != 0 ||
       pthread_condattr_setpshared(&condition_attributes, PTHREAD_PROCESS_SHARED) != 0)

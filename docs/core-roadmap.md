@@ -10,7 +10,7 @@ archive; it does not certify every behavior required by C or POSIX.
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
 | P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, and `atan2`; the arithmetic backend is x86-64-specific, and most math entry points remain open | Expand the math set; then long-double coverage and complete fenv semantics |
-| P1 | Standalone threading completeness | Standalone pthread remains a subset; condition-variable clock selection and per-thread signal masks are missing, and `PTHREAD_PRIO_PROTECT` is unsupported | Add condition-variable clock attributes and `pthread_sigmask`, then cover remaining POSIX gaps |
+| P1 | Standalone threading completeness | Standalone pthread remains a subset; per-thread signal masks are missing, and `PTHREAD_PRIO_PROTECT` is unsupported | Add `pthread_sigmask`, then cover remaining POSIX gaps |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 758 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
@@ -38,35 +38,32 @@ matter more for completeness than for the initial common-program target.
 
 ### Standalone pthread gap audit
 
-The generated API inventory currently records 87 pthread declarations, and all
-87 export from the Zig, GCC, and TinyCC standalone archives. This verifies
+The generated API inventory currently records 89 pthread declarations, and all
+89 export from the Zig, GCC, and TinyCC standalone archives. This verifies
 symbol presence, not full behavior. The pinned musl 1.2.5 public-symbol baseline
-adds 20 pthread candidates that Nelibc does not yet declare. Prioritize them by
+adds 18 pthread candidates that Nelibc does not yet declare. Prioritize them by
 portability impact:
 
 | Priority | Missing APIs | Why they matter | Scope |
 |---|---|---|---|
-| P1 | `pthread_condattr_setclock`, `pthread_condattr_getclock` | Selects the clock used by `pthread_cond_timedwait`; currently timed condition waits use realtime deadlines only | POSIX clock selection |
 | P1 | `pthread_sigmask` | Provides the standard per-thread signal-mask interface; `sigprocmask` alone does not cover pthread callers | POSIX thread/signal integration |
 | P2 | `pthread_atfork`, `pthread_kill`, `pthread_getcpuclockid` | Fills standard fork-handler, thread-directed signal, and per-thread CPU-clock behavior | POSIX APIs with broader process/signal interactions |
 | P2 | `pthread_mutex_getprioceiling`, `pthread_mutex_setprioceiling` | Completes the priority-ceiling path; `PTHREAD_PRIO_PROTECT` currently returns `ENOTSUP` | Optional real-time priority protocol |
 | P3 | `pthread_getaffinity_np`, `pthread_setaffinity_np`, `pthread_getname_np`, `pthread_setname_np`, `pthread_getattr_np`, `pthread_getattr_default_np`, `pthread_setattr_default_np`, `pthread_getconcurrency`, `pthread_setconcurrency`, `pthread_setschedprio`, `pthread_timedjoin_np`, `pthread_tryjoin_np` | Adds Linux/glibc and musl nonstandard thread controls and convenience calls | Implementation-specific extensions |
 
 This is a baseline-derived priority list, not a complete POSIX inventory. The
-next high-value implementation is condition-variable clock selection: it
-extends an existing standalone primitive and gives timed condition waits a
-monotonic-clock option. After that, add `pthread_sigmask` and audit against the
+next high-value implementation is `pthread_sigmask`; also audit against the
 current POSIX pthread index, including APIs absent from the pinned musl export
 set.
 
-- The current API inventory has 662 declared names: 565 marked implemented,
-  97 intentionally host-delegated across the hybrid profiles, and one
+- The current API inventory has 664 declared names: 565 marked implemented,
+  99 intentionally host-delegated across the hybrid profiles, and one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage.
 - The musl 1.2.5 public-symbol comparison finds 1,269 declarations that are
   also exported by the pinned release archives: Nelibc exports 425 in at least
-  one hybrid profile, delegates 86 to a hybrid host, and does not yet declare
-  758. The largest undeclared groups are pthread, complex math, wide
+  one hybrid profile, delegates 88 to a hybrid host, and does not yet declare
+  756. The largest undeclared groups are pthread, complex math, wide
   characters, stdlib, unistd, and network database APIs. These are gap counts,
   not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
@@ -174,7 +171,8 @@ set.
   requests, cancellation state enable/disable, `pthread_setcanceltype`,
   `pthread_testcancel`, cleanup-handler push/pop for
   created threads, and cancellation of a thread blocked in `pthread_cond_wait`
-  or `pthread_cond_timedwait`. Mutexes support absolute realtime timed locks,
+  or `pthread_cond_timedwait`. Condition variables select realtime or monotonic
+  clocks through their attributes. Mutexes support absolute realtime timed locks,
   Linux priority-inheritance futexes, and robust owner-death recovery through
   Linux robust lists. The smoke covers robust PI recovery both with and without
   a blocked waiter, PI timed-lock deadlines, and deferred cancellation while a

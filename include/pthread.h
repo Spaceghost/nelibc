@@ -8,8 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sched.h>
-
-struct timespec;
+#include <time.h>
 
 typedef struct __nelibc_pthread *pthread_t;
 typedef volatile int pthread_spinlock_t;
@@ -36,6 +35,7 @@ typedef struct {
 typedef struct {
   uintptr_t __magic;
   int __pshared;
+  clockid_t __clock;
 } pthread_condattr_t;
 typedef struct {
   uintptr_t __magic;
@@ -54,6 +54,7 @@ typedef struct {
   int __sequence;
   int __waiters;
   int __pshared;
+  clockid_t __clock;
 } pthread_cond_t;
 typedef struct {
   uintptr_t __magic;
@@ -106,7 +107,7 @@ typedef struct {
 #define PTHREAD_MUTEX_INITIALIZER {0x4E4D5458u, 0, PTHREAD_MUTEX_NORMAL, 0, 0, PTHREAD_PROCESS_PRIVATE}
 #define PTHREAD_PROCESS_PRIVATE 0
 #define PTHREAD_PROCESS_SHARED 1
-#define PTHREAD_COND_INITIALIZER {0x4E434F4E44u, 0, 0, PTHREAD_PROCESS_PRIVATE}
+#define PTHREAD_COND_INITIALIZER {0x4E434F4E44u, 0, 0, PTHREAD_PROCESS_PRIVATE, CLOCK_REALTIME}
 #define PTHREAD_BARRIER_SERIAL_THREAD (-1)
 #define PTHREAD_RWLOCK_INITIALIZER \
   {0x4E52574C4F434Bu, 0, 0, 0, 0, PTHREAD_PROCESS_PRIVATE}
@@ -184,6 +185,8 @@ int pthread_condattr_init(pthread_condattr_t *attr);
 int pthread_condattr_destroy(pthread_condattr_t *attr);
 int pthread_condattr_setpshared(pthread_condattr_t *attr, int pshared);
 int pthread_condattr_getpshared(const pthread_condattr_t *attr, int *pshared);
+int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t clock_id);
+int pthread_condattr_getclock(const pthread_condattr_t *attr, clockid_t *clock_id);
 int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr);
 int pthread_cond_destroy(pthread_cond_t *cond);
 int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
