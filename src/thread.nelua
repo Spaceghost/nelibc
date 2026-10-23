@@ -846,6 +846,49 @@ local function pthread_mutex_lock(mutex: *PthreadMutex): cint <cexport, codename
   return 0
 end
 
+local function pthread_mutex_timedlock(mutex: *PthreadMutex,
+    abstime: *Timespec): cint <cexport, codename 'pthread_mutex_timedlock'>
+  if not pthread_mutex_valid(mutex) or abstime == nilptr or
+     abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000 then
+    return 22 -- EINVAL
+  end
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local owner_result = pthread_mutex_owner_check(mutex, tid)
+  if owner_result == 1 then return 0 end
+  if owner_result > 1 then return owner_result end
+  if nelibc_atomic_cas_int(&mutex.state, 0, 1) == 0 then
+    mutex.count = 1
+    nelibc_atomic_store_int(&mutex.owner, tid)
+    return 0
+  end
+  local operation: culong = 393_culong -- WAIT_BITSET | CLOCK_REALTIME | MATCH_ANY
+  if mutex.pshared == 0 then operation = operation | 128_culong end
+  while true do
+    local previous = nelibc_atomic_exchange_int(&mutex.state, 2)
+    if previous == 0 then
+      mutex.count = 1
+      nelibc_atomic_store_int(&mutex.owner, tid)
+      return 0
+    end
+    local wait_result = nelibc_raw_syscall6(
+      202_culong, (@culong)((@usize)(&mutex.state)), operation, 2_culong,
+      (@culong)((@usize)(abstime)), 0_culong, 0xFFFFFFFF_culong
+    )
+    if wait_result < 0 and wait_result >= -4095 then
+      local wait_error = (@cint)(-wait_result)
+      if wait_error == 4 or wait_error == 11 then continue end -- EINTR/EAGAIN
+      if wait_error == 110 then
+        if nelibc_atomic_cas_int(&mutex.state, 0, 2) == 0 then
+          mutex.count = 1
+          nelibc_atomic_store_int(&mutex.owner, tid)
+          return 0
+        end
+      end
+      return wait_error
+    end
+  end
+end
+
 local function pthread_mutex_trylock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_trylock'>
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
   local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))

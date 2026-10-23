@@ -333,6 +333,12 @@ static void *value_exit_worker(void *argument) {
   return 0;
 }
 
+static void *timed_mutex_worker(void *argument) {
+  struct timespec expired = {0, 0};
+  int result = pthread_mutex_timedlock((pthread_mutex_t *)argument, &expired);
+  return (void *)(intptr_t)result;
+}
+
 int main(void) {
   sigset_t cancellation_mask;
   struct sigaction cancellation_action = {0};
@@ -364,6 +370,25 @@ int main(void) {
     return 4;
 
   pthread_t thread;
+  pthread_mutex_t timed_mutex;
+  if (pthread_mutex_init(&timed_mutex, 0) != 0) return 201;
+  struct timespec invalid_mutex_deadline = {0, 1000000000L};
+  if (pthread_mutex_timedlock(&timed_mutex, &invalid_mutex_deadline) != EINVAL)
+    return 202;
+  struct timespec expired_mutex_deadline = {0, 0};
+  if (pthread_mutex_timedlock(&timed_mutex, &expired_mutex_deadline) != 0 ||
+      pthread_mutex_unlock(&timed_mutex) != 0 ||
+      pthread_mutex_lock(&timed_mutex) != 0)
+    return 203;
+  if (pthread_create(&thread, 0, timed_mutex_worker, &timed_mutex) != 0)
+    return 204;
+  void *timed_mutex_result = 0;
+  if (pthread_join(thread, &timed_mutex_result) != 0 ||
+      timed_mutex_result != (void *)(intptr_t)ETIMEDOUT ||
+      pthread_mutex_unlock(&timed_mutex) != 0 ||
+      pthread_mutex_destroy(&timed_mutex) != 0)
+    return 205;
+
   if (pthread_create(&thread, &attributes, return_detached, 0) != 0) return 5;
   if (pthread_join(thread, 0) != EINVAL) return 6;
   detached_release = 1;

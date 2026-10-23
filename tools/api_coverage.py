@@ -37,7 +37,7 @@ HOST_DELEGATED = {
         "pthread_mutexattr_destroy", "pthread_mutexattr_settype",
         "pthread_mutexattr_gettype", "pthread_mutexattr_setpshared",
         "pthread_mutexattr_getpshared", "pthread_mutex_init",
-        "pthread_mutex_destroy", "pthread_mutex_lock",
+        "pthread_mutex_destroy", "pthread_mutex_lock", "pthread_mutex_timedlock",
         "pthread_mutex_trylock", "pthread_mutex_unlock",
         "pthread_condattr_init", "pthread_condattr_destroy",
         "pthread_condattr_setpshared", "pthread_condattr_getpshared",

@@ -151,7 +151,8 @@ matter more for completeness than for the initial common-program target.
   requests, cancellation state enable/disable, `pthread_setcanceltype`,
   `pthread_testcancel`, cleanup-handler push/pop for
   created threads, and cancellation of a thread blocked in `pthread_cond_wait`
-  or `pthread_cond_timedwait`. Reusable process-private and process-shared
+  or `pthread_cond_timedwait`. Mutexes support absolute realtime timed locks.
+  Reusable process-private and process-shared
   barriers use futex generations. Read-write locks support recursive readers,
   process sharing, try-locks, and absolute realtime timed locks; the reader-
   preference policy can starve writers under a continuous reader stream. It
