@@ -997,14 +997,15 @@ Standalone also exports a POSIX thread subset: `pthread_create`,
 `pthread_key_create`, `pthread_key_delete`, `pthread_getspecific`,
 `pthread_setspecific`, `pthread_self`, `pthread_equal`, detach-state, stack-size,
 caller-provided stack, guard-size, scope, and scheduling attributes,
-normal/recursive/error-checking and robust mutexes, recursive-reader
-read-write locks,
+normal/recursive/error-checking, robust, and priority-inheritance mutexes,
+recursive-reader read-write locks,
 condition variables, reusable barriers, and detached workers.
 Read-write locks support timed operations and process-shared futexes. Readers
 may pass queued writers, so a continuous reader stream can starve writers.
-Thread-specific key values use per-thread storage, key generations prevent
-deleted keys from aliasing reused slots, and worker exit runs up to four
-destructor passes before releasing that storage.
+Priority-inheritance mutexes use Linux PI futex operations; priority-protect
+mutexes are unsupported. Thread-specific key values use per-thread storage, key
+generations prevent deleted keys from aliasing reused slots, and worker exit runs
+up to four destructor passes before releasing that storage.
 Detached workers release their stack and TLS at exit; process-wide credential
 changes from a detached worker return `ENOTSUP` because no parent thread
 services the rendezvous after detachment.

@@ -19,6 +19,7 @@ static pthread_spinlock_t test_spinlock;
 static pthread_mutex_t condition_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t static_condition = PTHREAD_COND_INITIALIZER;
 static _Atomic int condition_waiting;
+static _Atomic int pi_cancel_acquired;
 static int condition_ready;
 static int condition_woken;
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
@@ -398,6 +399,17 @@ static void *pi_timed_mutex_worker(void *argument) {
   pi_timed_mutex_request *request = argument;
   int result = pthread_mutex_timedlock(request->mutex, &request->deadline);
   return (void *)(intptr_t)result;
+}
+
+static void *pi_cancel_mutex_worker(void *argument) {
+  pthread_mutex_t *mutex = argument;
+  int result = pthread_mutex_lock(mutex);
+  if (result != 0) return (void *)(intptr_t)result;
+  atomic_store_explicit(&pi_cancel_acquired, 1, memory_order_release);
+  result = pthread_mutex_unlock(mutex);
+  if (result != 0) return (void *)(intptr_t)result;
+  pthread_testcancel();
+  return 0;
 }
 
 static void *robust_owner_worker(void *argument) {
@@ -1017,6 +1029,23 @@ int main(void) {
   if (!pi_waiter_queued || pthread_mutex_unlock(&pi_mutex) != 0 ||
       pthread_join(pi_waiter, &result) != 0 || result != 0)
     return 254;
+  if (pthread_mutex_lock(&pi_mutex) != 0) return 255;
+  atomic_store_explicit(&pi_cancel_acquired, 0, memory_order_relaxed);
+  if (pthread_create(&pi_waiter, 0, pi_cancel_mutex_worker, &pi_mutex) != 0)
+    return 269;
+  int pi_cancel_waiter_queued = 0;
+  for (int i = 0; i < 1000000; ++i) {
+    if (pi_mutex.__state < 0) {
+      pi_cancel_waiter_queued = 1;
+      break;
+    }
+    sched_yield();
+  }
+  if (!pi_cancel_waiter_queued || pthread_cancel(pi_waiter) != 0 ||
+      pthread_mutex_unlock(&pi_mutex) != 0 ||
+      pthread_join(pi_waiter, &result) != 0 || result != PTHREAD_CANCELED ||
+      atomic_load_explicit(&pi_cancel_acquired, memory_order_acquire) != 1)
+    return 270;
   if (pthread_mutex_lock(&pi_mutex) != 0) return 255;
   struct timespec invalid_pi_deadline = {0, -1};
   if (pthread_mutex_timedlock(&pi_mutex, &invalid_pi_deadline) != EINVAL)
