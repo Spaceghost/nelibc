@@ -1068,6 +1068,20 @@ int main(void) {
       pthread_mutex_destroy(&robust_mutex) != 0)
     return 243;
 
+  if (pthread_mutexattr_init(&mutex_attributes) != 0 ||
+      pthread_mutexattr_setrobust(&mutex_attributes, PTHREAD_MUTEX_ROBUST) != 0 ||
+      pthread_mutexattr_setprotocol(&mutex_attributes, PTHREAD_PRIO_INHERIT) != 0 ||
+      pthread_mutex_init(&robust_mutex, &mutex_attributes) != 0 ||
+      pthread_mutexattr_destroy(&mutex_attributes) != 0)
+    return 258;
+  if (pthread_create(&robust_owner, 0, robust_owner_worker, &robust_mutex) != 0 ||
+      pthread_join(robust_owner, &result) != 0 || result != 0 ||
+      pthread_mutex_lock(&robust_mutex) != EOWNERDEAD ||
+      pthread_mutex_consistent(&robust_mutex) != 0 ||
+      pthread_mutex_unlock(&robust_mutex) != 0 ||
+      pthread_mutex_destroy(&robust_mutex) != 0)
+    return 259;
+
   struct process_shared_robust_state {
     pthread_mutex_t mutex;
   };
