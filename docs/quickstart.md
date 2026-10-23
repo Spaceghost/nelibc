@@ -106,8 +106,10 @@ memory, strings, integer conversion, and the current Nelua math slice.
 - `make lib-consumer-matrix` runs a larger C program against the four hybrid
   archives, including `sem_clockwait`; this covers more APIs than the small
   quickstart example.
-- `make qsort-r-smoke-zig` dogfoods Nelibc's GNU `qsort_r` with caller-owned
-  context, checking ascending and descending order through both sort paths.
+- `make qsort-r-smoke-matrix` dogfoods GNU `qsort_r` under Zig/glibc,
+  GCC/glibc, Zig/musl, and TinyCC/glibc.
+- `make pthread-standalone-matrix` exercises the standalone pthread subset with
+  Zig, GCC, and TinyCC, including reusable process-shared barriers.
 - `make sem-clockwait-musl-smoke` compiles and runs a static musl consumer of
   `sem_clockwait`, including deadline, wakeup, and cancellation behavior.
 - `make sem-clockwait-shootout-zig` compares Nelibc's immediate, empty-timeout,

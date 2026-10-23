@@ -25,6 +25,8 @@ static _Atomic int once_go;
 static _Atomic int once_started;
 static _Atomic int once_release;
 static _Atomic int once_runs;
+static pthread_barrier_t round_barrier;
+static _Atomic int barrier_serial_returns;
 static pthread_key_t value_key;
 static int value_destructor_calls;
 static pthread_mutex_t cancel_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -229,6 +231,18 @@ static void *once_worker(void *argument) {
   while (!atomic_load_explicit(&once_go, memory_order_acquire)) {
   }
   return (void *)(uintptr_t)pthread_once(&once_control, once_initializer);
+}
+
+static void *barrier_worker(void *argument) {
+  (void)argument;
+  for (int round = 0; round < 100; ++round) {
+    int result = pthread_barrier_wait(&round_barrier);
+    if (result == PTHREAD_BARRIER_SERIAL_THREAD)
+      atomic_fetch_add_explicit(&barrier_serial_returns, 1, memory_order_relaxed);
+    else if (result != 0)
+      return (void *)(uintptr_t)1;
+  }
+  return 0;
 }
 
 static void value_destructor(void *value) {
@@ -718,6 +732,47 @@ int main(void) {
   if (pthread_once(0, once_initializer) != EINVAL ||
       pthread_once(&once_control, 0) != EINVAL)
     return 73;
+  pthread_barrierattr_t barrier_attributes;
+  int barrier_pshared = -1;
+  if (pthread_barrierattr_init(&barrier_attributes) != 0 ||
+      pthread_barrierattr_setpshared(&barrier_attributes, PTHREAD_PROCESS_SHARED) != 0 ||
+      pthread_barrierattr_getpshared(&barrier_attributes, &barrier_pshared) != 0 ||
+      barrier_pshared != PTHREAD_PROCESS_SHARED ||
+      pthread_barrier_init(&round_barrier, &barrier_attributes, 4) != 0 ||
+      pthread_barrier_init(&round_barrier, &barrier_attributes, 0) != EINVAL)
+    return 197;
+  pthread_t barrier_threads[4];
+  for (int i = 0; i < 4; ++i) {
+    if (pthread_create(&barrier_threads[i], &attributes, barrier_worker, 0) != 0)
+      return 198;
+  }
+  for (int i = 0; i < 4; ++i) {
+    if (pthread_join(barrier_threads[i], &result) != 0 || result != 0)
+      return 199;
+  }
+  if (atomic_load_explicit(&barrier_serial_returns, memory_order_relaxed) != 100 ||
+      pthread_barrier_destroy(&round_barrier) != 0)
+    return 200;
+  pthread_barrier_t *process_barrier = mmap(0, sizeof(*process_barrier),
+      PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (process_barrier == MAP_FAILED ||
+      pthread_barrier_init(process_barrier, &barrier_attributes, 2) != 0)
+    return 201;
+  child = fork();
+  if (child < 0) return 202;
+  if (child == 0) {
+    int wait_result = pthread_barrier_wait(process_barrier);
+    _exit(wait_result == 0 || wait_result == PTHREAD_BARRIER_SERIAL_THREAD ? 0 : 1);
+  }
+  int process_wait_result = pthread_barrier_wait(process_barrier);
+  child_status = -1;
+  if ((process_wait_result != 0 &&
+       process_wait_result != PTHREAD_BARRIER_SERIAL_THREAD) ||
+      waitpid(child, &child_status, 0) != child || child_status != 0 ||
+      pthread_barrier_destroy(process_barrier) != 0 ||
+      munmap(process_barrier, sizeof(*process_barrier)) != 0 ||
+      pthread_barrierattr_destroy(&barrier_attributes) != 0)
+    return 203;
   if (pthread_key_create(&value_key, value_destructor) != 0 ||
       pthread_setspecific(value_key, 0) != 0 ||
       pthread_getspecific(value_key) != 0 ||

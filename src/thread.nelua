@@ -71,6 +71,17 @@ local PthreadCond: type = @record{
   waiters: cint,
   pshared: cint
 }
+local PthreadBarrierAttr: type = @record{
+  magic: culong,
+  pshared: cint
+}
+local PthreadBarrier: type = @record{
+  magic: culong,
+  count: cint,
+  arrived: cint,
+  generation: cint,
+  pshared: cint
+}
 local Semaphore: type = @record{
   magic: culong,
   value: cint,
@@ -106,6 +117,8 @@ local PTHREAD_MUTEX_ATTR_MAGIC: culong <comptime> = 0x4E4D4154545231
 local PTHREAD_MUTEX_MAGIC: culong <comptime> = 0x4E4D5458
 local PTHREAD_COND_ATTR_MAGIC: culong <comptime> = 0x4E434154545231
 local PTHREAD_COND_MAGIC: culong <comptime> = 0x4E434F4E44
+local PTHREAD_BARRIER_ATTR_MAGIC: culong <comptime> = 0x4E424154545231
+local PTHREAD_BARRIER_MAGIC: culong <comptime> = 0x4E42415252
 local SEMAPHORE_MAGIC: culong <comptime> = 0x4E454C53454D31
 local PTHREAD_CANCELED: pointer <comptime> = (@pointer)(~0_csize)
 local PTHREAD_CANCEL_ENABLE: cint <comptime> = 0
@@ -965,6 +978,102 @@ local function pthread_cond_broadcast(cond: *PthreadCond): cint <cexport, codena
     if cond.pshared ~= 0 then operation = 1_culong end
     nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&cond.sequence)),
                         operation, 2147483647_culong, 0_culong, 0_culong, 0_culong)
+  end
+  return 0
+end
+
+local function pthread_barrierattr_valid(attr: *PthreadBarrierAttr): boolean <inline>
+  return attr ~= nilptr and attr.magic == PTHREAD_BARRIER_ATTR_MAGIC
+end
+
+local function pthread_barrier_valid(barrier: *PthreadBarrier): boolean <inline>
+  return barrier ~= nilptr and barrier.magic == PTHREAD_BARRIER_MAGIC and
+         barrier.count > 0
+end
+
+local function pthread_barrierattr_init(attr: *PthreadBarrierAttr): cint
+    <cexport, codename 'pthread_barrierattr_init'>
+  if attr == nilptr then return 22 end -- EINVAL
+  attr.magic = PTHREAD_BARRIER_ATTR_MAGIC
+  attr.pshared = 0
+  return 0
+end
+
+local function pthread_barrierattr_destroy(attr: *PthreadBarrierAttr): cint
+    <cexport, codename 'pthread_barrierattr_destroy'>
+  if not pthread_barrierattr_valid(attr) then return 22 end -- EINVAL
+  attr.magic = 0
+  return 0
+end
+
+local function pthread_barrierattr_setpshared(attr: *PthreadBarrierAttr,
+    pshared: cint): cint <cexport, codename 'pthread_barrierattr_setpshared'>
+  if not pthread_barrierattr_valid(attr) or (pshared ~= 0 and pshared ~= 1) then
+    return 22 -- EINVAL
+  end
+  attr.pshared = pshared
+  return 0
+end
+
+local function pthread_barrierattr_getpshared(attr: *PthreadBarrierAttr,
+    pshared: *[0]cint): cint <cexport, codename 'pthread_barrierattr_getpshared'>
+  if not pthread_barrierattr_valid(attr) or pshared == nilptr then return 22 end
+  pshared[0] = attr.pshared
+  return 0
+end
+
+local function pthread_barrier_init(barrier: *PthreadBarrier,
+    attr: *PthreadBarrierAttr, count: cuint): cint
+    <cexport, codename 'pthread_barrier_init'>
+  if barrier == nilptr or count == 0 or count > 2147483647_cuint then
+    return 22 -- EINVAL
+  end
+  local pshared: cint = 0
+  if attr ~= nilptr then
+    if not pthread_barrierattr_valid(attr) then return 22 end
+    pshared = attr.pshared
+  end
+  barrier.count = (@cint)(count)
+  barrier.arrived = 0
+  barrier.generation = 0
+  barrier.pshared = pshared
+  barrier.magic = PTHREAD_BARRIER_MAGIC
+  return 0
+end
+
+local function pthread_barrier_destroy(barrier: *PthreadBarrier): cint
+    <cexport, codename 'pthread_barrier_destroy'>
+  if not pthread_barrier_valid(barrier) then return 22 end -- EINVAL
+  if nelibc_atomic_load_int(&barrier.arrived) ~= 0 then return 16 end -- EBUSY
+  barrier.magic = 0
+  return 0
+end
+
+local function pthread_barrier_wait(barrier: *PthreadBarrier): cint
+    <cexport, codename 'pthread_barrier_wait'>
+  if not pthread_barrier_valid(barrier) then return 22 end -- EINVAL
+  local generation = nelibc_atomic_load_int(&barrier.generation)
+  local position = nelibc_atomic_fetch_add_int(&barrier.arrived, 1)
+  if position < 0 or position >= barrier.count then
+    nelibc_atomic_fetch_add_int(&barrier.arrived, -1)
+    return 22 -- EINVAL: corrupt or concurrently reused barrier state
+  end
+  if position == barrier.count - 1 then
+    nelibc_atomic_store_int(&barrier.arrived, 0)
+    nelibc_atomic_fetch_add_int(&barrier.generation, 1)
+    local operation: culong = 129_culong -- FUTEX_WAKE | FUTEX_PRIVATE_FLAG
+    if barrier.pshared ~= 0 then operation = 1_culong end
+    nelibc_raw_syscall6(202_culong,
+      (@culong)((@usize)(&barrier.generation)), operation,
+      2147483647_culong, 0_culong, 0_culong, 0_culong)
+    return -1 -- PTHREAD_BARRIER_SERIAL_THREAD
+  end
+  local operation: culong = 128_culong -- FUTEX_WAIT | FUTEX_PRIVATE_FLAG
+  if barrier.pshared ~= 0 then operation = 0_culong end
+  while nelibc_atomic_load_int(&barrier.generation) == generation do
+    nelibc_raw_syscall6(202_culong,
+      (@culong)((@usize)(&barrier.generation)), operation,
+      (@culong)(generation), 0_culong, 0_culong, 0_culong)
   end
   return 0
 end

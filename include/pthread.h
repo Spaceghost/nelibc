@@ -41,6 +41,17 @@ typedef struct {
   int __waiters;
   int __pshared;
 } pthread_cond_t;
+typedef struct {
+  uintptr_t __magic;
+  int __pshared;
+} pthread_barrierattr_t;
+typedef struct {
+  uintptr_t __magic;
+  int __count;
+  int __arrived;
+  int __generation;
+  int __pshared;
+} pthread_barrier_t;
 
 #define PTHREAD_CREATE_JOINABLE 0
 #define PTHREAD_CREATE_DETACHED 1
@@ -59,6 +70,7 @@ typedef struct {
 #define PTHREAD_PROCESS_PRIVATE 0
 #define PTHREAD_PROCESS_SHARED 1
 #define PTHREAD_COND_INITIALIZER {0x4E434F4E44u, 0, 0, PTHREAD_PROCESS_PRIVATE}
+#define PTHREAD_BARRIER_SERIAL_THREAD (-1)
 
 int pthread_attr_init(pthread_attr_t *attr);
 int pthread_attr_destroy(pthread_attr_t *attr);
@@ -109,6 +121,14 @@ int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
                            const struct timespec *abstime);
 int pthread_cond_signal(pthread_cond_t *cond);
 int pthread_cond_broadcast(pthread_cond_t *cond);
+int pthread_barrierattr_init(pthread_barrierattr_t *attr);
+int pthread_barrierattr_destroy(pthread_barrierattr_t *attr);
+int pthread_barrierattr_setpshared(pthread_barrierattr_t *attr, int pshared);
+int pthread_barrierattr_getpshared(const pthread_barrierattr_t *attr, int *pshared);
+int pthread_barrier_init(pthread_barrier_t *barrier,
+                         const pthread_barrierattr_t *attr, unsigned count);
+int pthread_barrier_destroy(pthread_barrier_t *barrier);
+int pthread_barrier_wait(pthread_barrier_t *barrier);
 
 #endif
 #endif

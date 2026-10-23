@@ -12,7 +12,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, and `atan2`; the arithmetic backend is x86-64-specific, and most math entry points remain open | Expand the math set; then long-double coverage and complete fenv semantics |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; deferred cancellation now works at explicit cancellation points and condition waits, while async cancellation and broader synchronization APIs remain incomplete | Extend cancellation points and cleanup semantics, then expand synchronization coverage |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 805 undeclared candidates and record explicit intentional omissions |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 797 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -36,14 +36,14 @@ start, allocate, do I/O, handle strings/numbers, and use threads. Math and
 threading are the largest capability gaps; locales and broader portability
 matter more for completeness than for the initial common-program target.
 
-- The current API inventory has 616 declared names: 565 marked implemented,
-  51 intentionally host-delegated across the hybrid profiles, and one
+- The current API inventory has 623 declared names: 565 marked implemented,
+  58 intentionally host-delegated across the hybrid profiles, and one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage.
 - The musl 1.2.5 public-symbol comparison finds 1,269 declarations that are
   also exported by the pinned release archives: Nelibc exports 425 in at least
-  one hybrid profile, delegates 40 to a hybrid host, and does not yet declare
-  804. The largest undeclared groups are pthread, complex math, wide
+  one hybrid profile, delegates 47 to a hybrid host, and does not yet declare
+  797. The largest undeclared groups are pthread, complex math, wide
   characters, stdlib, unistd, and network database APIs. These are gap counts,
   not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
@@ -150,7 +150,8 @@ matter more for completeness than for the initial common-program target.
 - Standalone pthread now supports deferred cancellation requests, cancellation
   state enable/disable, `pthread_testcancel`, cleanup-handler push/pop for
   created threads, and cancellation of a thread blocked in `pthread_cond_wait`
-  or `pthread_cond_timedwait`. It also interrupts blocking calls routed through
+  or `pthread_cond_timedwait`. Reusable process-private and process-shared
+  barriers use futex generations. It also interrupts blocking calls routed through
   the cancellable syscall wrappers, including read/write, socket I/O,
   poll/select, waits, sleeps, openat, and fsync. Condition-wait cancellation
   reacquires the mutex, then unwinds cleanup handlers before thread-specific
