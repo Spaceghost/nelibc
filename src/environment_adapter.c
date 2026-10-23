@@ -287,8 +287,10 @@ long nelibc_cancellable_syscall6(unsigned long number, unsigned long arg1,
 #endif
 #ifdef NELIBC_STANDALONE
 extern void pthread_testcancel(void) __attribute__((weak));
+extern void nelibc_pthread_cancel_signal(void);
 static void nelibc_cancel_signal_handler(int signal_number) {
   (void)signal_number;
+  nelibc_pthread_cancel_signal();
 }
 
 int nelibc_thread_cancel_signal_install(void) {

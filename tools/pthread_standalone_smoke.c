@@ -39,6 +39,9 @@ static volatile int cancel_read_started;
 static volatile int cancel_sleep_started;
 static volatile int cancel_state_ready;
 static volatile int cancel_state_release;
+static volatile int cancel_async_ready;
+static volatile int cancel_type_ready;
+static volatile int cancel_type_release;
 static int cancel_cleanup_calls;
 static sem_t cancel_semaphore;
 static volatile int cancel_sem_started;
@@ -77,6 +80,36 @@ static void *cancel_disabled_worker(void *argument) {
   }
   pthread_testcancel();
   if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0) != 0) return (void *)2;
+  pthread_cleanup_pop(0);
+  return 0;
+}
+
+static void *cancel_async_worker(void *argument) {
+  (void)argument;
+  int old_type = -1;
+  pthread_cleanup_push(cancel_cleanup, 0);
+  if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &old_type) != 0 ||
+      old_type != PTHREAD_CANCEL_DEFERRED)
+    return (void *)10;
+  if (pthread_setcanceltype(99, 0) != EINVAL) return (void *)11;
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &old_type) != 0 ||
+      old_type != PTHREAD_CANCEL_DEFERRED)
+    return (void *)12;
+  cancel_async_ready = 1;
+  for (;;) {
+  }
+  pthread_cleanup_pop(0);
+  return 0;
+}
+
+static void *cancel_pending_type_worker(void *argument) {
+  (void)argument;
+  pthread_cleanup_push(cancel_cleanup, 0);
+  cancel_type_ready = 1;
+  while (!cancel_type_release) {
+  }
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0)
+    return (void *)13;
   pthread_cleanup_pop(0);
   return 0;
 }
@@ -312,6 +345,13 @@ int main(void) {
   errno = 0;
   if (sigaction(32, &cancellation_action, 0) != -1 || errno != EINVAL)
     return 145;
+
+  int initial_cancel_type = -1;
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &initial_cancel_type) != 0 ||
+      initial_cancel_type != PTHREAD_CANCEL_DEFERRED ||
+      pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &initial_cancel_type) != 0 ||
+      initial_cancel_type != PTHREAD_CANCEL_ASYNCHRONOUS)
+    return 197;
 
   pthread_attr_t attributes;
   if (pthread_attr_init(&attributes) != 0) return 1;
@@ -551,6 +591,30 @@ int main(void) {
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
       cancel_cleanup_calls != 1)
     return 136;
+
+  cancel_async_ready = 0;
+  cancel_cleanup_calls = 0;
+  if (pthread_create(&thread, 0, cancel_async_worker, 0) != 0) return 194;
+  for (unsigned int i = 0; i < 10000000U && !cancel_async_ready; ++i) {
+  }
+  if (!cancel_async_ready || pthread_cancel(thread) != 0) return 195;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 196;
+
+  cancel_type_ready = 0;
+  cancel_type_release = 0;
+  cancel_cleanup_calls = 0;
+  if (pthread_create(&thread, 0, cancel_pending_type_worker, 0) != 0) return 198;
+  for (unsigned int i = 0; i < 10000000U && !cancel_type_ready; ++i) {
+  }
+  if (!cancel_type_ready || pthread_cancel(thread) != 0) return 199;
+  cancel_type_release = 1;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 200;
 
   if (pthread_mutex_lock(&static_mutex) != 0) return 18;
   if (pthread_mutex_trylock(&static_mutex) != EBUSY) return 19;

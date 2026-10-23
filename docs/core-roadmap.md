@@ -147,8 +147,9 @@ matter more for completeness than for the initial common-program target.
   validation evidence, not a correctly-rounded guarantee.
 - Standalone static `-nostdlib` smoke paths exist for Zig, GCC, and TinyCC,
   including startup, TLS fixtures, allocation, stdio, and a pthread subset.
-- Standalone pthread now supports deferred cancellation requests, cancellation
-  state enable/disable, `pthread_testcancel`, cleanup-handler push/pop for
+- Standalone pthread now supports deferred and asynchronous cancellation
+  requests, cancellation state enable/disable, `pthread_setcanceltype`,
+  `pthread_testcancel`, cleanup-handler push/pop for
   created threads, and cancellation of a thread blocked in `pthread_cond_wait`
   or `pthread_cond_timedwait`. Reusable process-private and process-shared
   barriers use futex generations. Read-write locks support recursive readers,
@@ -158,11 +159,13 @@ matter more for completeness than for the initial common-program target.
   wrappers, including read/write, socket I/O,
   poll/select, waits, sleeps, openat, and fsync. Condition-wait cancellation
   reacquires the mutex, then unwinds cleanup handlers before thread-specific
-  data destructors. Ordinary CPU-bound code must call `pthread_testcancel`.
+  data destructors. In deferred mode, ordinary CPU-bound code must call
+  `pthread_testcancel`.
   Signal 32 is reserved internally and cannot be installed or blocked by
-  applications. `pthread_setcanceltype`, asynchronous cancellation, and
-  cleanup handlers on the initial thread are not implemented. The cleanup
-  stack is bounded to 32 entries per thread.
+  applications. Asynchronous cancellation requires application code to stay
+  within async-cancel-safe operations. Cancellation state and cleanup handlers
+  for the initial thread are not implemented. The cleanup stack is bounded
+  to 32 entries per thread.
 - Standalone unnamed POSIX semaphores now provide `sem_init`, `sem_destroy`,
   `sem_wait`, `sem_timedwait`, `sem_trywait`, `sem_post`, and `sem_getvalue`.
   They use Nelua-owned futex waits, including cancellation at blocking waits.

@@ -73,6 +73,8 @@ typedef struct {
 #define PTHREAD_DESTRUCTOR_ITERATIONS 4
 #define PTHREAD_CANCEL_ENABLE 0
 #define PTHREAD_CANCEL_DISABLE 1
+#define PTHREAD_CANCEL_DEFERRED 0
+#define PTHREAD_CANCEL_ASYNCHRONOUS 1
 #define PTHREAD_CANCELED ((void *)(intptr_t)-1)
 #define PTHREAD_MUTEX_NORMAL 0
 #define PTHREAD_MUTEX_DEFAULT PTHREAD_MUTEX_NORMAL
@@ -102,6 +104,7 @@ pthread_t pthread_self(void);
 void pthread_exit(void *retval);
 void pthread_testcancel(void);
 int pthread_setcancelstate(int state, int *oldstate);
+int pthread_setcanceltype(int type, int *oldtype);
 void __nelibc_pthread_cleanup_push(void (*routine)(void *), void *arg);
 void __nelibc_pthread_cleanup_pop(int execute);
 #define pthread_cleanup_push(routine, arg) \
