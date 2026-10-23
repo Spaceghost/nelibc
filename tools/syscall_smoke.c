@@ -36,9 +36,11 @@ _Static_assert(sizeof(pthread_attr_t) == 56,
                "standalone pthread attribute ABI");
 _Static_assert(sizeof(pthread_once_t) == 4,
                "standalone pthread once ABI");
-_Static_assert(sizeof(pthread_mutexattr_t) == 16 &&
-               sizeof(pthread_mutex_t) == 32,
-               "standalone pthread mutex ABI");
+_Static_assert(sizeof(pthread_mutexattr_t) == 24 &&
+               sizeof(pthread_mutex_t) == 48 &&
+               offsetof(pthread_mutex_t, __state) == 8 &&
+               offsetof(pthread_mutex_t, __robust_next) == 40,
+               "standalone pthread robust mutex ABI");
 _Static_assert(sizeof(pthread_condattr_t) == 16 &&
                sizeof(pthread_cond_t) == 24,
                "standalone pthread condition ABI");

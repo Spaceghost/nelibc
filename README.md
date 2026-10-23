@@ -997,7 +997,8 @@ Standalone also exports a POSIX thread subset: `pthread_create`,
 `pthread_key_create`, `pthread_key_delete`, `pthread_getspecific`,
 `pthread_setspecific`, `pthread_self`, `pthread_equal`, detach-state, stack-size,
 caller-provided stack, guard-size, scope, and scheduling attributes,
-normal/recursive/error-checking mutexes, recursive-reader read-write locks,
+normal/recursive/error-checking and robust mutexes, recursive-reader
+read-write locks,
 condition variables, reusable barriers, and detached workers.
 Read-write locks support timed operations and process-shared futexes. Readers
 may pass queued writers, so a continuous reader stream can starve writers.
@@ -1023,7 +1024,9 @@ attributes cover inherited or explicit `SCHED_OTHER`, `SCHED_FIFO`, and
 before the worker routine starts. Caller-provided stack memory remains owned
 by the application and must outlive the thread; Nelibc does not add a guard
 page to that memory. Cleanup handlers on the initial thread are also supported.
-Each created thread has room for 32 pending cleanup handlers.
+Robust mutexes recover owner death through Linux robust futex lists; callers
+must call `pthread_mutex_consistent` before unlocking recovered state. Each
+created thread has room for 32 pending cleanup handlers.
 Standalone unnamed POSIX semaphores (`sem_init`, `sem_destroy`, `sem_wait`,
 `sem_timedwait`, `sem_trywait`, `sem_post`, and `sem_getvalue`) are implemented
 with futex-backed waits; blocked `sem_wait` calls are deferred-cancellation

@@ -30,6 +30,7 @@ typedef struct {
   uintptr_t __magic;
   int __type;
   int __pshared;
+  int __robust;
 } pthread_mutexattr_t;
 typedef struct {
   uintptr_t __magic;
@@ -42,6 +43,9 @@ typedef struct {
   int __owner;
   int __count;
   int __pshared;
+  int __robust;
+  int __robust_state;
+  void *__robust_next;
 } pthread_mutex_t;
 typedef struct {
   uintptr_t __magic;
@@ -92,6 +96,8 @@ typedef struct {
 #define PTHREAD_MUTEX_DEFAULT PTHREAD_MUTEX_NORMAL
 #define PTHREAD_MUTEX_RECURSIVE 1
 #define PTHREAD_MUTEX_ERRORCHECK 2
+#define PTHREAD_MUTEX_STALLED 0
+#define PTHREAD_MUTEX_ROBUST 1
 #define PTHREAD_MUTEX_INITIALIZER {0x4E4D5458u, 0, PTHREAD_MUTEX_NORMAL, 0, 0, PTHREAD_PROCESS_PRIVATE}
 #define PTHREAD_PROCESS_PRIVATE 0
 #define PTHREAD_PROCESS_SHARED 1
@@ -152,6 +158,8 @@ int pthread_mutexattr_settype(pthread_mutexattr_t *attr, int type);
 int pthread_mutexattr_gettype(const pthread_mutexattr_t *attr, int *type);
 int pthread_mutexattr_setpshared(pthread_mutexattr_t *attr, int pshared);
 int pthread_mutexattr_getpshared(const pthread_mutexattr_t *attr, int *pshared);
+int pthread_mutexattr_setrobust(pthread_mutexattr_t *attr, int robustness);
+int pthread_mutexattr_getrobust(const pthread_mutexattr_t *attr, int *robustness);
 int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
 int pthread_mutex_destroy(pthread_mutex_t *mutex);
 int pthread_mutex_lock(pthread_mutex_t *mutex);
@@ -159,6 +167,7 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex,
                             const struct timespec *abstime);
 int pthread_mutex_trylock(pthread_mutex_t *mutex);
 int pthread_mutex_unlock(pthread_mutex_t *mutex);
+int pthread_mutex_consistent(pthread_mutex_t *mutex);
 int pthread_spin_init(pthread_spinlock_t *lock, int pshared);
 int pthread_spin_destroy(pthread_spinlock_t *lock);
 int pthread_spin_lock(pthread_spinlock_t *lock);

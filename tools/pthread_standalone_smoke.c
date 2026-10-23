@@ -381,6 +381,30 @@ static void *user_stack_worker(void *argument) {
              : (void *)3;
 }
 
+static void *robust_owner_worker(void *argument) {
+  pthread_mutex_t *mutex = argument;
+  return pthread_mutex_lock(mutex) == 0 ? 0 : (void *)4;
+}
+static sem_t robust_owner_release;
+static _Atomic int robust_owner_ready;
+
+static void *robust_gated_owner_worker(void *argument) {
+  pthread_mutex_t *mutex = argument;
+  if (pthread_mutex_lock(mutex) != 0) return (void *)5;
+  atomic_store_explicit(&robust_owner_ready, 1, memory_order_release);
+  if (sem_wait(&robust_owner_release) != 0) return (void *)6;
+  return 0;
+}
+
+static void *robust_recovery_waiter(void *argument) {
+  pthread_mutex_t *mutex = argument;
+  int result = pthread_mutex_lock(mutex);
+  if (result != EOWNERDEAD || pthread_mutex_consistent(mutex) != 0 ||
+      pthread_mutex_unlock(mutex) != 0)
+    return (void *)7;
+  return 0;
+}
+
 static void *explicit_schedule_worker(void *argument) {
   (void)argument;
   int policy = -1;
@@ -932,6 +956,63 @@ int main(void) {
       pthread_mutexattr_destroy(&mutex_attributes) != 0)
     return 28;
   if (pthread_mutex_destroy(&static_mutex) != 0) return 29;
+
+  if (pthread_mutexattr_init(&mutex_attributes) != 0) return 236;
+  int robustness = -1;
+  if (pthread_mutexattr_getrobust(&mutex_attributes, &robustness) != 0 ||
+      robustness != PTHREAD_MUTEX_STALLED ||
+      pthread_mutexattr_setrobust(&mutex_attributes, 99) != EINVAL ||
+      pthread_mutexattr_setrobust(&mutex_attributes, PTHREAD_MUTEX_ROBUST) != 0 ||
+      pthread_mutexattr_getrobust(&mutex_attributes, &robustness) != 0 ||
+      robustness != PTHREAD_MUTEX_ROBUST)
+    return 237;
+  pthread_mutex_t robust_mutex;
+  if (pthread_mutex_init(&robust_mutex, &mutex_attributes) != 0 ||
+      pthread_mutexattr_destroy(&mutex_attributes) != 0)
+    return 238;
+  pthread_t robust_owner;
+  pthread_t recovery_waiter;
+  if (sem_init(&robust_owner_release, 0, 0) != 0) return 239;
+  atomic_store_explicit(&robust_owner_ready, 0, memory_order_relaxed);
+  if (pthread_create(&robust_owner, 0, robust_gated_owner_worker,
+                     &robust_mutex) != 0)
+    return 244;
+  while (atomic_load_explicit(&robust_owner_ready, memory_order_acquire) == 0)
+    sched_yield();
+  if (pthread_create(&recovery_waiter, 0, robust_recovery_waiter,
+                     &robust_mutex) != 0)
+    return 245;
+  int robust_waiter_queued = 0;
+  for (int i = 0; i < 1000000; ++i) {
+    if (robust_mutex.__state < 0) {
+      robust_waiter_queued = 1;
+      break;
+    }
+    sched_yield();
+  }
+  if (!robust_waiter_queued || sem_post(&robust_owner_release) != 0 ||
+      pthread_join(robust_owner, &result) != 0 || result != 0 ||
+      pthread_join(recovery_waiter, &result) != 0 || result != 0 ||
+      sem_destroy(&robust_owner_release) != 0)
+    return 246;
+  if (pthread_mutex_lock(&robust_mutex) != 0 ||
+      pthread_mutex_unlock(&robust_mutex) != 0 ||
+      pthread_mutex_destroy(&robust_mutex) != 0)
+    return 240;
+
+  if (pthread_mutexattr_init(&mutex_attributes) != 0 ||
+      pthread_mutexattr_setrobust(&mutex_attributes, PTHREAD_MUTEX_ROBUST) != 0)
+    return 241;
+  if (pthread_mutex_init(&robust_mutex, &mutex_attributes) != 0 ||
+      pthread_mutexattr_destroy(&mutex_attributes) != 0)
+    return 242;
+  if (pthread_create(&robust_owner, 0, robust_owner_worker, &robust_mutex) != 0 ||
+      pthread_join(robust_owner, &result) != 0 || result != 0 ||
+      pthread_mutex_lock(&robust_mutex) != EOWNERDEAD ||
+      pthread_mutex_unlock(&robust_mutex) != 0 ||
+      pthread_mutex_lock(&robust_mutex) != ENOTRECOVERABLE ||
+      pthread_mutex_destroy(&robust_mutex) != 0)
+    return 243;
 
   pthread_t first_waiter;
   pthread_t second_waiter;

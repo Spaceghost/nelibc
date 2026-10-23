@@ -25,6 +25,16 @@ local ThreadHandle: type = @record{
   cleanup_stack_size: csize,
   tid_word: *[0]cint
 }
+local PthreadRobustHead: type = @record{
+  list_next: pointer,
+  futex_offset: clong,
+  list_op_pending: pointer
+}
+local PthreadRobustSlot: type = @record{
+  head: PthreadRobustHead,
+  tid: cint,
+  state: cint
+}
 local PthreadCleanupEntry: type = @record{
   routine: function(pointer): void,
   arg: pointer
@@ -46,7 +56,9 @@ local PthreadContext: type = @record{
   cancel_wait_address: pointer,
   cancel_wait_wake_operation: cint,
   cleanup_count: cint,
-  cleanup_entries: [32]PthreadCleanupEntry
+  cleanup_entries: [32]PthreadCleanupEntry,
+  robust_slot: *PthreadRobustSlot,
+  robust_registered: cint
 }
 local SchedParam: type = @record{
   sched_priority: cint
@@ -65,7 +77,8 @@ local PthreadAttr: type = @record{
 local PthreadMutexAttr: type = @record{
   magic: culong,
   kind: cint,
-  pshared: cint
+  pshared: cint,
+  robust: cint
 }
 local PthreadCondAttr: type = @record{
   magic: culong,
@@ -77,7 +90,10 @@ local PthreadMutex: type = @record{
   kind: cint,
   owner: cint,
   count: cint,
-  pshared: cint
+  pshared: cint,
+  robust: cint,
+  robust_state: cint,
+  robust_next: pointer
 }
 local PthreadCond: type = @record{
   magic: culong,
@@ -140,6 +156,13 @@ local PTHREAD_ATTR_MAGIC: culong <comptime> = 0x4E454C4154545231
 local PTHREAD_OBJECT_MAGIC: culong <comptime> = 0x4E454C4950544831
 local PTHREAD_MUTEX_ATTR_MAGIC: culong <comptime> = 0x4E4D4154545231
 local PTHREAD_MUTEX_MAGIC: culong <comptime> = 0x4E4D5458
+local PTHREAD_MUTEX_STALLED: cint <comptime> = 0
+local PTHREAD_MUTEX_ROBUST: cint <comptime> = 1
+local FUTEX_WAITERS: cint <comptime> = -2147483648
+local FUTEX_OWNER_DIED: cint <comptime> = 1073741824
+local FUTEX_TID_MASK: cint <comptime> = 1073741823
+local ROBUST_LIST_FUTEX_OFFSET: clong <comptime> = -32
+local ROBUST_SLOT_COUNT: csize <comptime> = 1024
 local PTHREAD_COND_ATTR_MAGIC: culong <comptime> = 0x4E434154545231
 local PTHREAD_COND_MAGIC: culong <comptime> = 0x4E434F4E44
 local PTHREAD_BARRIER_ATTR_MAGIC: culong <comptime> = 0x4E424154545231
@@ -162,6 +185,8 @@ local SCHED_RR: cint <comptime> = 2
 local PTHREAD_KEY_COUNT: csize <comptime> = 128
 local PTHREAD_KEY_INDEX_MASK: cuint <comptime> = 255
 local pthread_key_lock: cint = 0
+local pthread_robust_slot_lock: cint = 0
+local pthread_robust_slots: [1024]PthreadRobustSlot = {}
 local pthread_key_allocated: [128]cint = {}
 local pthread_key_generations: [128]cuint = {}
 local pthread_key_destructors: [128]pointer = {}
@@ -209,6 +234,64 @@ local function munmap(address: pointer, length: csize): cint <cimport> end
 local function unlink(pathname: pointer <const>): cint <cimport> end
 local function strlen(string: *[0]cchar <const>): csize <cimport> end
 
+local function pthread_robust_slot_lock_acquire(): void <inline>
+  while nelibc_atomic_cas_int(&pthread_robust_slot_lock, 0, 1) ~= 0 do end
+end
+
+local function pthread_robust_slot_lock_release(): void <inline>
+  nelibc_atomic_store_int(&pthread_robust_slot_lock, 0)
+end
+
+local function pthread_robust_slot_alloc(): *PthreadRobustSlot
+  pthread_robust_slot_lock_acquire()
+  local pid = nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong)
+  local index: csize = 0
+  while index < ROBUST_SLOT_COUNT do
+    local slot = &pthread_robust_slots[index]
+    if slot.state == 2 and slot.tid > 0 then
+      local alive = nelibc_raw_syscall3(234_culong, (@culong)(pid),
+                                        (@culong)(slot.tid), 0_culong)
+      if alive == -3 then slot.state = 0 end -- ESRCH: kernel completed robust-list exit
+    end
+    if slot.state == 0 then
+      slot.state = 1
+      slot.tid = 0
+      slot.head.list_next = (@pointer)(&slot.head.list_next)
+      slot.head.futex_offset = ROBUST_LIST_FUTEX_OFFSET
+      slot.head.list_op_pending = nilptr
+      pthread_robust_slot_lock_release()
+      return slot
+    end
+    index = index + 1
+  end
+  pthread_robust_slot_lock_release()
+  return nilptr
+end
+
+local function pthread_robust_slot_release(slot: *PthreadRobustSlot): void
+  if slot == nilptr then return end
+  pthread_robust_slot_lock_acquire()
+  slot.tid = 0
+  slot.state = 0
+  slot.head.list_next = (@pointer)(&slot.head.list_next)
+  slot.head.list_op_pending = nilptr
+  pthread_robust_slot_lock_release()
+end
+
+local function pthread_robust_register(context: *PthreadContext): boolean
+  if context == nilptr or context.robust_slot == nilptr then return false end
+  if context.robust_registered ~= 0 then return true end
+  local slot = context.robust_slot
+  local tid = nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong)
+  local result = nelibc_raw_syscall3(273_culong,
+      (@culong)((@usize)(&slot.head)), 24_culong, 0_culong)
+  slot.tid = (@cint)(tid)
+  slot.state = 2
+  if result < 0 and result >= -4095 then return false end
+  context.robust_registered = 1
+  return true
+end
+
 local function pthread_current_context(): *PthreadContext <inline>
   local context = nelibc_thread_current_pthread_context()
   if context == nilptr then
@@ -222,6 +305,10 @@ local function pthread_current_context(): *PthreadContext <inline>
   end
   if context == &initial_thread_context then
     initial_thread_tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+    if initial_thread_context.robust_slot == nilptr then
+      initial_thread_context.robust_slot = pthread_robust_slot_alloc()
+    end
+    pthread_robust_register(&initial_thread_context)
   end
   return context
 end
@@ -757,6 +844,7 @@ local function pthread_trampoline(argument: pointer): cint <cexport, codename 'n
   end
   if nelibc_atomic_load_int(&context.startup_gate) < 0 then return 0 end
   nelibc_thread_cancel_signal_unblock()
+  pthread_robust_register(context)
   pthread_key_reset_values()
   pthread_testcancel()
   context.result = context.start(context.arg)
@@ -944,6 +1032,7 @@ local function pthread_mutexattr_init(attr: *PthreadMutexAttr): cint <cexport, c
   attr.magic = PTHREAD_MUTEX_ATTR_MAGIC
   attr.kind = 0
   attr.pshared = 0
+  attr.robust = PTHREAD_MUTEX_STALLED
   return 0
 end
 
@@ -977,20 +1066,43 @@ local function pthread_mutexattr_getpshared(attr: *PthreadMutexAttr, pshared: *[
   return 0
 end
 
+local function pthread_mutexattr_setrobust(attr: *PthreadMutexAttr,
+    robustness: cint): cint <cexport, codename 'pthread_mutexattr_setrobust'>
+  if not pthread_mutexattr_valid(attr) or
+     (robustness ~= PTHREAD_MUTEX_STALLED and robustness ~= PTHREAD_MUTEX_ROBUST) then
+    return 22 -- EINVAL
+  end
+  attr.robust = robustness
+  return 0
+end
+
+local function pthread_mutexattr_getrobust(attr: *PthreadMutexAttr,
+    robustness: *[0]cint): cint <cexport, codename 'pthread_mutexattr_getrobust'>
+  if not pthread_mutexattr_valid(attr) or robustness == nilptr then return 22 end -- EINVAL
+  robustness[0] = attr.robust
+  return 0
+end
+
 local function pthread_mutex_valid(mutex: *PthreadMutex): boolean <inline>
   return mutex ~= nilptr and mutex.magic == PTHREAD_MUTEX_MAGIC and
          pthread_mutex_type_valid(mutex.kind) and
-         (mutex.pshared == 0 or mutex.pshared == 1)
+         (mutex.pshared == 0 or mutex.pshared == 1) and
+         (mutex.robust == PTHREAD_MUTEX_STALLED or mutex.robust == PTHREAD_MUTEX_ROBUST)
 end
 
 local function pthread_mutex_init(mutex: *PthreadMutex, attr: *PthreadMutexAttr): cint <cexport, codename 'pthread_mutex_init'>
   if mutex == nilptr then return 22 end -- EINVAL
   local kind: cint = 0
+  local robust: cint = PTHREAD_MUTEX_STALLED
   if attr ~= nilptr then
     if not pthread_mutexattr_valid(attr) then return 22 end -- EINVAL
     kind = attr.kind
+    robust = attr.robust
   end
-  if not pthread_mutex_type_valid(kind) then return 22 end -- EINVAL
+  if not pthread_mutex_type_valid(kind) or
+     (robust ~= PTHREAD_MUTEX_STALLED and robust ~= PTHREAD_MUTEX_ROBUST) then
+    return 22 -- EINVAL
+  end
   if attr ~= nilptr and attr.pshared ~= 0 and attr.pshared ~= 1 then return 22 end -- EINVAL
   mutex.state = 0
   mutex.kind = kind
@@ -998,6 +1110,9 @@ local function pthread_mutex_init(mutex: *PthreadMutex, attr: *PthreadMutexAttr)
   mutex.count = 0
   mutex.pshared = 0
   if attr ~= nilptr then mutex.pshared = attr.pshared end
+  mutex.robust = robust
+  mutex.robust_state = 0
+  mutex.robust_next = nilptr
   mutex.magic = PTHREAD_MUTEX_MAGIC
   return 0
 end
@@ -1008,6 +1123,8 @@ local function pthread_mutex_destroy(mutex: *PthreadMutex): cint <cexport, coden
   mutex.magic = 0
   mutex.owner = 0
   mutex.count = 0
+  mutex.robust_state = 0
+  mutex.robust_next = nilptr
   return 0
 end
 
@@ -1034,9 +1151,101 @@ local function pthread_mutex_acquire(mutex: *PthreadMutex): void
   end
 end
 
+local function pthread_robust_mutex_add(context: *PthreadContext,
+    mutex: *PthreadMutex): void
+  local slot = context.robust_slot
+  local node: pointer = (@pointer)(&mutex.robust_next)
+  slot.head.list_op_pending = node
+  mutex.robust_next = slot.head.list_next
+  slot.head.list_next = node
+  slot.head.list_op_pending = nilptr
+end
+
+local function pthread_robust_mutex_remove(context: *PthreadContext,
+    mutex: *PthreadMutex): void
+  local slot = context.robust_slot
+  local node: pointer = (@pointer)(&mutex.robust_next)
+  slot.head.list_op_pending = node
+  local cursor: *[0]pointer = &slot.head.list_next
+  while cursor[0] ~= (@pointer)(&slot.head.list_next) and cursor[0] ~= node do
+    cursor = (@*[0]pointer)(cursor[0])
+  end
+  if cursor[0] == node then cursor[0] = mutex.robust_next end
+  mutex.robust_next = nilptr
+end
+
+local function pthread_mutex_lock_robust(mutex: *PthreadMutex, tid: cint,
+    abstime: *Timespec): cint
+  local context = pthread_current_context()
+  if not pthread_robust_register(context) then return 95 end -- ENOTSUP
+  if nelibc_atomic_load_int(&mutex.robust_state) == 2 then return 131 end -- ENOTRECOVERABLE
+  -- The kernel robust-list exit path wakes shared futex keys, even for a
+  -- process-private robust mutex, so robust waiters use the shared futex key.
+  local wait_operation: culong = 0_culong -- FUTEX_WAIT
+  if abstime ~= nilptr then
+    wait_operation = 393_culong -- WAIT_BITSET | CLOCK_REALTIME | MATCH_ANY
+  end
+  while true do
+    local state = nelibc_atomic_load_int(&mutex.state)
+    local owner = state & FUTEX_TID_MASK
+    if owner == tid then
+      if mutex.kind == 1 then
+        if mutex.count == 2147483647 then return 11 end -- EAGAIN
+        mutex.count = mutex.count + 1
+        return 0
+      end
+      if mutex.kind == 2 then return 35 end -- EDEADLK
+    end
+    if owner == 0 then
+      if nelibc_atomic_load_int(&mutex.robust_state) == 2 then return 131 end -- ENOTRECOVERABLE
+      local died: boolean = (state & FUTEX_OWNER_DIED) ~= 0
+      local desired = tid | (state & FUTEX_WAITERS) | (state & FUTEX_OWNER_DIED)
+      nelibc_atomic_store_pointer(&context.robust_slot.head.list_op_pending,
+                                  (@pointer)(&mutex.robust_next))
+      if nelibc_atomic_cas_int(&mutex.state, state, desired) == 0 then
+        mutex.owner = tid
+        mutex.count = 1
+        if died then nelibc_atomic_store_int(&mutex.robust_state, 1)
+        else nelibc_atomic_store_int(&mutex.robust_state, 0) end
+        pthread_robust_mutex_add(context, mutex)
+        return died and 130 or 0 -- EOWNERDEAD
+      end
+      context.robust_slot.head.list_op_pending = nilptr
+      continue
+    end
+    local wait_state = state | FUTEX_WAITERS
+    if wait_state ~= state then
+      if nelibc_atomic_cas_int(&mutex.state, state, wait_state) ~= 0 then continue end
+    end
+    local wait_result: clong
+    if abstime == nilptr then
+      wait_result = nelibc_raw_syscall6(202_culong,
+          (@culong)((@usize)(&mutex.state)), wait_operation,
+          (@culong)(wait_state), 0_culong, 0_culong, 0_culong)
+    else
+      wait_result = nelibc_raw_syscall6(202_culong,
+          (@culong)((@usize)(&mutex.state)), wait_operation,
+          (@culong)(wait_state), (@culong)((@usize)(abstime)),
+          0_culong, 0xFFFFFFFF_culong)
+    end
+    if wait_result < 0 and wait_result >= -4095 then
+      local wait_error = (@cint)(-wait_result)
+      if wait_error == 4 or wait_error == 11 then continue end -- EINTR/EAGAIN
+      if wait_error == 110 then
+        if (nelibc_atomic_load_int(&mutex.state) & FUTEX_TID_MASK) == 0 then continue end
+        return 110 -- ETIMEDOUT
+      end
+      return wait_error
+    end
+  end
+end
+
 local function pthread_mutex_lock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_lock'>
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
   local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if mutex.robust == PTHREAD_MUTEX_ROBUST then
+    return pthread_mutex_lock_robust(mutex, tid, nilptr)
+  end
   local owner_result = pthread_mutex_owner_check(mutex, tid)
   if owner_result == 1 then return 0 end
   if owner_result > 1 then return owner_result end
@@ -1053,6 +1262,9 @@ local function pthread_mutex_timedlock(mutex: *PthreadMutex,
     return 22 -- EINVAL
   end
   local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if mutex.robust == PTHREAD_MUTEX_ROBUST then
+    return pthread_mutex_lock_robust(mutex, tid, abstime)
+  end
   local owner_result = pthread_mutex_owner_check(mutex, tid)
   if owner_result == 1 then return 0 end
   if owner_result > 1 then return owner_result end
@@ -1092,6 +1304,36 @@ end
 local function pthread_mutex_trylock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_trylock'>
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
   local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if mutex.robust == PTHREAD_MUTEX_ROBUST then
+    if not pthread_robust_register(pthread_current_context()) then return 95 end -- ENOTSUP
+    if nelibc_atomic_load_int(&mutex.robust_state) == 2 then return 131 end -- ENOTRECOVERABLE
+    local state = nelibc_atomic_load_int(&mutex.state)
+    if (state & FUTEX_TID_MASK) ~= 0 then
+      if (state & FUTEX_TID_MASK) == tid then
+        if mutex.kind == 1 then
+          if mutex.count == 2147483647 then return 11 end -- EAGAIN
+          mutex.count = mutex.count + 1
+          return 0
+        end
+      end
+      return 16 -- EBUSY
+    end
+    local died: boolean = (state & FUTEX_OWNER_DIED) ~= 0
+    local desired = tid | (state & FUTEX_WAITERS) | (state & FUTEX_OWNER_DIED)
+    local context = pthread_current_context()
+    nelibc_atomic_store_pointer(&context.robust_slot.head.list_op_pending,
+                                (@pointer)(&mutex.robust_next))
+    if nelibc_atomic_cas_int(&mutex.state, state, desired) ~= 0 then
+      context.robust_slot.head.list_op_pending = nilptr
+      return 16 -- EBUSY
+    end
+    mutex.owner = tid
+    mutex.count = 1
+    if died then nelibc_atomic_store_int(&mutex.robust_state, 1)
+        else nelibc_atomic_store_int(&mutex.robust_state, 0) end
+    pthread_robust_mutex_add(context, mutex)
+    return died and 130 or 0 -- EOWNERDEAD
+  end
   if nelibc_atomic_load_int(&mutex.owner) == tid then
     if mutex.kind == 1 then
       if mutex.count == 2147483647 then return 11 end -- EAGAIN
@@ -1109,6 +1351,30 @@ end
 local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_unlock'>
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
   local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if mutex.robust == PTHREAD_MUTEX_ROBUST then
+    local state = nelibc_atomic_load_int(&mutex.state)
+    if (state & FUTEX_TID_MASK) ~= tid then return 1 end -- EPERM
+    if mutex.kind == 1 and mutex.count > 1 then
+      mutex.count = mutex.count - 1
+      return 0
+    end
+    local context = pthread_current_context()
+    pthread_robust_mutex_remove(context, mutex)
+    mutex.count = 0
+    mutex.owner = 0
+    if nelibc_atomic_load_int(&mutex.robust_state) == 1 then
+      nelibc_atomic_store_int(&mutex.robust_state, 2)
+    end
+    local previous = nelibc_atomic_exchange_int(&mutex.state, 0)
+    context.robust_slot.head.list_op_pending = nilptr
+    if (previous & FUTEX_WAITERS) ~= 0 then
+      -- Match the shared-key wake used by Linux robust-list owner-death exit.
+      local operation: culong = 1_culong -- FUTEX_WAKE
+      nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
+                          operation, 1_culong, 0_culong, 0_culong, 0_culong)
+    end
+    return 0
+  end
   if nelibc_atomic_load_int(&mutex.owner) ~= tid then return 1 end -- EPERM
   if mutex.kind == 1 and mutex.count > 1 then
     mutex.count = mutex.count - 1
@@ -1123,6 +1389,23 @@ local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codena
     nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
                         operation, 1_culong, 0_culong, 0_culong, 0_culong)
   end
+  return 0
+end
+
+local function pthread_mutex_consistent(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_consistent'>
+  if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
+  if mutex.robust ~= PTHREAD_MUTEX_ROBUST then return 22 end -- EINVAL
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if nelibc_atomic_load_int(&mutex.robust_state) ~= 1 or
+     (nelibc_atomic_load_int(&mutex.state) & FUTEX_TID_MASK) ~= tid then
+    return 22 -- EINVAL
+  end
+  while true do
+    local state = nelibc_atomic_load_int(&mutex.state)
+    local consistent_state = state & ~FUTEX_OWNER_DIED
+    if nelibc_atomic_cas_int(&mutex.state, state, consistent_state) == 0 then break end
+  end
+  nelibc_atomic_store_int(&mutex.robust_state, 0)
   return 0
 end
 
@@ -2045,12 +2328,20 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.cancel_wait_wake_operation = 0
   state.context.cleanup_count = 0
   state.context.lifecycle = 0
+  state.context.robust_slot = pthread_robust_slot_alloc()
+  state.context.robust_registered = 0
+  if state.context.robust_slot == nilptr then
+    nelibc_thread_tid_slot_release(tid_word)
+    nelibc_free(object)
+    return 11 -- EAGAIN
+  end
   state.handle.state = 0
   state.handle.tid_word = tid_word
   if thread_spawn(&state.handle, (@pointer)(pthread_trampoline), &state.context,
                   stacksize, stackaddr, guardsize, object, &state.context,
                   attr ~= nilptr and attr.detachstate == 1) ~= 0 then
     local error_code = nelibc_errno_location()[0]
+    pthread_robust_slot_release(state.context.robust_slot)
     nelibc_thread_tid_slot_release(tid_word)
     nelibc_free(object)
     if error_code == 0 then return 11 end -- EAGAIN
@@ -2074,6 +2365,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
       (@culong)((@usize)(&state.context.startup_gate)), 129_culong,
       1_culong, 0_culong, 0_culong, 0_culong)
     thread_wait(&state.handle)
+    pthread_robust_slot_release(state.context.robust_slot)
     nelibc_thread_tid_slot_release(tid_word)
     state.magic = 0
     nelibc_free(object)
@@ -2102,6 +2394,7 @@ local function pthread_join(thread: pointer, result: *[0]pointer): cint <cexport
   local tid_word: *[0]cint = state.handle.tid_word
   if thread_wait(&state.handle) ~= 0 then return nelibc_errno_location()[0] end
   if result ~= nilptr then result[0] = state.context.result end
+  pthread_robust_slot_release(state.context.robust_slot)
   nelibc_thread_tid_slot_release(tid_word)
   state.magic = 0
   nelibc_free(thread)
@@ -2120,6 +2413,7 @@ local function pthread_detach(thread: pointer): cint <cexport, codename 'pthread
       if nelibc_atomic_cas_int(&state.context.lifecycle, 2, 6) == 0 then
         local tid_word: *[0]cint = state.handle.tid_word
         if thread_wait(&state.handle) ~= 0 then return nelibc_errno_location()[0] end
+        pthread_robust_slot_release(state.context.robust_slot)
         nelibc_thread_tid_slot_release(tid_word)
         state.magic = 0
         nelibc_free(thread)

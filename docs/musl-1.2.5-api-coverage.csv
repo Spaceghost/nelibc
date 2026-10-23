@@ -779,7 +779,7 @@ pthread_join,pthread.h,pthread.h,,host-delegated
 pthread_key_create,pthread.h,pthread.h,,host-delegated
 pthread_key_delete,pthread.h,pthread.h,,host-delegated
 pthread_kill,signal.h,,,not-declared
-pthread_mutex_consistent,pthread.h,,,not-declared
+pthread_mutex_consistent,pthread.h,pthread.h,,host-delegated
 pthread_mutex_destroy,pthread.h,pthread.h,,host-delegated
 pthread_mutex_getprioceiling,pthread.h,,,not-declared
 pthread_mutex_init,pthread.h,pthread.h,,host-delegated
@@ -791,12 +791,12 @@ pthread_mutex_unlock,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_destroy,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_getprotocol,pthread.h,,,not-declared
 pthread_mutexattr_getpshared,pthread.h,pthread.h,,host-delegated
-pthread_mutexattr_getrobust,pthread.h,,,not-declared
+pthread_mutexattr_getrobust,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_gettype,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_init,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_setprotocol,pthread.h,,,not-declared
 pthread_mutexattr_setpshared,pthread.h,pthread.h,,host-delegated
-pthread_mutexattr_setrobust,pthread.h,,,not-declared
+pthread_mutexattr_setrobust,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_settype,pthread.h,pthread.h,,host-delegated
 pthread_once,pthread.h,pthread.h,,host-delegated
 pthread_rwlock_destroy,pthread.h,pthread.h,,host-delegated
