@@ -4615,6 +4615,10 @@ local function nelibc_rt_sigreturn(): void <cimport> end
 
 -- Convert the glibc/musl x86_64 sigaction ABI to Linux's 8-byte kernel sigset ABI.
 local function sigaction(signal: cint, action: pointer <const>, old_action: pointer): cint <cexport, codename 'sigaction'>
+  if signal == 32 then
+    nelibc_errno_location()[0] = 22_cint -- EINVAL: internal cancellation signal
+    return -1_cint
+  end
   local kernel_action: KernelSigaction
   local kernel_old_action: KernelSigaction
   local action_ptr: pointer = nilptr
@@ -4646,10 +4650,20 @@ end
 
 -- Linux x86_64 uses an 8-byte kernel sigset even when libc's sigset_t is larger.
 local function sigprocmask(how: cint, set: pointer <const>, oldset: pointer): cint <cexport, codename 'sigprocmask'>
-  return (@cint)(syscall_result(nelibc_raw_syscall6(
-    14_culong, (@culong)(how), (@culong)((@usize)(set)),
+  local kernel_set: culong
+  local set_pointer: pointer = nilptr
+  if set ~= nilptr then
+    kernel_set = ((@*Sigset)(set)).bits[0] & ~(1_culong << 31)
+    set_pointer = (@pointer)(&kernel_set)
+  end
+  local result = syscall_result(nelibc_raw_syscall6(
+    14_culong, (@culong)(how), (@culong)((@usize)(set_pointer)),
     (@culong)((@usize)(oldset)), 8_culong, 0_culong, 0_culong
-  )))
+  ))
+  if result == 0 and oldset ~= nilptr then
+    ((@*Sigset)(oldset)).bits[0] = ((@*Sigset)(oldset)).bits[0] & ~(1_culong << 31)
+  end
+  return (@cint)(result)
 end
 
 local function sigpending(set: pointer): cint <cexport, codename 'sigpending'>
@@ -4664,6 +4678,7 @@ local function sigismember(set: pointer <const>, signal: cint): cint <cexport, c
     nelibc_errno_location()[0] = 22_cint
     return -1_cint
   end
+  if signal == 32 then return 0_cint end
   local words: *[0]culong = (@*[0]culong)(set)
   local bit = 1_culong << (@culong)((signal - 1) % 64)
   local word = words[(signal - 1) // 64]
@@ -4684,6 +4699,10 @@ local function sigaddset(set: pointer, signal: cint): cint <cexport, codename 's
     nelibc_errno_location()[0] = 22_cint
     return -1_cint
   end
+  if signal == 32 then
+    nelibc_errno_location()[0] = 22_cint
+    return -1_cint
+  end
   local words: *[0]culong = (@*[0]culong)(set)
   words[(signal - 1) // 64] = words[(signal - 1) // 64] | (1_culong << (@culong)((signal - 1) % 64))
   return 0_cint
@@ -4694,6 +4713,7 @@ local function sigdelset(set: pointer, signal: cint): cint <cexport, codename 's
     nelibc_errno_location()[0] = 22_cint
     return -1_cint
   end
+  if signal == 32 then return 0_cint end
   local words: *[0]culong = (@*[0]culong)(set)
   words[(signal - 1) // 64] = words[(signal - 1) // 64] & ~(1_culong << (@culong)((signal - 1) % 64))
   return 0_cint
@@ -4702,5 +4722,6 @@ end
 local function sigfillset(set: pointer): cint <cexport, codename 'sigfillset'>
   local bytes: *[0]byte = (@*[0]byte)(set)
   for i = 0, 128 do bytes[i] = 0xff end
+  ((@*Sigset)(set)).bits[0] = ((@*Sigset)(set)).bits[0] & ~(1_culong << 31)
   return 0_cint
 end

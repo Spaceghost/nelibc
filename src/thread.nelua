@@ -117,6 +117,8 @@ local function nelibc_credential_sync_end(): void <cimport> end
 local function nelibc_thread_tid_load(tid: pointer): cint <cimport> end
 local function nelibc_thread_current_identity(): pointer <cimport> end
 local function nelibc_thread_current_pthread_context(): *PthreadContext <cimport> end
+local function nelibc_thread_cancel_signal_install(): cint <cimport> end
+local function nelibc_thread_cancel_signal_unblock(): cint <cimport> end
 local function nelibc_thread_current_key_values(): pointer <cimport> end
 local function nelibc_thread_set_key_values(values: pointer): void <cimport> end
 local function nelibc_thread_detached_exit(stack: pointer, stack_size: csize, tls: pointer, tls_size: csize, cleanup_stack: pointer, cleanup_stack_size: csize): void <cimport> end
@@ -566,7 +568,17 @@ local function pthread_cancel(thread: pointer): cint <cexport, codename 'pthread
   local state = (@*PthreadObject)(thread)
   if state.magic ~= PTHREAD_OBJECT_MAGIC then return 3 end -- ESRCH
   nelibc_atomic_store_int(&state.context.cancel_pending, 1)
-  pthread_cancel_wake(&state.context)
+  if nelibc_atomic_load_int(&state.context.cancel_state) == PTHREAD_CANCEL_ENABLE then
+    pthread_cancel_wake(&state.context)
+    local tid_word = state.handle.tid_word
+    if tid_word ~= nilptr then
+      local tid = nelibc_thread_tid_load((@pointer)(tid_word))
+      if tid > 0 then
+        local pid = nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong)
+        nelibc_raw_syscall3(234_culong, (@culong)(pid), (@culong)(tid), 32_culong)
+      end
+    end
+  end
   return 0
 end
 
@@ -585,7 +597,9 @@ end
 
 local function pthread_trampoline(argument: pointer): cint <cexport, codename 'nelibc_pthread_trampoline'>
   local context = (@*PthreadContext)(argument)
+  nelibc_thread_cancel_signal_unblock()
   pthread_key_reset_values()
+  pthread_testcancel()
   context.result = context.start(context.arg)
   pthread_cleanup_run(context)
   pthread_key_run_destructors()
@@ -964,6 +978,8 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
     if attr.detachstate ~= 0 and attr.detachstate ~= 1 then return 22 end -- EINVAL
     stacksize = attr.stacksize
   end
+  local signal_error = nelibc_thread_cancel_signal_install()
+  if signal_error ~= 0 then return signal_error end
   local object = nelibc_malloc(1024_csize)
   if object == nilptr then return 12 end -- ENOMEM
   local tid_word = nelibc_thread_tid_slot_alloc()

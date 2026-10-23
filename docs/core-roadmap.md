@@ -150,13 +150,15 @@ matter more for completeness than for the initial common-program target.
 - Standalone pthread now supports deferred cancellation requests, cancellation
   state enable/disable, `pthread_testcancel`, cleanup-handler push/pop for
   created threads, and cancellation of a thread blocked in `pthread_cond_wait`
-  or `pthread_cond_timedwait`. Condition-wait cancellation wakes the futex,
+  or `pthread_cond_timedwait`. It also interrupts blocking calls routed through
+  the cancellable syscall wrappers, including read/write, socket I/O,
+  poll/select, waits, sleeps, openat, and fsync. Condition-wait cancellation
   reacquires the mutex, then unwinds cleanup handlers before thread-specific
-  data destructors. Requests during ordinary computation or other blocking
-  syscalls wait for the next supported cancellation point.
-  `pthread_setcanceltype`, asynchronous cancellation, and cleanup handlers on
-  the initial thread are not implemented. The cleanup stack is bounded to 32
-  entries per thread.
+  data destructors. Ordinary CPU-bound code must call `pthread_testcancel`.
+  Signal 32 is reserved internally and cannot be installed or blocked by
+  applications. `pthread_setcanceltype`, asynchronous cancellation, and
+  cleanup handlers on the initial thread are not implemented. The cleanup
+  stack is bounded to 32 entries per thread.
 - Hybrid stdio adapts to host `FILE` implementations in several profiles. The
   standalone `FILE` implementation is Nelua-owned, but full standards and
   edge-case coverage remains a separate conformance task.

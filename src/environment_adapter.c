@@ -103,6 +103,7 @@ extern long nelibc_raw_syscall6(unsigned long number, unsigned long arg1,
                                 unsigned long arg2, unsigned long arg3,
                                 unsigned long arg4, unsigned long arg5,
                                 unsigned long arg6) __attribute__((weak));
+extern void nelibc_rt_sigreturn(void) __attribute__((weak));
 #ifdef NELIBC_USE_GLIBC_CANCEL_WRAPPERS
 #include <poll.h>
 #include <sys/resource.h>
@@ -285,8 +286,45 @@ long nelibc_cancellable_syscall6(unsigned long number, unsigned long arg1,
 }
 #endif
 #ifdef NELIBC_STANDALONE
-int nelibc_cancellation_enter(void) { return -1; }
-void nelibc_cancellation_leave(int previous_type) { (void)previous_type; }
+extern void pthread_testcancel(void) __attribute__((weak));
+static void nelibc_cancel_signal_handler(int signal_number) {
+  (void)signal_number;
+}
+
+int nelibc_thread_cancel_signal_install(void) {
+  if (nelibc_raw_syscall6 == NULL || nelibc_rt_sigreturn == NULL) return ENOSYS;
+  struct nelibc_kernel_sigaction {
+    void (*handler)(int);
+    unsigned long flags;
+    void (*restorer)(void);
+    unsigned long mask;
+  } action = {
+    .handler = nelibc_cancel_signal_handler,
+    .flags = 0x04000000UL, /* SA_RESTORER, without SA_RESTART */
+    .restorer = nelibc_rt_sigreturn,
+    .mask = 0,
+  };
+  long result = nelibc_raw_syscall6(13, 32, (unsigned long)&action,
+                                   0, sizeof(unsigned long), 0, 0);
+  return result < 0 && result >= -4095 ? (int)-result : 0;
+}
+
+int nelibc_thread_cancel_signal_unblock(void) {
+  if (nelibc_raw_syscall6 == NULL) return ENOSYS;
+  unsigned long set = 1UL << 31; /* signal 32 is reserved for cancellation */
+  long result = nelibc_raw_syscall6(14, 1, (unsigned long)&set, 0,
+                                   sizeof(unsigned long), 0, 0);
+  return result < 0 && result >= -4095 ? (int)-result : 0;
+}
+
+int nelibc_cancellation_enter(void) {
+  if (pthread_testcancel != NULL) pthread_testcancel();
+  return -1;
+}
+void nelibc_cancellation_leave(int previous_type) {
+  (void)previous_type;
+  if (pthread_testcancel != NULL) pthread_testcancel();
+}
 #elif defined(NELIBC_WITH_UNISTD)
 int nelibc_cancellation_enter(void) {
   int previous_type;

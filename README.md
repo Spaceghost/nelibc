@@ -1003,12 +1003,15 @@ Deferred cancellation is supported through `pthread_cancel`,
 `pthread_setcancelstate`, and `pthread_testcancel`. Condition waits are
 cancellation points: a request wakes the target futex, reacquires the mutex,
 then runs cleanup handlers before thread-specific data destructors. Applications
-can use `pthread_cleanup_push`/`pthread_cleanup_pop` on created threads. A
-request during ordinary computation or another blocking syscall is delivered
-at the next supported cancellation point; `pthread_setcanceltype` and
-asynchronous cancellation are not implemented. Cleanup handlers on the
-initial thread are also unsupported. Each created thread has room for 32
-pending cleanup handlers.
+can use `pthread_cleanup_push`/`pthread_cleanup_pop` on created threads.
+Blocking calls routed through Nelibc's cancellable syscall wrappers (including
+read/write, socket I/O, poll/select, waits, sleeps, openat, and fsync) are
+interrupted for enabled cancellation and unwind cleanup handlers. Ordinary
+CPU-bound code must call `pthread_testcancel`. Linux signal 32 is reserved for
+this mechanism; Nelibc rejects attempts to install or block it. The API
+`pthread_setcanceltype` and asynchronous cancellation are not implemented.
+Cleanup handlers on the initial thread are also unsupported. Each created
+thread has room for 32 pending cleanup handlers.
 `nm -u` must be empty.
 The allocator exports only `nelibc_*` names in hybrid builds. The standalone-only wrappers
 in `src/alloc/standalone_exports.nelua` provide standard `malloc`, `calloc`,

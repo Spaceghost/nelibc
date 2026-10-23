@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdatomic.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
@@ -25,7 +26,9 @@ static pthread_key_t value_key;
 static int value_destructor_calls;
 static pthread_mutex_t cancel_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cancel_condition = PTHREAD_COND_INITIALIZER;
+static int cancel_read_pipe[2];
 static volatile int cancel_waiting;
+static volatile int cancel_read_started;
 static volatile int cancel_state_ready;
 static volatile int cancel_state_release;
 static int cancel_cleanup_calls;
@@ -57,6 +60,16 @@ static void *cancel_disabled_worker(void *argument) {
   if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0) != 0) return (void *)2;
   pthread_cleanup_pop(0);
   return 0;
+}
+
+static void *cancel_read_worker(void *argument) {
+  (void)argument;
+  char byte;
+  pthread_cleanup_push(cancel_cleanup, 0);
+  cancel_read_started = 1;
+  (void)read(cancel_read_pipe[0], &byte, 1);
+  pthread_cleanup_pop(0);
+  return (void *)3;
 }
 
 typedef struct {
@@ -174,6 +187,18 @@ static void *value_exit_worker(void *argument) {
 }
 
 int main(void) {
+  sigset_t cancellation_mask;
+  struct sigaction cancellation_action = {0};
+  cancellation_action.sa_handler = SIG_IGN;
+  if (sigfillset(&cancellation_mask) != 0 ||
+      sigismember(&cancellation_mask, 32) != 0)
+    return 143;
+  errno = 0;
+  if (sigaddset(&cancellation_mask, 32) != -1 || errno != EINVAL) return 144;
+  errno = 0;
+  if (sigaction(32, &cancellation_action, 0) != -1 || errno != EINVAL)
+    return 145;
+
   pthread_attr_t attributes;
   if (pthread_attr_init(&attributes) != 0) return 1;
   if (pthread_attr_setstacksize(&attributes, 65536) != 0) return 2;
@@ -230,6 +255,23 @@ int main(void) {
   if (pthread_mutex_lock(&cancel_mutex) != 0 ||
       pthread_mutex_unlock(&cancel_mutex) != 0)
     return 133;
+
+  cancel_cleanup_calls = 0;
+  cancel_read_started = 0;
+  if (pipe(cancel_read_pipe) != 0) return 137;
+  if (pthread_create(&thread, 0, cancel_read_worker, 0) != 0) return 138;
+  for (unsigned int i = 0; i < 10000000U && !cancel_read_started; ++i) {
+  }
+  if (!cancel_read_started) return 139;
+  for (volatile unsigned int i = 0; i < 10000000U; ++i) {
+  }
+  if (pthread_cancel(thread) != 0) return 140;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 141;
+  if (close(cancel_read_pipe[0]) != 0 || close(cancel_read_pipe[1]) != 0)
+    return 142;
 
   cancel_state_ready = 0;
   cancel_state_release = 0;
