@@ -48,6 +48,9 @@ typedef struct {
 #define PTHREAD_ONCE_INIT 0
 #define PTHREAD_KEYS_MAX 128
 #define PTHREAD_DESTRUCTOR_ITERATIONS 4
+#define PTHREAD_CANCEL_ENABLE 0
+#define PTHREAD_CANCEL_DISABLE 1
+#define PTHREAD_CANCELED ((void *)(intptr_t)-1)
 #define PTHREAD_MUTEX_NORMAL 0
 #define PTHREAD_MUTEX_DEFAULT PTHREAD_MUTEX_NORMAL
 #define PTHREAD_MUTEX_RECURSIVE 1
@@ -65,11 +68,20 @@ int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize);
 int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stacksize);
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
                    void *(*start_routine)(void *), void *arg);
+int pthread_cancel(pthread_t thread);
 int pthread_join(pthread_t thread, void **retval);
 int pthread_detach(pthread_t thread);
 int pthread_equal(pthread_t first, pthread_t second);
 pthread_t pthread_self(void);
 void pthread_exit(void *retval);
+void pthread_testcancel(void);
+int pthread_setcancelstate(int state, int *oldstate);
+void __nelibc_pthread_cleanup_push(void (*routine)(void *), void *arg);
+void __nelibc_pthread_cleanup_pop(int execute);
+#define pthread_cleanup_push(routine, arg) \
+  do { __nelibc_pthread_cleanup_push((routine), (arg)); {
+#define pthread_cleanup_pop(execute) \
+  } __nelibc_pthread_cleanup_pop((execute)); } while (0)
 int pthread_once(pthread_once_t *once_control, void (*init_routine)(void));
 int pthread_key_create(pthread_key_t *key, void (*destructor)(void *));
 int pthread_key_delete(pthread_key_t key);

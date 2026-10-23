@@ -430,6 +430,14 @@ int nelibc_atomic_fetch_add_int(int *value, int delta) {
   return __atomic_fetch_add(value, delta, __ATOMIC_ACQ_REL);
 }
 
+void *nelibc_atomic_load_pointer(void *const *value) {
+  return __atomic_load_n(value, __ATOMIC_ACQUIRE);
+}
+
+void nelibc_atomic_store_pointer(void **value, void *next) {
+  __atomic_store_n(value, next, __ATOMIC_RELEASE);
+}
+
 int nelibc_thread_tid_load(const int *tid) {
   return __atomic_load_n(tid, __ATOMIC_ACQUIRE);
 }

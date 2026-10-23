@@ -92,7 +92,7 @@ def main() -> int:
     counts = {"implemented": 0, "host-delegated": 0, "declared-not-exported": 0,
               "not-declared": 0}
     with output.open("w", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=columns)
+        writer = csv.DictWriter(stream, fieldnames=columns, lineterminator="\n")
         writer.writeheader()
         for name in sorted(baseline):
             declared = name in nelibc_headers

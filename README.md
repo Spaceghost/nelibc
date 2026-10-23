@@ -321,8 +321,9 @@ Zig-, GCC-, and TinyCC-built standalone archives. The TinyCC archive is linked
 with Zig cc, checked for unresolved symbols, and run; the consumer exercises
 the standard standalone allocator entry points as well as the rest of the ABI.
 The same matrix links and runs `tools/pthread_standalone_smoke.c` against all
-three archives to verify the pthread join, exit, and detach paths through the
-shipped headers and libraries.
+three archives to verify pthread join, exit, detach, deferred cancellation,
+condition-wait wakeup, and cleanup-handler paths through the shipped headers
+and libraries.
 For a consumer executable, run `make lib-standalone-zig`, then:
 
 ```sh
@@ -998,7 +999,16 @@ destructor passes before releasing that storage.
 Detached workers release their stack and TLS at exit; process-wide credential
 changes from a detached worker return `ENOTSUP` because no parent thread
 services the rendezvous after detachment.
-Cancellation and the broader pthread synchronization API are not implemented.
+Deferred cancellation is supported through `pthread_cancel`,
+`pthread_setcancelstate`, and `pthread_testcancel`. Condition waits are
+cancellation points: a request wakes the target futex, reacquires the mutex,
+then runs cleanup handlers before thread-specific data destructors. Applications
+can use `pthread_cleanup_push`/`pthread_cleanup_pop` on created threads. A
+request during ordinary computation or another blocking syscall is delivered
+at the next supported cancellation point; `pthread_setcanceltype` and
+asynchronous cancellation are not implemented. Cleanup handlers on the
+initial thread are also unsupported. Each created thread has room for 32
+pending cleanup handlers.
 `nm -u` must be empty.
 The allocator exports only `nelibc_*` names in hybrid builds. The standalone-only wrappers
 in `src/alloc/standalone_exports.nelua` provide standard `malloc`, `calloc`,

@@ -23,6 +23,41 @@ static _Atomic int once_release;
 static _Atomic int once_runs;
 static pthread_key_t value_key;
 static int value_destructor_calls;
+static pthread_mutex_t cancel_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cancel_condition = PTHREAD_COND_INITIALIZER;
+static volatile int cancel_waiting;
+static volatile int cancel_state_ready;
+static volatile int cancel_state_release;
+static int cancel_cleanup_calls;
+
+static void cancel_cleanup(void *argument) {
+  ++cancel_cleanup_calls;
+  if (argument != 0) pthread_mutex_unlock((pthread_mutex_t *)argument);
+}
+
+static void *cancel_cond_worker(void *argument) {
+  (void)argument;
+  if (pthread_mutex_lock(&cancel_mutex) != 0) return (void *)1;
+  pthread_cleanup_push(cancel_cleanup, &cancel_mutex);
+  cancel_waiting = 1;
+  (void)pthread_cond_wait(&cancel_condition, &cancel_mutex);
+  pthread_cleanup_pop(0);
+  pthread_mutex_unlock(&cancel_mutex);
+  return 0;
+}
+
+static void *cancel_disabled_worker(void *argument) {
+  (void)argument;
+  pthread_cleanup_push(cancel_cleanup, 0);
+  if (pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0) != 0) return (void *)1;
+  cancel_state_ready = 1;
+  while (!cancel_state_release) {
+  }
+  pthread_testcancel();
+  if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0) != 0) return (void *)2;
+  pthread_cleanup_pop(0);
+  return 0;
+}
 
 typedef struct {
   pthread_mutex_t mutex;
@@ -181,6 +216,34 @@ int main(void) {
     return 16;
   result = 0;
   if (pthread_join(thread, &result) != 0 || result != exit_value) return 17;
+
+  cancel_waiting = 0;
+  cancel_cleanup_calls = 0;
+  if (pthread_create(&thread, 0, cancel_cond_worker, 0) != 0) return 130;
+  for (unsigned int i = 0; i < 10000000U && !cancel_waiting; ++i) {
+  }
+  if (!cancel_waiting || pthread_cancel(thread) != 0) return 131;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 132;
+  if (pthread_mutex_lock(&cancel_mutex) != 0 ||
+      pthread_mutex_unlock(&cancel_mutex) != 0)
+    return 133;
+
+  cancel_state_ready = 0;
+  cancel_state_release = 0;
+  cancel_cleanup_calls = 0;
+  if (pthread_create(&thread, 0, cancel_disabled_worker, 0) != 0) return 134;
+  for (unsigned int i = 0; i < 10000000U && !cancel_state_ready; ++i) {
+  }
+  if (!cancel_state_ready || pthread_cancel(thread) != 0) return 135;
+  cancel_state_release = 1;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 136;
+
   if (pthread_mutex_lock(&static_mutex) != 0) return 18;
   if (pthread_mutex_trylock(&static_mutex) != EBUSY) return 19;
   if (pthread_mutex_destroy(&static_mutex) != EBUSY) return 20;

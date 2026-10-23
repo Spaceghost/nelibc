@@ -25,13 +25,23 @@ local ThreadHandle: type = @record{
   cleanup_stack_size: csize,
   tid_word: *[0]cint
 }
+local PthreadCleanupEntry: type = @record{
+  routine: function(pointer): void,
+  arg: pointer
+}
 local PthreadContext: type = @record{
   start: function(pointer): pointer,
   arg: pointer,
   result: pointer,
   handle: *ThreadHandle,
   object: pointer,
-  lifecycle: cint
+  lifecycle: cint,
+  cancel_pending: cint,
+  cancel_state: cint,
+  cancel_wait_address: pointer,
+  cancel_wait_wake_operation: cint,
+  cleanup_count: cint,
+  cleanup_entries: [32]PthreadCleanupEntry
 }
 local PthreadAttr: type = @record{
   magic: culong,
@@ -85,6 +95,9 @@ local PTHREAD_MUTEX_ATTR_MAGIC: culong <comptime> = 0x4E4D4154545231
 local PTHREAD_MUTEX_MAGIC: culong <comptime> = 0x4E4D5458
 local PTHREAD_COND_ATTR_MAGIC: culong <comptime> = 0x4E434154545231
 local PTHREAD_COND_MAGIC: culong <comptime> = 0x4E434F4E44
+local PTHREAD_CANCELED: pointer <comptime> = (@pointer)(~0_csize)
+local PTHREAD_CANCEL_ENABLE: cint <comptime> = 0
+local PTHREAD_CANCEL_DISABLE: cint <comptime> = 1
 local PTHREAD_KEY_COUNT: csize <comptime> = 128
 local PTHREAD_KEY_INDEX_MASK: cuint <comptime> = 255
 local pthread_key_lock: cint = 0
@@ -114,6 +127,8 @@ local function nelibc_atomic_store_int(value: *[0]cint, next: cint): void <cimpo
 local function nelibc_atomic_cas_int(value: *[0]cint, expected: cint, next: cint): cint <cimport> end
 local function nelibc_atomic_exchange_int(value: *[0]cint, next: cint): cint <cimport> end
 local function nelibc_atomic_fetch_add_int(value: *[0]cint, delta: cint): cint <cimport> end
+local function nelibc_atomic_load_pointer(value: *[0]pointer): pointer <cimport> end
+local function nelibc_atomic_store_pointer(value: *[0]pointer, next: pointer): void <cimport> end
 local function nelibc_malloc(size: csize): pointer <cimport> end
 local function nelibc_free(ptr: pointer): void <cimport> end
 
@@ -507,10 +522,72 @@ local function pthread_finish(context: *PthreadContext): void
   end
 end
 
+local function pthread_cleanup_run(context: *PthreadContext): void
+  if context == nilptr then return end
+  while context.cleanup_count > 0 do
+    context.cleanup_count = context.cleanup_count - 1
+    local entry = context.cleanup_entries[context.cleanup_count]
+    if entry.routine ~= nilptr then entry.routine(entry.arg) end
+  end
+end
+
+local function pthread_context_exit(context: *PthreadContext, result: pointer): void
+  pthread_cleanup_run(context)
+  if context ~= nilptr then
+    context.result = result
+    pthread_key_run_destructors()
+    pthread_finish(context)
+  else
+    pthread_key_run_destructors()
+  end
+  nelibc_raw_syscall3(60_culong, 0_culong, 0_culong, 0_culong)
+  while true do end
+end
+
+local function pthread_cancel_wake(context: *PthreadContext): void
+  local address = nelibc_atomic_load_pointer(&context.cancel_wait_address)
+  if address == nilptr then return end
+  nelibc_atomic_fetch_add_int((@*[0]cint)(address), 1)
+  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(address)),
+                      (@culong)(context.cancel_wait_wake_operation),
+                      2147483647_culong, 0_culong, 0_culong, 0_culong)
+end
+
+local function pthread_testcancel(): void <cexport, codename 'pthread_testcancel'>
+  local context = nelibc_thread_current_pthread_context()
+  if context == nilptr or context.cancel_state == PTHREAD_CANCEL_DISABLE or
+     nelibc_atomic_load_int(&context.cancel_pending) == 0 then return end
+  nelibc_atomic_store_int(&context.cancel_pending, 0)
+  pthread_context_exit(context, PTHREAD_CANCELED)
+end
+
+local function pthread_cancel(thread: pointer): cint <cexport, codename 'pthread_cancel'>
+  if thread == nilptr then return 3 end -- ESRCH
+  local state = (@*PthreadObject)(thread)
+  if state.magic ~= PTHREAD_OBJECT_MAGIC then return 3 end -- ESRCH
+  nelibc_atomic_store_int(&state.context.cancel_pending, 1)
+  pthread_cancel_wake(&state.context)
+  return 0
+end
+
+local function pthread_setcancelstate(cancel_state: cint, old_state: *[0]cint): cint <cexport, codename 'pthread_setcancelstate'>
+  if cancel_state ~= PTHREAD_CANCEL_ENABLE and cancel_state ~= PTHREAD_CANCEL_DISABLE then return 22 end -- EINVAL
+  local context = nelibc_thread_current_pthread_context()
+  if context == nilptr then return 0 end
+  local previous = nelibc_atomic_exchange_int(&context.cancel_state, cancel_state)
+  if old_state ~= nilptr then old_state[0] = previous end
+  if cancel_state == PTHREAD_CANCEL_ENABLE then
+    pthread_cancel_wake(context)
+    pthread_testcancel()
+  end
+  return 0
+end
+
 local function pthread_trampoline(argument: pointer): cint <cexport, codename 'nelibc_pthread_trampoline'>
   local context = (@*PthreadContext)(argument)
   pthread_key_reset_values()
   context.result = context.start(context.arg)
+  pthread_cleanup_run(context)
   pthread_key_run_destructors()
   pthread_finish(context)
   return 0
@@ -769,6 +846,7 @@ end
 
 local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMutex, abstime: *Timespec): cint
   if not pthread_cond_valid(cond) or not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
+  pthread_testcancel()
   if cond.pshared ~= mutex.pshared then return 22 end -- EINVAL
   if abstime ~= nilptr and (abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000) then
     return 22 -- EINVAL
@@ -777,6 +855,7 @@ local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMut
   if nelibc_atomic_load_int(&mutex.owner) ~= tid then return 1 end -- EPERM
   if mutex.kind == 1 and mutex.count ~= 1 then return 22 end -- EINVAL
   local sequence = nelibc_atomic_load_int(&cond.sequence)
+  local context = nelibc_thread_current_pthread_context()
   nelibc_atomic_fetch_add_int(&cond.waiters, 1)
   local unlock_result = pthread_mutex_unlock(mutex)
   if unlock_result ~= 0 then
@@ -795,6 +874,15 @@ local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMut
     if abstime ~= nilptr then wait_operation = wait_operation | 128_culong
     else wait_operation = 128_culong end -- FUTEX_PRIVATE_FLAG
   end
+  if context ~= nilptr then
+    if cond.pshared == 0 then context.cancel_wait_wake_operation = 129
+    else context.cancel_wait_wake_operation = 1 end
+    nelibc_atomic_store_pointer(&context.cancel_wait_address, (@pointer)(&cond.sequence))
+    if context.cancel_state == PTHREAD_CANCEL_ENABLE and
+       nelibc_atomic_load_int(&context.cancel_pending) ~= 0 then
+      pthread_cancel_wake(context)
+    end
+  end
   local wait_result = nelibc_raw_syscall6(
     202_culong, (@culong)((@usize)(&cond.sequence)), wait_operation,
     (@culong)(sequence), timeout_pointer, 0_culong, futex_mask
@@ -804,9 +892,11 @@ local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMut
     wait_error = (@cint)(-wait_result)
     if wait_error == 4 or wait_error == 11 then wait_error = 0 end -- EINTR/EAGAIN are spurious returns
   end
+  if context ~= nilptr then nelibc_atomic_store_pointer(&context.cancel_wait_address, nilptr) end
   nelibc_atomic_fetch_add_int(&cond.waiters, -1)
   local lock_result = pthread_mutex_lock(mutex)
   if lock_result ~= 0 then return lock_result end
+  pthread_testcancel()
   return wait_error
 end
 
@@ -874,7 +964,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
     if attr.detachstate ~= 0 and attr.detachstate ~= 1 then return 22 end -- EINVAL
     stacksize = attr.stacksize
   end
-  local object = nelibc_malloc(192_csize)
+  local object = nelibc_malloc(1024_csize)
   if object == nilptr then return 12 end -- ENOMEM
   local tid_word = nelibc_thread_tid_slot_alloc()
   if tid_word == nilptr then
@@ -888,6 +978,11 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.result = nilptr
   state.context.handle = &state.handle
   state.context.object = object
+  state.context.cancel_pending = 0
+  state.context.cancel_state = PTHREAD_CANCEL_ENABLE
+  state.context.cancel_wait_address = nilptr
+  state.context.cancel_wait_wake_operation = 0
+  state.context.cleanup_count = 0
   if attr ~= nilptr and attr.detachstate == 1 then state.context.lifecycle = 3
   else state.context.lifecycle = 0 end
   state.handle.state = 0
@@ -958,12 +1053,22 @@ local function pthread_self(): pointer <cexport, codename 'pthread_self'>
 end
 
 local function pthread_exit(result: pointer): void <cexport, codename 'pthread_exit'>
-  pthread_key_run_destructors()
   local context = nelibc_thread_current_pthread_context()
-  if context ~= nilptr then
-    context.result = result
-    pthread_finish(context)
-  end
-  nelibc_raw_syscall3(60_culong, 0_culong, 0_culong, 0_culong)
-  while true do end
+  pthread_context_exit(context, result)
+end
+
+local function pthread_cleanup_push(routine: function(pointer): void, arg: pointer): void <cexport, codename '__nelibc_pthread_cleanup_push'>
+  local context = nelibc_thread_current_pthread_context()
+  if context == nilptr or routine == nilptr or context.cleanup_count >= 32 then return end
+  context.cleanup_entries[context.cleanup_count].routine = routine
+  context.cleanup_entries[context.cleanup_count].arg = arg
+  context.cleanup_count = context.cleanup_count + 1
+end
+
+local function pthread_cleanup_pop(execute: cint): void <cexport, codename '__nelibc_pthread_cleanup_pop'>
+  local context = nelibc_thread_current_pthread_context()
+  if context == nilptr or context.cleanup_count <= 0 then return end
+  context.cleanup_count = context.cleanup_count - 1
+  local entry = context.cleanup_entries[context.cleanup_count]
+  if execute ~= 0 and entry.routine ~= nilptr then entry.routine(entry.arg) end
 end
