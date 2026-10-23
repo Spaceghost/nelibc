@@ -32,6 +32,8 @@ extern float nelibc_powf(float, float);
 extern double nelibc_pow(double, double);
 extern float nelibc_logf(float);
 extern double nelibc_log(double);
+extern float nelibc_log2f(float);
+extern double nelibc_log2(double);
 extern float nelibc_sinhf(float);
 extern double nelibc_sinh(double);
 extern float nelibc_coshf(float);
@@ -260,6 +262,18 @@ static int check_exp_log(double value, float valuef) {
     fprintf(stderr, "logf mismatch x=%.9g expected=%.9g actual=%.9g ulps=%u\n",
             log_inputf, expected_logf, actual_logf,
             ulps_float(expected_logf, actual_logf));
+    return 1;
+  }
+  const double expected_log2 = log2(log_input), actual_log2 = nelibc_log2(log_input);
+  const float expected_log2f = log2f(log_inputf), actual_log2f = nelibc_log2f(log_inputf);
+  if ((!isnan(expected_log2) && !isnan(actual_log2) && log_input >= DBL_MIN &&
+       ulps_double(expected_log2, actual_log2) > 4) ||
+      (!isnan(expected_log2f) && !isnan(actual_log2f) && ulps_float(expected_log2f, actual_log2f) > 4) ||
+      (log_input > 0.0 && log_input < DBL_MIN &&
+       (!(actual_log2 <= -1022.0 && actual_log2 >= -1075.0))) ||
+      isnan(expected_log2) != isnan(actual_log2) || isnan(expected_log2f) != isnan(actual_log2f)) {
+    fprintf(stderr, "log2 mismatch input=%.17g/%.9g expected=%.17g actual=%.17g log=%.17g expectedlog=%.17g\n",
+            log_input, log_inputf, expected_log2, actual_log2, actual_log, expected_log);
     return 1;
   }
   const double expected_cbrt = cbrt(value);
@@ -1067,7 +1081,7 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
-  printf("80 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+  printf("82 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
          (double)max_exp_ulps, (double)max_log_ulps,
          (double)max_expf_ulps, (double)max_logf_ulps,
          (unsigned long long)max_sin_ulps, (unsigned long long)max_cos_ulps,

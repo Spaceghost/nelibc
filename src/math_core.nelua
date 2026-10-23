@@ -994,7 +994,6 @@ local function log(value: cdouble): cdouble <cexport, codename 'log'>
     math_domain_error()
     return nelibc_log_domain_error_hw()
   end
-
   local exponent: cint = 0_cint
   local mantissa: cdouble
   if value >= 0.5_cdouble and value <= 1.5_cdouble then
@@ -1021,6 +1020,56 @@ end
 
 local function logf(value: cfloat): cfloat <cexport, codename 'logf'>
   return (@cfloat)(log((@cdouble)(value)))
+end
+
+local function log2(value: cdouble): cdouble <cexport, codename 'log2'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    if value < 0_cdouble then
+      math_domain_error()
+      return nelibc_log_domain_error_hw()
+    end
+    return value
+  end
+  if value == 0_cdouble then
+    math_range_error()
+    return nelibc_log_pole_hw()
+  end
+  if value < 0_cdouble then
+    math_domain_error()
+    return nelibc_log_domain_error_hw()
+  end
+  local exponent: cint = 0_cint
+  local normalized_mantissa = frexp(value, &exponent) * 2_cdouble
+  exponent = exponent - 1_cint
+  if normalized_mantissa == 1_cdouble then return (@cdouble)(exponent) end
+  if value < 0.5_cdouble or value > 1.5_cdouble then
+    return log(value) * 0x1.71547652B82FEP+0_cdouble
+  end
+
+  local mantissa: cdouble
+  if value >= 0.5_cdouble and value <= 1.5_cdouble then
+    mantissa = value
+    exponent = 0_cint
+  else
+    mantissa = normalized_mantissa
+  end
+  if mantissa == 1_cdouble then return (@cdouble)(exponent) end
+
+  local z = (mantissa - 1_cdouble) / (mantissa + 1_cdouble)
+  local z_squared = z * z
+  local polynomial: cdouble = 1_cdouble / 41_cdouble
+  local denominator: cint = 39_cint
+  while denominator >= 3_cint do
+    polynomial = 1_cdouble / (@cdouble)(denominator) + z_squared * polynomial
+    denominator = denominator - 2_cint
+  end
+  local log_mantissa = 2_cdouble * z * (1_cdouble + z_squared * polynomial)
+  return (@cdouble)(exponent) + log_mantissa * 0x1.71547652B82FEP+0_cdouble
+end
+
+local function log2f(value: cfloat): cfloat <cexport, codename 'log2f'>
+  return (@cfloat)(log2((@cdouble)(value)))
 end
 
 local function cbrt(value: cdouble): cdouble <cexport, codename 'cbrt'>
