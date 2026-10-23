@@ -159,10 +159,10 @@ matter more for completeness than for the initial common-program target.
   applications. `pthread_setcanceltype`, asynchronous cancellation, and
   cleanup handlers on the initial thread are not implemented. The cleanup
   stack is bounded to 32 entries per thread.
-- Standalone POSIX semaphores (`sem_init`, `sem_wait`, `sem_timedwait`, and
-  related operations) are not implemented yet. Build these as Nelua-owned
-  futex-backed synchronization primitives, with deferred cancellation at
-  blocking waits.
+- Standalone unnamed POSIX semaphores now provide `sem_init`, `sem_destroy`,
+  `sem_wait`, `sem_timedwait`, `sem_trywait`, `sem_post`, and `sem_getvalue`.
+  They use Nelua-owned futex waits, including cancellation at blocking waits.
+  Named semaphores remain unimplemented.
 - Hybrid stdio adapts to host `FILE` implementations in several profiles. The
   standalone `FILE` implementation is Nelua-owned, but full standards and
   edge-case coverage remains a separate conformance task.

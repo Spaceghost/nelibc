@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
+#include <semaphore.h>
 #include <stdatomic.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
@@ -33,6 +34,8 @@ static volatile int cancel_sleep_started;
 static volatile int cancel_state_ready;
 static volatile int cancel_state_release;
 static int cancel_cleanup_calls;
+static sem_t cancel_semaphore;
+static volatile int cancel_sem_started;
 
 static void cancel_cleanup(void *argument) {
   ++cancel_cleanup_calls;
@@ -81,6 +84,26 @@ static void *cancel_sleep_worker(void *argument) {
   (void)nanosleep(&delay, 0);
   pthread_cleanup_pop(0);
   return (void *)4;
+}
+
+static void *cancel_sem_worker(void *argument) {
+  (void)argument;
+  pthread_cleanup_push(cancel_cleanup, 0);
+  cancel_sem_started = 1;
+  (void)sem_wait(&cancel_semaphore);
+  pthread_cleanup_pop(0);
+  return (void *)5;
+}
+
+static void *cancel_disabled_sem_worker(void *argument) {
+  (void)argument;
+  pthread_cleanup_push(cancel_cleanup, 0);
+  if (pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0) != 0) return (void *)6;
+  cancel_sem_started = 1;
+  if (sem_wait(&cancel_semaphore) != 0) return (void *)7;
+  if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0) != 0) return (void *)8;
+  pthread_cleanup_pop(0);
+  return (void *)9;
 }
 
 typedef struct {
@@ -159,6 +182,11 @@ static void process_shared_condition_child(process_shared_condition_state *state
       _exit(72);
   }
   if (pthread_mutex_unlock(&state->mutex) != 0) _exit(73);
+  _exit(0);
+}
+
+static void process_shared_semaphore_child(sem_t *semaphore) {
+  if (sem_wait(semaphore) != 0) _exit(74);
   _exit(0);
 }
 
@@ -297,6 +325,53 @@ int main(void) {
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
       cancel_cleanup_calls != 1)
     return 146;
+
+  if (sem_init(&cancel_semaphore, 0, 0) != 0) return 147;
+  int semaphore_value = -1;
+  if (sem_getvalue(&cancel_semaphore, &semaphore_value) != 0 || semaphore_value != 0)
+    return 148;
+  if (sem_trywait(&cancel_semaphore) != -1 || errno != EAGAIN) return 149;
+  struct timespec expired = {0, 0};
+  if (sem_timedwait(&cancel_semaphore, &expired) != -1 || errno != ETIMEDOUT)
+    return 150;
+  cancel_sem_started = 0;
+  if (pthread_create(&thread, 0, cancel_sem_worker, 0) != 0) return 151;
+  for (unsigned int i = 0; i < 10000000U && !cancel_sem_started; ++i) {
+  }
+  for (volatile unsigned int i = 0; i < 10000000U; ++i) {
+  }
+  if (!cancel_sem_started || sem_post(&cancel_semaphore) != 0) return 152;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != (void *)5) return 153;
+  cancel_cleanup_calls = 0;
+  cancel_sem_started = 0;
+  if (pthread_create(&thread, 0, cancel_sem_worker, 0) != 0) return 154;
+  for (unsigned int i = 0; i < 10000000U && !cancel_sem_started; ++i) {
+  }
+  for (volatile unsigned int i = 0; i < 10000000U; ++i) {
+  }
+  if (!cancel_sem_started || pthread_cancel(thread) != 0) return 155;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 156;
+  cancel_cleanup_calls = 0;
+  cancel_sem_started = 0;
+  if (pthread_create(&thread, 0, cancel_disabled_sem_worker, 0) != 0) return 166;
+  for (unsigned int i = 0; i < 10000000U && !cancel_sem_started; ++i) {
+  }
+  for (volatile unsigned int i = 0; i < 10000000U; ++i) {
+  }
+  if (!cancel_sem_started || pthread_cancel(thread) != 0) return 167;
+  if (sem_post(&cancel_semaphore) != 0) return 168;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 169;
+  if (sem_destroy(&cancel_semaphore) != 0) return 157;
+  if (sem_init(&cancel_semaphore, 0, SEM_VALUE_MAX) != 0) return 158;
+  if (sem_post(&cancel_semaphore) != -1 || errno != EOVERFLOW) return 159;
+  if (sem_destroy(&cancel_semaphore) != 0) return 160;
 
   cancel_state_ready = 0;
   cancel_state_release = 0;
@@ -482,6 +557,23 @@ int main(void) {
       pthread_cond_destroy(&shared_condition) != 0 ||
       pthread_condattr_destroy(&condition_attributes) != 0)
     return 67;
+  sem_t *shared_semaphore = mmap(0, sizeof(*shared_semaphore), PROT_READ | PROT_WRITE,
+      MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (shared_semaphore == MAP_FAILED || sem_init(shared_semaphore, 1, 0) != 0)
+    return 161;
+  child = fork();
+  if (child < 0) return 162;
+  if (child == 0) process_shared_semaphore_child(shared_semaphore);
+  for (unsigned int i = 0; i < 10000000U &&
+       __atomic_load_n(&shared_semaphore->__waiters, __ATOMIC_ACQUIRE) == 0; ++i) {
+  }
+  if (__atomic_load_n(&shared_semaphore->__waiters, __ATOMIC_ACQUIRE) == 0 ||
+      sem_post(shared_semaphore) != 0)
+    return 163;
+  child_status = -1;
+  if (waitpid(child, &child_status, 0) != child || child_status != 0) return 164;
+  if (sem_destroy(shared_semaphore) != 0 || munmap(shared_semaphore, sizeof(*shared_semaphore)) != 0)
+    return 165;
   pthread_t once_threads[4];
   for (int i = 0; i < 4; ++i) {
     if (pthread_create(&once_threads[i], &attributes, once_worker, 0) != 0)

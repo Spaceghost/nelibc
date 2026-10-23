@@ -71,6 +71,12 @@ local PthreadCond: type = @record{
   waiters: cint,
   pshared: cint
 }
+local Semaphore: type = @record{
+  magic: culong,
+  value: cint,
+  sequence: cint,
+  waiters: cint
+}
 local PthreadKeyValue: type = @record{
   key: cuint,
   value: pointer
@@ -95,6 +101,7 @@ local PTHREAD_MUTEX_ATTR_MAGIC: culong <comptime> = 0x4E4D4154545231
 local PTHREAD_MUTEX_MAGIC: culong <comptime> = 0x4E4D5458
 local PTHREAD_COND_ATTR_MAGIC: culong <comptime> = 0x4E434154545231
 local PTHREAD_COND_MAGIC: culong <comptime> = 0x4E434F4E44
+local SEMAPHORE_MAGIC: culong <comptime> = 0x4E454C53454D31
 local PTHREAD_CANCELED: pointer <comptime> = (@pointer)(~0_csize)
 local PTHREAD_CANCEL_ENABLE: cint <comptime> = 0
 local PTHREAD_CANCEL_DISABLE: cint <comptime> = 1
@@ -944,6 +951,132 @@ local function pthread_cond_broadcast(cond: *PthreadCond): cint <cexport, codena
     nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&cond.sequence)),
                         operation, 2147483647_culong, 0_culong, 0_culong, 0_culong)
   end
+  return 0
+end
+
+local function semaphore_valid(sem: *Semaphore): boolean <inline>
+  return sem ~= nilptr and (sem.magic == SEMAPHORE_MAGIC or
+    sem.magic == (SEMAPHORE_MAGIC | 0x8000000000000000_culong))
+end
+
+local function semaphore_shared(sem: *Semaphore): boolean <inline>
+  return (sem.magic & 0x8000000000000000_culong) ~= 0_culong
+end
+
+local function sem_init(sem: *Semaphore, pshared: cint, value: cuint): cint <cexport, codename 'sem_init'>
+  if sem == nilptr or (pshared ~= 0 and pshared ~= 1) or value > 2147483647_cuint then
+    nelibc_errno_location()[0] = 22; return -1
+  end
+  sem.magic = SEMAPHORE_MAGIC
+  if pshared ~= 0 then sem.magic = SEMAPHORE_MAGIC | 0x8000000000000000_culong end
+  sem.value = (@cint)(value)
+  sem.sequence = 0
+  sem.waiters = 0
+  return 0
+end
+
+local function sem_destroy(sem: *Semaphore): cint <cexport, codename 'sem_destroy'>
+  if not semaphore_valid(sem) then nelibc_errno_location()[0] = 22; return -1 end
+  if nelibc_atomic_load_int(&sem.waiters) ~= 0 then nelibc_errno_location()[0] = 16; return -1 end
+  sem.magic = 0
+  return 0
+end
+
+local function sem_trywait(sem: *Semaphore): cint <cexport, codename 'sem_trywait'>
+  if not semaphore_valid(sem) then nelibc_errno_location()[0] = 22; return -1 end
+  while true do
+    local value = nelibc_atomic_load_int(&sem.value)
+    if value == 0 then nelibc_errno_location()[0] = 11; return -1 end
+    if nelibc_atomic_cas_int(&sem.value, value, value - 1) == 0 then return 0 end
+  end
+end
+
+local function sem_post(sem: *Semaphore): cint <cexport, codename 'sem_post'>
+  if not semaphore_valid(sem) then nelibc_errno_location()[0] = 22; return -1 end
+  while true do
+    local value = nelibc_atomic_load_int(&sem.value)
+    if value == 2147483647 then nelibc_errno_location()[0] = 75; return -1 end
+    if nelibc_atomic_cas_int(&sem.value, value, value + 1) == 0 then break end
+  end
+  if nelibc_atomic_load_int(&sem.waiters) ~= 0 then
+    nelibc_atomic_fetch_add_int(&sem.sequence, 1)
+    local operation: culong = 129_culong
+    if semaphore_shared(sem) then operation = 1_culong end
+    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&sem.sequence)),
+                        operation, 1_culong, 0_culong, 0_culong, 0_culong)
+  end
+  return 0
+end
+
+local function semaphore_wait(sem: *Semaphore, abstime: *Timespec): cint
+  if not semaphore_valid(sem) or
+     (abstime ~= nilptr and (abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000)) then
+    nelibc_errno_location()[0] = 22; return -1
+  end
+  pthread_testcancel()
+  while true do
+    local value = nelibc_atomic_load_int(&sem.value)
+    if value > 0 and nelibc_atomic_cas_int(&sem.value, value, value - 1) == 0 then return 0 end
+    local sequence = nelibc_atomic_load_int(&sem.sequence)
+    local context = nelibc_thread_current_pthread_context()
+    nelibc_atomic_fetch_add_int(&sem.waiters, 1)
+    if context ~= nilptr then
+      if semaphore_shared(sem) then context.cancel_wait_wake_operation = 1
+      else context.cancel_wait_wake_operation = 129 end
+      nelibc_atomic_store_pointer(&context.cancel_wait_address, (@pointer)(&sem.sequence))
+      if context.cancel_state == PTHREAD_CANCEL_ENABLE and
+         nelibc_atomic_load_int(&context.cancel_pending) ~= 0 then pthread_cancel_wake(context) end
+    end
+    -- A post may have observed no waiters just before we registered. Recheck
+    -- both the token count and sequence before entering the kernel.
+    if nelibc_atomic_load_int(&sem.value) > 0 or
+       nelibc_atomic_load_int(&sem.sequence) ~= sequence then
+      if context ~= nilptr then nelibc_atomic_store_pointer(&context.cancel_wait_address, nilptr) end
+      nelibc_atomic_fetch_add_int(&sem.waiters, -1)
+      continue
+    end
+    local operation: culong = 0_culong
+    local timeout_pointer: culong = 0_culong
+    local mask: culong = 0_culong
+    if abstime ~= nilptr then
+      operation = 265_culong
+      timeout_pointer = (@culong)((@usize)(abstime))
+      mask = 0xFFFFFFFF_culong
+    end
+    if not semaphore_shared(sem) then operation = operation | 128_culong end
+    local result = nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&sem.sequence)),
+      operation, (@culong)(sequence), timeout_pointer, 0_culong, mask)
+    if context ~= nilptr then nelibc_atomic_store_pointer(&context.cancel_wait_address, nilptr) end
+    nelibc_atomic_fetch_add_int(&sem.waiters, -1)
+    pthread_testcancel()
+    if result == -110 then nelibc_errno_location()[0] = 110; return -1 end
+    if result == -4 then
+      local cancel_context = nelibc_thread_current_pthread_context()
+      if cancel_context ~= nilptr and cancel_context.cancel_state == PTHREAD_CANCEL_DISABLE and
+         nelibc_atomic_load_int(&cancel_context.cancel_pending) ~= 0 then
+        continue -- Hide the internal cancellation signal while cancellation is disabled.
+      end
+      nelibc_errno_location()[0] = 4
+      return -1
+    end
+    if result < 0 and result ~= -11 then
+      nelibc_errno_location()[0] = (@cint)(-result); return -1
+    end
+  end
+end
+
+local function sem_wait(sem: *Semaphore): cint <cexport, codename 'sem_wait'>
+  return semaphore_wait(sem, nilptr)
+end
+
+local function sem_timedwait(sem: *Semaphore, abstime: *Timespec): cint <cexport, codename 'sem_timedwait'>
+  if abstime == nilptr then nelibc_errno_location()[0] = 22; return -1 end
+  return semaphore_wait(sem, abstime)
+end
+
+local function sem_getvalue(sem: *Semaphore, value: *[0]cint): cint <cexport, codename 'sem_getvalue'>
+  if not semaphore_valid(sem) or value == nilptr then nelibc_errno_location()[0] = 22; return -1 end
+  value[0] = nelibc_atomic_load_int(&sem.value)
   return 0
 end
 

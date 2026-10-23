@@ -1012,6 +1012,11 @@ this mechanism; Nelibc rejects attempts to install or block it. The API
 `pthread_setcanceltype` and asynchronous cancellation are not implemented.
 Cleanup handlers on the initial thread are also unsupported. Each created
 thread has room for 32 pending cleanup handlers.
+Standalone unnamed POSIX semaphores (`sem_init`, `sem_destroy`, `sem_wait`,
+`sem_timedwait`, `sem_trywait`, `sem_post`, and `sem_getvalue`) are implemented
+with futex-backed waits; blocked `sem_wait` calls are deferred-cancellation
+points. `sem_timedwait` is also a cancellation point. Named semaphores are not
+implemented.
 `nm -u` must be empty.
 The allocator exports only `nelibc_*` names in hybrid builds. The standalone-only wrappers
 in `src/alloc/standalone_exports.nelua` provide standard `malloc`, `calloc`,
