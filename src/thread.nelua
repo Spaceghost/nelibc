@@ -59,7 +59,8 @@ local PthreadAttr: type = @record{
   guardsize: csize,
   inheritsched: cint,
   schedpolicy: cint,
-  schedparam: SchedParam
+  schedparam: SchedParam,
+  stackaddr: pointer
 }
 local PthreadMutexAttr: type = @record{
   magic: culong,
@@ -409,7 +410,7 @@ local function pthread_detached_cleanup(context: *PthreadContext): void
 end
 
 -- Start a callback on a Linux thread with a private stack and static TLS copy.
-local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer, requested_stack_size: csize, requested_guard_size: csize, identity: pointer, pthread_context: *PthreadContext, detached: boolean): cint
+local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer, requested_stack_size: csize, provided_stack: pointer, requested_guard_size: csize, identity: pointer, pthread_context: *PthreadContext, detached: boolean): cint
   if handle == nilptr or start == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -434,16 +435,23 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
     return -1
   end
   local mapping_size = stack_size + guard_size
-
-  local stack = map_rw(mapping_size)
-  if stack == nilptr then return -1 end
+  local stack: pointer
+  if provided_stack ~= nilptr then
+    stack = provided_stack
+    stack_size = 0
+    guard_size = 0
+    mapping_size = 0
+  else
+    stack = map_rw(mapping_size)
+    if stack == nilptr then return -1 end
+  end
   if guard_size > 0 then
     local protect_result = nelibc_raw_syscall3(
       10_culong, (@culong)((@usize)(stack)), (@culong)(guard_size), 0_culong
     )
     if protect_result < 0 and protect_result >= -4095 then
       nelibc_errno_location()[0] = (@cint)(-protect_result)
-      unmap(stack, mapping_size)
+      if mapping_size > 0 then unmap(stack, mapping_size) end
       return -1
     end
   end
@@ -452,7 +460,7 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
   if detached or pthread_context ~= nilptr then
     cleanup_stack = map_rw(CLEANUP_STACK_SIZE)
     if cleanup_stack == nilptr then
-      unmap(stack, mapping_size)
+      if mapping_size > 0 then unmap(stack, mapping_size) end
       return -1
     end
   end
@@ -463,7 +471,7 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
   if align < 16 then align = 16 end
   if (align & (align - 1)) ~= 0 then
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, mapping_size)
+    if mapping_size > 0 then unmap(stack, mapping_size) end
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
   end
@@ -471,20 +479,20 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
   local rounded_size: csize = layout.image_memsz
   if rounded_size > MAX_CSIZE - (align - 1) then
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, mapping_size)
+    if mapping_size > 0 then unmap(stack, mapping_size) end
     nelibc_errno_location()[0] = 12 -- ENOMEM
     return -1
   end
   rounded_size = (rounded_size + align - 1) & ~(align - 1)
   if align > MAX_CSIZE - 16 then
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, mapping_size)
+    if mapping_size > 0 then unmap(stack, mapping_size) end
     nelibc_errno_location()[0] = 12 -- ENOMEM
     return -1
   end
   if rounded_size > MAX_CSIZE - align - 64 then
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, mapping_size)
+    if mapping_size > 0 then unmap(stack, mapping_size) end
     nelibc_errno_location()[0] = 12 -- ENOMEM
     return -1
   end
@@ -492,7 +500,7 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
   local tls_map = map_rw(tls_map_size)
   if tls_map == nilptr then
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, mapping_size)
+    if mapping_size > 0 then unmap(stack, mapping_size) end
     return -1
   end
 
@@ -516,7 +524,7 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
   tcb[2] = (@pointer)(pthread_context)
   if detached then tcb[3] = identity else tcb[3] = nilptr end
   tcb[4] = nilptr
-  handle.stack = stack
+  if mapping_size > 0 then handle.stack = stack else handle.stack = nilptr end
   handle.tls = tls_map
   handle.tls_size = tls_map_size
   handle.stack_size = mapping_size
@@ -525,11 +533,16 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
   handle.tid = 0
   if handle.tid_word == nilptr then handle.tid_word = &handle.tid end
   if detached then handle.state = 3 end
-  local stack_top: pointer = (@pointer)((@usize)(stack) + (@usize)(mapping_size))
+  local stack_top: pointer
+  if provided_stack ~= nilptr then
+    stack_top = (@pointer)(((@usize)(provided_stack) + (@usize)(requested_stack_size)) & ~15_usize)
+  else
+    stack_top = (@pointer)((@usize)(stack) + (@usize)(mapping_size))
+  end
   if nelibc_credential_sync_begin() ~= 0 then
     unmap(tls_map, tls_map_size)
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, mapping_size)
+    if mapping_size > 0 then unmap(stack, mapping_size) end
     return -1
   end
   local tid_pointer: *[0]cint = handle.tid_word
@@ -539,7 +552,7 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
     nelibc_errno_location()[0] = (@cint)(-child)
     unmap(tls_map, tls_map_size)
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, mapping_size)
+    if mapping_size > 0 then unmap(stack, mapping_size) end
     return -1
   end
   if not detached then handle.state = 1 end
@@ -555,7 +568,7 @@ local function nelibc_thread_create(handle: *ThreadHandle, start: function(point
   handle.context.arg = arg
   handle.context.result = 0
   return thread_spawn(handle, (@pointer)(thread_trampoline), &handle.context,
-                      STACK_SIZE, 0_csize, (@pointer)(handle), nilptr, false)
+                      STACK_SIZE, nilptr, 0_csize, (@pointer)(handle), nilptr, false)
 end
 
 -- Wait for a child, service process-wide credential rendezvous, and release maps.
@@ -585,7 +598,7 @@ local function thread_wait(handle: *ThreadHandle): cint
   end
   nelibc_credential_sync_end()
   unmap(handle.tls, handle.tls_size)
-  unmap(handle.stack, handle.stack_size)
+  if handle.stack ~= nilptr then unmap(handle.stack, handle.stack_size) end
   if handle.cleanup_stack ~= nilptr then unmap(handle.cleanup_stack, handle.cleanup_stack_size) end
   handle.stack = nilptr
   handle.tls = nilptr
@@ -767,6 +780,7 @@ local function pthread_attr_init(attr: *PthreadAttr): cint <cexport, codename 'p
   attr.inheritsched = PTHREAD_INHERIT_SCHED
   attr.schedpolicy = SCHED_OTHER
   attr.schedparam.sched_priority = 0
+  attr.stackaddr = nilptr
   return 0
 end
 
@@ -791,13 +805,38 @@ end
 
 local function pthread_attr_setstacksize(attr: *PthreadAttr, stacksize: csize): cint <cexport, codename 'pthread_attr_setstacksize'>
   if not pthread_attr_valid(attr) then return 22 end -- EINVAL
-  if stacksize < PTHREAD_STACK_MINIMUM or stacksize > MAX_CSIZE - (PAGE_SIZE - 1) then return 22 end
+  if stacksize < PTHREAD_STACK_MINIMUM or stacksize > MAX_CSIZE - (PAGE_SIZE - 1) or
+     (attr.stackaddr ~= nilptr and
+      stacksize > MAX_CSIZE - (@csize)((@usize)(attr.stackaddr))) then
+    return 22 -- EINVAL
+  end
   attr.stacksize = stacksize
   return 0
 end
 
 local function pthread_attr_getstacksize(attr: *PthreadAttr, stacksize: *[0]csize): cint <cexport, codename 'pthread_attr_getstacksize'>
   if not pthread_attr_valid(attr) or stacksize == nilptr then return 22 end -- EINVAL
+  stacksize[0] = attr.stacksize
+  return 0
+end
+
+local function pthread_attr_setstack(attr: *PthreadAttr, stackaddr: pointer, stacksize: csize): cint <cexport, codename 'pthread_attr_setstack'>
+  if not pthread_attr_valid(attr) or stackaddr == nilptr or
+     stacksize < PTHREAD_STACK_MINIMUM or
+     stacksize > MAX_CSIZE - (@csize)((@usize)(stackaddr)) then
+    return 22 -- EINVAL
+  end
+  attr.stackaddr = stackaddr
+  attr.stacksize = stacksize
+  return 0
+end
+
+local function pthread_attr_getstack(attr: *PthreadAttr, stackaddr: *[0]pointer,
+    stacksize: *[0]csize): cint <cexport, codename 'pthread_attr_getstack'>
+  if not pthread_attr_valid(attr) or stackaddr == nilptr or stacksize == nilptr then
+    return 22 -- EINVAL
+  end
+  stackaddr[0] = attr.stackaddr
   stacksize[0] = attr.stacksize
   return 0
 end
@@ -1954,6 +1993,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   if thread == nilptr or start == nilptr then return 22 end -- EINVAL
   local stacksize: csize = STACK_SIZE
   local guardsize: csize = PAGE_SIZE
+  local stackaddr: pointer = nilptr
   local inheritsched: cint = PTHREAD_INHERIT_SCHED
   local schedpolicy: cint = SCHED_OTHER
   local schedpriority: cint = 0
@@ -1968,6 +2008,10 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
       return 22 -- EINVAL
     end
     stacksize = attr.stacksize
+    stackaddr = attr.stackaddr
+    if stackaddr ~= nilptr and
+       (stacksize < PTHREAD_STACK_MINIMUM or
+        stacksize > MAX_CSIZE - (@csize)((@usize)(stackaddr))) then return 22 end -- EINVAL
     guardsize = attr.guardsize
     inheritsched = attr.inheritsched
     schedpolicy = attr.schedpolicy
@@ -2004,7 +2048,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.handle.state = 0
   state.handle.tid_word = tid_word
   if thread_spawn(&state.handle, (@pointer)(pthread_trampoline), &state.context,
-                  stacksize, guardsize, object, &state.context,
+                  stacksize, stackaddr, guardsize, object, &state.context,
                   attr ~= nilptr and attr.detachstate == 1) ~= 0 then
     local error_code = nelibc_errno_location()[0]
     nelibc_thread_tid_slot_release(tid_word)

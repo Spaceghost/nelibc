@@ -368,6 +368,19 @@ static void *timed_mutex_worker(void *argument) {
   return (void *)(intptr_t)result;
 }
 
+static _Alignas(16) unsigned char user_thread_stack[65536];
+static uintptr_t user_thread_stack_low;
+static uintptr_t user_thread_stack_high;
+
+static void *user_stack_worker(void *argument) {
+  (void)argument;
+  volatile unsigned char marker = 0;
+  uintptr_t address = (uintptr_t)&marker;
+  return address >= user_thread_stack_low && address < user_thread_stack_high
+             ? 0
+             : (void *)3;
+}
+
 static void *explicit_schedule_worker(void *argument) {
   (void)argument;
   int policy = -1;
@@ -473,6 +486,41 @@ int main(void) {
 
   pthread_attr_t attributes;
   if (pthread_attr_init(&attributes) != 0) return 1;
+  pthread_attr_t user_stack_attributes;
+  if (pthread_attr_init(&user_stack_attributes) != 0) return 232;
+  void *reported_stack = (void *)1;
+  size_t reported_stack_size = 0;
+  if (pthread_attr_getstack(&user_stack_attributes, &reported_stack,
+                            &reported_stack_size) != 0)
+    return 236;
+  if (reported_stack != 0 || reported_stack_size != 1048576) return 237;
+  if (pthread_attr_getstack(&user_stack_attributes, 0, &reported_stack_size) != EINVAL ||
+      pthread_attr_getstack(&user_stack_attributes, &reported_stack, 0) != EINVAL)
+    return 238;
+  if (pthread_attr_setstack(&user_stack_attributes, user_thread_stack,
+                            PTHREAD_STACK_MIN - 1) != EINVAL ||
+      pthread_attr_setstack(&user_stack_attributes, 0, sizeof(user_thread_stack)) != EINVAL ||
+      pthread_attr_setstack(&user_stack_attributes,
+                            (void *)(UINTPTR_MAX - 8191), 16384) != EINVAL)
+    return 239;
+  if (pthread_attr_setstack(&user_stack_attributes, user_thread_stack,
+                            sizeof(user_thread_stack)) != 0) return 241;
+  if (pthread_attr_getstack(&user_stack_attributes, &reported_stack,
+                            &reported_stack_size) != 0 ||
+      reported_stack != user_thread_stack ||
+      reported_stack_size != sizeof(user_thread_stack)) return 242;
+  user_thread_stack[0] = 0x5a;
+  user_thread_stack_low = (uintptr_t)user_thread_stack;
+  user_thread_stack_high = user_thread_stack_low + sizeof(user_thread_stack);
+  pthread_t user_stack_thread;
+  if (pthread_create(&user_stack_thread, &user_stack_attributes,
+                     user_stack_worker, 0) != 0)
+    return 233;
+  void *user_stack_result = 0;
+  if (pthread_join(user_stack_thread, &user_stack_result) != 0 ||
+      user_stack_result != 0 || user_thread_stack[0] != 0x5a)
+    return 234;
+  if (pthread_attr_destroy(&user_stack_attributes) != 0) return 235;
   int scope = -1;
   int inheritsched = -1;
   int schedpolicy = -1;

@@ -24,6 +24,7 @@ typedef struct {
   int __inheritsched;
   int __schedpolicy;
   struct sched_param __schedparam;
+  void *__stackaddr;
 } pthread_attr_t;
 typedef struct {
   uintptr_t __magic;
@@ -107,6 +108,8 @@ int pthread_attr_setscope(pthread_attr_t *attr, int scope);
 int pthread_attr_getscope(const pthread_attr_t *attr, int *scope);
 int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize);
 int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stacksize);
+int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr, size_t stacksize);
+int pthread_attr_getstack(const pthread_attr_t *attr, void **stackaddr, size_t *stacksize);
 int pthread_attr_setguardsize(pthread_attr_t *attr, size_t guardsize);
 int pthread_attr_getguardsize(const pthread_attr_t *attr, size_t *guardsize);
 int pthread_attr_setinheritsched(pthread_attr_t *attr, int inheritsched);

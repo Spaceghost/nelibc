@@ -29,6 +29,7 @@ HOST_DELEGATED = {
         "pthread_attr_setdetachstate", "pthread_attr_getdetachstate",
         "pthread_attr_setscope", "pthread_attr_getscope",
         "pthread_attr_setstacksize", "pthread_attr_getstacksize",
+        "pthread_attr_setstack", "pthread_attr_getstack",
         "pthread_attr_setguardsize", "pthread_attr_getguardsize",
         "pthread_attr_setinheritsched", "pthread_attr_getinheritsched",
         "pthread_attr_setschedpolicy", "pthread_attr_getschedpolicy",
