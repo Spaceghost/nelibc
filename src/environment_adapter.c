@@ -8,6 +8,16 @@
 #include <wchar.h>
 #include <string.h>
 #include <locale.h>
+
+int nelibc_atfork_lock_try(int *lock) {
+  int expected = 0;
+  return __atomic_compare_exchange_n(lock, &expected, 1, 0,
+                                     __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+}
+
+void nelibc_atfork_lock_reset(int *lock) {
+  __atomic_store_n(lock, 0, __ATOMIC_RELEASE);
+}
 #include <stdlib.h>
 #include <stdio.h>
 #ifndef NELIBC_STANDALONE

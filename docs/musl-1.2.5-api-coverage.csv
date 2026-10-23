@@ -724,7 +724,7 @@ process_vm_writev,sys/uio.h,,,not-declared
 pselect,sys/select.h,,,not-declared
 psiginfo,signal.h,,,not-declared
 psignal,signal.h,,,not-declared
-pthread_atfork,pthread.h,,,not-declared
+pthread_atfork,pthread.h,pthread.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 pthread_attr_destroy,pthread.h,pthread.h,,host-delegated
 pthread_attr_getdetachstate,pthread.h,pthread.h,,host-delegated
 pthread_attr_getguardsize,pthread.h,pthread.h,,host-delegated

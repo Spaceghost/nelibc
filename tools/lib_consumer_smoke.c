@@ -239,6 +239,18 @@ static int semaphore_clock_probe(void) {
 }
 
 #ifndef NELIBC_STANDALONE
+static int atfork_probe_order[8];
+static int atfork_probe_count;
+static void atfork_probe_add(int value) {
+  if (atfork_probe_count < 8) atfork_probe_order[atfork_probe_count++] = value;
+}
+static void atfork_probe_prepare_a(void) { atfork_probe_add(1); }
+static void atfork_probe_prepare_b(void) { atfork_probe_add(2); }
+static void atfork_probe_parent_a(void) { atfork_probe_add(3); }
+static void atfork_probe_parent_b(void) { atfork_probe_add(4); }
+static void atfork_probe_child_a(void) { atfork_probe_add(5); }
+static void atfork_probe_child_b(void) { atfork_probe_add(6); }
+
 static int pthread_protocol_probe(void) {
   pthread_mutexattr_t attributes;
   pthread_mutex_t mutex;
@@ -286,13 +298,27 @@ static int archive_unistd_adapter_probe(void) {
       setresuid_symbol == NULL || setresgid_symbol == NULL)
     return 10;
 
+  if (pthread_atfork(atfork_probe_prepare_a, atfork_probe_parent_a,
+                     atfork_probe_child_a) != 0 ||
+      pthread_atfork(atfork_probe_prepare_b, atfork_probe_parent_b,
+                     atfork_probe_child_b) != 0)
+    return 26;
   pid_t child = fork();
   if (child < 0) return 15;
-  if (child == 0) _Exit(37);
+  if (child == 0) {
+    if (atfork_probe_count != 4 || atfork_probe_order[0] != 2 ||
+        atfork_probe_order[1] != 1 || atfork_probe_order[2] != 5 ||
+        atfork_probe_order[3] != 6)
+      _Exit(38);
+    _Exit(37);
+  }
   int status = 0;
   if (waitpid(child, &status, 0) != child || !WIFEXITED(status) ||
-      WEXITSTATUS(status) != 37)
+      WEXITSTATUS(status) != 37 || atfork_probe_count != 4 ||
+      atfork_probe_order[0] != 2 || atfork_probe_order[1] != 1 ||
+      atfork_probe_order[2] != 3 || atfork_probe_order[3] != 4)
     return 16;
+  atfork_probe_count = 0;
 
   if (fcntl(STDOUT_FILENO, F_GETFD) < 0) return 11;
   int large_file_fd = open64("/dev/null", O_RDONLY);

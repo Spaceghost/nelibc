@@ -12,6 +12,8 @@
 
 static volatile int detached_release;
 static volatile int pthread_kill_signal;
+static int atfork_order[16];
+static int atfork_order_count;
 static volatile int detached_done;
 static volatile int mutex_counter;
 static pthread_mutex_t static_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -67,6 +69,17 @@ static void cancel_cleanup(void *argument) {
 static void pthread_kill_handler(int signal) {
   pthread_kill_signal = signal;
 }
+
+static void atfork_order_add(int value) {
+  if (atfork_order_count < (int)(sizeof(atfork_order) / sizeof(atfork_order[0])))
+    atfork_order[atfork_order_count++] = value;
+}
+static void atfork_prepare_a(void) { atfork_order_add(1); }
+static void atfork_prepare_b(void) { atfork_order_add(2); }
+static void atfork_parent_a(void) { atfork_order_add(3); }
+static void atfork_parent_b(void) { atfork_order_add(4); }
+static void atfork_child_a(void) { atfork_order_add(5); }
+static void atfork_child_b(void) { atfork_order_add(6); }
 
 static pthread_key_t initial_exit_key;
 
@@ -533,6 +546,9 @@ int main(void) {
   if (cancel_cleanup_calls != 1 ||
       pthread_key_create(&initial_exit_key, initial_exit_key_destructor) != 0)
     return 215;
+  if (pthread_atfork(atfork_prepare_a, atfork_parent_a, atfork_child_a) != 0 ||
+      pthread_atfork(atfork_prepare_b, atfork_parent_b, atfork_child_b) != 0)
+    return 279;
 
   volatile int *initial_exit_marker = mmap(0, sizeof(*initial_exit_marker),
       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
@@ -540,6 +556,10 @@ int main(void) {
   *initial_exit_marker = 0;
   pid_t initial_exit_child = fork();
   if (initial_exit_child == 0) {
+    if (atfork_order_count != 4 || atfork_order[0] != 2 ||
+        atfork_order[1] != 1 || atfork_order[2] != 5 ||
+        atfork_order[3] != 6)
+      _exit(280);
     if (pthread_setspecific(initial_exit_key, (void *)initial_exit_marker) != 0)
       _exit(217);
     pthread_cleanup_push(initial_exit_cleanup, (void *)initial_exit_marker);
@@ -550,9 +570,13 @@ int main(void) {
   if (initial_exit_child < 0 ||
       waitpid(initial_exit_child, &initial_exit_status, 0) != initial_exit_child ||
       initial_exit_status != 0 || *initial_exit_marker != 11 ||
+      atfork_order_count != 4 || atfork_order[0] != 2 ||
+      atfork_order[1] != 1 || atfork_order[2] != 3 ||
+      atfork_order[3] != 4 ||
       pthread_key_delete(initial_exit_key) != 0 ||
       munmap((void *)initial_exit_marker, sizeof(*initial_exit_marker)) != 0)
     return 218;
+  atfork_order_count = 0;
 
   volatile int *initial_cancel_marker = mmap(0, sizeof(*initial_cancel_marker),
       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);

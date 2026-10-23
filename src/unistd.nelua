@@ -22,6 +22,86 @@ local function nelibc_cancellation_enter(): cint <cimport> end
 local function nelibc_cancellation_leave(previous_type: cint): void <cimport> end
 local function nelibc_cancellable_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
 local function nelibc_cancellable_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
+local function nelibc_atfork_lock_try(value: *[0]cint): cint <cimport> end
+local function nelibc_atfork_lock_reset(value: *[0]cint): void <cimport> end
+
+local AtforkHandler: type = @record{
+  prepare: pointer,
+  parent: pointer,
+  child: pointer,
+  previous: *AtforkHandler,
+  next: *AtforkHandler
+}
+local atfork_handlers_first: *AtforkHandler = nilptr
+local atfork_handlers_last: *AtforkHandler = nilptr
+local atfork_handlers_lock: cint = 0
+
+local function atfork_handlers_lock_acquire(): void <inline>
+  while nelibc_atfork_lock_try(&atfork_handlers_lock) == 0 do
+    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&atfork_handlers_lock)),
+                        128_culong, 1_culong, 0_culong, 0_culong, 0_culong)
+  end
+end
+
+local function atfork_handlers_lock_release(): void <inline>
+  nelibc_atfork_lock_reset(&atfork_handlers_lock)
+  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&atfork_handlers_lock)),
+                      129_culong, 1_culong, 0_culong, 0_culong, 0_culong)
+end
+
+local function pthread_atfork(prepare: pointer, parent: pointer, child: pointer): cint <cexport, codename 'pthread_atfork'>
+  local handler = (@*AtforkHandler)(malloc(40_csize)) -- five pointers on Linux x86_64
+  if handler == nilptr then return 12 end -- ENOMEM
+  handler.prepare = prepare
+  handler.parent = parent
+  handler.child = child
+  handler.previous = nilptr
+  handler.next = nilptr
+  atfork_handlers_lock_acquire()
+  handler.previous = atfork_handlers_last
+  if atfork_handlers_last == nilptr then
+    atfork_handlers_first = handler
+  else
+    atfork_handlers_last.next = handler
+  end
+  atfork_handlers_last = handler
+  atfork_handlers_lock_release()
+  return 0
+end
+
+local function nelibc_atfork_prepare(): pointer
+  atfork_handlers_lock_acquire()
+  local snapshot = atfork_handlers_last
+  atfork_handlers_lock_release()
+  local handler = snapshot
+  while handler ~= nilptr do
+    if handler.prepare ~= nilptr then ((@function(): void)(handler.prepare))() end
+    handler = handler.previous
+  end
+  return (@pointer)(snapshot)
+end
+
+local function nelibc_atfork_parent(snapshot: pointer): void
+  local handler = atfork_handlers_first
+  local last = (@*AtforkHandler)(snapshot)
+  while handler ~= nilptr do
+    if handler.parent ~= nilptr then ((@function(): void)(handler.parent))() end
+    if handler == last then break end
+    handler = handler.next
+  end
+end
+
+local function nelibc_atfork_child(snapshot: pointer): void
+  -- The child contains only the forking thread; release an inherited lock.
+  nelibc_atfork_lock_reset(&atfork_handlers_lock)
+  local handler = atfork_handlers_first
+  local last = (@*AtforkHandler)(snapshot)
+  while handler ~= nilptr do
+    if handler.child ~= nilptr then ((@function(): void)(handler.child))() end
+    if handler == last then break end
+    handler = handler.next
+  end
+end
 
 local function syscall_result(result: clong): clong <inline>
   if result < 0 and result >= -4095 then
@@ -425,7 +505,14 @@ local function wait(status: pointer): cint <cexport, codename 'wait'>
 end
 
 local function fork(): cint <cexport, codename 'fork'>
-  return (@cint)(syscall_result(nelibc_raw_syscall3(57_culong, 0_culong, 0_culong, 0_culong)))
+  local snapshot = nelibc_atfork_prepare()
+  local result = nelibc_raw_syscall3(57_culong, 0_culong, 0_culong, 0_culong)
+  if result == 0 then
+    nelibc_atfork_child(snapshot)
+    return 0
+  end
+  nelibc_atfork_parent(snapshot)
+  return (@cint)(syscall_result(result))
 end
 
 local function execve(pathname: *[0]cchar <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <cexport, codename 'execve'>
