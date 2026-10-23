@@ -29,6 +29,7 @@ static pthread_cond_t cancel_condition = PTHREAD_COND_INITIALIZER;
 static int cancel_read_pipe[2];
 static volatile int cancel_waiting;
 static volatile int cancel_read_started;
+static volatile int cancel_sleep_started;
 static volatile int cancel_state_ready;
 static volatile int cancel_state_release;
 static int cancel_cleanup_calls;
@@ -70,6 +71,16 @@ static void *cancel_read_worker(void *argument) {
   (void)read(cancel_read_pipe[0], &byte, 1);
   pthread_cleanup_pop(0);
   return (void *)3;
+}
+
+static void *cancel_sleep_worker(void *argument) {
+  (void)argument;
+  const struct timespec delay = {60, 0};
+  pthread_cleanup_push(cancel_cleanup, 0);
+  cancel_sleep_started = 1;
+  (void)nanosleep(&delay, 0);
+  pthread_cleanup_pop(0);
+  return (void *)4;
 }
 
 typedef struct {
@@ -272,6 +283,20 @@ int main(void) {
     return 141;
   if (close(cancel_read_pipe[0]) != 0 || close(cancel_read_pipe[1]) != 0)
     return 142;
+
+  cancel_cleanup_calls = 0;
+  cancel_sleep_started = 0;
+  if (pthread_create(&thread, 0, cancel_sleep_worker, 0) != 0) return 143;
+  for (unsigned int i = 0; i < 10000000U && !cancel_sleep_started; ++i) {
+  }
+  if (!cancel_sleep_started) return 144;
+  for (volatile unsigned int i = 0; i < 10000000U; ++i) {
+  }
+  if (pthread_cancel(thread) != 0) return 145;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 146;
 
   cancel_state_ready = 0;
   cancel_state_release = 0;
