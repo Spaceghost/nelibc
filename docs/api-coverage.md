@@ -35,6 +35,45 @@ The declaration scanner handles the C declaration forms currently used by
 these headers. Review new or unusual declaration syntax when extending the
 header set. The implementation scanner also recognizes public function names
 passed as the first argument to `DEFINE_*` wrapper macros in C adapters.
+
+## Pinned musl API comparison
+
+`docs/musl-1.2.5-api-coverage.csv` is a checked-in comparison against musl
+1.2.5, built from the upstream release archive
+`https://musl.libc.org/releases/musl-1.2.5.tar.gz` (SHA-256
+`a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4`). The
+CSV keeps one row for every function declaration recognized in the release
+headers and present as a global text/weak symbol in its `libc.a` or `libm.a`.
+The audit intersects declarations and exports so function-like header macros
+and parser false positives do not become supposed libc functions.
+
+Regenerate it by building/installing that pinned release, then running:
+
+```sh
+python3 tools/musl_api_audit.py \
+  --musl-include /path/to/musl-install/include \
+  --musl-archive /path/to/musl-build/lib/libc.a \
+  --musl-archive /path/to/musl-build/lib/libm.a \
+  --nelibc-profile zig_glibc=build/libnelibc-zig.a \
+  --nelibc-profile gcc_glibc=build/libnelibc-gcc.a \
+  --nelibc-profile zig_musl=build/libnelibc-zig-musl.a \
+  --nelibc-profile tcc_glibc=build/libnelibc-tcc.a \
+  --output docs/musl-1.2.5-api-coverage.csv
+```
+
+The current snapshot contains 1,269 APIs: 424 exported by Nelibc in at least
+one tested hybrid profile, 37 intentionally delegated to the host in hybrid
+profiles, and 808 not declared by Nelibc. No baseline API is currently marked
+as an intentional omission; the 808 entries remain visible as unimplemented
+scope candidates until an explicit policy records why an API is excluded.
+The largest undeclared groups are pthread (69), complex math (66), wide
+characters (49), stdlib (40), unistd (38), and name service/network database
+APIs (32). This is a breadth comparison, not a behavioral conformance score.
+
+The report uses the same bounded declaration scanner as the project API
+inventory and requires the headers and archives from the same musl release.
+Review scanner changes against representative prototypes before refreshing the
+snapshot.
 The standalone-only pthread declarations are classified as host-delegated in
 hybrid profiles because `include/pthread.h` forwards to the selected host
 header there.
