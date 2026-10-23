@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
 #include <errno.h>
+#include <pthread.h>
 #include <semaphore.h>
 #include <time.h>
 
@@ -10,8 +11,11 @@
 typedef int (*glibc_sem_clockwait_fn)(sem_t *, clockid_t,
                                       const struct timespec *);
 
-static glibc_sem_clockwait_fn resolve_glibc_sem_clockwait(void) {
-  return (glibc_sem_clockwait_fn)
+static pthread_once_t sem_clockwait_host_once = PTHREAD_ONCE_INIT;
+static glibc_sem_clockwait_fn sem_clockwait_host;
+
+static void resolve_glibc_sem_clockwait(void) {
+  sem_clockwait_host = (glibc_sem_clockwait_fn)
       dlvsym(RTLD_NEXT, "sem_clockwait", "GLIBC_2.30");
 }
 
@@ -23,10 +27,15 @@ int sem_clockwait(sem_t *sem, clockid_t clock_id,
   }
   if (sem_trywait(sem) == 0) return 0;
   if (errno != EAGAIN) return -1;
-  glibc_sem_clockwait_fn host = resolve_glibc_sem_clockwait();
-  if (host == 0) {
+  int once_error = pthread_once(&sem_clockwait_host_once,
+                                resolve_glibc_sem_clockwait);
+  if (once_error != 0) {
+    errno = once_error;
+    return -1;
+  }
+  if (sem_clockwait_host == 0) {
     errno = ENOSYS;
     return -1;
   }
-  return host(sem, clock_id, abstime);
+  return sem_clockwait_host(sem, clock_id, abstime);
 }

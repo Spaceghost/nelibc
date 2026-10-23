@@ -2480,6 +2480,11 @@ sem-clockwait-musl-smoke: $(OUT)/libnelibc-zig-musl.a tools/sem_clockwait_musl_s
 	$(OUT)/sem-clockwait-musl-smoke
 .PHONY: sem-clockwait-musl-smoke
 
+sem-clockwait-shootout-zig: $(OUT)/libnelibc-zig.a tools/sem_clockwait_shootout.c
+	$(ZIG) cc -pthread -ldl -Iinclude -fno-builtin tools/sem_clockwait_shootout.c $(OUT)/libnelibc-zig.a -o $(OUT)/sem-clockwait-shootout-zig
+	$(OUT)/sem-clockwait-shootout-zig | tee $(OUT)/sem-clockwait-shootout-zig.csv
+.PHONY: sem-clockwait-shootout-zig
+
 rand-r-diff-standalone-zig: $(OUT)/libnelibc-standalone-zig.a
 	$(ZIG) cc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/rand_r_diff.c -o $(OUT)/rand-r-diff-standalone-zig
 	@test -z "$$(nm -u $(OUT)/rand-r-diff-standalone-zig)"

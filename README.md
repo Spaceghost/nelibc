@@ -1024,7 +1024,7 @@ timeout, and named opens ignore creation attributes for an existing name.
 `sem_clockwait` supports absolute realtime and monotonic deadlines.
 Hybrid glibc archives fast-path `sem_trywait` before delegating blocking waits
 to glibc, preserving POSIX's immediate-acquisition rule for invalid deadlines.
-Those consumers should link with `-ldl`. The hybrid musl archive supplies the
+Those consumers should link with `-pthread -ldl`. The hybrid musl archive supplies the
 API on musl versions without it; its monotonic implementation uses 1 ms polling
 through musl's public semaphore functions, avoiding assumptions about musl's
 private `sem_t` layout. The musl smoke checks cancellation while blocked.
