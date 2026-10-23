@@ -1282,7 +1282,7 @@ end
 
 local function pthread_priority_protect_refresh(context: *PthreadContext,
     tid: cint): cint
-  if context == nilptr or context.protect_mutexes == nilptr then return 0 end
+  if context == nilptr then return 0 end
   local effective = context.protect_base_priority
   local cursor: *[0]pointer = &context.protect_mutexes
   while cursor[0] ~= nilptr do
