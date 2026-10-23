@@ -43,6 +43,8 @@ float atan2f(float y, float x);
 double atan2(double y, double x);
 float logf(float value);
 double log(double value);
+float cbrtf(float value);
+double cbrt(double value);
 float sinf(float value);
 double sin(double value);
 float cosf(float value);

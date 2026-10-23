@@ -981,6 +981,32 @@ local function logf(value: cfloat): cfloat <cexport, codename 'logf'>
   return (@cfloat)(log((@cdouble)(value)))
 end
 
+local function cbrt(value: cdouble): cdouble <cexport, codename 'cbrt'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) or value == 0_cdouble then return value end
+
+  local exponent: cint = 0_cint
+  local mantissa = frexp(fabs(value), &exponent)
+  -- Write exponent = 3*q + r with r in [0, 2], keeping the reduced input
+  -- inside [0.5, 4). This makes the Newton iteration safe for all exponents.
+  local quotient: cint = exponent // 3_cint
+  local residual: cint = exponent - quotient * 3_cint
+  local reduced = ldexp(mantissa, residual)
+  local root = exp_core(log(reduced) / 3_cdouble)
+  local iteration: cint = 0_cint
+  while iteration < 3_cint do
+    root = (2_cdouble * root + reduced / (root * root)) / 3_cdouble
+    iteration = iteration + 1_cint
+  end
+  root = ldexp(root, quotient)
+  if value < 0_cdouble then return -root end
+  return root
+end
+
+local function cbrtf(value: cfloat): cfloat <cexport, codename 'cbrtf'>
+  return (@cfloat)(cbrt((@cdouble)(value)))
+end
+
 local function log1p_core(value: cdouble): cdouble
   if fabs(value) >= 0.125_cdouble then return log(1_cdouble + value) end
   local transformed = value / (2_cdouble + value)

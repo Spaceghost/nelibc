@@ -32,6 +32,12 @@ int main(void) {
   if (exp(0.0) != 1.0 || !(exp(1.0) > 2.71828182845904 && exp(1.0) < 2.71828182845905)) return 70;
   if (log(1.0) != 0.0 || !(log(2.0) > 0.69314718055994 && log(2.0) < 0.69314718055995)) return 71;
   if (!(expf(1.0f) > 2.71828f && expf(1.0f) < 2.71829f)) return 72;
+  if (cbrt(-8.0) != -2.0 || cbrtf(-0.125f) != -0.5f) return 138;
+  if (!same_double(cbrt(-0.0), -0.0) || !same_float(cbrtf(-0.0f), -0.0f)) return 139;
+  if (!(cbrt(0x1p-1074) > 1.7e-108 && cbrt(0x1p-1074) < 1.71e-108) ||
+      !(cbrtf(0x1p-149f) > 1.1e-15f && cbrtf(0x1p-149f) < 1.2e-15f)) return 140;
+  if (!(cbrt(0x1.fffffffffffffp+1023) > 5.6e102 &&
+        cbrt(0x1.fffffffffffffp+1023) < 5.7e102)) return 141;
   if (!(logf(2.0f) > 0.69314f && logf(2.0f) < 0.69315f)) return 73;
   if (!(sin(1.0) > 0.84147098480789 && sin(1.0) < 0.84147098480790)) return 83;
   if (!(cos(1.0) > 0.54030230586813 && cos(1.0) < 0.54030230586814)) return 84;

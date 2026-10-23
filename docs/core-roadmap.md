@@ -9,7 +9,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | Priority | Gap | Why it blocks a compelling libc | Next milestone |
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
-| P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `fmod`, `remainder`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, and `atan2`; the arithmetic backend is x86-64-specific, and most math entry points remain open | Expand the math set; then long-double coverage and complete fenv semantics |
+| P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, and `atan2`; the arithmetic backend is x86-64-specific, and most math entry points remain open | Expand the math set; then long-double coverage and complete fenv semantics |
 | P1 | Standalone threading completeness | Standalone pthread is a subset; cancellation and broader synchronization APIs are explicitly unimplemented | Keep the supported static-TLS ABI bounded and documented; prioritize pthread cancellation and synchronization semantics |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Compare declared/exported/delegated APIs against a pinned musl release and label every intentional omission |
@@ -26,7 +26,7 @@ symbol-count ratios or standards-conformance claims:
 |---|---:|---|
 | Core memory, strings, allocation, integer conversion, process/startup, and common I/O | 75–85% | Edge-case conformance, ABI review, and wider consumer coverage |
 | Core time and basic signals/process APIs | 65–80% | Cross-libc differential coverage, locale names, and less common POSIX behavior |
-| Math | 30–37% | Most C math entry points, long double, fenv behavior, and quality/performance work |
+| Math | 31–38% | Most C math entry points, long double, fenv behavior, and quality/performance work |
 | Standalone threading/TLS | 35–50% | Cancellation, synchronization breadth, and static-TLS ABI limits; dynamic TLS is deferred |
 | Locale and international text | 15–30% | Locale datasets, Unicode case conversion, collation, and numeric/time conventions |
 | Overall “core libc” for common Linux C programs | 65–75% | Math and threading gaps plus stronger compatibility evidence |
@@ -36,7 +36,7 @@ start, allocate, do I/O, handle strings/numbers, and use threads. Math and
 threading are the largest capability gaps; locales and broader portability
 matter more for completeness than for the initial common-program target.
 
-- The current API inventory has 587 declared names: 549 marked implemented,
+- The current API inventory has 589 declared names: 551 marked implemented,
   38 intentionally host-delegated across the hybrid profiles, and one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage.
@@ -49,7 +49,7 @@ matter more for completeness than for the initial common-program target.
   syscall smoke checks UTC and negative epochs, leap days, POSIX TZ rules,
   TZif zone files, DST transitions, formatting bounds, and CPU clocks. Broader
   locale-specific time names and cross-libc differential coverage remain open.
-- The current math slice in `src/math_core.nelua` exports 76 float and double
+- The current math slice in `src/math_core.nelua` exports 78 float and double
   functions through all four hybrid profiles and standalone archives. Its
   Nelua functions implement `fmin`/`fmax` NaN behavior and rounding rules;
   x86-64 hardware instructions implement correctly rounded square root and
@@ -71,6 +71,11 @@ matter more for completeness than for the initial common-program target.
   float variants on the current host; the cross-libc matrix checks the same
   four-ULP bound on each profile. Range errno and overflow/underflow/pole/domain
   exception flags are also checked.
+  `cbrt` reduces the binary exponent modulo three, seeds from the Nelua
+  exponential/logarithm cores, then applies Newton refinement. Across the
+  current edge set and 100,000 generated inputs per profile, observed error is
+  at most 4 ULP for binary64 and 0 ULP for binary32; this is differential
+  coverage, not a proof of correct rounding.
   `hypot`/`hypotf` scale by the larger input before squaring, prioritize infinity
   over NaN, and avoid underflow from insignificant operand ratios. Pairwise
   differential checks cover edge values and generated inputs.

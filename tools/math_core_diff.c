@@ -24,6 +24,8 @@ extern float nelibc_nearbyintf(float);
 extern double nelibc_nearbyint(double);
 extern float nelibc_expf(float);
 extern double nelibc_exp(double);
+extern float nelibc_cbrtf(float);
+extern double nelibc_cbrt(double);
 extern float nelibc_powf(float, float);
 extern double nelibc_pow(double, double);
 extern float nelibc_logf(float);
@@ -104,6 +106,8 @@ static uint64_t max_tan_ulps;
 static uint32_t max_tanf_ulps;
 static uint64_t max_pow_ulps;
 static uint32_t max_powf_ulps;
+static uint64_t max_cbrt_ulps;
+static uint32_t max_cbrtf_ulps;
 
 static uint64_t next_bits(void) {
   state ^= state >> 12;
@@ -247,6 +251,28 @@ static int check_exp_log(double value, float valuef) {
             ulps_float(expected_logf, actual_logf));
     return 1;
   }
+  const double expected_cbrt = cbrt(value);
+  const double actual_cbrt = nelibc_cbrt(value);
+  if (isnan(expected_cbrt) != isnan(actual_cbrt) ||
+      (!isnan(expected_cbrt) && ulps_double(expected_cbrt, actual_cbrt) > 4)) {
+    fprintf(stderr, "cbrt binary64 mismatch x=%.17g expected=%.17g actual=%.17g ulps=%llu\n",
+            value, expected_cbrt, actual_cbrt,
+            (unsigned long long)ulps_double(expected_cbrt, actual_cbrt));
+    return 1;
+  }
+  if (!isnan(expected_cbrt) && ulps_double(expected_cbrt, actual_cbrt) > max_cbrt_ulps)
+    max_cbrt_ulps = ulps_double(expected_cbrt, actual_cbrt);
+  const float expected_cbrtf = cbrtf(valuef);
+  const float actual_cbrtf = nelibc_cbrtf(valuef);
+  if (isnan(expected_cbrtf) != isnan(actual_cbrtf) ||
+      (!isnan(expected_cbrtf) && ulps_float(expected_cbrtf, actual_cbrtf) > 4)) {
+    fprintf(stderr, "cbrtf binary32 mismatch x=%.9g expected=%.9g actual=%.9g ulps=%u\n",
+            valuef, expected_cbrtf, actual_cbrtf,
+            ulps_float(expected_cbrtf, actual_cbrtf));
+    return 1;
+  }
+  if (!isnan(expected_cbrtf) && ulps_float(expected_cbrtf, actual_cbrtf) > max_cbrtf_ulps)
+    max_cbrtf_ulps = ulps_float(expected_cbrtf, actual_cbrtf);
   const double expected_asinh = asinh(value);
   const double actual_asinh = nelibc_asinh(value);
   /* Zig's bundled musl acosh also returns finite values below its x >= 1
@@ -1030,12 +1056,13 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
-  printf("76 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+  printf("78 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
          (double)max_exp_ulps, (double)max_log_ulps,
          (double)max_expf_ulps, (double)max_logf_ulps,
          (unsigned long long)max_sin_ulps, (unsigned long long)max_cos_ulps,
          (unsigned long long)max_tan_ulps,
          max_sinf_ulps, max_cosf_ulps, max_tanf_ulps,
-         (unsigned long long)max_pow_ulps, max_powf_ulps);
+         (unsigned long long)max_pow_ulps, max_powf_ulps,
+         (unsigned long long)max_cbrt_ulps, max_cbrtf_ulps);
   return 0;
 }
