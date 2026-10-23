@@ -38,32 +38,32 @@ matter more for completeness than for the initial common-program target.
 
 ### Standalone pthread gap audit
 
-The generated API inventory currently records 92 pthread declarations, and all
-92 export from the Zig, GCC, and TinyCC standalone archives. This verifies
+The generated API inventory currently records 93 pthread declarations, and all
+93 export from the Zig, GCC, and TinyCC standalone archives. This verifies
 symbol presence, not full behavior. The pinned musl 1.2.5 public-symbol baseline
 adds 14 pthread candidates that Nelibc does not yet declare. Prioritize them by
 portability impact:
 
 | Priority | Missing APIs | Why they matter | Scope |
 |---|---|---|---|
-| P2 | `pthread_getcpuclockid` | Exposes per-thread CPU-time clocks for timing and resource accounting | POSIX clock API |
 | P2 | `pthread_mutex_getprioceiling`, `pthread_mutex_setprioceiling` | Completes the priority-ceiling path; `PTHREAD_PRIO_PROTECT` currently returns `ENOTSUP` | Optional real-time priority protocol |
 | P3 | `pthread_getaffinity_np`, `pthread_setaffinity_np`, `pthread_getname_np`, `pthread_setname_np`, `pthread_getattr_np`, `pthread_getattr_default_np`, `pthread_setattr_default_np`, `pthread_getconcurrency`, `pthread_setconcurrency`, `pthread_setschedprio`, `pthread_timedjoin_np`, `pthread_tryjoin_np` | Adds Linux/glibc and musl nonstandard thread controls and convenience calls | Implementation-specific extensions |
 
 This is a baseline-derived priority list, not a complete POSIX inventory. The
-`pthread_kill` is implemented in standalone mode and delegated to the host in
-hybrid mode. `pthread_atfork` is implemented alongside Nelibc's `fork()` path
-in hybrid and standalone archives. Also audit against the current POSIX pthread
-index, including APIs absent from the pinned musl export set.
+`pthread_kill` and `pthread_getcpuclockid` are implemented in standalone mode
+and delegated to the host in hybrid mode. `pthread_atfork` is implemented
+alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
+against the current POSIX pthread index, including APIs absent from the pinned
+musl export set.
 
-- The current API inventory has 667 declared names: 566 exported in hybrid
-  archives, 101 intentionally host-delegated across the hybrid profiles, and one
+- The current API inventory has 668 declared names: 566 exported in hybrid
+  archives, 102 intentionally host-delegated across the hybrid profiles, and one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage.
 - The musl 1.2.5 public-symbol comparison finds 1,269 declarations that are
   also exported by the pinned release archives: Nelibc exports 426 in at least
-  one hybrid profile, delegates 90 to a hybrid host, and does not yet declare
-  753. The largest undeclared groups are pthread, complex math, wide
+  one hybrid profile, delegates 91 to a hybrid host, and does not yet declare
+  752. The largest undeclared groups are pthread, complex math, wide
   characters, stdlib, unistd, and network database APIs. These are gap counts,
   not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration

@@ -33,6 +33,8 @@ static _Atomic int once_release;
 static _Atomic int once_runs;
 static pthread_barrier_t round_barrier;
 static _Atomic int barrier_serial_returns;
+static _Atomic int cpu_clock_worker_release;
+static _Atomic unsigned long cpu_clock_worker_ticks;
 static pthread_rwlock_t static_rwlock = PTHREAD_RWLOCK_INITIALIZER;
 static _Atomic int rwlock_counter;
 static pthread_key_t value_key;
@@ -473,6 +475,13 @@ static void *spin_increment_worker(void *argument) {
   return 0;
 }
 
+static void *cpu_clock_worker(void *argument) {
+  (void)argument;
+  while (!atomic_load_explicit(&cpu_clock_worker_release, memory_order_acquire))
+    atomic_fetch_add_explicit(&cpu_clock_worker_ticks, 1, memory_order_relaxed);
+  return 0;
+}
+
 typedef struct {
   pthread_spinlock_t lock;
   int value;
@@ -527,6 +536,36 @@ int main(void) {
       pthread_kill_signal != SIGUSR2 ||
       sigaction(SIGUSR2, &previous_pthread_kill_action, 0) != 0)
     return 278;
+
+  clockid_t self_cpu_clock = 0;
+  struct timespec self_cpu_time;
+  if (pthread_getcpuclockid(pthread_self(), &self_cpu_clock) != 0 ||
+      pthread_getcpuclockid(pthread_self(), 0) != EINVAL ||
+      pthread_getcpuclockid(0, &self_cpu_clock) != ESRCH ||
+      clock_gettime(self_cpu_clock, &self_cpu_time) != 0 ||
+      self_cpu_time.tv_sec < 0 || self_cpu_time.tv_nsec < 0 ||
+      self_cpu_time.tv_nsec >= 1000000000L)
+    return 281;
+
+  pthread_t cpu_clock_thread;
+  clockid_t worker_cpu_clock = 0;
+  struct timespec worker_cpu_start;
+  struct timespec worker_cpu_end;
+  atomic_store_explicit(&cpu_clock_worker_release, 0, memory_order_relaxed);
+  atomic_store_explicit(&cpu_clock_worker_ticks, 0, memory_order_relaxed);
+  if (pthread_create(&cpu_clock_thread, 0, cpu_clock_worker, 0) != 0 ||
+      pthread_getcpuclockid(cpu_clock_thread, &worker_cpu_clock) != 0 ||
+      clock_gettime(worker_cpu_clock, &worker_cpu_start) != 0)
+    return 282;
+  while (atomic_load_explicit(&cpu_clock_worker_ticks, memory_order_relaxed) < 100000) {
+  }
+  if (clock_gettime(worker_cpu_clock, &worker_cpu_end) != 0 ||
+      worker_cpu_end.tv_sec < worker_cpu_start.tv_sec ||
+      (worker_cpu_end.tv_sec == worker_cpu_start.tv_sec &&
+       worker_cpu_end.tv_nsec <= worker_cpu_start.tv_nsec))
+    return 283;
+  atomic_store_explicit(&cpu_clock_worker_release, 1, memory_order_release);
+  if (pthread_join(cpu_clock_thread, 0) != 0) return 284;
 
   int initial_cancel_type = -1;
   if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &initial_cancel_type) != 0 ||

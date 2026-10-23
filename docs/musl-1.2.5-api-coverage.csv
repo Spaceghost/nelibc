@@ -771,7 +771,7 @@ pthread_getaffinity_np,pthread.h,,,not-declared
 pthread_getattr_default_np,pthread.h,,,not-declared
 pthread_getattr_np,pthread.h,,,not-declared
 pthread_getconcurrency,pthread.h,,,not-declared
-pthread_getcpuclockid,pthread.h,,,not-declared
+pthread_getcpuclockid,pthread.h,pthread.h,,host-delegated
 pthread_getname_np,pthread.h,,,not-declared
 pthread_getschedparam,pthread.h,pthread.h,,host-delegated
 pthread_getspecific,pthread.h,pthread.h,,host-delegated

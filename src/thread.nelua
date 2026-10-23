@@ -2756,6 +2756,16 @@ local function pthread_kill(thread: pointer, signal: cint): cint <cexport, coden
   return 0
 end
 
+local function pthread_getcpuclockid(thread: pointer, clock_id: *[0]cint): cint <cexport, codename 'pthread_getcpuclockid'>
+  if clock_id == nilptr then return 22 end -- EINVAL
+  local tid: cint
+  local thread_error = pthread_target_tid(thread, &tid)
+  if thread_error ~= 0 then return thread_error end
+  -- Linux make_thread_cpuclock(tid, CPUCLOCK_SCHED) encodes (~tid << 3) | 6.
+  clock_id[0] = (@cint)(((~(@cuint)(tid)) << 3) | 6_cuint)
+  return 0
+end
+
 local function pthread_getschedparam(thread: pointer, policy: *[0]cint,
     param: *SchedParam): cint <cexport, codename 'pthread_getschedparam'>
   if policy == nilptr or param == nilptr then return 22 end -- EINVAL

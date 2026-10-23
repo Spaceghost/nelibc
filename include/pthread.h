@@ -15,6 +15,7 @@ typedef struct __nelibc_pthread *pthread_t;
 int pthread_kill(pthread_t thread, int signal);
 int pthread_atfork(void (*prepare)(void), void (*parent)(void),
                    void (*child)(void));
+int pthread_getcpuclockid(pthread_t thread, clockid_t *clock_id);
 typedef volatile int pthread_spinlock_t;
 typedef unsigned int pthread_key_t;
 typedef int pthread_once_t;
