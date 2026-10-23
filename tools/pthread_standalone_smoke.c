@@ -389,10 +389,14 @@ static void *pi_mutex_worker(void *argument) {
   return (void *)(intptr_t)result;
 }
 
+typedef struct {
+  pthread_mutex_t *mutex;
+  struct timespec deadline;
+} pi_timed_mutex_request;
+
 static void *pi_timed_mutex_worker(void *argument) {
-  pthread_mutex_t *mutex = argument;
-  struct timespec expired = {0, 0};
-  int result = pthread_mutex_timedlock(mutex, &expired);
+  pi_timed_mutex_request *request = argument;
+  int result = pthread_mutex_timedlock(request->mutex, &request->deadline);
   return (void *)(intptr_t)result;
 }
 
@@ -1014,12 +1018,30 @@ int main(void) {
       pthread_join(pi_waiter, &result) != 0 || result != 0)
     return 254;
   if (pthread_mutex_lock(&pi_mutex) != 0) return 255;
-  if (pthread_create(&pi_waiter, 0, pi_timed_mutex_worker, &pi_mutex) != 0)
+  struct timespec invalid_pi_deadline = {0, -1};
+  if (pthread_mutex_timedlock(&pi_mutex, &invalid_pi_deadline) != EINVAL)
+    return 265;
+  invalid_pi_deadline.tv_nsec = 1000000000L;
+  if (pthread_mutex_timedlock(&pi_mutex, &invalid_pi_deadline) != EINVAL)
+    return 266;
+  pi_timed_mutex_request timed_request = {.mutex = &pi_mutex, .deadline = {0, 0}};
+  if (pthread_create(&pi_waiter, 0, pi_timed_mutex_worker, &timed_request) != 0)
     return 256;
-  if (pthread_join(pi_waiter, &result) != 0 || result != (void *)(intptr_t)ETIMEDOUT ||
+  if (pthread_join(pi_waiter, &result) != 0 || result != (void *)(intptr_t)ETIMEDOUT)
+    return 257;
+  if (clock_gettime(CLOCK_REALTIME, &timed_request.deadline) != 0)
+    return 267;
+  timed_request.deadline.tv_nsec += 100000000L;
+  if (timed_request.deadline.tv_nsec >= 1000000000L) {
+    ++timed_request.deadline.tv_sec;
+    timed_request.deadline.tv_nsec -= 1000000000L;
+  }
+  if (pthread_create(&pi_waiter, 0, pi_timed_mutex_worker, &timed_request) != 0 ||
+      pthread_join(pi_waiter, &result) != 0 ||
+      result != (void *)(intptr_t)ETIMEDOUT ||
       pthread_mutex_unlock(&pi_mutex) != 0 ||
       pthread_mutex_destroy(&pi_mutex) != 0)
-    return 257;
+    return 268;
 
   if (pthread_mutex_init(&robust_mutex, &mutex_attributes) != 0 ||
       pthread_mutexattr_destroy(&mutex_attributes) != 0)
