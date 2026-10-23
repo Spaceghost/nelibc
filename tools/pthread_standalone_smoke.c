@@ -398,6 +398,15 @@ int main(void) {
   if (sem_init(&cancel_semaphore, 0, SEM_VALUE_MAX) != 0) return 158;
   if (sem_post(&cancel_semaphore) != -1 || errno != EOVERFLOW) return 159;
   if (sem_destroy(&cancel_semaphore) != 0) return 160;
+  sem_t semaphore_edge_cases;
+  if (sem_init(&semaphore_edge_cases, 2, 1) != 0) return 186;
+  struct timespec semaphore_invalid_deadline = {0, 1000000000L};
+  if (sem_timedwait(&semaphore_edge_cases, &semaphore_invalid_deadline) != 0) return 187;
+  if (sem_post(&semaphore_edge_cases) != 0 || sem_timedwait(&semaphore_edge_cases, 0) != 0)
+    return 188;
+  if (sem_timedwait(&semaphore_edge_cases, &semaphore_invalid_deadline) != -1 || errno != EINVAL)
+    return 189;
+  if (sem_destroy(&semaphore_edge_cases) != 0) return 190;
   if (snprintf(named_semaphore_path, sizeof named_semaphore_path,
                "/nelibc-test-sem-%ld", (long)getpid()) < 0)
     return 170;
@@ -437,13 +446,13 @@ int main(void) {
   sem_t *named_semaphore = sem_open(named_semaphore_path, O_CREAT | O_EXCL, 0600, 1U);
   if (named_semaphore == SEM_FAILED) return 171;
   if (sem_wait(named_semaphore) != 0) return 172;
-  sem_t *named_semaphore_second = sem_open(named_semaphore_path, O_CREAT, 0600, 9U);
+  sem_t *named_semaphore_second = sem_open(named_semaphore_path, O_CREAT, 0600, ~0U);
   if (named_semaphore_second == SEM_FAILED) return 173;
   if (sem_getvalue(named_semaphore_second, &semaphore_value) != 0 || semaphore_value != 0)
     return 174;
   if (sem_post(named_semaphore_second) != 0 || sem_wait(named_semaphore) != 0)
     return 175;
-  if (sem_open(named_semaphore_path, O_CREAT | O_EXCL, 0600, 1U) != SEM_FAILED ||
+  if (sem_open(named_semaphore_path, O_CREAT | O_EXCL, 0600, ~0U) != SEM_FAILED ||
       errno != EEXIST)
     return 176;
   pid_t named_sem_child = fork();
@@ -463,6 +472,9 @@ int main(void) {
       sem_post(named_semaphore_second) != 0 || sem_wait(named_semaphore) != 0 ||
       sem_close(named_semaphore_second) != 0 || sem_close(named_semaphore) != 0)
     return 177;
+  if (sem_open(named_semaphore_path, O_CREAT, 0600, ~0U) != SEM_FAILED || errno != EINVAL)
+    return 191;
+  if (sem_open(named_semaphore_path, 0) != SEM_FAILED || errno != ENOENT) return 192;
 
   cancel_state_ready = 0;
   cancel_state_release = 0;

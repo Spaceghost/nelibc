@@ -167,6 +167,10 @@ matter more for completeness than for the initial common-program target.
   bridge; initialization, mapping, wait, and lifetime tracking are Nelua-owned.
   The smoke covers eight concurrent creators, cross-process opens/posts, and
   unlinking while mappings remain open; 20 repeated Zig runs passed.
+- Semaphore edge cases now follow POSIX immediate-acquisition rules for
+  `sem_timedwait`, accept any nonzero `pshared`, and ignore `sem_open`'s mode
+  and initial value when opening an existing name. `sem_clockwait` from
+  POSIX.1-2024 remains to be implemented.
 - Hybrid stdio adapts to host `FILE` implementations in several profiles. The
   standalone `FILE` implementation is Nelua-owned, but full standards and
   edge-case coverage remains a separate conformance task.

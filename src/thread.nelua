@@ -979,7 +979,7 @@ local function semaphore_shared(sem: *Semaphore): boolean <inline>
 end
 
 local function sem_init(sem: *Semaphore, pshared: cint, value: cuint): cint <cexport, codename 'sem_init'>
-  if sem == nilptr or (pshared ~= 0 and pshared ~= 1) or value > 2147483647_cuint then
+  if sem == nilptr or value > 2147483647_cuint then
     nelibc_errno_location()[0] = 22; return -1
   end
   sem.magic = SEMAPHORE_MAGIC
@@ -1023,15 +1023,24 @@ local function sem_post(sem: *Semaphore): cint <cexport, codename 'sem_post'>
   return 0
 end
 
-local function semaphore_wait(sem: *Semaphore, abstime: *Timespec): cint
-  if not semaphore_valid(sem) or
-     (abstime ~= nilptr and (abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000)) then
+local function semaphore_wait(sem: *Semaphore, abstime: *Timespec, timed: boolean): cint
+  if not semaphore_valid(sem) then
     nelibc_errno_location()[0] = 22; return -1
   end
   pthread_testcancel()
   while true do
     local value = nelibc_atomic_load_int(&sem.value)
     if value > 0 and nelibc_atomic_cas_int(&sem.value, value, value - 1) == 0 then return 0 end
+    if timed then
+      if abstime == nilptr then
+        nelibc_errno_location()[0] = 22 -- EINVAL
+        return -1
+      end
+      if abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000 then
+        nelibc_errno_location()[0] = 22 -- EINVAL
+        return -1
+      end
+    end
     local sequence = nelibc_atomic_load_int(&sem.sequence)
     local context = nelibc_thread_current_pthread_context()
     nelibc_atomic_fetch_add_int(&sem.waiters, 1)
@@ -1081,12 +1090,11 @@ local function semaphore_wait(sem: *Semaphore, abstime: *Timespec): cint
 end
 
 local function sem_wait(sem: *Semaphore): cint <cexport, codename 'sem_wait'>
-  return semaphore_wait(sem, nilptr)
+  return semaphore_wait(sem, nilptr, false)
 end
 
 local function sem_timedwait(sem: *Semaphore, abstime: *Timespec): cint <cexport, codename 'sem_timedwait'>
-  if abstime == nilptr then nelibc_errno_location()[0] = 22; return -1 end
-  return semaphore_wait(sem, abstime)
+  return semaphore_wait(sem, abstime, true)
 end
 
 local function sem_getvalue(sem: *Semaphore, value: *[0]cint): cint <cexport, codename 'sem_getvalue'>
@@ -1130,26 +1138,39 @@ local function nelibc_sem_open_impl(name: *[0]cchar <const>, oflag: cint,
   local path: [265]cchar = {}
   local path_length = named_sem_build_path(name, &path[0])
   if path_length < 0 or (oflag & ~(64_cint | 128_cint)) ~= 0_cint or
-     ((oflag & 128_cint) ~= 0_cint and (oflag & 64_cint) == 0_cint) or
-     value > 2147483647_cuint then
+     ((oflag & 128_cint) ~= 0_cint and (oflag & 64_cint) == 0_cint) then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr
   end
   local open_flags: cint = 2_cint | 524288_cint | 131072_cint
-  if (oflag & 64_cint) ~= 0_cint then open_flags = open_flags | 64_cint | 128_cint end
-  local fd = openat(-100_cint, &path[0], open_flags, mode)
   local created = false
-  if fd < 0 then
-    local open_error = nelibc_errno_location()[0]
-    if (oflag & 64_cint) == 0_cint or open_error ~= 17 or (oflag & 128_cint) ~= 0_cint then
+  local fd: cint = -1
+  if (oflag & 64_cint) ~= 0_cint and value > 2147483647_cuint then
+    -- mode and value are ignored when opening an existing semaphore.
+    fd = openat(-100_cint, &path[0], open_flags, 0_cuint)
+    if fd < 0 then
+      if nelibc_errno_location()[0] == 2 then nelibc_errno_location()[0] = 22 end
       return nilptr
     end
-    fd = openat(-100_cint, &path[0], 2_cint | 524288_cint | 131072_cint, 0_cuint)
-    if fd < 0 then return nilptr end
+    if (oflag & 128_cint) ~= 0_cint then
+      close(fd)
+      nelibc_errno_location()[0] = 17 -- EEXIST takes precedence for O_EXCL.
+      return nilptr
+    end
   else
-    created = true
+    if (oflag & 64_cint) ~= 0_cint then open_flags = open_flags | 64_cint | 128_cint end
+    fd = openat(-100_cint, &path[0], open_flags, mode)
+    if fd < 0 then
+      local open_error = nelibc_errno_location()[0]
+      if (oflag & 64_cint) == 0_cint or open_error ~= 17 or (oflag & 128_cint) ~= 0_cint then
+        return nilptr
+      end
+      fd = openat(-100_cint, &path[0], 2_cint | 524288_cint | 131072_cint, 0_cuint)
+      if fd < 0 then return nilptr end
+    else
+      created = true
+    end
   end
-
   -- flock serializes the first initializer against concurrent sem_open calls.
   local lock_result = nelibc_raw_syscall6(73_culong, (@culong)(fd), 2_culong,
                                            0_culong, 0_culong, 0_culong, 0_culong)
