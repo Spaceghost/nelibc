@@ -239,6 +239,22 @@ static int semaphore_clock_probe(void) {
 }
 
 #ifndef NELIBC_STANDALONE
+static int pthread_protocol_probe(void) {
+  pthread_mutexattr_t attributes;
+  pthread_mutex_t mutex;
+  int protocol = -1;
+  if (pthread_mutexattr_init(&attributes) != 0 ||
+      pthread_mutexattr_setprotocol(&attributes, PTHREAD_PRIO_INHERIT) != 0 ||
+      pthread_mutexattr_getprotocol(&attributes, &protocol) != 0 ||
+      protocol != PTHREAD_PRIO_INHERIT ||
+      pthread_mutex_init(&mutex, &attributes) != 0 ||
+      pthread_mutexattr_destroy(&attributes) != 0 ||
+      pthread_mutex_lock(&mutex) != 0 || pthread_mutex_unlock(&mutex) != 0 ||
+      pthread_mutex_destroy(&mutex) != 0)
+    return 1;
+  return 0;
+}
+
 static int archive_unistd_adapter_probe(void) {
   /* Force archive extraction of the variadic and credential C ABI adapters. */
   void (*volatile immediate_exit_symbol)(int) = _Exit;
@@ -493,6 +509,7 @@ int main(int argc, char **argv) {
   if (semaphore_result != 0) return 85 + semaphore_result;
 #ifndef NELIBC_STANDALONE
   if (archive_unistd_adapter_probe() != 0) return 84;
+  if (pthread_protocol_probe() != 0) return 86;
 #endif
   if (ffs(0) != 0 || ffsl(0) != 0 || ffsll(0) != 0 ||
       ffs(-1) != 1 || ffsl(-1L) != 1 || ffsll(-1LL) != 1)
