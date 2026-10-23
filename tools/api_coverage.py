@@ -27,6 +27,7 @@ HOST_DELEGATED = {
     for name in (
         "pthread_attr_init", "pthread_attr_destroy",
         "pthread_attr_setdetachstate", "pthread_attr_getdetachstate",
+        "pthread_attr_setscope", "pthread_attr_getscope",
         "pthread_attr_setstacksize", "pthread_attr_getstacksize",
         "pthread_attr_setguardsize", "pthread_attr_getguardsize",
         "pthread_attr_setinheritsched", "pthread_attr_getinheritsched",

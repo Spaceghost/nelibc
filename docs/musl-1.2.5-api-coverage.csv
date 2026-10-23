@@ -731,7 +731,7 @@ pthread_attr_getguardsize,pthread.h,pthread.h,,host-delegated
 pthread_attr_getinheritsched,pthread.h,pthread.h,,host-delegated
 pthread_attr_getschedparam,pthread.h,pthread.h,,host-delegated
 pthread_attr_getschedpolicy,pthread.h,pthread.h,,host-delegated
-pthread_attr_getscope,pthread.h,,,not-declared
+pthread_attr_getscope,pthread.h,pthread.h,,host-delegated
 pthread_attr_getstack,pthread.h,,,not-declared
 pthread_attr_getstacksize,pthread.h,pthread.h,,host-delegated
 pthread_attr_init,pthread.h,pthread.h,,host-delegated
@@ -740,7 +740,7 @@ pthread_attr_setguardsize,pthread.h,pthread.h,,host-delegated
 pthread_attr_setinheritsched,pthread.h,pthread.h,,host-delegated
 pthread_attr_setschedparam,pthread.h,pthread.h,,host-delegated
 pthread_attr_setschedpolicy,pthread.h,pthread.h,,host-delegated
-pthread_attr_setscope,pthread.h,,,not-declared
+pthread_attr_setscope,pthread.h,pthread.h,,host-delegated
 pthread_attr_setstack,pthread.h,,,not-declared
 pthread_attr_setstacksize,pthread.h,pthread.h,,host-delegated
 pthread_barrier_destroy,pthread.h,pthread.h,,host-delegated

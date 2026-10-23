@@ -473,10 +473,16 @@ int main(void) {
 
   pthread_attr_t attributes;
   if (pthread_attr_init(&attributes) != 0) return 1;
+  int scope = -1;
   int inheritsched = -1;
   int schedpolicy = -1;
   struct sched_param schedparam = {-1};
-  if (pthread_attr_getinheritsched(&attributes, &inheritsched) != 0 ||
+  if (pthread_attr_getscope(&attributes, &scope) != 0 ||
+      scope != PTHREAD_SCOPE_SYSTEM ||
+      pthread_attr_setscope(&attributes, PTHREAD_SCOPE_PROCESS) != ENOTSUP ||
+      pthread_attr_setscope(&attributes, 99) != EINVAL ||
+      pthread_attr_getscope(&attributes, 0) != EINVAL ||
+      pthread_attr_getinheritsched(&attributes, &inheritsched) != 0 ||
       inheritsched != PTHREAD_INHERIT_SCHED ||
       pthread_attr_getschedpolicy(&attributes, &schedpolicy) != 0 ||
       schedpolicy != SCHED_OTHER ||

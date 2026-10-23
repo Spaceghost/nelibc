@@ -54,6 +54,7 @@ local SchedParam: type = @record{
 local PthreadAttr: type = @record{
   magic: culong,
   detachstate: cint,
+  scope: cint,
   stacksize: csize,
   guardsize: csize,
   inheritsched: cint,
@@ -152,6 +153,8 @@ local PTHREAD_CANCEL_DEFERRED: cint <comptime> = 0
 local PTHREAD_CANCEL_ASYNCHRONOUS: cint <comptime> = 1
 local PTHREAD_INHERIT_SCHED: cint <comptime> = 0
 local PTHREAD_EXPLICIT_SCHED: cint <comptime> = 1
+local PTHREAD_SCOPE_SYSTEM: cint <comptime> = 0
+local PTHREAD_SCOPE_PROCESS: cint <comptime> = 1
 local SCHED_OTHER: cint <comptime> = 0
 local SCHED_FIFO: cint <comptime> = 1
 local SCHED_RR: cint <comptime> = 2
@@ -758,6 +761,7 @@ local function pthread_attr_init(attr: *PthreadAttr): cint <cexport, codename 'p
   if attr == nilptr then return 22 end -- EINVAL
   attr.magic = PTHREAD_ATTR_MAGIC
   attr.detachstate = 0
+  attr.scope = PTHREAD_SCOPE_SYSTEM
   attr.stacksize = STACK_SIZE
   attr.guardsize = PAGE_SIZE
   attr.inheritsched = PTHREAD_INHERIT_SCHED
@@ -795,6 +799,20 @@ end
 local function pthread_attr_getstacksize(attr: *PthreadAttr, stacksize: *[0]csize): cint <cexport, codename 'pthread_attr_getstacksize'>
   if not pthread_attr_valid(attr) or stacksize == nilptr then return 22 end -- EINVAL
   stacksize[0] = attr.stacksize
+  return 0
+end
+
+local function pthread_attr_setscope(attr: *PthreadAttr, scope: cint): cint <cexport, codename 'pthread_attr_setscope'>
+  if not pthread_attr_valid(attr) then return 22 end -- EINVAL
+  if scope == PTHREAD_SCOPE_PROCESS then return 95 end -- ENOTSUP on Linux
+  if scope ~= PTHREAD_SCOPE_SYSTEM then return 22 end -- EINVAL
+  attr.scope = scope
+  return 0
+end
+
+local function pthread_attr_getscope(attr: *PthreadAttr, scope: *[0]cint): cint <cexport, codename 'pthread_attr_getscope'>
+  if not pthread_attr_valid(attr) or scope == nilptr then return 22 end -- EINVAL
+  scope[0] = attr.scope
   return 0
 end
 
