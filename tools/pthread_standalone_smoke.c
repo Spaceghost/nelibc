@@ -464,6 +464,12 @@ int main(void) {
 
   pthread_attr_t attributes;
   if (pthread_attr_init(&attributes) != 0) return 1;
+  size_t guardsize = 0;
+  if (pthread_attr_getguardsize(&attributes, &guardsize) != 0 || guardsize != 4096 ||
+      pthread_attr_setguardsize(&attributes, 8192) != 0 ||
+      pthread_attr_getguardsize(&attributes, &guardsize) != 0 || guardsize != 8192 ||
+      pthread_attr_setguardsize(&attributes, SIZE_MAX) != EINVAL)
+    return 224;
   if (pthread_attr_setstacksize(&attributes, 65536) != 0) return 2;
   if (pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_DETACHED) != 0)
     return 3;

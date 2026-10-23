@@ -28,6 +28,7 @@ HOST_DELEGATED = {
         "pthread_attr_init", "pthread_attr_destroy",
         "pthread_attr_setdetachstate", "pthread_attr_getdetachstate",
         "pthread_attr_setstacksize", "pthread_attr_getstacksize",
+        "pthread_attr_setguardsize", "pthread_attr_getguardsize",
         "pthread_create", "pthread_cancel", "pthread_join", "pthread_detach", "pthread_equal",
         "pthread_self", "pthread_exit", "pthread_testcancel",
         "pthread_setcancelstate", "pthread_setcanceltype", "pthread_mutexattr_init",

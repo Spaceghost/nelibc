@@ -47,7 +47,8 @@ local PthreadContext: type = @record{
 local PthreadAttr: type = @record{
   magic: culong,
   detachstate: cint,
-  stacksize: csize
+  stacksize: csize,
+  guardsize: csize
 }
 local PthreadMutexAttr: type = @record{
   magic: culong,
@@ -391,7 +392,7 @@ local function pthread_detached_cleanup(context: *PthreadContext): void
 end
 
 -- Start a callback on a Linux thread with a private stack and static TLS copy.
-local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer, requested_stack_size: csize, identity: pointer, pthread_context: *PthreadContext, detached: boolean): cint
+local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer, requested_stack_size: csize, requested_guard_size: csize, identity: pointer, pthread_context: *PthreadContext, detached: boolean): cint
   if handle == nilptr or start == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -406,15 +407,35 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
     return -1
   end
   local stack_size: csize = (requested_stack_size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)
+  if requested_guard_size > MAX_CSIZE - (PAGE_SIZE - 1) then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local guard_size: csize = (requested_guard_size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)
+  if guard_size > MAX_CSIZE - stack_size then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local mapping_size = stack_size + guard_size
 
-  local stack = map_rw(stack_size)
+  local stack = map_rw(mapping_size)
   if stack == nilptr then return -1 end
+  if guard_size > 0 then
+    local protect_result = nelibc_raw_syscall3(
+      10_culong, (@culong)((@usize)(stack)), (@culong)(guard_size), 0_culong
+    )
+    if protect_result < 0 and protect_result >= -4095 then
+      nelibc_errno_location()[0] = (@cint)(-protect_result)
+      unmap(stack, mapping_size)
+      return -1
+    end
+  end
 
   local cleanup_stack: pointer = nilptr
   if detached or pthread_context ~= nilptr then
     cleanup_stack = map_rw(CLEANUP_STACK_SIZE)
     if cleanup_stack == nilptr then
-      unmap(stack, stack_size)
+      unmap(stack, mapping_size)
       return -1
     end
   end
@@ -425,7 +446,7 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
   if align < 16 then align = 16 end
   if (align & (align - 1)) ~= 0 then
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, stack_size)
+    unmap(stack, mapping_size)
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
   end
@@ -433,20 +454,20 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
   local rounded_size: csize = layout.image_memsz
   if rounded_size > MAX_CSIZE - (align - 1) then
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, stack_size)
+    unmap(stack, mapping_size)
     nelibc_errno_location()[0] = 12 -- ENOMEM
     return -1
   end
   rounded_size = (rounded_size + align - 1) & ~(align - 1)
   if align > MAX_CSIZE - 16 then
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, stack_size)
+    unmap(stack, mapping_size)
     nelibc_errno_location()[0] = 12 -- ENOMEM
     return -1
   end
   if rounded_size > MAX_CSIZE - align - 64 then
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, stack_size)
+    unmap(stack, mapping_size)
     nelibc_errno_location()[0] = 12 -- ENOMEM
     return -1
   end
@@ -454,7 +475,7 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
   local tls_map = map_rw(tls_map_size)
   if tls_map == nilptr then
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, stack_size)
+    unmap(stack, mapping_size)
     return -1
   end
 
@@ -481,17 +502,17 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
   handle.stack = stack
   handle.tls = tls_map
   handle.tls_size = tls_map_size
-  handle.stack_size = stack_size
+  handle.stack_size = mapping_size
   handle.cleanup_stack = cleanup_stack
   if cleanup_stack ~= nilptr then handle.cleanup_stack_size = CLEANUP_STACK_SIZE else handle.cleanup_stack_size = 0 end
   handle.tid = 0
   if handle.tid_word == nilptr then handle.tid_word = &handle.tid end
   if detached then handle.state = 3 end
-  local stack_top: pointer = (@pointer)((@usize)(stack) + (@usize)(stack_size))
+  local stack_top: pointer = (@pointer)((@usize)(stack) + (@usize)(mapping_size))
   if nelibc_credential_sync_begin() ~= 0 then
     unmap(tls_map, tls_map_size)
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, stack_size)
+    unmap(stack, mapping_size)
     return -1
   end
   local tid_pointer: *[0]cint = handle.tid_word
@@ -501,7 +522,7 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
     nelibc_errno_location()[0] = (@cint)(-child)
     unmap(tls_map, tls_map_size)
     if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
-    unmap(stack, stack_size)
+    unmap(stack, mapping_size)
     return -1
   end
   if not detached then handle.state = 1 end
@@ -516,7 +537,8 @@ local function nelibc_thread_create(handle: *ThreadHandle, start: function(point
   handle.context.start = start
   handle.context.arg = arg
   handle.context.result = 0
-  return thread_spawn(handle, (@pointer)(thread_trampoline), &handle.context, STACK_SIZE, (@pointer)(handle), nilptr, false)
+  return thread_spawn(handle, (@pointer)(thread_trampoline), &handle.context,
+                      STACK_SIZE, 0_csize, (@pointer)(handle), nilptr, false)
 end
 
 -- Wait for a child, service process-wide credential rendezvous, and release maps.
@@ -717,6 +739,7 @@ local function pthread_attr_init(attr: *PthreadAttr): cint <cexport, codename 'p
   attr.magic = PTHREAD_ATTR_MAGIC
   attr.detachstate = 0
   attr.stacksize = STACK_SIZE
+  attr.guardsize = PAGE_SIZE
   return 0
 end
 
@@ -749,6 +772,22 @@ end
 local function pthread_attr_getstacksize(attr: *PthreadAttr, stacksize: *[0]csize): cint <cexport, codename 'pthread_attr_getstacksize'>
   if not pthread_attr_valid(attr) or stacksize == nilptr then return 22 end -- EINVAL
   stacksize[0] = attr.stacksize
+  return 0
+end
+
+local function pthread_attr_setguardsize(attr: *PthreadAttr, guardsize: csize): cint
+    <cexport, codename 'pthread_attr_setguardsize'>
+  if not pthread_attr_valid(attr) or guardsize > MAX_CSIZE - (PAGE_SIZE - 1) then
+    return 22 -- EINVAL
+  end
+  attr.guardsize = guardsize
+  return 0
+end
+
+local function pthread_attr_getguardsize(attr: *PthreadAttr, guardsize: *[0]csize): cint
+    <cexport, codename 'pthread_attr_getguardsize'>
+  if not pthread_attr_valid(attr) or guardsize == nilptr then return 22 end -- EINVAL
+  guardsize[0] = attr.guardsize
   return 0
 end
 
@@ -1813,10 +1852,12 @@ end
 local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: function(pointer): pointer, arg: pointer): cint <cexport, codename 'pthread_create'>
   if thread == nilptr or start == nilptr then return 22 end -- EINVAL
   local stacksize: csize = STACK_SIZE
+  local guardsize: csize = PAGE_SIZE
   if attr ~= nilptr then
     if not pthread_attr_valid(attr) then return 22 end -- EINVAL
     if attr.detachstate ~= 0 and attr.detachstate ~= 1 then return 22 end -- EINVAL
     stacksize = attr.stacksize
+    guardsize = attr.guardsize
   end
   local signal_error = nelibc_thread_cancel_signal_install()
   if signal_error ~= 0 then return signal_error end
@@ -1846,7 +1887,8 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.handle.state = 0
   state.handle.tid_word = tid_word
   if thread_spawn(&state.handle, (@pointer)(pthread_trampoline), &state.context,
-                  stacksize, object, &state.context, attr ~= nilptr and attr.detachstate == 1) ~= 0 then
+                  stacksize, guardsize, object, &state.context,
+                  attr ~= nilptr and attr.detachstate == 1) ~= 0 then
     local error_code = nelibc_errno_location()[0]
     nelibc_thread_tid_slot_release(tid_word)
     nelibc_free(object)

@@ -32,7 +32,7 @@ _Static_assert(offsetof(nelibc_thread, stack) == 24 &&
                offsetof(nelibc_thread, tid_word) == 80 &&
                sizeof(nelibc_thread) == 88,
                "standalone thread handle ABI");
-_Static_assert(sizeof(pthread_attr_t) == 24,
+_Static_assert(sizeof(pthread_attr_t) == 32,
                "standalone pthread attribute ABI");
 _Static_assert(sizeof(pthread_once_t) == 4,
                "standalone pthread once ABI");

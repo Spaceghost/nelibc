@@ -727,7 +727,7 @@ psignal,signal.h,,,not-declared
 pthread_atfork,pthread.h,,,not-declared
 pthread_attr_destroy,pthread.h,pthread.h,,host-delegated
 pthread_attr_getdetachstate,pthread.h,pthread.h,,host-delegated
-pthread_attr_getguardsize,pthread.h,,,not-declared
+pthread_attr_getguardsize,pthread.h,pthread.h,,host-delegated
 pthread_attr_getinheritsched,pthread.h,,,not-declared
 pthread_attr_getschedparam,pthread.h,,,not-declared
 pthread_attr_getschedpolicy,pthread.h,,,not-declared
@@ -736,7 +736,7 @@ pthread_attr_getstack,pthread.h,,,not-declared
 pthread_attr_getstacksize,pthread.h,pthread.h,,host-delegated
 pthread_attr_init,pthread.h,pthread.h,,host-delegated
 pthread_attr_setdetachstate,pthread.h,pthread.h,,host-delegated
-pthread_attr_setguardsize,pthread.h,,,not-declared
+pthread_attr_setguardsize,pthread.h,pthread.h,,host-delegated
 pthread_attr_setinheritsched,pthread.h,,,not-declared
 pthread_attr_setschedparam,pthread.h,,,not-declared
 pthread_attr_setschedpolicy,pthread.h,,,not-declared
