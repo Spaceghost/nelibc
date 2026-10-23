@@ -18,6 +18,12 @@ size_t wcstombs(char *restrict output, const wchar_t *restrict wide_text, size_t
 /* Nelua checks overflow, then delegates to this build's matching realloc. */
 void *reallocarray(void *ptr, size_t count, size_t size);
 
+#if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
+/* GNU context-aware sort. */
+void qsort_r(void *base, size_t count, size_t width,
+             int (*compare)(const void *, const void *, void *), void *context);
+#endif
+
 /* Hybrid archives keep these on the host allocator; standalone uses Nelibc. */
 void *aligned_alloc(size_t alignment, size_t size);
 int posix_memalign(void **memptr, size_t alignment, size_t size);

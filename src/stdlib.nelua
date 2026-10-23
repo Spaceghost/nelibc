@@ -2097,6 +2097,69 @@ local function heap_sort(bytes: *[0]cchar, count: csize, width: csize,
   end
 end
 
+local function sift_down_r(bytes: *[0]cchar, root: csize, count: csize,
+    width: csize, compare: function(pointer, pointer, pointer): cint,
+    context: pointer): void <inline>
+  local current: csize = root
+  while current < count // 2 do
+    local child: csize = current * 2 + 1
+    if child + 1 < count and
+        compare((@pointer)(&bytes[child * width]),
+                (@pointer)(&bytes[(child + 1) * width]), context) < 0 then
+      child = child + 1
+    end
+    if compare((@pointer)(&bytes[current * width]),
+               (@pointer)(&bytes[child * width]), context) >= 0 then break end
+    swap_elements(&bytes[current * width], &bytes[child * width], width)
+    current = child
+  end
+end
+
+local function heap_sort_r(bytes: *[0]cchar, count: csize, width: csize,
+    compare: function(pointer, pointer, pointer): cint,
+    context: pointer): void <inline>
+  local parent: csize = count // 2
+  while parent > 0 do
+    parent = parent - 1
+    sift_down_r(bytes, parent, count, width, compare, context)
+  end
+  local end_index: csize = count
+  while end_index > 1 do
+    end_index = end_index - 1
+    swap_elements(&bytes[0], &bytes[end_index * width], width)
+    sift_down_r(bytes, 0, end_index, width, compare, context)
+  end
+end
+
+local function insertion_sort_r(bytes: *[0]cchar, count: csize, width: csize,
+    compare: function(pointer, pointer, pointer): cint,
+    context: pointer): void <inline>
+  local index: csize = 1
+  while index < count do
+    local position: csize = index
+    while position > 0 and compare(
+        (@pointer)(&bytes[position * width]),
+        (@pointer)(&bytes[(position - 1) * width]), context) < 0 do
+      swap_elements(&bytes[position * width],
+                    &bytes[(position - 1) * width], width)
+      position = position - 1
+    end
+    index = index + 1
+  end
+end
+
+local function qsort_r(base: pointer, count: csize, width: csize,
+    compare: function(pointer, pointer, pointer): cint,
+    context: pointer): void <cexport, codename 'qsort_r'>
+  if base == nilptr or compare == nilptr or count < 2 or width == 0 then return end
+  local bytes: *[0]cchar = (@*[0]cchar)(base)
+  if count <= 16 and width <= 64 then
+    insertion_sort_r(bytes, count, width, compare, context)
+  else
+    heap_sort_r(bytes, count, width, compare, context)
+  end
+end
+
 local function qsort(base: pointer, count: csize, width: csize,
     compare: function(pointer, pointer): cint): void <cexport, codename 'qsort'>
   if base == nilptr or compare == nilptr or count < 2 or width == 0 then return end

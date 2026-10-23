@@ -726,6 +726,9 @@ use introsort for larger arrays too. Other builds switch to heapsort above
 4,096 elements. All builds use heapsort for elements over 64 bytes, and
 introsort falls back to heapsort when its depth limit is reached.
 `bsearch` uses binary search; both accept the standard C comparator callback.
+GNU `qsort_r` accepts caller-owned comparator context and uses Nelua insertion
+sort for small elements plus an in-place heapsort for larger arrays. The smoke
+target checks independent ascending/descending contexts and both sorting paths.
 `make qsort-diff-matrix` compares their output on 256 deterministic random
 arrays plus sorted, reverse-sorted, all-equal, organ-pipe, and alternating-key
 patterns up to 4,096 items. Cases cover algorithm boundaries, ascending and

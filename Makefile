@@ -594,6 +594,30 @@ lib-consumer-tcc: $(OUT)/libnelibc-tcc.a
 	$(ZIG) cc -pthread -ldl -Iinclude -fno-builtin $(OUT)/lib-consumer-tcc.o $(OUT)/libnelibc-tcc.a $(TCC_LIBTCC1) -o $(OUT)/lib-consumer-tcc
 	$(OUT)/lib-consumer-tcc
 
+qsort-r-smoke-zig: $(OUT)/libnelibc-zig.a tools/qsort_r_smoke.c
+	$(ZIG) cc -Iinclude -fno-builtin tools/qsort_r_smoke.c $(OUT)/libnelibc-zig.a -o $(OUT)/qsort-r-smoke-zig
+	$(OUT)/qsort-r-smoke-zig
+	@nm --defined-only $(OUT)/qsort-r-smoke-zig | awk '{print $$3}' | grep -Fxq qsort_r
+
+qsort-r-smoke-gcc: $(OUT)/libnelibc-gcc.a tools/qsort_r_smoke.c
+	gcc -Iinclude -fno-builtin tools/qsort_r_smoke.c $(OUT)/libnelibc-gcc.a -o $(OUT)/qsort-r-smoke-gcc
+	$(OUT)/qsort-r-smoke-gcc
+	@nm --defined-only $(OUT)/qsort-r-smoke-gcc | awk '{print $$3}' | grep -Fxq qsort_r
+
+qsort-r-smoke-zig-musl: $(OUT)/libnelibc-zig-musl.a tools/qsort_r_smoke.c
+	$(ZIG) cc -target x86_64-linux-musl -static -Iinclude -fno-builtin $(MUSL_STDIO_WRAP_FLAGS) tools/qsort_r_smoke.c $(OUT)/libnelibc-zig-musl.a -o $(OUT)/qsort-r-smoke-zig-musl
+	$(OUT)/qsort-r-smoke-zig-musl
+	@nm --defined-only $(OUT)/qsort-r-smoke-zig-musl | awk '{print $$3}' | grep -Fxq qsort_r
+
+qsort-r-smoke-tcc: $(OUT)/libnelibc-tcc.a tools/qsort_r_smoke.c
+	$(TCC) -Iinclude -fno-builtin -c tools/qsort_r_smoke.c -o $(OUT)/qsort-r-smoke-tcc.o
+	$(ZIG) cc -Iinclude -fno-builtin $(OUT)/qsort-r-smoke-tcc.o $(OUT)/libnelibc-tcc.a $(TCC_LIBTCC1) -o $(OUT)/qsort-r-smoke-tcc
+	$(OUT)/qsort-r-smoke-tcc
+	@nm --defined-only $(OUT)/qsort-r-smoke-tcc | awk '{print $$3}' | grep -Fxq qsort_r
+
+qsort-r-smoke-matrix: qsort-r-smoke-zig qsort-r-smoke-gcc qsort-r-smoke-zig-musl qsort-r-smoke-tcc
+.PHONY: qsort-r-smoke-zig qsort-r-smoke-gcc qsort-r-smoke-zig-musl qsort-r-smoke-tcc qsort-r-smoke-matrix
+
 dogfood-zig: $(OUT)/libnelibc-zig.a examples/incremental.c
 	$(ZIG) cc -Wl,-u,memcpy -Iinclude -fno-builtin examples/incremental.c $(OUT)/libnelibc-zig.a -o $(OUT)/dogfood-zig
 	$(OUT)/dogfood-zig

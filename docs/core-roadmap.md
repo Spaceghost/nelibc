@@ -36,14 +36,14 @@ start, allocate, do I/O, handle strings/numbers, and use threads. Math and
 threading are the largest capability gaps; locales and broader portability
 matter more for completeness than for the initial common-program target.
 
-- The current API inventory has 604 declared names: 563 marked implemented,
-  41 intentionally host-delegated across the hybrid profiles, and one
+- The current API inventory has 616 declared names: 565 marked implemented,
+  51 intentionally host-delegated across the hybrid profiles, and one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage.
 - The musl 1.2.5 public-symbol comparison finds 1,269 declarations that are
-  also exported by the pinned release archives: Nelibc exports 424 in at least
+  also exported by the pinned release archives: Nelibc exports 425 in at least
   one hybrid profile, delegates 40 to a hybrid host, and does not yet declare
-  805. The largest undeclared groups are pthread, complex math, wide
+  804. The largest undeclared groups are pthread, complex math, wide
   characters, stdlib, unistd, and network database APIs. These are gap counts,
   not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration

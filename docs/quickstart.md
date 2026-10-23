@@ -106,10 +106,12 @@ memory, strings, integer conversion, and the current Nelua math slice.
 - `make lib-consumer-matrix` runs a larger C program against the four hybrid
   archives, including `sem_clockwait`; this covers more APIs than the small
   quickstart example.
+- `make qsort-r-smoke-zig` dogfoods Nelibc's GNU `qsort_r` with caller-owned
+  context, checking ascending and descending order through both sort paths.
 - `make sem-clockwait-musl-smoke` compiles and runs a static musl consumer of
   `sem_clockwait`, including deadline, wakeup, and cancellation behavior.
-- `make sem-clockwait-shootout-zig` compares Nelibc's immediate, empty-timeout, and blocked-wait
-  paths against glibc and writes CSV output under `build/`.
+- `make sem-clockwait-shootout-zig` compares Nelibc's immediate, empty-timeout,
+  and blocked-wait paths against glibc and writes CSV output under `build/`.
 - Link glibc applications using the hybrid `sem_clockwait` wrapper with
   `-pthread -ldl`.
 - `make api-coverage` refreshes `build/api-coverage.csv`. It tracks declared

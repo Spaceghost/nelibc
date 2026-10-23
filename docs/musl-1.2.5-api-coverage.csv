@@ -853,7 +853,7 @@ pwrite,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemen
 pwritev,sys/uio.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 pwritev2,sys/uio.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 qsort,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-qsort_r,stdlib.h,,,not-declared
+qsort_r,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 quick_exit,stdlib.h,,,not-declared
 quotactl,sys/quota.h,,,not-declared
 raise,signal.h,nelibc_syscall.h;signal.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
