@@ -926,6 +926,61 @@ local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codena
   return 0
 end
 
+local function pthread_spin_init(lock: *[0]cint, pshared: cint): cint
+    <cexport, codename 'pthread_spin_init'>
+  if lock == nilptr or (pshared ~= 0 and pshared ~= 1) then return 22 end -- EINVAL
+  nelibc_atomic_store_int(lock, 0)
+  return 0
+end
+
+local function pthread_spin_destroy(lock: *[0]cint): cint
+    <cexport, codename 'pthread_spin_destroy'>
+  if lock == nilptr then return 22 end -- EINVAL
+  local state = nelibc_atomic_load_int(lock)
+  if state == -1 then return 22 end -- EINVAL: already destroyed
+  if state ~= 0 then return 16 end -- EBUSY
+  if nelibc_atomic_cas_int(lock, 0, -1) ~= 0 then return 16 end
+  return 0
+end
+
+local function pthread_spin_lock(lock: *[0]cint): cint
+    <cexport, codename 'pthread_spin_lock'>
+  if lock == nilptr then return 22 end -- EINVAL
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local attempts: cint = 0
+  while true do
+    local state = nelibc_atomic_load_int(lock)
+    if state == -1 then return 22 end -- EINVAL: destroyed
+    if state == 0 and nelibc_atomic_cas_int(lock, 0, tid) == 0 then return 0 end
+    attempts = attempts + 1
+    if attempts >= 128 then
+      attempts = 0
+      nelibc_raw_syscall3(24_culong, 0_culong, 0_culong, 0_culong) -- sched_yield
+    end
+  end
+end
+
+local function pthread_spin_trylock(lock: *[0]cint): cint
+    <cexport, codename 'pthread_spin_trylock'>
+  if lock == nilptr then return 22 end -- EINVAL
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local state = nelibc_atomic_load_int(lock)
+  if state == -1 then return 22 end -- EINVAL: destroyed
+  if state ~= 0 or nelibc_atomic_cas_int(lock, 0, tid) ~= 0 then return 16 end -- EBUSY
+  return 0
+end
+
+local function pthread_spin_unlock(lock: *[0]cint): cint
+    <cexport, codename 'pthread_spin_unlock'>
+  if lock == nilptr then return 22 end -- EINVAL
+  local state = nelibc_atomic_load_int(lock)
+  if state == -1 then return 22 end -- EINVAL: destroyed
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if state ~= tid then return 1 end -- EPERM
+  if nelibc_atomic_cas_int(lock, tid, 0) ~= 0 then return 1 end -- EPERM
+  return 0
+end
+
 local function pthread_condattr_valid(attr: *PthreadCondAttr): boolean <inline>
   return attr ~= nilptr and attr.magic == PTHREAD_COND_ATTR_MAGIC
 end

@@ -11,6 +11,7 @@
 struct timespec;
 
 typedef struct __nelibc_pthread *pthread_t;
+typedef volatile int pthread_spinlock_t;
 typedef unsigned int pthread_key_t;
 typedef int pthread_once_t;
 typedef struct {
@@ -129,6 +130,11 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex,
                             const struct timespec *abstime);
 int pthread_mutex_trylock(pthread_mutex_t *mutex);
 int pthread_mutex_unlock(pthread_mutex_t *mutex);
+int pthread_spin_init(pthread_spinlock_t *lock, int pshared);
+int pthread_spin_destroy(pthread_spinlock_t *lock);
+int pthread_spin_lock(pthread_spinlock_t *lock);
+int pthread_spin_trylock(pthread_spinlock_t *lock);
+int pthread_spin_unlock(pthread_spinlock_t *lock);
 int pthread_condattr_init(pthread_condattr_t *attr);
 int pthread_condattr_destroy(pthread_condattr_t *attr);
 int pthread_condattr_setpshared(pthread_condattr_t *attr, int pshared);

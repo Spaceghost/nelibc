@@ -14,6 +14,8 @@ static volatile int detached_release;
 static volatile int detached_done;
 static volatile int mutex_counter;
 static pthread_mutex_t static_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int spin_counter;
+static pthread_spinlock_t test_spinlock;
 static pthread_mutex_t condition_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t static_condition = PTHREAD_COND_INITIALIZER;
 static _Atomic int condition_waiting;
@@ -339,6 +341,21 @@ static void *timed_mutex_worker(void *argument) {
   return (void *)(intptr_t)result;
 }
 
+static void *spin_increment_worker(void *argument) {
+  (void)argument;
+  for (int i = 0; i < 10000; ++i) {
+    if (pthread_spin_lock(&test_spinlock) != 0) return (void *)1;
+    ++spin_counter;
+    if (pthread_spin_unlock(&test_spinlock) != 0) return (void *)2;
+  }
+  return 0;
+}
+
+typedef struct {
+  pthread_spinlock_t lock;
+  int value;
+} shared_spin_state;
+
 int main(void) {
   sigset_t cancellation_mask;
   struct sigaction cancellation_action = {0};
@@ -370,6 +387,44 @@ int main(void) {
     return 4;
 
   pthread_t thread;
+  if (pthread_spin_init(&test_spinlock, PTHREAD_PROCESS_PRIVATE) != 0 ||
+      pthread_spin_trylock(&test_spinlock) != 0 ||
+      pthread_spin_trylock(&test_spinlock) != EBUSY ||
+      pthread_spin_destroy(&test_spinlock) != EBUSY ||
+      pthread_spin_unlock(&test_spinlock) != 0 ||
+      pthread_spin_unlock(&test_spinlock) != EPERM)
+    return 206;
+  pthread_t spin_threads[4];
+  spin_counter = 0;
+  for (int i = 0; i < 4; ++i)
+    if (pthread_create(&spin_threads[i], 0, spin_increment_worker, 0) != 0)
+      return 207;
+  for (int i = 0; i < 4; ++i)
+    if (pthread_join(spin_threads[i], 0) != 0) return 208;
+  if (spin_counter != 40000 || pthread_spin_destroy(&test_spinlock) != 0 ||
+      pthread_spin_lock(&test_spinlock) != EINVAL ||
+      pthread_spin_init(&test_spinlock, 2) != EINVAL)
+    return 209;
+
+  shared_spin_state *shared_spin = mmap(0, sizeof(*shared_spin),
+      PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (shared_spin == MAP_FAILED ||
+      pthread_spin_init(&shared_spin->lock, PTHREAD_PROCESS_SHARED) != 0)
+    return 210;
+  pid_t spin_child = fork();
+  if (spin_child == 0) {
+    if (pthread_spin_lock(&shared_spin->lock) != 0) _exit(211);
+    ++shared_spin->value;
+    if (pthread_spin_unlock(&shared_spin->lock) != 0) _exit(212);
+    _exit(0);
+  }
+  int spin_child_status = -1;
+  if (spin_child < 0 || waitpid(spin_child, &spin_child_status, 0) != spin_child ||
+      spin_child_status != 0 || shared_spin->value != 1 ||
+      pthread_spin_destroy(&shared_spin->lock) != 0 ||
+      munmap(shared_spin, sizeof(*shared_spin)) != 0)
+    return 213;
+
   pthread_mutex_t timed_mutex;
   if (pthread_mutex_init(&timed_mutex, 0) != 0) return 201;
   struct timespec invalid_mutex_deadline = {0, 1000000000L};
