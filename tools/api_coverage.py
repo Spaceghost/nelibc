@@ -50,7 +50,6 @@ HOST_DELEGATED = {
         "sem_unlink",
     )
 }
-HOST_DELEGATED["sem_clockwait"] = {"zig_glibc", "gcc_glibc", "tcc_glibc"}
 SMOKE_GLOBS = ("tools/*_smoke.c", "tools/*_diff.c", "tools/*_smoke.nelua")
 
 

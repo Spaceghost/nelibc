@@ -171,8 +171,9 @@ matter more for completeness than for the initial common-program target.
   `sem_timedwait`, accept any nonzero `pshared`, and ignore `sem_open`'s mode
   and initial value when opening an existing name. `sem_clockwait` supports
   `CLOCK_REALTIME` and `CLOCK_MONOTONIC` using absolute futex deadlines.
-  Hybrid builds delegate it to glibc where available; the current musl toolchain
-  does not declare or export it, so that profile remains without the API.
+  Hybrid glibc builds use the host function. Hybrid musl builds provide the
+  API through musl's public semaphore calls; monotonic waits poll at 1 ms
+  intervals to avoid depending on musl's private `sem_t` layout.
 - Hybrid stdio adapts to host `FILE` implementations in several profiles. The
   standalone `FILE` implementation is Nelua-owned, but full standards and
   edge-case coverage remains a separate conformance task.

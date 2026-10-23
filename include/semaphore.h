@@ -3,6 +3,18 @@
 
 #ifndef NELIBC_STANDALONE
 #include_next <semaphore.h>
+#if !defined(__GLIBC__)
+#include <time.h>
+/* Newer POSIX API, absent from older musl headers. */
+#ifdef __cplusplus
+extern "C" {
+#endif
+int sem_clockwait(sem_t *sem, clockid_t clock_id,
+                  const struct timespec *abstime);
+#ifdef __cplusplus
+}
+#endif
+#endif
 #else
 
 #include <stdint.h>

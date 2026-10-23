@@ -1022,6 +1022,9 @@ points. `sem_timedwait` is also a cancellation point. Named semaphores use
 Semaphore waits allow immediate acquisition even with an invalid absolute
 timeout, and named opens ignore creation attributes for an existing name.
 `sem_clockwait` supports absolute realtime and monotonic deadlines.
+The hybrid musl archive supplies the API on musl versions without it; its
+monotonic implementation uses 1 ms polling through musl's public semaphore
+functions, avoiding assumptions about musl's private `sem_t` layout.
 `nm -u` must be empty.
 The allocator exports only `nelibc_*` names in hybrid builds. The standalone-only wrappers
 in `src/alloc/standalone_exports.nelua` provide standard `malloc`, `calloc`,
