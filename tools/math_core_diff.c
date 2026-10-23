@@ -383,6 +383,28 @@ static int check_exp_log(double value, float valuef) {
   return check_atan(value, valuef);
 }
 
+static int check_log10_edge(double value) {
+  const double expected = log10(value), actual = nelibc_log10(value);
+  if (isnan(expected) != isnan(actual) ||
+      (!isnan(expected) && !isinf(expected) && value >= DBL_MIN &&
+       ulps_double(expected, actual) > 4) ||
+      (value > 0.0 && value < DBL_MIN &&
+       !(actual >= -324.0 && actual <= -307.0))) {
+    fprintf(stderr, "log10 binary64 edge mismatch x=%.17g expected=%.17g actual=%.17g\n",
+            value, expected, actual);
+    return 1;
+  }
+  const float inputf = (float)value;
+  const float expectedf = log10f(inputf), actualf = nelibc_log10f(inputf);
+  if (isnan(expectedf) != isnan(actualf) ||
+      (!isnan(expectedf) && !isinf(expectedf) && ulps_float(expectedf, actualf) > 4)) {
+    fprintf(stderr, "log10 binary32 edge mismatch x=%.9g expected=%.9g actual=%.9g\n",
+            inputf, expectedf, actualf);
+    return 1;
+  }
+  return 0;
+}
+
 static int check_sin_cos(double value, float valuef) {
   const double expected_sin = sin(value);
   const double actual_sin = nelibc_sin(value);
@@ -1025,6 +1047,14 @@ int main(void) {
   };
   for (size_t i = 0; i < sizeof exp_edges / sizeof exp_edges[0]; ++i)
     if (check_exp_log(exp_edges[i], (float)exp_edges[i])) return 1;
+  const double log10_edges[] = {
+      0.0, 0x1p-1074, nextafter(DBL_MIN, 0.0), DBL_MIN, 1e-300, 1e-100,
+      1e-10, 0.1, nextafter(1.0, 0.0), 1.0, nextafter(1.0, 2.0),
+      nextafter(10.0, 0.0), 10.0, nextafter(10.0, INFINITY), 100.0,
+      1e100, 1e300, DBL_MAX,
+  };
+  for (size_t i = 0; i < sizeof log10_edges / sizeof log10_edges[0]; ++i)
+    if (check_log10_edge(log10_edges[i])) return 1;
   const double inverse_hyperbolic_edges[] = {
       -1.0, nextafter(-1.0, 0.0), -0.5, -DBL_MIN, -0.0, 0.0,
       DBL_MIN, 0.5, nextafter(1.0, 0.0), 1.0, nextafter(1.0, 2.0),
@@ -1085,6 +1115,8 @@ int main(void) {
       check_unary_errno("tan-infinity", tan, nelibc_tan, infinity.value) ||
       check_errno_value("log-zero", log, nelibc_log, 0.0, ERANGE) ||
       check_errno_value("log-negative", log, nelibc_log, -1.0, EDOM) ||
+      check_errno_value("log10-zero", log10, nelibc_log10, 0.0, ERANGE) ||
+      check_errno_value("log10-negative", log10, nelibc_log10, -1.0, EDOM) ||
       check_errno_value("exp-overflow", exp, nelibc_exp, 1000.0, ERANGE) ||
       check_errno_value("exp-underflow", exp, nelibc_exp, -1000.0, ERANGE) ||
       check_errno_value("sinh-overflow", sinh, nelibc_sinh, 1000.0, ERANGE) ||

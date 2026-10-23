@@ -87,7 +87,10 @@ matter more for completeness than for the initial common-program target.
   Zig's bundled compiler math returns inaccurate reference values there;
   GCC/glibc comparisons cover those inputs directly. The same bundled Zig
   reference issue affects `log10` subnormals; the harness checks result range
-  there and uses full ULP comparisons with GCC/glibc.
+  there and uses full ULP comparisons with GCC/glibc. Targeted `log10` edges
+  cover zero, true-min and min-normal inputs, powers of ten and their adjacent
+  representable values, large magnitudes, and `DBL_MAX`; zero and negative
+  inputs also check `ERANGE` and `EDOM`.
   `log1p` uses a compensated `log(1+x)` path for larger inputs and an atanh
   series for small values; `expm1` uses a Taylor series around zero and the
   exponential core for larger magnitudes. Float variants widen to binary64
