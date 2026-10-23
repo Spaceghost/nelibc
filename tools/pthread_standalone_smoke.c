@@ -62,6 +62,33 @@ static void cancel_cleanup(void *argument) {
   if (argument != 0) pthread_mutex_unlock((pthread_mutex_t *)argument);
 }
 
+static pthread_key_t initial_exit_key;
+
+static void initial_exit_cleanup(void *argument) {
+  ++*(volatile int *)argument;
+}
+
+static void initial_exit_key_destructor(void *argument) {
+  *(volatile int *)argument += 10;
+}
+
+typedef struct {
+  pthread_t target;
+  sem_t *release;
+  _Atomic int ready;
+} initial_cancel_request;
+
+static void *cancel_initial_worker(void *argument) {
+  initial_cancel_request *request = argument;
+  while (!atomic_load_explicit(&request->ready, memory_order_acquire)) {
+  }
+  if (pthread_cancel(request->target) != 0) sem_post(request->release);
+  const struct timespec fallback = {0, 100000000L};
+  nanosleep(&fallback, 0);
+  sem_post(request->release);
+  return 0;
+}
+
 static void *cancel_cond_worker(void *argument) {
   (void)argument;
   if (pthread_mutex_lock(&cancel_mutex) != 0) return (void *)1;
@@ -375,6 +402,65 @@ int main(void) {
       pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &initial_cancel_type) != 0 ||
       initial_cancel_type != PTHREAD_CANCEL_ASYNCHRONOUS)
     return 197;
+  int initial_cancel_state = -1;
+  if (pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &initial_cancel_state) != 0 ||
+      initial_cancel_state != PTHREAD_CANCEL_ENABLE ||
+      pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &initial_cancel_state) != 0 ||
+      initial_cancel_state != PTHREAD_CANCEL_DISABLE)
+    return 214;
+  cancel_cleanup_calls = 0;
+  pthread_cleanup_push(cancel_cleanup, 0);
+  pthread_cleanup_pop(1);
+  if (cancel_cleanup_calls != 1 ||
+      pthread_key_create(&initial_exit_key, initial_exit_key_destructor) != 0)
+    return 215;
+
+  volatile int *initial_exit_marker = mmap(0, sizeof(*initial_exit_marker),
+      PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (initial_exit_marker == MAP_FAILED) return 216;
+  *initial_exit_marker = 0;
+  pid_t initial_exit_child = fork();
+  if (initial_exit_child == 0) {
+    if (pthread_setspecific(initial_exit_key, (void *)initial_exit_marker) != 0)
+      _exit(217);
+    pthread_cleanup_push(initial_exit_cleanup, (void *)initial_exit_marker);
+    pthread_exit(0);
+    pthread_cleanup_pop(0);
+  }
+  int initial_exit_status = -1;
+  if (initial_exit_child < 0 ||
+      waitpid(initial_exit_child, &initial_exit_status, 0) != initial_exit_child ||
+      initial_exit_status != 0 || *initial_exit_marker != 11 ||
+      pthread_key_delete(initial_exit_key) != 0 ||
+      munmap((void *)initial_exit_marker, sizeof(*initial_exit_marker)) != 0)
+    return 218;
+
+  volatile int *initial_cancel_marker = mmap(0, sizeof(*initial_cancel_marker),
+      PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (initial_cancel_marker == MAP_FAILED) return 219;
+  *initial_cancel_marker = 0;
+  pid_t initial_cancel_child = fork();
+  if (initial_cancel_child == 0) {
+    sem_t release;
+    if (sem_init(&release, 0, 0) != 0) _exit(220);
+    initial_cancel_request request = {0};
+    request.target = pthread_self();
+    request.release = &release;
+    pthread_cleanup_push(initial_exit_cleanup, (void *)initial_cancel_marker);
+    pthread_t canceler;
+    if (pthread_create(&canceler, 0, cancel_initial_worker, &request) != 0)
+      _exit(221);
+    atomic_store_explicit(&request.ready, 1, memory_order_release);
+    sem_wait(&release);
+    pthread_cleanup_pop(0);
+    _exit(222);
+  }
+  int initial_cancel_status = -1;
+  if (initial_cancel_child < 0 ||
+      waitpid(initial_cancel_child, &initial_cancel_status, 0) != initial_cancel_child ||
+      initial_cancel_status != 0 || *initial_cancel_marker != 1 ||
+      munmap((void *)initial_cancel_marker, sizeof(*initial_cancel_marker)) != 0)
+    return 223;
 
   pthread_attr_t attributes;
   if (pthread_attr_init(&attributes) != 0) return 1;

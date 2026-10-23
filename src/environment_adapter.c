@@ -493,6 +493,11 @@ void *nelibc_thread_current_pthread_context(void) {
   return ((void **)thread_pointer)[2];
 }
 
+void nelibc_thread_set_pthread_context(void *context) {
+  void *thread_pointer = __builtin_thread_pointer();
+  ((void **)thread_pointer)[2] = context;
+}
+
 void *nelibc_thread_current_key_values(void) {
   void *thread_pointer = __builtin_thread_pointer();
   return ((void **)thread_pointer)[4];

@@ -10,7 +10,7 @@ archive; it does not certify every behavior required by C or POSIX.
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
 | P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, and `atan2`; the arithmetic backend is x86-64-specific, and most math entry points remain open | Expand the math set; then long-double coverage and complete fenv semantics |
-| P1 | Standalone threading completeness | Standalone pthread remains a subset; initial-thread cleanup, broader attributes, and scheduler APIs remain incomplete | Complete initial-thread state/cleanup semantics, then expand pthread attributes and scheduler APIs |
+| P1 | Standalone threading completeness | Standalone pthread remains a subset; broader attributes and scheduler APIs remain incomplete | Expand pthread attributes and scheduler APIs, then cover the remaining cancellation and synchronization edge cases |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 777 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
@@ -164,9 +164,10 @@ matter more for completeness than for the initial common-program target.
   `pthread_testcancel`.
   Signal 32 is reserved internally and cannot be installed or blocked by
   applications. Asynchronous cancellation requires application code to stay
-  within async-cancel-safe operations. Cancellation state and cleanup handlers
-  for the initial thread are not implemented. The cleanup stack is bounded
-  to 32 entries per thread.
+  within async-cancel-safe operations. The initial thread has its own pthread
+  context; cancellation state, cleanup handlers, `pthread_exit`, and thread-
+  specific destructors use the same path as created threads. The cleanup stack
+  is bounded to 32 entries per thread.
 - Standalone unnamed POSIX semaphores now provide `sem_init`, `sem_destroy`,
   `sem_wait`, `sem_timedwait`, `sem_trywait`, `sem_post`, and `sem_getvalue`.
   They use Nelua-owned futex waits, including cancellation at blocking waits.
