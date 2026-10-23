@@ -1050,6 +1050,24 @@ int main(int argc, char **argv) {
   errno = 0;
   if (kill(getpid(), NSIG) != -1 || errno != EINVAL) return 118;
   sigset_t usr1_set;
+  struct {
+    unsigned char before[8];
+    sigset_t value;
+    unsigned char after[8];
+  } sigset_guard;
+  memset(&sigset_guard, 0xA5, sizeof(sigset_guard));
+  if (sigemptyset(&sigset_guard.value) != 0) return 132;
+  for (size_t i = 0; i < sizeof(sigset_guard.before); ++i) {
+    if (sigset_guard.before[i] != 0xA5 || sigset_guard.after[i] != 0xA5) return 133;
+  }
+  const unsigned char *empty_bytes = (const unsigned char *)&sigset_guard.value;
+  for (size_t i = 0; i < sizeof(sigset_guard.value); ++i) {
+    if (empty_bytes[i] != 0) return 134;
+  }
+  if (sigfillset(&sigset_guard.value) != 0) return 135;
+  for (size_t i = 0; i < sizeof(sigset_guard.before); ++i) {
+    if (sigset_guard.before[i] != 0xA5 || sigset_guard.after[i] != 0xA5) return 136;
+  }
   if (sigemptyset(&usr1_set) != 0 || sigaddset(&usr1_set, SIGUSR1) != 0) return 119;
   sigset_t high_signal_set;
   if (sigemptyset(&high_signal_set) != 0 || sigaddset(&high_signal_set, 64) != 0 ||

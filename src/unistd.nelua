@@ -4690,7 +4690,7 @@ end
 
 local function sigemptyset(set: pointer): cint <cexport, codename 'sigemptyset'>
   local bytes: *[0]byte = (@*[0]byte)(set)
-  for i = 0, 128 do bytes[i] = 0 end
+  for i = 0, 127 do bytes[i] = 0 end
   return 0_cint
 end
 
@@ -4721,7 +4721,7 @@ end
 
 local function sigfillset(set: pointer): cint <cexport, codename 'sigfillset'>
   local bytes: *[0]byte = (@*[0]byte)(set)
-  for i = 0, 128 do bytes[i] = 0xff end
+  for i = 0, 127 do bytes[i] = 0xff end
   ((@*Sigset)(set)).bits[0] = ((@*Sigset)(set)).bits[0] & ~(1_culong << 31)
   return 0_cint
 end

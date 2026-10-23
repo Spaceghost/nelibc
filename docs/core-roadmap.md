@@ -38,32 +38,32 @@ matter more for completeness than for the initial common-program target.
 
 ### Standalone pthread gap audit
 
-The generated API inventory currently records 89 pthread declarations, and all
-89 export from the Zig, GCC, and TinyCC standalone archives. This verifies
+The generated API inventory currently records 90 pthread declarations, and all
+90 export from the Zig, GCC, and TinyCC standalone archives. This verifies
 symbol presence, not full behavior. The pinned musl 1.2.5 public-symbol baseline
-adds 18 pthread candidates that Nelibc does not yet declare. Prioritize them by
+adds 17 pthread candidates that Nelibc does not yet declare. Prioritize them by
 portability impact:
 
 | Priority | Missing APIs | Why they matter | Scope |
 |---|---|---|---|
-| P1 | `pthread_sigmask` | Provides the standard per-thread signal-mask interface; `sigprocmask` alone does not cover pthread callers | POSIX thread/signal integration |
-| P2 | `pthread_atfork`, `pthread_kill`, `pthread_getcpuclockid` | Fills standard fork-handler, thread-directed signal, and per-thread CPU-clock behavior | POSIX APIs with broader process/signal interactions |
+| P1 | `pthread_atfork`, `pthread_kill` | Adds standard fork handlers and thread-directed signal delivery needed by multithreaded process control | POSIX process/signal integration |
+| P2 | `pthread_getcpuclockid` | Exposes per-thread CPU-time clocks for timing and resource accounting | POSIX clock API |
 | P2 | `pthread_mutex_getprioceiling`, `pthread_mutex_setprioceiling` | Completes the priority-ceiling path; `PTHREAD_PRIO_PROTECT` currently returns `ENOTSUP` | Optional real-time priority protocol |
 | P3 | `pthread_getaffinity_np`, `pthread_setaffinity_np`, `pthread_getname_np`, `pthread_setname_np`, `pthread_getattr_np`, `pthread_getattr_default_np`, `pthread_setattr_default_np`, `pthread_getconcurrency`, `pthread_setconcurrency`, `pthread_setschedprio`, `pthread_timedjoin_np`, `pthread_tryjoin_np` | Adds Linux/glibc and musl nonstandard thread controls and convenience calls | Implementation-specific extensions |
 
 This is a baseline-derived priority list, not a complete POSIX inventory. The
-next high-value implementation is `pthread_sigmask`; also audit against the
-current POSIX pthread index, including APIs absent from the pinned musl export
-set.
+next high-value implementation is `pthread_atfork`, followed by
+`pthread_kill`; also audit against the current POSIX pthread index, including
+APIs absent from the pinned musl export set.
 
-- The current API inventory has 664 declared names: 565 marked implemented,
-  99 intentionally host-delegated across the hybrid profiles, and one
+- The current API inventory has 665 declared names: 565 marked implemented,
+  100 intentionally host-delegated across the hybrid profiles, and one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage.
 - The musl 1.2.5 public-symbol comparison finds 1,269 declarations that are
   also exported by the pinned release archives: Nelibc exports 425 in at least
-  one hybrid profile, delegates 88 to a hybrid host, and does not yet declare
-  756. The largest undeclared groups are pthread, complex math, wide
+  one hybrid profile, delegates 89 to a hybrid host, and does not yet declare
+  755. The largest undeclared groups are pthread, complex math, wide
   characters, stdlib, unistd, and network database APIs. These are gap counts,
   not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration

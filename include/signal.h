@@ -74,6 +74,7 @@ struct sigaction {
 int kill(pid_t process, int signal);
 int raise(int signal);
 int sigprocmask(int how, const sigset_t *set, sigset_t *old_set);
+int pthread_sigmask(int how, const sigset_t *set, sigset_t *old_set);
 int sigpending(sigset_t *set);
 int sigismember(const sigset_t *set, int signal);
 int sigemptyset(sigset_t *set);

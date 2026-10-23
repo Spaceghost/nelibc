@@ -473,6 +473,31 @@ int main(void) {
   if (sigaction(32, &cancellation_action, 0) != -1 || errno != EINVAL)
     return 145;
 
+  sigset_t original_signal_mask;
+  sigset_t observed_signal_mask;
+  cancellation_mask.__bits[0] |= 1UL << 31;
+  if (pthread_sigmask(SIG_SETMASK, &cancellation_mask,
+                      &original_signal_mask) != 0 ||
+      pthread_sigmask(99, NULL, &observed_signal_mask) != 0 ||
+      sigismember(&observed_signal_mask, SIGUSR1) != 1 ||
+      (observed_signal_mask.__bits[0] & (1UL << 31)) != 0)
+    return 275;
+  errno = EDOM;
+  if (pthread_sigmask(99, &cancellation_mask, NULL) != EINVAL || errno != EDOM ||
+      pthread_sigmask(SIG_SETMASK, &original_signal_mask, NULL) != 0)
+    return 276;
+  sigset_t usr1_signal_set;
+  if (sigemptyset(&usr1_signal_set) != 0 ||
+      sigaddset(&usr1_signal_set, SIGUSR1) != 0 ||
+      pthread_sigmask(SIG_BLOCK, &usr1_signal_set, NULL) != 0 ||
+      pthread_sigmask(SIG_SETMASK, NULL, &observed_signal_mask) != 0 ||
+      sigismember(&observed_signal_mask, SIGUSR1) != 1 ||
+      pthread_sigmask(SIG_UNBLOCK, &usr1_signal_set, NULL) != 0 ||
+      pthread_sigmask(SIG_SETMASK, NULL, &observed_signal_mask) != 0 ||
+      sigismember(&observed_signal_mask, SIGUSR1) != 0 ||
+      pthread_sigmask(SIG_SETMASK, &original_signal_mask, NULL) != 0)
+    return 277;
+
   int initial_cancel_type = -1;
   if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &initial_cancel_type) != 0 ||
       initial_cancel_type != PTHREAD_CANCEL_DEFERRED ||

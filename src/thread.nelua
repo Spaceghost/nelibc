@@ -804,6 +804,25 @@ local function nelibc_pthread_cancel_signal(): void <cexport, codename 'nelibc_p
   pthread_context_exit(context, PTHREAD_CANCELED)
 end
 
+local function pthread_sigmask(how: cint, set: pointer <const>, oldset: pointer): cint <cexport, codename 'pthread_sigmask'>
+  local kernel_set: culong = 0_culong
+  local set_pointer: pointer = nilptr
+  if set ~= nilptr then
+    local set_words: *[0]culong = (@*[0]culong)(set)
+    kernel_set = set_words[0] & ~(1_culong << 31)
+    set_pointer = (@pointer)(&kernel_set)
+  end
+  local result = nelibc_raw_syscall6(14_culong, (@culong)(how),
+      (@culong)((@usize)(set_pointer)), (@culong)((@usize)(oldset)),
+      8_culong, 0_culong, 0_culong)
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  if oldset ~= nilptr then
+    local old_words: *[0]culong = (@*[0]culong)(oldset)
+    old_words[0] = old_words[0] & ~(1_culong << 31)
+  end
+  return 0
+end
+
 local function pthread_cancel(thread: pointer): cint <cexport, codename 'pthread_cancel'>
   if thread == nilptr then return 3 end -- ESRCH
   local context: *PthreadContext

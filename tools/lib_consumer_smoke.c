@@ -255,6 +255,19 @@ static int pthread_protocol_probe(void) {
   return 0;
 }
 
+static int pthread_sigmask_probe(void) {
+  sigset_t signal_set;
+  sigset_t previous_set;
+  sigset_t observed_set;
+  if (sigemptyset(&signal_set) != 0 || sigaddset(&signal_set, SIGUSR1) != 0 ||
+      pthread_sigmask(SIG_BLOCK, &signal_set, &previous_set) != 0 ||
+      pthread_sigmask(0, NULL, &observed_set) != 0 ||
+      sigismember(&observed_set, SIGUSR1) != 1 ||
+      pthread_sigmask(SIG_SETMASK, &previous_set, NULL) != 0)
+    return 1;
+  return 0;
+}
+
 static int archive_unistd_adapter_probe(void) {
   /* Force archive extraction of the variadic and credential C ABI adapters. */
   void (*volatile immediate_exit_symbol)(int) = _Exit;
@@ -510,6 +523,7 @@ int main(int argc, char **argv) {
 #ifndef NELIBC_STANDALONE
   if (archive_unistd_adapter_probe() != 0) return 84;
   if (pthread_protocol_probe() != 0) return 86;
+  if (pthread_sigmask_probe() != 0) return 87;
 #endif
   if (ffs(0) != 0 || ffsl(0) != 0 || ffsll(0) != 0 ||
       ffs(-1) != 1 || ffsl(-1L) != 1 || ffsll(-1LL) != 1)

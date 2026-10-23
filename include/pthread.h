@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sched.h>
+#include <signal.h>
 #include <time.h>
 
 typedef struct __nelibc_pthread *pthread_t;
