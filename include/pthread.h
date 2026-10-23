@@ -31,6 +31,7 @@ typedef struct {
   int __type;
   int __pshared;
   int __robust;
+  int __protocol;
 } pthread_mutexattr_t;
 typedef struct {
   uintptr_t __magic;
@@ -45,6 +46,7 @@ typedef struct {
   int __pshared;
   int __robust;
   int __robust_state;
+  int __protocol;
   void *__robust_next;
 } pthread_mutex_t;
 typedef struct {
@@ -98,6 +100,9 @@ typedef struct {
 #define PTHREAD_MUTEX_ERRORCHECK 2
 #define PTHREAD_MUTEX_STALLED 0
 #define PTHREAD_MUTEX_ROBUST 1
+#define PTHREAD_PRIO_NONE 0
+#define PTHREAD_PRIO_INHERIT 1
+#define PTHREAD_PRIO_PROTECT 2
 #define PTHREAD_MUTEX_INITIALIZER {0x4E4D5458u, 0, PTHREAD_MUTEX_NORMAL, 0, 0, PTHREAD_PROCESS_PRIVATE}
 #define PTHREAD_PROCESS_PRIVATE 0
 #define PTHREAD_PROCESS_SHARED 1
@@ -160,6 +165,8 @@ int pthread_mutexattr_setpshared(pthread_mutexattr_t *attr, int pshared);
 int pthread_mutexattr_getpshared(const pthread_mutexattr_t *attr, int *pshared);
 int pthread_mutexattr_setrobust(pthread_mutexattr_t *attr, int robustness);
 int pthread_mutexattr_getrobust(const pthread_mutexattr_t *attr, int *robustness);
+int pthread_mutexattr_setprotocol(pthread_mutexattr_t *attr, int protocol);
+int pthread_mutexattr_getprotocol(const pthread_mutexattr_t *attr, int *protocol);
 int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
 int pthread_mutex_destroy(pthread_mutex_t *mutex);
 int pthread_mutex_lock(pthread_mutex_t *mutex);

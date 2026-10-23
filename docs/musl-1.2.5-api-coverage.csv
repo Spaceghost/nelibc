@@ -789,12 +789,12 @@ pthread_mutex_timedlock,pthread.h,pthread.h,,host-delegated
 pthread_mutex_trylock,pthread.h,pthread.h,,host-delegated
 pthread_mutex_unlock,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_destroy,pthread.h,pthread.h,,host-delegated
-pthread_mutexattr_getprotocol,pthread.h,,,not-declared
+pthread_mutexattr_getprotocol,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_getpshared,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_getrobust,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_gettype,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_init,pthread.h,pthread.h,,host-delegated
-pthread_mutexattr_setprotocol,pthread.h,,,not-declared
+pthread_mutexattr_setprotocol,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_setpshared,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_setrobust,pthread.h,pthread.h,,host-delegated
 pthread_mutexattr_settype,pthread.h,pthread.h,,host-delegated

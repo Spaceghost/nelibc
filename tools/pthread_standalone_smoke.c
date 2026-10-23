@@ -381,6 +381,21 @@ static void *user_stack_worker(void *argument) {
              : (void *)3;
 }
 
+static void *pi_mutex_worker(void *argument) {
+  pthread_mutex_t *mutex = argument;
+  int result = pthread_mutex_lock(mutex);
+  if (result != 0) return (void *)(intptr_t)result;
+  result = pthread_mutex_unlock(mutex);
+  return (void *)(intptr_t)result;
+}
+
+static void *pi_timed_mutex_worker(void *argument) {
+  pthread_mutex_t *mutex = argument;
+  struct timespec expired = {0, 0};
+  int result = pthread_mutex_timedlock(mutex, &expired);
+  return (void *)(intptr_t)result;
+}
+
 static void *robust_owner_worker(void *argument) {
   pthread_mutex_t *mutex = argument;
   return pthread_mutex_lock(mutex) == 0 ? 0 : (void *)4;
@@ -967,6 +982,43 @@ int main(void) {
       robustness != PTHREAD_MUTEX_ROBUST)
     return 237;
   pthread_mutex_t robust_mutex;
+  int protocol = -1;
+  if (pthread_mutexattr_getprotocol(&mutex_attributes, &protocol) != 0 ||
+      protocol != PTHREAD_PRIO_NONE ||
+      pthread_mutexattr_setprotocol(&mutex_attributes, 99) != EINVAL ||
+      pthread_mutexattr_setprotocol(&mutex_attributes, PTHREAD_PRIO_PROTECT) != ENOTSUP ||
+      pthread_mutexattr_setprotocol(&mutex_attributes, PTHREAD_PRIO_INHERIT) != 0 ||
+      pthread_mutexattr_getprotocol(&mutex_attributes, &protocol) != 0 ||
+      protocol != PTHREAD_PRIO_INHERIT)
+    return 251;
+  pthread_mutex_t pi_mutex;
+  if (pthread_mutex_init(&pi_mutex, &mutex_attributes) != 0 ||
+      pthread_mutexattr_destroy(&mutex_attributes) != 0 ||
+      pthread_mutex_lock(&pi_mutex) != 0 ||
+      pthread_mutex_trylock(&pi_mutex) != EBUSY)
+    return 252;
+  pthread_t pi_waiter;
+  if (pthread_create(&pi_waiter, 0, pi_mutex_worker, &pi_mutex) != 0)
+    return 253;
+  int pi_waiter_queued = 0;
+  for (int i = 0; i < 1000000; ++i) {
+    if (pi_mutex.__state < 0) {
+      pi_waiter_queued = 1;
+      break;
+    }
+    sched_yield();
+  }
+  if (!pi_waiter_queued || pthread_mutex_unlock(&pi_mutex) != 0 ||
+      pthread_join(pi_waiter, &result) != 0 || result != 0)
+    return 254;
+  if (pthread_mutex_lock(&pi_mutex) != 0) return 255;
+  if (pthread_create(&pi_waiter, 0, pi_timed_mutex_worker, &pi_mutex) != 0)
+    return 256;
+  if (pthread_join(pi_waiter, &result) != 0 || result != (void *)(intptr_t)ETIMEDOUT ||
+      pthread_mutex_unlock(&pi_mutex) != 0 ||
+      pthread_mutex_destroy(&pi_mutex) != 0)
+    return 257;
+
   if (pthread_mutex_init(&robust_mutex, &mutex_attributes) != 0 ||
       pthread_mutexattr_destroy(&mutex_attributes) != 0)
     return 238;
