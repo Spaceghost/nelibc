@@ -38,6 +38,15 @@ static volatile int cancel_state_release;
 static int cancel_cleanup_calls;
 static sem_t cancel_semaphore;
 static volatile int cancel_sem_started;
+enum { NAMED_SEMAPHORE_RACE_WORKERS = 8 };
+static char named_semaphore_path[64];
+static _Atomic int named_semaphore_race_ready;
+static _Atomic int named_semaphore_race_go;
+static struct {
+  sem_t *semaphore;
+  int value;
+  int error;
+} named_semaphore_race_results[NAMED_SEMAPHORE_RACE_WORKERS];
 
 static void cancel_cleanup(void *argument) {
   ++cancel_cleanup_calls;
@@ -106,6 +115,21 @@ static void *cancel_disabled_sem_worker(void *argument) {
   if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0) != 0) return (void *)8;
   pthread_cleanup_pop(0);
   return (void *)9;
+}
+
+static void *named_semaphore_race_worker(void *argument) {
+  unsigned int index = (unsigned int)(uintptr_t)argument;
+  atomic_fetch_add_explicit(&named_semaphore_race_ready, 1, memory_order_release);
+  while (!atomic_load_explicit(&named_semaphore_race_go, memory_order_acquire)) {
+  }
+  sem_t *semaphore = sem_open(named_semaphore_path, O_CREAT, 0600, index + 1U);
+  named_semaphore_race_results[index].semaphore = semaphore;
+  if (semaphore == SEM_FAILED) {
+    named_semaphore_race_results[index].error = errno;
+  } else if (sem_getvalue(semaphore, &named_semaphore_race_results[index].value) != 0) {
+    named_semaphore_race_results[index].error = errno;
+  }
+  return 0;
 }
 
 typedef struct {
@@ -374,11 +398,42 @@ int main(void) {
   if (sem_init(&cancel_semaphore, 0, SEM_VALUE_MAX) != 0) return 158;
   if (sem_post(&cancel_semaphore) != -1 || errno != EOVERFLOW) return 159;
   if (sem_destroy(&cancel_semaphore) != 0) return 160;
-  char named_semaphore_path[64];
   if (snprintf(named_semaphore_path, sizeof named_semaphore_path,
                "/nelibc-test-sem-%ld", (long)getpid()) < 0)
     return 170;
   (void)sem_unlink(named_semaphore_path);
+  pthread_t named_semaphore_race_threads[NAMED_SEMAPHORE_RACE_WORKERS];
+  for (unsigned int i = 0; i < NAMED_SEMAPHORE_RACE_WORKERS; ++i) {
+    named_semaphore_race_results[i].semaphore = SEM_FAILED;
+    named_semaphore_race_results[i].value = -1;
+    named_semaphore_race_results[i].error = 0;
+    if (pthread_create(&named_semaphore_race_threads[i], 0,
+                       named_semaphore_race_worker, (void *)(uintptr_t)i) != 0)
+      return 180;
+  }
+  for (unsigned int i = 0; i < 10000000U &&
+       atomic_load_explicit(&named_semaphore_race_ready, memory_order_acquire) !=
+           NAMED_SEMAPHORE_RACE_WORKERS; ++i) {
+  }
+  if (atomic_load_explicit(&named_semaphore_race_ready, memory_order_acquire) !=
+      NAMED_SEMAPHORE_RACE_WORKERS)
+    return 181;
+  atomic_store_explicit(&named_semaphore_race_go, 1, memory_order_release);
+  for (unsigned int i = 0; i < NAMED_SEMAPHORE_RACE_WORKERS; ++i) {
+    void *race_result = 0;
+    if (pthread_join(named_semaphore_race_threads[i], &race_result) != 0 || race_result != 0)
+      return 182;
+  }
+  int race_initial_value = named_semaphore_race_results[0].value;
+  if (race_initial_value < 1 || race_initial_value > NAMED_SEMAPHORE_RACE_WORKERS)
+    return 183;
+  for (unsigned int i = 0; i < NAMED_SEMAPHORE_RACE_WORKERS; ++i) {
+    if (named_semaphore_race_results[i].error != 0 ||
+        named_semaphore_race_results[i].value != race_initial_value ||
+        sem_close(named_semaphore_race_results[i].semaphore) != 0)
+      return 184;
+  }
+  if (sem_unlink(named_semaphore_path) != 0) return 185;
   sem_t *named_semaphore = sem_open(named_semaphore_path, O_CREAT | O_EXCL, 0600, 1U);
   if (named_semaphore == SEM_FAILED) return 171;
   if (sem_wait(named_semaphore) != 0) return 172;

@@ -323,7 +323,9 @@ the standard standalone allocator entry points as well as the rest of the ABI.
 The same matrix links and runs `tools/pthread_standalone_smoke.c` against all
 three archives to verify pthread join, exit, detach, deferred cancellation,
 condition-wait wakeup, and cleanup-handler paths through the shipped headers
-and libraries.
+and libraries. Named semaphore coverage includes concurrent creators, repeated
+opens, cross-process posts, cancellation, and unlinking while handles remain
+open.
 For a consumer executable, run `make lib-standalone-zig`, then:
 
 ```sh

@@ -165,6 +165,8 @@ matter more for completeness than for the initial common-program target.
 - Standalone named POSIX semaphores provide `sem_open`, `sem_close`, and
   `sem_unlink` through shared `/dev/shm` mappings and a small C varargs ABI
   bridge; initialization, mapping, wait, and lifetime tracking are Nelua-owned.
+  The smoke covers eight concurrent creators, cross-process opens/posts, and
+  unlinking while mappings remain open; 20 repeated Zig runs passed.
 - Hybrid stdio adapts to host `FILE` implementations in several profiles. The
   standalone `FILE` implementation is Nelua-owned, but full standards and
   edge-case coverage remains a separate conformance task.
