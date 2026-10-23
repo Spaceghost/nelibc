@@ -54,6 +54,8 @@ typedef struct {
   int __robust_state;
   int __protocol;
   void *__robust_next;
+  int __prioceiling;
+  void *__protect_next;
 } pthread_mutex_t;
 typedef struct {
   uintptr_t __magic;
@@ -187,6 +189,10 @@ int pthread_mutex_timedlock(pthread_mutex_t *mutex,
 int pthread_mutex_trylock(pthread_mutex_t *mutex);
 int pthread_mutex_unlock(pthread_mutex_t *mutex);
 int pthread_mutex_consistent(pthread_mutex_t *mutex);
+int pthread_mutex_getprioceiling(const pthread_mutex_t *mutex,
+                                 int *prioceiling);
+int pthread_mutex_setprioceiling(pthread_mutex_t *mutex, int prioceiling,
+                                 int *old_ceiling);
 int pthread_spin_init(pthread_spinlock_t *lock, int pshared);
 int pthread_spin_destroy(pthread_spinlock_t *lock);
 int pthread_spin_lock(pthread_spinlock_t *lock);

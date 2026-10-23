@@ -10,7 +10,7 @@ archive; it does not certify every behavior required by C or POSIX.
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
 | P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, and `atan2`; the arithmetic backend is x86-64-specific, and most math entry points remain open | Expand the math set; then long-double coverage and complete fenv semantics |
-| P1 | Standalone threading completeness | Standalone pthread remains a subset; `PTHREAD_PRIO_PROTECT` and several process/signal APIs are unsupported | Add CPU-clock and priority-ceiling APIs, then cover remaining POSIX gaps |
+| P1 | Standalone threading completeness | Standalone pthread remains a subset; scheduler changes while holding protected mutexes and several process/signal APIs remain gaps | Differentially cover scheduling interactions, then address remaining POSIX gaps |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 753 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
@@ -46,13 +46,14 @@ portability impact:
 
 | Priority | Missing APIs | Why they matter | Scope |
 |---|---|---|---|
-| P2 | `pthread_mutex_getprioceiling`, `pthread_mutex_setprioceiling` | Completes the priority-ceiling path; standalone `PTHREAD_PRIO_PROTECT` remains `ENOTSUP` | Optional real-time priority protocol |
 | P3 | `pthread_getaffinity_np`, `pthread_setaffinity_np`, `pthread_getname_np`, `pthread_setname_np`, `pthread_getattr_np`, `pthread_getattr_default_np`, `pthread_setattr_default_np`, `pthread_getconcurrency`, `pthread_setconcurrency`, `pthread_timedjoin_np`, `pthread_tryjoin_np` | Adds Linux/glibc and musl nonstandard thread controls and convenience calls | Implementation-specific extensions |
 
 This is a baseline-derived priority list, not a complete POSIX inventory. The
-standalone `pthread_mutexattr_getprioceiling` and
-`pthread_mutexattr_setprioceiling` calls are implemented, but the mutex ceiling
-operations and standalone priority-protection behavior remain incomplete. The
+standalone priority-ceiling attributes and mutex get/set operations are
+implemented. `PTHREAD_PRIO_PROTECT` raises and restores scheduler priority for
+held protected mutexes; on Linux, a `SCHED_OTHER` thread cannot acquire a
+positive ceiling and receives `EINVAL`. Calls to `pthread_setschedparam` while
+holding protected mutexes do not yet recompute the active ceiling. The
 `pthread_kill`, `pthread_getcpuclockid`, and `pthread_setschedprio` are
 implemented in standalone mode and delegated to the host in hybrid mode.
 `pthread_atfork` is implemented
@@ -60,10 +61,10 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The current API inventory has 671 declared names: 566 exported in hybrid
-  archives, 103 host-delegated across all hybrid profiles, and two standalone
-  priority-ceiling attribute exports that glibc supplies in hybrid mode but
-  musl does not. There is also one implementation-only entry. This is an
+- The current API inventory has 673 declared names: 566 exported in hybrid
+  archives, 103 host-delegated across all hybrid profiles, and four standalone
+  priority-ceiling exports that glibc supplies in hybrid mode but musl does
+  not. There is also one implementation-only entry. This is an
   inventory signal, not a completeness percentage.
 - The musl 1.2.5 public-symbol comparison finds 1,269 declarations that are
   also exported by the pinned release archives: Nelibc exports 426 in at least

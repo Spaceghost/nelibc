@@ -1124,7 +1124,24 @@ int main(void) {
       pthread_mutexattr_getprotocol(&pi_attributes, &protocol) != 0 ||
       protocol != PTHREAD_PRIO_NONE ||
       pthread_mutexattr_setprotocol(&pi_attributes, 99) != EINVAL ||
-      pthread_mutexattr_setprotocol(&pi_attributes, PTHREAD_PRIO_PROTECT) != ENOTSUP ||
+      pthread_mutexattr_setprotocol(&pi_attributes, PTHREAD_PRIO_PROTECT) != 0 ||
+      pthread_mutexattr_getprotocol(&pi_attributes, &protocol) != 0 ||
+      protocol != PTHREAD_PRIO_PROTECT)
+    return 251;
+  pthread_mutex_t protect_mutex;
+  int protect_ceiling = -1;
+  if (pthread_mutex_init(&protect_mutex, &pi_attributes) != 0 ||
+      pthread_mutex_getprioceiling(&protect_mutex, &protect_ceiling) != 0 ||
+      protect_ceiling != 1 ||
+      pthread_mutex_setprioceiling(&protect_mutex, 7, &protect_ceiling) != 0 ||
+      protect_ceiling != 1 ||
+      pthread_mutex_getprioceiling(&protect_mutex, &protect_ceiling) != 0 ||
+      protect_ceiling != 7 ||
+      pthread_mutex_setprioceiling(&protect_mutex, 100, &protect_ceiling) != EINVAL ||
+      pthread_mutex_lock(&protect_mutex) != EINVAL ||
+      pthread_mutex_destroy(&protect_mutex) != 0 ||
+      pthread_mutex_getprioceiling(0, &protect_ceiling) != EINVAL ||
+      pthread_mutex_setprioceiling(0, 7, &protect_ceiling) != EINVAL ||
       pthread_mutexattr_setprotocol(&pi_attributes, PTHREAD_PRIO_INHERIT) != 0 ||
       pthread_mutexattr_getprotocol(&pi_attributes, &protocol) != 0 ||
       protocol != PTHREAD_PRIO_INHERIT)

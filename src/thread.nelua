@@ -59,7 +59,10 @@ local PthreadContext: type = @record{
   cleanup_entries: [32]PthreadCleanupEntry,
   robust_slot: *PthreadRobustSlot,
   robust_registered: cint,
-  robust_pid: cint
+  robust_pid: cint,
+  protect_mutexes: pointer,
+  protect_base_policy: cint,
+  protect_base_priority: cint
 }
 local SchedParam: type = @record{
   sched_priority: cint
@@ -98,7 +101,9 @@ local PthreadMutex: type = @record{
   robust: cint,
   robust_state: cint,
   protocol: cint,
-  robust_next: pointer
+  robust_next: pointer,
+  prioceiling: cint,
+  protect_next: pointer
 }
 local PthreadCond: type = @record{
   magic: culong,
@@ -1128,8 +1133,8 @@ end
 local function pthread_mutexattr_setprotocol(attr: *PthreadMutexAttr,
     protocol: cint): cint <cexport, codename 'pthread_mutexattr_setprotocol'>
   if not pthread_mutexattr_valid(attr) then return 22 end -- EINVAL
-  if protocol == PTHREAD_PRIO_PROTECT then return 95 end -- ENOTSUP
-  if protocol ~= PTHREAD_PRIO_NONE and protocol ~= PTHREAD_PRIO_INHERIT then
+  if protocol ~= PTHREAD_PRIO_NONE and protocol ~= PTHREAD_PRIO_INHERIT and
+     protocol ~= PTHREAD_PRIO_PROTECT then
     return 22 -- EINVAL
   end
   attr.protocol = protocol
@@ -1164,7 +1169,10 @@ local function pthread_mutex_valid(mutex: *PthreadMutex): boolean <inline>
          pthread_mutex_type_valid(mutex.kind) and
          (mutex.pshared == 0 or mutex.pshared == 1) and
          (mutex.robust == PTHREAD_MUTEX_STALLED or mutex.robust == PTHREAD_MUTEX_ROBUST) and
-         (mutex.protocol == PTHREAD_PRIO_NONE or mutex.protocol == PTHREAD_PRIO_INHERIT)
+         (mutex.protocol == PTHREAD_PRIO_NONE or mutex.protocol == PTHREAD_PRIO_INHERIT or
+          mutex.protocol == PTHREAD_PRIO_PROTECT) and
+         (mutex.protocol ~= PTHREAD_PRIO_PROTECT or
+          (mutex.prioceiling >= 1 and mutex.prioceiling <= 99))
 end
 
 local function pthread_mutex_init(mutex: *PthreadMutex, attr: *PthreadMutexAttr): cint <cexport, codename 'pthread_mutex_init'>
@@ -1172,15 +1180,19 @@ local function pthread_mutex_init(mutex: *PthreadMutex, attr: *PthreadMutexAttr)
   local kind: cint = 0
   local robust: cint = PTHREAD_MUTEX_STALLED
   local protocol: cint = PTHREAD_PRIO_NONE
+  local prioceiling: cint = 1
   if attr ~= nilptr then
     if not pthread_mutexattr_valid(attr) then return 22 end -- EINVAL
+    if attr.prioceiling < 1 or attr.prioceiling > 99 then return 22 end -- EINVAL
     kind = attr.kind
     robust = attr.robust
     protocol = attr.protocol
+    prioceiling = attr.prioceiling
   end
   if not pthread_mutex_type_valid(kind) or
      (robust ~= PTHREAD_MUTEX_STALLED and robust ~= PTHREAD_MUTEX_ROBUST) or
-     (protocol ~= PTHREAD_PRIO_NONE and protocol ~= PTHREAD_PRIO_INHERIT) then
+     (protocol ~= PTHREAD_PRIO_NONE and protocol ~= PTHREAD_PRIO_INHERIT and
+      protocol ~= PTHREAD_PRIO_PROTECT) then
     return 22 -- EINVAL
   end
   if attr ~= nilptr and attr.pshared ~= 0 and attr.pshared ~= 1 then return 22 end -- EINVAL
@@ -1194,6 +1206,8 @@ local function pthread_mutex_init(mutex: *PthreadMutex, attr: *PthreadMutexAttr)
   mutex.robust_state = 0
   mutex.protocol = protocol
   mutex.robust_next = nilptr
+  mutex.prioceiling = prioceiling
+  mutex.protect_next = nilptr
   mutex.magic = PTHREAD_MUTEX_MAGIC
   return 0
 end
@@ -1206,6 +1220,7 @@ local function pthread_mutex_destroy(mutex: *PthreadMutex): cint <cexport, coden
   mutex.count = 0
   mutex.robust_state = 0
   mutex.robust_next = nilptr
+  mutex.protect_next = nilptr
   return 0
 end
 
@@ -1253,6 +1268,127 @@ local function pthread_robust_mutex_remove(context: *PthreadContext,
   end
   if cursor[0] == node then cursor[0] = mutex.robust_next end
   mutex.robust_next = nilptr
+end
+
+local function pthread_priority_set(policy: cint, priority: cint): cint
+  local param: SchedParam
+  param.sched_priority = priority
+  local result = nelibc_raw_syscall3(144_culong, 0_culong,
+      (@culong)(policy), (@culong)((@usize)(&param)))
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  return 0
+end
+
+local function pthread_priority_protect_refresh(context: *PthreadContext): cint
+  if context == nilptr or context.protect_mutexes == nilptr then return 0 end
+  local effective = context.protect_base_priority
+  local cursor: *[0]pointer = &context.protect_mutexes
+  while cursor[0] ~= nilptr do
+    local held = (@*PthreadMutex)(cursor[0])
+    if held.prioceiling > effective then effective = held.prioceiling end
+    cursor = &held.protect_next
+  end
+  return pthread_priority_set(context.protect_base_policy, effective)
+end
+
+local function pthread_priority_protect_enter(mutex: *PthreadMutex): cint
+  local context = pthread_current_context()
+  if context == nilptr then return 12 end -- ENOMEM
+  local cursor: *[0]pointer = &context.protect_mutexes
+  while cursor[0] ~= nilptr do
+    local held = (@*PthreadMutex)(cursor[0])
+    if held == mutex then return 0 end
+    cursor = &held.protect_next
+  end
+
+  local policy: cint
+  local priority: cint
+  if context.protect_mutexes == nilptr then
+    local current_policy = nelibc_raw_syscall3(145_culong, 0_culong, 0_culong, 0_culong)
+    if current_policy < 0 and current_policy >= -4095 then
+      return (@cint)(-current_policy)
+    end
+    local param: SchedParam
+    local result = nelibc_raw_syscall3(143_culong, 0_culong,
+        (@culong)((@usize)(&param)), 0_culong)
+    if result < 0 and result >= -4095 then return (@cint)(-result) end
+    policy = (@cint)(current_policy)
+    priority = param.sched_priority
+    context.protect_base_policy = policy
+    context.protect_base_priority = priority
+  else
+    policy = context.protect_base_policy
+    priority = context.protect_base_priority
+  end
+  if priority > mutex.prioceiling or
+     (policy == SCHED_OTHER and mutex.prioceiling > 0) then
+    return 22 -- EINVAL
+  end
+  mutex.protect_next = context.protect_mutexes
+  context.protect_mutexes = (@pointer)(mutex)
+  local result = pthread_priority_protect_refresh(context)
+  if result ~= 0 then
+    context.protect_mutexes = mutex.protect_next
+    mutex.protect_next = nilptr
+    if context.protect_mutexes == nilptr then
+      context.protect_base_policy = 0
+      context.protect_base_priority = 0
+    end
+    return result
+  end
+  return 0
+end
+
+local function pthread_priority_protect_leave(mutex: *PthreadMutex): cint
+  local context = pthread_current_context()
+  if context == nilptr or context.protect_mutexes == nilptr then return 0 end
+  local cursor: *[0]pointer = &context.protect_mutexes
+  while cursor[0] ~= nilptr and cursor[0] ~= (@pointer)(mutex) do
+    local held = (@*PthreadMutex)(cursor[0])
+    cursor = &held.protect_next
+  end
+  if cursor[0] == nilptr then return 0 end
+  cursor[0] = mutex.protect_next
+  mutex.protect_next = nilptr
+  local result = pthread_priority_protect_refresh(context)
+  if context.protect_mutexes == nilptr then
+    context.protect_base_policy = 0
+    context.protect_base_priority = 0
+  end
+  return result
+end
+
+local function pthread_mutex_protect_finish(mutex: *PthreadMutex,
+    result: cint): cint
+  if mutex.protocol ~= PTHREAD_PRIO_PROTECT or (result ~= 0 and result ~= 130) then
+    return result
+  end
+  local protect_result = pthread_priority_protect_enter(mutex)
+  if protect_result ~= 0 then
+    local context = pthread_current_context()
+    if mutex.robust == PTHREAD_MUTEX_ROBUST then
+      pthread_robust_mutex_remove(context, mutex)
+      if nelibc_atomic_load_int(&mutex.robust_state) == 1 then
+        nelibc_atomic_store_int(&mutex.robust_state, 2)
+      end
+    end
+    mutex.count = 0
+    mutex.owner = 0
+    local previous = nelibc_atomic_exchange_int(&mutex.state, 0)
+    if mutex.robust == PTHREAD_MUTEX_ROBUST then
+      context.robust_slot.head.list_op_pending = nilptr
+    end
+    if (previous & FUTEX_WAITERS) ~= 0 then
+      local operation: culong = 1_culong
+      if mutex.robust ~= PTHREAD_MUTEX_ROBUST and mutex.pshared == 0 then
+        operation = 129_culong
+      end
+      nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
+          operation, 1_culong, 0_culong, 0_culong, 0_culong)
+    end
+    return protect_result
+  end
+  return result
 end
 
 local function pthread_mutex_lock_robust(mutex: *PthreadMutex, tid: cint,
@@ -1516,7 +1652,8 @@ local function pthread_mutex_lock(mutex: *PthreadMutex): cint <cexport, codename
     return pthread_mutex_lock_pi(mutex, tid, nilptr)
   end
   if mutex.robust == PTHREAD_MUTEX_ROBUST then
-    return pthread_mutex_lock_robust(mutex, tid, nilptr)
+    return pthread_mutex_protect_finish(mutex,
+        pthread_mutex_lock_robust(mutex, tid, nilptr))
   end
   local owner_result = pthread_mutex_owner_check(mutex, tid)
   if owner_result == 1 then return 0 end
@@ -1524,7 +1661,7 @@ local function pthread_mutex_lock(mutex: *PthreadMutex): cint <cexport, codename
   pthread_mutex_acquire(mutex)
   mutex.count = 1
   nelibc_atomic_store_int(&mutex.owner, tid)
-  return 0
+  return pthread_mutex_protect_finish(mutex, 0)
 end
 
 local function pthread_mutex_timedlock(mutex: *PthreadMutex,
@@ -1538,7 +1675,8 @@ local function pthread_mutex_timedlock(mutex: *PthreadMutex,
     return pthread_mutex_lock_pi(mutex, tid, abstime)
   end
   if mutex.robust == PTHREAD_MUTEX_ROBUST then
-    return pthread_mutex_lock_robust(mutex, tid, abstime)
+    return pthread_mutex_protect_finish(mutex,
+        pthread_mutex_lock_robust(mutex, tid, abstime))
   end
   local owner_result = pthread_mutex_owner_check(mutex, tid)
   if owner_result == 1 then return 0 end
@@ -1546,7 +1684,7 @@ local function pthread_mutex_timedlock(mutex: *PthreadMutex,
   if nelibc_atomic_cas_int(&mutex.state, 0, 1) == 0 then
     mutex.count = 1
     nelibc_atomic_store_int(&mutex.owner, tid)
-    return 0
+    return pthread_mutex_protect_finish(mutex, 0)
   end
   local operation: culong = 393_culong -- WAIT_BITSET | CLOCK_REALTIME | MATCH_ANY
   if mutex.pshared == 0 then operation = operation | 128_culong end
@@ -1555,7 +1693,7 @@ local function pthread_mutex_timedlock(mutex: *PthreadMutex,
     if previous == 0 then
       mutex.count = 1
       nelibc_atomic_store_int(&mutex.owner, tid)
-      return 0
+      return pthread_mutex_protect_finish(mutex, 0)
     end
     local wait_result = nelibc_raw_syscall6(
       202_culong, (@culong)((@usize)(&mutex.state)), operation, 2_culong,
@@ -1568,7 +1706,7 @@ local function pthread_mutex_timedlock(mutex: *PthreadMutex,
         if nelibc_atomic_cas_int(&mutex.state, 0, 2) == 0 then
           mutex.count = 1
           nelibc_atomic_store_int(&mutex.owner, tid)
-          return 0
+          return pthread_mutex_protect_finish(mutex, 0)
         end
       end
       return wait_error
@@ -1580,7 +1718,8 @@ local function pthread_mutex_trylock(mutex: *PthreadMutex): cint <cexport, coden
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
   local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
   if mutex.protocol == PTHREAD_PRIO_INHERIT then
-    return pthread_mutex_trylock_pi(mutex, tid)
+    return pthread_mutex_protect_finish(mutex,
+        pthread_mutex_trylock_pi(mutex, tid))
   end
   if mutex.robust == PTHREAD_MUTEX_ROBUST then
     if not pthread_robust_register(pthread_current_context()) then return 95 end -- ENOTSUP
@@ -1610,7 +1749,7 @@ local function pthread_mutex_trylock(mutex: *PthreadMutex): cint <cexport, coden
     if died then nelibc_atomic_store_int(&mutex.robust_state, 1)
         else nelibc_atomic_store_int(&mutex.robust_state, 0) end
     pthread_robust_mutex_add(context, mutex)
-    return died and 130 or 0 -- EOWNERDEAD
+    return pthread_mutex_protect_finish(mutex, died and 130 or 0) -- EOWNERDEAD
   end
   if nelibc_atomic_load_int(&mutex.owner) == tid then
     if mutex.kind == 1 then
@@ -1623,7 +1762,7 @@ local function pthread_mutex_trylock(mutex: *PthreadMutex): cint <cexport, coden
   if nelibc_atomic_cas_int(&mutex.state, 0, 1) ~= 0 then return 16 end -- EBUSY
   mutex.count = 1
   nelibc_atomic_store_int(&mutex.owner, tid)
-  return 0
+  return pthread_mutex_protect_finish(mutex, 0)
 end
 
 local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_unlock'>
@@ -1654,7 +1793,7 @@ local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codena
       nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
                           operation, 1_culong, 0_culong, 0_culong, 0_culong)
     end
-    return 0
+    return pthread_priority_protect_leave(mutex)
   end
   if nelibc_atomic_load_int(&mutex.owner) ~= tid then return 1 end -- EPERM
   if mutex.kind == 1 and mutex.count > 1 then
@@ -1670,7 +1809,59 @@ local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codena
     nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
                         operation, 1_culong, 0_culong, 0_culong, 0_culong)
   end
+  if mutex.protocol == PTHREAD_PRIO_PROTECT then
+    return pthread_priority_protect_leave(mutex)
+  end
   return 0
+end
+
+local function pthread_mutex_lock_for_ceiling(mutex: *PthreadMutex): cint
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if mutex.robust == PTHREAD_MUTEX_ROBUST then
+    return pthread_mutex_lock_robust(mutex, tid, nilptr)
+  end
+  local owner_result = pthread_mutex_owner_check(mutex, tid)
+  if owner_result == 1 then return 0 end
+  if owner_result > 1 then return owner_result end
+  pthread_mutex_acquire(mutex)
+  mutex.count = 1
+  nelibc_atomic_store_int(&mutex.owner, tid)
+  return 0
+end
+
+local function pthread_mutex_getprioceiling(mutex: *PthreadMutex,
+    prioceiling: *[0]cint): cint <cexport, codename 'pthread_mutex_getprioceiling'>
+  if not pthread_mutex_valid(mutex) or prioceiling == nilptr or
+     mutex.protocol ~= PTHREAD_PRIO_PROTECT then
+    return 22 -- EINVAL
+  end
+  prioceiling[0] = nelibc_atomic_load_int(&mutex.prioceiling)
+  return 0
+end
+
+local function pthread_mutex_setprioceiling(mutex: *PthreadMutex,
+    prioceiling: cint, old_ceiling: *[0]cint): cint <cexport, codename 'pthread_mutex_setprioceiling'>
+  if not pthread_mutex_valid(mutex) or old_ceiling == nilptr or
+     mutex.protocol ~= PTHREAD_PRIO_PROTECT or
+     prioceiling < 1 or prioceiling > 99 then
+    return 22 -- EINVAL
+  end
+  local lock_result = pthread_mutex_lock_for_ceiling(mutex)
+  if lock_result ~= 0 and lock_result ~= 130 then return lock_result end
+  local previous = nelibc_atomic_load_int(&mutex.prioceiling)
+  nelibc_atomic_store_int(&mutex.prioceiling, prioceiling)
+  local context = pthread_current_context()
+  local refresh_result = pthread_priority_protect_refresh(context)
+  if refresh_result ~= 0 then
+    nelibc_atomic_store_int(&mutex.prioceiling, previous)
+    pthread_priority_protect_refresh(context)
+  else
+    old_ceiling[0] = previous
+  end
+  local unlock_result = pthread_mutex_unlock(mutex)
+  if refresh_result ~= 0 then return refresh_result end
+  if unlock_result ~= 0 then return unlock_result end
+  return lock_result
 end
 
 local function pthread_mutex_consistent(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_consistent'>
@@ -2637,6 +2828,9 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.lifecycle = 0
   state.context.robust_slot = pthread_robust_slot_alloc()
   state.context.robust_registered = 0
+  state.context.protect_mutexes = nilptr
+  state.context.protect_base_policy = 0
+  state.context.protect_base_priority = 0
   state.context.robust_pid = (@cint)(nelibc_raw_syscall3(39_culong,
       0_culong, 0_culong, 0_culong))
   if state.context.robust_slot == nilptr then

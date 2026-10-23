@@ -72,7 +72,10 @@ HOST_DELEGATED = {
         "sem_unlink",
     )
 }
-for name in ("pthread_mutexattr_getprioceiling", "pthread_mutexattr_setprioceiling"):
+for name in (
+    "pthread_mutexattr_getprioceiling", "pthread_mutexattr_setprioceiling",
+    "pthread_mutex_getprioceiling", "pthread_mutex_setprioceiling",
+):
     HOST_DELEGATED[name] = {"zig_glibc", "gcc_glibc", "tcc_glibc"}
 SMOKE_GLOBS = ("tools/*_smoke.c", "tools/*_diff.c", "tools/*_smoke.nelua")
 
