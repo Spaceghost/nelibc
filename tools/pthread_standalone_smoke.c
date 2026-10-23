@@ -982,18 +982,20 @@ int main(void) {
       robustness != PTHREAD_MUTEX_ROBUST)
     return 237;
   pthread_mutex_t robust_mutex;
+  pthread_mutexattr_t pi_attributes;
   int protocol = -1;
-  if (pthread_mutexattr_getprotocol(&mutex_attributes, &protocol) != 0 ||
+  if (pthread_mutexattr_init(&pi_attributes) != 0 ||
+      pthread_mutexattr_getprotocol(&pi_attributes, &protocol) != 0 ||
       protocol != PTHREAD_PRIO_NONE ||
-      pthread_mutexattr_setprotocol(&mutex_attributes, 99) != EINVAL ||
-      pthread_mutexattr_setprotocol(&mutex_attributes, PTHREAD_PRIO_PROTECT) != ENOTSUP ||
-      pthread_mutexattr_setprotocol(&mutex_attributes, PTHREAD_PRIO_INHERIT) != 0 ||
-      pthread_mutexattr_getprotocol(&mutex_attributes, &protocol) != 0 ||
+      pthread_mutexattr_setprotocol(&pi_attributes, 99) != EINVAL ||
+      pthread_mutexattr_setprotocol(&pi_attributes, PTHREAD_PRIO_PROTECT) != ENOTSUP ||
+      pthread_mutexattr_setprotocol(&pi_attributes, PTHREAD_PRIO_INHERIT) != 0 ||
+      pthread_mutexattr_getprotocol(&pi_attributes, &protocol) != 0 ||
       protocol != PTHREAD_PRIO_INHERIT)
     return 251;
   pthread_mutex_t pi_mutex;
-  if (pthread_mutex_init(&pi_mutex, &mutex_attributes) != 0 ||
-      pthread_mutexattr_destroy(&mutex_attributes) != 0 ||
+  if (pthread_mutex_init(&pi_mutex, &pi_attributes) != 0 ||
+      pthread_mutexattr_destroy(&pi_attributes) != 0 ||
       pthread_mutex_lock(&pi_mutex) != 0 ||
       pthread_mutex_trylock(&pi_mutex) != EBUSY)
     return 252;
