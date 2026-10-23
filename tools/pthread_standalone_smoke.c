@@ -1,8 +1,10 @@
 #include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
 #include <semaphore.h>
 #include <stdatomic.h>
+#include <stdio.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -372,6 +374,40 @@ int main(void) {
   if (sem_init(&cancel_semaphore, 0, SEM_VALUE_MAX) != 0) return 158;
   if (sem_post(&cancel_semaphore) != -1 || errno != EOVERFLOW) return 159;
   if (sem_destroy(&cancel_semaphore) != 0) return 160;
+  char named_semaphore_path[64];
+  if (snprintf(named_semaphore_path, sizeof named_semaphore_path,
+               "/nelibc-test-sem-%ld", (long)getpid()) < 0)
+    return 170;
+  (void)sem_unlink(named_semaphore_path);
+  sem_t *named_semaphore = sem_open(named_semaphore_path, O_CREAT | O_EXCL, 0600, 1U);
+  if (named_semaphore == SEM_FAILED) return 171;
+  if (sem_wait(named_semaphore) != 0) return 172;
+  sem_t *named_semaphore_second = sem_open(named_semaphore_path, O_CREAT, 0600, 9U);
+  if (named_semaphore_second == SEM_FAILED) return 173;
+  if (sem_getvalue(named_semaphore_second, &semaphore_value) != 0 || semaphore_value != 0)
+    return 174;
+  if (sem_post(named_semaphore_second) != 0 || sem_wait(named_semaphore) != 0)
+    return 175;
+  if (sem_open(named_semaphore_path, O_CREAT | O_EXCL, 0600, 1U) != SEM_FAILED ||
+      errno != EEXIST)
+    return 176;
+  pid_t named_sem_child = fork();
+  if (named_sem_child < 0) return 178;
+  if (named_sem_child == 0) {
+    sem_t *child_semaphore = sem_open(named_semaphore_path, 0);
+    if (child_semaphore == SEM_FAILED || sem_post(child_semaphore) != 0 ||
+        sem_close(child_semaphore) != 0)
+      _exit(79);
+    _exit(0);
+  }
+  int named_sem_child_status = -1;
+  if (waitpid(named_sem_child, &named_sem_child_status, 0) != named_sem_child ||
+      named_sem_child_status != 0 || sem_wait(named_semaphore) != 0)
+    return 179;
+  if (sem_unlink(named_semaphore_path) != 0 ||
+      sem_post(named_semaphore_second) != 0 || sem_wait(named_semaphore) != 0 ||
+      sem_close(named_semaphore_second) != 0 || sem_close(named_semaphore) != 0)
+    return 177;
 
   cancel_state_ready = 0;
   cancel_state_release = 0;

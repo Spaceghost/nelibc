@@ -77,6 +77,11 @@ local Semaphore: type = @record{
   sequence: cint,
   waiters: cint
 }
+local NamedSemaphoreHandle: type = @record{
+  semaphore: pointer,
+  fd: cint,
+  next: *NamedSemaphoreHandle
+}
 local PthreadKeyValue: type = @record{
   key: cuint,
   value: pointer
@@ -111,6 +116,8 @@ local pthread_key_lock: cint = 0
 local pthread_key_allocated: [128]cint = {}
 local pthread_key_generations: [128]cuint = {}
 local pthread_key_destructors: [128]pointer = {}
+local named_semaphore_handles: *NamedSemaphoreHandle = nilptr
+local named_semaphore_handles_lock: cint = 0
 local MAX_CSIZE: csize <comptime> = ~0_csize
 
 local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
@@ -140,6 +147,14 @@ local function nelibc_atomic_load_pointer(value: *[0]pointer): pointer <cimport>
 local function nelibc_atomic_store_pointer(value: *[0]pointer, next: pointer): void <cimport> end
 local function nelibc_malloc(size: csize): pointer <cimport> end
 local function nelibc_free(ptr: pointer): void <cimport> end
+local function openat(dirfd: cint, pathname: pointer <const>, flags: cint, mode: cuint): cint <cimport> end
+local function close(fd: cint): cint <cimport> end
+local function ftruncate(fd: cint, length: clong): cint <cimport> end
+local function lseek(fd: cint, offset: clong, whence: cint): clong <cimport> end
+local function mmap(address: pointer, length: csize, protection: cint, flags: cint, fd: cint, offset: clong): pointer <cimport> end
+local function munmap(address: pointer, length: csize): cint <cimport> end
+local function unlink(pathname: pointer <const>): cint <cimport> end
+local function strlen(string: *[0]cchar <const>): csize <cimport> end
 
 local function pthread_key_lock_acquire(): void <inline>
   while true do
@@ -1078,6 +1093,170 @@ local function sem_getvalue(sem: *Semaphore, value: *[0]cint): cint <cexport, co
   if not semaphore_valid(sem) or value == nilptr then nelibc_errno_location()[0] = 22; return -1 end
   value[0] = nelibc_atomic_load_int(&sem.value)
   return 0
+end
+
+local function named_sem_registry_lock(): void
+  while nelibc_atomic_cas_int(&named_semaphore_handles_lock, 0, 1) ~= 0 do
+    nelibc_raw_syscall3(24_culong, 0_culong, 0_culong, 0_culong)
+  end
+end
+
+local function named_sem_registry_unlock(): void
+  nelibc_atomic_store_int(&named_semaphore_handles_lock, 0)
+end
+
+local function named_sem_build_path(name: *[0]cchar <const>, path: *[0]cchar): cint
+  if name == nilptr or name[0] ~= 47_cchar then return -1 end
+  local name_length = strlen(name)
+  if name_length < 2_csize or name_length > 252_csize then return -1 end
+  for i: csize = 1, name_length - 1_csize do
+    if name[i] == 47_cchar then return -1 end
+  end
+  -- Linux reserves a four-byte "sem." prefix inside /dev/shm's NAME_MAX.
+  if name_length - 1_csize > 251_csize then return -1 end
+  local prefix: [13]cchar = {
+    47_cchar, 100_cchar, 101_cchar, 118_cchar, 47_cchar,
+    115_cchar, 104_cchar, 109_cchar, 47_cchar,
+    115_cchar, 101_cchar, 109_cchar, 46_cchar
+  }
+  for i: csize = 0, 12 do path[i] = prefix[i] end
+  for i: csize = 1, name_length - 1_csize do path[12_csize + i] = name[i] end
+  path[12_csize + name_length] = 0_cchar
+  return (@cint)(name_length + 12_csize)
+end
+
+local function nelibc_sem_open_impl(name: *[0]cchar <const>, oflag: cint,
+                                    mode: cuint, value: cuint): *Semaphore <cexport, codename 'nelibc_sem_open_impl'>
+  local path: [265]cchar = {}
+  local path_length = named_sem_build_path(name, &path[0])
+  if path_length < 0 or (oflag & ~(64_cint | 128_cint)) ~= 0_cint or
+     ((oflag & 128_cint) ~= 0_cint and (oflag & 64_cint) == 0_cint) or
+     value > 2147483647_cuint then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  local open_flags: cint = 2_cint | 524288_cint | 131072_cint
+  if (oflag & 64_cint) ~= 0_cint then open_flags = open_flags | 64_cint | 128_cint end
+  local fd = openat(-100_cint, &path[0], open_flags, mode)
+  local created = false
+  if fd < 0 then
+    local open_error = nelibc_errno_location()[0]
+    if (oflag & 64_cint) == 0_cint or open_error ~= 17 or (oflag & 128_cint) ~= 0_cint then
+      return nilptr
+    end
+    fd = openat(-100_cint, &path[0], 2_cint | 524288_cint | 131072_cint, 0_cuint)
+    if fd < 0 then return nilptr end
+  else
+    created = true
+  end
+
+  -- flock serializes the first initializer against concurrent sem_open calls.
+  local lock_result = nelibc_raw_syscall6(73_culong, (@culong)(fd), 2_culong,
+                                           0_culong, 0_culong, 0_culong, 0_culong)
+  if lock_result < 0 then
+    nelibc_errno_location()[0] = (@cint)(-lock_result)
+    close(fd)
+    if created then unlink(&path[0]) end
+    return nilptr
+  end
+  if created then
+    if ftruncate(fd, 16_clong) ~= 0 then
+      local error_code = nelibc_errno_location()[0]
+      nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+      close(fd); unlink(&path[0]); nelibc_errno_location()[0] = error_code
+      return nilptr
+    end
+  else
+    local size: clong = -1_clong
+    for attempt: cint = 0, 9999 do
+      size = lseek(fd, 0_clong, 2_cint)
+      if size < 0_clong then
+        local error_code = nelibc_errno_location()[0]
+        nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+        close(fd); nelibc_errno_location()[0] = error_code
+        return nilptr
+      end
+      if size ~= 0_clong then break end
+      nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+      nelibc_raw_syscall3(24_culong, 0_culong, 0_culong, 0_culong)
+      lock_result = nelibc_raw_syscall6(73_culong, (@culong)(fd), 2_culong,
+                                         0_culong, 0_culong, 0_culong, 0_culong)
+      if lock_result < 0 then
+        nelibc_errno_location()[0] = (@cint)(-lock_result); close(fd); return nilptr
+      end
+    end
+    if size ~= 16_clong then
+      nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+      close(fd); nelibc_errno_location()[0] = 22; return nilptr
+    end
+  end
+  local mapped = mmap(nilptr, 16_csize, 3_cint, 1_cint, fd, 0_clong)
+  if mapped == (@pointer)(~0_csize) then
+    local error_code = nelibc_errno_location()[0]
+    nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+    close(fd)
+    if created then unlink(&path[0]) end
+    nelibc_errno_location()[0] = error_code
+    return nilptr
+  end
+  local semaphore = (@*Semaphore)(mapped)
+  if created then
+    semaphore.magic = SEMAPHORE_MAGIC | 0x8000000000000000_culong
+    semaphore.value = (@cint)(value)
+    semaphore.sequence = 0
+    semaphore.waiters = 0
+  elseif not semaphore_valid(semaphore) or not semaphore_shared(semaphore) then
+    munmap(mapped, 16_csize)
+    nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+    close(fd); nelibc_errno_location()[0] = 22; return nilptr
+  end
+  local handle = (@*NamedSemaphoreHandle)(nelibc_malloc(24_csize))
+  if handle == nilptr then
+    munmap(mapped, 16_csize)
+    nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+    close(fd)
+    if created then unlink(&path[0]) end
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return nilptr
+  end
+  handle.semaphore = mapped
+  handle.fd = fd
+  named_sem_registry_lock()
+  handle.next = named_semaphore_handles
+  named_semaphore_handles = handle
+  named_sem_registry_unlock()
+  nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+  return semaphore
+end
+
+local function sem_close(sem: *Semaphore): cint <cexport, codename 'sem_close'>
+  if sem == nilptr then nelibc_errno_location()[0] = 22; return -1 end
+  named_sem_registry_lock()
+  local previous: *NamedSemaphoreHandle = nilptr
+  local handle = named_semaphore_handles
+  while handle ~= nilptr and handle.semaphore ~= (@pointer)(sem) do
+    previous = handle
+    handle = handle.next
+  end
+  if handle == nilptr then
+    named_sem_registry_unlock()
+    nelibc_errno_location()[0] = 22
+    return -1
+  end
+  if previous == nilptr then named_semaphore_handles = handle.next
+  else previous.next = handle.next end
+  named_sem_registry_unlock()
+  local unmap_result = munmap(handle.semaphore, 16_csize)
+  local close_result = close(handle.fd)
+  nelibc_free((@pointer)(handle))
+  if unmap_result ~= 0 or close_result ~= 0 then return -1 end
+  return 0
+end
+
+local function sem_unlink(name: *[0]cchar <const>): cint <cexport, codename 'sem_unlink'>
+  local path: [265]cchar = {}
+  if named_sem_build_path(name, &path[0]) < 0 then nelibc_errno_location()[0] = 22; return -1 end
+  return unlink(&path[0])
 end
 
 local function pthread_once(control: *[0]cint, init_routine: function(): void): cint <cexport, codename 'pthread_once'>

@@ -162,7 +162,9 @@ matter more for completeness than for the initial common-program target.
 - Standalone unnamed POSIX semaphores now provide `sem_init`, `sem_destroy`,
   `sem_wait`, `sem_timedwait`, `sem_trywait`, `sem_post`, and `sem_getvalue`.
   They use Nelua-owned futex waits, including cancellation at blocking waits.
-  Named semaphores remain unimplemented.
+- Standalone named POSIX semaphores provide `sem_open`, `sem_close`, and
+  `sem_unlink` through shared `/dev/shm` mappings and a small C varargs ABI
+  bridge; initialization, mapping, wait, and lifetime tracking are Nelua-owned.
 - Hybrid stdio adapts to host `FILE` implementations in several profiles. The
   standalone `FILE` implementation is Nelua-owned, but full standards and
   edge-case coverage remains a separate conformance task.

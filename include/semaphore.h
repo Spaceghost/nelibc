@@ -25,6 +25,9 @@ int sem_timedwait(sem_t *sem, const struct timespec *abstime);
 int sem_trywait(sem_t *sem);
 int sem_post(sem_t *sem);
 int sem_getvalue(sem_t *sem, int *value);
+sem_t *sem_open(const char *name, int oflag, ...);
+int sem_close(sem_t *sem);
+int sem_unlink(const char *name);
 
 #endif
 #endif
