@@ -152,6 +152,7 @@ int pthread_getschedparam(pthread_t thread, int *policy,
                           struct sched_param *param);
 int pthread_setschedparam(pthread_t thread, int policy,
                           const struct sched_param *param);
+int pthread_setschedprio(pthread_t thread, int priority);
 void __nelibc_pthread_cleanup_push(void (*routine)(void *), void *arg);
 void __nelibc_pthread_cleanup_pop(int execute);
 #define pthread_cleanup_push(routine, arg) \

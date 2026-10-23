@@ -37,7 +37,7 @@ HOST_DELEGATED = {
         "pthread_create", "pthread_cancel", "pthread_sigmask", "pthread_kill", "pthread_getcpuclockid", "pthread_join", "pthread_detach", "pthread_equal",
         "pthread_self", "pthread_exit", "pthread_testcancel",
         "pthread_setcancelstate", "pthread_setcanceltype", "pthread_mutexattr_init",
-        "pthread_getschedparam", "pthread_setschedparam",
+        "pthread_getschedparam", "pthread_setschedparam", "pthread_setschedprio",
         "pthread_once",
         "pthread_key_create", "pthread_key_delete", "pthread_getspecific",
         "pthread_setspecific",

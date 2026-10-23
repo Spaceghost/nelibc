@@ -2798,6 +2798,15 @@ local function pthread_setschedparam(thread: pointer, policy: cint,
   return 0
 end
 
+local function pthread_setschedprio(thread: pointer, priority: cint): cint <cexport, codename 'pthread_setschedprio'>
+  local policy: cint
+  local param: SchedParam
+  local result = pthread_getschedparam(thread, &policy, &param)
+  if result ~= 0 then return result end
+  param.sched_priority = priority
+  return pthread_setschedparam(thread, policy, &param)
+end
+
 local function pthread_exit(result: pointer): void <cexport, codename 'pthread_exit'>
   local context = pthread_current_context()
   pthread_context_exit(context, result)

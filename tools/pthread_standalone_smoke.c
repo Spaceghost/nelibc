@@ -713,7 +713,9 @@ int main(void) {
       pthread_attr_setinheritsched(&attributes, PTHREAD_EXPLICIT_SCHED) != 0)
     return 227;
   if (pthread_setschedparam(pthread_self(), SCHED_OTHER, &schedparam) != 0 ||
-      pthread_setschedparam(pthread_self(), SCHED_OTHER, 0) != EINVAL)
+      pthread_setschedparam(pthread_self(), SCHED_OTHER, 0) != EINVAL ||
+      pthread_setschedprio(pthread_self(), 0) != 0 ||
+      pthread_setschedprio(pthread_self(), 1) != EINVAL)
     return 228;
   size_t guardsize = 0;
   if (pthread_attr_getguardsize(&attributes, &guardsize) != 0 || guardsize != 4096 ||

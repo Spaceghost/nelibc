@@ -47,17 +47,18 @@ portability impact:
 | Priority | Missing APIs | Why they matter | Scope |
 |---|---|---|---|
 | P2 | `pthread_mutex_getprioceiling`, `pthread_mutex_setprioceiling` | Completes the priority-ceiling path; `PTHREAD_PRIO_PROTECT` currently returns `ENOTSUP` | Optional real-time priority protocol |
-| P3 | `pthread_getaffinity_np`, `pthread_setaffinity_np`, `pthread_getname_np`, `pthread_setname_np`, `pthread_getattr_np`, `pthread_getattr_default_np`, `pthread_setattr_default_np`, `pthread_getconcurrency`, `pthread_setconcurrency`, `pthread_setschedprio`, `pthread_timedjoin_np`, `pthread_tryjoin_np` | Adds Linux/glibc and musl nonstandard thread controls and convenience calls | Implementation-specific extensions |
+| P3 | `pthread_getaffinity_np`, `pthread_setaffinity_np`, `pthread_getname_np`, `pthread_setname_np`, `pthread_getattr_np`, `pthread_getattr_default_np`, `pthread_setattr_default_np`, `pthread_getconcurrency`, `pthread_setconcurrency`, `pthread_timedjoin_np`, `pthread_tryjoin_np` | Adds Linux/glibc and musl nonstandard thread controls and convenience calls | Implementation-specific extensions |
 
 This is a baseline-derived priority list, not a complete POSIX inventory. The
-`pthread_kill` and `pthread_getcpuclockid` are implemented in standalone mode
-and delegated to the host in hybrid mode. `pthread_atfork` is implemented
+`pthread_kill`, `pthread_getcpuclockid`, and `pthread_setschedprio` are
+implemented in standalone mode and delegated to the host in hybrid mode.
+`pthread_atfork` is implemented
 alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The current API inventory has 668 declared names: 566 exported in hybrid
-  archives, 102 intentionally host-delegated across the hybrid profiles, and one
+- The current API inventory has 669 declared names: 566 exported in hybrid
+  archives, 103 intentionally host-delegated across the hybrid profiles, and one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage.
 - The musl 1.2.5 public-symbol comparison finds 1,269 declarations that are
