@@ -13,6 +13,7 @@
 #include <time.h>
 #include <locale.h>
 #include <wchar.h>
+#include <semaphore.h>
 #include "nelibc_alloc.h"
 #ifndef NELIBC_STANDALONE
 #include <fcntl.h>
@@ -220,6 +221,22 @@ static int allocator_probe(void) {
   nelibc_free(zeroed);
   nelibc_free(aligned);
   nelibc_free(posix_aligned);
+  return 0;
+}
+
+static int semaphore_clock_probe(void) {
+  sem_t semaphore;
+  if (sem_init(&semaphore, 0, 1) != 0) return 1;
+
+  struct timespec future;
+  if (clock_gettime(CLOCK_MONOTONIC, &future) != 0) return 2;
+  ++future.tv_sec;
+  if (sem_clockwait(&semaphore, CLOCK_MONOTONIC, &future) != 0) return 3;
+
+  struct timespec expired = { .tv_sec = 0, .tv_nsec = 0 };
+  if (sem_clockwait(&semaphore, CLOCK_MONOTONIC, &expired) != -1 ||
+      errno != ETIMEDOUT) return 4;
+  if (sem_destroy(&semaphore) != 0) return 5;
   return 0;
 }
 
@@ -474,6 +491,8 @@ int main(int argc, char **argv) {
                "prefix%n-suffix", &format_count) != 13 || format_count != 6 ||
       strcmp(format_count_buffer, "prefix-suffix") != 0) return 553;
   if (allocator_probe() != 0) return 83;
+  int semaphore_result = semaphore_clock_probe();
+  if (semaphore_result != 0) return 85 + semaphore_result;
 #ifndef NELIBC_STANDALONE
   if (archive_unistd_adapter_probe() != 0) return 84;
 #endif

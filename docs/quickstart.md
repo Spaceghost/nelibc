@@ -104,7 +104,8 @@ memory, strings, integer conversion, and the current Nelua math slice.
 - `make smoke-matrix` exercises the compiler, libc, syscall, standalone, and
   differential-test matrix.
 - `make lib-consumer-matrix` runs a larger C program against the four hybrid
-  archives; this covers more APIs than the small quickstart example.
+  archives, including `sem_clockwait`; this covers more APIs than the small
+  quickstart example.
 - `make sem-clockwait-musl-smoke` compiles and runs a static musl consumer of
   `sem_clockwait`, including deadline, wakeup, and cancellation behavior.
 - `make api-coverage` refreshes `build/api-coverage.csv`. It tracks declared
