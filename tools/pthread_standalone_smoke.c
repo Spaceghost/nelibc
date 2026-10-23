@@ -27,6 +27,8 @@ static _Atomic int once_release;
 static _Atomic int once_runs;
 static pthread_barrier_t round_barrier;
 static _Atomic int barrier_serial_returns;
+static pthread_rwlock_t static_rwlock = PTHREAD_RWLOCK_INITIALIZER;
+static _Atomic int rwlock_counter;
 static pthread_key_t value_key;
 static int value_destructor_calls;
 static pthread_mutex_t cancel_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -241,6 +243,39 @@ static void *barrier_worker(void *argument) {
       atomic_fetch_add_explicit(&barrier_serial_returns, 1, memory_order_relaxed);
     else if (result != 0)
       return (void *)(uintptr_t)1;
+  }
+  return 0;
+}
+
+struct rwlock_timeout_request {
+  pthread_rwlock_t *rwlock;
+  struct timespec deadline;
+  int write_lock;
+  int result;
+};
+
+static void *rwlock_timeout_worker(void *argument) {
+  struct rwlock_timeout_request *request = argument;
+  request->result = request->write_lock
+      ? pthread_rwlock_timedwrlock(request->rwlock, &request->deadline)
+      : pthread_rwlock_timedrdlock(request->rwlock, &request->deadline);
+  if (request->result == 0) pthread_rwlock_unlock(request->rwlock);
+  return 0;
+}
+
+static void *rwlock_stress_worker(void *argument) {
+  int write_lock = argument != 0;
+  for (int i = 0; i < 500; ++i) {
+    int result = write_lock ? pthread_rwlock_wrlock(&static_rwlock)
+                            : pthread_rwlock_rdlock(&static_rwlock);
+    if (result != 0) return (void *)(uintptr_t)result;
+    if (write_lock) {
+      int value = atomic_load_explicit(&rwlock_counter, memory_order_relaxed);
+      atomic_store_explicit(&rwlock_counter, value + 1, memory_order_relaxed);
+    } else {
+      (void)atomic_load_explicit(&rwlock_counter, memory_order_relaxed);
+    }
+    if (pthread_rwlock_unlock(&static_rwlock) != 0) return (void *)(uintptr_t)1;
   }
   return 0;
 }
@@ -773,6 +808,116 @@ int main(void) {
       munmap(process_barrier, sizeof(*process_barrier)) != 0 ||
       pthread_barrierattr_destroy(&barrier_attributes) != 0)
     return 203;
+  struct timespec invalid_rwlock_deadline = {0, 1000000000L};
+  struct timespec expired_rwlock_deadline = {0, 0};
+  if (pthread_rwlock_timedrdlock(&static_rwlock, &invalid_rwlock_deadline) != 0 ||
+      pthread_rwlock_destroy(&static_rwlock) != EBUSY ||
+      pthread_rwlock_unlock(&static_rwlock) != 0 ||
+      pthread_rwlock_timedwrlock(&static_rwlock, &invalid_rwlock_deadline) != 0 ||
+      pthread_rwlock_tryrdlock(&static_rwlock) != EBUSY ||
+      pthread_rwlock_trywrlock(&static_rwlock) != EBUSY ||
+      pthread_rwlock_timedrdlock(&static_rwlock, &expired_rwlock_deadline) != EDEADLK ||
+      pthread_rwlock_unlock(&static_rwlock) != 0)
+    return 204;
+  if (pthread_rwlock_rdlock(&static_rwlock) != 0 ||
+      pthread_create(&thread, &attributes, rwlock_stress_worker,
+                     (void *)(uintptr_t)1) != 0)
+    return 205;
+  for (unsigned int i = 0; i < 10000000U &&
+       __atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0; ++i) {
+  }
+  if (__atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0 ||
+      pthread_rwlock_rdlock(&static_rwlock) != 0 ||
+      pthread_rwlock_unlock(&static_rwlock) != 0 ||
+      pthread_rwlock_unlock(&static_rwlock) != 0 ||
+      pthread_join(thread, &result) != 0 || result != 0)
+    return 206;
+  if (pthread_rwlock_rdlock(&static_rwlock) != 0) return 219;
+  struct rwlock_timeout_request timeout_request = {
+    .rwlock = &static_rwlock,
+    .deadline = {0, 0},
+    .write_lock = 1,
+  };
+  if (pthread_create(&thread, &attributes, rwlock_timeout_worker,
+                     &timeout_request) != 0 ||
+      pthread_join(thread, &result) != 0 || result != 0 ||
+      timeout_request.result != ETIMEDOUT ||
+      pthread_rwlock_unlock(&static_rwlock) != 0)
+    return 207;
+  if (pthread_rwlock_wrlock(&static_rwlock) != 0) return 208;
+  timeout_request.write_lock = 0;
+  timeout_request.result = 0;
+  if (pthread_create(&thread, &attributes, rwlock_timeout_worker,
+                     &timeout_request) != 0 ||
+      pthread_join(thread, &result) != 0 || result != 0 ||
+      timeout_request.result != ETIMEDOUT ||
+      pthread_rwlock_unlock(&static_rwlock) != 0)
+    return 209;
+  if (pthread_rwlock_rdlock(&static_rwlock) != 0 ||
+      pthread_rwlock_timedwrlock(&static_rwlock, &invalid_rwlock_deadline) != EINVAL ||
+      pthread_rwlock_unlock(&static_rwlock) != 0 ||
+      pthread_rwlock_wrlock(&static_rwlock) != 0 ||
+      pthread_rwlock_timedrdlock(&static_rwlock, &invalid_rwlock_deadline) != EDEADLK ||
+      pthread_rwlock_unlock(&static_rwlock) != 0)
+    return 210;
+  pthread_t rwlock_threads[6];
+  atomic_store_explicit(&rwlock_counter, 0, memory_order_relaxed);
+  for (int i = 0; i < 6; ++i) {
+    if (pthread_create(&rwlock_threads[i], &attributes, rwlock_stress_worker,
+                       i < 4 ? (void *)(uintptr_t)1 : 0) != 0)
+      return 211;
+  }
+  for (int i = 0; i < 6; ++i) {
+    if (pthread_join(rwlock_threads[i], &result) != 0 || result != 0)
+      return 212;
+  }
+  if (atomic_load_explicit(&rwlock_counter, memory_order_relaxed) != 2000 ||
+      pthread_rwlock_destroy(&static_rwlock) != 0)
+    return 213;
+  pthread_rwlockattr_t rwlock_attributes;
+  int rwlock_pshared = -1;
+  if (pthread_rwlockattr_init(&rwlock_attributes) != 0 ||
+      pthread_rwlockattr_setpshared(&rwlock_attributes, PTHREAD_PROCESS_SHARED) != 0 ||
+      pthread_rwlockattr_getpshared(&rwlock_attributes, &rwlock_pshared) != 0 ||
+      rwlock_pshared != PTHREAD_PROCESS_SHARED)
+    return 214;
+  struct process_shared_rwlock_state {
+    pthread_rwlock_t rwlock;
+    _Atomic int started;
+    _Atomic int acquired;
+  };
+  struct process_shared_rwlock_state *shared_rwlock = mmap(0, sizeof(*shared_rwlock),
+      PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (shared_rwlock == MAP_FAILED ||
+      pthread_rwlock_init(&shared_rwlock->rwlock, &rwlock_attributes) != 0 ||
+      pthread_rwlock_wrlock(&shared_rwlock->rwlock) != 0)
+    return 215;
+  atomic_store_explicit(&shared_rwlock->started, 0, memory_order_relaxed);
+  atomic_store_explicit(&shared_rwlock->acquired, 0, memory_order_relaxed);
+  child = fork();
+  if (child < 0) return 216;
+  if (child == 0) {
+    atomic_store_explicit(&shared_rwlock->started, 1, memory_order_release);
+    int lock_result = pthread_rwlock_wrlock(&shared_rwlock->rwlock);
+    if (lock_result != 0) _exit(1);
+    atomic_store_explicit(&shared_rwlock->acquired, 1, memory_order_release);
+    _exit(pthread_rwlock_unlock(&shared_rwlock->rwlock) == 0 ? 0 : 2);
+  }
+  for (unsigned int i = 0; i < 10000000U &&
+       (!atomic_load_explicit(&shared_rwlock->started, memory_order_acquire) ||
+        __atomic_load_n(&shared_rwlock->rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0); ++i) {
+  }
+  if (!atomic_load_explicit(&shared_rwlock->started, memory_order_acquire) ||
+      __atomic_load_n(&shared_rwlock->rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0 ||
+      pthread_rwlock_unlock(&shared_rwlock->rwlock) != 0)
+    return 217;
+  child_status = -1;
+  if (waitpid(child, &child_status, 0) != child || child_status != 0 ||
+      !atomic_load_explicit(&shared_rwlock->acquired, memory_order_acquire) ||
+      pthread_rwlock_destroy(&shared_rwlock->rwlock) != 0 ||
+      munmap(shared_rwlock, sizeof(*shared_rwlock)) != 0 ||
+      pthread_rwlockattr_destroy(&rwlock_attributes) != 0)
+    return 218;
   if (pthread_key_create(&value_key, value_destructor) != 0 ||
       pthread_setspecific(value_key, 0) != 0 ||
       pthread_getspecific(value_key) != 0 ||

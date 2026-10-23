@@ -52,6 +52,18 @@ typedef struct {
   int __generation;
   int __pshared;
 } pthread_barrier_t;
+typedef struct {
+  uintptr_t __magic;
+  int __pshared;
+} pthread_rwlockattr_t;
+typedef struct {
+  uintptr_t __magic;
+  int __state;
+  int __writer;
+  int __waiting_writers;
+  int __sequence;
+  int __pshared;
+} pthread_rwlock_t;
 
 #define PTHREAD_CREATE_JOINABLE 0
 #define PTHREAD_CREATE_DETACHED 1
@@ -71,6 +83,8 @@ typedef struct {
 #define PTHREAD_PROCESS_SHARED 1
 #define PTHREAD_COND_INITIALIZER {0x4E434F4E44u, 0, 0, PTHREAD_PROCESS_PRIVATE}
 #define PTHREAD_BARRIER_SERIAL_THREAD (-1)
+#define PTHREAD_RWLOCK_INITIALIZER \
+  {0x4E52574C4F434Bu, 0, 0, 0, 0, PTHREAD_PROCESS_PRIVATE}
 
 int pthread_attr_init(pthread_attr_t *attr);
 int pthread_attr_destroy(pthread_attr_t *attr);
@@ -129,6 +143,22 @@ int pthread_barrier_init(pthread_barrier_t *barrier,
                          const pthread_barrierattr_t *attr, unsigned count);
 int pthread_barrier_destroy(pthread_barrier_t *barrier);
 int pthread_barrier_wait(pthread_barrier_t *barrier);
+int pthread_rwlockattr_init(pthread_rwlockattr_t *attr);
+int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attr);
+int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attr, int pshared);
+int pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *attr, int *pshared);
+int pthread_rwlock_init(pthread_rwlock_t *rwlock,
+                        const pthread_rwlockattr_t *attr);
+int pthread_rwlock_destroy(pthread_rwlock_t *rwlock);
+int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock);
+int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock);
+int pthread_rwlock_timedrdlock(pthread_rwlock_t *rwlock,
+                               const struct timespec *abstime);
+int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock);
+int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock);
+int pthread_rwlock_timedwrlock(pthread_rwlock_t *rwlock,
+                               const struct timespec *abstime);
+int pthread_rwlock_unlock(pthread_rwlock_t *rwlock);
 
 #endif
 #endif

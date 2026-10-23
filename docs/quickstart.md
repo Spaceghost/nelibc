@@ -109,7 +109,7 @@ memory, strings, integer conversion, and the current Nelua math slice.
 - `make qsort-r-smoke-matrix` dogfoods GNU `qsort_r` under Zig/glibc,
   GCC/glibc, Zig/musl, and TinyCC/glibc.
 - `make pthread-standalone-matrix` exercises the standalone pthread subset with
-  Zig, GCC, and TinyCC, including reusable process-shared barriers.
+  Zig, GCC, and TinyCC, including process-shared barriers and read-write locks.
 - `make sem-clockwait-musl-smoke` compiles and runs a static musl consumer of
   `sem_clockwait`, including deadline, wakeup, and cancellation behavior.
 - `make sem-clockwait-shootout-zig` compares Nelibc's immediate, empty-timeout,

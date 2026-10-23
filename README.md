@@ -996,9 +996,10 @@ Standalone also exports a POSIX thread subset: `pthread_create`,
 `pthread_join`, `pthread_detach`, `pthread_exit`, `pthread_once`,
 `pthread_key_create`, `pthread_key_delete`, `pthread_getspecific`,
 `pthread_setspecific`, `pthread_self`, `pthread_equal`, detach-state and
-stack-size attributes, normal/recursive/error-checking mutexes, condition
-variables and reusable barriers with process-private or process-shared futexes,
-and detached workers.
+stack-size attributes, normal/recursive/error-checking mutexes, recursive-reader
+read-write locks, condition variables, reusable barriers, and detached workers.
+Read-write locks support timed operations and process-shared futexes. Readers
+may pass queued writers, so a continuous reader stream can starve writers.
 Thread-specific key values use per-thread storage, key generations prevent
 deleted keys from aliasing reused slots, and worker exit runs up to four
 destructor passes before releasing that storage.

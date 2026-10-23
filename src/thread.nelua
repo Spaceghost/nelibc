@@ -82,6 +82,18 @@ local PthreadBarrier: type = @record{
   generation: cint,
   pshared: cint
 }
+local PthreadRwlockAttr: type = @record{
+  magic: culong,
+  pshared: cint
+}
+local PthreadRwlock: type = @record{
+  magic: culong,
+  state: cint,
+  writer: cint,
+  waiting_writers: cint,
+  sequence: cint,
+  pshared: cint
+}
 local Semaphore: type = @record{
   magic: culong,
   value: cint,
@@ -119,6 +131,8 @@ local PTHREAD_COND_ATTR_MAGIC: culong <comptime> = 0x4E434154545231
 local PTHREAD_COND_MAGIC: culong <comptime> = 0x4E434F4E44
 local PTHREAD_BARRIER_ATTR_MAGIC: culong <comptime> = 0x4E424154545231
 local PTHREAD_BARRIER_MAGIC: culong <comptime> = 0x4E42415252
+local PTHREAD_RWLOCK_ATTR_MAGIC: culong <comptime> = 0x4E525741545452
+local PTHREAD_RWLOCK_MAGIC: culong <comptime> = 0x4E52574C4F434B
 local SEMAPHORE_MAGIC: culong <comptime> = 0x4E454C53454D31
 local PTHREAD_CANCELED: pointer <comptime> = (@pointer)(~0_csize)
 local PTHREAD_CANCEL_ENABLE: cint <comptime> = 0
@@ -1076,6 +1090,229 @@ local function pthread_barrier_wait(barrier: *PthreadBarrier): cint
       (@culong)(generation), 0_culong, 0_culong, 0_culong)
   end
   return 0
+end
+
+local function pthread_rwlockattr_valid(attr: *PthreadRwlockAttr): boolean <inline>
+  return attr ~= nilptr and attr.magic == PTHREAD_RWLOCK_ATTR_MAGIC
+end
+
+local function pthread_rwlock_valid(rwlock: *PthreadRwlock): boolean <inline>
+  return rwlock ~= nilptr and rwlock.magic == PTHREAD_RWLOCK_MAGIC and
+         (rwlock.pshared == 0 or rwlock.pshared == 1)
+end
+
+local function pthread_rwlock_wake(rwlock: *PthreadRwlock): void
+  nelibc_atomic_fetch_add_int(&rwlock.sequence, 1)
+  local operation: culong = 129_culong -- FUTEX_WAKE | FUTEX_PRIVATE_FLAG
+  if rwlock.pshared ~= 0 then operation = 1_culong end
+  nelibc_raw_syscall6(202_culong,
+    (@culong)((@usize)(&rwlock.sequence)), operation,
+    2147483647_culong, 0_culong, 0_culong, 0_culong)
+end
+
+local function pthread_rwlock_wait(rwlock: *PthreadRwlock, sequence: cint,
+    abstime: *Timespec): cint
+  if abstime ~= nilptr and
+      (abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000) then
+    return 22 -- EINVAL
+  end
+  local operation: culong = 0_culong
+  local timeout_pointer: culong = 0_culong
+  local bitset: culong = 0_culong
+  if abstime ~= nilptr then
+    operation = 265_culong -- FUTEX_WAIT_BITSET | FUTEX_CLOCK_REALTIME
+    timeout_pointer = (@culong)((@usize)(abstime))
+    bitset = 0xFFFFFFFF_culong
+  end
+  if rwlock.pshared == 0 then operation = operation | 128_culong end
+  local result = nelibc_raw_syscall6(202_culong,
+    (@culong)((@usize)(&rwlock.sequence)), operation,
+    (@culong)(sequence), timeout_pointer, 0_culong, bitset)
+  if result < 0 and result >= -4095 then
+    local error = (@cint)(-result)
+    if error == 4 or error == 11 then return 0 end -- EINTR/EAGAIN: retry
+    return error
+  end
+  return 0
+end
+
+local function pthread_rwlockattr_init(attr: *PthreadRwlockAttr): cint
+    <cexport, codename 'pthread_rwlockattr_init'>
+  if attr == nilptr then return 22 end -- EINVAL
+  attr.magic = PTHREAD_RWLOCK_ATTR_MAGIC
+  attr.pshared = 0
+  return 0
+end
+
+local function pthread_rwlockattr_destroy(attr: *PthreadRwlockAttr): cint
+    <cexport, codename 'pthread_rwlockattr_destroy'>
+  if not pthread_rwlockattr_valid(attr) then return 22 end -- EINVAL
+  attr.magic = 0
+  return 0
+end
+
+local function pthread_rwlockattr_setpshared(attr: *PthreadRwlockAttr,
+    pshared: cint): cint <cexport, codename 'pthread_rwlockattr_setpshared'>
+  if not pthread_rwlockattr_valid(attr) or (pshared ~= 0 and pshared ~= 1) then
+    return 22 -- EINVAL
+  end
+  attr.pshared = pshared
+  return 0
+end
+
+local function pthread_rwlockattr_getpshared(attr: *PthreadRwlockAttr,
+    pshared: *[0]cint): cint <cexport, codename 'pthread_rwlockattr_getpshared'>
+  if not pthread_rwlockattr_valid(attr) or pshared == nilptr then return 22 end
+  pshared[0] = attr.pshared
+  return 0
+end
+
+local function pthread_rwlock_init(rwlock: *PthreadRwlock,
+    attr: *PthreadRwlockAttr): cint <cexport, codename 'pthread_rwlock_init'>
+  if rwlock == nilptr then return 22 end -- EINVAL
+  local pshared: cint = 0
+  if attr ~= nilptr then
+    if not pthread_rwlockattr_valid(attr) then return 22 end
+    pshared = attr.pshared
+  end
+  rwlock.state = 0
+  rwlock.writer = 0
+  rwlock.waiting_writers = 0
+  rwlock.sequence = 0
+  rwlock.pshared = pshared
+  rwlock.magic = PTHREAD_RWLOCK_MAGIC
+  return 0
+end
+
+local function pthread_rwlock_destroy(rwlock: *PthreadRwlock): cint
+    <cexport, codename 'pthread_rwlock_destroy'>
+  if not pthread_rwlock_valid(rwlock) then return 22 end -- EINVAL
+  if nelibc_atomic_load_int(&rwlock.state) ~= 0 or
+      nelibc_atomic_load_int(&rwlock.waiting_writers) ~= 0 then
+    return 16 -- EBUSY
+  end
+  rwlock.magic = 0
+  return 0
+end
+
+local function pthread_rwlock_rdlock_internal(rwlock: *PthreadRwlock,
+    abstime: *Timespec, nonblocking: boolean): cint
+  if not pthread_rwlock_valid(rwlock) then return 22 end -- EINVAL
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if nelibc_atomic_load_int(&rwlock.state) < 0 and rwlock.writer == tid then
+    if nonblocking then return 16 end -- EBUSY
+    return 35 -- EDEADLK
+  end
+  while true do
+    local sequence = nelibc_atomic_load_int(&rwlock.sequence)
+    local state = nelibc_atomic_load_int(&rwlock.state)
+    if state >= 2147483647 then return 11 end -- EAGAIN
+    if state >= 0 then
+      if nelibc_atomic_cas_int(&rwlock.state, state, state + 1) == 0 then
+        return 0
+      end
+      continue
+    end
+    if nonblocking then return 16 end -- EBUSY
+    local wait_error = pthread_rwlock_wait(rwlock, sequence, abstime)
+    if wait_error == 110 then -- ETIMEDOUT: take any lock available at the deadline
+      state = nelibc_atomic_load_int(&rwlock.state)
+      if state >= 0 and state < 2147483647 and
+          nelibc_atomic_cas_int(&rwlock.state, state, state + 1) == 0 then
+        return 0
+      end
+      return wait_error
+    end
+    if wait_error ~= 0 then return wait_error end
+  end
+end
+
+local function pthread_rwlock_rdlock(rwlock: *PthreadRwlock): cint
+    <cexport, codename 'pthread_rwlock_rdlock'>
+  return pthread_rwlock_rdlock_internal(rwlock, nilptr, false)
+end
+
+local function pthread_rwlock_tryrdlock(rwlock: *PthreadRwlock): cint
+    <cexport, codename 'pthread_rwlock_tryrdlock'>
+  return pthread_rwlock_rdlock_internal(rwlock, nilptr, true)
+end
+
+local function pthread_rwlock_timedrdlock(rwlock: *PthreadRwlock,
+    abstime: *Timespec): cint <cexport, codename 'pthread_rwlock_timedrdlock'>
+  if abstime == nilptr then return 22 end -- EINVAL
+  return pthread_rwlock_rdlock_internal(rwlock, abstime, false)
+end
+
+local function pthread_rwlock_wrlock_internal(rwlock: *PthreadRwlock,
+    abstime: *Timespec, nonblocking: boolean): cint
+  if not pthread_rwlock_valid(rwlock) then return 22 end -- EINVAL
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if not nonblocking and nelibc_atomic_load_int(&rwlock.state) < 0 and
+      rwlock.writer == tid then
+    return 35 -- EDEADLK
+  end
+  if nonblocking then
+    if nelibc_atomic_cas_int(&rwlock.state, 0, -1) ~= 0 then return 16 end
+    nelibc_atomic_store_int(&rwlock.writer, tid)
+    return 0
+  end
+  nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, 1)
+  while true do
+    local sequence = nelibc_atomic_load_int(&rwlock.sequence)
+    if nelibc_atomic_cas_int(&rwlock.state, 0, -1) == 0 then
+      nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, -1)
+      nelibc_atomic_store_int(&rwlock.writer, tid)
+      return 0
+    end
+    local wait_error = pthread_rwlock_wait(rwlock, sequence, abstime)
+    if wait_error ~= 0 then
+      if wait_error == 110 and nelibc_atomic_cas_int(&rwlock.state, 0, -1) == 0 then
+        nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, -1)
+        nelibc_atomic_store_int(&rwlock.writer, tid)
+        return 0
+      end
+      nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, -1)
+      pthread_rwlock_wake(rwlock)
+      return wait_error
+    end
+  end
+end
+
+local function pthread_rwlock_wrlock(rwlock: *PthreadRwlock): cint
+    <cexport, codename 'pthread_rwlock_wrlock'>
+  return pthread_rwlock_wrlock_internal(rwlock, nilptr, false)
+end
+
+local function pthread_rwlock_trywrlock(rwlock: *PthreadRwlock): cint
+    <cexport, codename 'pthread_rwlock_trywrlock'>
+  return pthread_rwlock_wrlock_internal(rwlock, nilptr, true)
+end
+
+local function pthread_rwlock_timedwrlock(rwlock: *PthreadRwlock,
+    abstime: *Timespec): cint <cexport, codename 'pthread_rwlock_timedwrlock'>
+  if abstime == nilptr then return 22 end -- EINVAL
+  return pthread_rwlock_wrlock_internal(rwlock, abstime, false)
+end
+
+local function pthread_rwlock_unlock(rwlock: *PthreadRwlock): cint
+    <cexport, codename 'pthread_rwlock_unlock'>
+  if not pthread_rwlock_valid(rwlock) then return 22 end -- EINVAL
+  while true do
+    local state = nelibc_atomic_load_int(&rwlock.state)
+    if state < 0 then
+      local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+      if rwlock.writer ~= tid then return 1 end -- EPERM
+      nelibc_atomic_store_int(&rwlock.writer, 0)
+      if nelibc_atomic_cas_int(&rwlock.state, -1, 0) ~= 0 then return 1 end
+      pthread_rwlock_wake(rwlock)
+      return 0
+    end
+    if state == 0 then return 1 end -- EPERM
+    if nelibc_atomic_cas_int(&rwlock.state, state, state - 1) == 0 then
+      if state == 1 then pthread_rwlock_wake(rwlock) end
+      return 0
+    end
+  end
 end
 
 local function semaphore_valid(sem: *Semaphore): boolean <inline>

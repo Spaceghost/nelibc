@@ -62,11 +62,11 @@ python3 tools/musl_api_audit.py \
 ```
 
 The current snapshot contains 1,269 APIs: 425 exported by Nelibc in at least
-one tested hybrid profile, 47 intentionally delegated to the host in hybrid
-profiles, and 797 not declared by Nelibc. No baseline API is currently marked
-as an intentional omission; the 797 entries remain visible as unimplemented
+one tested hybrid profile, 60 intentionally delegated to the host in hybrid
+profiles, and 784 not declared by Nelibc. No baseline API is currently marked
+as an intentional omission; the 784 entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
-The largest undeclared groups are pthread (59), complex math (66), wide
+The largest undeclared groups are pthread (46), complex math (66), wide
 characters (49), stdlib (40), unistd (38), and name service/network database
 APIs (32). This is a breadth comparison, not a behavioral conformance score.
 
@@ -74,6 +74,6 @@ The report uses the same bounded declaration scanner as the project API
 inventory and requires the headers and archives from the same musl release.
 Review scanner changes against representative prototypes before refreshing the
 snapshot.
-The standalone pthread implementations, including process-shared barriers,
+Standalone pthread implementations, including barriers and read-write locks,
 are classified as host-delegated in hybrid profiles because
 `include/pthread.h` forwards to the selected host header there.
