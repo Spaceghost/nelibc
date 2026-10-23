@@ -24,6 +24,8 @@ extern float nelibc_nearbyintf(float);
 extern double nelibc_nearbyint(double);
 extern float nelibc_expf(float);
 extern double nelibc_exp(double);
+extern float nelibc_exp2f(float);
+extern double nelibc_exp2(double);
 extern float nelibc_cbrtf(float);
 extern double nelibc_cbrt(double);
 extern float nelibc_powf(float, float);
@@ -223,6 +225,15 @@ static int check_exp_log(double value, float valuef) {
     fprintf(stderr, "expf mismatch x=%.9g expected=%.9g actual=%.9g ulps=%u\n",
             valuef, expected_expf, actual_expf,
             ulps_float(expected_expf, actual_expf));
+    return 1;
+  }
+  const double expected_exp2 = exp2(value), actual_exp2 = nelibc_exp2(value);
+  const float expected_exp2f = exp2f(valuef), actual_exp2f = nelibc_exp2f(valuef);
+  if ((!isnan(expected_exp2) && !isnan(actual_exp2) && ulps_double(expected_exp2, actual_exp2) > 4) ||
+      (!isnan(expected_exp2f) && !isnan(actual_exp2f) && ulps_float(expected_exp2f, actual_exp2f) > 4) ||
+      isnan(expected_exp2) != isnan(actual_exp2) || isnan(expected_exp2f) != isnan(actual_exp2f)) {
+    fprintf(stderr, "exp2 mismatch input=%.17g/%.9g expected=%.17g actual=%.17g\n",
+            value, valuef, expected_exp2, actual_exp2);
     return 1;
   }
   const double log_input = fabs(value);
@@ -1056,7 +1067,7 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
-  printf("78 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+  printf("80 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
          (double)max_exp_ulps, (double)max_log_ulps,
          (double)max_expf_ulps, (double)max_logf_ulps,
          (unsigned long long)max_sin_ulps, (unsigned long long)max_cos_ulps,

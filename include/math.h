@@ -23,6 +23,8 @@ float nearbyintf(float value);
 double nearbyint(double value);
 float expf(float value);
 double exp(double value);
+float exp2f(float value);
+double exp2(double value);
 float powf(float value, float exponent);
 double pow(double value, double exponent);
 float sinhf(float value);

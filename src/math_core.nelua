@@ -717,6 +717,48 @@ local function expf(value: cfloat): cfloat <cexport, codename 'expf'>
   return result
 end
 
+-- Evaluate 2^x by separating its integral binary scale from a small
+-- fractional remainder. This avoids multiplying the full input by ln(2),
+-- which loses many bits for ordinary fractions.
+local function exp2(value: cdouble): cdouble <cexport, codename 'exp2'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    if value < 0_cdouble then return 0_cdouble end
+    return value
+  end
+  if value > 1024_cdouble then
+    math_range_error()
+    return nelibc_exp_overflow_hw()
+  end
+  if value < -1075_cdouble then
+    math_range_error()
+    return nelibc_exp_underflow_hw()
+  end
+  local scale: cint = (@cint)(round_binary64(value, 3_cint))
+  local residual = value - (@cdouble)(scale)
+  local z = residual * 0x1.62E42FEE00000P-1_cdouble +
+    residual * 0x1.A39EF35793C76P-33_cdouble
+  local term: cdouble = 1_cdouble
+  local sum: cdouble = 1_cdouble
+  local n: cint = 1_cint
+  while n <= 20_cint do
+    term = term * z / (@cdouble)(n)
+    sum = sum + term
+    n = n + 1_cint
+  end
+  return ldexp(sum, scale)
+end
+
+local function exp2f(value: cfloat): cfloat <cexport, codename 'exp2f'>
+  local result = (@cfloat)(exp2((@cdouble)(value)))
+  local result_bits: FloatBits = {value = result}
+  local result_field = result_bits.bits & 0x7F800000_cuint
+  if result_field == 0x7F800000_cuint or result_field == 0_cuint then
+    if value == value and not is_infinite32(value) then math_range_error() end
+  end
+  return result
+end
+
 -- Compute exp(value - ln(2)) without losing the low subtraction bits near the
 -- binary64 overflow boundary, where exp(value) itself no longer fits.
 local function exp_minus_ln2(value: cdouble): cdouble
