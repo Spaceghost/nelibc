@@ -108,6 +108,7 @@ memory, strings, integer conversion, and the current Nelua math slice.
   quickstart example.
 - `make sem-clockwait-musl-smoke` compiles and runs a static musl consumer of
   `sem_clockwait`, including deadline, wakeup, and cancellation behavior.
+- Link glibc applications using the hybrid `sem_clockwait` wrapper with `-ldl`.
 - `make api-coverage` refreshes `build/api-coverage.csv`. It tracks declared
   APIs and archive exports; a listed export is not proof of full conformance.
 - `make shootout-matrix` runs performance comparisons. Treat these as local

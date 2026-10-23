@@ -228,15 +228,13 @@ static int semaphore_clock_probe(void) {
   sem_t semaphore;
   if (sem_init(&semaphore, 0, 1) != 0) return 1;
 
-  struct timespec future;
-  if (clock_gettime(CLOCK_MONOTONIC, &future) != 0) return 2;
-  ++future.tv_sec;
-  if (sem_clockwait(&semaphore, CLOCK_MONOTONIC, &future) != 0) return 3;
+  struct timespec invalid = { .tv_sec = 0, .tv_nsec = 1000000000L };
+  if (sem_clockwait(&semaphore, CLOCK_MONOTONIC, &invalid) != 0) return 2;
 
   struct timespec expired = { .tv_sec = 0, .tv_nsec = 0 };
   if (sem_clockwait(&semaphore, CLOCK_MONOTONIC, &expired) != -1 ||
-      errno != ETIMEDOUT) return 4;
-  if (sem_destroy(&semaphore) != 0) return 5;
+      errno != ETIMEDOUT) return 3;
+  if (sem_destroy(&semaphore) != 0) return 4;
   return 0;
 }
 
