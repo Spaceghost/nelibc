@@ -1,0 +1,33 @@
+TinyCC hexadecimal exact-integer append profile
+================================================
+
+The regular short corpus has too few hexadecimal digits to exercise the exact
+BigUInt append loop substantially. I profiled two temporary 600-digit hex
+inputs: a fractional significand with `p+2400`, and an integer significand
+with `p-2400`. Each parser benchmark made 800 calls.
+
+Profile
+-------
+The exact hex append path performed 474,000 BigUInt append calls and
+18,681,200 limb iterations per parser, or about 592 appends and 23,352 limb
+iterations per parse. The distribution was identical for `strtof`, `strtod`,
+and `strtold`. This is a recurring long-input cost, comparable to and slightly
+larger than the decimal digit-append profile.
+
+Change and validation
+---------------------
+Added a TCC-only rolling-pointer loop for hexadecimal BigUInt digit appends;
+other compilers keep the indexed loop. Twenty-four alternating TinyCC/glibc
+pairs show short-input timing within 0.3% of baseline and long-hex gains of
+18.4–18.8% across all three parsers.
+
+The candidate passed the 1,250-case TinyCC float differential corpus. A custom
+long-hex check matched host results, end pointers, and errno for `strtof`,
+`strtod`, and `strtold`. The four-way float differential and Knuth precheck
+matrices passed, Zig/GCC fallbacks compiled, and standalone TinyCC smoke passed.
+The TCC-specific path is retained.
+
+Raw limb counts: `2026-10-22-float-hex-append-counts.csv`. Paired timings:
+`2026-10-22-float-hex-append-pointer-ab.csv`. Final compiler/libc matrices:
+`2026-10-22-float-hex-pointer-final-short.csv` and
+`2026-10-22-float-hex-pointer-final-long.csv`.

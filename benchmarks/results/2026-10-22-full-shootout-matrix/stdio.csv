@@ -1,0 +1,49 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,putchar,200000,3.31
+Zig cc,glibc,host-libc,puts,200000,8.17
+Zig cc,glibc,host-libc,fputc,200000,2.09
+Zig cc,glibc,host-libc,fputs,200000,7.50
+Zig cc,glibc,host-libc,snprintf,50000,146.27
+Zig cc,glibc,host-libc,fprintf,50000,156.19
+Zig cc,glibc,nelibc,putchar,200000,5.82
+Zig cc,glibc,nelibc,puts,200000,15.02
+Zig cc,glibc,nelibc,fputc,200000,5.06
+Zig cc,glibc,nelibc,fputs,200000,12.99
+Zig cc,glibc,nelibc,snprintf,50000,226.14
+Zig cc,glibc,nelibc,fprintf,50000,250.17
+GCC,glibc,host-libc,putchar,200000,3.68
+GCC,glibc,host-libc,puts,200000,8.22
+GCC,glibc,host-libc,fputc,200000,1.74
+GCC,glibc,host-libc,fputs,200000,7.43
+GCC,glibc,host-libc,snprintf,50000,144.88
+GCC,glibc,host-libc,fprintf,50000,149.23
+GCC,glibc,nelibc,putchar,200000,5.57
+GCC,glibc,nelibc,puts,200000,15.44
+GCC,glibc,nelibc,fputc,200000,4.87
+GCC,glibc,nelibc,fputs,200000,14.30
+GCC,glibc,nelibc,snprintf,50000,159.26
+GCC,glibc,nelibc,fprintf,50000,217.51
+Zig cc,musl,host-libc,putchar,200000,1.58
+Zig cc,musl,host-libc,puts,200000,13.65
+Zig cc,musl,host-libc,fputc,200000,1.53
+Zig cc,musl,host-libc,fputs,200000,11.74
+Zig cc,musl,host-libc,snprintf,50000,185.72
+Zig cc,musl,host-libc,fprintf,50000,172.96
+Zig cc,musl,nelibc,putchar,200000,17.94
+Zig cc,musl,nelibc,puts,200000,27.77
+Zig cc,musl,nelibc,fputc,200000,17.49
+Zig cc,musl,nelibc,fputs,200000,25.08
+Zig cc,musl,nelibc,snprintf,50000,218.73
+Zig cc,musl,nelibc,fprintf,50000,260.16
+TinyCC,glibc,host-libc,putchar,200000,3.98
+TinyCC,glibc,host-libc,puts,200000,8.60
+TinyCC,glibc,host-libc,fputc,200000,3.14
+TinyCC,glibc,host-libc,fputs,200000,8.80
+TinyCC,glibc,host-libc,snprintf,50000,146.57
+TinyCC,glibc,host-libc,fprintf,50000,150.53
+TinyCC,glibc,nelibc,putchar,200000,7.50
+TinyCC,glibc,nelibc,puts,200000,21.10
+TinyCC,glibc,nelibc,fputc,200000,5.81
+TinyCC,glibc,nelibc,fputs,200000,20.62
+TinyCC,glibc,nelibc,snprintf,50000,192.96
+TinyCC,glibc,nelibc,fprintf,50000,237.07

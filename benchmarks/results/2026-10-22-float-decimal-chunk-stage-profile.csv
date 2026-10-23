@@ -1,0 +1,25 @@
+compiler,function,input,stage,timed_calls,total_cycles,raw_cycles_per_group,timer_overhead_cycles_per_group,adjusted_cycles_per_group,adjusted_cycles_per_parse
+TinyCC,strtof,fraction_600,nine_digit_scan_and_chunk_accumulation,52000,7177554,138.03,28.51,109.52,7118.79
+TinyCC,strtof,fraction_600,biguint_chunk_append,52000,8650908,166.36,28.51,137.85,8960.49
+TinyCC,strtof,integer_620,nine_digit_scan_and_chunk_accumulation,53600,6809418,127.04,28.51,98.53,6601.60
+TinyCC,strtof,integer_620,biguint_chunk_append,53600,9146948,170.65,28.51,142.14,9523.51
+TinyCC,strtod,fraction_600,nine_digit_scan_and_chunk_accumulation,52000,8151614,156.76,28.51,128.25,8336.37
+TinyCC,strtod,fraction_600,biguint_chunk_append,52000,9396314,180.70,28.51,152.19,9892.24
+TinyCC,strtod,integer_620,nine_digit_scan_and_chunk_accumulation,53600,6878018,128.32,28.51,99.81,6687.35
+TinyCC,strtod,integer_620,biguint_chunk_append,53600,8448806,157.63,28.51,129.12,8650.84
+TinyCC,strtold,fraction_600,nine_digit_scan_and_chunk_accumulation,52000,7141076,137.33,28.51,108.82,7073.19
+TinyCC,strtold,fraction_600,biguint_chunk_append,52000,8734324,167.97,28.51,139.46,9064.75
+TinyCC,strtold,integer_620,nine_digit_scan_and_chunk_accumulation,53600,6811360,127.08,28.51,98.57,6604.03
+TinyCC,strtold,integer_620,biguint_chunk_append,53600,9793906,182.72,28.51,154.21,10332.21
+Zig cc,strtof,fraction_600,nine_digit_scan_and_chunk_accumulation,52000,6154750,118.36,23.95,94.41,6136.69
+Zig cc,strtof,fraction_600,biguint_chunk_append,52000,3546576,68.20,23.95,44.25,2876.47
+Zig cc,strtof,integer_620,nine_digit_scan_and_chunk_accumulation,53600,6247990,116.57,23.95,92.62,6205.34
+Zig cc,strtof,integer_620,biguint_chunk_append,53600,3669474,68.46,23.95,44.51,2982.19
+Zig cc,strtod,fraction_600,nine_digit_scan_and_chunk_accumulation,52000,6157344,118.41,23.95,94.46,6139.93
+Zig cc,strtod,fraction_600,biguint_chunk_append,52000,3435216,66.06,23.95,42.11,2737.27
+Zig cc,strtod,integer_620,nine_digit_scan_and_chunk_accumulation,53600,6273312,117.04,23.95,93.09,6236.99
+Zig cc,strtod,integer_620,biguint_chunk_append,53600,3510606,65.50,23.95,41.55,2783.61
+Zig cc,strtold,fraction_600,nine_digit_scan_and_chunk_accumulation,52000,5815256,111.83,23.95,87.88,5712.32
+Zig cc,strtold,fraction_600,biguint_chunk_append,52000,3405886,65.50,23.95,41.55,2700.61
+Zig cc,strtold,integer_620,nine_digit_scan_and_chunk_accumulation,53600,5911264,110.28,23.95,86.33,5784.43
+Zig cc,strtold,integer_620,biguint_chunk_append,53600,3604902,67.26,23.95,43.31,2901.48

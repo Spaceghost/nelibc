@@ -1,0 +1,5 @@
+compiler,libc,kernel,median_ns_per_digit,samples,digits_per_sample
+TinyCC,glibc,multiply_add_chunk,0.6204,11,11796480
+TinyCC,glibc,add_digit_control,0.5617,11,11796480
+Zig cc,glibc,multiply_add_chunk,0.2009,11,11796480
+Zig cc,glibc,add_digit_control,0.0470,11,11796480

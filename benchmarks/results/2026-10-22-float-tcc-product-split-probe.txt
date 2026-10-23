@@ -1,0 +1,38 @@
+TinyCC product-split screening probe
+====================================
+
+Question
+--------
+Can a 16-bit partial-product multiply avoid the 64-bit product temporary in
+TinyCC's `big_mul_small` limb loop?
+
+Method
+------
+Compiled `build/mulsplit_shootout.c` with `/tmp/tcc-install/bin/tcc -O2` and
+ran six alternating-order rounds over 65 limbs, 400,000 loop iterations per
+variant, multiplying by 1,220,703,125 (`5^13`). Compared:
+
+- baseline: one `uint64_t` product per limb, then low/high extraction;
+- duplicate: two direct `uint64_t` expressions for low and high words;
+- partial: four 16-bit partial products and 32-bit accumulation.
+
+Elapsed nanoseconds by round (baseline, duplicate, partial):
+
+| Round | Baseline | Duplicate | Partial | Duplicate / baseline | Partial / baseline |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 44,309,656 | 49,832,512 | 155,726,438 | 1.12 | 3.51 |
+| 1 | 43,583,582 | 48,435,101 | 152,833,008 | 1.11 | 3.51 |
+| 2 | 43,150,009 | 49,356,909 | 153,686,879 | 1.14 | 3.56 |
+| 3 | 43,616,374 | 49,091,008 | 153,667,939 | 1.13 | 3.52 |
+| 4 | 43,544,467 | 48,919,407 | 151,938,509 | 1.12 | 3.49 |
+| 5 | 43,033,216 | 50,599,131 | 158,871,800 | 1.18 | 3.69 |
+
+Result
+------
+Reject both alternatives. Duplicating the 64-bit expression was 11–18% slower;
+the 16-bit partial-product implementation was 3.49–3.69x slower. The output
+macro probe also still materialized and spilled the 64-bit product, so output
+parameters alone do not remove TinyCC's stack temporary.
+
+This is a screening microbenchmark in C, not a full Nelua parser shootout. No
+production source was changed. Probe source and executable are under `build/`.

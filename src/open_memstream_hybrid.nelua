@@ -1,0 +1,150 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local MemstreamState: type = @record{
+  output_buffer: *[0]*[0]cchar,
+  output_size: *[0]csize,
+  buffer: *[0]cchar,
+  length: csize,
+  capacity: csize,
+  position: csize
+}
+
+local function malloc(size: csize): pointer <cimport> end
+local function realloc(memory: pointer, size: csize): pointer <cimport> end
+local function free(memory: pointer): void <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_host_open_memstream(cookie: pointer): pointer <cimport> end
+
+local MAX_LONG: csize <comptime> = 9223372036854775807_csize
+
+local function publish_memstream(state: *MemstreamState): void <inline>
+  state.output_buffer[0] = state.buffer
+  state.output_size[0] = state.length
+  state.buffer[state.length] = 0
+end
+
+local function nelibc_open_memstream_write(cookie: pointer,
+    source: pointer <const>, count: csize): clong <cexport, codename 'nelibc_open_memstream_write'>
+  local state: *MemstreamState = (@*MemstreamState)(cookie)
+  if count == 0 then return 0 end
+  if state.position > MAX_LONG or count > MAX_LONG - state.position then
+    nelibc_errno_location()[0] = 27 -- EFBIG
+    return -1
+  end
+  local required: csize = state.position + count + 1
+  if required <= state.position then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  if required > state.capacity then
+    local new_capacity: csize = state.capacity
+    while new_capacity < required do
+      if new_capacity > MAX_LONG // 2 then
+        new_capacity = required
+        break
+      end
+      new_capacity = new_capacity * 2
+    end
+    local new_buffer: pointer = realloc((@pointer)(state.buffer), new_capacity)
+    if new_buffer == nilptr then return -1 end
+    state.buffer = (@*[0]cchar)(new_buffer)
+    state.capacity = new_capacity
+  end
+
+  local destination: *[0]byte = (@*[0]byte)(state.buffer)
+  local input: *[0]byte = (@*[0]byte)(source)
+  if state.position > state.length then
+    local gap: csize = state.length
+    while gap < state.position do
+      destination[gap] = 0
+      gap = gap + 1
+    end
+  end
+  local index: csize = 0
+  while index < count do
+    destination[state.position + index] = input[index]
+    index = index + 1
+  end
+  state.position = state.position + count
+  if state.position > state.length then state.length = state.position end
+  state.buffer[state.length] = 0
+  publish_memstream(state)
+  return (@clong)(count)
+end
+
+local function nelibc_open_memstream_seek(cookie: pointer,
+    offset: *[0]clong, whence: cint): cint <cexport, codename 'nelibc_open_memstream_seek'>
+  local state: *MemstreamState = (@*MemstreamState)(cookie)
+  local base: csize
+  if whence == 0 then -- SEEK_SET
+    base = 0
+  elseif whence == 1 then -- SEEK_CUR
+    base = state.position
+  elseif whence == 2 then -- SEEK_END
+    base = state.length
+  else
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+
+  if offset[0] < 0 then
+    local magnitude: csize = (@csize)(-(offset[0] + 1)) + 1
+    if magnitude > base then
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      return -1
+    end
+    state.position = base - magnitude
+  else
+    local positive: csize = (@csize)(offset[0])
+    if positive > MAX_LONG - base then
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      return -1
+    end
+    state.position = base + positive
+  end
+  offset[0] = (@clong)(state.position)
+  return 0
+end
+
+local function nelibc_open_memstream_close(cookie: pointer): cint <cexport, codename 'nelibc_open_memstream_close'>
+  local state: *MemstreamState = (@*MemstreamState)(cookie)
+  publish_memstream(state)
+  free((@pointer)(state))
+  return 0
+end
+
+local function open_memstream(buffer_output: *[0]*[0]cchar,
+    size_output: *[0]csize): pointer <cexport, codename 'open_memstream'>
+  if buffer_output == nilptr or size_output == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  buffer_output[0] = nilptr
+  size_output[0] = 0
+
+  local state: *MemstreamState = (@*MemstreamState)(malloc((@csize)(#MemstreamState)))
+  if state == nilptr then return nilptr end
+  local buffer: pointer = malloc(1)
+  if buffer == nilptr then
+    free((@pointer)(state))
+    return nilptr
+  end
+  state.output_buffer = buffer_output
+  state.output_size = size_output
+  state.buffer = (@*[0]cchar)(buffer)
+  state.length = 0
+  state.capacity = 1
+  state.position = 0
+  state.buffer[0] = 0
+  buffer_output[0] = state.buffer
+
+  local stream: pointer = nelibc_host_open_memstream((@pointer)(state))
+  if stream == nilptr then
+    local saved_errno: cint = nelibc_errno_location()[0]
+    free(buffer)
+    free((@pointer)(state))
+    nelibc_errno_location()[0] = saved_errno
+  end
+  return stream
+end

@@ -1,0 +1,67 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,putchar,200000,3.22
+Zig cc,glibc,host-libc,puts,200000,8.48
+Zig cc,glibc,host-libc,fputc,200000,1.91
+Zig cc,glibc,host-libc,fputs,200000,7.38
+Zig cc,glibc,host-libc,snprintf,50000,148.14
+Zig cc,glibc,host-libc,sprintf,50000,143.79
+Zig cc,glibc,host-libc,vsprintf,50000,142.52
+Zig cc,glibc,host-libc,fprintf,50000,150.07
+Zig cc,glibc,host-libc,fmemopen-open-write-close,10000,83.25
+Zig cc,glibc,host-libc,fread-byte-tmpfile,200000,6.84
+Zig cc,glibc,host-libc,fwrite-byte-tmpfile,200000,7.25
+Zig cc,glibc,nelibc,putchar,200000,5.28
+Zig cc,glibc,nelibc,puts,200000,15.25
+Zig cc,glibc,nelibc,fputc,200000,4.71
+Zig cc,glibc,nelibc,fputs,200000,13.36
+Zig cc,glibc,nelibc,snprintf,50000,231.33
+Zig cc,glibc,nelibc,sprintf,50000,228.87
+Zig cc,glibc,nelibc,vsprintf,50000,205.14
+Zig cc,glibc,nelibc,fprintf,50000,249.64
+Zig cc,glibc,nelibc,fmemopen-open-write-close,10000,93.66
+Zig cc,glibc,nelibc,fread-byte-tmpfile,200000,9.99
+Zig cc,glibc,nelibc,fwrite-byte-tmpfile,200000,9.89
+GCC,glibc,host-libc,putchar,200000,3.12
+GCC,glibc,host-libc,puts,200000,8.08
+GCC,glibc,host-libc,fputc,200000,2.05
+GCC,glibc,host-libc,fputs,200000,7.43
+GCC,glibc,host-libc,snprintf,50000,144.40
+GCC,glibc,host-libc,sprintf,50000,146.54
+GCC,glibc,host-libc,vsprintf,50000,143.18
+GCC,glibc,host-libc,fprintf,50000,155.46
+GCC,glibc,host-libc,fmemopen-open-write-close,10000,84.98
+GCC,glibc,host-libc,fread-byte-tmpfile,200000,6.40
+GCC,glibc,host-libc,fwrite-byte-tmpfile,200000,7.53
+GCC,glibc,nelibc,putchar,200000,5.42
+GCC,glibc,nelibc,puts,200000,14.96
+GCC,glibc,nelibc,fputc,200000,4.96
+GCC,glibc,nelibc,fputs,200000,12.63
+GCC,glibc,nelibc,snprintf,50000,165.49
+GCC,glibc,nelibc,sprintf,50000,172.38
+GCC,glibc,nelibc,vsprintf,50000,166.25
+GCC,glibc,nelibc,fprintf,50000,229.35
+GCC,glibc,nelibc,fmemopen-open-write-close,10000,88.75
+GCC,glibc,nelibc,fread-byte-tmpfile,200000,9.33
+GCC,glibc,nelibc,fwrite-byte-tmpfile,200000,9.38
+Zig cc,musl,host-libc,putchar,200000,1.79
+Zig cc,musl,host-libc,puts,200000,13.67
+Zig cc,musl,host-libc,fputc,200000,1.33
+Zig cc,musl,host-libc,fputs,200000,11.49
+Zig cc,musl,host-libc,snprintf,50000,187.35
+Zig cc,musl,host-libc,sprintf,50000,189.96
+Zig cc,musl,host-libc,vsprintf,50000,194.46
+Zig cc,musl,host-libc,fprintf,50000,172.88
+Zig cc,musl,host-libc,fmemopen-open-write-close,10000,47.04
+Zig cc,musl,host-libc,fread-byte-tmpfile,200000,4.42
+Zig cc,musl,host-libc,fwrite-byte-tmpfile,200000,5.36
+Zig cc,musl,nelibc,putchar,200000,17.91
+Zig cc,musl,nelibc,puts,200000,26.66
+Zig cc,musl,nelibc,fputc,200000,18.03
+Zig cc,musl,nelibc,fputs,200000,25.36
+Zig cc,musl,nelibc,snprintf,50000,225.39
+Zig cc,musl,nelibc,sprintf,50000,224.40
+Zig cc,musl,nelibc,vsprintf,50000,199.23
+Zig cc,musl,nelibc,fprintf,50000,264.44
+Zig cc,musl,nelibc,fmemopen-open-write-close,10000,95.77
+Zig cc,musl,nelibc,fread-byte-tmpfile,200000,5.02
+Zig cc,musl,nelibc,fwrite-byte-tmpfile,200000,6.31

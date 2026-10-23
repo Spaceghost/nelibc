@@ -1,0 +1,19 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_malloc(size: csize): pointer <cimport> end
+local function nelibc_hybrid_free(ptr: pointer): void <cimport> end
+local function nelibc_hybrid_realloc(ptr: pointer, size: csize): pointer <cimport> end
+
+local function malloc(size: csize): pointer <cexport, codename 'malloc'>
+  return nelibc_malloc(size)
+end
+
+local function free(ptr: pointer): void <cexport, codename 'free'>
+  nelibc_hybrid_free(ptr)
+end
+
+local function realloc(ptr: pointer, size: csize): pointer
+    <cexport, codename 'realloc'>
+  return nelibc_hybrid_realloc(ptr, size)
+end

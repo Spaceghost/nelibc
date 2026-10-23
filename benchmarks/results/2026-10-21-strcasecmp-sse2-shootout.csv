@@ -1,0 +1,41 @@
+compiler,libc,implementation,function,case,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,strcasecmp,equal-short,20000,2.06
+Zig cc,glibc,host-libc,strcasecmp,mismatch-first,20000,2.73
+Zig cc,glibc,host-libc,strcasecmp,mismatch-late,20000,2.74
+Zig cc,glibc,host-libc,strncasecmp,equal-bounded,20000,3.19
+Zig cc,glibc,host-libc,strncasecmp,mismatch-at-bound,20000,3.65
+Zig cc,glibc,nelibc,strcasecmp,equal-short,20000,13.54
+Zig cc,glibc,nelibc,strcasecmp,mismatch-first,20000,3.47
+Zig cc,glibc,nelibc,strcasecmp,mismatch-late,20000,6.76
+Zig cc,glibc,nelibc,strncasecmp,equal-bounded,20000,8.89
+Zig cc,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,10.37
+GCC,glibc,host-libc,strcasecmp,equal-short,20000,2.23
+GCC,glibc,host-libc,strcasecmp,mismatch-first,20000,2.26
+GCC,glibc,host-libc,strcasecmp,mismatch-late,20000,2.83
+GCC,glibc,host-libc,strncasecmp,equal-bounded,20000,2.18
+GCC,glibc,host-libc,strncasecmp,mismatch-at-bound,20000,2.62
+GCC,glibc,nelibc,strcasecmp,equal-short,20000,2.90
+GCC,glibc,nelibc,strcasecmp,mismatch-first,20000,3.12
+GCC,glibc,nelibc,strcasecmp,mismatch-late,20000,6.68
+GCC,glibc,nelibc,strncasecmp,equal-bounded,20000,9.58
+GCC,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,11.51
+Zig cc,musl,host-libc,strcasecmp,equal-short,20000,12.43
+Zig cc,musl,host-libc,strcasecmp,mismatch-first,20000,1.60
+Zig cc,musl,host-libc,strcasecmp,mismatch-late,20000,45.72
+Zig cc,musl,host-libc,strncasecmp,equal-bounded,20000,12.09
+Zig cc,musl,host-libc,strncasecmp,mismatch-at-bound,20000,13.83
+Zig cc,musl,nelibc,strcasecmp,equal-short,20000,2.96
+Zig cc,musl,nelibc,strcasecmp,mismatch-first,20000,3.19
+Zig cc,musl,nelibc,strcasecmp,mismatch-late,20000,7.07
+Zig cc,musl,nelibc,strncasecmp,equal-bounded,20000,9.13
+Zig cc,musl,nelibc,strncasecmp,mismatch-at-bound,20000,10.45
+TinyCC,glibc,host-libc,strcasecmp,equal-short,20000,3.79
+TinyCC,glibc,host-libc,strcasecmp,mismatch-first,20000,3.72
+TinyCC,glibc,host-libc,strcasecmp,mismatch-late,20000,4.36
+TinyCC,glibc,host-libc,strncasecmp,equal-bounded,20000,3.92
+TinyCC,glibc,host-libc,strncasecmp,mismatch-at-bound,20000,4.36
+TinyCC,glibc,nelibc,strcasecmp,equal-short,20000,4.98
+TinyCC,glibc,nelibc,strcasecmp,mismatch-first,20000,5.55
+TinyCC,glibc,nelibc,strcasecmp,mismatch-late,20000,9.99
+TinyCC,glibc,nelibc,strncasecmp,equal-bounded,20000,27.71
+TinyCC,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,29.90

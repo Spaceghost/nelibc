@@ -1,0 +1,51 @@
+compiler,libc,implementation,function,case,iterations,median_ns_per_call
+Zig cc,glibc,nelibc,strcasecmp,equal-short,20000,3.93
+Zig cc,glibc,nelibc,strcasecmp,mismatch-first,20000,1.82
+Zig cc,glibc,nelibc,strcasecmp,mismatch-late,20000,4.13
+Zig cc,glibc,nelibc,strncasecmp,equal-bounded,20000,9.80
+Zig cc,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,10.94
+Zig cc,glibc,nelibc,strncasecmp,mismatch-first-bounded,20000,4.80
+Zig cc,glibc,nelibc,strncasecmp,equal-long-bounded,20000,4.46
+Zig cc,glibc,nelibc,strncasecmp,mismatch-late-bounded,20000,5.50
+Zig cc,glibc,nelibc,strcasecmp,equal-very-long,20000,6.04
+Zig cc,glibc,nelibc,strcasecmp,mismatch-very-late,20000,6.47
+Zig cc,glibc,nelibc,strcasecmp,equal-256,20000,10.24
+Zig cc,glibc,nelibc,strcasecmp,mismatch-late-256,20000,11.38
+compiler,libc,implementation,function,case,iterations,median_ns_per_call
+GCC,glibc,nelibc,strcasecmp,equal-short,20000,4.17
+GCC,glibc,nelibc,strcasecmp,mismatch-first,20000,1.60
+GCC,glibc,nelibc,strcasecmp,mismatch-late,20000,4.13
+GCC,glibc,nelibc,strncasecmp,equal-bounded,20000,11.17
+GCC,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,10.49
+GCC,glibc,nelibc,strncasecmp,mismatch-first-bounded,20000,4.68
+GCC,glibc,nelibc,strncasecmp,equal-long-bounded,20000,4.35
+GCC,glibc,nelibc,strncasecmp,mismatch-late-bounded,20000,5.01
+GCC,glibc,nelibc,strcasecmp,equal-very-long,20000,5.97
+GCC,glibc,nelibc,strcasecmp,mismatch-very-late,20000,6.26
+GCC,glibc,nelibc,strcasecmp,equal-256,20000,10.17
+GCC,glibc,nelibc,strcasecmp,mismatch-late-256,20000,10.89
+compiler,libc,implementation,function,case,iterations,median_ns_per_call
+Zig cc,musl,nelibc,strcasecmp,equal-short,20000,3.76
+Zig cc,musl,nelibc,strcasecmp,mismatch-first,20000,1.71
+Zig cc,musl,nelibc,strcasecmp,mismatch-late,20000,4.05
+Zig cc,musl,nelibc,strncasecmp,equal-bounded,20000,8.35
+Zig cc,musl,nelibc,strncasecmp,mismatch-at-bound,20000,9.41
+Zig cc,musl,nelibc,strncasecmp,mismatch-first-bounded,20000,4.49
+Zig cc,musl,nelibc,strncasecmp,equal-long-bounded,20000,4.27
+Zig cc,musl,nelibc,strncasecmp,mismatch-late-bounded,20000,4.79
+Zig cc,musl,nelibc,strcasecmp,equal-very-long,20000,5.83
+Zig cc,musl,nelibc,strcasecmp,mismatch-very-late,20000,6.01
+Zig cc,musl,nelibc,strcasecmp,equal-256,20000,9.97
+Zig cc,musl,nelibc,strcasecmp,mismatch-late-256,20000,10.49
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strcasecmp,equal-short,20000,4.27
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strcasecmp,mismatch-first,20000,2.18
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strcasecmp,mismatch-late,20000,4.58
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strncasecmp,equal-bounded,20000,23.43
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strncasecmp,mismatch-at-bound,20000,27.47
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strncasecmp,mismatch-first-bounded,20000,5.33
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strncasecmp,equal-long-bounded,20000,5.12
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strncasecmp,mismatch-late-bounded,20000,5.12
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strcasecmp,equal-very-long,20000,6.09
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strcasecmp,mismatch-very-late,20000,6.40
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strcasecmp,equal-256,20000,10.65
+GCC harness (TinyCC Nelua objects),glibc,nelibc,strcasecmp,mismatch-late-256,20000,10.95

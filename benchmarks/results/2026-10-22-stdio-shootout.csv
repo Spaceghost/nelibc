@@ -1,0 +1,65 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,putchar,200000,3.17
+Zig cc,glibc,host-libc,puts,200000,8.11
+Zig cc,glibc,host-libc,fputc,200000,2.06
+Zig cc,glibc,host-libc,fputs,200000,7.58
+Zig cc,glibc,host-libc,snprintf,50000,144.06
+Zig cc,glibc,host-libc,sprintf,50000,143.32
+Zig cc,glibc,host-libc,vsprintf,50000,144.86
+Zig cc,glibc,host-libc,fprintf,50000,152.80
+Zig cc,glibc,nelibc,putchar,200000,5.52
+Zig cc,glibc,nelibc,puts,200000,14.69
+Zig cc,glibc,nelibc,fputc,200000,4.86
+Zig cc,glibc,nelibc,fputs,200000,13.39
+Zig cc,glibc,nelibc,snprintf,50000,235.96
+Zig cc,glibc,nelibc,sprintf,50000,231.15
+Zig cc,glibc,nelibc,vsprintf,50000,209.38
+Zig cc,glibc,nelibc,fprintf,50000,247.20
+GCC,glibc,host-libc,putchar,200000,3.05
+GCC,glibc,host-libc,puts,200000,7.93
+GCC,glibc,host-libc,fputc,200000,1.85
+GCC,glibc,host-libc,fputs,200000,7.58
+GCC,glibc,host-libc,snprintf,50000,144.42
+GCC,glibc,host-libc,sprintf,50000,146.80
+GCC,glibc,host-libc,vsprintf,50000,146.73
+GCC,glibc,host-libc,fprintf,50000,151.32
+GCC,glibc,nelibc,putchar,200000,5.91
+GCC,glibc,nelibc,puts,200000,15.24
+GCC,glibc,nelibc,fputc,200000,5.04
+GCC,glibc,nelibc,fputs,200000,13.20
+GCC,glibc,nelibc,snprintf,50000,170.30
+GCC,glibc,nelibc,sprintf,50000,176.06
+GCC,glibc,nelibc,vsprintf,50000,173.60
+GCC,glibc,nelibc,fprintf,50000,224.42
+Zig cc,musl,host-libc,putchar,200000,1.55
+Zig cc,musl,host-libc,puts,200000,13.43
+Zig cc,musl,host-libc,fputc,200000,1.49
+Zig cc,musl,host-libc,fputs,200000,12.00
+Zig cc,musl,host-libc,snprintf,50000,184.41
+Zig cc,musl,host-libc,sprintf,50000,189.71
+Zig cc,musl,host-libc,vsprintf,50000,189.35
+Zig cc,musl,host-libc,fprintf,50000,174.31
+Zig cc,musl,nelibc,putchar,200000,17.44
+Zig cc,musl,nelibc,puts,200000,26.46
+Zig cc,musl,nelibc,fputc,200000,17.55
+Zig cc,musl,nelibc,fputs,200000,25.22
+Zig cc,musl,nelibc,snprintf,50000,218.46
+Zig cc,musl,nelibc,sprintf,50000,222.19
+Zig cc,musl,nelibc,vsprintf,50000,204.59
+Zig cc,musl,nelibc,fprintf,50000,271.05
+TinyCC,glibc,host-libc,putchar,200000,3.75
+TinyCC,glibc,host-libc,puts,200000,8.58
+TinyCC,glibc,host-libc,fputc,200000,3.39
+TinyCC,glibc,host-libc,fputs,200000,8.48
+TinyCC,glibc,host-libc,snprintf,50000,148.62
+TinyCC,glibc,host-libc,sprintf,50000,145.44
+TinyCC,glibc,host-libc,vsprintf,50000,150.65
+TinyCC,glibc,host-libc,fprintf,50000,151.81
+TinyCC,glibc,nelibc,putchar,200000,7.57
+TinyCC,glibc,nelibc,puts,200000,22.56
+TinyCC,glibc,nelibc,fputc,200000,6.27
+TinyCC,glibc,nelibc,fputs,200000,20.49
+TinyCC,glibc,nelibc,snprintf,50000,198.26
+TinyCC,glibc,nelibc,sprintf,50000,198.27
+TinyCC,glibc,nelibc,vsprintf,50000,206.86
+TinyCC,glibc,nelibc,fprintf,50000,238.02

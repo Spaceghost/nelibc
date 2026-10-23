@@ -1,0 +1,27 @@
+Current TinyCC long-parser function profile
+===========================================
+
+Instrumented the current `src/stdlib_float.nelua` in a temporary copy with
+`rdtsc` timers around `big_mul_power5` and the Knuth quotient loop. The long
+benchmark ran 800 parser calls per function (5 samples x 160 calls). `big_mul_power5`
+ran once on every parser call; the Knuth loop ran 0.5 times per `strtof` and
+`strtod` call and once per `strtold` call.
+
+| Parser | Power5 cycles per parse | Knuth calls per parse | Knuth cycles per parse |
+|---|---:|---:|---:|
+| strtof | 10,166.9 | 0.50 | 550.2 |
+| strtod | 10,107.5 | 0.50 | 821.4 |
+| strtold | 9,892.9 | 1.00 | 1,847.4 |
+
+The power-of-five scaling path accounts for about 5.5–18.5 times as many
+measured cycles per parser call as the Knuth quotient loop. The recently
+measured quotient-correction loop runs zero times for `strtof` and at most once
+per quotient estimate on the other long cases. That loop is not a useful
+optimization target for these inputs. The persistent per-call hotspot remains
+`big_mul_power5`, particularly its repeated `big_mul_small` limb work.
+
+The timers use C `lfence; rdtsc` helpers called at the function boundaries. This
+is a scoped function profile, not a complete cycle breakdown of the parser. The
+profile source copy and executable are under `build/`; production source is
+unchanged. Raw counts and cycle totals:
+`2026-10-22-float-long-current-hotspots-tcc.csv`.

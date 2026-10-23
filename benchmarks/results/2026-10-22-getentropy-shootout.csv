@@ -1,0 +1,17 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,getentropy-32-bytes,100000,232.32
+Zig cc,glibc,host-libc,getentropy-256-bytes,100000,675.19
+Zig cc,glibc,nelibc,getentropy-32-bytes,100000,227.81
+Zig cc,glibc,nelibc,getentropy-256-bytes,100000,673.68
+GCC,glibc,host-libc,getentropy-32-bytes,100000,232.05
+GCC,glibc,host-libc,getentropy-256-bytes,100000,680.13
+GCC,glibc,nelibc,getentropy-32-bytes,100000,230.10
+GCC,glibc,nelibc,getentropy-256-bytes,100000,682.49
+Zig cc,musl,host-libc,getentropy-32-bytes,100000,239.45
+Zig cc,musl,host-libc,getentropy-256-bytes,100000,693.14
+Zig cc,musl,nelibc,getentropy-32-bytes,100000,237.75
+Zig cc,musl,nelibc,getentropy-256-bytes,100000,676.62
+TinyCC,glibc,host-libc,getentropy-32-bytes,100000,229.86
+TinyCC,glibc,host-libc,getentropy-256-bytes,100000,678.56
+TinyCC,glibc,nelibc,getentropy-32-bytes,100000,239.83
+TinyCC,glibc,nelibc,getentropy-256-bytes,100000,694.76

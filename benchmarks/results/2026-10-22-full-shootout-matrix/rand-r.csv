@@ -1,0 +1,9 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,rand_r,1000000,3.96
+Zig cc,glibc,nelibc,rand_r,1000000,1.19
+GCC,glibc,host-libc,rand_r,1000000,3.87
+GCC,glibc,nelibc,rand_r,1000000,1.72
+Zig cc,musl,host-libc,rand_r,1000000,1.35
+Zig cc,musl,nelibc,rand_r,1000000,1.18
+TinyCC,glibc,host-libc,rand_r,1000000,3.11
+TinyCC,glibc,nelibc,rand_r,1000000,1.77

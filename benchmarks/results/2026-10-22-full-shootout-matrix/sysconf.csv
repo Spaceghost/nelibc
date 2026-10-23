@@ -1,0 +1,321 @@
+compiler,libc,implementation,query,value,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,arg-max,2097152,10000,128.35
+Zig cc,glibc,host-libc,child-max,61661,10000,129.46
+Zig cc,glibc,host-libc,clock-ticks,100,250000,4.10
+Zig cc,glibc,host-libc,open-max,1024,10000,130.03
+Zig cc,glibc,host-libc,page-size,4096,250000,3.99
+Zig cc,glibc,host-libc,groups-max,65536,250000,1711.45
+Zig cc,glibc,host-libc,processors-conf,16,10000,2456.03
+Zig cc,glibc,host-libc,processors-online,16,10000,2525.78
+Zig cc,glibc,host-libc,physical-pages,4006116,10000,163.73
+Zig cc,glibc,host-libc,available-pages,106201,10000,168.34
+Zig cc,glibc,host-libc,stream-max,16,250000,3.44
+Zig cc,glibc,host-libc,tzname-max,-1,250000,3.55
+Zig cc,glibc,host-libc,posix-version,200809,250000,3.34
+Zig cc,glibc,host-libc,realtime-signals,200809,250000,3.33
+Zig cc,glibc,host-libc,async-io,200809,250000,3.28
+Zig cc,glibc,host-libc,delaytimer-max,2147483647,250000,3.25
+Zig cc,glibc,host-libc,mq-priority-max,32768,250000,3.34
+Zig cc,glibc,host-libc,signal-queue-max,61661,250000,125.06
+Zig cc,glibc,host-libc,sem-nsems-max,-1,250000,4.19
+Zig cc,glibc,host-libc,sem-value-max,2147483647,250000,3.55
+Zig cc,glibc,host-libc,bc-base-max,99,250000,3.67
+Zig cc,glibc,host-libc,bc-dim-max,2048,250000,3.75
+Zig cc,glibc,host-libc,bc-scale-max,99,250000,3.69
+Zig cc,glibc,host-libc,bc-string-max,1000,250000,3.38
+Zig cc,glibc,host-libc,coll-weights-max,255,250000,3.33
+Zig cc,glibc,host-libc,regex-repeat-max,32767,250000,3.39
+Zig cc,glibc,host-libc,iov-max,1024,250000,2.82
+Zig cc,glibc,host-libc,login-name-max,256,250000,2.21
+Zig cc,glibc,host-libc,tty-name-max,32,250000,2.62
+Zig cc,glibc,host-libc,thread-destructors,4,250000,2.56
+Zig cc,glibc,host-libc,thread-keys-max,1024,250000,2.81
+Zig cc,glibc,host-libc,thread-stack-min,16384,250000,2.59
+Zig cc,glibc,host-libc,thread-count-max,-1,250000,2.83
+Zig cc,glibc,host-libc,xopen-version,700,250000,2.77
+Zig cc,glibc,host-libc,xopen-unix,1,250000,3.04
+Zig cc,glibc,host-libc,nzero,20,250000,3.05
+Zig cc,glibc,host-libc,symlink-max,-1,250000,3.24
+Zig cc,glibc,host-libc,hostname-max,64,250000,3.02
+Zig cc,glibc,host-libc,ipv6,200809,250000,2.98
+Zig cc,glibc,host-libc,raw-sockets,200809,250000,3.02
+Zig cc,glibc,nelibc,arg-max,2097152,10000,123.99
+Zig cc,glibc,nelibc,child-max,61661,10000,122.22
+Zig cc,glibc,nelibc,clock-ticks,100,250000,1.82
+Zig cc,glibc,nelibc,open-max,1024,10000,117.31
+Zig cc,glibc,nelibc,page-size,4096,250000,2.23
+Zig cc,glibc,nelibc,groups-max,65536,250000,1.97
+Zig cc,glibc,nelibc,processors-conf,16,10000,274.32
+Zig cc,glibc,nelibc,processors-online,16,10000,261.05
+Zig cc,glibc,nelibc,physical-pages,4006116,10000,181.18
+Zig cc,glibc,nelibc,available-pages,111045,10000,177.78
+Zig cc,glibc,nelibc,stream-max,16,250000,1.94
+Zig cc,glibc,nelibc,tzname-max,-1,250000,1.65
+Zig cc,glibc,nelibc,posix-version,200809,250000,2.32
+Zig cc,glibc,nelibc,realtime-signals,200809,250000,2.35
+Zig cc,glibc,nelibc,async-io,200809,250000,2.34
+Zig cc,glibc,nelibc,delaytimer-max,2147483647,250000,2.40
+Zig cc,glibc,nelibc,mq-priority-max,32768,250000,2.26
+Zig cc,glibc,nelibc,signal-queue-max,61661,250000,115.60
+Zig cc,glibc,nelibc,sem-nsems-max,-1,250000,2.24
+Zig cc,glibc,nelibc,sem-value-max,2147483647,250000,2.17
+Zig cc,glibc,nelibc,bc-base-max,99,250000,1.92
+Zig cc,glibc,nelibc,bc-dim-max,2048,250000,1.93
+Zig cc,glibc,nelibc,bc-scale-max,99,250000,1.95
+Zig cc,glibc,nelibc,bc-string-max,1000,250000,2.05
+Zig cc,glibc,nelibc,coll-weights-max,255,250000,2.05
+Zig cc,glibc,nelibc,regex-repeat-max,32767,250000,2.06
+Zig cc,glibc,nelibc,iov-max,1024,250000,2.42
+Zig cc,glibc,nelibc,login-name-max,256,250000,2.76
+Zig cc,glibc,nelibc,tty-name-max,32,250000,2.66
+Zig cc,glibc,nelibc,thread-destructors,4,250000,2.84
+Zig cc,glibc,nelibc,thread-keys-max,1024,250000,2.72
+Zig cc,glibc,nelibc,thread-stack-min,16384,250000,2.72
+Zig cc,glibc,nelibc,thread-count-max,-1,250000,2.76
+Zig cc,glibc,nelibc,xopen-version,700,250000,2.81
+Zig cc,glibc,nelibc,xopen-unix,1,250000,3.17
+Zig cc,glibc,nelibc,nzero,20,250000,3.22
+Zig cc,glibc,nelibc,symlink-max,-1,250000,3.77
+Zig cc,glibc,nelibc,hostname-max,64,250000,4.29
+Zig cc,glibc,nelibc,ipv6,200809,250000,4.00
+Zig cc,glibc,nelibc,raw-sockets,200809,250000,3.98
+GCC,glibc,host-libc,arg-max,2097152,10000,126.42
+GCC,glibc,host-libc,child-max,61661,10000,133.73
+GCC,glibc,host-libc,clock-ticks,100,250000,4.46
+GCC,glibc,host-libc,open-max,1024,10000,127.53
+GCC,glibc,host-libc,page-size,4096,250000,4.61
+GCC,glibc,host-libc,groups-max,65536,250000,1691.90
+GCC,glibc,host-libc,processors-conf,16,10000,2419.44
+GCC,glibc,host-libc,processors-online,16,10000,2414.87
+GCC,glibc,host-libc,physical-pages,4006116,10000,156.94
+GCC,glibc,host-libc,available-pages,110120,10000,156.24
+GCC,glibc,host-libc,stream-max,16,250000,3.97
+GCC,glibc,host-libc,tzname-max,-1,250000,3.95
+GCC,glibc,host-libc,posix-version,200809,250000,3.92
+GCC,glibc,host-libc,realtime-signals,200809,250000,3.89
+GCC,glibc,host-libc,async-io,200809,250000,4.02
+GCC,glibc,host-libc,delaytimer-max,2147483647,250000,4.03
+GCC,glibc,host-libc,mq-priority-max,32768,250000,4.06
+GCC,glibc,host-libc,signal-queue-max,61661,250000,123.86
+GCC,glibc,host-libc,sem-nsems-max,-1,250000,3.94
+GCC,glibc,host-libc,sem-value-max,2147483647,250000,3.95
+GCC,glibc,host-libc,bc-base-max,99,250000,4.04
+GCC,glibc,host-libc,bc-dim-max,2048,250000,4.15
+GCC,glibc,host-libc,bc-scale-max,99,250000,4.11
+GCC,glibc,host-libc,bc-string-max,1000,250000,3.89
+GCC,glibc,host-libc,coll-weights-max,255,250000,3.87
+GCC,glibc,host-libc,regex-repeat-max,32767,250000,3.91
+GCC,glibc,host-libc,iov-max,1024,250000,3.01
+GCC,glibc,host-libc,login-name-max,256,250000,3.04
+GCC,glibc,host-libc,tty-name-max,32,250000,3.12
+GCC,glibc,host-libc,thread-destructors,4,250000,3.13
+GCC,glibc,host-libc,thread-keys-max,1024,250000,3.23
+GCC,glibc,host-libc,thread-stack-min,16384,250000,3.12
+GCC,glibc,host-libc,thread-count-max,-1,250000,3.06
+GCC,glibc,host-libc,xopen-version,700,250000,3.33
+GCC,glibc,host-libc,xopen-unix,1,250000,3.50
+GCC,glibc,host-libc,nzero,20,250000,3.48
+GCC,glibc,host-libc,symlink-max,-1,250000,3.62
+GCC,glibc,host-libc,hostname-max,64,250000,3.42
+GCC,glibc,host-libc,ipv6,200809,250000,3.48
+GCC,glibc,host-libc,raw-sockets,200809,250000,3.56
+GCC,glibc,nelibc,arg-max,2097152,10000,119.78
+GCC,glibc,nelibc,child-max,61661,10000,115.86
+GCC,glibc,nelibc,clock-ticks,100,250000,1.53
+GCC,glibc,nelibc,open-max,1024,10000,115.02
+GCC,glibc,nelibc,page-size,4096,250000,1.93
+GCC,glibc,nelibc,groups-max,65536,250000,1.63
+GCC,glibc,nelibc,processors-conf,16,10000,219.96
+GCC,glibc,nelibc,processors-online,16,10000,221.79
+GCC,glibc,nelibc,physical-pages,4006116,10000,152.83
+GCC,glibc,nelibc,available-pages,110396,10000,156.22
+GCC,glibc,nelibc,stream-max,16,250000,1.30
+GCC,glibc,nelibc,tzname-max,-1,250000,1.23
+GCC,glibc,nelibc,posix-version,200809,250000,2.00
+GCC,glibc,nelibc,realtime-signals,200809,250000,2.06
+GCC,glibc,nelibc,async-io,200809,250000,1.93
+GCC,glibc,nelibc,delaytimer-max,2147483647,250000,1.91
+GCC,glibc,nelibc,mq-priority-max,32768,250000,1.95
+GCC,glibc,nelibc,signal-queue-max,61661,250000,114.98
+GCC,glibc,nelibc,sem-nsems-max,-1,250000,1.74
+GCC,glibc,nelibc,sem-value-max,2147483647,250000,1.85
+GCC,glibc,nelibc,bc-base-max,99,250000,1.64
+GCC,glibc,nelibc,bc-dim-max,2048,250000,1.85
+GCC,glibc,nelibc,bc-scale-max,99,250000,1.75
+GCC,glibc,nelibc,bc-string-max,1000,250000,1.76
+GCC,glibc,nelibc,coll-weights-max,255,250000,1.82
+GCC,glibc,nelibc,regex-repeat-max,32767,250000,1.79
+GCC,glibc,nelibc,iov-max,1024,250000,1.77
+GCC,glibc,nelibc,login-name-max,256,250000,1.79
+GCC,glibc,nelibc,tty-name-max,32,250000,1.76
+GCC,glibc,nelibc,thread-destructors,4,250000,1.92
+GCC,glibc,nelibc,thread-keys-max,1024,250000,1.71
+GCC,glibc,nelibc,thread-stack-min,16384,250000,1.72
+GCC,glibc,nelibc,thread-count-max,-1,250000,1.53
+GCC,glibc,nelibc,xopen-version,700,250000,1.99
+GCC,glibc,nelibc,xopen-unix,1,250000,2.35
+GCC,glibc,nelibc,nzero,20,250000,2.13
+GCC,glibc,nelibc,symlink-max,-1,250000,1.71
+GCC,glibc,nelibc,hostname-max,64,250000,2.12
+GCC,glibc,nelibc,ipv6,200809,250000,2.14
+GCC,glibc,nelibc,raw-sockets,200809,250000,2.12
+Zig cc,musl,host-libc,arg-max,131072,10000,2.51
+Zig cc,musl,host-libc,child-max,61661,10000,131.02
+Zig cc,musl,host-libc,clock-ticks,100,250000,1.62
+Zig cc,musl,host-libc,open-max,1024,10000,126.71
+Zig cc,musl,host-libc,page-size,4096,250000,2.69
+Zig cc,musl,host-libc,groups-max,32,250000,1.56
+Zig cc,musl,host-libc,processors-conf,16,10000,238.32
+Zig cc,musl,host-libc,processors-online,16,10000,234.39
+Zig cc,musl,host-libc,physical-pages,4006116,10000,157.19
+Zig cc,musl,host-libc,available-pages,102321,10000,150.93
+Zig cc,musl,host-libc,stream-max,-1,250000,1.49
+Zig cc,musl,host-libc,tzname-max,6,250000,1.52
+Zig cc,musl,host-libc,posix-version,200809,250000,2.53
+Zig cc,musl,host-libc,realtime-signals,200809,250000,2.46
+Zig cc,musl,host-libc,async-io,200809,250000,2.47
+Zig cc,musl,host-libc,delaytimer-max,2147483647,250000,2.45
+Zig cc,musl,host-libc,mq-priority-max,32768,250000,2.39
+Zig cc,musl,host-libc,signal-queue-max,-1,250000,1.43
+Zig cc,musl,host-libc,sem-nsems-max,256,250000,1.50
+Zig cc,musl,host-libc,sem-value-max,2147483647,250000,2.52
+Zig cc,musl,host-libc,bc-base-max,99,250000,1.53
+Zig cc,musl,host-libc,bc-dim-max,2048,250000,1.56
+Zig cc,musl,host-libc,bc-scale-max,99,250000,1.50
+Zig cc,musl,host-libc,bc-string-max,1000,250000,1.56
+Zig cc,musl,host-libc,coll-weights-max,2,250000,1.52
+Zig cc,musl,host-libc,regex-repeat-max,255,250000,1.55
+Zig cc,musl,host-libc,iov-max,1024,250000,1.49
+Zig cc,musl,host-libc,login-name-max,256,250000,1.50
+Zig cc,musl,host-libc,tty-name-max,32,250000,1.43
+Zig cc,musl,host-libc,thread-destructors,4,250000,1.51
+Zig cc,musl,host-libc,thread-keys-max,128,250000,1.55
+Zig cc,musl,host-libc,thread-stack-min,2048,250000,1.53
+Zig cc,musl,host-libc,thread-count-max,-1,250000,1.51
+Zig cc,musl,host-libc,xopen-version,700,250000,1.55
+Zig cc,musl,host-libc,xopen-unix,1,250000,1.61
+Zig cc,musl,host-libc,nzero,20,250000,1.50
+Zig cc,musl,host-libc,symlink-max,40,250000,1.56
+Zig cc,musl,host-libc,hostname-max,255,250000,1.55
+Zig cc,musl,host-libc,ipv6,200809,250000,2.37
+Zig cc,musl,host-libc,raw-sockets,200809,250000,2.43
+Zig cc,musl,nelibc,arg-max,2097152,10000,118.74
+Zig cc,musl,nelibc,child-max,61661,10000,118.90
+Zig cc,musl,nelibc,clock-ticks,100,250000,1.91
+Zig cc,musl,nelibc,open-max,1024,10000,120.90
+Zig cc,musl,nelibc,page-size,4096,250000,2.18
+Zig cc,musl,nelibc,groups-max,65536,250000,1.73
+Zig cc,musl,nelibc,processors-conf,16,10000,256.16
+Zig cc,musl,nelibc,processors-online,16,10000,252.67
+Zig cc,musl,nelibc,physical-pages,4006116,10000,167.23
+Zig cc,musl,nelibc,available-pages,102784,10000,162.85
+Zig cc,musl,nelibc,stream-max,16,250000,1.76
+Zig cc,musl,nelibc,tzname-max,-1,250000,1.57
+Zig cc,musl,nelibc,posix-version,200809,250000,2.17
+Zig cc,musl,nelibc,realtime-signals,200809,250000,2.20
+Zig cc,musl,nelibc,async-io,200809,250000,2.21
+Zig cc,musl,nelibc,delaytimer-max,2147483647,250000,2.31
+Zig cc,musl,nelibc,mq-priority-max,32768,250000,2.34
+Zig cc,musl,nelibc,signal-queue-max,61661,250000,115.86
+Zig cc,musl,nelibc,sem-nsems-max,-1,250000,2.26
+Zig cc,musl,nelibc,sem-value-max,2147483647,250000,2.17
+Zig cc,musl,nelibc,bc-base-max,99,250000,1.74
+Zig cc,musl,nelibc,bc-dim-max,2048,250000,1.71
+Zig cc,musl,nelibc,bc-scale-max,99,250000,1.71
+Zig cc,musl,nelibc,bc-string-max,1000,250000,1.71
+Zig cc,musl,nelibc,coll-weights-max,255,250000,1.78
+Zig cc,musl,nelibc,regex-repeat-max,32767,250000,2.19
+Zig cc,musl,nelibc,iov-max,1024,250000,2.38
+Zig cc,musl,nelibc,login-name-max,256,250000,2.90
+Zig cc,musl,nelibc,tty-name-max,32,250000,2.80
+Zig cc,musl,nelibc,thread-destructors,4,250000,2.92
+Zig cc,musl,nelibc,thread-keys-max,1024,250000,2.79
+Zig cc,musl,nelibc,thread-stack-min,16384,250000,2.80
+Zig cc,musl,nelibc,thread-count-max,-1,250000,2.96
+Zig cc,musl,nelibc,xopen-version,700,250000,2.87
+Zig cc,musl,nelibc,xopen-unix,1,250000,3.00
+Zig cc,musl,nelibc,nzero,20,250000,3.53
+Zig cc,musl,nelibc,symlink-max,-1,250000,4.02
+Zig cc,musl,nelibc,hostname-max,64,250000,4.37
+Zig cc,musl,nelibc,ipv6,200809,250000,3.86
+Zig cc,musl,nelibc,raw-sockets,200809,250000,3.85
+TinyCC,glibc,host-libc,arg-max,2097152,10000,131.92
+TinyCC,glibc,host-libc,child-max,61661,10000,130.99
+TinyCC,glibc,host-libc,clock-ticks,100,250000,4.78
+TinyCC,glibc,host-libc,open-max,1024,10000,131.11
+TinyCC,glibc,host-libc,page-size,4096,250000,4.89
+TinyCC,glibc,host-libc,groups-max,65536,250000,1787.53
+TinyCC,glibc,host-libc,processors-conf,16,10000,2419.72
+TinyCC,glibc,host-libc,processors-online,16,10000,2370.82
+TinyCC,glibc,host-libc,physical-pages,4006116,10000,158.22
+TinyCC,glibc,host-libc,available-pages,105040,10000,160.61
+TinyCC,glibc,host-libc,stream-max,16,250000,4.16
+TinyCC,glibc,host-libc,tzname-max,-1,250000,5.64
+TinyCC,glibc,host-libc,posix-version,200809,250000,4.14
+TinyCC,glibc,host-libc,realtime-signals,200809,250000,4.06
+TinyCC,glibc,host-libc,async-io,200809,250000,4.14
+TinyCC,glibc,host-libc,delaytimer-max,2147483647,250000,4.19
+TinyCC,glibc,host-libc,mq-priority-max,32768,250000,4.25
+TinyCC,glibc,host-libc,signal-queue-max,61661,250000,126.41
+TinyCC,glibc,host-libc,sem-nsems-max,-1,250000,5.78
+TinyCC,glibc,host-libc,sem-value-max,2147483647,250000,4.20
+TinyCC,glibc,host-libc,bc-base-max,99,250000,4.35
+TinyCC,glibc,host-libc,bc-dim-max,2048,250000,4.34
+TinyCC,glibc,host-libc,bc-scale-max,99,250000,4.34
+TinyCC,glibc,host-libc,bc-string-max,1000,250000,4.11
+TinyCC,glibc,host-libc,coll-weights-max,255,250000,4.19
+TinyCC,glibc,host-libc,regex-repeat-max,32767,250000,4.14
+TinyCC,glibc,host-libc,iov-max,1024,250000,3.62
+TinyCC,glibc,host-libc,login-name-max,256,250000,3.12
+TinyCC,glibc,host-libc,tty-name-max,32,250000,3.21
+TinyCC,glibc,host-libc,thread-destructors,4,250000,3.32
+TinyCC,glibc,host-libc,thread-keys-max,1024,250000,3.54
+TinyCC,glibc,host-libc,thread-stack-min,16384,250000,3.21
+TinyCC,glibc,host-libc,thread-count-max,-1,250000,4.79
+TinyCC,glibc,host-libc,xopen-version,700,250000,3.54
+TinyCC,glibc,host-libc,xopen-unix,1,250000,3.75
+TinyCC,glibc,host-libc,nzero,20,250000,3.66
+TinyCC,glibc,host-libc,symlink-max,-1,250000,5.14
+TinyCC,glibc,host-libc,hostname-max,64,250000,3.61
+TinyCC,glibc,host-libc,ipv6,200809,250000,3.78
+TinyCC,glibc,host-libc,raw-sockets,200809,250000,3.63
+TinyCC,glibc,nelibc,arg-max,2097152,10000,138.64
+TinyCC,glibc,nelibc,child-max,61661,10000,140.10
+TinyCC,glibc,nelibc,clock-ticks,100,250000,3.08
+TinyCC,glibc,nelibc,open-max,1024,10000,144.44
+TinyCC,glibc,nelibc,page-size,4096,250000,6.71
+TinyCC,glibc,nelibc,groups-max,65536,250000,3.20
+TinyCC,glibc,nelibc,processors-conf,16,10000,414.21
+TinyCC,glibc,nelibc,processors-online,16,10000,414.98
+TinyCC,glibc,nelibc,physical-pages,4006116,10000,216.34
+TinyCC,glibc,nelibc,available-pages,102980,10000,222.37
+TinyCC,glibc,nelibc,stream-max,16,250000,3.55
+TinyCC,glibc,nelibc,tzname-max,-1,250000,5.65
+TinyCC,glibc,nelibc,posix-version,200809,250000,6.40
+TinyCC,glibc,nelibc,realtime-signals,200809,250000,4.78
+TinyCC,glibc,nelibc,async-io,200809,250000,4.90
+TinyCC,glibc,nelibc,delaytimer-max,2147483647,250000,6.24
+TinyCC,glibc,nelibc,mq-priority-max,32768,250000,6.12
+TinyCC,glibc,nelibc,signal-queue-max,61661,250000,134.94
+TinyCC,glibc,nelibc,sem-nsems-max,-1,250000,7.12
+TinyCC,glibc,nelibc,sem-value-max,2147483647,250000,5.58
+TinyCC,glibc,nelibc,bc-base-max,99,250000,7.18
+TinyCC,glibc,nelibc,bc-dim-max,2048,250000,7.18
+TinyCC,glibc,nelibc,bc-scale-max,99,250000,7.59
+TinyCC,glibc,nelibc,bc-string-max,1000,250000,7.79
+TinyCC,glibc,nelibc,coll-weights-max,255,250000,8.18
+TinyCC,glibc,nelibc,regex-repeat-max,32767,250000,8.30
+TinyCC,glibc,nelibc,iov-max,1024,250000,9.26
+TinyCC,glibc,nelibc,login-name-max,256,250000,10.13
+TinyCC,glibc,nelibc,tty-name-max,32,250000,10.09
+TinyCC,glibc,nelibc,thread-destructors,4,250000,10.51
+TinyCC,glibc,nelibc,thread-keys-max,1024,250000,10.96
+TinyCC,glibc,nelibc,thread-stack-min,16384,250000,10.97
+TinyCC,glibc,nelibc,thread-count-max,-1,250000,11.18
+TinyCC,glibc,nelibc,xopen-version,700,250000,12.41
+TinyCC,glibc,nelibc,xopen-unix,1,250000,13.11
+TinyCC,glibc,nelibc,nzero,20,250000,13.74
+TinyCC,glibc,nelibc,symlink-max,-1,250000,17.20
+TinyCC,glibc,nelibc,hostname-max,64,250000,16.75
+TinyCC,glibc,nelibc,ipv6,200809,250000,17.88
+TinyCC,glibc,nelibc,raw-sockets,200809,250000,17.57

@@ -1,0 +1,97 @@
+compiler,libc,implementation,function,size_bytes,threads,iterations_per_thread,median_ns_per_pair
+Zig cc,glibc,host-libc,malloc-free,64,1,30000,5.95
+Zig cc,glibc,host-libc,malloc-free,64,2,30000,2.73
+Zig cc,glibc,host-libc,malloc-free,64,4,30000,1.40
+Zig cc,glibc,host-libc,malloc-free,64,8,30000,0.72
+Zig cc,glibc,host-libc,malloc-free,128,1,30000,5.43
+Zig cc,glibc,host-libc,malloc-free,128,2,30000,2.72
+Zig cc,glibc,host-libc,malloc-free,128,4,30000,1.41
+Zig cc,glibc,host-libc,malloc-free,128,8,30000,0.72
+Zig cc,glibc,host-libc,malloc-free,4096,1,30000,28.28
+Zig cc,glibc,host-libc,malloc-free,4096,2,30000,14.35
+Zig cc,glibc,host-libc,malloc-free,4096,4,30000,7.09
+Zig cc,glibc,host-libc,malloc-free,4096,8,30000,5.71
+Zig cc,glibc,nelibc,malloc-free,64,1,30000,8.99
+Zig cc,glibc,nelibc,malloc-free,64,2,30000,4.39
+Zig cc,glibc,nelibc,malloc-free,64,4,30000,2.28
+Zig cc,glibc,nelibc,malloc-free,64,8,30000,2.11
+Zig cc,glibc,nelibc,malloc-free,128,1,30000,9.01
+Zig cc,glibc,nelibc,malloc-free,128,2,30000,4.35
+Zig cc,glibc,nelibc,malloc-free,128,4,30000,2.21
+Zig cc,glibc,nelibc,malloc-free,128,8,30000,1.13
+Zig cc,glibc,nelibc,malloc-free,4096,1,30000,9.81
+Zig cc,glibc,nelibc,malloc-free,4096,2,30000,4.77
+Zig cc,glibc,nelibc,malloc-free,4096,4,30000,3.17
+Zig cc,glibc,nelibc,malloc-free,4096,8,30000,2.28
+GCC,glibc,host-libc,malloc-free,64,1,30000,5.49
+GCC,glibc,host-libc,malloc-free,64,2,30000,2.54
+GCC,glibc,host-libc,malloc-free,64,4,30000,1.36
+GCC,glibc,host-libc,malloc-free,64,8,30000,0.69
+GCC,glibc,host-libc,malloc-free,128,1,30000,5.18
+GCC,glibc,host-libc,malloc-free,128,2,30000,2.53
+GCC,glibc,host-libc,malloc-free,128,4,30000,1.32
+GCC,glibc,host-libc,malloc-free,128,8,30000,0.68
+GCC,glibc,host-libc,malloc-free,4096,1,30000,28.61
+GCC,glibc,host-libc,malloc-free,4096,2,30000,14.27
+GCC,glibc,host-libc,malloc-free,4096,4,30000,7.14
+GCC,glibc,host-libc,malloc-free,4096,8,30000,3.60
+GCC,glibc,nelibc,malloc-free,64,1,30000,7.19
+GCC,glibc,nelibc,malloc-free,64,2,30000,3.35
+GCC,glibc,nelibc,malloc-free,64,4,30000,1.74
+GCC,glibc,nelibc,malloc-free,64,8,30000,1.04
+GCC,glibc,nelibc,malloc-free,128,1,30000,7.16
+GCC,glibc,nelibc,malloc-free,128,2,30000,3.73
+GCC,glibc,nelibc,malloc-free,128,4,30000,1.80
+GCC,glibc,nelibc,malloc-free,128,8,30000,0.92
+GCC,glibc,nelibc,malloc-free,4096,1,30000,7.93
+GCC,glibc,nelibc,malloc-free,4096,2,30000,3.80
+GCC,glibc,nelibc,malloc-free,4096,4,30000,1.99
+GCC,glibc,nelibc,malloc-free,4096,8,30000,1.44
+Zig cc,musl,host-libc,malloc-free,64,1,30000,16.51
+Zig cc,musl,host-libc,malloc-free,64,2,30000,7.83
+Zig cc,musl,host-libc,malloc-free,64,4,30000,3.94
+Zig cc,musl,host-libc,malloc-free,64,8,30000,2.04
+Zig cc,musl,host-libc,malloc-free,128,1,30000,16.24
+Zig cc,musl,host-libc,malloc-free,128,2,30000,7.82
+Zig cc,musl,host-libc,malloc-free,128,4,30000,4.01
+Zig cc,musl,host-libc,malloc-free,128,8,30000,2.51
+Zig cc,musl,host-libc,malloc-free,4096,1,30000,16.07
+Zig cc,musl,host-libc,malloc-free,4096,2,30000,7.77
+Zig cc,musl,host-libc,malloc-free,4096,4,30000,4.01
+Zig cc,musl,host-libc,malloc-free,4096,8,30000,2.18
+Zig cc,musl,nelibc,malloc-free,64,1,30000,8.22
+Zig cc,musl,nelibc,malloc-free,64,2,30000,4.19
+Zig cc,musl,nelibc,malloc-free,64,4,30000,2.10
+Zig cc,musl,nelibc,malloc-free,64,8,30000,1.61
+Zig cc,musl,nelibc,malloc-free,128,1,30000,8.66
+Zig cc,musl,nelibc,malloc-free,128,2,30000,4.31
+Zig cc,musl,nelibc,malloc-free,128,4,30000,2.18
+Zig cc,musl,nelibc,malloc-free,128,8,30000,1.13
+Zig cc,musl,nelibc,malloc-free,4096,1,30000,8.61
+Zig cc,musl,nelibc,malloc-free,4096,2,30000,4.53
+Zig cc,musl,nelibc,malloc-free,4096,4,30000,2.51
+Zig cc,musl,nelibc,malloc-free,4096,8,30000,1.27
+TinyCC,glibc,host-libc,malloc-free,64,1,30000,7.04
+TinyCC,glibc,host-libc,malloc-free,64,2,30000,3.90
+TinyCC,glibc,host-libc,malloc-free,64,4,30000,2.04
+TinyCC,glibc,host-libc,malloc-free,64,8,30000,1.44
+TinyCC,glibc,host-libc,malloc-free,128,1,30000,7.22
+TinyCC,glibc,host-libc,malloc-free,128,2,30000,3.76
+TinyCC,glibc,host-libc,malloc-free,128,4,30000,2.00
+TinyCC,glibc,host-libc,malloc-free,128,8,30000,0.99
+TinyCC,glibc,host-libc,malloc-free,4096,1,30000,29.48
+TinyCC,glibc,host-libc,malloc-free,4096,2,30000,14.69
+TinyCC,glibc,host-libc,malloc-free,4096,4,30000,7.36
+TinyCC,glibc,host-libc,malloc-free,4096,8,30000,5.12
+TinyCC,glibc,nelibc,malloc-free,64,1,30000,24.71
+TinyCC,glibc,nelibc,malloc-free,64,2,30000,12.05
+TinyCC,glibc,nelibc,malloc-free,64,4,30000,6.09
+TinyCC,glibc,nelibc,malloc-free,64,8,30000,4.33
+TinyCC,glibc,nelibc,malloc-free,128,1,30000,24.52
+TinyCC,glibc,nelibc,malloc-free,128,2,30000,12.38
+TinyCC,glibc,nelibc,malloc-free,128,4,30000,6.13
+TinyCC,glibc,nelibc,malloc-free,128,8,30000,3.07
+TinyCC,glibc,nelibc,malloc-free,4096,1,30000,24.98
+TinyCC,glibc,nelibc,malloc-free,4096,2,30000,12.51
+TinyCC,glibc,nelibc,malloc-free,4096,4,30000,6.32
+TinyCC,glibc,nelibc,malloc-free,4096,8,30000,3.20

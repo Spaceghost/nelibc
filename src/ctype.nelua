@@ -1,0 +1,88 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- C-locale character classification. Arguments outside EOF and the unsigned
+-- char range are outside the C contract; return false unchanged for safety.
+local function valid_character(character: cint): boolean <inline>
+  return character >= 0 and character <= 255
+end
+
+local function isupper(character: cint): cint <cexport, codename 'isupper'>
+  if valid_character(character) and character >= 65 and character <= 90 then return 1 end
+  return 0
+end
+
+local function islower(character: cint): cint <cexport, codename 'islower'>
+  if valid_character(character) and character >= 97 and character <= 122 then return 1 end
+  return 0
+end
+
+local function isalpha(character: cint): cint <cexport, codename 'isalpha'>
+  if isupper(character) ~= 0 or islower(character) ~= 0 then return 1 end
+  return 0
+end
+
+local function isdigit(character: cint): cint <cexport, codename 'isdigit'>
+  if valid_character(character) and character >= 48 and character <= 57 then return 1 end
+  return 0
+end
+
+local function isalnum(character: cint): cint <cexport, codename 'isalnum'>
+  if isalpha(character) ~= 0 or isdigit(character) ~= 0 then return 1 end
+  return 0
+end
+
+local function isblank(character: cint): cint <cexport, codename 'isblank'>
+  if character == 9 or character == 32 then return 1 end
+  return 0
+end
+
+local function isspace(character: cint): cint <cexport, codename 'isspace'>
+  if character == 32 or (character >= 9 and character <= 13) then return 1 end
+  return 0
+end
+
+local function iscntrl(character: cint): cint <cexport, codename 'iscntrl'>
+  if valid_character(character) and (character < 32 or character == 127) then return 1 end
+  return 0
+end
+
+local function isprint(character: cint): cint <cexport, codename 'isprint'>
+  if valid_character(character) and character >= 32 and character <= 126 then return 1 end
+  return 0
+end
+
+local function isgraph(character: cint): cint <cexport, codename 'isgraph'>
+  if valid_character(character) and character >= 33 and character <= 126 then return 1 end
+  return 0
+end
+
+local function ispunct(character: cint): cint <cexport, codename 'ispunct'>
+  if isgraph(character) ~= 0 and isalnum(character) == 0 then return 1 end
+  return 0
+end
+
+local function isxdigit(character: cint): cint <cexport, codename 'isxdigit'>
+  if isdigit(character) ~= 0 or (character >= 65 and character <= 70) or
+      (character >= 97 and character <= 102) then return 1 end
+  return 0
+end
+
+local function isascii(character: cint): cint <cexport, codename 'isascii'>
+  if character >= 0 and character <= 127 then return 1 end
+  return 0
+end
+
+local function toascii(character: cint): cint <cexport, codename 'toascii'>
+  return character & 127
+end
+
+local function tolower(character: cint): cint <cexport, codename 'tolower'>
+  if isupper(character) ~= 0 then return character + 32 end
+  return character
+end
+
+local function toupper(character: cint): cint <cexport, codename 'toupper'>
+  if islower(character) ~= 0 then return character - 32 end
+  return character
+end

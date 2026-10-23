@@ -1,0 +1,505 @@
+compiler,libc,implementation,function,size_bytes,iterations,median_ns_per_call
+Zig cc,glibc,libc,memcpy,64,1048576,1.88
+Zig cc,glibc,libc,mempcpy,64,1048576,2.00
+Zig cc,glibc,libc,memmove-overlap-backward,64,1048576,4.68
+Zig cc,glibc,libc,memmove-overlap-forward,64,1048576,5.08
+Zig cc,glibc,libc,memmove-disjoint-dst-after,64,1048576,1.50
+Zig cc,glibc,libc,memmove-disjoint-dst-before,64,1048576,1.52
+Zig cc,glibc,libc,memccpy,64,1048576,4.01
+Zig cc,glibc,libc,memset,64,1048576,1.77
+Zig cc,glibc,libc,memcmp,64,1048576,2.03
+Zig cc,glibc,libc,memcmp-first-diff,64,1048576,2.00
+Zig cc,glibc,libc,memcmp-middle-diff,64,1048576,2.24
+Zig cc,glibc,libc,memcmp-last-diff,64,1048576,2.16
+Zig cc,glibc,libc,memchr,64,1048576,1.73
+Zig cc,glibc,libc,memrchr,64,1048576,1.96
+Zig cc,glibc,libc,memmem-rare4,64,1048576,11.11
+Zig cc,glibc,libc,memcpy,4096,16384,16.59
+Zig cc,glibc,libc,mempcpy,4096,16384,16.72
+Zig cc,glibc,libc,memmove-overlap-backward,4096,16384,32.42
+Zig cc,glibc,libc,memmove-overlap-forward,4096,16384,34.90
+Zig cc,glibc,libc,memmove-disjoint-dst-after,4096,16384,41.30
+Zig cc,glibc,libc,memmove-disjoint-dst-before,4096,16384,24.17
+Zig cc,glibc,libc,memccpy,4096,16384,45.34
+Zig cc,glibc,libc,memset,4096,16384,18.77
+Zig cc,glibc,libc,memcmp,4096,16384,37.64
+Zig cc,glibc,libc,memcmp-first-diff,4096,16384,1.96
+Zig cc,glibc,libc,memcmp-middle-diff,4096,16384,17.13
+Zig cc,glibc,libc,memcmp-last-diff,4096,16384,33.63
+Zig cc,glibc,libc,memchr,4096,16384,26.64
+Zig cc,glibc,libc,memrchr,4096,16384,24.36
+Zig cc,glibc,libc,memmem-rare4,4096,16384,312.55
+Zig cc,glibc,libc,memcpy,65536,1024,1049.60
+Zig cc,glibc,libc,mempcpy,65536,1024,1021.14
+Zig cc,glibc,libc,memmove-overlap-backward,65536,1024,752.48
+Zig cc,glibc,libc,memmove-overlap-forward,65536,1024,741.79
+Zig cc,glibc,libc,memmove-disjoint-dst-after,65536,1024,1124.02
+Zig cc,glibc,libc,memmove-disjoint-dst-before,65536,1024,1087.35
+Zig cc,glibc,libc,memccpy,65536,1024,1487.71
+Zig cc,glibc,libc,memset,65536,1024,805.98
+Zig cc,glibc,libc,memcmp,65536,1024,1012.21
+Zig cc,glibc,libc,memcmp-first-diff,65536,1024,1.94
+Zig cc,glibc,libc,memcmp-middle-diff,65536,1024,505.44
+Zig cc,glibc,libc,memcmp-last-diff,65536,1024,986.31
+Zig cc,glibc,libc,memchr,65536,1024,532.03
+Zig cc,glibc,libc,memrchr,65536,1024,477.23
+Zig cc,glibc,libc,memmem-rare4,65536,1024,4767.37
+Zig cc,glibc,libc,memmem-needle-tail,65536,256,9844.51
+Zig cc,glibc,libc,memmem-periodic-absent,65536,256,219597.91
+Zig cc,glibc,libc,memmem-needle-tail,65536,256,4320.19
+Zig cc,glibc,libc,memmem-periodic-absent,65536,256,217051.21
+Zig cc,glibc,libc,memmem-needle-tail,65536,256,71468.55
+Zig cc,glibc,libc,memmem-periodic-absent,65536,256,216752.53
+Zig cc,glibc,libc,memmem-needle-tail,65536,256,31107.34
+Zig cc,glibc,libc,memmem-periodic-absent,65536,256,216555.91
+Zig cc,glibc,libc,memmem-needle-tail,65536,256,14916.31
+Zig cc,glibc,libc,memmem-periodic-absent,65536,256,220061.80
+Zig cc,glibc,libc,memmem-needle-tail,65536,256,9604.39
+Zig cc,glibc,libc,memmem-periodic-absent,65536,256,220037.43
+Zig cc,glibc,libc,memmem-needle-tail,65536,256,4032.12
+Zig cc,glibc,libc,memmem-periodic-absent,65536,256,217705.04
+Zig cc,glibc,libc,memmem-needle-tail,65536,256,1825.70
+Zig cc,glibc,libc,memmem-periodic-absent,65536,256,217201.02
+Zig cc,glibc,libc,memmem-needle-tail,65536,256,1867.74
+Zig cc,glibc,libc,memmem-periodic-absent,65536,256,215693.32
+Zig cc,glibc,nelibc,memcpy,64,1048576,2.62
+Zig cc,glibc,nelibc,mempcpy,64,1048576,2.43
+Zig cc,glibc,nelibc,memmove-overlap-backward,64,1048576,4.70
+Zig cc,glibc,nelibc,memmove-overlap-forward,64,1048576,5.43
+Zig cc,glibc,nelibc,memmove-disjoint-dst-after,64,1048576,2.74
+Zig cc,glibc,nelibc,memmove-disjoint-dst-before,64,1048576,2.73
+Zig cc,glibc,nelibc,memccpy,64,1048576,5.08
+Zig cc,glibc,nelibc,memset,64,1048576,5.01
+Zig cc,glibc,nelibc,memcmp,64,1048576,2.24
+Zig cc,glibc,nelibc,memcmp-first-diff,64,1048576,1.99
+Zig cc,glibc,nelibc,memcmp-middle-diff,64,1048576,2.21
+Zig cc,glibc,nelibc,memcmp-last-diff,64,1048576,8.38
+Zig cc,glibc,nelibc,memchr,64,1048576,2.30
+Zig cc,glibc,nelibc,memrchr,64,1048576,2.43
+Zig cc,glibc,nelibc,memmem-rare4,64,1048576,7.59
+Zig cc,glibc,nelibc,memcpy,4096,16384,40.59
+Zig cc,glibc,nelibc,mempcpy,4096,16384,38.77
+Zig cc,glibc,nelibc,memmove-overlap-backward,4096,16384,40.97
+Zig cc,glibc,nelibc,memmove-overlap-forward,4096,16384,49.79
+Zig cc,glibc,nelibc,memmove-disjoint-dst-after,4096,16384,53.08
+Zig cc,glibc,nelibc,memmove-disjoint-dst-before,4096,16384,48.37
+Zig cc,glibc,nelibc,memccpy,4096,16384,57.04
+Zig cc,glibc,nelibc,memset,4096,16384,13.50
+Zig cc,glibc,nelibc,memcmp,4096,16384,39.72
+Zig cc,glibc,nelibc,memcmp-first-diff,4096,16384,1.84
+Zig cc,glibc,nelibc,memcmp-middle-diff,4096,16384,17.17
+Zig cc,glibc,nelibc,memcmp-last-diff,4096,16384,45.13
+Zig cc,glibc,nelibc,memchr,4096,16384,24.04
+Zig cc,glibc,nelibc,memrchr,4096,16384,29.66
+Zig cc,glibc,nelibc,memmem-rare4,4096,16384,16.34
+Zig cc,glibc,nelibc,memcpy,65536,1024,921.08
+Zig cc,glibc,nelibc,mempcpy,65536,1024,914.33
+Zig cc,glibc,nelibc,memmove-overlap-backward,65536,1024,754.04
+Zig cc,glibc,nelibc,memmove-overlap-forward,65536,1024,976.50
+Zig cc,glibc,nelibc,memmove-disjoint-dst-after,65536,1024,1319.83
+Zig cc,glibc,nelibc,memmove-disjoint-dst-before,65536,1024,1220.83
+Zig cc,glibc,nelibc,memccpy,65536,1024,1358.81
+Zig cc,glibc,nelibc,memset,65536,1024,815.51
+Zig cc,glibc,nelibc,memcmp,65536,1024,989.69
+Zig cc,glibc,nelibc,memcmp-first-diff,65536,1024,1.73
+Zig cc,glibc,nelibc,memcmp-middle-diff,65536,1024,484.79
+Zig cc,glibc,nelibc,memcmp-last-diff,65536,1024,1013.75
+Zig cc,glibc,nelibc,memchr,65536,1024,310.79
+Zig cc,glibc,nelibc,memrchr,65536,1024,320.34
+Zig cc,glibc,nelibc,memmem-rare4,65536,1024,124.96
+Zig cc,glibc,nelibc,memmem-needle-tail,65536,256,310.74
+Zig cc,glibc,nelibc,memmem-periodic-absent,65536,256,268315.07
+Zig cc,glibc,nelibc,memmem-needle-tail,65536,256,3136.27
+Zig cc,glibc,nelibc,memmem-periodic-absent,65536,256,245665.90
+Zig cc,glibc,nelibc,memmem-needle-tail,65536,256,2435.10
+Zig cc,glibc,nelibc,memmem-periodic-absent,65536,256,247712.57
+Zig cc,glibc,nelibc,memmem-needle-tail,65536,256,1703.64
+Zig cc,glibc,nelibc,memmem-periodic-absent,65536,256,249430.44
+Zig cc,glibc,nelibc,memmem-needle-tail,65536,256,1250.22
+Zig cc,glibc,nelibc,memmem-periodic-absent,65536,256,249465.75
+Zig cc,glibc,nelibc,memmem-needle-tail,65536,256,1062.49
+Zig cc,glibc,nelibc,memmem-periodic-absent,65536,256,246465.70
+Zig cc,glibc,nelibc,memmem-needle-tail,65536,256,699.52
+Zig cc,glibc,nelibc,memmem-periodic-absent,65536,256,246957.87
+Zig cc,glibc,nelibc,memmem-needle-tail,65536,256,579.54
+Zig cc,glibc,nelibc,memmem-periodic-absent,65536,256,246901.18
+Zig cc,glibc,nelibc,memmem-needle-tail,65536,256,664.30
+Zig cc,glibc,nelibc,memmem-periodic-absent,65536,256,245757.26
+GCC,glibc,libc,memcpy,64,1048576,2.01
+GCC,glibc,libc,mempcpy,64,1048576,2.23
+GCC,glibc,libc,memmove-overlap-backward,64,1048576,4.52
+GCC,glibc,libc,memmove-overlap-forward,64,1048576,4.91
+GCC,glibc,libc,memmove-disjoint-dst-after,64,1048576,1.75
+GCC,glibc,libc,memmove-disjoint-dst-before,64,1048576,1.75
+GCC,glibc,libc,memccpy,64,1048576,4.17
+GCC,glibc,libc,memset,64,1048576,1.61
+GCC,glibc,libc,memcmp,64,1048576,2.06
+GCC,glibc,libc,memcmp-first-diff,64,1048576,2.06
+GCC,glibc,libc,memcmp-middle-diff,64,1048576,2.29
+GCC,glibc,libc,memcmp-last-diff,64,1048576,2.29
+GCC,glibc,libc,memchr,64,1048576,2.56
+GCC,glibc,libc,memrchr,64,1048576,2.48
+GCC,glibc,libc,memmem-rare4,64,1048576,11.88
+GCC,glibc,libc,memcpy,4096,16384,17.35
+GCC,glibc,libc,mempcpy,4096,16384,17.28
+GCC,glibc,libc,memmove-overlap-backward,4096,16384,34.77
+GCC,glibc,libc,memmove-overlap-forward,4096,16384,35.95
+GCC,glibc,libc,memmove-disjoint-dst-after,4096,16384,42.56
+GCC,glibc,libc,memmove-disjoint-dst-before,4096,16384,24.80
+GCC,glibc,libc,memccpy,4096,16384,68.16
+GCC,glibc,libc,memset,4096,16384,18.88
+GCC,glibc,libc,memcmp,4096,16384,32.59
+GCC,glibc,libc,memcmp-first-diff,4096,16384,1.92
+GCC,glibc,libc,memcmp-middle-diff,4096,16384,15.01
+GCC,glibc,libc,memcmp-last-diff,4096,16384,33.68
+GCC,glibc,libc,memchr,4096,16384,27.95
+GCC,glibc,libc,memrchr,4096,16384,30.22
+GCC,glibc,libc,memmem-rare4,4096,16384,317.85
+GCC,glibc,libc,memcpy,65536,1024,1076.93
+GCC,glibc,libc,mempcpy,65536,1024,1044.89
+GCC,glibc,libc,memmove-overlap-backward,65536,1024,730.49
+GCC,glibc,libc,memmove-overlap-forward,65536,1024,773.25
+GCC,glibc,libc,memmove-disjoint-dst-after,65536,1024,1107.05
+GCC,glibc,libc,memmove-disjoint-dst-before,65536,1024,1070.92
+GCC,glibc,libc,memccpy,65536,1024,1872.30
+GCC,glibc,libc,memset,65536,1024,717.80
+GCC,glibc,libc,memcmp,65536,1024,985.38
+GCC,glibc,libc,memcmp-first-diff,65536,1024,1.85
+GCC,glibc,libc,memcmp-middle-diff,65536,1024,519.94
+GCC,glibc,libc,memcmp-last-diff,65536,1024,983.30
+GCC,glibc,libc,memchr,65536,1024,506.48
+GCC,glibc,libc,memrchr,65536,1024,466.02
+GCC,glibc,libc,memmem-rare4,65536,1024,4935.42
+GCC,glibc,libc,memmem-needle-tail,65536,256,9659.10
+GCC,glibc,libc,memmem-periodic-absent,65536,256,218695.91
+GCC,glibc,libc,memmem-needle-tail,65536,256,4218.20
+GCC,glibc,libc,memmem-periodic-absent,65536,256,219439.11
+GCC,glibc,libc,memmem-needle-tail,65536,256,73623.38
+GCC,glibc,libc,memmem-periodic-absent,65536,256,220275.23
+GCC,glibc,libc,memmem-needle-tail,65536,256,31469.30
+GCC,glibc,libc,memmem-periodic-absent,65536,256,219011.76
+GCC,glibc,libc,memmem-needle-tail,65536,256,14277.01
+GCC,glibc,libc,memmem-periodic-absent,65536,256,217676.60
+GCC,glibc,libc,memmem-needle-tail,65536,256,9465.17
+GCC,glibc,libc,memmem-periodic-absent,65536,256,217313.44
+GCC,glibc,libc,memmem-needle-tail,65536,256,4053.98
+GCC,glibc,libc,memmem-periodic-absent,65536,256,216982.58
+GCC,glibc,libc,memmem-needle-tail,65536,256,1837.16
+GCC,glibc,libc,memmem-periodic-absent,65536,256,216623.56
+GCC,glibc,libc,memmem-needle-tail,65536,256,1971.61
+GCC,glibc,libc,memmem-periodic-absent,65536,256,216860.43
+GCC,glibc,nelibc,memcpy,64,1048576,2.04
+GCC,glibc,nelibc,mempcpy,64,1048576,2.01
+GCC,glibc,nelibc,memmove-overlap-backward,64,1048576,4.60
+GCC,glibc,nelibc,memmove-overlap-forward,64,1048576,5.08
+GCC,glibc,nelibc,memmove-disjoint-dst-after,64,1048576,2.69
+GCC,glibc,nelibc,memmove-disjoint-dst-before,64,1048576,2.59
+GCC,glibc,nelibc,memccpy,64,1048576,4.88
+GCC,glibc,nelibc,memset,64,1048576,2.03
+GCC,glibc,nelibc,memcmp,64,1048576,3.66
+GCC,glibc,nelibc,memcmp-first-diff,64,1048576,1.74
+GCC,glibc,nelibc,memcmp-middle-diff,64,1048576,2.39
+GCC,glibc,nelibc,memcmp-last-diff,64,1048576,2.89
+GCC,glibc,nelibc,memchr,64,1048576,2.61
+GCC,glibc,nelibc,memrchr,64,1048576,2.68
+GCC,glibc,nelibc,memmem-rare4,64,1048576,7.65
+GCC,glibc,nelibc,memcpy,4096,16384,57.32
+GCC,glibc,nelibc,mempcpy,4096,16384,59.51
+GCC,glibc,nelibc,memmove-overlap-backward,4096,16384,38.10
+GCC,glibc,nelibc,memmove-overlap-forward,4096,16384,35.10
+GCC,glibc,nelibc,memmove-disjoint-dst-after,4096,16384,49.60
+GCC,glibc,nelibc,memmove-disjoint-dst-before,4096,16384,35.01
+GCC,glibc,nelibc,memccpy,4096,16384,79.89
+GCC,glibc,nelibc,memset,4096,16384,37.92
+GCC,glibc,nelibc,memcmp,4096,16384,40.49
+GCC,glibc,nelibc,memcmp-first-diff,4096,16384,1.64
+GCC,glibc,nelibc,memcmp-middle-diff,4096,16384,16.85
+GCC,glibc,nelibc,memcmp-last-diff,4096,16384,45.98
+GCC,glibc,nelibc,memchr,4096,16384,23.10
+GCC,glibc,nelibc,memrchr,4096,16384,31.34
+GCC,glibc,nelibc,memmem-rare4,4096,16384,15.50
+GCC,glibc,nelibc,memcpy,65536,1024,1155.38
+GCC,glibc,nelibc,mempcpy,65536,1024,1144.59
+GCC,glibc,nelibc,memmove-overlap-backward,65536,1024,736.65
+GCC,glibc,nelibc,memmove-overlap-forward,65536,1024,748.02
+GCC,glibc,nelibc,memmove-disjoint-dst-after,65536,1024,1200.95
+GCC,glibc,nelibc,memmove-disjoint-dst-before,65536,1024,970.48
+GCC,glibc,nelibc,memccpy,65536,1024,1809.63
+GCC,glibc,nelibc,memset,65536,1024,791.82
+GCC,glibc,nelibc,memcmp,65536,1024,1027.90
+GCC,glibc,nelibc,memcmp-first-diff,65536,1024,1.72
+GCC,glibc,nelibc,memcmp-middle-diff,65536,1024,522.94
+GCC,glibc,nelibc,memcmp-last-diff,65536,1024,977.52
+GCC,glibc,nelibc,memchr,65536,1024,277.12
+GCC,glibc,nelibc,memrchr,65536,1024,309.21
+GCC,glibc,nelibc,memmem-rare4,65536,1024,117.64
+GCC,glibc,nelibc,memmem-needle-tail,65536,256,300.24
+GCC,glibc,nelibc,memmem-periodic-absent,65536,256,262530.01
+GCC,glibc,nelibc,memmem-needle-tail,65536,256,3764.17
+GCC,glibc,nelibc,memmem-periodic-absent,65536,256,192354.61
+GCC,glibc,nelibc,memmem-needle-tail,65536,256,2575.11
+GCC,glibc,nelibc,memmem-periodic-absent,65536,256,194537.24
+GCC,glibc,nelibc,memmem-needle-tail,65536,256,1813.90
+GCC,glibc,nelibc,memmem-periodic-absent,65536,256,192627.17
+GCC,glibc,nelibc,memmem-needle-tail,65536,256,1819.10
+GCC,glibc,nelibc,memmem-periodic-absent,65536,256,189775.24
+GCC,glibc,nelibc,memmem-needle-tail,65536,256,1039.36
+GCC,glibc,nelibc,memmem-periodic-absent,65536,256,192323.48
+GCC,glibc,nelibc,memmem-needle-tail,65536,256,677.39
+GCC,glibc,nelibc,memmem-periodic-absent,65536,256,189781.93
+GCC,glibc,nelibc,memmem-needle-tail,65536,256,501.64
+GCC,glibc,nelibc,memmem-periodic-absent,65536,256,190525.75
+GCC,glibc,nelibc,memmem-needle-tail,65536,256,606.55
+GCC,glibc,nelibc,memmem-periodic-absent,65536,256,189633.89
+Zig cc,musl,libc,memcpy,64,1048576,2.96
+Zig cc,musl,libc,mempcpy,64,1048576,22.99
+Zig cc,musl,libc,memmove-overlap-backward,64,1048576,6.20
+Zig cc,musl,libc,memmove-overlap-forward,64,1048576,6.33
+Zig cc,musl,libc,memmove-disjoint-dst-after,64,1048576,3.39
+Zig cc,musl,libc,memmove-disjoint-dst-before,64,1048576,3.20
+Zig cc,musl,libc,memccpy,64,1048576,30.00
+Zig cc,musl,libc,memset,64,1048576,2.25
+Zig cc,musl,libc,memcmp,64,1048576,25.29
+Zig cc,musl,libc,memcmp-first-diff,64,1048576,1.16
+Zig cc,musl,libc,memcmp-middle-diff,64,1048576,10.31
+Zig cc,musl,libc,memcmp-last-diff,64,1048576,28.60
+Zig cc,musl,libc,memchr,64,1048576,23.99
+Zig cc,musl,libc,memrchr,64,1048576,25.65
+Zig cc,musl,libc,memmem-rare4,64,1048576,62.26
+Zig cc,musl,libc,memcpy,4096,16384,54.84
+Zig cc,musl,libc,mempcpy,4096,16384,986.42
+Zig cc,musl,libc,memmove-overlap-backward,4096,16384,61.21
+Zig cc,musl,libc,memmove-overlap-forward,4096,16384,67.34
+Zig cc,musl,libc,memmove-disjoint-dst-after,4096,16384,59.94
+Zig cc,musl,libc,memmove-disjoint-dst-before,4096,16384,68.16
+Zig cc,musl,libc,memccpy,4096,16384,1048.66
+Zig cc,musl,libc,memset,4096,16384,33.46
+Zig cc,musl,libc,memcmp,4096,16384,997.24
+Zig cc,musl,libc,memcmp-first-diff,4096,16384,1.59
+Zig cc,musl,libc,memcmp-middle-diff,4096,16384,538.17
+Zig cc,musl,libc,memcmp-last-diff,4096,16384,1093.66
+Zig cc,musl,libc,memchr,4096,16384,923.81
+Zig cc,musl,libc,memrchr,4096,16384,1070.93
+Zig cc,musl,libc,memmem-rare4,4096,16384,3683.86
+Zig cc,musl,libc,memcpy,65536,1024,1160.57
+Zig cc,musl,libc,mempcpy,65536,1024,16455.40
+Zig cc,musl,libc,memmove-overlap-backward,65536,1024,1116.20
+Zig cc,musl,libc,memmove-overlap-forward,65536,1024,1295.71
+Zig cc,musl,libc,memmove-disjoint-dst-after,65536,1024,1173.13
+Zig cc,musl,libc,memmove-disjoint-dst-before,65536,1024,1469.47
+Zig cc,musl,libc,memccpy,65536,1024,17486.16
+Zig cc,musl,libc,memset,65536,1024,740.70
+Zig cc,musl,libc,memcmp,65536,1024,19794.38
+Zig cc,musl,libc,memcmp-first-diff,65536,1024,1.29
+Zig cc,musl,libc,memcmp-middle-diff,65536,1024,9869.62
+Zig cc,musl,libc,memcmp-last-diff,65536,1024,19929.42
+Zig cc,musl,libc,memchr,65536,1024,14496.50
+Zig cc,musl,libc,memrchr,65536,1024,17096.57
+Zig cc,musl,libc,memmem-rare4,65536,1024,60648.28
+Zig cc,musl,libc,memmem-needle-tail,65536,256,119154.98
+Zig cc,musl,libc,memmem-periodic-absent,65536,256,117882.43
+Zig cc,musl,libc,memmem-needle-tail,65536,256,26096.61
+Zig cc,musl,libc,memmem-periodic-absent,65536,256,212476.66
+Zig cc,musl,libc,memmem-needle-tail,65536,256,18519.52
+Zig cc,musl,libc,memmem-periodic-absent,65536,256,213492.34
+Zig cc,musl,libc,memmem-needle-tail,65536,256,13386.98
+Zig cc,musl,libc,memmem-periodic-absent,65536,256,211830.72
+Zig cc,musl,libc,memmem-needle-tail,65536,256,8066.21
+Zig cc,musl,libc,memmem-periodic-absent,65536,256,217042.17
+Zig cc,musl,libc,memmem-needle-tail,65536,256,6162.94
+Zig cc,musl,libc,memmem-periodic-absent,65536,256,215688.63
+Zig cc,musl,libc,memmem-needle-tail,65536,256,3819.35
+Zig cc,musl,libc,memmem-periodic-absent,65536,256,240958.08
+Zig cc,musl,libc,memmem-needle-tail,65536,256,2201.71
+Zig cc,musl,libc,memmem-periodic-absent,65536,256,337434.56
+Zig cc,musl,libc,memmem-needle-tail,65536,256,1129.20
+Zig cc,musl,libc,memmem-periodic-absent,65536,256,539774.13
+Zig cc,musl,nelibc,memcpy,64,1048576,2.29
+Zig cc,musl,nelibc,mempcpy,64,1048576,2.81
+Zig cc,musl,nelibc,memmove-overlap-backward,64,1048576,4.78
+Zig cc,musl,nelibc,memmove-overlap-forward,64,1048576,6.71
+Zig cc,musl,nelibc,memmove-disjoint-dst-after,64,1048576,2.91
+Zig cc,musl,nelibc,memmove-disjoint-dst-before,64,1048576,2.94
+Zig cc,musl,nelibc,memccpy,64,1048576,5.39
+Zig cc,musl,nelibc,memset,64,1048576,4.18
+Zig cc,musl,nelibc,memcmp,64,1048576,2.97
+Zig cc,musl,nelibc,memcmp-first-diff,64,1048576,2.02
+Zig cc,musl,nelibc,memcmp-middle-diff,64,1048576,3.08
+Zig cc,musl,nelibc,memcmp-last-diff,64,1048576,8.66
+Zig cc,musl,nelibc,memchr,64,1048576,2.26
+Zig cc,musl,nelibc,memrchr,64,1048576,2.64
+Zig cc,musl,nelibc,memmem-rare4,64,1048576,7.92
+Zig cc,musl,nelibc,memcpy,4096,16384,48.93
+Zig cc,musl,nelibc,mempcpy,4096,16384,49.17
+Zig cc,musl,nelibc,memmove-overlap-backward,4096,16384,38.00
+Zig cc,musl,nelibc,memmove-overlap-forward,4096,16384,35.44
+Zig cc,musl,nelibc,memmove-disjoint-dst-after,4096,16384,46.47
+Zig cc,musl,nelibc,memmove-disjoint-dst-before,4096,16384,34.84
+Zig cc,musl,nelibc,memccpy,4096,16384,72.34
+Zig cc,musl,nelibc,memset,4096,16384,48.08
+Zig cc,musl,nelibc,memcmp,4096,16384,44.85
+Zig cc,musl,nelibc,memcmp-first-diff,4096,16384,1.71
+Zig cc,musl,nelibc,memcmp-middle-diff,4096,16384,22.41
+Zig cc,musl,nelibc,memcmp-last-diff,4096,16384,52.72
+Zig cc,musl,nelibc,memchr,4096,16384,33.25
+Zig cc,musl,nelibc,memrchr,4096,16384,27.88
+Zig cc,musl,nelibc,memmem-rare4,4096,16384,18.05
+Zig cc,musl,nelibc,memcpy,65536,1024,1278.15
+Zig cc,musl,nelibc,mempcpy,65536,1024,1268.40
+Zig cc,musl,nelibc,memmove-overlap-backward,65536,1024,736.42
+Zig cc,musl,nelibc,memmove-overlap-forward,65536,1024,761.81
+Zig cc,musl,nelibc,memmove-disjoint-dst-after,65536,1024,1285.96
+Zig cc,musl,nelibc,memmove-disjoint-dst-before,65536,1024,967.22
+Zig cc,musl,nelibc,memccpy,65536,1024,1702.84
+Zig cc,musl,nelibc,memset,65536,1024,1244.62
+Zig cc,musl,nelibc,memcmp,65536,1024,1431.44
+Zig cc,musl,nelibc,memcmp-first-diff,65536,1024,1.72
+Zig cc,musl,nelibc,memcmp-middle-diff,65536,1024,723.62
+Zig cc,musl,nelibc,memcmp-last-diff,65536,1024,1459.00
+Zig cc,musl,nelibc,memchr,65536,1024,320.08
+Zig cc,musl,nelibc,memrchr,65536,1024,300.09
+Zig cc,musl,nelibc,memmem-rare4,65536,1024,153.01
+Zig cc,musl,nelibc,memmem-needle-tail,65536,256,318.56
+Zig cc,musl,nelibc,memmem-periodic-absent,65536,256,274611.91
+Zig cc,musl,nelibc,memmem-needle-tail,65536,256,2782.80
+Zig cc,musl,nelibc,memmem-periodic-absent,65536,256,245946.31
+Zig cc,musl,nelibc,memmem-needle-tail,65536,256,1974.41
+Zig cc,musl,nelibc,memmem-periodic-absent,65536,256,250648.24
+Zig cc,musl,nelibc,memmem-needle-tail,65536,256,1500.12
+Zig cc,musl,nelibc,memmem-periodic-absent,65536,256,246930.99
+Zig cc,musl,nelibc,memmem-needle-tail,65536,256,1245.67
+Zig cc,musl,nelibc,memmem-periodic-absent,65536,256,246329.70
+Zig cc,musl,nelibc,memmem-needle-tail,65536,256,1101.67
+Zig cc,musl,nelibc,memmem-periodic-absent,65536,256,245305.89
+Zig cc,musl,nelibc,memmem-needle-tail,65536,256,666.20
+Zig cc,musl,nelibc,memmem-periodic-absent,65536,256,248839.67
+Zig cc,musl,nelibc,memmem-needle-tail,65536,256,608.55
+Zig cc,musl,nelibc,memmem-periodic-absent,65536,256,250019.90
+Zig cc,musl,nelibc,memmem-needle-tail,65536,256,672.07
+Zig cc,musl,nelibc,memmem-periodic-absent,65536,256,248324.21
+TinyCC,glibc,libc,memcpy,64,1048576,2.31
+TinyCC,glibc,libc,mempcpy,64,1048576,2.45
+TinyCC,glibc,libc,memmove-overlap-backward,64,1048576,4.84
+TinyCC,glibc,libc,memmove-overlap-forward,64,1048576,4.96
+TinyCC,glibc,libc,memmove-disjoint-dst-after,64,1048576,2.20
+TinyCC,glibc,libc,memmove-disjoint-dst-before,64,1048576,2.16
+TinyCC,glibc,libc,memccpy,64,1048576,4.72
+TinyCC,glibc,libc,memset,64,1048576,2.17
+TinyCC,glibc,libc,memcmp,64,1048576,2.41
+TinyCC,glibc,libc,memcmp-first-diff,64,1048576,2.38
+TinyCC,glibc,libc,memcmp-middle-diff,64,1048576,2.62
+TinyCC,glibc,libc,memcmp-last-diff,64,1048576,2.60
+TinyCC,glibc,libc,memchr,64,1048576,2.17
+TinyCC,glibc,libc,memrchr,64,1048576,2.41
+TinyCC,glibc,libc,memmem-rare4,64,1048576,12.17
+TinyCC,glibc,libc,memcpy,4096,16384,18.18
+TinyCC,glibc,libc,mempcpy,4096,16384,18.21
+TinyCC,glibc,libc,memmove-overlap-backward,4096,16384,35.20
+TinyCC,glibc,libc,memmove-overlap-forward,4096,16384,34.50
+TinyCC,glibc,libc,memmove-disjoint-dst-after,4096,16384,44.38
+TinyCC,glibc,libc,memmove-disjoint-dst-before,4096,16384,25.30
+TinyCC,glibc,libc,memccpy,4096,16384,49.05
+TinyCC,glibc,libc,memset,4096,16384,19.26
+TinyCC,glibc,libc,memcmp,4096,16384,32.98
+TinyCC,glibc,libc,memcmp-first-diff,4096,16384,2.35
+TinyCC,glibc,libc,memcmp-middle-diff,4096,16384,17.15
+TinyCC,glibc,libc,memcmp-last-diff,4096,16384,34.63
+TinyCC,glibc,libc,memchr,4096,16384,22.04
+TinyCC,glibc,libc,memrchr,4096,16384,29.65
+TinyCC,glibc,libc,memmem-rare4,4096,16384,319.03
+TinyCC,glibc,libc,memcpy,65536,1024,1041.80
+TinyCC,glibc,libc,mempcpy,65536,1024,1079.83
+TinyCC,glibc,libc,memmove-overlap-backward,65536,1024,740.49
+TinyCC,glibc,libc,memmove-overlap-forward,65536,1024,729.08
+TinyCC,glibc,libc,memmove-disjoint-dst-after,65536,1024,1102.56
+TinyCC,glibc,libc,memmove-disjoint-dst-before,65536,1024,1091.75
+TinyCC,glibc,libc,memccpy,65536,1024,1591.24
+TinyCC,glibc,libc,memset,65536,1024,727.79
+TinyCC,glibc,libc,memcmp,65536,1024,963.87
+TinyCC,glibc,libc,memcmp-first-diff,65536,1024,2.26
+TinyCC,glibc,libc,memcmp-middle-diff,65536,1024,510.86
+TinyCC,glibc,libc,memcmp-last-diff,65536,1024,987.09
+TinyCC,glibc,libc,memchr,65536,1024,531.25
+TinyCC,glibc,libc,memrchr,65536,1024,498.72
+TinyCC,glibc,libc,memmem-rare4,65536,1024,4772.75
+TinyCC,glibc,libc,memmem-needle-tail,65536,256,9515.95
+TinyCC,glibc,libc,memmem-periodic-absent,65536,256,216746.79
+TinyCC,glibc,libc,memmem-needle-tail,65536,256,4133.13
+TinyCC,glibc,libc,memmem-periodic-absent,65536,256,218795.34
+TinyCC,glibc,libc,memmem-needle-tail,65536,256,72565.06
+TinyCC,glibc,libc,memmem-periodic-absent,65536,256,218194.32
+TinyCC,glibc,libc,memmem-needle-tail,65536,256,30990.70
+TinyCC,glibc,libc,memmem-periodic-absent,65536,256,219640.18
+TinyCC,glibc,libc,memmem-needle-tail,65536,256,15207.39
+TinyCC,glibc,libc,memmem-periodic-absent,65536,256,222168.29
+TinyCC,glibc,libc,memmem-needle-tail,65536,256,9638.11
+TinyCC,glibc,libc,memmem-periodic-absent,65536,256,219325.33
+TinyCC,glibc,libc,memmem-needle-tail,65536,256,3869.27
+TinyCC,glibc,libc,memmem-periodic-absent,65536,256,220387.99
+TinyCC,glibc,libc,memmem-needle-tail,65536,256,1892.23
+TinyCC,glibc,libc,memmem-periodic-absent,65536,256,215785.34
+TinyCC,glibc,libc,memmem-needle-tail,65536,256,1919.64
+TinyCC,glibc,libc,memmem-periodic-absent,65536,256,217696.74
+TinyCC,glibc,nelibc,memcpy,64,1048576,5.86
+TinyCC,glibc,nelibc,mempcpy,64,1048576,6.51
+TinyCC,glibc,nelibc,memmove-overlap-backward,64,1048576,4.39
+TinyCC,glibc,nelibc,memmove-overlap-forward,64,1048576,4.72
+TinyCC,glibc,nelibc,memmove-disjoint-dst-after,64,1048576,4.64
+TinyCC,glibc,nelibc,memmove-disjoint-dst-before,64,1048576,4.61
+TinyCC,glibc,nelibc,memccpy,64,1048576,6.94
+TinyCC,glibc,nelibc,memset,64,1048576,10.11
+TinyCC,glibc,nelibc,memcmp,64,1048576,5.27
+TinyCC,glibc,nelibc,memcmp-first-diff,64,1048576,3.73
+TinyCC,glibc,nelibc,memcmp-middle-diff,64,1048576,4.08
+TinyCC,glibc,nelibc,memcmp-last-diff,64,1048576,4.46
+TinyCC,glibc,nelibc,memchr,64,1048576,3.64
+TinyCC,glibc,nelibc,memrchr,64,1048576,4.02
+TinyCC,glibc,nelibc,memmem-rare4,64,1048576,11.10
+TinyCC,glibc,nelibc,memcpy,4096,16384,23.26
+TinyCC,glibc,nelibc,mempcpy,4096,16384,25.82
+TinyCC,glibc,nelibc,memmove-overlap-backward,4096,16384,39.78
+TinyCC,glibc,nelibc,memmove-overlap-forward,4096,16384,34.02
+TinyCC,glibc,nelibc,memmove-disjoint-dst-after,4096,16384,48.51
+TinyCC,glibc,nelibc,memmove-disjoint-dst-before,4096,16384,34.20
+TinyCC,glibc,nelibc,memccpy,4096,16384,154.41
+TinyCC,glibc,nelibc,memset,4096,16384,20.52
+TinyCC,glibc,nelibc,memcmp,4096,16384,45.13
+TinyCC,glibc,nelibc,memcmp-first-diff,4096,16384,2.99
+TinyCC,glibc,nelibc,memcmp-middle-diff,4096,16384,18.78
+TinyCC,glibc,nelibc,memcmp-last-diff,4096,16384,47.40
+TinyCC,glibc,nelibc,memchr,4096,16384,30.79
+TinyCC,glibc,nelibc,memrchr,4096,16384,31.20
+TinyCC,glibc,nelibc,memmem-rare4,4096,16384,23.88
+TinyCC,glibc,nelibc,memcpy,65536,1024,1071.44
+TinyCC,glibc,nelibc,mempcpy,65536,1024,1034.15
+TinyCC,glibc,nelibc,memmove-overlap-backward,65536,1024,741.55
+TinyCC,glibc,nelibc,memmove-overlap-forward,65536,1024,702.48
+TinyCC,glibc,nelibc,memmove-disjoint-dst-after,65536,1024,1189.26
+TinyCC,glibc,nelibc,memmove-disjoint-dst-before,65536,1024,1003.08
+TinyCC,glibc,nelibc,memccpy,65536,1024,2312.65
+TinyCC,glibc,nelibc,memset,65536,1024,734.92
+TinyCC,glibc,nelibc,memcmp,65536,1024,1002.54
+TinyCC,glibc,nelibc,memcmp-first-diff,65536,1024,2.88
+TinyCC,glibc,nelibc,memcmp-middle-diff,65536,1024,503.87
+TinyCC,glibc,nelibc,memcmp-last-diff,65536,1024,978.99
+TinyCC,glibc,nelibc,memchr,65536,1024,303.19
+TinyCC,glibc,nelibc,memrchr,65536,1024,334.34
+TinyCC,glibc,nelibc,memmem-rare4,65536,1024,144.08
+TinyCC,glibc,nelibc,memmem-needle-tail,65536,256,331.25
+TinyCC,glibc,nelibc,memmem-periodic-absent,65536,256,481383.86
+TinyCC,glibc,nelibc,memmem-needle-tail,65536,256,15764.28
+TinyCC,glibc,nelibc,memmem-periodic-absent,65536,256,259168.14
+TinyCC,glibc,nelibc,memmem-needle-tail,65536,256,10150.23
+TinyCC,glibc,nelibc,memmem-periodic-absent,65536,256,270609.92
+TinyCC,glibc,nelibc,memmem-needle-tail,65536,256,8361.16
+TinyCC,glibc,nelibc,memmem-periodic-absent,65536,256,268422.23
+TinyCC,glibc,nelibc,memmem-needle-tail,65536,256,6021.23
+TinyCC,glibc,nelibc,memmem-periodic-absent,65536,256,281683.19
+TinyCC,glibc,nelibc,memmem-needle-tail,65536,256,4542.23
+TinyCC,glibc,nelibc,memmem-periodic-absent,65536,256,272660.37
+TinyCC,glibc,nelibc,memmem-needle-tail,65536,256,2651.57
+TinyCC,glibc,nelibc,memmem-periodic-absent,65536,256,262892.75
+TinyCC,glibc,nelibc,memmem-needle-tail,65536,256,2125.05
+TinyCC,glibc,nelibc,memmem-periodic-absent,65536,256,256541.13
+TinyCC,glibc,nelibc,memmem-needle-tail,65536,256,2364.77
+TinyCC,glibc,nelibc,memmem-periodic-absent,65536,256,256458.99

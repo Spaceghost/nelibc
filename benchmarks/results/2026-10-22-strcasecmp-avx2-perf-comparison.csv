@@ -1,0 +1,25 @@
+compiler,libc,implementation,case,cycles,instructions,branches,branch_misses
+GCC,glibc,host-libc,equal-256,44,197,15,0
+GCC,glibc,host-libc,late-mismatch-256,35,159,14,0
+GCC harness (TinyCC row),glibc,host-libc,equal-256,44,197,15,0
+GCC harness (TinyCC row),glibc,host-libc,late-mismatch-256,36,159,14,0
+Zig cc,glibc,host-libc,equal-256,44,197,15,0
+Zig cc,glibc,host-libc,late-mismatch-256,36,159,14,0
+Zig cc,musl,host-libc,equal-256,1131,4896,774,1
+Zig cc,musl,host-libc,late-mismatch-256,1138,4881,772,1
+GCC,glibc,nelibc SSE2-only,equal-256,121,567,40,0
+GCC,glibc,nelibc SSE2-only,late-mismatch-256,122,570,41,0
+TinyCC object; GCC harness,glibc,nelibc SSE2-only,equal-256,124,579,42,0
+TinyCC object; GCC harness,glibc,nelibc SSE2-only,late-mismatch-256,123,582,43,0
+Zig cc,glibc,nelibc SSE2-only,equal-256,119,570,40,0
+Zig cc,glibc,nelibc SSE2-only,late-mismatch-256,121,573,41,0
+Zig cc,musl,nelibc SSE2-only,equal-256,119,570,40,0
+Zig cc,musl,nelibc SSE2-only,late-mismatch-256,121,573,41,0
+GCC,glibc,nelibc AVX2,equal-256,49,198,15,0
+GCC,glibc,nelibc AVX2,late-mismatch-256,50,201,16,0
+TinyCC object; GCC harness,glibc,nelibc AVX2,equal-256,55,210,17,0
+TinyCC object; GCC harness,glibc,nelibc AVX2,late-mismatch-256,56,213,18,0
+Zig cc,glibc,nelibc AVX2,equal-256,49,201,15,0
+Zig cc,glibc,nelibc AVX2,late-mismatch-256,50,204,16,0
+Zig cc,musl,nelibc AVX2,equal-256,49,201,15,0
+Zig cc,musl,nelibc AVX2,late-mismatch-256,51,204,16,0

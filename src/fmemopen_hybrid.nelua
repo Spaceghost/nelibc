@@ -1,0 +1,185 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local FmemopenState: type = @record{
+  buffer: *[0]byte,
+  size: csize,
+  length: csize,
+  position: csize,
+  initial_mode: byte,
+  plus: boolean,
+  owned: boolean
+}
+
+local function malloc(size: csize): pointer <cimport> end
+local function free(memory: pointer): void <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_host_fmemopen_cookie(cookie: pointer,
+    mode: *[0]cchar <const>): pointer <cimport> end
+local function nelibc_host_fmemopen_glibc_termination(): cint <cimport> end
+
+local function nelibc_fmemopen_read(cookie: pointer, destination: pointer,
+    count: csize): clong <cexport, codename 'nelibc_fmemopen_read'>
+  local state: *FmemopenState = (@*FmemopenState)(cookie)
+  local available: csize = 0
+  if state.position < state.length then available = state.length - state.position end
+  if count > available then count = available end
+  local output: *[0]byte = (@*[0]byte)(destination)
+  local index: csize = 0
+  while index < count do
+    output[index] = state.buffer[state.position + index]
+    index = index + 1
+  end
+  state.position = state.position + count
+  return (@clong)(count)
+end
+
+local function nelibc_fmemopen_write(cookie: pointer, source: pointer <const>,
+    count: csize): clong <cexport, codename 'nelibc_fmemopen_write'>
+  local state: *FmemopenState = (@*FmemopenState)(cookie)
+  if state.initial_mode == 97 then -- 'a'
+    state.position = state.length
+  end
+  local available: csize = 0
+  if state.position < state.size then available = state.size - state.position end
+  if count > available then count = available end
+  local input: *[0]byte = (@*[0]byte)(source)
+  local index: csize = 0
+  while index < count do
+    state.buffer[state.position + index] = input[index]
+    index = index + 1
+  end
+  state.position = state.position + count
+  if state.position > state.length then state.length = state.position end
+  if state.length < state.size then
+    state.buffer[state.length] = 0
+  elseif (not state.plus or nelibc_host_fmemopen_glibc_termination() ~= 0) and state.size > 0 then
+    state.buffer[state.size - 1] = 0
+  end
+  return (@clong)(count)
+end
+
+local function nelibc_fmemopen_seek(cookie: pointer, offset: *[0]clong,
+    whence: cint): cint <cexport, codename 'nelibc_fmemopen_seek'>
+  local state: *FmemopenState = (@*FmemopenState)(cookie)
+  local base: csize
+  if whence == 0 then -- SEEK_SET
+    base = 0
+  elseif whence == 1 then -- SEEK_CUR
+    base = state.position
+  elseif whence == 2 then -- SEEK_END
+    base = state.length
+  else
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+
+  if offset[0] < 0 then
+    local magnitude: csize = (@csize)(-(offset[0] + 1)) + 1
+    if magnitude > base then
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      return -1
+    end
+    state.position = base - magnitude
+  else
+    local positive: csize = (@csize)(offset[0])
+    if positive > state.size - base then
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      return -1
+    end
+    state.position = base + positive
+  end
+  offset[0] = (@clong)(state.position)
+  return 0
+end
+
+local function nelibc_fmemopen_close(cookie: pointer): cint <cexport, codename 'nelibc_fmemopen_close'>
+  local state: *FmemopenState = (@*FmemopenState)(cookie)
+  if state.owned then free((@pointer)(state.buffer)) end
+  free((@pointer)(state))
+  return 0
+end
+
+local function fmemopen(buffer: pointer, size: csize,
+    mode: *[0]cchar <const>): pointer <cexport, codename 'fmemopen'>
+  if mode == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  local initial_mode: byte = (@byte)(mode[0])
+  if initial_mode ~= 114 and initial_mode ~= 119 and initial_mode ~= 97 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+
+  local plus_seen: boolean = false
+  local binary_seen: boolean = false
+  local index: csize = 1
+  while mode[index] ~= 0 do
+    if mode[index] == 43 then -- '+'
+      plus_seen = true
+    elseif mode[index] == 98 then -- 'b'
+      binary_seen = true
+    end
+    index = index + 1
+  end
+
+  local state: *FmemopenState = (@*FmemopenState)(malloc((@csize)(#FmemopenState)))
+  if state == nilptr then return nilptr end
+  local owned: boolean = buffer == nilptr
+  if owned then
+    local allocation_size: csize = size
+    if allocation_size == 0 then allocation_size = 1 end
+    buffer = malloc(allocation_size)
+    if buffer == nilptr then
+      free((@pointer)(state))
+      return nilptr
+    end
+    local allocated: *[0]byte = (@*[0]byte)(buffer)
+    local clear_index: csize = 0
+    while clear_index < size do
+      allocated[clear_index] = 0
+      clear_index = clear_index + 1
+    end
+  end
+
+  state.buffer = (@*[0]byte)(buffer)
+  state.size = size
+  state.initial_mode = initial_mode
+  state.plus = plus_seen
+  state.owned = owned
+  if initial_mode == 114 then
+    state.length = size
+    state.position = 0
+  elseif initial_mode == 97 then
+    state.length = 0
+    local contents: *[0]byte = (@*[0]byte)(buffer)
+    while state.length < size and contents[state.length] ~= 0 do
+      state.length = state.length + 1
+    end
+    state.position = state.length
+  else
+    state.length = 0
+    state.position = 0
+    if plus_seen then state.buffer[0] = 0 end
+  end
+
+  local host_mode: *[0]cchar
+  if plus_seen then
+    if initial_mode == 114 then host_mode = 'r+'_cstring
+    elseif initial_mode == 119 then host_mode = 'w+'_cstring
+    else host_mode = 'a+'_cstring end
+  else
+    if initial_mode == 114 then host_mode = 'r'_cstring
+    elseif initial_mode == 119 then host_mode = 'w'_cstring
+    else host_mode = 'a'_cstring end
+  end
+  local stream: pointer = nelibc_host_fmemopen_cookie((@pointer)(state), host_mode)
+  if stream == nilptr then
+    local saved_errno: cint = nelibc_errno_location()[0]
+    if owned then free((@pointer)(state.buffer)) end
+    free((@pointer)(state))
+    nelibc_errno_location()[0] = saved_errno
+  end
+  return stream
+end

@@ -1,0 +1,19 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_host_setvbuf(stream: pointer, buffer: pointer,
+    mode: cint, size: csize): cint <cimport> end
+local function nelibc_host_bufsiz(): csize <cimport> end
+
+local function setvbuf(stream: pointer, buffer: pointer, mode: cint,
+    size: csize): cint <cexport, codename 'setvbuf'>
+  return nelibc_host_setvbuf(stream, buffer, mode, size)
+end
+
+local function setbuf(stream: pointer, buffer: *cchar): void <cexport, codename 'setbuf'>
+  if buffer == nilptr then
+    setvbuf(stream, nilptr, 2, nelibc_host_bufsiz()) -- _IONBF
+  else
+    setvbuf(stream, (@pointer)(buffer), 0, nelibc_host_bufsiz()) -- _IOFBF
+  end
+end

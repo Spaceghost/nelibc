@@ -1,0 +1,3 @@
+DIVTIME,strtof,calls=400,total_ns=83599,mean_ns_per_call=209.00
+DIVTIME,strtod,calls=400,total_ns=105950,mean_ns_per_call=264.88
+DIVTIME,strtold,calls=800,total_ns=211779,mean_ns_per_call=264.72

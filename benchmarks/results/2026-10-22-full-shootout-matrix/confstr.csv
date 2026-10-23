@@ -1,0 +1,9 @@
+compiler,libc,implementation,function,path,required_bytes,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,confstr,"/usr/bin",9,1000000,2.72
+Zig cc,glibc,nelibc,confstr,"/bin:/usr/bin",14,1000000,1.83
+GCC,glibc,host-libc,confstr,"/usr/bin",9,1000000,2.66
+GCC,glibc,nelibc,confstr,"/bin:/usr/bin",14,1000000,1.14
+Zig cc,musl,host-libc,confstr,"/bin:/usr/bin",14,1000000,47.53
+Zig cc,musl,nelibc,confstr,"/bin:/usr/bin",14,1000000,1.56
+TinyCC,glibc,host-libc,confstr,"/usr/bin",9,1000000,4.02
+TinyCC,glibc,nelibc,confstr,"/bin:/usr/bin",14,1000000,2.00

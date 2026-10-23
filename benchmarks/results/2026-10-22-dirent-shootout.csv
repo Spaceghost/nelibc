@@ -1,0 +1,33 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,open-close,1000,1156.05
+Zig cc,glibc,host-libc,opendir-closedir,1000,1419.71
+Zig cc,glibc,host-libc,readdir-rewind-64,1000,3938.63
+Zig cc,glibc,host-libc,opendir-readdir-64-closedir,1000,5282.84
+Zig cc,glibc,nelibc,open-close,1000,1205.23
+Zig cc,glibc,nelibc,opendir-closedir,1000,1224.05
+Zig cc,glibc,nelibc,readdir-rewind-64,1000,3192.33
+Zig cc,glibc,nelibc,opendir-readdir-64-closedir,1000,4673.70
+GCC,glibc,host-libc,open-close,1000,1118.59
+GCC,glibc,host-libc,opendir-closedir,1000,1407.53
+GCC,glibc,host-libc,readdir-rewind-64,1000,3901.61
+GCC,glibc,host-libc,opendir-readdir-64-closedir,1000,5494.78
+GCC,glibc,nelibc,open-close,1000,1239.32
+GCC,glibc,nelibc,opendir-closedir,1000,1284.40
+GCC,glibc,nelibc,readdir-rewind-64,1000,3315.33
+GCC,glibc,nelibc,opendir-readdir-64-closedir,1000,4455.28
+Zig cc,musl,host-libc,open-close,1000,1138.95
+Zig cc,musl,host-libc,opendir-closedir,1000,1366.89
+Zig cc,musl,host-libc,readdir-rewind-64,1000,3610.07
+Zig cc,musl,host-libc,opendir-readdir-64-closedir,1000,4843.24
+Zig cc,musl,nelibc,open-close,1000,1225.74
+Zig cc,musl,nelibc,opendir-closedir,1000,1167.60
+Zig cc,musl,nelibc,readdir-rewind-64,1000,3183.03
+Zig cc,musl,nelibc,opendir-readdir-64-closedir,1000,4292.34
+TinyCC,glibc,host-libc,open-close,1000,1168.25
+TinyCC,glibc,host-libc,opendir-closedir,1000,1407.85
+TinyCC,glibc,host-libc,readdir-rewind-64,1000,3856.78
+TinyCC,glibc,host-libc,opendir-readdir-64-closedir,1000,5145.96
+TinyCC,glibc,nelibc,open-close,1000,1219.21
+TinyCC,glibc,nelibc,opendir-closedir,1000,1294.96
+TinyCC,glibc,nelibc,readdir-rewind-64,1000,3368.64
+TinyCC,glibc,nelibc,opendir-readdir-64-closedir,1000,4585.25

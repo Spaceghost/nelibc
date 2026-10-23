@@ -1,0 +1,219 @@
+compiler,libc,implementation,function,size_bytes,iterations,median_ns_per_call
+Zig cc,glibc,libc,memcpy,64,1048576,1.63
+Zig cc,glibc,libc,mempcpy,64,1048576,2.07
+Zig cc,glibc,libc,memmove-overlap,64,1048576,5.01
+Zig cc,glibc,libc,memccpy,64,1048576,4.38
+Zig cc,glibc,libc,memset,64,1048576,1.61
+Zig cc,glibc,libc,memcmp,64,1048576,2.07
+Zig cc,glibc,libc,memcmp-first-diff,64,1048576,2.09
+Zig cc,glibc,libc,memcmp-middle-diff,64,1048576,2.32
+Zig cc,glibc,libc,memcmp-last-diff,64,1048576,2.26
+Zig cc,glibc,libc,memchr,64,1048576,2.16
+Zig cc,glibc,libc,memrchr,64,1048576,2.07
+Zig cc,glibc,libc,memmem,64,1048576,11.47
+Zig cc,glibc,libc,memcpy,4096,16384,16.40
+Zig cc,glibc,libc,mempcpy,4096,16384,16.73
+Zig cc,glibc,libc,memmove-overlap,4096,16384,34.68
+Zig cc,glibc,libc,memccpy,4096,16384,44.78
+Zig cc,glibc,libc,memset,4096,16384,17.28
+Zig cc,glibc,libc,memcmp,4096,16384,32.85
+Zig cc,glibc,libc,memcmp-first-diff,4096,16384,1.92
+Zig cc,glibc,libc,memcmp-middle-diff,4096,16384,15.43
+Zig cc,glibc,libc,memcmp-last-diff,4096,16384,39.21
+Zig cc,glibc,libc,memchr,4096,16384,25.11
+Zig cc,glibc,libc,memrchr,4096,16384,28.79
+Zig cc,glibc,libc,memmem,4096,16384,322.25
+Zig cc,glibc,libc,memcpy,65536,1024,1055.64
+Zig cc,glibc,libc,mempcpy,65536,1024,1061.55
+Zig cc,glibc,libc,memmove-overlap,65536,1024,774.27
+Zig cc,glibc,libc,memccpy,65536,1024,1546.53
+Zig cc,glibc,libc,memset,65536,1024,732.45
+Zig cc,glibc,libc,memcmp,65536,1024,982.33
+Zig cc,glibc,libc,memcmp-first-diff,65536,1024,1.93
+Zig cc,glibc,libc,memcmp-middle-diff,65536,1024,507.71
+Zig cc,glibc,libc,memcmp-last-diff,65536,1024,1032.41
+Zig cc,glibc,libc,memchr,65536,1024,523.96
+Zig cc,glibc,libc,memrchr,65536,1024,501.41
+Zig cc,glibc,libc,memmem,65536,1024,5193.61
+Zig cc,glibc,nelibc,memcpy,64,1048576,2.03
+Zig cc,glibc,nelibc,mempcpy,64,1048576,2.18
+Zig cc,glibc,nelibc,memmove-overlap,64,1048576,4.77
+Zig cc,glibc,nelibc,memccpy,64,1048576,11.77
+Zig cc,glibc,nelibc,memset,64,1048576,4.22
+Zig cc,glibc,nelibc,memcmp,64,1048576,2.64
+Zig cc,glibc,nelibc,memcmp-first-diff,64,1048576,1.88
+Zig cc,glibc,nelibc,memcmp-middle-diff,64,1048576,2.86
+Zig cc,glibc,nelibc,memcmp-last-diff,64,1048576,8.43
+Zig cc,glibc,nelibc,memchr,64,1048576,6.79
+Zig cc,glibc,nelibc,memrchr,64,1048576,34.56
+Zig cc,glibc,nelibc,memmem,64,1048576,8.01
+Zig cc,glibc,nelibc,memcpy,4096,16384,47.41
+Zig cc,glibc,nelibc,mempcpy,4096,16384,49.93
+Zig cc,glibc,nelibc,memmove-overlap,4096,16384,47.97
+Zig cc,glibc,nelibc,memccpy,4096,16384,249.44
+Zig cc,glibc,nelibc,memset,4096,16384,47.94
+Zig cc,glibc,nelibc,memcmp,4096,16384,71.87
+Zig cc,glibc,nelibc,memcmp-first-diff,4096,16384,1.71
+Zig cc,glibc,nelibc,memcmp-middle-diff,4096,16384,43.76
+Zig cc,glibc,nelibc,memcmp-last-diff,4096,16384,80.91
+Zig cc,glibc,nelibc,memchr,4096,16384,203.76
+Zig cc,glibc,nelibc,memrchr,4096,16384,729.05
+Zig cc,glibc,nelibc,memmem,4096,16384,109.79
+Zig cc,glibc,nelibc,memcpy,65536,1024,1325.97
+Zig cc,glibc,nelibc,mempcpy,65536,1024,1303.24
+Zig cc,glibc,nelibc,memmove-overlap,65536,1024,954.34
+Zig cc,glibc,nelibc,memccpy,65536,1024,4245.67
+Zig cc,glibc,nelibc,memset,65536,1024,1246.60
+Zig cc,glibc,nelibc,memcmp,65536,1024,1677.17
+Zig cc,glibc,nelibc,memcmp-first-diff,65536,1024,1.73
+Zig cc,glibc,nelibc,memcmp-middle-diff,65536,1024,838.61
+Zig cc,glibc,nelibc,memcmp-last-diff,65536,1024,1645.12
+Zig cc,glibc,nelibc,memchr,65536,1024,3097.69
+Zig cc,glibc,nelibc,memrchr,65536,1024,4101.98
+Zig cc,glibc,nelibc,memmem,65536,1024,1554.34
+compiler,libc,implementation,function,size_bytes,iterations,median_ns_per_call
+GCC,glibc,libc,memcpy,64,1048576,2.09
+GCC,glibc,libc,mempcpy,64,1048576,2.30
+GCC,glibc,libc,memmove-overlap,64,1048576,4.58
+GCC,glibc,libc,memccpy,64,1048576,4.30
+GCC,glibc,libc,memset,64,1048576,1.58
+GCC,glibc,libc,memcmp,64,1048576,2.03
+GCC,glibc,libc,memcmp-first-diff,64,1048576,1.99
+GCC,glibc,libc,memcmp-middle-diff,64,1048576,2.20
+GCC,glibc,libc,memcmp-last-diff,64,1048576,2.20
+GCC,glibc,libc,memchr,64,1048576,2.56
+GCC,glibc,libc,memrchr,64,1048576,2.53
+GCC,glibc,libc,memmem,64,1048576,12.05
+GCC,glibc,libc,memcpy,4096,16384,18.10
+GCC,glibc,libc,mempcpy,4096,16384,17.87
+GCC,glibc,libc,memmove-overlap,4096,16384,35.36
+GCC,glibc,libc,memccpy,4096,16384,76.64
+GCC,glibc,libc,memset,4096,16384,19.13
+GCC,glibc,libc,memcmp,4096,16384,32.45
+GCC,glibc,libc,memcmp-first-diff,4096,16384,1.84
+GCC,glibc,libc,memcmp-middle-diff,4096,16384,15.97
+GCC,glibc,libc,memcmp-last-diff,4096,16384,33.60
+GCC,glibc,libc,memchr,4096,16384,26.72
+GCC,glibc,libc,memrchr,4096,16384,29.68
+GCC,glibc,libc,memmem,4096,16384,314.20
+GCC,glibc,libc,memcpy,65536,1024,1053.10
+GCC,glibc,libc,mempcpy,65536,1024,1101.39
+GCC,glibc,libc,memmove-overlap,65536,1024,757.46
+GCC,glibc,libc,memccpy,65536,1024,1944.27
+GCC,glibc,libc,memset,65536,1024,743.65
+GCC,glibc,libc,memcmp,65536,1024,992.76
+GCC,glibc,libc,memcmp-first-diff,65536,1024,1.89
+GCC,glibc,libc,memcmp-middle-diff,65536,1024,504.02
+GCC,glibc,libc,memcmp-last-diff,65536,1024,1008.88
+GCC,glibc,libc,memchr,65536,1024,506.01
+GCC,glibc,libc,memrchr,65536,1024,461.94
+GCC,glibc,libc,memmem,65536,1024,4861.07
+GCC,glibc,nelibc,memcpy,64,1048576,4.07
+GCC,glibc,nelibc,mempcpy,64,1048576,4.82
+GCC,glibc,nelibc,memmove-overlap,64,1048576,4.65
+GCC,glibc,nelibc,memccpy,64,1048576,12.55
+GCC,glibc,nelibc,memset,64,1048576,2.01
+GCC,glibc,nelibc,memcmp,64,1048576,3.77
+GCC,glibc,nelibc,memcmp-first-diff,64,1048576,2.19
+GCC,glibc,nelibc,memcmp-middle-diff,64,1048576,3.66
+GCC,glibc,nelibc,memcmp-last-diff,64,1048576,12.14
+GCC,glibc,nelibc,memchr,64,1048576,8.66
+GCC,glibc,nelibc,memrchr,64,1048576,9.43
+GCC,glibc,nelibc,memmem,64,1048576,7.32
+GCC,glibc,nelibc,memcpy,4096,16384,132.53
+GCC,glibc,nelibc,mempcpy,4096,16384,131.99
+GCC,glibc,nelibc,memmove-overlap,4096,16384,136.02
+GCC,glibc,nelibc,memccpy,4096,16384,661.48
+GCC,glibc,nelibc,memset,4096,16384,39.76
+GCC,glibc,nelibc,memcmp,4096,16384,182.99
+GCC,glibc,nelibc,memcmp-first-diff,4096,16384,2.18
+GCC,glibc,nelibc,memcmp-middle-diff,4096,16384,102.27
+GCC,glibc,nelibc,memcmp-last-diff,4096,16384,194.94
+GCC,glibc,nelibc,memchr,4096,16384,522.28
+GCC,glibc,nelibc,memrchr,4096,16384,578.11
+GCC,glibc,nelibc,memmem,4096,16384,263.12
+GCC,glibc,nelibc,memcpy,65536,1024,2045.59
+GCC,glibc,nelibc,mempcpy,65536,1024,2083.55
+GCC,glibc,nelibc,memmove-overlap,65536,1024,2196.78
+GCC,glibc,nelibc,memccpy,65536,1024,10514.99
+GCC,glibc,nelibc,memset,65536,1024,755.64
+GCC,glibc,nelibc,memcmp,65536,1024,2848.74
+GCC,glibc,nelibc,memcmp-first-diff,65536,1024,2.15
+GCC,glibc,nelibc,memcmp-middle-diff,65536,1024,1387.54
+GCC,glibc,nelibc,memcmp-last-diff,65536,1024,2806.63
+GCC,glibc,nelibc,memchr,65536,1024,8225.50
+GCC,glibc,nelibc,memrchr,65536,1024,9140.91
+GCC,glibc,nelibc,memmem,65536,1024,4135.39
+compiler,libc,implementation,function,size_bytes,iterations,median_ns_per_call
+Zig cc,musl,libc,memcpy,64,1048576,2.84
+Zig cc,musl,libc,mempcpy,64,1048576,22.75
+Zig cc,musl,libc,memmove-overlap,64,1048576,6.53
+Zig cc,musl,libc,memccpy,64,1048576,27.23
+Zig cc,musl,libc,memset,64,1048576,2.03
+Zig cc,musl,libc,memcmp,64,1048576,27.10
+Zig cc,musl,libc,memcmp-first-diff,64,1048576,0.86
+Zig cc,musl,libc,memcmp-middle-diff,64,1048576,18.29
+Zig cc,musl,libc,memcmp-last-diff,64,1048576,25.46
+Zig cc,musl,libc,memchr,64,1048576,23.52
+Zig cc,musl,libc,memrchr,64,1048576,28.54
+Zig cc,musl,libc,memmem,64,1048576,62.77
+Zig cc,musl,libc,memcpy,4096,16384,53.40
+Zig cc,musl,libc,mempcpy,4096,16384,1016.54
+Zig cc,musl,libc,memmove-overlap,4096,16384,61.63
+Zig cc,musl,libc,memccpy,4096,16384,1154.58
+Zig cc,musl,libc,memset,4096,16384,34.04
+Zig cc,musl,libc,memcmp,4096,16384,939.16
+Zig cc,musl,libc,memcmp-first-diff,4096,16384,0.82
+Zig cc,musl,libc,memcmp-middle-diff,4096,16384,470.58
+Zig cc,musl,libc,memcmp-last-diff,4096,16384,940.26
+Zig cc,musl,libc,memchr,4096,16384,919.57
+Zig cc,musl,libc,memrchr,4096,16384,1112.23
+Zig cc,musl,libc,memmem,4096,16384,3708.59
+Zig cc,musl,libc,memcpy,65536,1024,1241.65
+Zig cc,musl,libc,mempcpy,65536,1024,16338.42
+Zig cc,musl,libc,memmove-overlap,65536,1024,1090.29
+Zig cc,musl,libc,memccpy,65536,1024,18027.92
+Zig cc,musl,libc,memset,65536,1024,730.79
+Zig cc,musl,libc,memcmp,65536,1024,19745.74
+Zig cc,musl,libc,memcmp-first-diff,65536,1024,0.86
+Zig cc,musl,libc,memcmp-middle-diff,65536,1024,9763.63
+Zig cc,musl,libc,memcmp-last-diff,65536,1024,19698.19
+Zig cc,musl,libc,memchr,65536,1024,14882.00
+Zig cc,musl,libc,memrchr,65536,1024,17339.98
+Zig cc,musl,libc,memmem,65536,1024,58223.23
+Zig cc,musl,nelibc,memcpy,64,1048576,2.02
+Zig cc,musl,nelibc,mempcpy,64,1048576,1.99
+Zig cc,musl,nelibc,memmove-overlap,64,1048576,4.78
+Zig cc,musl,nelibc,memccpy,64,1048576,12.74
+Zig cc,musl,nelibc,memset,64,1048576,4.59
+Zig cc,musl,nelibc,memcmp,64,1048576,2.62
+Zig cc,musl,nelibc,memcmp-first-diff,64,1048576,1.74
+Zig cc,musl,nelibc,memcmp-middle-diff,64,1048576,2.69
+Zig cc,musl,nelibc,memcmp-last-diff,64,1048576,8.36
+Zig cc,musl,nelibc,memchr,64,1048576,6.24
+Zig cc,musl,nelibc,memrchr,64,1048576,33.89
+Zig cc,musl,nelibc,memmem,64,1048576,7.60
+Zig cc,musl,nelibc,memcpy,4096,16384,47.08
+Zig cc,musl,nelibc,mempcpy,4096,16384,49.56
+Zig cc,musl,nelibc,memmove-overlap,4096,16384,48.55
+Zig cc,musl,nelibc,memccpy,4096,16384,240.91
+Zig cc,musl,nelibc,memset,4096,16384,46.74
+Zig cc,musl,nelibc,memcmp,4096,16384,71.58
+Zig cc,musl,nelibc,memcmp-first-diff,4096,16384,1.71
+Zig cc,musl,nelibc,memcmp-middle-diff,4096,16384,43.84
+Zig cc,musl,nelibc,memcmp-last-diff,4096,16384,75.77
+Zig cc,musl,nelibc,memchr,4096,16384,202.55
+Zig cc,musl,nelibc,memrchr,4096,16384,724.15
+Zig cc,musl,nelibc,memmem,4096,16384,110.52
+Zig cc,musl,nelibc,memcpy,65536,1024,1285.47
+Zig cc,musl,nelibc,mempcpy,65536,1024,1303.50
+Zig cc,musl,nelibc,memmove-overlap,65536,1024,972.85
+Zig cc,musl,nelibc,memccpy,65536,1024,4249.62
+Zig cc,musl,nelibc,memset,65536,1024,1235.03
+Zig cc,musl,nelibc,memcmp,65536,1024,1613.12
+Zig cc,musl,nelibc,memcmp-first-diff,65536,1024,1.76
+Zig cc,musl,nelibc,memcmp-middle-diff,65536,1024,807.77
+Zig cc,musl,nelibc,memcmp-last-diff,65536,1024,1648.10
+Zig cc,musl,nelibc,memchr,65536,1024,2984.33
+Zig cc,musl,nelibc,memrchr,65536,1024,3973.65
+Zig cc,musl,nelibc,memmem,65536,1024,1519.34

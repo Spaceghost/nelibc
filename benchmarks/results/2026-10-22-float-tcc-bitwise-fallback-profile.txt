@@ -1,0 +1,16 @@
+TinyCC bitwise division fallback inspection
+Date: 2026-10-22
+
+The fallback loop in big_divide_round calls big_try_subtract_shifted once for
+each bit from precision - 1 down to 0, at most 64 calls for the current
+precisions. TCC disassembly shows the helper uses a 128-byte stack frame; the
+caller uses 96 bytes. The helper also makes generic shifted-used/shifted-limb
+calls.
+
+Instrumented TinyCC/glibc run across the 1,250-case float differential corpus:
+  fallback entries: 0
+  shifted-subtract calls: 0
+
+The short-input and long-decimal profiles also recorded zero fallback entries.
+The path remains a cold correctness fallback, so no hot-path optimization was
+made.

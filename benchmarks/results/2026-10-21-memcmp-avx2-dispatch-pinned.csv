@@ -1,0 +1,433 @@
+repeat,compiler,libc,implementation,function,size_bytes,iterations,median_ns_per_call
+1,Zig cc,glibc,libc,memcmp,64,1048576,2.00
+1,Zig cc,glibc,libc,memcmp-first-diff,64,1048576,2.08
+1,Zig cc,glibc,libc,memcmp-middle-diff,64,1048576,2.22
+1,Zig cc,glibc,libc,memcmp-last-diff,64,1048576,2.26
+1,Zig cc,glibc,libc,memcmp,4096,16384,32.90
+1,Zig cc,glibc,libc,memcmp-first-diff,4096,16384,2.88
+1,Zig cc,glibc,libc,memcmp-middle-diff,4096,16384,16.44
+1,Zig cc,glibc,libc,memcmp-last-diff,4096,16384,35.11
+1,Zig cc,glibc,libc,memcmp,65536,1024,996.54
+1,Zig cc,glibc,libc,memcmp-first-diff,65536,1024,1.89
+1,Zig cc,glibc,libc,memcmp-middle-diff,65536,1024,516.76
+1,Zig cc,glibc,libc,memcmp-last-diff,65536,1024,968.44
+1,Zig cc,glibc,nelibc-sse2,memcmp,64,1048576,3.17
+1,Zig cc,glibc,nelibc-sse2,memcmp-first-diff,64,1048576,2.25
+1,Zig cc,glibc,nelibc-sse2,memcmp-middle-diff,64,1048576,3.48
+1,Zig cc,glibc,nelibc-sse2,memcmp-last-diff,64,1048576,8.94
+1,Zig cc,glibc,nelibc-sse2,memcmp,4096,16384,70.34
+1,Zig cc,glibc,nelibc-sse2,memcmp-first-diff,4096,16384,1.74
+1,Zig cc,glibc,nelibc-sse2,memcmp-middle-diff,4096,16384,39.32
+1,Zig cc,glibc,nelibc-sse2,memcmp-last-diff,4096,16384,67.00
+1,Zig cc,glibc,nelibc-sse2,memcmp,65536,1024,1559.45
+1,Zig cc,glibc,nelibc-sse2,memcmp-first-diff,65536,1024,1.68
+1,Zig cc,glibc,nelibc-sse2,memcmp-middle-diff,65536,1024,805.69
+1,Zig cc,glibc,nelibc-sse2,memcmp-last-diff,65536,1024,1618.16
+1,Zig cc,glibc,nelibc,memcmp,64,1048576,3.28
+1,Zig cc,glibc,nelibc,memcmp-first-diff,64,1048576,2.06
+1,Zig cc,glibc,nelibc,memcmp-middle-diff,64,1048576,3.15
+1,Zig cc,glibc,nelibc,memcmp-last-diff,64,1048576,8.81
+1,Zig cc,glibc,nelibc,memcmp,4096,16384,39.37
+1,Zig cc,glibc,nelibc,memcmp-first-diff,4096,16384,1.67
+1,Zig cc,glibc,nelibc,memcmp-middle-diff,4096,16384,17.63
+1,Zig cc,glibc,nelibc,memcmp-last-diff,4096,16384,42.87
+1,Zig cc,glibc,nelibc,memcmp,65536,1024,984.36
+1,Zig cc,glibc,nelibc,memcmp-first-diff,65536,1024,1.73
+1,Zig cc,glibc,nelibc,memcmp-middle-diff,65536,1024,498.34
+1,Zig cc,glibc,nelibc,memcmp-last-diff,65536,1024,993.86
+1,GCC,glibc,libc,memcmp,64,1048576,2.04
+1,GCC,glibc,libc,memcmp-first-diff,64,1048576,2.03
+1,GCC,glibc,libc,memcmp-middle-diff,64,1048576,2.29
+1,GCC,glibc,libc,memcmp-last-diff,64,1048576,2.31
+1,GCC,glibc,libc,memcmp,4096,16384,33.73
+1,GCC,glibc,libc,memcmp-first-diff,4096,16384,2.05
+1,GCC,glibc,libc,memcmp-middle-diff,4096,16384,16.35
+1,GCC,glibc,libc,memcmp-last-diff,4096,16384,33.77
+1,GCC,glibc,libc,memcmp,65536,1024,985.25
+1,GCC,glibc,libc,memcmp-first-diff,65536,1024,1.94
+1,GCC,glibc,libc,memcmp-middle-diff,65536,1024,503.27
+1,GCC,glibc,libc,memcmp-last-diff,65536,1024,1029.16
+1,GCC,glibc,nelibc-sse2,memcmp,64,1048576,3.62
+1,GCC,glibc,nelibc-sse2,memcmp-first-diff,64,1048576,1.59
+1,GCC,glibc,nelibc-sse2,memcmp-middle-diff,64,1048576,2.28
+1,GCC,glibc,nelibc-sse2,memcmp-last-diff,64,1048576,2.86
+1,GCC,glibc,nelibc-sse2,memcmp,4096,16384,70.15
+1,GCC,glibc,nelibc-sse2,memcmp-first-diff,4096,16384,1.31
+1,GCC,glibc,nelibc-sse2,memcmp-middle-diff,4096,16384,37.55
+1,GCC,glibc,nelibc-sse2,memcmp-last-diff,4096,16384,75.80
+1,GCC,glibc,nelibc-sse2,memcmp,65536,1024,1590.86
+1,GCC,glibc,nelibc-sse2,memcmp-first-diff,65536,1024,1.32
+1,GCC,glibc,nelibc-sse2,memcmp-middle-diff,65536,1024,805.64
+1,GCC,glibc,nelibc-sse2,memcmp-last-diff,65536,1024,1602.64
+1,GCC,glibc,nelibc,memcmp,64,1048576,3.64
+1,GCC,glibc,nelibc,memcmp-first-diff,64,1048576,1.81
+1,GCC,glibc,nelibc,memcmp-middle-diff,64,1048576,2.52
+1,GCC,glibc,nelibc,memcmp-last-diff,64,1048576,2.76
+1,GCC,glibc,nelibc,memcmp,4096,16384,42.02
+1,GCC,glibc,nelibc,memcmp-first-diff,4096,16384,1.74
+1,GCC,glibc,nelibc,memcmp-middle-diff,4096,16384,25.45
+1,GCC,glibc,nelibc,memcmp-last-diff,4096,16384,46.34
+1,GCC,glibc,nelibc,memcmp,65536,1024,1027.59
+1,GCC,glibc,nelibc,memcmp-first-diff,65536,1024,1.73
+1,GCC,glibc,nelibc,memcmp-middle-diff,65536,1024,511.36
+1,GCC,glibc,nelibc,memcmp-last-diff,65536,1024,1022.77
+1,Zig cc,musl,libc,memcmp,64,1048576,27.76
+1,Zig cc,musl,libc,memcmp-first-diff,64,1048576,1.13
+1,Zig cc,musl,libc,memcmp-middle-diff,64,1048576,18.76
+1,Zig cc,musl,libc,memcmp-last-diff,64,1048576,25.42
+1,Zig cc,musl,libc,memcmp,4096,16384,936.53
+1,Zig cc,musl,libc,memcmp-first-diff,4096,16384,1.05
+1,Zig cc,musl,libc,memcmp-middle-diff,4096,16384,473.85
+1,Zig cc,musl,libc,memcmp-last-diff,4096,16384,919.32
+1,Zig cc,musl,libc,memcmp,65536,1024,19727.07
+1,Zig cc,musl,libc,memcmp-first-diff,65536,1024,1.06
+1,Zig cc,musl,libc,memcmp-middle-diff,65536,1024,10181.09
+1,Zig cc,musl,libc,memcmp-last-diff,65536,1024,20391.54
+1,Zig cc,musl,nelibc-sse2,memcmp,64,1048576,3.20
+1,Zig cc,musl,nelibc-sse2,memcmp-first-diff,64,1048576,2.25
+1,Zig cc,musl,nelibc-sse2,memcmp-middle-diff,64,1048576,3.24
+1,Zig cc,musl,nelibc-sse2,memcmp-last-diff,64,1048576,8.78
+1,Zig cc,musl,nelibc-sse2,memcmp,4096,16384,68.65
+1,Zig cc,musl,nelibc-sse2,memcmp-first-diff,4096,16384,1.67
+1,Zig cc,musl,nelibc-sse2,memcmp-middle-diff,4096,16384,40.31
+1,Zig cc,musl,nelibc-sse2,memcmp-last-diff,4096,16384,68.15
+1,Zig cc,musl,nelibc-sse2,memcmp,65536,1024,1568.47
+1,Zig cc,musl,nelibc-sse2,memcmp-first-diff,65536,1024,1.72
+1,Zig cc,musl,nelibc-sse2,memcmp-middle-diff,65536,1024,780.08
+1,Zig cc,musl,nelibc-sse2,memcmp-last-diff,65536,1024,1572.66
+1,Zig cc,musl,nelibc,memcmp,64,1048576,2.53
+1,Zig cc,musl,nelibc,memcmp-first-diff,64,1048576,2.28
+1,Zig cc,musl,nelibc,memcmp-middle-diff,64,1048576,2.51
+1,Zig cc,musl,nelibc,memcmp-last-diff,64,1048576,8.76
+1,Zig cc,musl,nelibc,memcmp,4096,16384,41.10
+1,Zig cc,musl,nelibc,memcmp-first-diff,4096,16384,1.92
+1,Zig cc,musl,nelibc,memcmp-middle-diff,4096,16384,18.34
+1,Zig cc,musl,nelibc,memcmp-last-diff,4096,16384,44.27
+1,Zig cc,musl,nelibc,memcmp,65536,1024,1003.03
+1,Zig cc,musl,nelibc,memcmp-first-diff,65536,1024,1.94
+1,Zig cc,musl,nelibc,memcmp-middle-diff,65536,1024,521.12
+1,Zig cc,musl,nelibc,memcmp-last-diff,65536,1024,986.23
+1,TinyCC,glibc,libc,memcmp,64,1048576,2.54
+1,TinyCC,glibc,libc,memcmp-first-diff,64,1048576,2.52
+1,TinyCC,glibc,libc,memcmp-middle-diff,64,1048576,2.72
+1,TinyCC,glibc,libc,memcmp-last-diff,64,1048576,2.71
+1,TinyCC,glibc,libc,memcmp,4096,16384,33.66
+1,TinyCC,glibc,libc,memcmp-first-diff,4096,16384,2.35
+1,TinyCC,glibc,libc,memcmp-middle-diff,4096,16384,15.91
+1,TinyCC,glibc,libc,memcmp-last-diff,4096,16384,35.29
+1,TinyCC,glibc,libc,memcmp,65536,1024,994.03
+1,TinyCC,glibc,libc,memcmp-first-diff,65536,1024,2.36
+1,TinyCC,glibc,libc,memcmp-middle-diff,65536,1024,505.52
+1,TinyCC,glibc,libc,memcmp-last-diff,65536,1024,1048.75
+1,TinyCC,glibc,nelibc-sse2,memcmp,64,1048576,4.49
+1,TinyCC,glibc,nelibc-sse2,memcmp-first-diff,64,1048576,3.08
+1,TinyCC,glibc,nelibc-sse2,memcmp-middle-diff,64,1048576,3.68
+1,TinyCC,glibc,nelibc-sse2,memcmp-last-diff,64,1048576,3.77
+1,TinyCC,glibc,nelibc-sse2,memcmp,4096,16384,73.40
+1,TinyCC,glibc,nelibc-sse2,memcmp-first-diff,4096,16384,2.96
+1,TinyCC,glibc,nelibc-sse2,memcmp-middle-diff,4096,16384,42.71
+1,TinyCC,glibc,nelibc-sse2,memcmp-last-diff,4096,16384,82.21
+1,TinyCC,glibc,nelibc-sse2,memcmp,65536,1024,1566.46
+1,TinyCC,glibc,nelibc-sse2,memcmp-first-diff,65536,1024,2.74
+1,TinyCC,glibc,nelibc-sse2,memcmp-middle-diff,65536,1024,825.84
+1,TinyCC,glibc,nelibc-sse2,memcmp-last-diff,65536,1024,1628.91
+1,TinyCC,glibc,nelibc,memcmp,64,1048576,4.98
+1,TinyCC,glibc,nelibc,memcmp-first-diff,64,1048576,3.15
+1,TinyCC,glibc,nelibc,memcmp-middle-diff,64,1048576,3.72
+1,TinyCC,glibc,nelibc,memcmp-last-diff,64,1048576,3.90
+1,TinyCC,glibc,nelibc,memcmp,4096,16384,43.50
+1,TinyCC,glibc,nelibc,memcmp-first-diff,4096,16384,3.13
+1,TinyCC,glibc,nelibc,memcmp-middle-diff,4096,16384,20.96
+1,TinyCC,glibc,nelibc,memcmp-last-diff,4096,16384,48.26
+1,TinyCC,glibc,nelibc,memcmp,65536,1024,1035.94
+1,TinyCC,glibc,nelibc,memcmp-first-diff,65536,1024,3.15
+1,TinyCC,glibc,nelibc,memcmp-middle-diff,65536,1024,542.93
+1,TinyCC,glibc,nelibc,memcmp-last-diff,65536,1024,1006.99
+2,Zig cc,glibc,libc,memcmp,64,1048576,2.03
+2,Zig cc,glibc,libc,memcmp-first-diff,64,1048576,2.02
+2,Zig cc,glibc,libc,memcmp-middle-diff,64,1048576,2.22
+2,Zig cc,glibc,libc,memcmp-last-diff,64,1048576,2.24
+2,Zig cc,glibc,libc,memcmp,4096,16384,33.42
+2,Zig cc,glibc,libc,memcmp-first-diff,4096,16384,1.96
+2,Zig cc,glibc,libc,memcmp-middle-diff,4096,16384,17.29
+2,Zig cc,glibc,libc,memcmp-last-diff,4096,16384,35.58
+2,Zig cc,glibc,libc,memcmp,65536,1024,1081.90
+2,Zig cc,glibc,libc,memcmp-first-diff,65536,1024,1.94
+2,Zig cc,glibc,libc,memcmp-middle-diff,65536,1024,550.09
+2,Zig cc,glibc,libc,memcmp-last-diff,65536,1024,1009.97
+2,Zig cc,glibc,nelibc-sse2,memcmp,64,1048576,3.16
+2,Zig cc,glibc,nelibc-sse2,memcmp-first-diff,64,1048576,2.25
+2,Zig cc,glibc,nelibc-sse2,memcmp-middle-diff,64,1048576,3.49
+2,Zig cc,glibc,nelibc-sse2,memcmp-last-diff,64,1048576,8.75
+2,Zig cc,glibc,nelibc-sse2,memcmp,4096,16384,70.90
+2,Zig cc,glibc,nelibc-sse2,memcmp-first-diff,4096,16384,1.82
+2,Zig cc,glibc,nelibc-sse2,memcmp-middle-diff,4096,16384,40.12
+2,Zig cc,glibc,nelibc-sse2,memcmp-last-diff,4096,16384,70.48
+2,Zig cc,glibc,nelibc-sse2,memcmp,65536,1024,1584.01
+2,Zig cc,glibc,nelibc-sse2,memcmp-first-diff,65536,1024,1.72
+2,Zig cc,glibc,nelibc-sse2,memcmp-middle-diff,65536,1024,794.23
+2,Zig cc,glibc,nelibc-sse2,memcmp-last-diff,65536,1024,1575.01
+2,Zig cc,glibc,nelibc,memcmp,64,1048576,3.32
+2,Zig cc,glibc,nelibc,memcmp-first-diff,64,1048576,2.03
+2,Zig cc,glibc,nelibc,memcmp-middle-diff,64,1048576,3.19
+2,Zig cc,glibc,nelibc,memcmp-last-diff,64,1048576,8.74
+2,Zig cc,glibc,nelibc,memcmp,4096,16384,39.09
+2,Zig cc,glibc,nelibc,memcmp-first-diff,4096,16384,1.67
+2,Zig cc,glibc,nelibc,memcmp-middle-diff,4096,16384,17.11
+2,Zig cc,glibc,nelibc,memcmp-last-diff,4096,16384,43.57
+2,Zig cc,glibc,nelibc,memcmp,65536,1024,1002.16
+2,Zig cc,glibc,nelibc,memcmp-first-diff,65536,1024,1.69
+2,Zig cc,glibc,nelibc,memcmp-middle-diff,65536,1024,497.92
+2,Zig cc,glibc,nelibc,memcmp-last-diff,65536,1024,980.51
+2,GCC,glibc,libc,memcmp,64,1048576,2.02
+2,GCC,glibc,libc,memcmp-first-diff,64,1048576,2.01
+2,GCC,glibc,libc,memcmp-middle-diff,64,1048576,2.34
+2,GCC,glibc,libc,memcmp-last-diff,64,1048576,2.23
+2,GCC,glibc,libc,memcmp,4096,16384,33.71
+2,GCC,glibc,libc,memcmp-first-diff,4096,16384,1.92
+2,GCC,glibc,libc,memcmp-middle-diff,4096,16384,18.88
+2,GCC,glibc,libc,memcmp-last-diff,4096,16384,35.33
+2,GCC,glibc,libc,memcmp,65536,1024,1018.31
+2,GCC,glibc,libc,memcmp-first-diff,65536,1024,1.99
+2,GCC,glibc,libc,memcmp-middle-diff,65536,1024,544.06
+2,GCC,glibc,libc,memcmp-last-diff,65536,1024,1052.81
+2,GCC,glibc,nelibc-sse2,memcmp,64,1048576,3.64
+2,GCC,glibc,nelibc-sse2,memcmp-first-diff,64,1048576,1.60
+2,GCC,glibc,nelibc-sse2,memcmp-middle-diff,64,1048576,2.31
+2,GCC,glibc,nelibc-sse2,memcmp-last-diff,64,1048576,2.89
+2,GCC,glibc,nelibc-sse2,memcmp,4096,16384,69.82
+2,GCC,glibc,nelibc-sse2,memcmp-first-diff,4096,16384,1.53
+2,GCC,glibc,nelibc-sse2,memcmp-middle-diff,4096,16384,37.86
+2,GCC,glibc,nelibc-sse2,memcmp-last-diff,4096,16384,75.88
+2,GCC,glibc,nelibc-sse2,memcmp,65536,1024,1559.65
+2,GCC,glibc,nelibc-sse2,memcmp-first-diff,65536,1024,1.29
+2,GCC,glibc,nelibc-sse2,memcmp-middle-diff,65536,1024,797.49
+2,GCC,glibc,nelibc-sse2,memcmp-last-diff,65536,1024,1569.33
+2,GCC,glibc,nelibc,memcmp,64,1048576,3.60
+2,GCC,glibc,nelibc,memcmp-first-diff,64,1048576,1.78
+2,GCC,glibc,nelibc,memcmp-middle-diff,64,1048576,2.50
+2,GCC,glibc,nelibc,memcmp-last-diff,64,1048576,2.67
+2,GCC,glibc,nelibc,memcmp,4096,16384,41.75
+2,GCC,glibc,nelibc,memcmp-first-diff,4096,16384,1.71
+2,GCC,glibc,nelibc,memcmp-middle-diff,4096,16384,24.66
+2,GCC,glibc,nelibc,memcmp-last-diff,4096,16384,42.88
+2,GCC,glibc,nelibc,memcmp,65536,1024,980.32
+2,GCC,glibc,nelibc,memcmp-first-diff,65536,1024,1.70
+2,GCC,glibc,nelibc,memcmp-middle-diff,65536,1024,514.85
+2,GCC,glibc,nelibc,memcmp-last-diff,65536,1024,994.50
+2,Zig cc,musl,libc,memcmp,64,1048576,27.52
+2,Zig cc,musl,libc,memcmp-first-diff,64,1048576,1.17
+2,Zig cc,musl,libc,memcmp-middle-diff,64,1048576,19.59
+2,Zig cc,musl,libc,memcmp-last-diff,64,1048576,27.22
+2,Zig cc,musl,libc,memcmp,4096,16384,959.74
+2,Zig cc,musl,libc,memcmp-first-diff,4096,16384,1.07
+2,Zig cc,musl,libc,memcmp-middle-diff,4096,16384,493.55
+2,Zig cc,musl,libc,memcmp-last-diff,4096,16384,953.70
+2,Zig cc,musl,libc,memcmp,65536,1024,20701.56
+2,Zig cc,musl,libc,memcmp-first-diff,65536,1024,1.08
+2,Zig cc,musl,libc,memcmp-middle-diff,65536,1024,10119.20
+2,Zig cc,musl,libc,memcmp-last-diff,65536,1024,20036.59
+2,Zig cc,musl,nelibc-sse2,memcmp,64,1048576,3.21
+2,Zig cc,musl,nelibc-sse2,memcmp-first-diff,64,1048576,2.34
+2,Zig cc,musl,nelibc-sse2,memcmp-middle-diff,64,1048576,3.45
+2,Zig cc,musl,nelibc-sse2,memcmp-last-diff,64,1048576,9.01
+2,Zig cc,musl,nelibc-sse2,memcmp,4096,16384,71.94
+2,Zig cc,musl,nelibc-sse2,memcmp-first-diff,4096,16384,1.82
+2,Zig cc,musl,nelibc-sse2,memcmp-middle-diff,4096,16384,40.08
+2,Zig cc,musl,nelibc-sse2,memcmp-last-diff,4096,16384,74.05
+2,Zig cc,musl,nelibc-sse2,memcmp,65536,1024,1701.30
+2,Zig cc,musl,nelibc-sse2,memcmp-first-diff,65536,1024,1.84
+2,Zig cc,musl,nelibc-sse2,memcmp-middle-diff,65536,1024,828.74
+2,Zig cc,musl,nelibc-sse2,memcmp-last-diff,65536,1024,1715.37
+2,Zig cc,musl,nelibc,memcmp,64,1048576,2.58
+2,Zig cc,musl,nelibc,memcmp-first-diff,64,1048576,2.24
+2,Zig cc,musl,nelibc,memcmp-middle-diff,64,1048576,2.90
+2,Zig cc,musl,nelibc,memcmp-last-diff,64,1048576,8.79
+2,Zig cc,musl,nelibc,memcmp,4096,16384,40.73
+2,Zig cc,musl,nelibc,memcmp-first-diff,4096,16384,1.96
+2,Zig cc,musl,nelibc,memcmp-middle-diff,4096,16384,25.05
+2,Zig cc,musl,nelibc,memcmp-last-diff,4096,16384,43.51
+2,Zig cc,musl,nelibc,memcmp,65536,1024,1011.90
+2,Zig cc,musl,nelibc,memcmp-first-diff,65536,1024,2.02
+2,Zig cc,musl,nelibc,memcmp-middle-diff,65536,1024,534.28
+2,Zig cc,musl,nelibc,memcmp-last-diff,65536,1024,1076.62
+2,TinyCC,glibc,libc,memcmp,64,1048576,2.46
+2,TinyCC,glibc,libc,memcmp-first-diff,64,1048576,2.51
+2,TinyCC,glibc,libc,memcmp-middle-diff,64,1048576,2.72
+2,TinyCC,glibc,libc,memcmp-last-diff,64,1048576,2.69
+2,TinyCC,glibc,libc,memcmp,4096,16384,33.21
+2,TinyCC,glibc,libc,memcmp-first-diff,4096,16384,2.40
+2,TinyCC,glibc,libc,memcmp-middle-diff,4096,16384,16.38
+2,TinyCC,glibc,libc,memcmp-last-diff,4096,16384,35.06
+2,TinyCC,glibc,libc,memcmp,65536,1024,993.24
+2,TinyCC,glibc,libc,memcmp-first-diff,65536,1024,2.31
+2,TinyCC,glibc,libc,memcmp-middle-diff,65536,1024,534.67
+2,TinyCC,glibc,libc,memcmp-last-diff,65536,1024,1039.00
+2,TinyCC,glibc,nelibc-sse2,memcmp,64,1048576,4.43
+2,TinyCC,glibc,nelibc-sse2,memcmp-first-diff,64,1048576,2.95
+2,TinyCC,glibc,nelibc-sse2,memcmp-middle-diff,64,1048576,3.32
+2,TinyCC,glibc,nelibc-sse2,memcmp-last-diff,64,1048576,3.61
+2,TinyCC,glibc,nelibc-sse2,memcmp,4096,16384,70.29
+2,TinyCC,glibc,nelibc-sse2,memcmp-first-diff,4096,16384,2.72
+2,TinyCC,glibc,nelibc-sse2,memcmp-middle-diff,4096,16384,40.46
+2,TinyCC,glibc,nelibc-sse2,memcmp-last-diff,4096,16384,78.33
+2,TinyCC,glibc,nelibc-sse2,memcmp,65536,1024,1544.64
+2,TinyCC,glibc,nelibc-sse2,memcmp-first-diff,65536,1024,2.80
+2,TinyCC,glibc,nelibc-sse2,memcmp-middle-diff,65536,1024,776.56
+2,TinyCC,glibc,nelibc-sse2,memcmp-last-diff,65536,1024,1533.24
+2,TinyCC,glibc,nelibc,memcmp,64,1048576,4.71
+2,TinyCC,glibc,nelibc,memcmp-first-diff,64,1048576,3.13
+2,TinyCC,glibc,nelibc,memcmp-middle-diff,64,1048576,3.51
+2,TinyCC,glibc,nelibc,memcmp-last-diff,64,1048576,3.88
+2,TinyCC,glibc,nelibc,memcmp,4096,16384,43.60
+2,TinyCC,glibc,nelibc,memcmp-first-diff,4096,16384,3.20
+2,TinyCC,glibc,nelibc,memcmp-middle-diff,4096,16384,22.17
+2,TinyCC,glibc,nelibc,memcmp-last-diff,4096,16384,45.99
+2,TinyCC,glibc,nelibc,memcmp,65536,1024,990.36
+2,TinyCC,glibc,nelibc,memcmp-first-diff,65536,1024,3.22
+2,TinyCC,glibc,nelibc,memcmp-middle-diff,65536,1024,564.72
+2,TinyCC,glibc,nelibc,memcmp-last-diff,65536,1024,1067.57
+3,Zig cc,glibc,libc,memcmp,64,1048576,2.04
+3,Zig cc,glibc,libc,memcmp-first-diff,64,1048576,2.06
+3,Zig cc,glibc,libc,memcmp-middle-diff,64,1048576,2.24
+3,Zig cc,glibc,libc,memcmp-last-diff,64,1048576,2.22
+3,Zig cc,glibc,libc,memcmp,4096,16384,32.00
+3,Zig cc,glibc,libc,memcmp-first-diff,4096,16384,1.92
+3,Zig cc,glibc,libc,memcmp-middle-diff,4096,16384,15.96
+3,Zig cc,glibc,libc,memcmp-last-diff,4096,16384,34.44
+3,Zig cc,glibc,libc,memcmp,65536,1024,960.38
+3,Zig cc,glibc,libc,memcmp-first-diff,65536,1024,1.89
+3,Zig cc,glibc,libc,memcmp-middle-diff,65536,1024,516.75
+3,Zig cc,glibc,libc,memcmp-last-diff,65536,1024,996.45
+3,Zig cc,glibc,nelibc-sse2,memcmp,64,1048576,3.18
+3,Zig cc,glibc,nelibc-sse2,memcmp-first-diff,64,1048576,2.32
+3,Zig cc,glibc,nelibc-sse2,memcmp-middle-diff,64,1048576,3.41
+3,Zig cc,glibc,nelibc-sse2,memcmp-last-diff,64,1048576,9.04
+3,Zig cc,glibc,nelibc-sse2,memcmp,4096,16384,72.12
+3,Zig cc,glibc,nelibc-sse2,memcmp-first-diff,4096,16384,1.82
+3,Zig cc,glibc,nelibc-sse2,memcmp-middle-diff,4096,16384,39.79
+3,Zig cc,glibc,nelibc-sse2,memcmp-last-diff,4096,16384,73.59
+3,Zig cc,glibc,nelibc-sse2,memcmp,65536,1024,1636.06
+3,Zig cc,glibc,nelibc-sse2,memcmp-first-diff,65536,1024,1.76
+3,Zig cc,glibc,nelibc-sse2,memcmp-middle-diff,65536,1024,820.15
+3,Zig cc,glibc,nelibc-sse2,memcmp-last-diff,65536,1024,1595.42
+3,Zig cc,glibc,nelibc,memcmp,64,1048576,3.41
+3,Zig cc,glibc,nelibc,memcmp-first-diff,64,1048576,2.05
+3,Zig cc,glibc,nelibc,memcmp-middle-diff,64,1048576,3.29
+3,Zig cc,glibc,nelibc,memcmp-last-diff,64,1048576,8.67
+3,Zig cc,glibc,nelibc,memcmp,4096,16384,39.04
+3,Zig cc,glibc,nelibc,memcmp-first-diff,4096,16384,1.67
+3,Zig cc,glibc,nelibc,memcmp-middle-diff,4096,16384,17.53
+3,Zig cc,glibc,nelibc,memcmp-last-diff,4096,16384,43.14
+3,Zig cc,glibc,nelibc,memcmp,65536,1024,960.68
+3,Zig cc,glibc,nelibc,memcmp-first-diff,65536,1024,1.69
+3,Zig cc,glibc,nelibc,memcmp-middle-diff,65536,1024,503.64
+3,Zig cc,glibc,nelibc,memcmp-last-diff,65536,1024,1022.24
+3,GCC,glibc,libc,memcmp,64,1048576,2.09
+3,GCC,glibc,libc,memcmp-first-diff,64,1048576,2.02
+3,GCC,glibc,libc,memcmp-middle-diff,64,1048576,2.38
+3,GCC,glibc,libc,memcmp-last-diff,64,1048576,2.30
+3,GCC,glibc,libc,memcmp,4096,16384,34.19
+3,GCC,glibc,libc,memcmp-first-diff,4096,16384,1.96
+3,GCC,glibc,libc,memcmp-middle-diff,4096,16384,26.27
+3,GCC,glibc,libc,memcmp-last-diff,4096,16384,34.95
+3,GCC,glibc,libc,memcmp,65536,1024,1182.23
+3,GCC,glibc,libc,memcmp-first-diff,65536,1024,2.06
+3,GCC,glibc,libc,memcmp-middle-diff,65536,1024,645.84
+3,GCC,glibc,libc,memcmp-last-diff,65536,1024,1299.99
+3,GCC,glibc,nelibc-sse2,memcmp,64,1048576,3.70
+3,GCC,glibc,nelibc-sse2,memcmp-first-diff,64,1048576,1.55
+3,GCC,glibc,nelibc-sse2,memcmp-middle-diff,64,1048576,2.15
+3,GCC,glibc,nelibc-sse2,memcmp-last-diff,64,1048576,2.85
+3,GCC,glibc,nelibc-sse2,memcmp,4096,16384,70.04
+3,GCC,glibc,nelibc-sse2,memcmp-first-diff,4096,16384,1.53
+3,GCC,glibc,nelibc-sse2,memcmp-middle-diff,4096,16384,40.85
+3,GCC,glibc,nelibc-sse2,memcmp-last-diff,4096,16384,74.21
+3,GCC,glibc,nelibc-sse2,memcmp,65536,1024,1583.07
+3,GCC,glibc,nelibc-sse2,memcmp-first-diff,65536,1024,1.54
+3,GCC,glibc,nelibc-sse2,memcmp-middle-diff,65536,1024,813.65
+3,GCC,glibc,nelibc-sse2,memcmp-last-diff,65536,1024,1601.96
+3,GCC,glibc,nelibc,memcmp,64,1048576,3.63
+3,GCC,glibc,nelibc,memcmp-first-diff,64,1048576,1.83
+3,GCC,glibc,nelibc,memcmp-middle-diff,64,1048576,2.51
+3,GCC,glibc,nelibc,memcmp-last-diff,64,1048576,2.66
+3,GCC,glibc,nelibc,memcmp,4096,16384,40.34
+3,GCC,glibc,nelibc,memcmp-first-diff,4096,16384,1.71
+3,GCC,glibc,nelibc,memcmp-middle-diff,4096,16384,24.89
+3,GCC,glibc,nelibc,memcmp-last-diff,4096,16384,46.33
+3,GCC,glibc,nelibc,memcmp,65536,1024,984.95
+3,GCC,glibc,nelibc,memcmp-first-diff,65536,1024,1.72
+3,GCC,glibc,nelibc,memcmp-middle-diff,65536,1024,491.66
+3,GCC,glibc,nelibc,memcmp-last-diff,65536,1024,991.26
+3,Zig cc,musl,libc,memcmp,64,1048576,27.50
+3,Zig cc,musl,libc,memcmp-first-diff,64,1048576,1.17
+3,Zig cc,musl,libc,memcmp-middle-diff,64,1048576,18.24
+3,Zig cc,musl,libc,memcmp-last-diff,64,1048576,25.48
+3,Zig cc,musl,libc,memcmp,4096,16384,931.24
+3,Zig cc,musl,libc,memcmp-first-diff,4096,16384,1.07
+3,Zig cc,musl,libc,memcmp-middle-diff,4096,16384,471.77
+3,Zig cc,musl,libc,memcmp-last-diff,4096,16384,920.93
+3,Zig cc,musl,libc,memcmp,65536,1024,20415.29
+3,Zig cc,musl,libc,memcmp-first-diff,65536,1024,1.13
+3,Zig cc,musl,libc,memcmp-middle-diff,65536,1024,10320.58
+3,Zig cc,musl,libc,memcmp-last-diff,65536,1024,21201.50
+3,Zig cc,musl,nelibc-sse2,memcmp,64,1048576,3.36
+3,Zig cc,musl,nelibc-sse2,memcmp-first-diff,64,1048576,2.41
+3,Zig cc,musl,nelibc-sse2,memcmp-middle-diff,64,1048576,3.63
+3,Zig cc,musl,nelibc-sse2,memcmp-last-diff,64,1048576,8.96
+3,Zig cc,musl,nelibc-sse2,memcmp,4096,16384,69.07
+3,Zig cc,musl,nelibc-sse2,memcmp-first-diff,4096,16384,1.71
+3,Zig cc,musl,nelibc-sse2,memcmp-middle-diff,4096,16384,39.13
+3,Zig cc,musl,nelibc-sse2,memcmp-last-diff,4096,16384,72.00
+3,Zig cc,musl,nelibc-sse2,memcmp,65536,1024,1565.07
+3,Zig cc,musl,nelibc-sse2,memcmp-first-diff,65536,1024,1.75
+3,Zig cc,musl,nelibc-sse2,memcmp-middle-diff,65536,1024,783.16
+3,Zig cc,musl,nelibc-sse2,memcmp-last-diff,65536,1024,1563.81
+3,Zig cc,musl,nelibc,memcmp,64,1048576,2.53
+3,Zig cc,musl,nelibc,memcmp-first-diff,64,1048576,2.27
+3,Zig cc,musl,nelibc,memcmp-middle-diff,64,1048576,2.46
+3,Zig cc,musl,nelibc,memcmp-last-diff,64,1048576,8.87
+3,Zig cc,musl,nelibc,memcmp,4096,16384,42.04
+3,Zig cc,musl,nelibc,memcmp-first-diff,4096,16384,1.92
+3,Zig cc,musl,nelibc,memcmp-middle-diff,4096,16384,26.62
+3,Zig cc,musl,nelibc,memcmp-last-diff,4096,16384,43.69
+3,Zig cc,musl,nelibc,memcmp,65536,1024,1006.62
+3,Zig cc,musl,nelibc,memcmp-first-diff,65536,1024,1.90
+3,Zig cc,musl,nelibc,memcmp-middle-diff,65536,1024,486.13
+3,Zig cc,musl,nelibc,memcmp-last-diff,65536,1024,986.34
+3,TinyCC,glibc,libc,memcmp,64,1048576,2.44
+3,TinyCC,glibc,libc,memcmp-first-diff,64,1048576,2.49
+3,TinyCC,glibc,libc,memcmp-middle-diff,64,1048576,2.76
+3,TinyCC,glibc,libc,memcmp-last-diff,64,1048576,2.65
+3,TinyCC,glibc,libc,memcmp,4096,16384,32.79
+3,TinyCC,glibc,libc,memcmp-first-diff,4096,16384,2.35
+3,TinyCC,glibc,libc,memcmp-middle-diff,4096,16384,25.83
+3,TinyCC,glibc,libc,memcmp-last-diff,4096,16384,33.32
+3,TinyCC,glibc,libc,memcmp,65536,1024,1081.92
+3,TinyCC,glibc,libc,memcmp-first-diff,65536,1024,2.52
+3,TinyCC,glibc,libc,memcmp-middle-diff,65536,1024,540.00
+3,TinyCC,glibc,libc,memcmp-last-diff,65536,1024,1042.59
+3,TinyCC,glibc,nelibc-sse2,memcmp,64,1048576,4.73
+3,TinyCC,glibc,nelibc-sse2,memcmp-first-diff,64,1048576,2.98
+3,TinyCC,glibc,nelibc-sse2,memcmp-middle-diff,64,1048576,3.32
+3,TinyCC,glibc,nelibc-sse2,memcmp-last-diff,64,1048576,3.76
+3,TinyCC,glibc,nelibc-sse2,memcmp,4096,16384,72.80
+3,TinyCC,glibc,nelibc-sse2,memcmp-first-diff,4096,16384,2.72
+3,TinyCC,glibc,nelibc-sse2,memcmp-middle-diff,4096,16384,43.60
+3,TinyCC,glibc,nelibc-sse2,memcmp-last-diff,4096,16384,79.60
+3,TinyCC,glibc,nelibc-sse2,memcmp,65536,1024,1741.73
+3,TinyCC,glibc,nelibc-sse2,memcmp-first-diff,65536,1024,2.86
+3,TinyCC,glibc,nelibc-sse2,memcmp-middle-diff,65536,1024,803.39
+3,TinyCC,glibc,nelibc-sse2,memcmp-last-diff,65536,1024,1551.78
+3,TinyCC,glibc,nelibc,memcmp,64,1048576,4.83
+3,TinyCC,glibc,nelibc,memcmp-first-diff,64,1048576,3.18
+3,TinyCC,glibc,nelibc,memcmp-middle-diff,64,1048576,3.64
+3,TinyCC,glibc,nelibc,memcmp-last-diff,64,1048576,3.86
+3,TinyCC,glibc,nelibc,memcmp,4096,16384,43.90
+3,TinyCC,glibc,nelibc,memcmp-first-diff,4096,16384,3.20
+3,TinyCC,glibc,nelibc,memcmp-middle-diff,4096,16384,20.86
+3,TinyCC,glibc,nelibc,memcmp-last-diff,4096,16384,48.55
+3,TinyCC,glibc,nelibc,memcmp,65536,1024,996.12
+3,TinyCC,glibc,nelibc,memcmp-first-diff,65536,1024,3.22
+3,TinyCC,glibc,nelibc,memcmp-middle-diff,65536,1024,506.14
+3,TinyCC,glibc,nelibc,memcmp-last-diff,65536,1024,1071.76

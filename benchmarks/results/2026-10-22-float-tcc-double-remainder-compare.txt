@@ -1,0 +1,20 @@
+TinyCC fixed-shift remainder comparison
+Date: 2026-10-22
+
+TinyCC's remainder-rounding disassembly showed that the generic virtual shift
+comparison calls generic shifted-used and shifted-limb helpers, including
+constant division/modulo helpers for the fixed shift of one bit. A specialized
+compare computes the used limb count for twice the remainder and compares the
+shifted limbs directly, avoiding the generic helpers.
+
+The specialized compare passed TinyCC/glibc float differential cases. Twelve
+alternating A/B pairs against the current rolling-pointer implementation
+improved all short cases by 2.1-3.2% using the median paired change. Long-input
+results were mixed: the median paired change ranged from 0.5% slower to 2.2%
+faster, with high run-to-run variation.
+
+The helper and call are compiled only for TinyCC. The four-way float
+1,250-case matrix and quotient-precheck matrix passed after this change; the
+standalone TinyCC smoke also built and ran. Final host/Nelibc short and long
+shootouts are preserved in the paired artifact's final-short and final-long
+CSV files.

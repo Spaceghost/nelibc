@@ -1,0 +1,1494 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- This math slice uses IEEE-754 binary32 and binary64 layouts. Correctly
+-- rounded sqrt/remainder primitives use x86-64 hardware; other semantics live
+-- in Nelua. Long-double and remaining transcendental entry points are still
+-- separate work.
+local FloatBits: type = @union{bits: cuint, value: cfloat}
+local DoubleBits: type = @union{bits: culonglong, value: cdouble}
+-- The 2/pi digits and math-kernel coefficients follow FreeBSD libmsun/musl fdlibm
+-- constants. Copyright (C) 1993 by Sun Microsystems, Inc.; developed at
+-- SunSoft. Permission to use, copy, modify, and distribute is freely granted
+-- provided this notice is preserved.
+local two_over_pi: [50]cuint = {
+  0xA2F983_cuint, 0x6E4E44_cuint, 0x1529FC_cuint, 0x2757D1_cuint, 0xF534DD_cuint,
+  0xC0DB62_cuint, 0x95993C_cuint, 0x439041_cuint, 0xFE5163_cuint, 0xABDEBB_cuint,
+  0xC561B7_cuint, 0x246E3A_cuint, 0x424DD2_cuint, 0xE00649_cuint, 0x2EEA09_cuint,
+  0xD1921C_cuint, 0xFE1DEB_cuint, 0x1CB129_cuint, 0xA73EE8_cuint, 0x8235F5_cuint,
+  0x2EBB44_cuint, 0x84E99C_cuint, 0x7026B4_cuint, 0x5F7E41_cuint, 0x3991D6_cuint,
+  0x398353_cuint, 0x39F49C_cuint, 0x845F8B_cuint, 0xBDF928_cuint, 0x3B1FF8_cuint,
+  0x97FFDE_cuint, 0x05980F_cuint, 0xEF2F11_cuint, 0x8B5A0A_cuint, 0x6D1F6D_cuint,
+  0x367ECF_cuint, 0x27CB09_cuint, 0xB74F46_cuint, 0x3F669E_cuint, 0x5FEA2D_cuint,
+  0x7527BA_cuint, 0xC7EBE5_cuint, 0xF17B3D_cuint, 0x0739F7_cuint, 0x8A5292_cuint,
+  0xEA6BFB_cuint, 0x5FB11F_cuint, 0x8D5D08_cuint, 0x560330_cuint, 0x46FC7B_cuint,
+}
+local atan_high: [4]cdouble = {
+  4.63647609000806093515e-1_cdouble,
+  7.85398163397448278999e-1_cdouble,
+  9.82793723247329054082e-1_cdouble,
+  1.57079632679489655800e+0_cdouble,
+}
+local atan_low: [4]cdouble = {
+  2.26987774529616870924e-17_cdouble,
+  3.06161699786838301793e-17_cdouble,
+  1.39033110312309984516e-17_cdouble,
+  6.12323399573676588613e-17_cdouble,
+}
+-- fdlibm atan kernel coefficients. Sun Microsystems fdlibm notice applies.
+local atan_coefficients: [11]cdouble = {
+  3.33333333333329318027e-1_cdouble, -1.99999999998764832476e-1_cdouble,
+  1.42857142725034663711e-1_cdouble, -1.11111104054623557880e-1_cdouble,
+  9.09088713343650656196e-2_cdouble, -7.69187620504482999495e-2_cdouble,
+  6.66107313738753120669e-2_cdouble, -5.83357013379057348645e-2_cdouble,
+  4.97687799461593236017e-2_cdouble, -3.65315727442169155270e-2_cdouble,
+  1.62858201153657823623e-2_cdouble,
+}
+
+local function nelibc_errno_location(): *[0]cint <cimport> end
+
+local function float_from_bits(bits: cuint): cfloat <inline>
+  local representation: FloatBits = {bits = bits}
+  return representation.value
+end
+
+local function double_from_bits(bits: culonglong): cdouble <inline>
+  local representation: DoubleBits = {bits = bits}
+  return representation.value
+end
+
+local function is_signaling_nan(value: cdouble): boolean <inline>
+  local representation: DoubleBits = {value = value}
+  local bits = representation.bits
+  return (bits & 0x7FF0000000000000_culonglong) == 0x7FF0000000000000_culonglong and
+    (bits & 0x000FFFFFFFFFFFFF_culonglong) ~= 0_culonglong and
+    (bits & 0x0008000000000000_culonglong) == 0_culonglong
+end
+
+local function is_signaling_nanf(value: cfloat): boolean <inline>
+  local representation: FloatBits = {value = value}
+  local bits = representation.bits
+  return (bits & 0x7F800000_cuint) == 0x7F800000_cuint and
+    (bits & 0x007FFFFF_cuint) ~= 0_cuint and
+    (bits & 0x00400000_cuint) == 0_cuint
+end
+
+local function is_nan64(value: cdouble): boolean <inline>
+  local representation: DoubleBits = {value = value}
+  local bits = representation.bits
+  return (bits & 0x7FF0000000000000_culonglong) == 0x7FF0000000000000_culonglong and
+    (bits & 0x000FFFFFFFFFFFFF_culonglong) ~= 0_culonglong
+end
+
+local function is_infinite64(value: cdouble): boolean <inline>
+  local representation: DoubleBits = {value = value}
+  return (representation.bits & 0x7FFFFFFFFFFFFFFF_culonglong) ==
+    0x7FF0000000000000_culonglong
+end
+
+local function is_nan32(value: cfloat): boolean <inline>
+  local representation: FloatBits = {value = value}
+  return (representation.bits & 0x7F800000_cuint) == 0x7F800000_cuint and
+    (representation.bits & 0x007FFFFF_cuint) ~= 0_cuint
+end
+
+local function is_infinite32(value: cfloat): boolean <inline>
+  local representation: FloatBits = {value = value}
+  return (representation.bits & 0x7FFFFFFF_cuint) == 0x7F800000_cuint
+end
+
+local function is_negative_zero64(value: cdouble): boolean <inline>
+  local representation: DoubleBits = {value = value}
+  return representation.bits == 0x8000000000000000_culonglong
+end
+
+local function is_negative_zerof(value: cfloat): boolean <inline>
+  local representation: FloatBits = {value = value}
+  return representation.bits == 0x80000000_cuint
+end
+
+local function is_integer64(value: cdouble): boolean <inline>
+  if is_nan64(value) or is_infinite64(value) then return false end
+  if value == 0_cdouble then return true end
+  local representation: DoubleBits = {value = value}
+  local bits = representation.bits & 0x7FFFFFFFFFFFFFFF_culonglong
+  local field = (@cint)((bits >> 52) & 0x7FF_culonglong)
+  local exponent = field - 1023_cint
+  if exponent < 0_cint then return false end
+  if exponent >= 52_cint then return true end
+  local fractional_bits = 52_cint - exponent
+  local mask = (1_culonglong << fractional_bits) - 1_culonglong
+  return (bits & mask) == 0_culonglong
+end
+
+local function is_odd_integer64(value: cdouble): boolean <inline>
+  if not is_integer64(value) or value <= -0x1p53_cdouble or value >= 0x1p53_cdouble then return false end
+  local magnitude: cdouble
+  if value < 0_cdouble then magnitude = -value else magnitude = value end
+  local integral = (@culonglong)(magnitude)
+  return (integral & 1_culonglong) ~= 0_culonglong
+end
+
+local function math_domain_error(): void <inline>
+  nelibc_errno_location()[0] = 33 -- EDOM on the supported Linux target.
+end
+
+local function math_range_error(): void <inline>
+  nelibc_errno_location()[0] = 34 -- ERANGE on the supported Linux target.
+end
+
+local function check_remainder_domain(x: cdouble, y: cdouble): void <inline>
+  if not is_nan64(x) and not is_nan64(y) and (is_infinite64(x) or y == 0_cdouble) then
+    math_domain_error()
+  end
+end
+
+local function nelibc_sqrt_hw(value: cdouble): cdouble <cimport> end
+local function nelibc_sqrtf_hw(value: cfloat): cfloat <cimport> end
+local function nelibc_rint_hw(value: cdouble): cdouble <cimport> end
+local function nelibc_rintf_hw(value: cfloat): cfloat <cimport> end
+local function nelibc_nearbyint_hw(value: cdouble): cdouble <cimport> end
+local function nelibc_nearbyintf_hw(value: cfloat): cfloat <cimport> end
+local function nelibc_exp_overflow_hw(): cdouble <cimport> end
+local function nelibc_exp_underflow_hw(): cdouble <cimport> end
+local function nelibc_log_domain_error_hw(): cdouble <cimport> end
+local function nelibc_log_pole_hw(): cdouble <cimport> end
+local function nelibc_ldexp_hw(value: cdouble, exponent: cint): cdouble <cimport> end
+local function nelibc_ldexpf_hw(value: cfloat, exponent: cint): cfloat <cimport> end
+local function nelibc_fmod_hw(x: cdouble, y: cdouble): cdouble <cimport> end
+local function nelibc_remainder_hw(x: cdouble, y: cdouble): cdouble <cimport> end
+
+local function sqrt(value: cdouble): cdouble <cexport, codename 'sqrt'>
+  if value < 0_cdouble then math_domain_error() end
+  return nelibc_sqrt_hw(value)
+end
+
+local function sqrtf(value: cfloat): cfloat <cexport, codename 'sqrtf'>
+  return nelibc_sqrtf_hw(value)
+end
+
+local function rint(value: cdouble): cdouble <cexport, codename 'rint'>
+  return nelibc_rint_hw(value)
+end
+
+local function rintf(value: cfloat): cfloat <cexport, codename 'rintf'>
+  return nelibc_rintf_hw(value)
+end
+
+local function nearbyint(value: cdouble): cdouble
+    <cexport, codename 'nearbyint'>
+  return nelibc_nearbyint_hw(value)
+end
+
+local function nearbyintf(value: cfloat): cfloat
+    <cexport, codename 'nearbyintf'>
+  return nelibc_nearbyintf_hw(value)
+end
+
+local function ilogb(value: cdouble): cint <cexport, codename 'ilogb'>
+  local representation: DoubleBits = {value = value}
+  local bits = representation.bits & 0x7FFFFFFFFFFFFFFF_culonglong
+  local field = (@cint)((bits >> 52) & 0x7FF_culonglong)
+  if field == 0x7FF_cint then
+    if (bits & 0x000FFFFFFFFFFFFF_culonglong) ~= 0_culonglong then return (-2147483647_cint - 1_cint) end
+    return 2147483647_cint
+  end
+  if bits == 0_culonglong then return (-2147483647_cint - 1_cint) end
+  if field ~= 0_cint then return field - 1023_cint end
+  local fraction = bits & 0x000FFFFFFFFFFFFF_culonglong
+  local shifts: cint = 0_cint
+  while (fraction & 0x0010000000000000_culonglong) == 0_culonglong do
+    fraction = fraction << 1
+    shifts = shifts + 1_cint
+  end
+  return -1022_cint - shifts
+end
+
+local function ilogbf(value: cfloat): cint <cexport, codename 'ilogbf'>
+  local representation: FloatBits = {value = value}
+  local bits = representation.bits & 0x7FFFFFFF_cuint
+  local field = (@cint)((bits >> 23) & 0xFF_cuint)
+  if field == 0xFF_cint then
+    if (bits & 0x007FFFFF_cuint) ~= 0_cuint then return (-2147483647_cint - 1_cint) end
+    return 2147483647_cint
+  end
+  if bits == 0_cuint then return (-2147483647_cint - 1_cint) end
+  if field ~= 0_cint then return field - 127_cint end
+  local fraction = bits & 0x007FFFFF_cuint
+  local shifts: cint = 0_cint
+  while (fraction & 0x00800000_cuint) == 0_cuint do
+    fraction = fraction << 1
+    shifts = shifts + 1_cint
+  end
+  return -126_cint - shifts
+end
+
+local function logb(value: cdouble): cdouble <cexport, codename 'logb'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then return double_from_bits(0x7FF0000000000000_culonglong) end
+  if value == 0_cdouble then return double_from_bits(0xFFF0000000000000_culonglong) end
+  return (@cdouble)(ilogb(value))
+end
+
+local function logbf(value: cfloat): cfloat <cexport, codename 'logbf'>
+  if is_nan32(value) then return value + value end
+  if is_infinite32(value) then return float_from_bits(0x7F800000_cuint) end
+  if value == 0_cfloat then return float_from_bits(0xFF800000_cuint) end
+  return (@cfloat)(ilogbf(value))
+end
+
+local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>
+  local result = nelibc_ldexp_hw(value, exponent)
+  local input_bits: DoubleBits = {value = value}
+  local result_bits: DoubleBits = {value = result}
+  local input_field = input_bits.bits & 0x7FF0000000000000_culonglong
+  local result_field = result_bits.bits & 0x7FF0000000000000_culonglong
+  if input_field ~= 0x7FF0000000000000_culonglong and
+      (result_field == 0x7FF0000000000000_culonglong or
+       ((result_bits.bits & 0x7FFFFFFFFFFFFFFF_culonglong) == 0_culonglong and
+        value ~= 0_cdouble)) then
+    math_range_error()
+  end
+  return result
+end
+
+local function ldexpf(value: cfloat, exponent: cint): cfloat <cexport, codename 'ldexpf'>
+  local result = nelibc_ldexpf_hw(value, exponent)
+  local input_bits: FloatBits = {value = value}
+  local result_bits: FloatBits = {value = result}
+  local input_field = input_bits.bits & 0x7F800000_cuint
+  local result_field = result_bits.bits & 0x7F800000_cuint
+  if input_field ~= 0x7F800000_cuint and
+      (result_field == 0x7F800000_cuint or
+       ((result_bits.bits & 0x7FFFFFFF_cuint) == 0_cuint and
+        value ~= 0_cfloat)) then
+    math_range_error()
+  end
+  return result
+end
+
+local function scalbn(value: cdouble, exponent: cint): cdouble <cexport, codename 'scalbn'>
+  return ldexp(value, exponent)
+end
+
+local function scalbnf(value: cfloat, exponent: cint): cfloat <cexport, codename 'scalbnf'>
+  return ldexpf(value, exponent)
+end
+
+local function scalbln(value: cdouble, exponent: clong): cdouble <cexport, codename 'scalbln'>
+  local bounded: cint
+  if exponent > 2147483647_clong then
+    bounded = 2147483647_cint
+  elseif exponent < (-2147483647_clong - 1_clong) then
+    bounded = (-2147483647_cint - 1_cint)
+  else
+    bounded = (@cint)(exponent)
+  end
+  return ldexp(value, bounded)
+end
+
+local function scalblnf(value: cfloat, exponent: clong): cfloat <cexport, codename 'scalblnf'>
+  local bounded: cint
+  if exponent > 2147483647_clong then
+    bounded = 2147483647_cint
+  elseif exponent < (-2147483647_clong - 1_clong) then
+    bounded = (-2147483647_cint - 1_cint)
+  else
+    bounded = (@cint)(exponent)
+  end
+  return ldexpf(value, bounded)
+end
+
+local function nextafter(x: cdouble, y: cdouble): cdouble <cexport, codename 'nextafter'>
+  if is_nan64(x) then return x + y end
+  if is_nan64(y) then return x + y end
+  if x == y then return y end
+  local xbits: DoubleBits = {value = x}
+  local ybits: DoubleBits = {value = y}
+  if (xbits.bits & 0x7FFFFFFFFFFFFFFF_culonglong) == 0_culonglong then
+    xbits.bits = (ybits.bits & 0x8000000000000000_culonglong) | 1_culonglong
+  elseif (x < y) == (x > 0_cdouble) then
+    xbits.bits = xbits.bits + 1_culonglong
+  else
+    xbits.bits = xbits.bits - 1_culonglong
+  end
+  local result_field = xbits.bits & 0x7FF0000000000000_culonglong
+  if result_field == 0x7FF0000000000000_culonglong and not is_infinite64(x) then
+    math_range_error()
+  elseif result_field == 0_culonglong and x ~= 0_cdouble then
+    math_range_error()
+  end
+  return xbits.value
+end
+
+local function nextafterf(x: cfloat, y: cfloat): cfloat <cexport, codename 'nextafterf'>
+  if is_nan32(x) then return x + y end
+  if is_nan32(y) then return x + y end
+  if x == y then return y end
+  local xbits: FloatBits = {value = x}
+  local ybits: FloatBits = {value = y}
+  if (xbits.bits & 0x7FFFFFFF_cuint) == 0_cuint then
+    xbits.bits = (ybits.bits & 0x80000000_cuint) | 1_cuint
+  elseif (x < y) == (x > 0_cfloat) then
+    xbits.bits = xbits.bits + 1_cuint
+  else
+    xbits.bits = xbits.bits - 1_cuint
+  end
+  local result_field = xbits.bits & 0x7F800000_cuint
+  if result_field == 0x7F800000_cuint and not is_infinite32(x) then
+    math_range_error()
+  elseif result_field == 0_cuint and x ~= 0_cfloat then
+    math_range_error()
+  end
+  return xbits.value
+end
+
+local function nexttoward(x: cdouble, y: clongdouble): cdouble <cexport, codename 'nexttoward'>
+  -- Compare in the direction type before narrowing: y may lie between x and
+  -- its adjacent double, where converting y to double would lose direction.
+  if x ~= x or y ~= y then return nextafter(x, (@cdouble)(y)) end
+  if (@clongdouble)(x) == y then return (@cdouble)(y) end
+  if (@clongdouble)(x) < y then
+    return nextafter(x, double_from_bits(0x7FF0000000000000_culonglong))
+  end
+  return nextafter(x, double_from_bits(0xFFF0000000000000_culonglong))
+end
+
+local function nexttowardf(x: cfloat, y: clongdouble): cfloat <cexport, codename 'nexttowardf'>
+  if x ~= x or y ~= y then return nextafterf(x, (@cfloat)(y)) end
+  if (@clongdouble)(x) == y then return (@cfloat)(y) end
+  if (@clongdouble)(x) < y then
+    return nextafterf(x, float_from_bits(0x7F800000_cuint))
+  end
+  return nextafterf(x, float_from_bits(0xFF800000_cuint))
+end
+
+local function fmod(x: cdouble, y: cdouble): cdouble <cexport, codename 'fmod'>
+  check_remainder_domain(x, y)
+  return nelibc_fmod_hw(x, y)
+end
+
+local function fmodf(x: cfloat, y: cfloat): cfloat <cexport, codename 'fmodf'>
+  check_remainder_domain((@cdouble)(x), (@cdouble)(y))
+  return (@cfloat)(nelibc_fmod_hw((@cdouble)(x), (@cdouble)(y)))
+end
+
+local function remainder(x: cdouble, y: cdouble): cdouble
+    <cexport, codename 'remainder'>
+  check_remainder_domain(x, y)
+  return nelibc_remainder_hw(x, y)
+end
+
+local function remainderf(x: cfloat, y: cfloat): cfloat
+    <cexport, codename 'remainderf'>
+  check_remainder_domain((@cdouble)(x), (@cdouble)(y))
+  return (@cfloat)(nelibc_remainder_hw((@cdouble)(x), (@cdouble)(y)))
+end
+
+local function fmin(x: cdouble, y: cdouble): cdouble <cexport, codename 'fmin'>
+  if is_signaling_nan(x) then return x + x end
+  if is_signaling_nan(y) then return y + y end
+  if x ~= x then return y end
+  if y ~= y then return x end
+  if x < y then return x end
+  if y < x then return y end
+  if x == 0_cdouble then
+    if is_negative_zero64(x) or is_negative_zero64(y) then
+      return double_from_bits(0x8000000000000000_culonglong)
+    end
+    return 0_cdouble
+  end
+  return y -- Either operand has the same value here.
+end
+
+local function fmax(x: cdouble, y: cdouble): cdouble <cexport, codename 'fmax'>
+  if is_signaling_nan(x) then return x + x end
+  if is_signaling_nan(y) then return y + y end
+  if x ~= x then return y end
+  if y ~= y then return x end
+  if x < y then return y end
+  if y < x then return x end
+  if x == 0_cdouble then
+    if not is_negative_zero64(x) or not is_negative_zero64(y) then return 0_cdouble end
+    return double_from_bits(0x8000000000000000_culonglong)
+  end
+  return y
+end
+
+local function fminf(x: cfloat, y: cfloat): cfloat <cexport, codename 'fminf'>
+  if is_signaling_nanf(x) then return x + x end
+  if is_signaling_nanf(y) then return y + y end
+  if x ~= x then return y end
+  if y ~= y then return x end
+  if x < y then return x end
+  if y < x then return y end
+  if x == 0_cfloat then
+    if is_negative_zerof(x) or is_negative_zerof(y) then
+      return float_from_bits(0x80000000_cuint)
+    end
+    return 0_cfloat
+  end
+  return y
+end
+
+local function fmaxf(x: cfloat, y: cfloat): cfloat <cexport, codename 'fmaxf'>
+  if is_signaling_nanf(x) then return x + x end
+  if is_signaling_nanf(y) then return y + y end
+  if x ~= x then return y end
+  if y ~= y then return x end
+  if x < y then return y end
+  if y < x then return x end
+  if x == 0_cfloat then
+    if not is_negative_zerof(x) or not is_negative_zerof(y) then return 0_cfloat end
+    return float_from_bits(0x80000000_cuint)
+  end
+  return y
+end
+
+local function fdim(x: cdouble, y: cdouble): cdouble <cexport, codename 'fdim'>
+  if x ~= x or y ~= y then return x + y end
+  if x <= y then return 0_cdouble end
+  local result = x - y
+  if is_infinite64(result) and not is_infinite64(x) and not is_infinite64(y) then
+    math_range_error()
+  end
+  return result
+end
+
+local function fdimf(x: cfloat, y: cfloat): cfloat <cexport, codename 'fdimf'>
+  if x ~= x or y ~= y then return x + y end
+  if x <= y then return 0_cfloat end
+  local result = x - y
+  if is_infinite32(result) and not is_infinite32(x) and not is_infinite32(y) then
+    math_range_error()
+  end
+  return result
+end
+
+local function frexp(value: cdouble, exponent: *[0]cint): cdouble
+    <cexport, codename 'frexp'>
+  local representation: DoubleBits = {value = value}
+  local bits = representation.bits
+  local field = (@cint)((bits >> 52) & 0x7FF_culonglong)
+  local fraction = bits & 0x000FFFFFFFFFFFFF_culonglong
+  if field == 0x7FF_cint or (field == 0_cint and fraction == 0_culonglong) then
+    exponent[0] = 0_cint
+    return value
+  end
+  if field == 0_cint then
+    local shifts: cint = 0_cint
+    while (fraction & 0x0010000000000000_culonglong) == 0_culonglong do
+      fraction = fraction << 1
+      shifts = shifts + 1_cint
+    end
+    exponent[0] = -1021_cint - shifts
+    representation.bits = (bits & 0x8000000000000000_culonglong) |
+      0x3FE0000000000000_culonglong |
+      (fraction & 0x000FFFFFFFFFFFFF_culonglong)
+    return representation.value
+  end
+  exponent[0] = field - 1022_cint
+  representation.bits = (bits & 0x800FFFFFFFFFFFFF_culonglong) |
+    0x3FE0000000000000_culonglong
+  return representation.value
+end
+
+local function frexpf(value: cfloat, exponent: *[0]cint): cfloat
+    <cexport, codename 'frexpf'>
+  local representation: FloatBits = {value = value}
+  local bits = representation.bits
+  local field = (@cint)((bits >> 23) & 0xFF_cuint)
+  local fraction = bits & 0x007FFFFF_cuint
+  if field == 0xFF_cint or (field == 0_cint and fraction == 0_cuint) then
+    exponent[0] = 0_cint
+    return value
+  end
+  if field == 0_cint then
+    local shifts: cint = 0_cint
+    while (fraction & 0x00800000_cuint) == 0_cuint do
+      fraction = fraction << 1
+      shifts = shifts + 1_cint
+    end
+    exponent[0] = -125_cint - shifts
+    representation.bits = (bits & 0x80000000_cuint) |
+      0x3F000000_cuint | (fraction & 0x007FFFFF_cuint)
+    return representation.value
+  end
+  exponent[0] = field - 126_cint
+  representation.bits = (bits & 0x807FFFFF_cuint) | 0x3F000000_cuint
+  return representation.value
+end
+
+local function fabsf(value: cfloat): cfloat <cexport, codename 'fabsf'>
+  local representation: FloatBits = {value = value}
+  representation.bits = representation.bits & 0x7FFFFFFF_cuint
+  return representation.value
+end
+
+local function fabs(value: cdouble): cdouble <cexport, codename 'fabs'>
+  local representation: DoubleBits = {value = value}
+  representation.bits = representation.bits & 0x7FFFFFFFFFFFFFFF_culonglong
+  return representation.value
+end
+
+local function copysignf(magnitude: cfloat, sign: cfloat): cfloat
+    <cexport, codename 'copysignf'>
+  local magnitude_bits: FloatBits = {value = magnitude}
+  local sign_bits: FloatBits = {value = sign}
+  magnitude_bits.bits = (magnitude_bits.bits & 0x7FFFFFFF_cuint) |
+    (sign_bits.bits & 0x80000000_cuint)
+  return magnitude_bits.value
+end
+
+local function copysign(magnitude: cdouble, sign: cdouble): cdouble
+    <cexport, codename 'copysign'>
+  local magnitude_bits: DoubleBits = {value = magnitude}
+  local sign_bits: DoubleBits = {value = sign}
+  magnitude_bits.bits = (magnitude_bits.bits & 0x7FFFFFFFFFFFFFFF_culonglong) |
+    (sign_bits.bits & 0x8000000000000000_culonglong)
+  return magnitude_bits.value
+end
+
+local function round_binary64(value: cdouble, mode: cint): cdouble <inline>
+  local representation: DoubleBits = {value = value}
+  local bits = representation.bits
+  local sign = bits & 0x8000000000000000_culonglong
+  local exponent = (@cint)((bits >> 52) & 0x7FF_culonglong)
+  if exponent == 0x7FF_cint then return value end -- NaN or infinity
+  if (bits & 0x7FFFFFFFFFFFFFFF_culonglong) == 0 then return value end
+
+  local unbiased = exponent - 1023_cint
+  if unbiased < 0_cint then
+    if mode == 0_cint then return double_from_bits(sign) end -- trunc
+    if mode == 1_cint then -- floor
+      if sign ~= 0_culonglong then return -1_cdouble end
+      return double_from_bits(0_culonglong)
+    end
+    if mode == 2_cint then -- ceil
+      if sign == 0_culonglong then return 1_cdouble end
+      return double_from_bits(sign)
+    end
+    if unbiased == -1_cint and
+        (bits & 0x7FFFFFFFFFFFFFFF_culonglong) >= 0x3FE0000000000000_culonglong then
+      if sign ~= 0_culonglong then return -1_cdouble end
+      return 1_cdouble
+    end
+    return double_from_bits(sign)
+  end
+  if unbiased >= 52_cint then return value end
+
+  local fractional_bits: cint = 52_cint - unbiased
+  local mask: culonglong = (1_culonglong << fractional_bits) - 1_culonglong
+  local fraction = bits & mask
+  if fraction == 0_culonglong then return value end
+  local truncated = double_from_bits(bits & (~mask))
+  if mode == 1_cint then
+    if sign ~= 0_culonglong then return truncated - 1_cdouble end
+    return truncated
+  end
+  if mode == 2_cint then
+    if sign == 0_culonglong then return truncated + 1_cdouble end
+    return truncated
+  end
+  if mode == 3_cint then
+    local half: culonglong = 1_culonglong << (fractional_bits - 1_cint)
+    if fraction >= half then
+      if sign ~= 0_culonglong then return truncated - 1_cdouble end
+      return truncated + 1_cdouble
+    end
+    return truncated
+  end
+  return truncated
+end
+
+local function round_binary32(value: cfloat, mode: cint): cfloat <inline>
+  local representation: FloatBits = {value = value}
+  local bits = representation.bits
+  local sign = bits & 0x80000000_cuint
+  local exponent = (@cint)((bits >> 23) & 0xFF_cuint)
+  if exponent == 0xFF_cint then return value end
+  if (bits & 0x7FFFFFFF_cuint) == 0 then return value end
+
+  local unbiased = exponent - 127_cint
+  if unbiased < 0_cint then
+    if mode == 0_cint then return float_from_bits(sign) end
+    if mode == 1_cint then
+      if sign ~= 0_cuint then return -1_cfloat end
+      return float_from_bits(0_cuint)
+    end
+    if mode == 2_cint then
+      if sign == 0_cuint then return 1_cfloat end
+      return float_from_bits(sign)
+    end
+    if unbiased == -1_cint and
+        (bits & 0x7FFFFFFF_cuint) >= 0x3F000000_cuint then
+      if sign ~= 0_cuint then return -1_cfloat end
+      return 1_cfloat
+    end
+    return float_from_bits(sign)
+  end
+  if unbiased >= 23_cint then return value end
+
+  local fractional_bits: cint = 23_cint - unbiased
+  local mask: cuint = (1_cuint << fractional_bits) - 1_cuint
+  local fraction = bits & mask
+  if fraction == 0_cuint then return value end
+  local truncated = float_from_bits(bits & (~mask))
+  if mode == 1_cint then
+    if sign ~= 0_cuint then return truncated - 1_cfloat end
+    return truncated
+  end
+  if mode == 2_cint then
+    if sign == 0_cuint then return truncated + 1_cfloat end
+    return truncated
+  end
+  if mode == 3_cint then
+    local half: cuint = 1_cuint << (fractional_bits - 1_cint)
+    if fraction >= half then
+      if sign ~= 0_cuint then return truncated - 1_cfloat end
+      return truncated + 1_cfloat
+    end
+    return truncated
+  end
+  return truncated
+end
+
+-- Range-reduced Taylor kernel. The residual is close to [-ln(2)/2, ln(2)/2];
+-- the split ln(2) constants keep the reduction accurate for the full binary64
+-- exponent range. Scaling uses the same x86-64 primitive as ldexp.
+local function exp_core(value: cdouble): cdouble
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    if value < 0_cdouble then return 0_cdouble end
+    return value
+  end
+  if value > 710_cdouble then
+    math_range_error()
+    return nelibc_exp_overflow_hw()
+  end
+  if value < -746_cdouble then
+    math_range_error()
+    return nelibc_exp_underflow_hw()
+  end
+
+  local scale_value = value * 0x1.71547652B82FEP+0_cdouble
+  local scale: cint = (@cint)(round_binary64(scale_value, 3_cint))
+  local residual = (value - (@cdouble)(scale) * 0x1.62E42FEE00000P-1_cdouble) -
+    (@cdouble)(scale) * 0x1.A39EF35793C76P-33_cdouble
+  local polynomial: cdouble = 4.110317623312165E-19_cdouble -- 1/20!
+  polynomial = 8.22063524662433E-18_cdouble + residual * polynomial -- 1/19!
+  polynomial = 1.5619206968586225E-16_cdouble + residual * polynomial -- 1/18!
+  polynomial = 2.8114572543455206E-15_cdouble + residual * polynomial -- 1/17!
+  polynomial = 4.7794773323873853E-14_cdouble + residual * polynomial -- 1/16!
+  polynomial = 7.6471637318198164E-13_cdouble + residual * polynomial -- 1/15!
+  polynomial = 1.1470745597729725E-11_cdouble + residual * polynomial -- 1/14!
+  polynomial = 1.6059043836821613E-10_cdouble + residual * polynomial -- 1/13!
+  polynomial = 2.08767569878681E-9_cdouble + residual * polynomial -- 1/12!
+  polynomial = 2.505210838544172E-8_cdouble + residual * polynomial -- 1/11!
+  polynomial = 2.7557319223985893E-7_cdouble + residual * polynomial -- 1/10!
+  polynomial = 2.755731922398589E-6_cdouble + residual * polynomial -- 1/9!
+  polynomial = 2.48015873015873E-5_cdouble + residual * polynomial -- 1/8!
+  polynomial = 1.984126984126984E-4_cdouble + residual * polynomial -- 1/7!
+  polynomial = 1.388888888888889E-3_cdouble + residual * polynomial -- 1/6!
+  polynomial = 8.333333333333333E-3_cdouble + residual * polynomial -- 1/5!
+  polynomial = 4.166666666666667E-2_cdouble + residual * polynomial -- 1/4!
+  polynomial = 1.6666666666666667E-1_cdouble + residual * polynomial -- 1/3!
+  polynomial = 0.5_cdouble + residual * polynomial -- 1/2!
+  local result = ldexp(1_cdouble + residual + residual * residual * polynomial, scale)
+  local result_bits: DoubleBits = {value = result}
+  local result_field = result_bits.bits & 0x7FF0000000000000_culonglong
+  if result_field == 0x7FF0000000000000_culonglong or result_field == 0_culonglong then
+    math_range_error()
+  end
+  return result
+end
+
+local function exp(value: cdouble): cdouble <cexport, codename 'exp'>
+  return exp_core(value)
+end
+
+local function expf(value: cfloat): cfloat <cexport, codename 'expf'>
+  local result = (@cfloat)(exp_core((@cdouble)(value)))
+  local result_bits: FloatBits = {value = result}
+  local result_field = result_bits.bits & 0x7F800000_cuint
+  if result_field == 0x7F800000_cuint or result_field == 0_cuint then
+    if value == value and not is_infinite32(value) then math_range_error() end
+  end
+  return result
+end
+
+-- Compute exp(value - ln(2)) without losing the low subtraction bits near the
+-- binary64 overflow boundary, where exp(value) itself no longer fits.
+local function exp_minus_ln2(value: cdouble): cdouble
+  local negative_ln2_hi = -0x1.62E42FEE00000P-1_cdouble
+  local high = value + negative_ln2_hi
+  local b_virtual = high - value
+  local a_virtual = high - b_virtual
+  local b_roundoff = negative_ln2_hi - b_virtual
+  local a_roundoff = value - a_virtual
+  local correction = (a_roundoff + b_roundoff) - 0x1.A39EF35793C76P-33_cdouble
+  return exp_core(high) * (1_cdouble + correction)
+end
+
+local function sinh(value: cdouble): cdouble <cexport, codename 'sinh'>
+  if value ~= value or is_infinite64(value) then return value + value end
+  if fabs(value) < 0x1p-27_cdouble then return value end
+  if fabs(value) < 0.5_cdouble then
+    local square = value * value
+    return value + value * square * (1_cdouble / 6_cdouble + square *
+      (1_cdouble / 120_cdouble + square * (1_cdouble / 5040_cdouble +
+      square * (1_cdouble / 362880_cdouble + square *
+      (1_cdouble / 39916800_cdouble + square / 6227020800_cdouble)))))
+  end
+  local magnitude = fabs(value)
+  if magnitude > 20_cdouble then
+    local result: cdouble
+    if magnitude <= 709_cdouble then
+      result = 0.5_cdouble * exp_core(magnitude)
+    else
+      result = exp_minus_ln2(magnitude)
+    end
+    if value < 0_cdouble then return -result end
+    return result
+  end
+  local exponential = exp_core(magnitude)
+  local result = 0.5_cdouble * (exponential - 1_cdouble / exponential)
+  if value < 0_cdouble then return -result end
+  return result
+end
+
+local function cosh(value: cdouble): cdouble <cexport, codename 'cosh'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then return double_from_bits(0x7FF0000000000000_culonglong) end
+  local magnitude = fabs(value)
+  if magnitude < 0x1p-27_cdouble then return 1_cdouble end
+  if magnitude > 20_cdouble then
+    if magnitude <= 709_cdouble then return 0.5_cdouble * exp_core(magnitude) end
+    return exp_minus_ln2(magnitude)
+  end
+  local exponential = exp_core(magnitude)
+  return 0.5_cdouble * (exponential + 1_cdouble / exponential)
+end
+
+local function tanh(value: cdouble): cdouble <cexport, codename 'tanh'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    if value < 0_cdouble then return -1_cdouble end
+    return 1_cdouble
+  end
+  local magnitude = fabs(value)
+  if magnitude < 0x1p-27_cdouble then return value end
+  if magnitude < 0.125_cdouble then
+    local square = value * value
+    return value + value * square * (-1_cdouble / 3_cdouble + square *
+      (2_cdouble / 15_cdouble + square * (-17_cdouble / 315_cdouble +
+      square * (62_cdouble / 2835_cdouble + square *
+      (-1382_cdouble / 155925_cdouble + square *
+      (21844_cdouble / 6081075_cdouble + square *
+      (-929569_cdouble / 638512875_cdouble + square *
+      (6404582_cdouble / 10854718875_cdouble))))))))
+  end
+  if magnitude > 20_cdouble then
+    if value < 0_cdouble then return -1_cdouble end
+    return 1_cdouble
+  end
+  local exponential = exp_core(2_cdouble * magnitude)
+  local result = (exponential - 1_cdouble) / (exponential + 1_cdouble)
+  if value < 0_cdouble then return -result end
+  return result
+end
+
+local function sinhf(value: cfloat): cfloat <cexport, codename 'sinhf'>
+  local result = (@cfloat)(sinh((@cdouble)(value)))
+  if is_infinite32(result) and not is_infinite32(value) then math_range_error() end
+  return result
+end
+
+local function coshf(value: cfloat): cfloat <cexport, codename 'coshf'>
+  local result = (@cfloat)(cosh((@cdouble)(value)))
+  if is_infinite32(result) and not is_infinite32(value) then math_range_error() end
+  return result
+end
+
+local function tanhf(value: cfloat): cfloat <cexport, codename 'tanhf'>
+  return (@cfloat)(tanh((@cdouble)(value)))
+end
+
+local function atan(value: cdouble): cdouble <cexport, codename 'atan'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    if value < 0_cdouble then return -atan_high[3] end
+    return atan_high[3]
+  end
+  if value == 0_cdouble then return value end
+  local negative = value < 0_cdouble
+  local x = fabs(value)
+  if x >= 0x1p66_cdouble then
+    if negative then return -atan_high[3] end
+    return atan_high[3]
+  end
+
+  local id: cint = -1_cint
+  local z = x
+  if x < 0.4375_cdouble then
+    id = -1_cint
+  elseif x < 1.1875_cdouble then
+    id = 0_cint
+    z = (2_cdouble * x - 1_cdouble) / (2_cdouble + x)
+  elseif x < 2.4375_cdouble then
+    id = 1_cint
+    z = (x - 1_cdouble) / (x + 1_cdouble)
+  elseif x < 3_cdouble then
+    id = 2_cint
+    z = (x - 1.5_cdouble) / (1_cdouble + 1.5_cdouble * x)
+  else
+    id = 3_cint
+    z = -1_cdouble / x
+  end
+
+  local square = z * z
+  local fourth = square * square
+  local s1 = square * (atan_coefficients[0] + fourth *
+    (atan_coefficients[2] + fourth * (atan_coefficients[4] +
+    fourth * (atan_coefficients[6] + fourth *
+    (atan_coefficients[8] + fourth * atan_coefficients[10])))))
+  local s2 = fourth * (atan_coefficients[1] + fourth *
+    (atan_coefficients[3] + fourth * (atan_coefficients[5] +
+    fourth * (atan_coefficients[7] + fourth * atan_coefficients[9]))))
+  local result: cdouble
+  if id < 0_cint then
+    result = z - z * (s1 + s2)
+  else
+    result = atan_high[id] - ((z * (s1 + s2) - atan_low[id]) - z)
+  end
+  if negative then return -result end
+  return result
+end
+
+local function atan2(y: cdouble, x: cdouble): cdouble
+    <cexport, codename 'atan2'>
+  if is_nan64(x) or is_nan64(y) then return x + y end
+  local pi = 0x1.921FB54442D18P+1_cdouble
+  local half_pi = 0x1.921FB54442D18P+0_cdouble
+  local quarter_pi = 0x1.921FB54442D18P-1_cdouble
+  local ay = fabs(y)
+  local ax = fabs(x)
+  local y_negative = y < 0_cdouble or is_negative_zero64(y)
+  local x_negative = x < 0_cdouble or is_negative_zero64(x)
+
+  if ay == 0_cdouble then
+    if x_negative then
+      if y_negative then return -pi end
+      return pi
+    end
+    return y
+  end
+  if ax == 0_cdouble then
+    if y_negative then return -half_pi end
+    return half_pi
+  end
+  if is_infinite64(ay) then
+    if is_infinite64(ax) then
+      if x_negative then
+        if y_negative then return -3_cdouble * quarter_pi end
+        return 3_cdouble * quarter_pi
+      end
+      if y_negative then return -quarter_pi end
+      return quarter_pi
+    end
+    if y_negative then return -half_pi end
+    return half_pi
+  end
+  if is_infinite64(ax) then
+    if x_negative then
+      if y_negative then return -pi end
+      return pi
+    end
+    if y_negative then return -0_cdouble end
+    return 0_cdouble
+  end
+
+  local angle: cdouble
+  if ax > ay then
+    angle = atan(ay / ax)
+    if x_negative then
+      if y_negative then return angle - pi end
+      return pi - angle
+    end
+  else
+    angle = half_pi - atan(ax / ay)
+    if x_negative then
+      if y_negative then return angle - pi end
+      return pi - angle
+    end
+  end
+  if y_negative then return -angle end
+  return angle
+end
+
+local function atanf(value: cfloat): cfloat <cexport, codename 'atanf'>
+  return (@cfloat)(atan((@cdouble)(value)))
+end
+
+local function atan2f(y: cfloat, x: cfloat): cfloat
+    <cexport, codename 'atan2f'>
+  return (@cfloat)(atan2((@cdouble)(y), (@cdouble)(x)))
+end
+
+local function log(value: cdouble): cdouble <cexport, codename 'log'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    if value < 0_cdouble then
+      math_domain_error()
+      return nelibc_log_domain_error_hw()
+    end
+    return value
+  end
+  if value == 0_cdouble then
+    math_range_error()
+    return nelibc_log_pole_hw()
+  end
+  if value < 0_cdouble then
+    math_domain_error()
+    return nelibc_log_domain_error_hw()
+  end
+
+  local exponent: cint = 0_cint
+  local mantissa: cdouble
+  if value >= 0.5_cdouble and value <= 1.5_cdouble then
+    -- Avoid subtracting two rounded ln(2) values around one. Sterbenz's
+    -- lemma makes value-1 exact in this interval.
+    mantissa = value
+  else
+    mantissa = frexp(value, &exponent) * 2_cdouble
+    exponent = exponent - 1_cint
+  end
+  local z = (mantissa - 1_cdouble) / (mantissa + 1_cdouble)
+  local z_squared = z * z
+  local polynomial: cdouble = 1_cdouble / 41_cdouble
+  local denominator: cint = 39_cint
+  while denominator >= 3_cint do
+    polynomial = 1_cdouble / (@cdouble)(denominator) + z_squared * polynomial
+    denominator = denominator - 2_cint
+  end
+  local log_mantissa = 2_cdouble * z * (1_cdouble + z_squared * polynomial)
+  local exponent_double = (@cdouble)(exponent)
+  return (log_mantissa + exponent_double * 0x1.62E42FEE00000P-1_cdouble) +
+    exponent_double * 0x1.A39EF35793C76P-33_cdouble
+end
+
+local function logf(value: cfloat): cfloat <cexport, codename 'logf'>
+  return (@cfloat)(log((@cdouble)(value)))
+end
+
+local function log1p_core(value: cdouble): cdouble
+  if fabs(value) >= 0.125_cdouble then return log(1_cdouble + value) end
+  local transformed = value / (2_cdouble + value)
+  local square = transformed * transformed
+  local polynomial: cdouble = 1_cdouble / 41_cdouble
+  local denominator: cint = 39_cint
+  while denominator >= 3_cint do
+    polynomial = 1_cdouble / (@cdouble)(denominator) + square * polynomial
+    denominator = denominator - 2_cint
+  end
+  return 2_cdouble * transformed * (1_cdouble + square * polynomial)
+end
+
+
+local function asinh(value: cdouble): cdouble <cexport, codename 'asinh'>
+  if value ~= value or is_infinite64(value) or value == 0_cdouble then return value end
+  local magnitude = fabs(value)
+  if magnitude < 0x1p-27_cdouble then return value end
+  local result: cdouble
+  if magnitude >= 0x1p512_cdouble then
+    result = log(magnitude) + 0.693147180559945309417232121458176568_cdouble
+    if value < 0_cdouble then result = -result end
+  else
+    local square = magnitude * magnitude
+    result = log1p_core(magnitude + square / (1_cdouble + sqrt(square + 1_cdouble)))
+    if value < 0_cdouble then result = -result end
+  end
+  return result
+end
+
+
+local function acosh(value: cdouble): cdouble <cexport, codename 'acosh'>
+  if value ~= value then return value + value end
+  if value < 1_cdouble then
+    math_domain_error()
+    return double_from_bits(0x7FF8000000000000_culonglong)
+  end
+  if value == 1_cdouble then return 0_cdouble end
+  if is_infinite64(value) then return value end
+  if value >= 0x1p512_cdouble then
+    return log(value) + 0.693147180559945309417232121458176568_cdouble
+  end
+  if value < 2_cdouble then
+    local delta = value - 1_cdouble
+    return log1p_core(delta + sqrt(delta * (delta + 2_cdouble)))
+  end
+  -- acosh(1+2t²) = 2 asinh(t) avoids overflowing intermediate squares.
+  return 2_cdouble * asinh(sqrt((value - 1_cdouble) * 0.5_cdouble))
+end
+
+local function atanh(value: cdouble): cdouble <cexport, codename 'atanh'>
+  if value ~= value then return value + value end
+  if value == 0_cdouble then return value end
+  local magnitude = fabs(value)
+  if magnitude == 1_cdouble then
+    math_range_error()
+    if value < 0_cdouble then return double_from_bits(0xFFF0000000000000_culonglong) end
+    return double_from_bits(0x7FF0000000000000_culonglong)
+  end
+  if magnitude > 1_cdouble then
+    math_domain_error()
+    return double_from_bits(0x7FF8000000000000_culonglong)
+  end
+  if magnitude < 0.125_cdouble then
+    local square = value * value
+    return value + value * square * (1_cdouble / 3_cdouble + square *
+      (1_cdouble / 5_cdouble + square * (1_cdouble / 7_cdouble + square *
+      (1_cdouble / 9_cdouble + square * (1_cdouble / 11_cdouble + square *
+      (1_cdouble / 13_cdouble + square * (1_cdouble / 15_cdouble + square *
+      (1_cdouble / 17_cdouble + square / 19_cdouble))))))))
+  end
+  return 0.5_cdouble * log((1_cdouble + value) / (1_cdouble - value))
+end
+
+local function asinhf(value: cfloat): cfloat <cexport, codename 'asinhf'>
+  return (@cfloat)(asinh((@cdouble)(value)))
+end
+
+local function acoshf(value: cfloat): cfloat <cexport, codename 'acoshf'>
+  return (@cfloat)(acosh((@cdouble)(value)))
+end
+
+local function atanhf(value: cfloat): cfloat <cexport, codename 'atanhf'>
+  return (@cfloat)(atanh((@cdouble)(value)))
+end
+
+
+-- Keep the log/exponent product in x86 extended precision. Doing the whole
+-- composition in binary64 magnifies log's last-bit error for large exponents.
+local function pow_wide(base: cdouble, exponent: cdouble): cdouble
+  local fraction_exponent: cint = 0_cint
+  local fraction = frexp(base, &fraction_exponent)
+  local mantissa = (@clongdouble)(fraction) * 2.0_clongdouble
+  fraction_exponent = fraction_exponent - 1_cint
+  if mantissa > 1.414213562373095048801688724209698079_clongdouble then
+    mantissa = mantissa * 0.5_clongdouble
+    fraction_exponent = fraction_exponent + 1_cint
+  end
+  local z = (mantissa - 1.0_clongdouble) / (mantissa + 1.0_clongdouble)
+  local z_squared = z * z
+  local polynomial = 1.0_clongdouble / 81.0_clongdouble
+  local denominator: cint = 79_cint
+  while denominator >= 3_cint do
+    polynomial = 1.0_clongdouble / (@clongdouble)(denominator) + z_squared * polynomial
+    denominator = denominator - 2_cint
+  end
+  local log_mantissa = 2.0_clongdouble * z * (1.0_clongdouble + z_squared * polynomial)
+  local log_base = log_mantissa + (@clongdouble)(fraction_exponent) *
+    0.693147180559945309417232121458176568_clongdouble
+  local wide_argument = (@clongdouble)(exponent) * log_base
+  if wide_argument > 710.0_clongdouble then
+    math_range_error()
+    return double_from_bits(0x7FF0000000000000_culonglong)
+  end
+  if wide_argument < -750.0_clongdouble then
+    math_range_error()
+    return 0_cdouble
+  end
+  local scaled_argument = wide_argument * 1.442695040888963407359924681001892137_clongdouble
+  local scale: cint
+  if scaled_argument >= 0.0_clongdouble then
+    scale = (@cint)(scaled_argument + 0.5_clongdouble)
+  else
+    scale = (@cint)(scaled_argument - 0.5_clongdouble)
+  end
+  local residual = wide_argument - (@clongdouble)(scale) *
+    0.693147180559945309417232121458176568_clongdouble
+  local sum = 1.0_clongdouble
+  local term = 1.0_clongdouble
+  for i = 1, 32 do
+    term = term * residual / (@clongdouble)(i)
+    sum = sum + term
+  end
+  if scale > 0_cint then
+    for i = 1, scale do sum = sum * 2.0_clongdouble end
+  elseif scale < 0_cint then
+    for i = scale, -1_cint do sum = sum * 0.5_clongdouble end
+  end
+  local result = (@cdouble)(sum)
+  if is_infinite64(result) or result == 0_cdouble then math_range_error() end
+  return result
+end
+
+local function pow(value: cdouble, exponent: cdouble): cdouble
+    <cexport, codename 'pow'>
+  if exponent == 0_cdouble or value == 1_cdouble then return 1_cdouble end
+  if is_nan64(value) or is_nan64(exponent) then return value + exponent end
+  local absolute = fabs(value)
+  local odd = is_odd_integer64(exponent)
+  if is_infinite64(exponent) then
+    if absolute == 1_cdouble then return 1_cdouble end
+    if (absolute > 1_cdouble) == (exponent > 0_cdouble) then
+      return double_from_bits(0x7FF0000000000000_culonglong)
+    end
+    return 0_cdouble
+  end
+  if is_infinite64(value) then
+    if value < 0_cdouble and not is_integer64(exponent) then
+      math_domain_error()
+      return double_from_bits(0x7FF8000000000000_culonglong)
+    end
+    if exponent > 0_cdouble then
+      if value < 0_cdouble and odd then
+        return double_from_bits(0xFFF0000000000000_culonglong)
+      end
+      return double_from_bits(0x7FF0000000000000_culonglong)
+    end
+    if value < 0_cdouble and odd then
+      return double_from_bits(0x8000000000000000_culonglong)
+    end
+    return 0_cdouble
+  end
+  if value == 0_cdouble then
+    if exponent > 0_cdouble then
+      if is_negative_zero64(value) and odd then
+        return double_from_bits(0x8000000000000000_culonglong)
+      end
+      return 0_cdouble
+    end
+    math_range_error()
+    if is_negative_zero64(value) and odd then
+      return double_from_bits(0xFFF0000000000000_culonglong)
+    end
+    return double_from_bits(0x7FF0000000000000_culonglong)
+  end
+  if value < 0_cdouble and not is_integer64(exponent) then
+    math_domain_error()
+    return double_from_bits(0x7FF8000000000000_culonglong)
+  end
+
+  local result: cdouble
+  if is_integer64(exponent) and fabs(exponent) <= 64_cdouble then
+    local integer_exponent = (@cint)(fabs(exponent))
+    local power: cuint = (@cuint)(integer_exponent)
+    local base = absolute
+    result = 1_cdouble
+    while power ~= 0_cuint do
+      if (power & 1_cuint) ~= 0_cuint then result = result * base end
+      power = power >> 1
+      if power ~= 0_cuint then base = base * base end
+    end
+    if exponent < 0_cdouble then result = 1_cdouble / result end
+    if value < 0_cdouble and odd then result = -result end
+  else
+    result = pow_wide(absolute, exponent)
+    if value < 0_cdouble and odd then result = -result end
+  end
+  if is_infinite64(result) and not is_infinite64(value) and not is_infinite64(exponent) then
+    math_range_error()
+  elseif result == 0_cdouble and value ~= 0_cdouble then
+    math_range_error()
+  end
+  return result
+end
+
+local function powf(value: cfloat, exponent: cfloat): cfloat
+    <cexport, codename 'powf'>
+  local result = (@cfloat)(pow((@cdouble)(value), (@cdouble)(exponent)))
+  if is_infinite32(result) and not is_infinite32(value) and not is_infinite32(exponent) then
+    math_range_error()
+  elseif result == 0_cfloat and value ~= 0_cfloat then
+    math_range_error()
+  end
+  return result
+end
+
+-- Scale by the larger operand before squaring. Exponent-gap shortcuts avoid
+-- raising underflow for a contribution too small to affect the rounded result.
+local function hypot(x: cdouble, y: cdouble): cdouble <cexport, codename 'hypot'>
+  local ax = fabs(x)
+  local ay = fabs(y)
+  if is_infinite64(ax) or is_infinite64(ay) then
+    return double_from_bits(0x7FF0000000000000_culonglong)
+  end
+  if is_nan64(ax) or is_nan64(ay) then return ax + ay end
+  if ax < ay then
+    local temporary = ax
+    ax = ay
+    ay = temporary
+  end
+  if ax == 0_cdouble then return 0_cdouble end
+  if ay == 0_cdouble then return ax end
+  if ilogb(ax) - ilogb(ay) >= 27_cint then return ax end
+  local ratio = ay / ax
+  local result = ax * sqrt(1_cdouble + ratio * ratio)
+  if is_infinite64(result) then math_range_error() end
+  return result
+end
+
+local function hypotf(x: cfloat, y: cfloat): cfloat <cexport, codename 'hypotf'>
+  local ax = fabsf(x)
+  local ay = fabsf(y)
+  if is_infinite32(ax) or is_infinite32(ay) then
+    return float_from_bits(0x7F800000_cuint)
+  end
+  if is_nan32(ax) or is_nan32(ay) then return ax + ay end
+  if ax < ay then
+    local temporary = ax
+    ax = ay
+    ay = temporary
+  end
+  if ax == 0_cfloat then return 0_cfloat end
+  if ay == 0_cfloat then return ax end
+  if ilogbf(ax) - ilogbf(ay) >= 13_cint then return ax end
+  local ratio = ay / ax
+  local result = ax * sqrtf(1_cfloat + ratio * ratio)
+  if is_infinite32(result) then math_range_error() end
+  return result
+end
+
+local function pio2_product_bit(product: *[0]cuint, bit_index: cint): cint <inline>
+  if bit_index < 0 or bit_index >= 1272_cint then return 0_cint end
+  local limb: cint = bit_index / 24_cint
+  local offset: cint = bit_index % 24_cint
+  return (@cint)((product[limb] >> offset) & 1_cuint)
+end
+
+-- Payne-Hanek reduction: multiply the 53-bit significand by 1200 fixed bits
+-- of 2/pi, then extract the nearest integer and two pieces of its fraction.
+-- The table leaves over 170 guard bits at the largest binary64 exponent.
+local function reduce_pio2(value: cdouble, quadrant: *[0]cint,
+    head: *[0]cdouble, tail: *[0]cdouble): void
+  local absolute = fabs(value)
+  local exponent: cint = 0_cint
+  local mantissa: cdouble = frexp(absolute, &exponent)
+  local significand: culonglong = (@culonglong)(mantissa * 0x1p53_cdouble)
+  local m: [3]cuint = {
+    (@cuint)(significand & 0xFFFFFF_culonglong),
+    (@cuint)((significand >> 24) & 0xFFFFFF_culonglong),
+    (@cuint)(significand >> 48),
+  }
+  local product: [53]cuint = {}
+  for i = 0, 2 do
+    local carry: culonglong = 0_culonglong
+    for j = 0, 49 do
+      local destination = i + j
+      local table_value = two_over_pi[49 - j]
+      local accum = (@culonglong)(product[destination]) +
+        (@culonglong)(m[i]) * (@culonglong)(table_value) + carry
+      product[destination] = (@cuint)(accum & 0xFFFFFF_culonglong)
+      carry = accum >> 24
+    end
+    product[i + 50] = (@cuint)(carry)
+  end
+
+  local shift: cint = 1253_cint - exponent
+  local q = pio2_product_bit(&product[0], shift) +
+    2_cint * pio2_product_bit(&product[0], shift + 1_cint)
+  local fractional_head: culonglong = 0_culonglong
+  local fractional_tail: culonglong = 0_culonglong
+  for i = 0, 52 do
+    fractional_head = (fractional_head << 1) |
+      (@culonglong)(pio2_product_bit(&product[0], shift - 1_cint - i))
+    fractional_tail = (fractional_tail << 1) |
+      (@culonglong)(pio2_product_bit(&product[0], shift - 54_cint - i))
+  end
+  local fraction_hi = (@cdouble)(fractional_head) * 0x1p-53_cdouble
+  local fraction_lo = (@cdouble)(fractional_tail) * 0x1p-106_cdouble
+  if pio2_product_bit(&product[0], shift - 1_cint) ~= 0_cint then
+    q = (q + 1_cint) & 3_cint
+    fraction_hi = fraction_hi - 1_cdouble
+  end
+  if value < 0_cdouble then
+    q = (4_cint - q) & 3_cint
+    fraction_hi = -fraction_hi
+    fraction_lo = -fraction_lo
+  end
+  quadrant[0] = q
+
+  -- TwoProduct recovers the rounding error of fraction*pio2_hi; the low part
+  -- then carries both that error and the omitted bits of the fraction.
+  local pio2_hi: cdouble = 0x1.921fb54442D18p+0_cdouble
+  local pio2_lo: cdouble = 6.12323399573676603587e-17_cdouble
+  local product_hi = fraction_hi * pio2_hi
+  local split = 0x1.0000002p+27_cdouble
+  local ca = split * fraction_hi
+  local a_hi = ca - (ca - fraction_hi)
+  local a_lo = fraction_hi - a_hi
+  local cb = split * pio2_hi
+  local b_hi = cb - (cb - pio2_hi)
+  local b_lo = pio2_hi - b_hi
+  local product_error = ((a_hi * b_hi - product_hi) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo
+  head[0] = product_hi
+  tail[0] = product_error + fraction_hi * pio2_lo + fraction_lo * pio2_hi +
+    fraction_lo * pio2_lo
+end
+
+local function sin_kernel(x: cdouble, y: cdouble): cdouble
+  local z = x * x
+  local w = z * z
+  local r = 8.33333333332248946124e-3_cdouble + z *
+    (-1.98412698298579493134e-4_cdouble + z * 2.75573137070700676789e-6_cdouble) +
+    z * w * (-2.50507602534068634195e-8_cdouble + z * 1.58969099521155010221e-10_cdouble)
+  local v = z * x
+  if y == 0_cdouble then
+    return x + v * (-1.66666666666666324348e-1_cdouble + z * r)
+  end
+  return x - ((z * (0.5_cdouble * y - v * r) - y) - v * -1.66666666666666324348e-1_cdouble)
+end
+
+local function cos_kernel(x: cdouble, y: cdouble): cdouble
+  local z = x * x
+  local w = z * z
+  local r = z * (4.16666666666666019037e-2_cdouble + z *
+    (-1.38888888888741095749e-3_cdouble + z * 2.48015872894767294178e-5_cdouble)) +
+    w * w * (-2.75573143513906633035e-7_cdouble + z *
+      (2.08757232129817482790e-9_cdouble - z * 1.13596475577881948265e-11_cdouble))
+  local half_square = 0.5_cdouble * z
+  local rounded_base = 1_cdouble - half_square
+  return rounded_base + (((1_cdouble - rounded_base) - half_square) + (z * r - x * y))
+end
+
+local function sin(value: cdouble): cdouble <cexport, codename 'sin'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    math_domain_error()
+    return value - value
+  end
+  if fabs(value) < 0x1p-27_cdouble then return value end
+  local quadrant: cint = 0_cint
+  local x: cdouble = value
+  local y: cdouble = 0_cdouble
+  if fabs(value) > 0x1.921FB54442D18P-1_cdouble then
+    reduce_pio2(value, &quadrant, &x, &y)
+  end
+  local sine = sin_kernel(x, y)
+  local cosine = cos_kernel(x, y)
+  if quadrant == 0_cint then return sine end
+  if quadrant == 1_cint then return cosine end
+  if quadrant == 2_cint then return -sine end
+  return -cosine
+end
+
+local function cos(value: cdouble): cdouble <cexport, codename 'cos'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    math_domain_error()
+    return value - value
+  end
+  if fabs(value) < 0x1p-27_cdouble then return 1_cdouble end
+  local quadrant: cint = 0_cint
+  local x: cdouble = value
+  local y: cdouble = 0_cdouble
+  if fabs(value) > 0x1.921FB54442D18P-1_cdouble then
+    reduce_pio2(value, &quadrant, &x, &y)
+  end
+  local sine = sin_kernel(x, y)
+  local cosine = cos_kernel(x, y)
+  if quadrant == 0_cint then return cosine end
+  if quadrant == 1_cint then return -sine end
+  if quadrant == 2_cint then return -cosine end
+  return sine
+end
+
+local function sinf(value: cfloat): cfloat <cexport, codename 'sinf'>
+  return (@cfloat)(sin((@cdouble)(value)))
+end
+
+local function cosf(value: cfloat): cfloat <cexport, codename 'cosf'>
+  return (@cfloat)(cos((@cdouble)(value)))
+end
+
+local function tan(value: cdouble): cdouble <cexport, codename 'tan'>
+  if value ~= value then return value + value end
+  if is_infinite64(value) then
+    math_domain_error()
+    return value - value
+  end
+  if fabs(value) < 0x1p-27_cdouble then return value end
+  local result = sin(value) / cos(value)
+  if is_infinite64(result) then math_range_error() end
+  return result
+end
+
+local function tanf(value: cfloat): cfloat <cexport, codename 'tanf'>
+  local result = (@cfloat)(tan((@cdouble)(value)))
+  if is_infinite32(result) and value == value and not is_infinite32(value) then
+    math_range_error()
+  end
+  return result
+end
+
+local function modf(value: cdouble, integral: *[0]cdouble): cdouble
+    <cexport, codename 'modf'>
+  if value ~= value then
+    integral[0] = value
+    return value
+  end
+  local representation: DoubleBits = {value = value}
+  if (representation.bits & 0x7FFFFFFFFFFFFFFF_culonglong) == 0_culonglong then
+    integral[0] = value
+    return value
+  end
+  if (representation.bits & 0x7FFFFFFFFFFFFFFF_culonglong) == 0x7FF0000000000000_culonglong then
+    integral[0] = value
+    return double_from_bits(representation.bits & 0x8000000000000000_culonglong)
+  end
+  integral[0] = round_binary64(value, 0_cint)
+  if value == integral[0] then
+    return double_from_bits(representation.bits & 0x8000000000000000_culonglong)
+  end
+  return value - integral[0]
+end
+
+local function modff(value: cfloat, integral: *[0]cfloat): cfloat
+    <cexport, codename 'modff'>
+  if value ~= value then
+    integral[0] = value
+    return value
+  end
+  local representation: FloatBits = {value = value}
+  if (representation.bits & 0x7FFFFFFF_cuint) == 0_cuint then
+    integral[0] = value
+    return value
+  end
+  if (representation.bits & 0x7FFFFFFF_cuint) == 0x7F800000_cuint then
+    integral[0] = value
+    return float_from_bits(representation.bits & 0x80000000_cuint)
+  end
+  integral[0] = round_binary32(value, 0_cint)
+  if value == integral[0] then
+    return float_from_bits(representation.bits & 0x80000000_cuint)
+  end
+  return value - integral[0]
+end
+
+local function trunc(value: cdouble): cdouble <cexport, codename 'trunc'>
+  return round_binary64(value, 0_cint)
+end
+local function floor(value: cdouble): cdouble <cexport, codename 'floor'>
+  return round_binary64(value, 1_cint)
+end
+local function ceil(value: cdouble): cdouble <cexport, codename 'ceil'>
+  return round_binary64(value, 2_cint)
+end
+local function round(value: cdouble): cdouble <cexport, codename 'round'>
+  return round_binary64(value, 3_cint)
+end
+
+local function truncf(value: cfloat): cfloat <cexport, codename 'truncf'>
+  return round_binary32(value, 0_cint)
+end
+local function floorf(value: cfloat): cfloat <cexport, codename 'floorf'>
+  return round_binary32(value, 1_cint)
+end
+local function ceilf(value: cfloat): cfloat <cexport, codename 'ceilf'>
+  return round_binary32(value, 2_cint)
+end
+local function roundf(value: cfloat): cfloat <cexport, codename 'roundf'>
+  return round_binary32(value, 3_cint)
+end

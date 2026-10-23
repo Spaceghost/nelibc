@@ -1,0 +1,3 @@
+DIV,strtof,knuth_ok=400,knuth_fail=0,qdigits=800,q_limb_visits=51200,estimate_corrections=0,addbacks=0,fallback_bits=0,fallback_successes=0
+DIV,strtod,knuth_ok=400,knuth_fail=0,qdigits=1200,q_limb_visits=75600,estimate_corrections=400,addbacks=0,fallback_bits=0,fallback_successes=0
+DIV,strtold,knuth_ok=800,knuth_fail=0,qdigits=2400,q_limb_visits=180000,estimate_corrections=400,addbacks=0,fallback_bits=0,fallback_successes=0

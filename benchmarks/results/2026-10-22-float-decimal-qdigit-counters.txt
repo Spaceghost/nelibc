@@ -1,0 +1,3 @@
+QDIGIT,strtof,digits=800,denominator_limb_sum=51200,zero_correction=800,one_correction=0,two_corrections=0,three_plus=0,total_corrections=0,clamped=0
+QDIGIT,strtod,digits=1200,denominator_limb_sum=75600,zero_correction=800,one_correction=400,two_corrections=0,three_plus=0,total_corrections=400,clamped=0
+QDIGIT,strtold,digits=2400,denominator_limb_sum=180000,zero_correction=2000,one_correction=400,two_corrections=0,three_plus=0,total_corrections=400,clamped=0

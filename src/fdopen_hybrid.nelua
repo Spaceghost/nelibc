@@ -1,0 +1,10 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_host_fdopen(descriptor: cint,
+    mode: *[0]cchar <const>): pointer <cimport> end
+
+local function fdopen(descriptor: cint, mode: *[0]cchar <const>): pointer
+    <cexport, codename 'fdopen'>
+  return nelibc_host_fdopen(descriptor, mode)
+end

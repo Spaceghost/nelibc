@@ -1,0 +1,786 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- Keep this function independent of Nelua's standard library: it is the
+-- beginning of the runtime-free replacement layer.
+local function malloc(size: csize): pointer <cimport> end
+local function nelibc_strtok_state(): *[0]*[0]cchar <cimport> end
+local function nelibc_locale_strcoll(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <cimport> end
+local function nelibc_locale_strxfrm(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <cimport> end
+local function strverscmp(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <cexport, codename 'strverscmp'>
+  local index: csize = 0
+  local digit_start: csize = 0
+  local common_digits_are_zero: boolean = true
+  while left[index] == right[index] do
+    local character = (@byte)(left[index])
+    if character == 0 then return 0 end
+    if character < 48 or character > 57 then
+      digit_start = index + 1
+      common_digits_are_zero = true
+    elseif character ~= 48 then
+      common_digits_are_zero = false
+    end
+    index = index + 1
+  end
+
+  local left_character = (@byte)(left[index])
+  local right_character = (@byte)(right[index])
+  if left[digit_start] ~= 48 and right[digit_start] ~= 48 then
+    local digit_index = index
+    local left_digit: byte = (@byte)(left[digit_index])
+    while left_digit >= 48 and left_digit <= 57 do
+      local right_digit: byte = (@byte)(right[digit_index])
+      if right_digit < 48 or right_digit > 57 then return 1 end
+      digit_index = digit_index + 1
+      left_digit = (@byte)(left[digit_index])
+    end
+    local right_digit: byte = (@byte)(right[digit_index])
+    if right_digit >= 48 and right_digit <= 57 then return -1 end
+  elseif common_digits_are_zero and digit_start < index and
+      ((left_character >= 48 and left_character <= 57) or
+       (right_character >= 48 and right_character <= 57)) then
+    local left_fraction: cint = (@cint)(left_character) - 48
+    local right_fraction: cint = (@cint)(right_character) - 48
+    if left_fraction < 0 then left_fraction = left_fraction + 256 end
+    if right_fraction < 0 then right_fraction = right_fraction + 256 end
+    return left_fraction - right_fraction
+  end
+  return (@cint)(left_character) - (@cint)(right_character)
+end
+
+local function nelibc_x86_64_sse_strlen(s: pointer <const>): csize <cimport> end
+local function nelibc_x86_64_sse_memchr(s: pointer <const>, value: cint, n: csize): pointer <cimport> end
+local function nelibc_x86_64_sse_strcasecmp(a: pointer <const>, b: pointer <const>): cint <cimport> end
+local function nelibc_x86_64_sse_strncasecmp(a: pointer <const>, b: pointer <const>, n: csize): cint <cimport> end
+local function memmem(haystack: pointer <const>, haystack_len: csize,
+                      needle: pointer <const>, needle_len: csize): pointer <cimport> end
+
+local function strlen(s: *[0]cchar <const>): csize <cexport, codename 'strlen'>
+  ## if ccinfo.is_x86_64 then
+  return nelibc_x86_64_sse_strlen(s)
+  ## else
+  local n: csize = 0
+  while s[n] ~= 0 do
+    n = n + 1
+  end
+  return n
+  ## end
+end
+
+local function strnlen(s: *[0]cchar <const>, maxlen: csize): csize <cexport, codename 'strnlen'>
+  local n: csize = 0
+  while n < maxlen and s[n] ~= 0 do
+    n = n + 1
+  end
+  return n
+end
+
+-- Hybrid builds resolve malloc from the host libc; the standalone profile
+-- links the malloc wrapper backed by nelibc's allocator.
+local function strdup(s: *[0]cchar <const>): *cchar <cexport, codename 'strdup'>
+  local length: csize = strlen(s)
+  local copy: *[0]cchar = (@*[0]cchar)(malloc(length + 1))
+  if copy == nilptr then return nilptr end
+  local i: csize = 0
+  while i <= length do
+    copy[i] = s[i]
+    i = i + 1
+  end
+  return copy
+end
+
+local function strndup(s: *[0]cchar <const>, maxlen: csize): *cchar <cexport, codename 'strndup'>
+  local length: csize = strnlen(s, maxlen)
+  local copy: *[0]cchar = (@*[0]cchar)(malloc(length + 1))
+  if copy == nilptr then return nilptr end
+  local i: csize = 0
+  while i < length do
+    copy[i] = s[i]
+    i = i + 1
+  end
+  copy[length] = 0
+  return copy
+end
+
+local function strcmp(a: *[0]cchar <const>, b: *[0]cchar <const>): cint <cexport, codename 'strcmp'>
+  local i: csize = 0
+  while true do
+    local x: byte = (@byte)(a[i])
+    local y: byte = (@byte)(b[i])
+    if x ~= y then return (@cint)(x) - (@cint)(y) end
+    if x == 0 then return 0 end
+    i = i + 1
+  end
+end
+
+local function strcasecmp(a: *[0]cchar <const>, b: *[0]cchar <const>): cint <cexport, codename 'strcasecmp'>
+  ## if ccinfo.is_x86_64 then
+  return nelibc_x86_64_sse_strcasecmp(a, b)
+  ## end
+  local i: csize = 0
+  while true do
+    local x: byte = (@byte)(a[i])
+    local y: byte = (@byte)(b[i])
+    if x ~= y then
+      if (x ~ y) ~= 32 or not ((x >= 65 and x <= 90) or (y >= 65 and y <= 90)) then
+        if x >= 65 and x <= 90 then x = x + 32 end
+        if y >= 65 and y <= 90 then y = y + 32 end
+        return (@cint)(x) - (@cint)(y)
+      end
+    elseif x == 0 then
+      return 0
+    end
+    i = i + 1
+  end
+end
+
+local function nelibc_strcasecmp(a: *[0]cchar <const>, b: *[0]cchar <const>): cint <cexport, codename 'nelibc_strcasecmp'>
+  ## if ccinfo.is_x86_64 then
+  return nelibc_x86_64_sse_strcasecmp(a, b)
+  ## end
+  local i: csize = 0
+  while true do
+    local x: byte = (@byte)(a[i])
+    local y: byte = (@byte)(b[i])
+    if x ~= y then
+      if (x ~ y) ~= 32 or not ((x >= 65 and x <= 90) or (y >= 65 and y <= 90)) then
+        if x >= 65 and x <= 90 then x = x + 32 end
+        if y >= 65 and y <= 90 then y = y + 32 end
+        return (@cint)(x) - (@cint)(y)
+      end
+    elseif x == 0 then
+      return 0
+    end
+    i = i + 1
+  end
+end
+
+local function strcoll(a: *[0]cchar <const>, b: *[0]cchar <const>): cint <cexport, codename 'strcoll'>
+  return nelibc_locale_strcoll(a, b)
+end
+
+local function strncmp(a: *[0]cchar <const>, b: *[0]cchar <const>, n: csize): cint <cexport, codename 'strncmp'>
+  local i: csize = 0
+  while i < n do
+    local x: byte = (@byte)(a[i])
+    local y: byte = (@byte)(b[i])
+    if x ~= y then return (@cint)(x) - (@cint)(y) end
+    if x == 0 then return 0 end
+    i = i + 1
+  end
+  return 0
+end
+
+local function strncasecmp(a: *[0]cchar <const>, b: *[0]cchar <const>, n: csize): cint <cexport, codename 'strncasecmp'>
+  ## if ccinfo.is_x86_64 then
+  if n >= 16 then return nelibc_x86_64_sse_strncasecmp(a, b, n) end
+  ## end
+  local i: csize = 0
+  while i < n do
+    local x: byte = (@byte)(a[i])
+    local y: byte = (@byte)(b[i])
+    if x ~= y then
+      if (x ~ y) ~= 32 or not ((x >= 65 and x <= 90) or (y >= 65 and y <= 90)) then
+        if x >= 65 and x <= 90 then x = x + 32 end
+        if y >= 65 and y <= 90 then y = y + 32 end
+        return (@cint)(x) - (@cint)(y)
+      end
+    elseif x == 0 then
+      return 0
+    end
+    i = i + 1
+  end
+  return 0
+end
+
+local function nelibc_strncasecmp(a: *[0]cchar <const>, b: *[0]cchar <const>, n: csize): cint <cexport, codename 'nelibc_strncasecmp'>
+  ## if ccinfo.is_x86_64 then
+  if n >= 16 then return nelibc_x86_64_sse_strncasecmp(a, b, n) end
+  ## end
+  local i: csize = 0
+  while i < n do
+    local x: byte = (@byte)(a[i])
+    local y: byte = (@byte)(b[i])
+    if x ~= y then
+      if (x ~ y) ~= 32 or not ((x >= 65 and x <= 90) or (y >= 65 and y <= 90)) then
+        if x >= 65 and x <= 90 then x = x + 32 end
+        if y >= 65 and y <= 90 then y = y + 32 end
+        return (@cint)(x) - (@cint)(y)
+      end
+    elseif x == 0 then
+      return 0
+    end
+    i = i + 1
+  end
+  return 0
+end
+
+local function strcpy(dest: *[0]cchar, src: *[0]cchar <const>): *[0]cchar <cexport, codename 'strcpy'>
+  local i: csize = 0
+  while true do
+    local c = src[i]
+    dest[i] = c
+    if c == 0 then break end
+    i = i + 1
+  end
+  return dest
+end
+
+local function strlcpy(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <cexport, codename 'strlcpy'>
+  local length: csize = 0
+  while src[length] ~= 0 do
+    length = length + 1
+  end
+  if size > 0 then
+    local copied: csize = 0
+    while copied + 1 < size and src[copied] ~= 0 do
+      dest[copied] = src[copied]
+      copied = copied + 1
+    end
+    dest[copied] = 0
+  end
+  return length
+end
+
+local function strxfrm(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <cexport, codename 'strxfrm'>
+  return nelibc_locale_strxfrm(dest, src, size)
+end
+
+local function strlcat(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <cexport, codename 'strlcat'>
+  local dest_len: csize = 0
+  while dest_len < size and dest[dest_len] ~= 0 do
+    dest_len = dest_len + 1
+  end
+  local src_len: csize = strlen(src)
+  if dest_len == size then return dest_len + src_len end
+
+  local available: csize = size - dest_len
+  local copied: csize = 0
+  while copied + 1 < available and src[copied] ~= 0 do
+    dest[dest_len + copied] = src[copied]
+    copied = copied + 1
+  end
+  dest[dest_len + copied] = 0
+  return dest_len + src_len
+end
+
+local function stpcpy(dest: *[0]cchar, src: *[0]cchar <const>): *cchar <cexport, codename 'stpcpy'>
+  local i: csize = 0
+  while true do
+    local c = src[i]
+    dest[i] = c
+    if c == 0 then return &dest[i] end
+    i = i + 1
+  end
+end
+
+local function strcat(dest: *[0]cchar, src: *[0]cchar <const>): *[0]cchar <cexport, codename 'strcat'>
+  local i: csize = 0
+  while dest[i] ~= 0 do
+    i = i + 1
+  end
+  local j: csize = 0
+  while src[j] ~= 0 do
+    dest[i] = src[j]
+    i = i + 1
+    j = j + 1
+  end
+  dest[i] = 0
+  return dest
+end
+
+local function strncat(dest: *[0]cchar, src: *[0]cchar <const>, n: csize): *[0]cchar <cexport, codename 'strncat'>
+  local i: csize = 0
+  while dest[i] ~= 0 do
+    i = i + 1
+  end
+  local j: csize = 0
+  while j < n and src[j] ~= 0 do
+    dest[i] = src[j]
+    i = i + 1
+    j = j + 1
+  end
+  dest[i] = 0
+  return dest
+end
+
+local function strncpy(dest: *[0]cchar, src: *[0]cchar <const>, n: csize): *[0]cchar <cexport, codename 'strncpy'>
+  local i: csize = 0
+  while i < n and src[i] ~= 0 do
+    dest[i] = src[i]
+    i = i + 1
+  end
+  while i < n do
+    dest[i] = 0
+    i = i + 1
+  end
+  return dest
+end
+
+local function stpncpy(dest: *[0]cchar, src: *[0]cchar <const>, n: csize): *cchar <cexport, codename 'stpncpy'>
+  local i: csize = 0
+  while i < n and src[i] ~= 0 do
+    dest[i] = src[i]
+    i = i + 1
+  end
+  if i == n then return &dest[n] end
+
+  local endptr: *cchar = &dest[i]
+  while i < n do
+    dest[i] = 0
+    i = i + 1
+  end
+  return endptr
+end
+
+local function strchr(s: *[0]cchar <const>, c: cint): *cchar <cexport, codename 'strchr'>
+  local target: byte = (@byte)(c)
+  local i: csize = 0
+  while true do
+    if (@byte)(s[i]) == target then return &s[i] end
+    if s[i] == 0 then return nilptr end
+    i = i + 1
+  end
+end
+
+local function strchrnul(s: *[0]cchar <const>, c: cint): *cchar
+    <cexport, codename 'strchrnul'>
+  local target: byte = (@byte)(c)
+  local i: csize = 0
+  while s[i] ~= 0 and (@byte)(s[i]) ~= target do
+    i = i + 1
+  end
+  return &s[i]
+end
+
+local function strrchr(s: *[0]cchar <const>, c: cint): *cchar <cexport, codename 'strrchr'>
+  local target: byte = (@byte)(c)
+  local last: *cchar = nilptr
+  local i: csize = 0
+  while true do
+    if (@byte)(s[i]) == target then last = &s[i] end
+    if s[i] == 0 then return last end
+    i = i + 1
+  end
+end
+
+local function index(s: *[0]cchar <const>, c: cint): *cchar <cexport, codename 'index'>
+  return strchr(s, c)
+end
+
+local function rindex(s: *[0]cchar <const>, c: cint): *cchar <cexport, codename 'rindex'>
+  return strrchr(s, c)
+end
+
+local function strstr(haystack: *[0]cchar <const>, needle: *[0]cchar <const>): *cchar <cexport, codename 'strstr'>
+  if needle[0] == 0 then return haystack end
+  local needle_len: csize = strlen(needle)
+  local haystack_len: csize = strlen(haystack)
+  if needle_len > haystack_len then return nilptr end
+  if needle_len < 64 then
+    local h: *[0]cchar = (@*[0]cchar)(haystack)
+    local last_start: csize = haystack_len - needle_len
+    local sample_len: csize = haystack_len
+    if sample_len > 16 then sample_len = 16 end
+    local sample_hits: csize = 0
+    local sample: csize = 0
+    while sample < sample_len do
+      if h[sample] == needle[0] then sample_hits = sample_hits + 1 end
+      sample = sample + 1
+    end
+    if sample_hits > 2 then
+      if needle_len >= 8 then
+        return (@*cchar)(memmem(haystack, haystack_len, needle, needle_len))
+      end
+      local start: csize = 0
+      while start <= last_start do
+        local j: csize = 0
+        while j < needle_len and h[start + j] == needle[j] do j = j + 1 end
+        if j == needle_len then return &h[start] end
+        start = start + 1
+      end
+      return nilptr
+    end
+    local position: csize = 0
+    while position <= last_start do
+      ## if ccinfo.is_x86_64 then
+      local candidate: pointer = nelibc_x86_64_sse_memchr(&h[position], (@cint)(needle[0]), last_start - position + 1)
+      ## else
+      local candidate: pointer = nilptr
+      local scan: csize = position
+      while scan <= last_start and h[scan] ~= needle[0] do scan = scan + 1 end
+      if scan <= last_start then candidate = &h[scan] end
+      ## end
+      if candidate == nilptr then return nilptr end
+      local bytes: *[0]cchar = (@*[0]cchar)(candidate)
+      local j: csize = 1
+      while j < needle_len and bytes[j] == needle[j] do j = j + 1 end
+      if j == needle_len then return (@*cchar)(candidate) end
+      position = ((@csize)((@usize)(candidate) - (@usize)(haystack))) + 1
+    end
+    return nilptr
+  end
+  return (@*cchar)(memmem(haystack, haystack_len, needle, needle_len))
+end
+
+local function strcasestr(haystack: *[0]cchar <const>, needle: *[0]cchar <const>): *cchar
+    <cexport, codename 'strcasestr'>
+  if needle[0] == 0 then return haystack end
+  local needle_len: csize = strlen(needle)
+  local start: csize = 0
+  while haystack[start] ~= 0 do
+    if strncasecmp(&haystack[start], needle, needle_len) == 0 then
+      return &haystack[start]
+    end
+    start = start + 1
+  end
+  return nilptr
+end
+
+local function strspn(s: *[0]cchar <const>, accept: *[0]cchar <const>): csize <cexport, codename 'strspn'>
+  local i: csize = 0
+  while s[i] ~= 0 do
+    local j: csize = 0
+    while accept[j] ~= 0 and accept[j] ~= s[i] do
+      j = j + 1
+    end
+    if accept[j] == 0 then break end
+    i = i + 1
+  end
+  return i
+end
+
+local function strcspn(s: *[0]cchar <const>, reject: *[0]cchar <const>): csize <cexport, codename 'strcspn'>
+  local i: csize = 0
+  while s[i] ~= 0 do
+    local j: csize = 0
+    while reject[j] ~= 0 and reject[j] ~= s[i] do
+      j = j + 1
+    end
+    if reject[j] ~= 0 then break end
+    i = i + 1
+  end
+  return i
+end
+
+local function strpbrk(s: *[0]cchar <const>, accept: *[0]cchar <const>): *cchar <cexport, codename 'strpbrk'>
+  local i: csize = 0
+  while s[i] ~= 0 do
+    local j: csize = 0
+    while accept[j] ~= 0 and accept[j] ~= s[i] do
+      j = j + 1
+    end
+    if accept[j] ~= 0 then return (@*cchar)(&s[i]) end
+    i = i + 1
+  end
+  return nilptr
+end
+
+local function strtok_r(s: *[0]cchar, delim: *[0]cchar <const>, saveptr: *[0]*[0]cchar): *cchar <cexport, codename 'strtok_r'>
+  -- POSIX does not require *saveptr to be initialized on the first call.
+  local state: *[0]cchar = s
+  if state == nilptr then state = saveptr[0] end
+  if state == nilptr then return nilptr end
+
+  -- A single delimiter is common and needs no repeated delimiter search.
+  local delimiter: cchar = delim[0]
+  if delimiter ~= 0 and delim[1] == 0 then
+    while state[0] == delimiter do state = &state[1] end
+    if state[0] == 0 then
+      saveptr[0] = nilptr
+      return nilptr
+    end
+    local token: *cchar = state
+    while state[0] ~= 0 and state[0] ~= delimiter do state = &state[1] end
+    if state[0] == delimiter then
+      state[0] = 0
+      saveptr[0] = &state[1]
+    else
+      saveptr[0] = nilptr
+    end
+    return token
+  end
+
+  -- Skip leading delimiters, including runs of repeated delimiters.
+  while state[0] ~= 0 do
+    local j: csize = 0
+    while delim[j] ~= 0 and delim[j] ~= state[0] do
+      j = j + 1
+    end
+    if delim[j] == 0 then break end
+    state = &state[1]
+  end
+  if state[0] == 0 then
+    saveptr[0] = nilptr
+    return nilptr
+  end
+
+  local token: *cchar = state
+  local i: csize = 0
+  while state[i] ~= 0 do
+    local j: csize = 0
+    while delim[j] ~= 0 and delim[j] ~= state[i] do
+      j = j + 1
+    end
+    if delim[j] ~= 0 then
+      state[i] = 0
+      saveptr[0] = &state[i + 1]
+      return token
+    end
+    i = i + 1
+  end
+  saveptr[0] = nilptr
+  return token
+end
+
+local function strtok(s: *[0]cchar, delim: *[0]cchar <const>): *cchar <cexport, codename 'strtok'>
+  local state: *[0]*[0]cchar = nelibc_strtok_state()
+  if state == nilptr then return nilptr end
+  local cursor: *[0]cchar = state[0]
+  if s ~= nilptr then cursor = s end
+  if cursor == nilptr then return nilptr end
+
+  -- Keep strtok's thread-local state update out of the per-character loop.
+  local delimiter: cchar = delim[0]
+  if delimiter ~= 0 and delim[1] == 0 then
+    while cursor[0] == delimiter do cursor = &cursor[1] end
+    if cursor[0] == 0 then
+      state[0] = nilptr
+      return nilptr
+    end
+    local token: *cchar = cursor
+    while cursor[0] ~= 0 and cursor[0] ~= delimiter do cursor = &cursor[1] end
+    if cursor[0] == delimiter then
+      cursor[0] = 0
+      state[0] = &cursor[1]
+    else
+      state[0] = nilptr
+    end
+    return token
+  end
+
+  while cursor[0] ~= 0 do
+    local j: csize = 0
+    while delim[j] ~= 0 and delim[j] ~= cursor[0] do
+      j = j + 1
+    end
+    if delim[j] == 0 then break end
+    cursor = &cursor[1]
+  end
+  if cursor[0] == 0 then
+    state[0] = nilptr
+    return nilptr
+  end
+
+  local token: *cchar = cursor
+  local i: csize = 0
+  while cursor[i] ~= 0 do
+    local j: csize = 0
+    while delim[j] ~= 0 and delim[j] ~= cursor[i] do
+      j = j + 1
+    end
+    if delim[j] ~= 0 then
+      cursor[i] = 0
+      state[0] = &cursor[i + 1]
+      return token
+    end
+    i = i + 1
+  end
+  state[0] = nilptr
+  return token
+end
+
+local function strsep(stringp: *[0]*[0]cchar, delim: *[0]cchar <const>): *cchar <cexport, codename 'strsep'>
+  local s: *[0]cchar = stringp[0]
+  if s == nilptr then return nilptr end
+  local i: csize = 0
+  while s[i] ~= 0 do
+    local j: csize = 0
+    while delim[j] ~= 0 and delim[j] ~= s[i] do
+      j = j + 1
+    end
+    if delim[j] ~= 0 then
+      s[i] = 0
+      stringp[0] = &s[i + 1]
+      return s
+    end
+    i = i + 1
+  end
+  stringp[0] = nilptr
+  return s
+end
+
+-- Linux errno text is fixed English in this bootstrap implementation.
+local function nelibc_strerror(errnum: cint): *cchar <cexport, codename 'nelibc_strerror'>
+  if errnum == 0 then return 'Success' end
+  if errnum == 1 then return 'Operation not permitted' end
+  if errnum == 2 then return 'No such file or directory' end
+  if errnum == 3 then return 'No such process' end
+  if errnum == 4 then return 'Interrupted system call' end
+  if errnum == 5 then return 'Input/output error' end
+  if errnum == 6 then return 'No such device or address' end
+  if errnum == 7 then return 'Argument list too long' end
+  if errnum == 8 then return 'Exec format error' end
+  if errnum == 9 then return 'Bad file descriptor' end
+  if errnum == 10 then return 'No child processes' end
+  if errnum == 11 then return 'Resource temporarily unavailable' end
+  if errnum == 12 then return 'Cannot allocate memory' end
+  if errnum == 13 then return 'Permission denied' end
+  if errnum == 14 then return 'Bad address' end
+  if errnum == 15 then return 'Block device required' end
+  if errnum == 16 then return 'Device or resource busy' end
+  if errnum == 17 then return 'File exists' end
+  if errnum == 18 then return 'Invalid cross-device link' end
+  if errnum == 19 then return 'No such device' end
+  if errnum == 20 then return 'Not a directory' end
+  if errnum == 21 then return 'Is a directory' end
+  if errnum == 22 then return 'Invalid argument' end
+  if errnum == 23 then return 'Too many open files in system' end
+  if errnum == 24 then return 'Too many open files' end
+  if errnum == 25 then return 'Inappropriate ioctl for device' end
+  if errnum == 26 then return 'Text file busy' end
+  if errnum == 27 then return 'File too large' end
+  if errnum == 28 then return 'No space left on device' end
+  if errnum == 29 then return 'Illegal seek' end
+  if errnum == 30 then return 'Read-only file system' end
+  if errnum == 31 then return 'Too many links' end
+  if errnum == 32 then return 'Broken pipe' end
+  if errnum == 33 then return 'Numerical argument out of domain' end
+  if errnum == 34 then return 'Numerical result out of range' end
+  if errnum == 35 then return 'Resource deadlock avoided' end
+  if errnum == 36 then return 'File name too long' end
+  if errnum == 37 then return 'No locks available' end
+  if errnum == 38 then return 'Function not implemented' end
+  if errnum == 39 then return 'Directory not empty' end
+  if errnum == 40 then return 'Too many levels of symbolic links' end
+  if errnum == 44 then return 'Channel number out of range' end
+  if errnum == 45 then return 'Level 2 not synchronized' end
+  if errnum == 46 then return 'Level 3 halted' end
+  if errnum == 47 then return 'Level 3 reset' end
+  if errnum == 48 then return 'Link number out of range' end
+  if errnum == 49 then return 'Protocol driver not attached' end
+  if errnum == 50 then return 'No CSI structure available' end
+  if errnum == 51 then return 'Level 2 halted' end
+  if errnum == 52 then return 'Invalid exchange' end
+  if errnum == 53 then return 'Invalid request descriptor' end
+  if errnum == 54 then return 'Exchange full' end
+  if errnum == 55 then return 'No anode' end
+  if errnum == 56 then return 'Invalid request code' end
+  if errnum == 57 then return 'Invalid slot' end
+  if errnum == 59 then return 'Bad font file format' end
+  if errnum == 60 then return 'Device not a stream' end
+  if errnum == 61 then return 'No data available' end
+  if errnum == 62 then return 'Timer expired' end
+  if errnum == 63 then return 'Out of streams resources' end
+  if errnum == 64 then return 'Machine is not on the network' end
+  if errnum == 65 then return 'Package not installed' end
+  if errnum == 66 then return 'Object is remote' end
+  if errnum == 67 then return 'Link has been severed' end
+  if errnum == 68 then return 'Advertise error' end
+  if errnum == 69 then return 'Srmount error' end
+  if errnum == 70 then return 'Communication error on send' end
+  if errnum == 71 then return 'Protocol error' end
+  if errnum == 72 then return 'Multihop attempted' end
+  if errnum == 73 then return 'RFS specific error' end
+  if errnum == 74 then return 'Bad message' end
+  if errnum == 42 then return 'No message of desired type' end
+  if errnum == 43 then return 'Identifier removed' end
+  if errnum == 75 then return 'Value too large for defined data type' end
+  if errnum == 76 then return 'Name not unique on network' end
+  if errnum == 77 then return 'File descriptor in bad state' end
+  if errnum == 78 then return 'Remote address changed' end
+  if errnum == 79 then return 'Can not access a needed shared library' end
+  if errnum == 80 then return 'Accessing a corrupted shared library' end
+  if errnum == 81 then return '.lib section in a.out corrupted' end
+  if errnum == 82 then return 'Attempting to link in too many shared libraries' end
+  if errnum == 83 then return 'Cannot exec a shared library directly' end
+  if errnum == 84 then return 'Invalid or incomplete multibyte or wide character' end
+  if errnum == 85 then return 'Interrupted system call should be restarted' end
+  if errnum == 86 then return 'Streams pipe error' end
+  if errnum == 87 then return 'Too many users' end
+  if errnum == 88 then return 'Socket operation on non-socket' end
+  if errnum == 89 then return 'Destination address required' end
+  if errnum == 90 then return 'Message too long' end
+  if errnum == 91 then return 'Protocol wrong type for socket' end
+  if errnum == 92 then return 'Protocol not available' end
+  if errnum == 93 then return 'Protocol not supported' end
+  if errnum == 94 then return 'Socket type not supported' end
+  if errnum == 95 then return 'Operation not supported' end
+  if errnum == 96 then return 'Protocol family not supported' end
+  if errnum == 97 then return 'Address family not supported by protocol' end
+  if errnum == 98 then return 'Address already in use' end
+  if errnum == 99 then return 'Cannot assign requested address' end
+  if errnum == 100 then return 'Network is down' end
+  if errnum == 101 then return 'Network is unreachable' end
+  if errnum == 102 then return 'Network dropped connection on reset' end
+  if errnum == 103 then return 'Software caused connection abort' end
+  if errnum == 104 then return 'Connection reset by peer' end
+  if errnum == 105 then return 'No buffer space available' end
+  if errnum == 106 then return 'Transport endpoint is already connected' end
+  if errnum == 107 then return 'Transport endpoint is not connected' end
+  if errnum == 108 then return 'Cannot send after transport endpoint shutdown' end
+  if errnum == 109 then return 'Too many references: cannot splice' end
+  if errnum == 110 then return 'Connection timed out' end
+  if errnum == 111 then return 'Connection refused' end
+  if errnum == 112 then return 'Host is down' end
+  if errnum == 113 then return 'No route to host' end
+  if errnum == 114 then return 'Operation already in progress' end
+  if errnum == 115 then return 'Operation now in progress' end
+  if errnum == 116 then return 'Stale file handle' end
+  if errnum == 117 then return 'Structure needs cleaning' end
+  if errnum == 118 then return 'Not a XENIX named type file' end
+  if errnum == 119 then return 'No XENIX semaphores available' end
+  if errnum == 120 then return 'Is a named type file' end
+  if errnum == 121 then return 'Remote I/O error' end
+  if errnum == 122 then return 'Disk quota exceeded' end
+  if errnum == 123 then return 'No medium found' end
+  if errnum == 124 then return 'Wrong medium type' end
+  if errnum == 125 then return 'Operation canceled' end
+  if errnum == 126 then return 'Required key not available' end
+  if errnum == 127 then return 'Key has expired' end
+  if errnum == 128 then return 'Key has been revoked' end
+  if errnum == 129 then return 'Key was rejected by service' end
+  if errnum == 130 then return 'Owner died' end
+  if errnum == 131 then return 'State not recoverable' end
+  if errnum == 132 then return 'Operation not possible due to RF-kill' end
+  if errnum == 133 then return 'Memory page has hardware error' end
+  if errnum == 134 then return 'Wrong file type for the intended operation' end
+  return 'Unknown error'
+end
+
+local function strerror(errnum: cint): *cchar <cexport, codename 'strerror'>
+  return nelibc_strerror(errnum)
+end
+
+local function strerror_r(errnum: cint, buffer: *[0]cchar,
+    buffer_size: csize): cint <cexport, codename 'nelibc_strerror_r'>
+  local message: *[0]cchar = nelibc_strerror(errnum)
+  local length: csize = strlen(message)
+  if length + 1 > buffer_size then return 34 end -- ERANGE
+  local index: csize = 0
+  while index <= length do
+    buffer[index] = message[index]
+    index = index + 1
+  end
+  local unknown: boolean = message[0] == 85 and message[1] == 110 and
+      message[2] == 107 and message[3] == 110 and message[4] == 111 and
+      message[5] == 119 and message[6] == 110 and message[7] == 32 and
+      message[8] == 101 and message[9] == 114 and message[10] == 114 and
+      message[11] == 111 and message[12] == 114 and message[13] == 0
+  if errnum < 0 or errnum > 134 or unknown then return 22 end -- EINVAL
+  return 0
+end
+
+-- GNU strerror_r returns a string pointer; use the caller buffer when it fits.
+local function gnu_strerror_r(errnum: cint, buffer: *[0]cchar,
+    buffer_size: csize): *[0]cchar <cexport, codename 'nelibc_gnu_strerror_r'>
+  local message: *[0]cchar = nelibc_strerror(errnum)
+  local length: csize = strlen(message)
+  if length + 1 > buffer_size then return message end
+  local index: csize = 0
+  while index <= length do
+    buffer[index] = message[index]
+    index = index + 1
+  end
+  return buffer
+end

@@ -1,0 +1,4 @@
+parser,parse_calls,copy_loop_visits,zero_fill_loop_visits,bit_shift_loop_visits,total_baseline_loop_visits,combined_pass_estimate
+strtof,800,69200,8000,69200,146400,77200
+strtod,800,68800,7600,68800,145200,76400
+strtold,800,94000,17600,94000,205600,111600

@@ -1,0 +1,2881 @@
+round,compiler,libc,implementation,function,size_bytes,case,iterations,median_ns_per_call
+1,Zig cc,glibc,libc,memchr,64,first,131072,1.97
+1,Zig cc,glibc,libc,memchr,64,middle,131072,2.96
+1,Zig cc,glibc,libc,memchr,64,last,131072,2.95
+1,Zig cc,glibc,libc,memchr,64,absent,131072,3.20
+1,Zig cc,glibc,libc,memrchr,64,first,131072,2.72
+1,Zig cc,glibc,libc,memrchr,64,middle,131072,1.94
+1,Zig cc,glibc,libc,memrchr,64,last,131072,1.98
+1,Zig cc,glibc,libc,memrchr,64,absent,131072,2.85
+1,Zig cc,glibc,libc,memchr,1024,first,8192,1.97
+1,Zig cc,glibc,libc,memchr,1024,middle,8192,8.62
+1,Zig cc,glibc,libc,memchr,1024,last,8192,11.68
+1,Zig cc,glibc,libc,memchr,1024,absent,8192,11.32
+1,Zig cc,glibc,libc,memrchr,1024,first,8192,12.53
+1,Zig cc,glibc,libc,memrchr,1024,middle,8192,7.63
+1,Zig cc,glibc,libc,memrchr,1024,last,8192,1.99
+1,Zig cc,glibc,libc,memrchr,1024,absent,8192,11.80
+1,Zig cc,glibc,libc,memchr,2048,first,4096,2.07
+1,Zig cc,glibc,libc,memchr,2048,middle,4096,12.03
+1,Zig cc,glibc,libc,memchr,2048,last,4096,18.43
+1,Zig cc,glibc,libc,memchr,2048,absent,4096,18.18
+1,Zig cc,glibc,libc,memrchr,2048,first,4096,19.23
+1,Zig cc,glibc,libc,memrchr,2048,middle,4096,12.22
+1,Zig cc,glibc,libc,memrchr,2048,last,4096,1.94
+1,Zig cc,glibc,libc,memrchr,2048,absent,4096,18.66
+1,Zig cc,glibc,libc,memchr,4096,first,2048,2.08
+1,Zig cc,glibc,libc,memchr,4096,middle,2048,18.67
+1,Zig cc,glibc,libc,memchr,4096,last,2048,32.99
+1,Zig cc,glibc,libc,memchr,4096,absent,2048,32.11
+1,Zig cc,glibc,libc,memrchr,4096,first,2048,34.61
+1,Zig cc,glibc,libc,memrchr,4096,middle,2048,20.12
+1,Zig cc,glibc,libc,memrchr,4096,last,2048,2.01
+1,Zig cc,glibc,libc,memrchr,4096,absent,2048,35.73
+1,Zig cc,glibc,libc,memchr,8192,first,1024,1.91
+1,Zig cc,glibc,libc,memchr,8192,middle,1024,33.74
+1,Zig cc,glibc,libc,memchr,8192,last,1024,70.64
+1,Zig cc,glibc,libc,memchr,8192,absent,1024,70.37
+1,Zig cc,glibc,libc,memrchr,8192,first,1024,76.85
+1,Zig cc,glibc,libc,memrchr,8192,middle,1024,38.22
+1,Zig cc,glibc,libc,memrchr,8192,last,1024,1.98
+1,Zig cc,glibc,libc,memrchr,8192,absent,1024,72.64
+1,Zig cc,glibc,libc,memchr,65536,first,128,2.33
+1,Zig cc,glibc,libc,memchr,65536,middle,128,265.59
+1,Zig cc,glibc,libc,memchr,65536,last,128,699.45
+1,Zig cc,glibc,libc,memchr,65536,absent,128,654.03
+1,Zig cc,glibc,libc,memrchr,65536,first,128,618.08
+1,Zig cc,glibc,libc,memrchr,65536,middle,128,189.94
+1,Zig cc,glibc,libc,memrchr,65536,last,128,1.76
+1,Zig cc,glibc,libc,memrchr,65536,absent,128,504.70
+1,Zig cc,glibc,avx2-only,memchr,64,first,131072,2.33
+1,Zig cc,glibc,avx2-only,memchr,64,middle,131072,2.51
+1,Zig cc,glibc,avx2-only,memchr,64,last,131072,2.51
+1,Zig cc,glibc,avx2-only,memchr,64,absent,131072,2.58
+1,Zig cc,glibc,avx2-only,memrchr,64,first,131072,2.61
+1,Zig cc,glibc,avx2-only,memrchr,64,middle,131072,3.12
+1,Zig cc,glibc,avx2-only,memrchr,64,last,131072,2.70
+1,Zig cc,glibc,avx2-only,memrchr,64,absent,131072,2.40
+1,Zig cc,glibc,avx2-only,memchr,1024,first,8192,2.14
+1,Zig cc,glibc,avx2-only,memchr,1024,middle,8192,8.22
+1,Zig cc,glibc,avx2-only,memchr,1024,last,8192,14.08
+1,Zig cc,glibc,avx2-only,memchr,1024,absent,8192,14.21
+1,Zig cc,glibc,avx2-only,memrchr,1024,first,8192,15.04
+1,Zig cc,glibc,avx2-only,memrchr,1024,middle,8192,8.11
+1,Zig cc,glibc,avx2-only,memrchr,1024,last,8192,2.35
+1,Zig cc,glibc,avx2-only,memrchr,1024,absent,8192,15.26
+1,Zig cc,glibc,avx2-only,memchr,2048,first,4096,3.06
+1,Zig cc,glibc,avx2-only,memchr,2048,middle,4096,8.07
+1,Zig cc,glibc,avx2-only,memchr,2048,last,4096,12.94
+1,Zig cc,glibc,avx2-only,memchr,2048,absent,4096,12.64
+1,Zig cc,glibc,avx2-only,memrchr,2048,first,4096,13.21
+1,Zig cc,glibc,avx2-only,memrchr,2048,middle,4096,8.21
+1,Zig cc,glibc,avx2-only,memrchr,2048,last,4096,3.06
+1,Zig cc,glibc,avx2-only,memrchr,2048,absent,4096,12.76
+1,Zig cc,glibc,avx2-only,memchr,4096,first,2048,2.79
+1,Zig cc,glibc,avx2-only,memchr,4096,middle,2048,13.05
+1,Zig cc,glibc,avx2-only,memchr,4096,last,2048,23.36
+1,Zig cc,glibc,avx2-only,memchr,4096,absent,2048,23.12
+1,Zig cc,glibc,avx2-only,memrchr,4096,first,2048,22.71
+1,Zig cc,glibc,avx2-only,memrchr,4096,middle,2048,12.95
+1,Zig cc,glibc,avx2-only,memrchr,4096,last,2048,3.07
+1,Zig cc,glibc,avx2-only,memrchr,4096,absent,2048,23.17
+1,Zig cc,glibc,avx2-only,memchr,8192,first,1024,2.87
+1,Zig cc,glibc,avx2-only,memchr,8192,middle,1024,32.05
+1,Zig cc,glibc,avx2-only,memchr,8192,last,1024,52.01
+1,Zig cc,glibc,avx2-only,memchr,8192,absent,1024,50.97
+1,Zig cc,glibc,avx2-only,memrchr,8192,first,1024,52.38
+1,Zig cc,glibc,avx2-only,memrchr,8192,middle,1024,31.55
+1,Zig cc,glibc,avx2-only,memrchr,8192,last,1024,3.08
+1,Zig cc,glibc,avx2-only,memrchr,8192,absent,1024,49.72
+1,Zig cc,glibc,avx2-only,memchr,65536,first,128,3.13
+1,Zig cc,glibc,avx2-only,memchr,65536,middle,128,177.09
+1,Zig cc,glibc,avx2-only,memchr,65536,last,128,479.12
+1,Zig cc,glibc,avx2-only,memchr,65536,absent,128,496.84
+1,Zig cc,glibc,avx2-only,memrchr,65536,first,128,487.61
+1,Zig cc,glibc,avx2-only,memrchr,65536,middle,128,178.59
+1,Zig cc,glibc,avx2-only,memrchr,65536,last,128,3.21
+1,Zig cc,glibc,avx2-only,memrchr,65536,absent,128,486.41
+1,Zig cc,glibc,avx512-runtime,memchr,64,first,131072,2.19
+1,Zig cc,glibc,avx512-runtime,memchr,64,middle,131072,2.26
+1,Zig cc,glibc,avx512-runtime,memchr,64,last,131072,2.62
+1,Zig cc,glibc,avx512-runtime,memchr,64,absent,131072,2.50
+1,Zig cc,glibc,avx512-runtime,memrchr,64,first,131072,2.80
+1,Zig cc,glibc,avx512-runtime,memrchr,64,middle,131072,2.63
+1,Zig cc,glibc,avx512-runtime,memrchr,64,last,131072,2.45
+1,Zig cc,glibc,avx512-runtime,memrchr,64,absent,131072,3.07
+1,Zig cc,glibc,avx512-runtime,memchr,1024,first,8192,1.97
+1,Zig cc,glibc,avx512-runtime,memchr,1024,middle,8192,9.34
+1,Zig cc,glibc,avx512-runtime,memchr,1024,last,8192,15.48
+1,Zig cc,glibc,avx512-runtime,memchr,1024,absent,8192,14.83
+1,Zig cc,glibc,avx512-runtime,memrchr,1024,first,8192,15.14
+1,Zig cc,glibc,avx512-runtime,memrchr,1024,middle,8192,8.72
+1,Zig cc,glibc,avx512-runtime,memrchr,1024,last,8192,2.40
+1,Zig cc,glibc,avx512-runtime,memrchr,1024,absent,8192,15.37
+1,Zig cc,glibc,avx512-runtime,memchr,2048,first,4096,3.05
+1,Zig cc,glibc,avx512-runtime,memchr,2048,middle,4096,8.27
+1,Zig cc,glibc,avx512-runtime,memchr,2048,last,4096,13.13
+1,Zig cc,glibc,avx512-runtime,memchr,2048,absent,4096,12.92
+1,Zig cc,glibc,avx512-runtime,memrchr,2048,first,4096,12.83
+1,Zig cc,glibc,avx512-runtime,memrchr,2048,middle,4096,7.91
+1,Zig cc,glibc,avx512-runtime,memrchr,2048,last,4096,3.06
+1,Zig cc,glibc,avx512-runtime,memrchr,2048,absent,4096,12.76
+1,Zig cc,glibc,avx512-runtime,memchr,4096,first,2048,3.08
+1,Zig cc,glibc,avx512-runtime,memchr,4096,middle,2048,13.57
+1,Zig cc,glibc,avx512-runtime,memchr,4096,last,2048,23.08
+1,Zig cc,glibc,avx512-runtime,memchr,4096,absent,2048,23.06
+1,Zig cc,glibc,avx512-runtime,memrchr,4096,first,2048,22.79
+1,Zig cc,glibc,avx512-runtime,memrchr,4096,middle,2048,12.78
+1,Zig cc,glibc,avx512-runtime,memrchr,4096,last,2048,3.00
+1,Zig cc,glibc,avx512-runtime,memrchr,4096,absent,2048,23.32
+1,Zig cc,glibc,avx512-runtime,memchr,8192,first,1024,3.08
+1,Zig cc,glibc,avx512-runtime,memchr,8192,middle,1024,24.21
+1,Zig cc,glibc,avx512-runtime,memchr,8192,last,1024,51.17
+1,Zig cc,glibc,avx512-runtime,memchr,8192,absent,1024,49.49
+1,Zig cc,glibc,avx512-runtime,memrchr,8192,first,1024,53.07
+1,Zig cc,glibc,avx512-runtime,memrchr,8192,middle,1024,30.95
+1,Zig cc,glibc,avx512-runtime,memrchr,8192,last,1024,3.00
+1,Zig cc,glibc,avx512-runtime,memrchr,8192,absent,1024,62.25
+1,Zig cc,glibc,avx512-runtime,memchr,65536,first,128,11.23
+1,Zig cc,glibc,avx512-runtime,memchr,65536,middle,128,129.38
+1,Zig cc,glibc,avx512-runtime,memchr,65536,last,128,297.95
+1,Zig cc,glibc,avx512-runtime,memchr,65536,absent,128,290.66
+1,Zig cc,glibc,avx512-runtime,memrchr,65536,first,128,297.77
+1,Zig cc,glibc,avx512-runtime,memrchr,65536,middle,128,124.11
+1,Zig cc,glibc,avx512-runtime,memrchr,65536,last,128,2.74
+1,Zig cc,glibc,avx512-runtime,memrchr,65536,absent,128,294.88
+1,GCC,glibc,libc,memchr,64,first,131072,1.89
+1,GCC,glibc,libc,memchr,64,middle,131072,2.34
+1,GCC,glibc,libc,memchr,64,last,131072,2.28
+1,GCC,glibc,libc,memchr,64,absent,131072,2.34
+1,GCC,glibc,libc,memrchr,64,first,131072,2.30
+1,GCC,glibc,libc,memrchr,64,middle,131072,1.78
+1,GCC,glibc,libc,memrchr,64,last,131072,1.79
+1,GCC,glibc,libc,memrchr,64,absent,131072,2.36
+1,GCC,glibc,libc,memchr,1024,first,8192,1.78
+1,GCC,glibc,libc,memchr,1024,middle,8192,5.71
+1,GCC,glibc,libc,memchr,1024,last,8192,8.15
+1,GCC,glibc,libc,memchr,1024,absent,8192,8.05
+1,GCC,glibc,libc,memrchr,1024,first,8192,8.59
+1,GCC,glibc,libc,memrchr,1024,middle,8192,6.09
+1,GCC,glibc,libc,memrchr,1024,last,8192,1.75
+1,GCC,glibc,libc,memrchr,1024,absent,8192,8.56
+1,GCC,glibc,libc,memchr,2048,first,4096,1.75
+1,GCC,glibc,libc,memchr,2048,middle,4096,8.31
+1,GCC,glibc,libc,memchr,2048,last,4096,13.18
+1,GCC,glibc,libc,memchr,2048,absent,4096,13.12
+1,GCC,glibc,libc,memrchr,2048,first,4096,14.31
+1,GCC,glibc,libc,memrchr,2048,middle,4096,9.00
+1,GCC,glibc,libc,memrchr,2048,last,4096,1.71
+1,GCC,glibc,libc,memrchr,2048,absent,4096,13.98
+1,GCC,glibc,libc,memchr,4096,first,2048,1.71
+1,GCC,glibc,libc,memchr,4096,middle,2048,13.38
+1,GCC,glibc,libc,memchr,4096,last,2048,26.82
+1,GCC,glibc,libc,memchr,4096,absent,2048,27.26
+1,GCC,glibc,libc,memrchr,4096,first,2048,29.50
+1,GCC,glibc,libc,memrchr,4096,middle,2048,14.34
+1,GCC,glibc,libc,memrchr,4096,last,2048,1.71
+1,GCC,glibc,libc,memrchr,4096,absent,2048,27.37
+1,GCC,glibc,libc,memchr,8192,first,1024,1.71
+1,GCC,glibc,libc,memchr,8192,middle,1024,23.68
+1,GCC,glibc,libc,memchr,8192,last,1024,50.07
+1,GCC,glibc,libc,memchr,8192,absent,1024,49.71
+1,GCC,glibc,libc,memrchr,8192,first,1024,50.13
+1,GCC,glibc,libc,memrchr,8192,middle,1024,34.57
+1,GCC,glibc,libc,memrchr,8192,last,1024,1.72
+1,GCC,glibc,libc,memrchr,8192,absent,1024,50.14
+1,GCC,glibc,libc,memchr,65536,first,128,1.86
+1,GCC,glibc,libc,memchr,65536,middle,128,200.51
+1,GCC,glibc,libc,memchr,65536,last,128,505.34
+1,GCC,glibc,libc,memchr,65536,absent,128,507.13
+1,GCC,glibc,libc,memrchr,65536,first,128,532.98
+1,GCC,glibc,libc,memrchr,65536,middle,128,189.95
+1,GCC,glibc,libc,memrchr,65536,last,128,1.88
+1,GCC,glibc,libc,memrchr,65536,absent,128,477.80
+1,GCC,glibc,avx2-only,memchr,64,first,131072,3.11
+1,GCC,glibc,avx2-only,memchr,64,middle,131072,2.49
+1,GCC,glibc,avx2-only,memchr,64,last,131072,2.72
+1,GCC,glibc,avx2-only,memchr,64,absent,131072,3.30
+1,GCC,glibc,avx2-only,memrchr,64,first,131072,2.51
+1,GCC,glibc,avx2-only,memrchr,64,middle,131072,2.62
+1,GCC,glibc,avx2-only,memrchr,64,last,131072,2.98
+1,GCC,glibc,avx2-only,memrchr,64,absent,131072,3.06
+1,GCC,glibc,avx2-only,memchr,1024,first,8192,2.83
+1,GCC,glibc,avx2-only,memchr,1024,middle,8192,9.16
+1,GCC,glibc,avx2-only,memchr,1024,last,8192,14.93
+1,GCC,glibc,avx2-only,memchr,1024,absent,8192,15.47
+1,GCC,glibc,avx2-only,memrchr,1024,first,8192,15.36
+1,GCC,glibc,avx2-only,memrchr,1024,middle,8192,8.53
+1,GCC,glibc,avx2-only,memrchr,1024,last,8192,2.78
+1,GCC,glibc,avx2-only,memrchr,1024,absent,8192,15.69
+1,GCC,glibc,avx2-only,memchr,2048,first,4096,2.84
+1,GCC,glibc,avx2-only,memchr,2048,middle,4096,8.28
+1,GCC,glibc,avx2-only,memchr,2048,last,4096,12.59
+1,GCC,glibc,avx2-only,memchr,2048,absent,4096,14.08
+1,GCC,glibc,avx2-only,memrchr,2048,first,4096,13.20
+1,GCC,glibc,avx2-only,memrchr,2048,middle,4096,7.98
+1,GCC,glibc,avx2-only,memrchr,2048,last,4096,3.27
+1,GCC,glibc,avx2-only,memrchr,2048,absent,4096,13.12
+1,GCC,glibc,avx2-only,memchr,4096,first,2048,3.15
+1,GCC,glibc,avx2-only,memchr,4096,middle,2048,13.30
+1,GCC,glibc,avx2-only,memchr,4096,last,2048,23.39
+1,GCC,glibc,avx2-only,memchr,4096,absent,2048,28.78
+1,GCC,glibc,avx2-only,memrchr,4096,first,2048,23.34
+1,GCC,glibc,avx2-only,memrchr,4096,middle,2048,13.23
+1,GCC,glibc,avx2-only,memrchr,4096,last,2048,3.29
+1,GCC,glibc,avx2-only,memrchr,4096,absent,2048,29.51
+1,GCC,glibc,avx2-only,memchr,8192,first,1024,3.13
+1,GCC,glibc,avx2-only,memchr,8192,middle,1024,31.71
+1,GCC,glibc,avx2-only,memchr,8192,last,1024,51.27
+1,GCC,glibc,avx2-only,memchr,8192,absent,1024,49.12
+1,GCC,glibc,avx2-only,memrchr,8192,first,1024,59.88
+1,GCC,glibc,avx2-only,memrchr,8192,middle,1024,34.70
+1,GCC,glibc,avx2-only,memrchr,8192,last,1024,3.22
+1,GCC,glibc,avx2-only,memrchr,8192,absent,1024,53.01
+1,GCC,glibc,avx2-only,memchr,65536,first,128,3.11
+1,GCC,glibc,avx2-only,memchr,65536,middle,128,185.00
+1,GCC,glibc,avx2-only,memchr,65536,last,128,503.98
+1,GCC,glibc,avx2-only,memchr,65536,absent,128,607.55
+1,GCC,glibc,avx2-only,memrchr,65536,first,128,493.39
+1,GCC,glibc,avx2-only,memrchr,65536,middle,128,178.52
+1,GCC,glibc,avx2-only,memrchr,65536,last,128,3.26
+1,GCC,glibc,avx2-only,memrchr,65536,absent,128,475.98
+1,GCC,glibc,avx512-runtime,memchr,64,first,131072,2.28
+1,GCC,glibc,avx512-runtime,memchr,64,middle,131072,2.40
+1,GCC,glibc,avx512-runtime,memchr,64,last,131072,2.45
+1,GCC,glibc,avx512-runtime,memchr,64,absent,131072,2.62
+1,GCC,glibc,avx512-runtime,memrchr,64,first,131072,2.82
+1,GCC,glibc,avx512-runtime,memrchr,64,middle,131072,2.62
+1,GCC,glibc,avx512-runtime,memrchr,64,last,131072,2.61
+1,GCC,glibc,avx512-runtime,memrchr,64,absent,131072,2.99
+1,GCC,glibc,avx512-runtime,memchr,1024,first,8192,2.14
+1,GCC,glibc,avx512-runtime,memchr,1024,middle,8192,8.55
+1,GCC,glibc,avx512-runtime,memchr,1024,last,8192,14.93
+1,GCC,glibc,avx512-runtime,memchr,1024,absent,8192,15.36
+1,GCC,glibc,avx512-runtime,memrchr,1024,first,8192,18.77
+1,GCC,glibc,avx512-runtime,memrchr,1024,middle,8192,10.46
+1,GCC,glibc,avx512-runtime,memrchr,1024,last,8192,2.56
+1,GCC,glibc,avx512-runtime,memrchr,1024,absent,8192,15.82
+1,GCC,glibc,avx512-runtime,memchr,2048,first,4096,2.84
+1,GCC,glibc,avx512-runtime,memchr,2048,middle,4096,8.07
+1,GCC,glibc,avx512-runtime,memchr,2048,last,4096,12.86
+1,GCC,glibc,avx512-runtime,memchr,2048,absent,4096,13.11
+1,GCC,glibc,avx512-runtime,memrchr,2048,first,4096,12.72
+1,GCC,glibc,avx512-runtime,memrchr,2048,middle,4096,8.12
+1,GCC,glibc,avx512-runtime,memrchr,2048,last,4096,3.20
+1,GCC,glibc,avx512-runtime,memrchr,2048,absent,4096,12.61
+1,GCC,glibc,avx512-runtime,memchr,4096,first,2048,2.78
+1,GCC,glibc,avx512-runtime,memchr,4096,middle,2048,13.02
+1,GCC,glibc,avx512-runtime,memchr,4096,last,2048,22.84
+1,GCC,glibc,avx512-runtime,memchr,4096,absent,2048,23.16
+1,GCC,glibc,avx512-runtime,memrchr,4096,first,2048,22.85
+1,GCC,glibc,avx512-runtime,memrchr,4096,middle,2048,12.87
+1,GCC,glibc,avx512-runtime,memrchr,4096,last,2048,3.28
+1,GCC,glibc,avx512-runtime,memrchr,4096,absent,2048,30.44
+1,GCC,glibc,avx512-runtime,memchr,8192,first,1024,2.79
+1,GCC,glibc,avx512-runtime,memchr,8192,middle,1024,23.79
+1,GCC,glibc,avx512-runtime,memchr,8192,last,1024,51.16
+1,GCC,glibc,avx512-runtime,memchr,8192,absent,1024,51.55
+1,GCC,glibc,avx512-runtime,memrchr,8192,first,1024,50.36
+1,GCC,glibc,avx512-runtime,memrchr,8192,middle,1024,22.38
+1,GCC,glibc,avx512-runtime,memrchr,8192,last,1024,2.93
+1,GCC,glibc,avx512-runtime,memrchr,8192,absent,1024,49.21
+1,GCC,glibc,avx512-runtime,memchr,65536,first,128,10.73
+1,GCC,glibc,avx512-runtime,memchr,65536,middle,128,121.93
+1,GCC,glibc,avx512-runtime,memchr,65536,last,128,307.67
+1,GCC,glibc,avx512-runtime,memchr,65536,absent,128,298.74
+1,GCC,glibc,avx512-runtime,memrchr,65536,first,128,295.17
+1,GCC,glibc,avx512-runtime,memrchr,65536,middle,128,119.37
+1,GCC,glibc,avx512-runtime,memrchr,65536,last,128,2.89
+1,GCC,glibc,avx512-runtime,memrchr,65536,absent,128,288.62
+1,Zig cc,musl,libc,memchr,64,first,131072,1.14
+1,Zig cc,musl,libc,memchr,64,middle,131072,16.57
+1,Zig cc,musl,libc,memchr,64,last,131072,24.14
+1,Zig cc,musl,libc,memchr,64,absent,131072,25.86
+1,Zig cc,musl,libc,memrchr,64,first,131072,25.61
+1,Zig cc,musl,libc,memrchr,64,middle,131072,17.78
+1,Zig cc,musl,libc,memrchr,64,last,131072,1.31
+1,Zig cc,musl,libc,memrchr,64,absent,131072,24.48
+1,Zig cc,musl,libc,memchr,1024,first,8192,1.09
+1,Zig cc,musl,libc,memchr,1024,middle,8192,124.65
+1,Zig cc,musl,libc,memchr,1024,last,8192,240.34
+1,Zig cc,musl,libc,memchr,1024,absent,8192,248.45
+1,Zig cc,musl,libc,memrchr,1024,first,8192,284.75
+1,Zig cc,musl,libc,memrchr,1024,middle,8192,142.39
+1,Zig cc,musl,libc,memrchr,1024,last,8192,1.31
+1,Zig cc,musl,libc,memrchr,1024,absent,8192,272.26
+1,Zig cc,musl,libc,memchr,2048,first,4096,1.07
+1,Zig cc,musl,libc,memchr,2048,middle,4096,236.21
+1,Zig cc,musl,libc,memchr,2048,last,4096,460.79
+1,Zig cc,musl,libc,memchr,2048,absent,4096,463.77
+1,Zig cc,musl,libc,memrchr,2048,first,4096,542.55
+1,Zig cc,musl,libc,memrchr,2048,middle,4096,268.02
+1,Zig cc,musl,libc,memrchr,2048,last,4096,1.28
+1,Zig cc,musl,libc,memrchr,2048,absent,4096,532.92
+1,Zig cc,musl,libc,memchr,4096,first,2048,1.07
+1,Zig cc,musl,libc,memchr,4096,middle,2048,461.58
+1,Zig cc,musl,libc,memchr,4096,last,2048,916.08
+1,Zig cc,musl,libc,memchr,4096,absent,2048,911.62
+1,Zig cc,musl,libc,memrchr,4096,first,2048,1040.92
+1,Zig cc,musl,libc,memrchr,4096,middle,2048,519.96
+1,Zig cc,musl,libc,memrchr,4096,last,2048,1.68
+1,Zig cc,musl,libc,memrchr,4096,absent,2048,1091.33
+1,Zig cc,musl,libc,memchr,8192,first,1024,1.07
+1,Zig cc,musl,libc,memchr,8192,middle,1024,905.75
+1,Zig cc,musl,libc,memchr,8192,last,1024,1810.57
+1,Zig cc,musl,libc,memchr,8192,absent,1024,1820.77
+1,Zig cc,musl,libc,memrchr,8192,first,1024,2106.40
+1,Zig cc,musl,libc,memrchr,8192,middle,1024,1060.25
+1,Zig cc,musl,libc,memrchr,8192,last,1024,1.30
+1,Zig cc,musl,libc,memrchr,8192,absent,1024,2135.36
+1,Zig cc,musl,libc,memchr,65536,first,128,1.24
+1,Zig cc,musl,libc,memchr,65536,middle,128,7207.02
+1,Zig cc,musl,libc,memchr,65536,last,128,14289.34
+1,Zig cc,musl,libc,memchr,65536,absent,128,14879.87
+1,Zig cc,musl,libc,memrchr,65536,first,128,16831.58
+1,Zig cc,musl,libc,memrchr,65536,middle,128,8600.27
+1,Zig cc,musl,libc,memrchr,65536,last,128,1.41
+1,Zig cc,musl,libc,memrchr,65536,absent,128,16715.06
+1,Zig cc,musl,avx2-only,memchr,64,first,131072,2.21
+1,Zig cc,musl,avx2-only,memchr,64,middle,131072,2.51
+1,Zig cc,musl,avx2-only,memchr,64,last,131072,2.62
+1,Zig cc,musl,avx2-only,memchr,64,absent,131072,2.62
+1,Zig cc,musl,avx2-only,memrchr,64,first,131072,2.62
+1,Zig cc,musl,avx2-only,memrchr,64,middle,131072,2.47
+1,Zig cc,musl,avx2-only,memrchr,64,last,131072,2.61
+1,Zig cc,musl,avx2-only,memrchr,64,absent,131072,3.12
+1,Zig cc,musl,avx2-only,memchr,1024,first,8192,2.62
+1,Zig cc,musl,avx2-only,memchr,1024,middle,8192,9.16
+1,Zig cc,musl,avx2-only,memchr,1024,last,8192,15.36
+1,Zig cc,musl,avx2-only,memchr,1024,absent,8192,15.70
+1,Zig cc,musl,avx2-only,memrchr,1024,first,8192,15.69
+1,Zig cc,musl,avx2-only,memrchr,1024,middle,8192,10.38
+1,Zig cc,musl,avx2-only,memrchr,1024,last,8192,2.78
+1,Zig cc,musl,avx2-only,memrchr,1024,absent,8192,15.91
+1,Zig cc,musl,avx2-only,memchr,2048,first,4096,2.85
+1,Zig cc,musl,avx2-only,memchr,2048,middle,4096,8.09
+1,Zig cc,musl,avx2-only,memchr,2048,last,4096,12.95
+1,Zig cc,musl,avx2-only,memchr,2048,absent,4096,12.60
+1,Zig cc,musl,avx2-only,memrchr,2048,first,4096,13.07
+1,Zig cc,musl,avx2-only,memrchr,2048,middle,4096,7.89
+1,Zig cc,musl,avx2-only,memrchr,2048,last,4096,3.06
+1,Zig cc,musl,avx2-only,memrchr,2048,absent,4096,12.81
+1,Zig cc,musl,avx2-only,memchr,4096,first,2048,2.86
+1,Zig cc,musl,avx2-only,memchr,4096,middle,2048,13.34
+1,Zig cc,musl,avx2-only,memchr,4096,last,2048,25.31
+1,Zig cc,musl,avx2-only,memchr,4096,absent,2048,31.15
+1,Zig cc,musl,avx2-only,memrchr,4096,first,2048,30.93
+1,Zig cc,musl,avx2-only,memrchr,4096,middle,2048,13.05
+1,Zig cc,musl,avx2-only,memrchr,4096,last,2048,3.17
+1,Zig cc,musl,avx2-only,memrchr,4096,absent,2048,23.05
+1,Zig cc,musl,avx2-only,memchr,8192,first,1024,3.01
+1,Zig cc,musl,avx2-only,memchr,8192,middle,1024,31.75
+1,Zig cc,musl,avx2-only,memchr,8192,last,1024,51.27
+1,Zig cc,musl,avx2-only,memchr,8192,absent,1024,50.54
+1,Zig cc,musl,avx2-only,memrchr,8192,first,1024,50.31
+1,Zig cc,musl,avx2-only,memrchr,8192,middle,1024,30.37
+1,Zig cc,musl,avx2-only,memrchr,8192,last,1024,3.16
+1,Zig cc,musl,avx2-only,memrchr,8192,absent,1024,48.36
+1,Zig cc,musl,avx2-only,memchr,65536,first,128,2.98
+1,Zig cc,musl,avx2-only,memchr,65536,middle,128,184.78
+1,Zig cc,musl,avx2-only,memchr,65536,last,128,480.09
+1,Zig cc,musl,avx2-only,memchr,65536,absent,128,473.55
+1,Zig cc,musl,avx2-only,memrchr,65536,first,128,478.24
+1,Zig cc,musl,avx2-only,memrchr,65536,middle,128,174.60
+1,Zig cc,musl,avx2-only,memrchr,65536,last,128,3.28
+1,Zig cc,musl,avx2-only,memrchr,65536,absent,128,470.28
+1,Zig cc,musl,avx512-runtime,memchr,64,first,131072,2.12
+1,Zig cc,musl,avx512-runtime,memchr,64,middle,131072,2.25
+1,Zig cc,musl,avx512-runtime,memchr,64,last,131072,2.56
+1,Zig cc,musl,avx512-runtime,memchr,64,absent,131072,2.45
+1,Zig cc,musl,avx512-runtime,memrchr,64,first,131072,2.94
+1,Zig cc,musl,avx512-runtime,memrchr,64,middle,131072,2.50
+1,Zig cc,musl,avx512-runtime,memrchr,64,last,131072,2.52
+1,Zig cc,musl,avx512-runtime,memrchr,64,absent,131072,2.70
+1,Zig cc,musl,avx512-runtime,memchr,1024,first,8192,1.97
+1,Zig cc,musl,avx512-runtime,memchr,1024,middle,8192,9.54
+1,Zig cc,musl,avx512-runtime,memchr,1024,last,8192,15.26
+1,Zig cc,musl,avx512-runtime,memchr,1024,absent,8192,16.88
+1,Zig cc,musl,avx512-runtime,memrchr,1024,first,8192,15.72
+1,Zig cc,musl,avx512-runtime,memrchr,1024,middle,8192,8.55
+1,Zig cc,musl,avx512-runtime,memrchr,1024,last,8192,2.35
+1,Zig cc,musl,avx512-runtime,memrchr,1024,absent,8192,15.37
+1,Zig cc,musl,avx512-runtime,memchr,2048,first,4096,2.99
+1,Zig cc,musl,avx512-runtime,memchr,2048,middle,4096,8.11
+1,Zig cc,musl,avx512-runtime,memchr,2048,last,4096,12.67
+1,Zig cc,musl,avx512-runtime,memchr,2048,absent,4096,13.08
+1,Zig cc,musl,avx512-runtime,memrchr,2048,first,4096,12.89
+1,Zig cc,musl,avx512-runtime,memrchr,2048,middle,4096,7.97
+1,Zig cc,musl,avx512-runtime,memrchr,2048,last,4096,3.13
+1,Zig cc,musl,avx512-runtime,memrchr,2048,absent,4096,12.53
+1,Zig cc,musl,avx512-runtime,memchr,4096,first,2048,3.05
+1,Zig cc,musl,avx512-runtime,memchr,4096,middle,2048,13.23
+1,Zig cc,musl,avx512-runtime,memchr,4096,last,2048,23.33
+1,Zig cc,musl,avx512-runtime,memchr,4096,absent,2048,27.95
+1,Zig cc,musl,avx512-runtime,memrchr,4096,first,2048,22.81
+1,Zig cc,musl,avx512-runtime,memrchr,4096,middle,2048,14.18
+1,Zig cc,musl,avx512-runtime,memrchr,4096,last,2048,3.14
+1,Zig cc,musl,avx512-runtime,memrchr,4096,absent,2048,23.23
+1,Zig cc,musl,avx512-runtime,memchr,8192,first,1024,3.08
+1,Zig cc,musl,avx512-runtime,memchr,8192,middle,1024,24.00
+1,Zig cc,musl,avx512-runtime,memchr,8192,last,1024,52.49
+1,Zig cc,musl,avx512-runtime,memchr,8192,absent,1024,47.75
+1,Zig cc,musl,avx512-runtime,memrchr,8192,first,1024,50.25
+1,Zig cc,musl,avx512-runtime,memrchr,8192,middle,1024,30.79
+1,Zig cc,musl,avx512-runtime,memrchr,8192,last,1024,3.17
+1,Zig cc,musl,avx512-runtime,memrchr,8192,absent,1024,48.96
+1,Zig cc,musl,avx512-runtime,memchr,65536,first,128,10.71
+1,Zig cc,musl,avx512-runtime,memchr,65536,middle,128,121.91
+1,Zig cc,musl,avx512-runtime,memchr,65536,last,128,298.15
+1,Zig cc,musl,avx512-runtime,memchr,65536,absent,128,299.22
+1,Zig cc,musl,avx512-runtime,memrchr,65536,first,128,293.62
+1,Zig cc,musl,avx512-runtime,memrchr,65536,middle,128,119.59
+1,Zig cc,musl,avx512-runtime,memrchr,65536,last,128,2.91
+1,Zig cc,musl,avx512-runtime,memrchr,65536,absent,128,289.16
+1,TinyCC,glibc,libc,memchr,64,first,131072,2.55
+1,TinyCC,glibc,libc,memchr,64,middle,131072,2.99
+1,TinyCC,glibc,libc,memchr,64,last,131072,3.00
+1,TinyCC,glibc,libc,memchr,64,absent,131072,3.13
+1,TinyCC,glibc,libc,memrchr,64,first,131072,3.04
+1,TinyCC,glibc,libc,memrchr,64,middle,131072,2.51
+1,TinyCC,glibc,libc,memrchr,64,last,131072,2.42
+1,TinyCC,glibc,libc,memrchr,64,absent,131072,2.96
+1,TinyCC,glibc,libc,memchr,1024,first,8192,2.40
+1,TinyCC,glibc,libc,memchr,1024,middle,8192,5.90
+1,TinyCC,glibc,libc,memchr,1024,last,8192,7.93
+1,TinyCC,glibc,libc,memchr,1024,absent,8192,9.98
+1,TinyCC,glibc,libc,memrchr,1024,first,8192,8.86
+1,TinyCC,glibc,libc,memrchr,1024,middle,8192,6.14
+1,TinyCC,glibc,libc,memrchr,1024,last,8192,2.40
+1,TinyCC,glibc,libc,memrchr,1024,absent,8192,8.40
+1,TinyCC,glibc,libc,memchr,2048,first,4096,2.40
+1,TinyCC,glibc,libc,memchr,2048,middle,4096,9.19
+1,TinyCC,glibc,libc,memchr,2048,last,4096,13.32
+1,TinyCC,glibc,libc,memchr,2048,absent,4096,13.20
+1,TinyCC,glibc,libc,memrchr,2048,first,4096,14.50
+1,TinyCC,glibc,libc,memrchr,2048,middle,4096,9.57
+1,TinyCC,glibc,libc,memrchr,2048,last,4096,2.40
+1,TinyCC,glibc,libc,memrchr,2048,absent,4096,14.06
+1,TinyCC,glibc,libc,memchr,4096,first,2048,2.35
+1,TinyCC,glibc,libc,memchr,4096,middle,2048,13.48
+1,TinyCC,glibc,libc,memchr,4096,last,2048,26.65
+1,TinyCC,glibc,libc,memchr,4096,absent,2048,23.19
+1,TinyCC,glibc,libc,memrchr,4096,first,2048,29.33
+1,TinyCC,glibc,libc,memrchr,4096,middle,2048,14.44
+1,TinyCC,glibc,libc,memrchr,4096,last,2048,2.31
+1,TinyCC,glibc,libc,memrchr,4096,absent,2048,23.64
+1,TinyCC,glibc,libc,memchr,8192,first,1024,2.33
+1,TinyCC,glibc,libc,memchr,8192,middle,1024,23.20
+1,TinyCC,glibc,libc,memchr,8192,last,1024,51.83
+1,TinyCC,glibc,libc,memchr,8192,absent,1024,50.05
+1,TinyCC,glibc,libc,memrchr,8192,first,1024,66.61
+1,TinyCC,glibc,libc,memrchr,8192,middle,1024,40.08
+1,TinyCC,glibc,libc,memrchr,8192,last,1024,2.58
+1,TinyCC,glibc,libc,memrchr,8192,absent,1024,68.30
+1,TinyCC,glibc,libc,memchr,65536,first,128,2.83
+1,TinyCC,glibc,libc,memchr,65536,middle,128,214.03
+1,TinyCC,glibc,libc,memchr,65536,last,128,528.96
+1,TinyCC,glibc,libc,memchr,65536,absent,128,529.91
+1,TinyCC,glibc,libc,memrchr,65536,first,128,499.57
+1,TinyCC,glibc,libc,memrchr,65536,middle,128,197.91
+1,TinyCC,glibc,libc,memrchr,65536,last,128,2.66
+1,TinyCC,glibc,libc,memrchr,65536,absent,128,500.48
+1,TinyCC,glibc,avx2-only,memchr,64,first,131072,3.69
+1,TinyCC,glibc,avx2-only,memchr,64,middle,131072,3.87
+1,TinyCC,glibc,avx2-only,memchr,64,last,131072,4.09
+1,TinyCC,glibc,avx2-only,memchr,64,absent,131072,3.94
+1,TinyCC,glibc,avx2-only,memrchr,64,first,131072,3.92
+1,TinyCC,glibc,avx2-only,memrchr,64,middle,131072,4.12
+1,TinyCC,glibc,avx2-only,memrchr,64,last,131072,4.02
+1,TinyCC,glibc,avx2-only,memrchr,64,absent,131072,4.26
+1,TinyCC,glibc,avx2-only,memchr,1024,first,8192,3.42
+1,TinyCC,glibc,avx2-only,memchr,1024,middle,8192,10.03
+1,TinyCC,glibc,avx2-only,memchr,1024,last,8192,16.29
+1,TinyCC,glibc,avx2-only,memchr,1024,absent,8192,16.31
+1,TinyCC,glibc,avx2-only,memrchr,1024,first,8192,17.29
+1,TinyCC,glibc,avx2-only,memrchr,1024,middle,8192,9.61
+1,TinyCC,glibc,avx2-only,memrchr,1024,last,8192,3.84
+1,TinyCC,glibc,avx2-only,memrchr,1024,absent,8192,17.13
+1,TinyCC,glibc,avx2-only,memchr,2048,first,4096,4.06
+1,TinyCC,glibc,avx2-only,memchr,2048,middle,4096,9.18
+1,TinyCC,glibc,avx2-only,memchr,2048,last,4096,14.20
+1,TinyCC,glibc,avx2-only,memchr,2048,absent,4096,14.74
+1,TinyCC,glibc,avx2-only,memrchr,2048,first,4096,14.54
+1,TinyCC,glibc,avx2-only,memrchr,2048,middle,4096,8.95
+1,TinyCC,glibc,avx2-only,memrchr,2048,last,4096,4.69
+1,TinyCC,glibc,avx2-only,memrchr,2048,absent,4096,13.87
+1,TinyCC,glibc,avx2-only,memchr,4096,first,2048,4.06
+1,TinyCC,glibc,avx2-only,memchr,4096,middle,2048,14.68
+1,TinyCC,glibc,avx2-only,memchr,4096,last,2048,32.26
+1,TinyCC,glibc,avx2-only,memchr,4096,absent,2048,31.18
+1,TinyCC,glibc,avx2-only,memrchr,4096,first,2048,32.75
+1,TinyCC,glibc,avx2-only,memrchr,4096,middle,2048,14.18
+1,TinyCC,glibc,avx2-only,memrchr,4096,last,2048,4.37
+1,TinyCC,glibc,avx2-only,memrchr,4096,absent,2048,30.83
+1,TinyCC,glibc,avx2-only,memchr,8192,first,1024,4.25
+1,TinyCC,glibc,avx2-only,memchr,8192,middle,1024,33.60
+1,TinyCC,glibc,avx2-only,memchr,8192,last,1024,53.62
+1,TinyCC,glibc,avx2-only,memchr,8192,absent,1024,50.14
+1,TinyCC,glibc,avx2-only,memrchr,8192,first,1024,52.88
+1,TinyCC,glibc,avx2-only,memrchr,8192,middle,1024,32.80
+1,TinyCC,glibc,avx2-only,memrchr,8192,last,1024,4.17
+1,TinyCC,glibc,avx2-only,memrchr,8192,absent,1024,50.60
+1,TinyCC,glibc,avx2-only,memchr,65536,first,128,4.20
+1,TinyCC,glibc,avx2-only,memchr,65536,middle,128,182.16
+1,TinyCC,glibc,avx2-only,memchr,65536,last,128,493.86
+1,TinyCC,glibc,avx2-only,memchr,65536,absent,128,495.03
+1,TinyCC,glibc,avx2-only,memrchr,65536,first,128,552.94
+1,TinyCC,glibc,avx2-only,memrchr,65536,middle,128,183.43
+1,TinyCC,glibc,avx2-only,memrchr,65536,last,128,4.81
+1,TinyCC,glibc,avx2-only,memrchr,65536,absent,128,499.56
+1,TinyCC,glibc,avx512-runtime,memchr,64,first,131072,3.66
+1,TinyCC,glibc,avx512-runtime,memchr,64,middle,131072,3.87
+1,TinyCC,glibc,avx512-runtime,memchr,64,last,131072,4.02
+1,TinyCC,glibc,avx512-runtime,memchr,64,absent,131072,3.82
+1,TinyCC,glibc,avx512-runtime,memrchr,64,first,131072,4.18
+1,TinyCC,glibc,avx512-runtime,memrchr,64,middle,131072,4.23
+1,TinyCC,glibc,avx512-runtime,memrchr,64,last,131072,4.02
+1,TinyCC,glibc,avx512-runtime,memrchr,64,absent,131072,4.56
+1,TinyCC,glibc,avx512-runtime,memchr,1024,first,8192,3.63
+1,TinyCC,glibc,avx512-runtime,memchr,1024,middle,8192,9.82
+1,TinyCC,glibc,avx512-runtime,memchr,1024,last,8192,17.56
+1,TinyCC,glibc,avx512-runtime,memchr,1024,absent,8192,16.21
+1,TinyCC,glibc,avx512-runtime,memrchr,1024,first,8192,16.70
+1,TinyCC,glibc,avx512-runtime,memrchr,1024,middle,8192,9.81
+1,TinyCC,glibc,avx512-runtime,memrchr,1024,last,8192,3.84
+1,TinyCC,glibc,avx512-runtime,memrchr,1024,absent,8192,16.64
+1,TinyCC,glibc,avx512-runtime,memchr,2048,first,4096,7.49
+1,TinyCC,glibc,avx512-runtime,memchr,2048,middle,4096,9.39
+1,TinyCC,glibc,avx512-runtime,memchr,2048,last,4096,13.93
+1,TinyCC,glibc,avx512-runtime,memchr,2048,absent,4096,13.87
+1,TinyCC,glibc,avx512-runtime,memrchr,2048,first,4096,13.69
+1,TinyCC,glibc,avx512-runtime,memrchr,2048,middle,4096,8.72
+1,TinyCC,glibc,avx512-runtime,memrchr,2048,last,4096,4.50
+1,TinyCC,glibc,avx512-runtime,memrchr,2048,absent,4096,13.87
+1,TinyCC,glibc,avx512-runtime,memchr,4096,first,2048,4.28
+1,TinyCC,glibc,avx512-runtime,memchr,4096,middle,2048,14.31
+1,TinyCC,glibc,avx512-runtime,memchr,4096,last,2048,24.18
+1,TinyCC,glibc,avx512-runtime,memchr,4096,absent,2048,30.50
+1,TinyCC,glibc,avx512-runtime,memrchr,4096,first,2048,24.50
+1,TinyCC,glibc,avx512-runtime,memrchr,4096,middle,2048,13.74
+1,TinyCC,glibc,avx512-runtime,memrchr,4096,last,2048,4.06
+1,TinyCC,glibc,avx512-runtime,memrchr,4096,absent,2048,29.66
+1,TinyCC,glibc,avx512-runtime,memchr,8192,first,1024,4.08
+1,TinyCC,glibc,avx512-runtime,memchr,8192,middle,1024,24.77
+1,TinyCC,glibc,avx512-runtime,memchr,8192,last,1024,52.48
+1,TinyCC,glibc,avx512-runtime,memchr,8192,absent,1024,49.93
+1,TinyCC,glibc,avx512-runtime,memrchr,8192,first,1024,53.02
+1,TinyCC,glibc,avx512-runtime,memrchr,8192,middle,1024,23.96
+1,TinyCC,glibc,avx512-runtime,memrchr,8192,last,1024,4.51
+1,TinyCC,glibc,avx512-runtime,memrchr,8192,absent,1024,50.58
+1,TinyCC,glibc,avx512-runtime,memchr,65536,first,128,4.19
+1,TinyCC,glibc,avx512-runtime,memchr,65536,middle,128,123.86
+1,TinyCC,glibc,avx512-runtime,memchr,65536,last,128,299.65
+1,TinyCC,glibc,avx512-runtime,memchr,65536,absent,128,293.57
+1,TinyCC,glibc,avx512-runtime,memrchr,65536,first,128,294.19
+1,TinyCC,glibc,avx512-runtime,memrchr,65536,middle,128,118.60
+1,TinyCC,glibc,avx512-runtime,memrchr,65536,last,128,3.98
+1,TinyCC,glibc,avx512-runtime,memrchr,65536,absent,128,293.66
+2,Zig cc,glibc,avx2-only,memchr,64,first,131072,2.14
+2,Zig cc,glibc,avx2-only,memchr,64,middle,131072,2.40
+2,Zig cc,glibc,avx2-only,memchr,64,last,131072,2.52
+2,Zig cc,glibc,avx2-only,memchr,64,absent,131072,2.51
+2,Zig cc,glibc,avx2-only,memrchr,64,first,131072,2.47
+2,Zig cc,glibc,avx2-only,memrchr,64,middle,131072,2.55
+2,Zig cc,glibc,avx2-only,memrchr,64,last,131072,2.90
+2,Zig cc,glibc,avx2-only,memrchr,64,absent,131072,2.50
+2,Zig cc,glibc,avx2-only,memchr,1024,first,8192,1.92
+2,Zig cc,glibc,avx2-only,memchr,1024,middle,8192,8.21
+2,Zig cc,glibc,avx2-only,memchr,1024,last,8192,14.08
+2,Zig cc,glibc,avx2-only,memchr,1024,absent,8192,13.88
+2,Zig cc,glibc,avx2-only,memrchr,1024,first,8192,15.34
+2,Zig cc,glibc,avx2-only,memrchr,1024,middle,8192,8.53
+2,Zig cc,glibc,avx2-only,memrchr,1024,last,8192,2.35
+2,Zig cc,glibc,avx2-only,memrchr,1024,absent,8192,14.93
+2,Zig cc,glibc,avx2-only,memchr,2048,first,4096,2.78
+2,Zig cc,glibc,avx2-only,memchr,2048,middle,4096,7.91
+2,Zig cc,glibc,avx2-only,memchr,2048,last,4096,12.68
+2,Zig cc,glibc,avx2-only,memchr,2048,absent,4096,12.38
+2,Zig cc,glibc,avx2-only,memrchr,2048,first,4096,12.70
+2,Zig cc,glibc,avx2-only,memrchr,2048,middle,4096,7.69
+2,Zig cc,glibc,avx2-only,memrchr,2048,last,4096,2.99
+2,Zig cc,glibc,avx2-only,memrchr,2048,absent,4096,12.49
+2,Zig cc,glibc,avx2-only,memchr,4096,first,2048,2.79
+2,Zig cc,glibc,avx2-only,memchr,4096,middle,2048,19.84
+2,Zig cc,glibc,avx2-only,memchr,4096,last,2048,30.62
+2,Zig cc,glibc,avx2-only,memchr,4096,absent,2048,22.16
+2,Zig cc,glibc,avx2-only,memrchr,4096,first,2048,22.82
+2,Zig cc,glibc,avx2-only,memrchr,4096,middle,2048,12.74
+2,Zig cc,glibc,avx2-only,memrchr,4096,last,2048,2.79
+2,Zig cc,glibc,avx2-only,memrchr,4096,absent,2048,22.87
+2,Zig cc,glibc,avx2-only,memchr,8192,first,1024,2.80
+2,Zig cc,glibc,avx2-only,memchr,8192,middle,1024,31.40
+2,Zig cc,glibc,avx2-only,memchr,8192,last,1024,54.68
+2,Zig cc,glibc,avx2-only,memchr,8192,absent,1024,48.78
+2,Zig cc,glibc,avx2-only,memrchr,8192,first,1024,51.51
+2,Zig cc,glibc,avx2-only,memrchr,8192,middle,1024,30.98
+2,Zig cc,glibc,avx2-only,memrchr,8192,last,1024,3.00
+2,Zig cc,glibc,avx2-only,memrchr,8192,absent,1024,48.67
+2,Zig cc,glibc,avx2-only,memchr,65536,first,128,2.96
+2,Zig cc,glibc,avx2-only,memchr,65536,middle,128,177.04
+2,Zig cc,glibc,avx2-only,memchr,65536,last,128,489.30
+2,Zig cc,glibc,avx2-only,memchr,65536,absent,128,483.36
+2,Zig cc,glibc,avx2-only,memrchr,65536,first,128,488.84
+2,Zig cc,glibc,avx2-only,memrchr,65536,middle,128,174.45
+2,Zig cc,glibc,avx2-only,memrchr,65536,last,128,2.91
+2,Zig cc,glibc,avx2-only,memrchr,65536,absent,128,484.94
+2,Zig cc,glibc,avx512-runtime,memchr,64,first,131072,2.18
+2,Zig cc,glibc,avx512-runtime,memchr,64,middle,131072,2.43
+2,Zig cc,glibc,avx512-runtime,memchr,64,last,131072,2.57
+2,Zig cc,glibc,avx512-runtime,memchr,64,absent,131072,2.51
+2,Zig cc,glibc,avx512-runtime,memrchr,64,first,131072,2.64
+2,Zig cc,glibc,avx512-runtime,memrchr,64,middle,131072,2.51
+2,Zig cc,glibc,avx512-runtime,memrchr,64,last,131072,2.56
+2,Zig cc,glibc,avx512-runtime,memrchr,64,absent,131072,3.01
+2,Zig cc,glibc,avx512-runtime,memchr,1024,first,8192,2.14
+2,Zig cc,glibc,avx512-runtime,memchr,1024,middle,8192,8.96
+2,Zig cc,glibc,avx512-runtime,memchr,1024,last,8192,15.49
+2,Zig cc,glibc,avx512-runtime,memchr,1024,absent,8192,14.93
+2,Zig cc,glibc,avx512-runtime,memrchr,1024,first,8192,15.36
+2,Zig cc,glibc,avx512-runtime,memrchr,1024,middle,8192,8.70
+2,Zig cc,glibc,avx512-runtime,memrchr,1024,last,8192,2.35
+2,Zig cc,glibc,avx512-runtime,memrchr,1024,absent,8192,15.36
+2,Zig cc,glibc,avx512-runtime,memchr,2048,first,4096,2.78
+2,Zig cc,glibc,avx512-runtime,memchr,2048,middle,4096,7.90
+2,Zig cc,glibc,avx512-runtime,memchr,2048,last,4096,12.72
+2,Zig cc,glibc,avx512-runtime,memchr,2048,absent,4096,12.59
+2,Zig cc,glibc,avx512-runtime,memrchr,2048,first,4096,12.51
+2,Zig cc,glibc,avx512-runtime,memrchr,2048,middle,4096,7.58
+2,Zig cc,glibc,avx512-runtime,memrchr,2048,last,4096,2.99
+2,Zig cc,glibc,avx512-runtime,memrchr,2048,absent,4096,12.49
+2,Zig cc,glibc,avx512-runtime,memchr,4096,first,2048,3.00
+2,Zig cc,glibc,avx512-runtime,memchr,4096,middle,2048,13.24
+2,Zig cc,glibc,avx512-runtime,memchr,4096,last,2048,22.86
+2,Zig cc,glibc,avx512-runtime,memchr,4096,absent,2048,23.38
+2,Zig cc,glibc,avx512-runtime,memrchr,4096,first,2048,23.23
+2,Zig cc,glibc,avx512-runtime,memrchr,4096,middle,2048,12.52
+2,Zig cc,glibc,avx512-runtime,memrchr,4096,last,2048,2.78
+2,Zig cc,glibc,avx512-runtime,memrchr,4096,absent,2048,22.65
+2,Zig cc,glibc,avx512-runtime,memchr,8192,first,1024,3.22
+2,Zig cc,glibc,avx512-runtime,memchr,8192,middle,1024,23.52
+2,Zig cc,glibc,avx512-runtime,memchr,8192,last,1024,51.27
+2,Zig cc,glibc,avx512-runtime,memchr,8192,absent,1024,48.01
+2,Zig cc,glibc,avx512-runtime,memrchr,8192,first,1024,50.58
+2,Zig cc,glibc,avx512-runtime,memrchr,8192,middle,1024,30.74
+2,Zig cc,glibc,avx512-runtime,memrchr,8192,last,1024,3.00
+2,Zig cc,glibc,avx512-runtime,memrchr,8192,absent,1024,49.07
+2,Zig cc,glibc,avx512-runtime,memchr,65536,first,128,10.77
+2,Zig cc,glibc,avx512-runtime,memchr,65536,middle,128,122.49
+2,Zig cc,glibc,avx512-runtime,memchr,65536,last,128,296.55
+2,Zig cc,glibc,avx512-runtime,memchr,65536,absent,128,285.22
+2,Zig cc,glibc,avx512-runtime,memrchr,65536,first,128,287.57
+2,Zig cc,glibc,avx512-runtime,memrchr,65536,middle,128,119.12
+2,Zig cc,glibc,avx512-runtime,memrchr,65536,last,128,2.69
+2,Zig cc,glibc,avx512-runtime,memrchr,65536,absent,128,288.40
+2,Zig cc,glibc,libc,memchr,64,first,131072,1.56
+2,Zig cc,glibc,libc,memchr,64,middle,131072,2.05
+2,Zig cc,glibc,libc,memchr,64,last,131072,1.96
+2,Zig cc,glibc,libc,memchr,64,absent,131072,1.94
+2,Zig cc,glibc,libc,memrchr,64,first,131072,2.03
+2,Zig cc,glibc,libc,memrchr,64,middle,131072,1.56
+2,Zig cc,glibc,libc,memrchr,64,last,131072,1.54
+2,Zig cc,glibc,libc,memrchr,64,absent,131072,1.98
+2,Zig cc,glibc,libc,memchr,1024,first,8192,1.49
+2,Zig cc,glibc,libc,memchr,1024,middle,8192,5.53
+2,Zig cc,glibc,libc,memchr,1024,last,8192,7.54
+2,Zig cc,glibc,libc,memchr,1024,absent,8192,7.33
+2,Zig cc,glibc,libc,memrchr,1024,first,8192,8.07
+2,Zig cc,glibc,libc,memrchr,1024,middle,8192,5.68
+2,Zig cc,glibc,libc,memrchr,1024,last,8192,1.50
+2,Zig cc,glibc,libc,memrchr,1024,absent,8192,8.16
+2,Zig cc,glibc,libc,memchr,2048,first,4096,1.47
+2,Zig cc,glibc,libc,memchr,2048,middle,4096,7.95
+2,Zig cc,glibc,libc,memchr,2048,last,4096,12.19
+2,Zig cc,glibc,libc,memchr,2048,absent,4096,12.13
+2,Zig cc,glibc,libc,memrchr,2048,first,4096,13.60
+2,Zig cc,glibc,libc,memrchr,2048,middle,4096,8.50
+2,Zig cc,glibc,libc,memrchr,2048,last,4096,1.47
+2,Zig cc,glibc,libc,memrchr,2048,absent,4096,13.39
+2,Zig cc,glibc,libc,memchr,4096,first,2048,1.48
+2,Zig cc,glibc,libc,memchr,4096,middle,2048,13.11
+2,Zig cc,glibc,libc,memchr,4096,last,2048,32.22
+2,Zig cc,glibc,libc,memchr,4096,absent,2048,25.83
+2,Zig cc,glibc,libc,memrchr,4096,first,2048,28.40
+2,Zig cc,glibc,libc,memrchr,4096,middle,2048,13.78
+2,Zig cc,glibc,libc,memrchr,4096,last,2048,1.47
+2,Zig cc,glibc,libc,memrchr,4096,absent,2048,26.50
+2,Zig cc,glibc,libc,memchr,8192,first,1024,1.48
+2,Zig cc,glibc,libc,memchr,8192,middle,1024,31.23
+2,Zig cc,glibc,libc,memchr,8192,last,1024,49.33
+2,Zig cc,glibc,libc,memchr,8192,absent,1024,49.18
+2,Zig cc,glibc,libc,memrchr,8192,first,1024,49.77
+2,Zig cc,glibc,libc,memrchr,8192,middle,1024,33.07
+2,Zig cc,glibc,libc,memrchr,8192,last,1024,1.50
+2,Zig cc,glibc,libc,memrchr,8192,absent,1024,49.89
+2,Zig cc,glibc,libc,memchr,65536,first,128,1.60
+2,Zig cc,glibc,libc,memchr,65536,middle,128,200.09
+2,Zig cc,glibc,libc,memchr,65536,last,128,495.24
+2,Zig cc,glibc,libc,memchr,65536,absent,128,523.18
+2,Zig cc,glibc,libc,memrchr,65536,first,128,466.98
+2,Zig cc,glibc,libc,memrchr,65536,middle,128,188.02
+2,Zig cc,glibc,libc,memrchr,65536,last,128,1.69
+2,Zig cc,glibc,libc,memrchr,65536,absent,128,467.46
+2,GCC,glibc,avx2-only,memchr,64,first,131072,2.52
+2,GCC,glibc,avx2-only,memchr,64,middle,131072,2.58
+2,GCC,glibc,avx2-only,memchr,64,last,131072,2.81
+2,GCC,glibc,avx2-only,memchr,64,absent,131072,2.80
+2,GCC,glibc,avx2-only,memrchr,64,first,131072,2.51
+2,GCC,glibc,avx2-only,memrchr,64,middle,131072,2.92
+2,GCC,glibc,avx2-only,memrchr,64,last,131072,3.20
+2,GCC,glibc,avx2-only,memrchr,64,absent,131072,3.22
+2,GCC,glibc,avx2-only,memchr,1024,first,8192,2.40
+2,GCC,glibc,avx2-only,memchr,1024,middle,8192,9.15
+2,GCC,glibc,avx2-only,memchr,1024,last,8192,15.26
+2,GCC,glibc,avx2-only,memchr,1024,absent,8192,15.36
+2,GCC,glibc,avx2-only,memrchr,1024,first,8192,16.24
+2,GCC,glibc,avx2-only,memrchr,1024,middle,8192,8.74
+2,GCC,glibc,avx2-only,memrchr,1024,last,8192,2.77
+2,GCC,glibc,avx2-only,memrchr,1024,absent,8192,15.36
+2,GCC,glibc,avx2-only,memchr,2048,first,4096,2.78
+2,GCC,glibc,avx2-only,memchr,2048,middle,4096,8.07
+2,GCC,glibc,avx2-only,memchr,2048,last,4096,12.87
+2,GCC,glibc,avx2-only,memchr,2048,absent,4096,14.39
+2,GCC,glibc,avx2-only,memrchr,2048,first,4096,13.17
+2,GCC,glibc,avx2-only,memrchr,2048,middle,4096,8.02
+2,GCC,glibc,avx2-only,memrchr,2048,last,4096,3.28
+2,GCC,glibc,avx2-only,memrchr,2048,absent,4096,12.80
+2,GCC,glibc,avx2-only,memchr,4096,first,2048,2.78
+2,GCC,glibc,avx2-only,memchr,4096,middle,2048,13.02
+2,GCC,glibc,avx2-only,memchr,4096,last,2048,30.36
+2,GCC,glibc,avx2-only,memchr,4096,absent,2048,28.16
+2,GCC,glibc,avx2-only,memrchr,4096,first,2048,31.07
+2,GCC,glibc,avx2-only,memrchr,4096,middle,2048,13.21
+2,GCC,glibc,avx2-only,memrchr,4096,last,2048,3.28
+2,GCC,glibc,avx2-only,memrchr,4096,absent,2048,29.52
+2,GCC,glibc,avx2-only,memchr,8192,first,1024,2.86
+2,GCC,glibc,avx2-only,memchr,8192,middle,1024,32.46
+2,GCC,glibc,avx2-only,memchr,8192,last,1024,52.18
+2,GCC,glibc,avx2-only,memchr,8192,absent,1024,50.04
+2,GCC,glibc,avx2-only,memrchr,8192,first,1024,52.74
+2,GCC,glibc,avx2-only,memrchr,8192,middle,1024,31.04
+2,GCC,glibc,avx2-only,memrchr,8192,last,1024,3.22
+2,GCC,glibc,avx2-only,memrchr,8192,absent,1024,49.58
+2,GCC,glibc,avx2-only,memchr,65536,first,128,3.01
+2,GCC,glibc,avx2-only,memchr,65536,middle,128,183.52
+2,GCC,glibc,avx2-only,memchr,65536,last,128,488.06
+2,GCC,glibc,avx2-only,memchr,65536,absent,128,480.40
+2,GCC,glibc,avx2-only,memrchr,65536,first,128,487.70
+2,GCC,glibc,avx2-only,memrchr,65536,middle,128,178.66
+2,GCC,glibc,avx2-only,memrchr,65536,last,128,3.38
+2,GCC,glibc,avx2-only,memrchr,65536,absent,128,481.41
+2,GCC,glibc,avx512-runtime,memchr,64,first,131072,4.09
+2,GCC,glibc,avx512-runtime,memchr,64,middle,131072,3.06
+2,GCC,glibc,avx512-runtime,memchr,64,last,131072,2.97
+2,GCC,glibc,avx512-runtime,memchr,64,absent,131072,2.73
+2,GCC,glibc,avx512-runtime,memrchr,64,first,131072,2.85
+2,GCC,glibc,avx512-runtime,memrchr,64,middle,131072,2.76
+2,GCC,glibc,avx512-runtime,memrchr,64,last,131072,2.91
+2,GCC,glibc,avx512-runtime,memrchr,64,absent,131072,3.27
+2,GCC,glibc,avx512-runtime,memchr,1024,first,8192,2.28
+2,GCC,glibc,avx512-runtime,memchr,1024,middle,8192,9.34
+2,GCC,glibc,avx512-runtime,memchr,1024,last,8192,16.61
+2,GCC,glibc,avx512-runtime,memchr,1024,absent,8192,15.95
+2,GCC,glibc,avx512-runtime,memrchr,1024,first,8192,20.07
+2,GCC,glibc,avx512-runtime,memrchr,1024,middle,8192,9.20
+2,GCC,glibc,avx512-runtime,memrchr,1024,last,8192,2.74
+2,GCC,glibc,avx512-runtime,memrchr,1024,absent,8192,16.21
+2,GCC,glibc,avx512-runtime,memchr,2048,first,4096,4.17
+2,GCC,glibc,avx512-runtime,memchr,2048,middle,4096,11.45
+2,GCC,glibc,avx512-runtime,memchr,2048,last,4096,17.13
+2,GCC,glibc,avx512-runtime,memchr,2048,absent,4096,13.23
+2,GCC,glibc,avx512-runtime,memrchr,2048,first,4096,13.98
+2,GCC,glibc,avx512-runtime,memrchr,2048,middle,4096,8.88
+2,GCC,glibc,avx512-runtime,memrchr,2048,last,4096,4.45
+2,GCC,glibc,avx512-runtime,memrchr,2048,absent,4096,14.23
+2,GCC,glibc,avx512-runtime,memchr,4096,first,2048,3.73
+2,GCC,glibc,avx512-runtime,memchr,4096,middle,2048,18.52
+2,GCC,glibc,avx512-runtime,memchr,4096,last,2048,33.51
+2,GCC,glibc,avx512-runtime,memchr,4096,absent,2048,24.74
+2,GCC,glibc,avx512-runtime,memrchr,4096,first,2048,24.44
+2,GCC,glibc,avx512-runtime,memrchr,4096,middle,2048,13.60
+2,GCC,glibc,avx512-runtime,memrchr,4096,last,2048,3.66
+2,GCC,glibc,avx512-runtime,memrchr,4096,absent,2048,24.48
+2,GCC,glibc,avx512-runtime,memchr,8192,first,1024,2.99
+2,GCC,glibc,avx512-runtime,memchr,8192,middle,1024,24.87
+2,GCC,glibc,avx512-runtime,memchr,8192,last,1024,54.81
+2,GCC,glibc,avx512-runtime,memchr,8192,absent,1024,57.33
+2,GCC,glibc,avx512-runtime,memrchr,8192,first,1024,55.16
+2,GCC,glibc,avx512-runtime,memrchr,8192,middle,1024,24.45
+2,GCC,glibc,avx512-runtime,memrchr,8192,last,1024,3.67
+2,GCC,glibc,avx512-runtime,memrchr,8192,absent,1024,52.77
+2,GCC,glibc,avx512-runtime,memchr,65536,first,128,11.47
+2,GCC,glibc,avx512-runtime,memchr,65536,middle,128,131.97
+2,GCC,glibc,avx512-runtime,memchr,65536,last,128,320.84
+2,GCC,glibc,avx512-runtime,memchr,65536,absent,128,312.80
+2,GCC,glibc,avx512-runtime,memrchr,65536,first,128,314.44
+2,GCC,glibc,avx512-runtime,memrchr,65536,middle,128,141.35
+2,GCC,glibc,avx512-runtime,memrchr,65536,last,128,3.09
+2,GCC,glibc,avx512-runtime,memrchr,65536,absent,128,308.02
+2,GCC,glibc,libc,memchr,64,first,131072,1.94
+2,GCC,glibc,libc,memchr,64,middle,131072,2.28
+2,GCC,glibc,libc,memchr,64,last,131072,2.28
+2,GCC,glibc,libc,memchr,64,absent,131072,2.29
+2,GCC,glibc,libc,memrchr,64,first,131072,2.34
+2,GCC,glibc,libc,memrchr,64,middle,131072,1.83
+2,GCC,glibc,libc,memrchr,64,last,131072,1.84
+2,GCC,glibc,libc,memrchr,64,absent,131072,2.31
+2,GCC,glibc,libc,memchr,1024,first,8192,1.83
+2,GCC,glibc,libc,memchr,1024,middle,8192,5.75
+2,GCC,glibc,libc,memchr,1024,last,8192,8.29
+2,GCC,glibc,libc,memchr,1024,absent,8192,8.22
+2,GCC,glibc,libc,memrchr,1024,first,8192,9.07
+2,GCC,glibc,libc,memrchr,1024,middle,8192,6.36
+2,GCC,glibc,libc,memrchr,1024,last,8192,1.82
+2,GCC,glibc,libc,memrchr,1024,absent,8192,8.94
+2,GCC,glibc,libc,memchr,2048,first,4096,1.83
+2,GCC,glibc,libc,memchr,2048,middle,4096,8.62
+2,GCC,glibc,libc,memchr,2048,last,4096,13.64
+2,GCC,glibc,libc,memchr,2048,absent,4096,13.54
+2,GCC,glibc,libc,memrchr,2048,first,4096,15.00
+2,GCC,glibc,libc,memrchr,2048,middle,4096,9.42
+2,GCC,glibc,libc,memrchr,2048,last,4096,1.83
+2,GCC,glibc,libc,memrchr,2048,absent,4096,14.88
+2,GCC,glibc,libc,memchr,4096,first,2048,1.83
+2,GCC,glibc,libc,memchr,4096,middle,2048,14.13
+2,GCC,glibc,libc,memchr,4096,last,2048,24.57
+2,GCC,glibc,libc,memchr,4096,absent,2048,24.45
+2,GCC,glibc,libc,memrchr,4096,first,2048,30.92
+2,GCC,glibc,libc,memrchr,4096,middle,2048,15.28
+2,GCC,glibc,libc,memrchr,4096,last,2048,1.83
+2,GCC,glibc,libc,memrchr,4096,absent,2048,28.66
+2,GCC,glibc,libc,memchr,8192,first,1024,1.84
+2,GCC,glibc,libc,memchr,8192,middle,1024,25.09
+2,GCC,glibc,libc,memchr,8192,last,1024,53.17
+2,GCC,glibc,libc,memchr,8192,absent,1024,53.08
+2,GCC,glibc,libc,memrchr,8192,first,1024,53.50
+2,GCC,glibc,libc,memrchr,8192,middle,1024,35.56
+2,GCC,glibc,libc,memrchr,8192,last,1024,1.84
+2,GCC,glibc,libc,memrchr,8192,absent,1024,53.54
+2,GCC,glibc,libc,memchr,65536,first,128,1.99
+2,GCC,glibc,libc,memchr,65536,middle,128,218.49
+2,GCC,glibc,libc,memchr,65536,last,128,528.51
+2,GCC,glibc,libc,memchr,65536,absent,128,528.52
+2,GCC,glibc,libc,memrchr,65536,first,128,499.02
+2,GCC,glibc,libc,memrchr,65536,middle,128,196.71
+2,GCC,glibc,libc,memrchr,65536,last,128,2.05
+2,GCC,glibc,libc,memrchr,65536,absent,128,498.39
+2,Zig cc,musl,avx2-only,memchr,64,first,131072,2.29
+2,Zig cc,musl,avx2-only,memchr,64,middle,131072,2.52
+2,Zig cc,musl,avx2-only,memchr,64,last,131072,2.74
+2,Zig cc,musl,avx2-only,memchr,64,absent,131072,2.98
+2,Zig cc,musl,avx2-only,memrchr,64,first,131072,2.75
+2,Zig cc,musl,avx2-only,memrchr,64,middle,131072,2.57
+2,Zig cc,musl,avx2-only,memrchr,64,last,131072,2.76
+2,Zig cc,musl,avx2-only,memrchr,64,absent,131072,2.98
+2,Zig cc,musl,avx2-only,memchr,1024,first,8192,2.28
+2,Zig cc,musl,avx2-only,memchr,1024,middle,8192,9.35
+2,Zig cc,musl,avx2-only,memchr,1024,last,8192,16.42
+2,Zig cc,musl,avx2-only,memchr,1024,absent,8192,16.41
+2,Zig cc,musl,avx2-only,memrchr,1024,first,8192,16.40
+2,Zig cc,musl,avx2-only,memrchr,1024,middle,8192,9.14
+2,Zig cc,musl,avx2-only,memrchr,1024,last,8192,2.74
+2,Zig cc,musl,avx2-only,memrchr,1024,absent,8192,16.18
+2,Zig cc,musl,avx2-only,memchr,2048,first,4096,2.97
+2,Zig cc,musl,avx2-only,memchr,2048,middle,4096,8.46
+2,Zig cc,musl,avx2-only,memchr,2048,last,4096,13.69
+2,Zig cc,musl,avx2-only,memchr,2048,absent,4096,13.46
+2,Zig cc,musl,avx2-only,memrchr,2048,first,4096,13.66
+2,Zig cc,musl,avx2-only,memrchr,2048,middle,4096,8.24
+2,Zig cc,musl,avx2-only,memrchr,2048,last,4096,3.20
+2,Zig cc,musl,avx2-only,memrchr,2048,absent,4096,13.39
+2,Zig cc,musl,avx2-only,memchr,4096,first,2048,2.98
+2,Zig cc,musl,avx2-only,memchr,4096,middle,2048,13.95
+2,Zig cc,musl,avx2-only,memchr,4096,last,2048,27.64
+2,Zig cc,musl,avx2-only,memchr,4096,absent,2048,32.17
+2,Zig cc,musl,avx2-only,memrchr,4096,first,2048,23.75
+2,Zig cc,musl,avx2-only,memrchr,4096,middle,2048,13.66
+2,Zig cc,musl,avx2-only,memrchr,4096,last,2048,3.43
+2,Zig cc,musl,avx2-only,memrchr,4096,absent,2048,24.39
+2,Zig cc,musl,avx2-only,memchr,8192,first,1024,3.21
+2,Zig cc,musl,avx2-only,memchr,8192,middle,1024,33.62
+2,Zig cc,musl,avx2-only,memchr,8192,last,1024,53.33
+2,Zig cc,musl,avx2-only,memchr,8192,absent,1024,51.17
+2,Zig cc,musl,avx2-only,memrchr,8192,first,1024,54.79
+2,Zig cc,musl,avx2-only,memrchr,8192,middle,1024,31.42
+2,Zig cc,musl,avx2-only,memrchr,8192,last,1024,3.08
+2,Zig cc,musl,avx2-only,memrchr,8192,absent,1024,50.33
+2,Zig cc,musl,avx2-only,memchr,65536,first,128,3.05
+2,Zig cc,musl,avx2-only,memchr,65536,middle,128,180.77
+2,Zig cc,musl,avx2-only,memchr,65536,last,128,489.05
+2,Zig cc,musl,avx2-only,memchr,65536,absent,128,483.84
+2,Zig cc,musl,avx2-only,memrchr,65536,first,128,487.67
+2,Zig cc,musl,avx2-only,memrchr,65536,middle,128,178.27
+2,Zig cc,musl,avx2-only,memrchr,65536,last,128,3.47
+2,Zig cc,musl,avx2-only,memrchr,65536,absent,128,479.97
+2,Zig cc,musl,avx512-runtime,memchr,64,first,131072,2.22
+2,Zig cc,musl,avx512-runtime,memchr,64,middle,131072,2.30
+2,Zig cc,musl,avx512-runtime,memchr,64,last,131072,2.40
+2,Zig cc,musl,avx512-runtime,memchr,64,absent,131072,2.65
+2,Zig cc,musl,avx512-runtime,memrchr,64,first,131072,2.62
+2,Zig cc,musl,avx512-runtime,memrchr,64,middle,131072,2.48
+2,Zig cc,musl,avx512-runtime,memrchr,64,last,131072,2.45
+2,Zig cc,musl,avx512-runtime,memrchr,64,absent,131072,2.65
+2,Zig cc,musl,avx512-runtime,memchr,1024,first,8192,1.97
+2,Zig cc,musl,avx512-runtime,memchr,1024,middle,8192,10.22
+2,Zig cc,musl,avx512-runtime,memchr,1024,last,8192,15.69
+2,Zig cc,musl,avx512-runtime,memchr,1024,absent,8192,15.26
+2,Zig cc,musl,avx512-runtime,memrchr,1024,first,8192,15.69
+2,Zig cc,musl,avx512-runtime,memrchr,1024,middle,8192,8.92
+2,Zig cc,musl,avx512-runtime,memrchr,1024,last,8192,2.45
+2,Zig cc,musl,avx512-runtime,memrchr,1024,absent,8192,15.69
+2,Zig cc,musl,avx512-runtime,memchr,2048,first,4096,3.06
+2,Zig cc,musl,avx512-runtime,memchr,2048,middle,4096,8.39
+2,Zig cc,musl,avx512-runtime,memchr,2048,last,4096,13.29
+2,Zig cc,musl,avx512-runtime,memchr,2048,absent,4096,12.90
+2,Zig cc,musl,avx512-runtime,memrchr,2048,first,4096,12.89
+2,Zig cc,musl,avx512-runtime,memrchr,2048,middle,4096,7.81
+2,Zig cc,musl,avx512-runtime,memrchr,2048,last,4096,3.70
+2,Zig cc,musl,avx512-runtime,memrchr,2048,absent,4096,12.81
+2,Zig cc,musl,avx512-runtime,memchr,4096,first,2048,2.85
+2,Zig cc,musl,avx512-runtime,memchr,4096,middle,2048,13.50
+2,Zig cc,musl,avx512-runtime,memchr,4096,last,2048,23.44
+2,Zig cc,musl,avx512-runtime,memchr,4096,absent,2048,28.52
+2,Zig cc,musl,avx512-runtime,memrchr,4096,first,2048,23.19
+2,Zig cc,musl,avx512-runtime,memrchr,4096,middle,2048,12.90
+2,Zig cc,musl,avx512-runtime,memrchr,4096,last,2048,3.29
+2,Zig cc,musl,avx512-runtime,memrchr,4096,absent,2048,23.66
+2,Zig cc,musl,avx512-runtime,memchr,8192,first,1024,2.84
+2,Zig cc,musl,avx512-runtime,memchr,8192,middle,1024,23.49
+2,Zig cc,musl,avx512-runtime,memchr,8192,last,1024,51.07
+2,Zig cc,musl,avx512-runtime,memchr,8192,absent,1024,48.80
+2,Zig cc,musl,avx512-runtime,memrchr,8192,first,1024,52.93
+2,Zig cc,musl,avx512-runtime,memrchr,8192,middle,1024,31.67
+2,Zig cc,musl,avx512-runtime,memrchr,8192,last,1024,3.29
+2,Zig cc,musl,avx512-runtime,memrchr,8192,absent,1024,49.96
+2,Zig cc,musl,avx512-runtime,memchr,65536,first,128,10.73
+2,Zig cc,musl,avx512-runtime,memchr,65536,middle,128,122.73
+2,Zig cc,musl,avx512-runtime,memchr,65536,last,128,299.18
+2,Zig cc,musl,avx512-runtime,memchr,65536,absent,128,294.51
+2,Zig cc,musl,avx512-runtime,memrchr,65536,first,128,296.66
+2,Zig cc,musl,avx512-runtime,memrchr,65536,middle,128,121.63
+2,Zig cc,musl,avx512-runtime,memrchr,65536,last,128,2.95
+2,Zig cc,musl,avx512-runtime,memrchr,65536,absent,128,294.58
+2,Zig cc,musl,libc,memchr,64,first,131072,1.14
+2,Zig cc,musl,libc,memchr,64,middle,131072,11.96
+2,Zig cc,musl,libc,memchr,64,last,131072,24.45
+2,Zig cc,musl,libc,memchr,64,absent,131072,26.48
+2,Zig cc,musl,libc,memrchr,64,first,131072,26.24
+2,Zig cc,musl,libc,memrchr,64,middle,131072,13.77
+2,Zig cc,musl,libc,memrchr,64,last,131072,1.40
+2,Zig cc,musl,libc,memrchr,64,absent,131072,24.85
+2,Zig cc,musl,libc,memchr,1024,first,8192,1.07
+2,Zig cc,musl,libc,memchr,1024,middle,8192,124.59
+2,Zig cc,musl,libc,memchr,1024,last,8192,240.23
+2,Zig cc,musl,libc,memchr,1024,absent,8192,251.27
+2,Zig cc,musl,libc,memrchr,1024,first,8192,281.14
+2,Zig cc,musl,libc,memrchr,1024,middle,8192,142.62
+2,Zig cc,musl,libc,memrchr,1024,last,8192,1.31
+2,Zig cc,musl,libc,memrchr,1024,absent,8192,277.95
+2,Zig cc,musl,libc,memchr,2048,first,4096,1.09
+2,Zig cc,musl,libc,memchr,2048,middle,4096,245.83
+2,Zig cc,musl,libc,memchr,2048,last,4096,472.18
+2,Zig cc,musl,libc,memchr,2048,absent,4096,471.94
+2,Zig cc,musl,libc,memrchr,2048,first,4096,554.50
+2,Zig cc,musl,libc,memrchr,2048,middle,4096,283.57
+2,Zig cc,musl,libc,memrchr,2048,last,4096,1.31
+2,Zig cc,musl,libc,memrchr,2048,absent,4096,547.25
+2,Zig cc,musl,libc,memchr,4096,first,2048,1.29
+2,Zig cc,musl,libc,memchr,4096,middle,2048,508.40
+2,Zig cc,musl,libc,memchr,4096,last,2048,962.50
+2,Zig cc,musl,libc,memchr,4096,absent,2048,949.17
+2,Zig cc,musl,libc,memrchr,4096,first,2048,1083.45
+2,Zig cc,musl,libc,memrchr,4096,middle,2048,544.46
+2,Zig cc,musl,libc,memrchr,4096,last,2048,1.29
+2,Zig cc,musl,libc,memrchr,4096,absent,2048,1049.39
+2,Zig cc,musl,libc,memchr,8192,first,1024,1.59
+2,Zig cc,musl,libc,memchr,8192,middle,1024,929.75
+2,Zig cc,musl,libc,memchr,8192,last,1024,1861.94
+2,Zig cc,musl,libc,memchr,8192,absent,1024,1816.15
+2,Zig cc,musl,libc,memrchr,8192,first,1024,2136.43
+2,Zig cc,musl,libc,memrchr,8192,middle,1024,1054.26
+2,Zig cc,musl,libc,memrchr,8192,last,1024,1.27
+2,Zig cc,musl,libc,memrchr,8192,absent,1024,2082.77
+2,Zig cc,musl,libc,memchr,65536,first,128,1.29
+2,Zig cc,musl,libc,memchr,65536,middle,128,7188.02
+2,Zig cc,musl,libc,memchr,65536,last,128,14427.08
+2,Zig cc,musl,libc,memchr,65536,absent,128,14379.16
+2,Zig cc,musl,libc,memrchr,65536,first,128,17636.87
+2,Zig cc,musl,libc,memrchr,65536,middle,128,8446.17
+2,Zig cc,musl,libc,memrchr,65536,last,128,1.42
+2,Zig cc,musl,libc,memrchr,65536,absent,128,17043.73
+2,TinyCC,glibc,avx2-only,memchr,64,first,131072,3.65
+2,TinyCC,glibc,avx2-only,memchr,64,middle,131072,3.88
+2,TinyCC,glibc,avx2-only,memchr,64,last,131072,4.03
+2,TinyCC,glibc,avx2-only,memchr,64,absent,131072,4.02
+2,TinyCC,glibc,avx2-only,memrchr,64,first,131072,3.99
+2,TinyCC,glibc,avx2-only,memrchr,64,middle,131072,3.86
+2,TinyCC,glibc,avx2-only,memrchr,64,last,131072,3.98
+2,TinyCC,glibc,avx2-only,memrchr,64,absent,131072,4.30
+2,TinyCC,glibc,avx2-only,memchr,1024,first,8192,3.84
+2,TinyCC,glibc,avx2-only,memchr,1024,middle,8192,11.93
+2,TinyCC,glibc,avx2-only,memchr,1024,last,8192,17.00
+2,TinyCC,glibc,avx2-only,memchr,1024,absent,8192,16.64
+2,TinyCC,glibc,avx2-only,memrchr,1024,first,8192,16.64
+2,TinyCC,glibc,avx2-only,memrchr,1024,middle,8192,9.61
+2,TinyCC,glibc,avx2-only,memrchr,1024,last,8192,3.93
+2,TinyCC,glibc,avx2-only,memrchr,1024,absent,8192,17.01
+2,TinyCC,glibc,avx2-only,memchr,2048,first,4096,4.06
+2,TinyCC,glibc,avx2-only,memchr,2048,middle,4096,9.37
+2,TinyCC,glibc,avx2-only,memchr,2048,last,4096,13.91
+2,TinyCC,glibc,avx2-only,memchr,2048,absent,4096,14.38
+2,TinyCC,glibc,avx2-only,memrchr,2048,first,4096,14.02
+2,TinyCC,glibc,avx2-only,memrchr,2048,middle,4096,8.55
+2,TinyCC,glibc,avx2-only,memrchr,2048,last,4096,4.70
+2,TinyCC,glibc,avx2-only,memrchr,2048,absent,4096,14.08
+2,TinyCC,glibc,avx2-only,memchr,4096,first,2048,4.07
+2,TinyCC,glibc,avx2-only,memchr,4096,middle,2048,14.31
+2,TinyCC,glibc,avx2-only,memchr,4096,last,2048,24.18
+2,TinyCC,glibc,avx2-only,memchr,4096,absent,2048,31.17
+2,TinyCC,glibc,avx2-only,memrchr,4096,first,2048,33.17
+2,TinyCC,glibc,avx2-only,memrchr,4096,middle,2048,14.70
+2,TinyCC,glibc,avx2-only,memrchr,4096,last,2048,4.54
+2,TinyCC,glibc,avx2-only,memrchr,4096,absent,2048,30.00
+2,TinyCC,glibc,avx2-only,memchr,8192,first,1024,4.17
+2,TinyCC,glibc,avx2-only,memchr,8192,middle,1024,33.60
+2,TinyCC,glibc,avx2-only,memchr,8192,last,1024,53.92
+2,TinyCC,glibc,avx2-only,memchr,8192,absent,1024,51.44
+2,TinyCC,glibc,avx2-only,memrchr,8192,first,1024,53.99
+2,TinyCC,glibc,avx2-only,memrchr,8192,middle,1024,32.41
+2,TinyCC,glibc,avx2-only,memrchr,8192,last,1024,4.65
+2,TinyCC,glibc,avx2-only,memrchr,8192,absent,1024,51.75
+2,TinyCC,glibc,avx2-only,memchr,65536,first,128,4.41
+2,TinyCC,glibc,avx2-only,memchr,65536,middle,128,181.73
+2,TinyCC,glibc,avx2-only,memchr,65536,last,128,508.62
+2,TinyCC,glibc,avx2-only,memchr,65536,absent,128,489.09
+2,TinyCC,glibc,avx2-only,memrchr,65536,first,128,494.77
+2,TinyCC,glibc,avx2-only,memrchr,65536,middle,128,181.91
+2,TinyCC,glibc,avx2-only,memrchr,65536,last,128,4.90
+2,TinyCC,glibc,avx2-only,memrchr,65536,absent,128,486.52
+2,TinyCC,glibc,avx512-runtime,memchr,64,first,131072,3.57
+2,TinyCC,glibc,avx512-runtime,memchr,64,middle,131072,3.75
+2,TinyCC,glibc,avx512-runtime,memchr,64,last,131072,4.12
+2,TinyCC,glibc,avx512-runtime,memchr,64,absent,131072,4.02
+2,TinyCC,glibc,avx512-runtime,memrchr,64,first,131072,4.20
+2,TinyCC,glibc,avx512-runtime,memrchr,64,middle,131072,3.95
+2,TinyCC,glibc,avx512-runtime,memrchr,64,last,131072,4.12
+2,TinyCC,glibc,avx512-runtime,memrchr,64,absent,131072,4.67
+2,TinyCC,glibc,avx512-runtime,memchr,1024,first,8192,3.27
+2,TinyCC,glibc,avx512-runtime,memchr,1024,middle,8192,10.90
+2,TinyCC,glibc,avx512-runtime,memchr,1024,last,8192,17.32
+2,TinyCC,glibc,avx512-runtime,memchr,1024,absent,8192,16.59
+2,TinyCC,glibc,avx512-runtime,memrchr,1024,first,8192,17.38
+2,TinyCC,glibc,avx512-runtime,memrchr,1024,middle,8192,10.31
+2,TinyCC,glibc,avx512-runtime,memrchr,1024,last,8192,3.93
+2,TinyCC,glibc,avx512-runtime,memrchr,1024,absent,8192,16.78
+2,TinyCC,glibc,avx512-runtime,memchr,2048,first,4096,4.06
+2,TinyCC,glibc,avx512-runtime,memchr,2048,middle,4096,11.11
+2,TinyCC,glibc,avx512-runtime,memchr,2048,last,4096,19.08
+2,TinyCC,glibc,avx512-runtime,memchr,2048,absent,4096,14.17
+2,TinyCC,glibc,avx512-runtime,memrchr,2048,first,4096,13.74
+2,TinyCC,glibc,avx512-runtime,memrchr,2048,middle,4096,8.59
+2,TinyCC,glibc,avx512-runtime,memrchr,2048,last,4096,4.27
+2,TinyCC,glibc,avx512-runtime,memrchr,2048,absent,4096,13.86
+2,TinyCC,glibc,avx512-runtime,memchr,4096,first,2048,4.28
+2,TinyCC,glibc,avx512-runtime,memchr,4096,middle,2048,14.30
+2,TinyCC,glibc,avx512-runtime,memchr,4096,last,2048,24.13
+2,TinyCC,glibc,avx512-runtime,memchr,4096,absent,2048,30.00
+2,TinyCC,glibc,avx512-runtime,memrchr,4096,first,2048,23.94
+2,TinyCC,glibc,avx512-runtime,memrchr,4096,middle,2048,13.74
+2,TinyCC,glibc,avx512-runtime,memrchr,4096,last,2048,4.39
+2,TinyCC,glibc,avx512-runtime,memrchr,4096,absent,2048,24.01
+2,TinyCC,glibc,avx512-runtime,memchr,8192,first,1024,4.07
+2,TinyCC,glibc,avx512-runtime,memchr,8192,middle,1024,24.57
+2,TinyCC,glibc,avx512-runtime,memchr,8192,last,1024,53.36
+2,TinyCC,glibc,avx512-runtime,memchr,8192,absent,1024,49.94
+2,TinyCC,glibc,avx512-runtime,memrchr,8192,first,1024,52.88
+2,TinyCC,glibc,avx512-runtime,memrchr,8192,middle,1024,23.97
+2,TinyCC,glibc,avx512-runtime,memrchr,8192,last,1024,4.51
+2,TinyCC,glibc,avx512-runtime,memrchr,8192,absent,1024,50.71
+2,TinyCC,glibc,avx512-runtime,memchr,65536,first,128,4.30
+2,TinyCC,glibc,avx512-runtime,memchr,65536,middle,128,126.89
+2,TinyCC,glibc,avx512-runtime,memchr,65536,last,128,305.59
+2,TinyCC,glibc,avx512-runtime,memchr,65536,absent,128,303.37
+2,TinyCC,glibc,avx512-runtime,memrchr,65536,first,128,311.16
+2,TinyCC,glibc,avx512-runtime,memrchr,65536,middle,128,129.38
+2,TinyCC,glibc,avx512-runtime,memrchr,65536,last,128,4.30
+2,TinyCC,glibc,avx512-runtime,memrchr,65536,absent,128,324.77
+2,TinyCC,glibc,libc,memchr,64,first,131072,2.70
+2,TinyCC,glibc,libc,memchr,64,middle,131072,2.93
+2,TinyCC,glibc,libc,memchr,64,last,131072,2.94
+2,TinyCC,glibc,libc,memchr,64,absent,131072,2.85
+2,TinyCC,glibc,libc,memrchr,64,first,131072,2.88
+2,TinyCC,glibc,libc,memrchr,64,middle,131072,2.50
+2,TinyCC,glibc,libc,memrchr,64,last,131072,2.45
+2,TinyCC,glibc,libc,memrchr,64,absent,131072,2.77
+2,TinyCC,glibc,libc,memchr,1024,first,8192,2.30
+2,TinyCC,glibc,libc,memchr,1024,middle,8192,5.76
+2,TinyCC,glibc,libc,memchr,1024,last,8192,7.77
+2,TinyCC,glibc,libc,memchr,1024,absent,8192,7.76
+2,TinyCC,glibc,libc,memrchr,1024,first,8192,8.48
+2,TinyCC,glibc,libc,memrchr,1024,middle,8192,5.87
+2,TinyCC,glibc,libc,memrchr,1024,last,8192,2.35
+2,TinyCC,glibc,libc,memrchr,1024,absent,8192,8.19
+2,TinyCC,glibc,libc,memchr,2048,first,4096,2.35
+2,TinyCC,glibc,libc,memchr,2048,middle,4096,8.46
+2,TinyCC,glibc,libc,memchr,2048,last,4096,15.47
+2,TinyCC,glibc,libc,memchr,2048,absent,4096,13.70
+2,TinyCC,glibc,libc,memrchr,2048,first,4096,13.97
+2,TinyCC,glibc,libc,memrchr,2048,middle,4096,8.95
+2,TinyCC,glibc,libc,memrchr,2048,last,4096,2.35
+2,TinyCC,glibc,libc,memrchr,2048,absent,4096,14.42
+2,TinyCC,glibc,libc,memchr,4096,first,2048,2.35
+2,TinyCC,glibc,libc,memchr,4096,middle,2048,13.96
+2,TinyCC,glibc,libc,memchr,4096,last,2048,23.76
+2,TinyCC,glibc,libc,memchr,4096,absent,2048,24.11
+2,TinyCC,glibc,libc,memrchr,4096,first,2048,29.10
+2,TinyCC,glibc,libc,memrchr,4096,middle,2048,14.74
+2,TinyCC,glibc,libc,memrchr,4096,last,2048,2.40
+2,TinyCC,glibc,libc,memrchr,4096,absent,2048,24.69
+2,TinyCC,glibc,libc,memchr,8192,first,1024,2.41
+2,TinyCC,glibc,libc,memchr,8192,middle,1024,24.76
+2,TinyCC,glibc,libc,memchr,8192,last,1024,52.13
+2,TinyCC,glibc,libc,memchr,8192,absent,1024,51.91
+2,TinyCC,glibc,libc,memrchr,8192,first,1024,52.18
+2,TinyCC,glibc,libc,memrchr,8192,middle,1024,34.55
+2,TinyCC,glibc,libc,memrchr,8192,last,1024,2.47
+2,TinyCC,glibc,libc,memrchr,8192,absent,1024,51.71
+2,TinyCC,glibc,libc,memchr,65536,first,128,2.60
+2,TinyCC,glibc,libc,memchr,65536,middle,128,214.47
+2,TinyCC,glibc,libc,memchr,65536,last,128,515.37
+2,TinyCC,glibc,libc,memchr,65536,absent,128,512.81
+2,TinyCC,glibc,libc,memrchr,65536,first,128,485.61
+2,TinyCC,glibc,libc,memrchr,65536,middle,128,191.17
+2,TinyCC,glibc,libc,memrchr,65536,last,128,2.51
+2,TinyCC,glibc,libc,memrchr,65536,absent,128,485.20
+3,Zig cc,glibc,avx512-runtime,memchr,64,first,131072,2.26
+3,Zig cc,glibc,avx512-runtime,memchr,64,middle,131072,2.47
+3,Zig cc,glibc,avx512-runtime,memchr,64,last,131072,2.90
+3,Zig cc,glibc,avx512-runtime,memchr,64,absent,131072,2.49
+3,Zig cc,glibc,avx512-runtime,memrchr,64,first,131072,2.62
+3,Zig cc,glibc,avx512-runtime,memrchr,64,middle,131072,2.57
+3,Zig cc,glibc,avx512-runtime,memrchr,64,last,131072,2.40
+3,Zig cc,glibc,avx512-runtime,memrchr,64,absent,131072,2.83
+3,Zig cc,glibc,avx512-runtime,memchr,1024,first,8192,1.92
+3,Zig cc,glibc,avx512-runtime,memchr,1024,middle,8192,8.75
+3,Zig cc,glibc,avx512-runtime,memchr,1024,last,8192,15.41
+3,Zig cc,glibc,avx512-runtime,memchr,1024,absent,8192,15.26
+3,Zig cc,glibc,avx512-runtime,memrchr,1024,first,8192,15.69
+3,Zig cc,glibc,avx512-runtime,memrchr,1024,middle,8192,8.54
+3,Zig cc,glibc,avx512-runtime,memrchr,1024,last,8192,2.35
+3,Zig cc,glibc,avx512-runtime,memrchr,1024,absent,8192,15.36
+3,Zig cc,glibc,avx512-runtime,memchr,2048,first,4096,2.99
+3,Zig cc,glibc,avx512-runtime,memchr,2048,middle,4096,8.11
+3,Zig cc,glibc,avx512-runtime,memchr,2048,last,4096,12.65
+3,Zig cc,glibc,avx512-runtime,memchr,2048,absent,4096,12.86
+3,Zig cc,glibc,avx512-runtime,memrchr,2048,first,4096,13.02
+3,Zig cc,glibc,avx512-runtime,memrchr,2048,middle,4096,8.22
+3,Zig cc,glibc,avx512-runtime,memrchr,2048,last,4096,3.71
+3,Zig cc,glibc,avx512-runtime,memrchr,2048,absent,4096,12.82
+3,Zig cc,glibc,avx512-runtime,memchr,4096,first,2048,3.08
+3,Zig cc,glibc,avx512-runtime,memchr,4096,middle,2048,13.82
+3,Zig cc,glibc,avx512-runtime,memchr,4096,last,2048,24.15
+3,Zig cc,glibc,avx512-runtime,memchr,4096,absent,2048,23.33
+3,Zig cc,glibc,avx512-runtime,memrchr,4096,first,2048,23.22
+3,Zig cc,glibc,avx512-runtime,memrchr,4096,middle,2048,12.79
+3,Zig cc,glibc,avx512-runtime,memrchr,4096,last,2048,3.13
+3,Zig cc,glibc,avx512-runtime,memrchr,4096,absent,2048,22.72
+3,Zig cc,glibc,avx512-runtime,memchr,8192,first,1024,3.02
+3,Zig cc,glibc,avx512-runtime,memchr,8192,middle,1024,23.49
+3,Zig cc,glibc,avx512-runtime,memchr,8192,last,1024,50.87
+3,Zig cc,glibc,avx512-runtime,memchr,8192,absent,1024,49.07
+3,Zig cc,glibc,avx512-runtime,memrchr,8192,first,1024,52.82
+3,Zig cc,glibc,avx512-runtime,memrchr,8192,middle,1024,32.54
+3,Zig cc,glibc,avx512-runtime,memrchr,8192,last,1024,4.98
+3,Zig cc,glibc,avx512-runtime,memrchr,8192,absent,1024,49.97
+3,Zig cc,glibc,avx512-runtime,memchr,65536,first,128,11.02
+3,Zig cc,glibc,avx512-runtime,memchr,65536,middle,128,124.52
+3,Zig cc,glibc,avx512-runtime,memchr,65536,last,128,304.01
+3,Zig cc,glibc,avx512-runtime,memchr,65536,absent,128,301.81
+3,Zig cc,glibc,avx512-runtime,memrchr,65536,first,128,302.13
+3,Zig cc,glibc,avx512-runtime,memrchr,65536,middle,128,121.55
+3,Zig cc,glibc,avx512-runtime,memrchr,65536,last,128,2.85
+3,Zig cc,glibc,avx512-runtime,memrchr,65536,absent,128,295.86
+3,Zig cc,glibc,libc,memchr,64,first,131072,1.56
+3,Zig cc,glibc,libc,memchr,64,middle,131072,2.05
+3,Zig cc,glibc,libc,memchr,64,last,131072,2.10
+3,Zig cc,glibc,libc,memchr,64,absent,131072,1.97
+3,Zig cc,glibc,libc,memrchr,64,first,131072,1.96
+3,Zig cc,glibc,libc,memrchr,64,middle,131072,1.56
+3,Zig cc,glibc,libc,memrchr,64,last,131072,1.54
+3,Zig cc,glibc,libc,memrchr,64,absent,131072,1.96
+3,Zig cc,glibc,libc,memchr,1024,first,8192,1.56
+3,Zig cc,glibc,libc,memchr,1024,middle,8192,5.77
+3,Zig cc,glibc,libc,memchr,1024,last,8192,7.88
+3,Zig cc,glibc,libc,memchr,1024,absent,8192,7.50
+3,Zig cc,glibc,libc,memrchr,1024,first,8192,8.51
+3,Zig cc,glibc,libc,memrchr,1024,middle,8192,5.94
+3,Zig cc,glibc,libc,memrchr,1024,last,8192,1.53
+3,Zig cc,glibc,libc,memrchr,1024,absent,8192,8.42
+3,Zig cc,glibc,libc,memchr,2048,first,4096,1.53
+3,Zig cc,glibc,libc,memchr,2048,middle,4096,8.33
+3,Zig cc,glibc,libc,memchr,2048,last,4096,12.79
+3,Zig cc,glibc,libc,memchr,2048,absent,4096,12.72
+3,Zig cc,glibc,libc,memrchr,2048,first,4096,14.19
+3,Zig cc,glibc,libc,memrchr,2048,middle,4096,8.81
+3,Zig cc,glibc,libc,memrchr,2048,last,4096,1.53
+3,Zig cc,glibc,libc,memrchr,2048,absent,4096,13.95
+3,Zig cc,glibc,libc,memchr,4096,first,2048,1.50
+3,Zig cc,glibc,libc,memchr,4096,middle,2048,13.18
+3,Zig cc,glibc,libc,memchr,4096,last,2048,26.34
+3,Zig cc,glibc,libc,memchr,4096,absent,2048,27.56
+3,Zig cc,glibc,libc,memrchr,4096,first,2048,28.96
+3,Zig cc,glibc,libc,memrchr,4096,middle,2048,14.00
+3,Zig cc,glibc,libc,memrchr,4096,last,2048,1.51
+3,Zig cc,glibc,libc,memrchr,4096,absent,2048,27.79
+3,Zig cc,glibc,libc,memchr,8192,first,1024,1.51
+3,Zig cc,glibc,libc,memchr,8192,middle,1024,31.93
+3,Zig cc,glibc,libc,memchr,8192,last,1024,49.27
+3,Zig cc,glibc,libc,memchr,8192,absent,1024,50.29
+3,Zig cc,glibc,libc,memrchr,8192,first,1024,51.50
+3,Zig cc,glibc,libc,memrchr,8192,middle,1024,33.79
+3,Zig cc,glibc,libc,memrchr,8192,last,1024,1.55
+3,Zig cc,glibc,libc,memrchr,8192,absent,1024,53.19
+3,Zig cc,glibc,libc,memchr,65536,first,128,1.68
+3,Zig cc,glibc,libc,memchr,65536,middle,128,198.85
+3,Zig cc,glibc,libc,memchr,65536,last,128,494.43
+3,Zig cc,glibc,libc,memchr,65536,absent,128,505.55
+3,Zig cc,glibc,libc,memrchr,65536,first,128,478.04
+3,Zig cc,glibc,libc,memrchr,65536,middle,128,198.30
+3,Zig cc,glibc,libc,memrchr,65536,last,128,1.63
+3,Zig cc,glibc,libc,memrchr,65536,absent,128,494.87
+3,Zig cc,glibc,avx2-only,memchr,64,first,131072,2.05
+3,Zig cc,glibc,avx2-only,memchr,64,middle,131072,2.51
+3,Zig cc,glibc,avx2-only,memchr,64,last,131072,2.40
+3,Zig cc,glibc,avx2-only,memchr,64,absent,131072,2.40
+3,Zig cc,glibc,avx2-only,memrchr,64,first,131072,2.56
+3,Zig cc,glibc,avx2-only,memrchr,64,middle,131072,2.40
+3,Zig cc,glibc,avx2-only,memrchr,64,last,131072,2.61
+3,Zig cc,glibc,avx2-only,memrchr,64,absent,131072,2.35
+3,Zig cc,glibc,avx2-only,memchr,1024,first,8192,2.14
+3,Zig cc,glibc,avx2-only,memchr,1024,middle,8192,8.39
+3,Zig cc,glibc,avx2-only,memchr,1024,last,8192,14.08
+3,Zig cc,glibc,avx2-only,memchr,1024,absent,8192,13.87
+3,Zig cc,glibc,avx2-only,memrchr,1024,first,8192,15.26
+3,Zig cc,glibc,avx2-only,memrchr,1024,middle,8192,8.28
+3,Zig cc,glibc,avx2-only,memrchr,1024,last,8192,2.35
+3,Zig cc,glibc,avx2-only,memrchr,1024,absent,8192,14.93
+3,Zig cc,glibc,avx2-only,memchr,2048,first,4096,2.78
+3,Zig cc,glibc,avx2-only,memchr,2048,middle,4096,8.18
+3,Zig cc,glibc,avx2-only,memchr,2048,last,4096,12.93
+3,Zig cc,glibc,avx2-only,memchr,2048,absent,4096,12.16
+3,Zig cc,glibc,avx2-only,memrchr,2048,first,4096,12.41
+3,Zig cc,glibc,avx2-only,memrchr,2048,middle,4096,7.50
+3,Zig cc,glibc,avx2-only,memrchr,2048,last,4096,2.93
+3,Zig cc,glibc,avx2-only,memrchr,2048,absent,4096,14.55
+3,Zig cc,glibc,avx2-only,memchr,4096,first,2048,2.85
+3,Zig cc,glibc,avx2-only,memchr,4096,middle,2048,13.37
+3,Zig cc,glibc,avx2-only,memchr,4096,last,2048,30.95
+3,Zig cc,glibc,avx2-only,memchr,4096,absent,2048,22.62
+3,Zig cc,glibc,avx2-only,memrchr,4096,first,2048,22.73
+3,Zig cc,glibc,avx2-only,memrchr,4096,middle,2048,12.67
+3,Zig cc,glibc,avx2-only,memrchr,4096,last,2048,3.00
+3,Zig cc,glibc,avx2-only,memrchr,4096,absent,2048,23.40
+3,Zig cc,glibc,avx2-only,memchr,8192,first,1024,3.58
+3,Zig cc,glibc,avx2-only,memchr,8192,middle,1024,31.41
+3,Zig cc,glibc,avx2-only,memchr,8192,last,1024,51.08
+3,Zig cc,glibc,avx2-only,memchr,8192,absent,1024,48.83
+3,Zig cc,glibc,avx2-only,memrchr,8192,first,1024,51.64
+3,Zig cc,glibc,avx2-only,memrchr,8192,middle,1024,31.01
+3,Zig cc,glibc,avx2-only,memrchr,8192,last,1024,3.00
+3,Zig cc,glibc,avx2-only,memrchr,8192,absent,1024,49.70
+3,Zig cc,glibc,avx2-only,memchr,65536,first,128,3.07
+3,Zig cc,glibc,avx2-only,memchr,65536,middle,128,176.70
+3,Zig cc,glibc,avx2-only,memchr,65536,last,128,480.04
+3,Zig cc,glibc,avx2-only,memchr,65536,absent,128,474.45
+3,Zig cc,glibc,avx2-only,memrchr,65536,first,128,478.28
+3,Zig cc,glibc,avx2-only,memrchr,65536,middle,128,194.64
+3,Zig cc,glibc,avx2-only,memrchr,65536,last,128,2.92
+3,Zig cc,glibc,avx2-only,memrchr,65536,absent,128,484.16
+3,GCC,glibc,avx512-runtime,memchr,64,first,131072,2.29
+3,GCC,glibc,avx512-runtime,memchr,64,middle,131072,3.50
+3,GCC,glibc,avx512-runtime,memchr,64,last,131072,2.48
+3,GCC,glibc,avx512-runtime,memchr,64,absent,131072,2.67
+3,GCC,glibc,avx512-runtime,memrchr,64,first,131072,2.83
+3,GCC,glibc,avx512-runtime,memrchr,64,middle,131072,2.63
+3,GCC,glibc,avx512-runtime,memrchr,64,last,131072,2.72
+3,GCC,glibc,avx512-runtime,memrchr,64,absent,131072,3.14
+3,GCC,glibc,avx512-runtime,memchr,1024,first,8192,2.14
+3,GCC,glibc,avx512-runtime,memchr,1024,middle,8192,8.96
+3,GCC,glibc,avx512-runtime,memchr,1024,last,8192,14.93
+3,GCC,glibc,avx512-runtime,memchr,1024,absent,8192,15.87
+3,GCC,glibc,avx512-runtime,memrchr,1024,first,8192,15.79
+3,GCC,glibc,avx512-runtime,memrchr,1024,middle,8192,8.78
+3,GCC,glibc,avx512-runtime,memrchr,1024,last,8192,2.62
+3,GCC,glibc,avx512-runtime,memrchr,1024,absent,8192,15.36
+3,GCC,glibc,avx512-runtime,memchr,2048,first,4096,2.78
+3,GCC,glibc,avx512-runtime,memchr,2048,middle,4096,7.90
+3,GCC,glibc,avx512-runtime,memchr,2048,last,4096,12.59
+3,GCC,glibc,avx512-runtime,memchr,2048,absent,4096,12.38
+3,GCC,glibc,avx512-runtime,memrchr,2048,first,4096,12.74
+3,GCC,glibc,avx512-runtime,memrchr,2048,middle,4096,8.12
+3,GCC,glibc,avx512-runtime,memrchr,2048,last,4096,3.27
+3,GCC,glibc,avx512-runtime,memrchr,2048,absent,4096,12.61
+3,GCC,glibc,avx512-runtime,memchr,4096,first,2048,2.79
+3,GCC,glibc,avx512-runtime,memchr,4096,middle,2048,13.30
+3,GCC,glibc,avx512-runtime,memchr,4096,last,2048,22.84
+3,GCC,glibc,avx512-runtime,memchr,4096,absent,2048,23.05
+3,GCC,glibc,avx512-runtime,memrchr,4096,first,2048,22.84
+3,GCC,glibc,avx512-runtime,memrchr,4096,middle,2048,12.73
+3,GCC,glibc,avx512-runtime,memrchr,4096,last,2048,3.21
+3,GCC,glibc,avx512-runtime,memrchr,4096,absent,2048,22.85
+3,GCC,glibc,avx512-runtime,memchr,8192,first,1024,3.01
+3,GCC,glibc,avx512-runtime,memchr,8192,middle,1024,30.83
+3,GCC,glibc,avx512-runtime,memchr,8192,last,1024,56.77
+3,GCC,glibc,avx512-runtime,memchr,8192,absent,1024,49.91
+3,GCC,glibc,avx512-runtime,memrchr,8192,first,1024,52.83
+3,GCC,glibc,avx512-runtime,memrchr,8192,middle,1024,23.38
+3,GCC,glibc,avx512-runtime,memrchr,8192,last,1024,3.29
+3,GCC,glibc,avx512-runtime,memrchr,8192,absent,1024,50.35
+3,GCC,glibc,avx512-runtime,memchr,65536,first,128,10.98
+3,GCC,glibc,avx512-runtime,memchr,65536,middle,128,124.52
+3,GCC,glibc,avx512-runtime,memchr,65536,last,128,304.06
+3,GCC,glibc,avx512-runtime,memchr,65536,absent,128,307.98
+3,GCC,glibc,avx512-runtime,memrchr,65536,first,128,305.15
+3,GCC,glibc,avx512-runtime,memrchr,65536,middle,128,123.45
+3,GCC,glibc,avx512-runtime,memrchr,65536,last,128,2.95
+3,GCC,glibc,avx512-runtime,memrchr,65536,absent,128,304.79
+3,GCC,glibc,libc,memchr,64,first,131072,1.85
+3,GCC,glibc,libc,memchr,64,middle,131072,2.35
+3,GCC,glibc,libc,memchr,64,last,131072,2.27
+3,GCC,glibc,libc,memchr,64,absent,131072,2.24
+3,GCC,glibc,libc,memrchr,64,first,131072,2.18
+3,GCC,glibc,libc,memrchr,64,middle,131072,1.74
+3,GCC,glibc,libc,memrchr,64,last,131072,1.74
+3,GCC,glibc,libc,memrchr,64,absent,131072,2.18
+3,GCC,glibc,libc,memchr,1024,first,8192,1.71
+3,GCC,glibc,libc,memchr,1024,middle,8192,5.39
+3,GCC,glibc,libc,memchr,1024,last,8192,7.92
+3,GCC,glibc,libc,memchr,1024,absent,8192,7.85
+3,GCC,glibc,libc,memrchr,1024,first,8192,8.43
+3,GCC,glibc,libc,memrchr,1024,middle,8192,6.09
+3,GCC,glibc,libc,memrchr,1024,last,8192,1.75
+3,GCC,glibc,libc,memrchr,1024,absent,8192,8.56
+3,GCC,glibc,libc,memchr,2048,first,4096,1.75
+3,GCC,glibc,libc,memchr,2048,middle,4096,8.24
+3,GCC,glibc,libc,memchr,2048,last,4096,12.79
+3,GCC,glibc,libc,memchr,2048,absent,4096,12.68
+3,GCC,glibc,libc,memrchr,2048,first,4096,14.64
+3,GCC,glibc,libc,memrchr,2048,middle,4096,9.20
+3,GCC,glibc,libc,memrchr,2048,last,4096,1.79
+3,GCC,glibc,libc,memrchr,2048,absent,4096,14.57
+3,GCC,glibc,libc,memchr,4096,first,2048,1.75
+3,GCC,glibc,libc,memchr,4096,middle,2048,13.22
+3,GCC,glibc,libc,memchr,4096,last,2048,22.99
+3,GCC,glibc,libc,memchr,4096,absent,2048,26.65
+3,GCC,glibc,libc,memrchr,4096,first,2048,29.38
+3,GCC,glibc,libc,memrchr,4096,middle,2048,14.62
+3,GCC,glibc,libc,memrchr,4096,last,2048,1.75
+3,GCC,glibc,libc,memrchr,4096,absent,2048,27.83
+3,GCC,glibc,libc,memchr,8192,first,1024,1.76
+3,GCC,glibc,libc,memchr,8192,middle,1024,30.62
+3,GCC,glibc,libc,memchr,8192,last,1024,49.60
+3,GCC,glibc,libc,memchr,8192,absent,1024,49.70
+3,GCC,glibc,libc,memrchr,8192,first,1024,50.00
+3,GCC,glibc,libc,memrchr,8192,middle,1024,34.55
+3,GCC,glibc,libc,memrchr,8192,last,1024,1.74
+3,GCC,glibc,libc,memrchr,8192,absent,1024,50.01
+3,GCC,glibc,libc,memchr,65536,first,128,1.86
+3,GCC,glibc,libc,memchr,65536,middle,128,202.54
+3,GCC,glibc,libc,memchr,65536,last,128,506.64
+3,GCC,glibc,libc,memchr,65536,absent,128,506.07
+3,GCC,glibc,libc,memrchr,65536,first,128,478.28
+3,GCC,glibc,libc,memrchr,65536,middle,128,188.12
+3,GCC,glibc,libc,memrchr,65536,last,128,1.95
+3,GCC,glibc,libc,memrchr,65536,absent,128,481.18
+3,GCC,glibc,avx2-only,memchr,64,first,131072,2.76
+3,GCC,glibc,avx2-only,memchr,64,middle,131072,2.41
+3,GCC,glibc,avx2-only,memchr,64,last,131072,2.67
+3,GCC,glibc,avx2-only,memchr,64,absent,131072,2.99
+3,GCC,glibc,avx2-only,memrchr,64,first,131072,2.63
+3,GCC,glibc,avx2-only,memrchr,64,middle,131072,2.72
+3,GCC,glibc,avx2-only,memrchr,64,last,131072,2.96
+3,GCC,glibc,avx2-only,memrchr,64,absent,131072,3.21
+3,GCC,glibc,avx2-only,memchr,1024,first,8192,2.51
+3,GCC,glibc,avx2-only,memchr,1024,middle,8192,9.35
+3,GCC,glibc,avx2-only,memchr,1024,last,8192,16.19
+3,GCC,glibc,avx2-only,memchr,1024,absent,8192,16.22
+3,GCC,glibc,avx2-only,memrchr,1024,first,8192,16.41
+3,GCC,glibc,avx2-only,memrchr,1024,middle,8192,9.12
+3,GCC,glibc,avx2-only,memrchr,1024,last,8192,2.96
+3,GCC,glibc,avx2-only,memrchr,1024,absent,8192,16.64
+3,GCC,glibc,avx2-only,memchr,2048,first,4096,2.84
+3,GCC,glibc,avx2-only,memchr,2048,middle,4096,8.08
+3,GCC,glibc,avx2-only,memchr,2048,last,4096,13.46
+3,GCC,glibc,avx2-only,memchr,2048,absent,4096,13.45
+3,GCC,glibc,avx2-only,memrchr,2048,first,4096,13.74
+3,GCC,glibc,avx2-only,memrchr,2048,middle,4096,8.15
+3,GCC,glibc,avx2-only,memrchr,2048,last,4096,3.42
+3,GCC,glibc,avx2-only,memrchr,2048,absent,4096,13.67
+3,GCC,glibc,avx2-only,memchr,4096,first,2048,2.97
+3,GCC,glibc,avx2-only,memchr,4096,middle,2048,13.92
+3,GCC,glibc,avx2-only,memchr,4096,last,2048,24.51
+3,GCC,glibc,avx2-only,memchr,4096,absent,2048,30.08
+3,GCC,glibc,avx2-only,memrchr,4096,first,2048,32.62
+3,GCC,glibc,avx2-only,memrchr,4096,middle,2048,13.46
+3,GCC,glibc,avx2-only,memrchr,4096,last,2048,3.13
+3,GCC,glibc,avx2-only,memrchr,4096,absent,2048,23.85
+3,GCC,glibc,avx2-only,memchr,8192,first,1024,3.15
+3,GCC,glibc,avx2-only,memchr,8192,middle,1024,32.38
+3,GCC,glibc,avx2-only,memchr,8192,last,1024,52.37
+3,GCC,glibc,avx2-only,memchr,8192,absent,1024,49.97
+3,GCC,glibc,avx2-only,memrchr,8192,first,1024,55.12
+3,GCC,glibc,avx2-only,memrchr,8192,middle,1024,33.26
+3,GCC,glibc,avx2-only,memrchr,8192,last,1024,3.21
+3,GCC,glibc,avx2-only,memrchr,8192,absent,1024,52.93
+3,GCC,glibc,avx2-only,memchr,65536,first,128,3.23
+3,GCC,glibc,avx2-only,memchr,65536,middle,128,188.44
+3,GCC,glibc,avx2-only,memchr,65536,last,128,501.36
+3,GCC,glibc,avx2-only,memchr,65536,absent,128,495.07
+3,GCC,glibc,avx2-only,memrchr,65536,first,128,767.42
+3,GCC,glibc,avx2-only,memrchr,65536,middle,128,182.62
+3,GCC,glibc,avx2-only,memrchr,65536,last,128,3.31
+3,GCC,glibc,avx2-only,memrchr,65536,absent,128,493.71
+3,Zig cc,musl,avx512-runtime,memchr,64,first,131072,2.08
+3,Zig cc,musl,avx512-runtime,memchr,64,middle,131072,2.36
+3,Zig cc,musl,avx512-runtime,memchr,64,last,131072,2.56
+3,Zig cc,musl,avx512-runtime,memchr,64,absent,131072,2.51
+3,Zig cc,musl,avx512-runtime,memrchr,64,first,131072,2.68
+3,Zig cc,musl,avx512-runtime,memrchr,64,middle,131072,2.51
+3,Zig cc,musl,avx512-runtime,memrchr,64,last,131072,2.49
+3,Zig cc,musl,avx512-runtime,memrchr,64,absent,131072,2.62
+3,Zig cc,musl,avx512-runtime,memchr,1024,first,8192,1.92
+3,Zig cc,musl,avx512-runtime,memchr,1024,middle,8192,8.53
+3,Zig cc,musl,avx512-runtime,memchr,1024,last,8192,14.93
+3,Zig cc,musl,avx512-runtime,memchr,1024,absent,8192,14.94
+3,Zig cc,musl,avx512-runtime,memrchr,1024,first,8192,15.36
+3,Zig cc,musl,avx512-runtime,memrchr,1024,middle,8192,8.54
+3,Zig cc,musl,avx512-runtime,memrchr,1024,last,8192,2.35
+3,Zig cc,musl,avx512-runtime,memrchr,1024,absent,8192,15.37
+3,Zig cc,musl,avx512-runtime,memchr,2048,first,4096,2.99
+3,Zig cc,musl,avx512-runtime,memchr,2048,middle,4096,8.11
+3,Zig cc,musl,avx512-runtime,memchr,2048,last,4096,12.68
+3,Zig cc,musl,avx512-runtime,memchr,2048,absent,4096,12.64
+3,Zig cc,musl,avx512-runtime,memrchr,2048,first,4096,12.36
+3,Zig cc,musl,avx512-runtime,memrchr,2048,middle,4096,7.48
+3,Zig cc,musl,avx512-runtime,memrchr,2048,last,4096,2.93
+3,Zig cc,musl,avx512-runtime,memrchr,2048,absent,4096,12.53
+3,Zig cc,musl,avx512-runtime,memchr,4096,first,2048,3.00
+3,Zig cc,musl,avx512-runtime,memchr,4096,middle,2048,13.23
+3,Zig cc,musl,avx512-runtime,memchr,4096,last,2048,22.84
+3,Zig cc,musl,avx512-runtime,memchr,4096,absent,2048,29.41
+3,Zig cc,musl,avx512-runtime,memrchr,4096,first,2048,22.70
+3,Zig cc,musl,avx512-runtime,memrchr,4096,middle,2048,12.63
+3,Zig cc,musl,avx512-runtime,memrchr,4096,last,2048,3.21
+3,Zig cc,musl,avx512-runtime,memrchr,4096,absent,2048,22.67
+3,Zig cc,musl,avx512-runtime,memchr,8192,first,1024,2.94
+3,Zig cc,musl,avx512-runtime,memchr,8192,middle,1024,23.49
+3,Zig cc,musl,avx512-runtime,memchr,8192,last,1024,51.35
+3,Zig cc,musl,avx512-runtime,memchr,8192,absent,1024,48.76
+3,Zig cc,musl,avx512-runtime,memrchr,8192,first,1024,51.57
+3,Zig cc,musl,avx512-runtime,memrchr,8192,middle,1024,31.61
+3,Zig cc,musl,avx512-runtime,memrchr,8192,last,1024,2.86
+3,Zig cc,musl,avx512-runtime,memrchr,8192,absent,1024,49.89
+3,Zig cc,musl,avx512-runtime,memchr,65536,first,128,11.08
+3,Zig cc,musl,avx512-runtime,memchr,65536,middle,128,157.74
+3,Zig cc,musl,avx512-runtime,memchr,65536,last,128,384.42
+3,Zig cc,musl,avx512-runtime,memchr,65536,absent,128,454.98
+3,Zig cc,musl,avx512-runtime,memrchr,65536,first,128,427.09
+3,Zig cc,musl,avx512-runtime,memrchr,65536,middle,128,196.17
+3,Zig cc,musl,avx512-runtime,memrchr,65536,last,128,3.01
+3,Zig cc,musl,avx512-runtime,memrchr,65536,absent,128,301.63
+3,Zig cc,musl,libc,memchr,64,first,131072,1.17
+3,Zig cc,musl,libc,memchr,64,middle,131072,11.77
+3,Zig cc,musl,libc,memchr,64,last,131072,24.39
+3,Zig cc,musl,libc,memchr,64,absent,131072,27.18
+3,Zig cc,musl,libc,memrchr,64,first,131072,26.76
+3,Zig cc,musl,libc,memrchr,64,middle,131072,16.14
+3,Zig cc,musl,libc,memrchr,64,last,131072,1.58
+3,Zig cc,musl,libc,memrchr,64,absent,131072,25.32
+3,Zig cc,musl,libc,memchr,1024,first,8192,1.07
+3,Zig cc,musl,libc,memchr,1024,middle,8192,119.39
+3,Zig cc,musl,libc,memchr,1024,last,8192,239.78
+3,Zig cc,musl,libc,memchr,1024,absent,8192,245.06
+3,Zig cc,musl,libc,memrchr,1024,first,8192,273.41
+3,Zig cc,musl,libc,memrchr,1024,middle,8192,144.24
+3,Zig cc,musl,libc,memrchr,1024,last,8192,1.25
+3,Zig cc,musl,libc,memrchr,1024,absent,8192,267.63
+3,Zig cc,musl,libc,memchr,2048,first,4096,1.09
+3,Zig cc,musl,libc,memchr,2048,middle,4096,230.85
+3,Zig cc,musl,libc,memchr,2048,last,4096,482.71
+3,Zig cc,musl,libc,memchr,2048,absent,4096,469.38
+3,Zig cc,musl,libc,memrchr,2048,first,4096,554.10
+3,Zig cc,musl,libc,memrchr,2048,middle,4096,276.42
+3,Zig cc,musl,libc,memrchr,2048,last,4096,1.31
+3,Zig cc,musl,libc,memrchr,2048,absent,4096,533.68
+3,Zig cc,musl,libc,memchr,4096,first,2048,1.07
+3,Zig cc,musl,libc,memchr,4096,middle,2048,467.04
+3,Zig cc,musl,libc,memchr,4096,last,2048,928.66
+3,Zig cc,musl,libc,memchr,4096,absent,2048,907.87
+3,Zig cc,musl,libc,memrchr,4096,first,2048,1116.21
+3,Zig cc,musl,libc,memrchr,4096,middle,2048,552.39
+3,Zig cc,musl,libc,memrchr,4096,last,2048,1.35
+3,Zig cc,musl,libc,memrchr,4096,absent,2048,1089.33
+3,Zig cc,musl,libc,memchr,8192,first,1024,1.12
+3,Zig cc,musl,libc,memchr,8192,middle,1024,919.87
+3,Zig cc,musl,libc,memchr,8192,last,1024,1860.52
+3,Zig cc,musl,libc,memchr,8192,absent,1024,1774.92
+3,Zig cc,musl,libc,memrchr,8192,first,1024,2059.18
+3,Zig cc,musl,libc,memrchr,8192,middle,1024,1026.97
+3,Zig cc,musl,libc,memrchr,8192,last,1024,1.27
+3,Zig cc,musl,libc,memrchr,8192,absent,1024,2150.01
+3,Zig cc,musl,libc,memchr,65536,first,128,1.30
+3,Zig cc,musl,libc,memchr,65536,middle,128,7249.96
+3,Zig cc,musl,libc,memchr,65536,last,128,14250.45
+3,Zig cc,musl,libc,memchr,65536,absent,128,14252.55
+3,Zig cc,musl,libc,memrchr,65536,first,128,16851.98
+3,Zig cc,musl,libc,memrchr,65536,middle,128,8219.98
+3,Zig cc,musl,libc,memrchr,65536,last,128,1.41
+3,Zig cc,musl,libc,memrchr,65536,absent,128,16613.14
+3,Zig cc,musl,avx2-only,memchr,64,first,131072,2.28
+3,Zig cc,musl,avx2-only,memchr,64,middle,131072,2.40
+3,Zig cc,musl,avx2-only,memchr,64,last,131072,2.73
+3,Zig cc,musl,avx2-only,memchr,64,absent,131072,2.56
+3,Zig cc,musl,avx2-only,memrchr,64,first,131072,2.61
+3,Zig cc,musl,avx2-only,memrchr,64,middle,131072,2.56
+3,Zig cc,musl,avx2-only,memrchr,64,last,131072,2.56
+3,Zig cc,musl,avx2-only,memrchr,64,absent,131072,2.79
+3,Zig cc,musl,avx2-only,memchr,1024,first,8192,2.14
+3,Zig cc,musl,avx2-only,memchr,1024,middle,8192,8.96
+3,Zig cc,musl,avx2-only,memchr,1024,last,8192,15.69
+3,Zig cc,musl,avx2-only,memchr,1024,absent,8192,15.36
+3,Zig cc,musl,avx2-only,memrchr,1024,first,8192,14.93
+3,Zig cc,musl,avx2-only,memrchr,1024,middle,8192,8.12
+3,Zig cc,musl,avx2-only,memrchr,1024,last,8192,2.56
+3,Zig cc,musl,avx2-only,memrchr,1024,absent,8192,14.94
+3,Zig cc,musl,avx2-only,memchr,2048,first,4096,2.94
+3,Zig cc,musl,avx2-only,memchr,2048,middle,4096,8.41
+3,Zig cc,musl,avx2-only,memchr,2048,last,4096,13.18
+3,Zig cc,musl,avx2-only,memchr,2048,absent,4096,12.87
+3,Zig cc,musl,avx2-only,memrchr,2048,first,4096,12.78
+3,Zig cc,musl,avx2-only,memrchr,2048,middle,4096,7.88
+3,Zig cc,musl,avx2-only,memrchr,2048,last,4096,2.99
+3,Zig cc,musl,avx2-only,memrchr,2048,absent,4096,12.60
+3,Zig cc,musl,avx2-only,memchr,4096,first,2048,2.95
+3,Zig cc,musl,avx2-only,memchr,4096,middle,2048,13.71
+3,Zig cc,musl,avx2-only,memchr,4096,last,2048,23.88
+3,Zig cc,musl,avx2-only,memchr,4096,absent,2048,31.55
+3,Zig cc,musl,avx2-only,memrchr,4096,first,2048,30.72
+3,Zig cc,musl,avx2-only,memrchr,4096,middle,2048,13.18
+3,Zig cc,musl,avx2-only,memrchr,4096,last,2048,3.21
+3,Zig cc,musl,avx2-only,memrchr,4096,absent,2048,29.13
+3,Zig cc,musl,avx2-only,memchr,8192,first,1024,3.01
+3,Zig cc,musl,avx2-only,memchr,8192,middle,1024,33.53
+3,Zig cc,musl,avx2-only,memchr,8192,last,1024,66.80
+3,Zig cc,musl,avx2-only,memchr,8192,absent,1024,61.37
+3,Zig cc,musl,avx2-only,memrchr,8192,first,1024,58.97
+3,Zig cc,musl,avx2-only,memrchr,8192,middle,1024,31.75
+3,Zig cc,musl,avx2-only,memrchr,8192,last,1024,3.07
+3,Zig cc,musl,avx2-only,memrchr,8192,absent,1024,52.64
+3,Zig cc,musl,avx2-only,memchr,65536,first,128,3.36
+3,Zig cc,musl,avx2-only,memchr,65536,middle,128,189.53
+3,Zig cc,musl,avx2-only,memchr,65536,last,128,495.50
+3,Zig cc,musl,avx2-only,memchr,65536,absent,128,564.72
+3,Zig cc,musl,avx2-only,memrchr,65536,first,128,488.40
+3,Zig cc,musl,avx2-only,memrchr,65536,middle,128,176.94
+3,Zig cc,musl,avx2-only,memrchr,65536,last,128,3.30
+3,Zig cc,musl,avx2-only,memrchr,65536,absent,128,564.45
+3,TinyCC,glibc,avx512-runtime,memchr,64,first,131072,3.53
+3,TinyCC,glibc,avx512-runtime,memchr,64,middle,131072,4.06
+3,TinyCC,glibc,avx512-runtime,memchr,64,last,131072,4.14
+3,TinyCC,glibc,avx512-runtime,memchr,64,absent,131072,4.08
+3,TinyCC,glibc,avx512-runtime,memrchr,64,first,131072,4.27
+3,TinyCC,glibc,avx512-runtime,memrchr,64,middle,131072,4.24
+3,TinyCC,glibc,avx512-runtime,memrchr,64,last,131072,4.18
+3,TinyCC,glibc,avx512-runtime,memrchr,64,absent,131072,4.61
+3,TinyCC,glibc,avx512-runtime,memchr,1024,first,8192,3.90
+3,TinyCC,glibc,avx512-runtime,memchr,1024,middle,8192,10.76
+3,TinyCC,glibc,avx512-runtime,memchr,1024,last,8192,17.37
+3,TinyCC,glibc,avx512-runtime,memchr,1024,absent,8192,17.55
+3,TinyCC,glibc,avx512-runtime,memrchr,1024,first,8192,17.79
+3,TinyCC,glibc,avx512-runtime,memrchr,1024,middle,8192,10.49
+3,TinyCC,glibc,avx512-runtime,memrchr,1024,last,8192,4.17
+3,TinyCC,glibc,avx512-runtime,memrchr,1024,absent,8192,17.56
+3,TinyCC,glibc,avx512-runtime,memchr,2048,first,4096,5.07
+3,TinyCC,glibc,avx512-runtime,memchr,2048,middle,4096,10.03
+3,TinyCC,glibc,avx512-runtime,memchr,2048,last,4096,14.89
+3,TinyCC,glibc,avx512-runtime,memchr,2048,absent,4096,14.87
+3,TinyCC,glibc,avx512-runtime,memrchr,2048,first,4096,14.69
+3,TinyCC,glibc,avx512-runtime,memrchr,2048,middle,4096,9.20
+3,TinyCC,glibc,avx512-runtime,memrchr,2048,last,4096,5.02
+3,TinyCC,glibc,avx512-runtime,memrchr,2048,absent,4096,14.81
+3,TinyCC,glibc,avx512-runtime,memchr,4096,first,2048,4.57
+3,TinyCC,glibc,avx512-runtime,memchr,4096,middle,2048,16.19
+3,TinyCC,glibc,avx512-runtime,memchr,4096,last,2048,26.13
+3,TinyCC,glibc,avx512-runtime,memchr,4096,absent,2048,32.58
+3,TinyCC,glibc,avx512-runtime,memrchr,4096,first,2048,25.59
+3,TinyCC,glibc,avx512-runtime,memrchr,4096,middle,2048,14.70
+3,TinyCC,glibc,avx512-runtime,memrchr,4096,last,2048,4.59
+3,TinyCC,glibc,avx512-runtime,memrchr,4096,absent,2048,25.93
+3,TinyCC,glibc,avx512-runtime,memchr,8192,first,1024,4.35
+3,TinyCC,glibc,avx512-runtime,memchr,8192,middle,1024,26.23
+3,TinyCC,glibc,avx512-runtime,memchr,8192,last,1024,56.20
+3,TinyCC,glibc,avx512-runtime,memchr,8192,absent,1024,53.42
+3,TinyCC,glibc,avx512-runtime,memrchr,8192,first,1024,56.48
+3,TinyCC,glibc,avx512-runtime,memrchr,8192,middle,1024,25.59
+3,TinyCC,glibc,avx512-runtime,memrchr,8192,last,1024,5.04
+3,TinyCC,glibc,avx512-runtime,memrchr,8192,absent,1024,54.70
+3,TinyCC,glibc,avx512-runtime,memchr,65536,first,128,22.56
+3,TinyCC,glibc,avx512-runtime,memchr,65536,middle,128,134.02
+3,TinyCC,glibc,avx512-runtime,memchr,65536,last,128,330.29
+3,TinyCC,glibc,avx512-runtime,memchr,65536,absent,128,331.02
+3,TinyCC,glibc,avx512-runtime,memrchr,65536,first,128,332.00
+3,TinyCC,glibc,avx512-runtime,memrchr,65536,middle,128,135.46
+3,TinyCC,glibc,avx512-runtime,memrchr,65536,last,128,4.70
+3,TinyCC,glibc,avx512-runtime,memrchr,65536,absent,128,336.98
+3,TinyCC,glibc,libc,memchr,64,first,131072,2.54
+3,TinyCC,glibc,libc,memchr,64,middle,131072,3.00
+3,TinyCC,glibc,libc,memchr,64,last,131072,3.00
+3,TinyCC,glibc,libc,memchr,64,absent,131072,3.03
+3,TinyCC,glibc,libc,memrchr,64,first,131072,2.99
+3,TinyCC,glibc,libc,memrchr,64,middle,131072,2.54
+3,TinyCC,glibc,libc,memrchr,64,last,131072,2.55
+3,TinyCC,glibc,libc,memrchr,64,absent,131072,3.02
+3,TinyCC,glibc,libc,memchr,1024,first,8192,2.51
+3,TinyCC,glibc,libc,memchr,1024,middle,8192,6.16
+3,TinyCC,glibc,libc,memchr,1024,last,8192,8.33
+3,TinyCC,glibc,libc,memchr,1024,absent,8192,8.13
+3,TinyCC,glibc,libc,memrchr,1024,first,8192,9.06
+3,TinyCC,glibc,libc,memrchr,1024,middle,8192,6.27
+3,TinyCC,glibc,libc,memrchr,1024,last,8192,2.51
+3,TinyCC,glibc,libc,memrchr,1024,absent,8192,9.46
+3,TinyCC,glibc,libc,memchr,2048,first,4096,2.53
+3,TinyCC,glibc,libc,memchr,2048,middle,4096,8.88
+3,TinyCC,glibc,libc,memchr,2048,last,4096,13.68
+3,TinyCC,glibc,libc,memchr,2048,absent,4096,13.75
+3,TinyCC,glibc,libc,memrchr,2048,first,4096,15.00
+3,TinyCC,glibc,libc,memrchr,2048,middle,4096,9.66
+3,TinyCC,glibc,libc,memrchr,2048,last,4096,2.51
+3,TinyCC,glibc,libc,memrchr,2048,absent,4096,14.79
+3,TinyCC,glibc,libc,memchr,4096,first,2048,2.52
+3,TinyCC,glibc,libc,memchr,4096,middle,2048,14.43
+3,TinyCC,glibc,libc,memchr,4096,last,2048,24.96
+3,TinyCC,glibc,libc,memchr,4096,absent,2048,25.05
+3,TinyCC,glibc,libc,memrchr,4096,first,2048,26.37
+3,TinyCC,glibc,libc,memrchr,4096,middle,2048,15.67
+3,TinyCC,glibc,libc,memrchr,4096,last,2048,2.52
+3,TinyCC,glibc,libc,memrchr,4096,absent,2048,26.28
+3,TinyCC,glibc,libc,memchr,8192,first,1024,2.53
+3,TinyCC,glibc,libc,memchr,8192,middle,1024,25.35
+3,TinyCC,glibc,libc,memchr,8192,last,1024,52.95
+3,TinyCC,glibc,libc,memchr,8192,absent,1024,54.25
+3,TinyCC,glibc,libc,memrchr,8192,first,1024,54.45
+3,TinyCC,glibc,libc,memrchr,8192,middle,1024,36.72
+3,TinyCC,glibc,libc,memrchr,8192,last,1024,2.52
+3,TinyCC,glibc,libc,memrchr,8192,absent,1024,54.07
+3,TinyCC,glibc,libc,memchr,65536,first,128,2.80
+3,TinyCC,glibc,libc,memchr,65536,middle,128,221.37
+3,TinyCC,glibc,libc,memchr,65536,last,128,540.29
+3,TinyCC,glibc,libc,memchr,65536,absent,128,535.88
+3,TinyCC,glibc,libc,memrchr,65536,first,128,512.31
+3,TinyCC,glibc,libc,memrchr,65536,middle,128,275.70
+3,TinyCC,glibc,libc,memrchr,65536,last,128,2.71
+3,TinyCC,glibc,libc,memrchr,65536,absent,128,623.52
+3,TinyCC,glibc,avx2-only,memchr,64,first,131072,3.71
+3,TinyCC,glibc,avx2-only,memchr,64,middle,131072,4.09
+3,TinyCC,glibc,avx2-only,memchr,64,last,131072,4.27
+3,TinyCC,glibc,avx2-only,memchr,64,absent,131072,4.42
+3,TinyCC,glibc,avx2-only,memrchr,64,first,131072,4.19
+3,TinyCC,glibc,avx2-only,memrchr,64,middle,131072,4.09
+3,TinyCC,glibc,avx2-only,memrchr,64,last,131072,4.07
+3,TinyCC,glibc,avx2-only,memrchr,64,absent,131072,4.22
+3,TinyCC,glibc,avx2-only,memchr,1024,first,8192,3.49
+3,TinyCC,glibc,avx2-only,memchr,1024,middle,8192,10.24
+3,TinyCC,glibc,avx2-only,memchr,1024,last,8192,17.00
+3,TinyCC,glibc,avx2-only,memchr,1024,absent,8192,16.64
+3,TinyCC,glibc,avx2-only,memrchr,1024,first,8192,17.00
+3,TinyCC,glibc,avx2-only,memrchr,1024,middle,8192,10.02
+3,TinyCC,glibc,avx2-only,memrchr,1024,last,8192,3.84
+3,TinyCC,glibc,avx2-only,memrchr,1024,absent,8192,17.00
+3,TinyCC,glibc,avx2-only,memchr,2048,first,4096,4.15
+3,TinyCC,glibc,avx2-only,memchr,2048,middle,4096,9.41
+3,TinyCC,glibc,avx2-only,memchr,2048,last,4096,13.90
+3,TinyCC,glibc,avx2-only,memchr,2048,absent,4096,13.87
+3,TinyCC,glibc,avx2-only,memrchr,2048,first,4096,13.98
+3,TinyCC,glibc,avx2-only,memrchr,2048,middle,4096,8.76
+3,TinyCC,glibc,avx2-only,memrchr,2048,last,4096,4.27
+3,TinyCC,glibc,avx2-only,memrchr,2048,absent,4096,13.84
+3,TinyCC,glibc,avx2-only,memchr,4096,first,2048,4.06
+3,TinyCC,glibc,avx2-only,memchr,4096,middle,2048,14.30
+3,TinyCC,glibc,avx2-only,memchr,4096,last,2048,31.58
+3,TinyCC,glibc,avx2-only,memchr,4096,absent,2048,34.52
+3,TinyCC,glibc,avx2-only,memrchr,4096,first,2048,47.34
+3,TinyCC,glibc,avx2-only,memrchr,4096,middle,2048,23.30
+3,TinyCC,glibc,avx2-only,memrchr,4096,last,2048,4.50
+3,TinyCC,glibc,avx2-only,memrchr,4096,absent,2048,30.62
+3,TinyCC,glibc,avx2-only,memchr,8192,first,1024,4.07
+3,TinyCC,glibc,avx2-only,memchr,8192,middle,1024,32.73
+3,TinyCC,glibc,avx2-only,memchr,8192,last,1024,52.34
+3,TinyCC,glibc,avx2-only,memchr,8192,absent,1024,51.35
+3,TinyCC,glibc,avx2-only,memrchr,8192,first,1024,53.22
+3,TinyCC,glibc,avx2-only,memrchr,8192,middle,1024,32.79
+3,TinyCC,glibc,avx2-only,memrchr,8192,last,1024,4.50
+3,TinyCC,glibc,avx2-only,memrchr,8192,absent,1024,51.22
+3,TinyCC,glibc,avx2-only,memchr,65536,first,128,4.26
+3,TinyCC,glibc,avx2-only,memchr,65536,middle,128,178.30
+3,TinyCC,glibc,avx2-only,memchr,65536,last,128,481.40
+3,TinyCC,glibc,avx2-only,memchr,65536,absent,128,529.07
+3,TinyCC,glibc,avx2-only,memrchr,65536,first,128,530.79
+3,TinyCC,glibc,avx2-only,memrchr,65536,middle,128,176.08
+3,TinyCC,glibc,avx2-only,memrchr,65536,last,128,4.56
+3,TinyCC,glibc,avx2-only,memrchr,65536,absent,128,492.93
+4,Zig cc,glibc,libc,memchr,64,first,131072,1.71
+4,Zig cc,glibc,libc,memchr,64,middle,131072,2.01
+4,Zig cc,glibc,libc,memchr,64,last,131072,2.00
+4,Zig cc,glibc,libc,memchr,64,absent,131072,2.00
+4,Zig cc,glibc,libc,memrchr,64,first,131072,2.01
+4,Zig cc,glibc,libc,memrchr,64,middle,131072,1.53
+4,Zig cc,glibc,libc,memrchr,64,last,131072,1.53
+4,Zig cc,glibc,libc,memrchr,64,absent,131072,1.96
+4,Zig cc,glibc,libc,memchr,1024,first,8192,1.53
+4,Zig cc,glibc,libc,memchr,1024,middle,8192,5.82
+4,Zig cc,glibc,libc,memchr,1024,last,8192,7.72
+4,Zig cc,glibc,libc,memchr,1024,absent,8192,7.50
+4,Zig cc,glibc,libc,memrchr,1024,first,8192,8.24
+4,Zig cc,glibc,libc,memrchr,1024,middle,8192,5.83
+4,Zig cc,glibc,libc,memrchr,1024,last,8192,1.49
+4,Zig cc,glibc,libc,memrchr,1024,absent,8192,9.77
+4,Zig cc,glibc,libc,memchr,2048,first,4096,1.50
+4,Zig cc,glibc,libc,memchr,2048,middle,4096,8.11
+4,Zig cc,glibc,libc,memchr,2048,last,4096,15.80
+4,Zig cc,glibc,libc,memchr,2048,absent,4096,12.41
+4,Zig cc,glibc,libc,memrchr,2048,first,4096,13.87
+4,Zig cc,glibc,libc,memrchr,2048,middle,4096,8.69
+4,Zig cc,glibc,libc,memrchr,2048,last,4096,1.50
+4,Zig cc,glibc,libc,memrchr,2048,absent,4096,13.65
+4,Zig cc,glibc,libc,memchr,4096,first,2048,1.50
+4,Zig cc,glibc,libc,memchr,4096,middle,2048,13.19
+4,Zig cc,glibc,libc,memchr,4096,last,2048,26.83
+4,Zig cc,glibc,libc,memchr,4096,absent,2048,26.40
+4,Zig cc,glibc,libc,memrchr,4096,first,2048,29.27
+4,Zig cc,glibc,libc,memrchr,4096,middle,2048,13.75
+4,Zig cc,glibc,libc,memrchr,4096,last,2048,1.47
+4,Zig cc,glibc,libc,memrchr,4096,absent,2048,23.92
+4,Zig cc,glibc,libc,memchr,8192,first,1024,1.49
+4,Zig cc,glibc,libc,memchr,8192,middle,1024,30.63
+4,Zig cc,glibc,libc,memchr,8192,last,1024,50.91
+4,Zig cc,glibc,libc,memchr,8192,absent,1024,50.68
+4,Zig cc,glibc,libc,memrchr,8192,first,1024,80.47
+4,Zig cc,glibc,libc,memrchr,8192,middle,1024,38.83
+4,Zig cc,glibc,libc,memrchr,8192,last,1024,2.09
+4,Zig cc,glibc,libc,memrchr,8192,absent,1024,59.34
+4,Zig cc,glibc,libc,memchr,65536,first,128,1.70
+4,Zig cc,glibc,libc,memchr,65536,middle,128,199.44
+4,Zig cc,glibc,libc,memchr,65536,last,128,495.47
+4,Zig cc,glibc,libc,memchr,65536,absent,128,495.29
+4,Zig cc,glibc,libc,memrchr,65536,first,128,466.97
+4,Zig cc,glibc,libc,memrchr,65536,middle,128,182.99
+4,Zig cc,glibc,libc,memrchr,65536,last,128,1.63
+4,Zig cc,glibc,libc,memrchr,65536,absent,128,468.51
+4,Zig cc,glibc,avx2-only,memchr,64,first,131072,2.44
+4,Zig cc,glibc,avx2-only,memchr,64,middle,131072,2.49
+4,Zig cc,glibc,avx2-only,memchr,64,last,131072,2.49
+4,Zig cc,glibc,avx2-only,memchr,64,absent,131072,2.41
+4,Zig cc,glibc,avx2-only,memrchr,64,first,131072,2.75
+4,Zig cc,glibc,avx2-only,memrchr,64,middle,131072,2.57
+4,Zig cc,glibc,avx2-only,memrchr,64,last,131072,2.57
+4,Zig cc,glibc,avx2-only,memrchr,64,absent,131072,2.51
+4,Zig cc,glibc,avx2-only,memchr,1024,first,8192,2.18
+4,Zig cc,glibc,avx2-only,memchr,1024,middle,8192,8.21
+4,Zig cc,glibc,avx2-only,memchr,1024,last,8192,14.93
+4,Zig cc,glibc,avx2-only,memchr,1024,absent,8192,14.93
+4,Zig cc,glibc,avx2-only,memrchr,1024,first,8192,14.94
+4,Zig cc,glibc,avx2-only,memrchr,1024,middle,8192,8.28
+4,Zig cc,glibc,avx2-only,memrchr,1024,last,8192,2.62
+4,Zig cc,glibc,avx2-only,memrchr,1024,absent,8192,16.63
+4,Zig cc,glibc,avx2-only,memchr,2048,first,4096,2.78
+4,Zig cc,glibc,avx2-only,memchr,2048,middle,4096,8.53
+4,Zig cc,glibc,avx2-only,memchr,2048,last,4096,13.28
+4,Zig cc,glibc,avx2-only,memchr,2048,absent,4096,12.77
+4,Zig cc,glibc,avx2-only,memrchr,2048,first,4096,12.97
+4,Zig cc,glibc,avx2-only,memrchr,2048,middle,4096,7.66
+4,Zig cc,glibc,avx2-only,memrchr,2048,last,4096,2.99
+4,Zig cc,glibc,avx2-only,memrchr,2048,absent,4096,12.48
+4,Zig cc,glibc,avx2-only,memchr,4096,first,2048,2.81
+4,Zig cc,glibc,avx2-only,memchr,4096,middle,2048,13.12
+4,Zig cc,glibc,avx2-only,memchr,4096,last,2048,23.01
+4,Zig cc,glibc,avx2-only,memchr,4096,absent,2048,22.62
+4,Zig cc,glibc,avx2-only,memrchr,4096,first,2048,31.00
+4,Zig cc,glibc,avx2-only,memrchr,4096,middle,2048,18.17
+4,Zig cc,glibc,avx2-only,memrchr,4096,last,2048,3.13
+4,Zig cc,glibc,avx2-only,memrchr,4096,absent,2048,46.58
+4,Zig cc,glibc,avx2-only,memchr,8192,first,1024,5.77
+4,Zig cc,glibc,avx2-only,memchr,8192,middle,1024,37.84
+4,Zig cc,glibc,avx2-only,memchr,8192,last,1024,52.43
+4,Zig cc,glibc,avx2-only,memchr,8192,absent,1024,49.59
+4,Zig cc,glibc,avx2-only,memrchr,8192,first,1024,52.30
+4,Zig cc,glibc,avx2-only,memrchr,8192,middle,1024,31.56
+4,Zig cc,glibc,avx2-only,memrchr,8192,last,1024,3.06
+4,Zig cc,glibc,avx2-only,memrchr,8192,absent,1024,48.82
+4,Zig cc,glibc,avx2-only,memchr,65536,first,128,2.98
+4,Zig cc,glibc,avx2-only,memchr,65536,middle,128,182.14
+4,Zig cc,glibc,avx2-only,memchr,65536,last,128,494.26
+4,Zig cc,glibc,avx2-only,memchr,65536,absent,128,472.87
+4,Zig cc,glibc,avx2-only,memrchr,65536,first,128,483.58
+4,Zig cc,glibc,avx2-only,memrchr,65536,middle,128,179.01
+4,Zig cc,glibc,avx2-only,memrchr,65536,last,128,2.97
+4,Zig cc,glibc,avx2-only,memrchr,65536,absent,128,483.91
+4,Zig cc,glibc,avx512-runtime,memchr,64,first,131072,2.42
+4,Zig cc,glibc,avx512-runtime,memchr,64,middle,131072,2.86
+4,Zig cc,glibc,avx512-runtime,memchr,64,last,131072,2.67
+4,Zig cc,glibc,avx512-runtime,memchr,64,absent,131072,2.40
+4,Zig cc,glibc,avx512-runtime,memrchr,64,first,131072,2.75
+4,Zig cc,glibc,avx512-runtime,memrchr,64,middle,131072,2.45
+4,Zig cc,glibc,avx512-runtime,memrchr,64,last,131072,2.42
+4,Zig cc,glibc,avx512-runtime,memrchr,64,absent,131072,2.93
+4,Zig cc,glibc,avx512-runtime,memchr,1024,first,8192,2.04
+4,Zig cc,glibc,avx512-runtime,memchr,1024,middle,8192,8.92
+4,Zig cc,glibc,avx512-runtime,memchr,1024,last,8192,15.47
+4,Zig cc,glibc,avx512-runtime,memchr,1024,absent,8192,15.26
+4,Zig cc,glibc,avx512-runtime,memrchr,1024,first,8192,15.71
+4,Zig cc,glibc,avx512-runtime,memrchr,1024,middle,8192,8.73
+4,Zig cc,glibc,avx512-runtime,memrchr,1024,last,8192,2.62
+4,Zig cc,glibc,avx512-runtime,memrchr,1024,absent,8192,15.70
+4,Zig cc,glibc,avx512-runtime,memchr,2048,first,4096,3.06
+4,Zig cc,glibc,avx512-runtime,memchr,2048,middle,4096,8.29
+4,Zig cc,glibc,avx512-runtime,memchr,2048,last,4096,12.93
+4,Zig cc,glibc,avx512-runtime,memchr,2048,absent,4096,12.86
+4,Zig cc,glibc,avx512-runtime,memrchr,2048,first,4096,12.87
+4,Zig cc,glibc,avx512-runtime,memrchr,2048,middle,4096,7.95
+4,Zig cc,glibc,avx512-runtime,memrchr,2048,last,4096,3.35
+4,Zig cc,glibc,avx512-runtime,memrchr,2048,absent,4096,21.38
+4,Zig cc,glibc,avx512-runtime,memchr,4096,first,2048,5.71
+4,Zig cc,glibc,avx512-runtime,memchr,4096,middle,2048,25.58
+4,Zig cc,glibc,avx512-runtime,memchr,4096,last,2048,23.85
+4,Zig cc,glibc,avx512-runtime,memchr,4096,absent,2048,23.85
+4,Zig cc,glibc,avx512-runtime,memrchr,4096,first,2048,23.76
+4,Zig cc,glibc,avx512-runtime,memrchr,4096,middle,2048,12.81
+4,Zig cc,glibc,avx512-runtime,memrchr,4096,last,2048,3.06
+4,Zig cc,glibc,avx512-runtime,memrchr,4096,absent,2048,23.14
+4,Zig cc,glibc,avx512-runtime,memchr,8192,first,1024,2.87
+4,Zig cc,glibc,avx512-runtime,memchr,8192,middle,1024,24.01
+4,Zig cc,glibc,avx512-runtime,memchr,8192,last,1024,51.96
+4,Zig cc,glibc,avx512-runtime,memchr,8192,absent,1024,50.34
+4,Zig cc,glibc,avx512-runtime,memrchr,8192,first,1024,53.44
+4,Zig cc,glibc,avx512-runtime,memrchr,8192,middle,1024,23.93
+4,Zig cc,glibc,avx512-runtime,memrchr,8192,last,1024,3.13
+4,Zig cc,glibc,avx512-runtime,memrchr,8192,absent,1024,51.10
+4,Zig cc,glibc,avx512-runtime,memchr,65536,first,128,11.24
+4,Zig cc,glibc,avx512-runtime,memchr,65536,middle,128,127.29
+4,Zig cc,glibc,avx512-runtime,memchr,65536,last,128,309.22
+4,Zig cc,glibc,avx512-runtime,memchr,65536,absent,128,297.87
+4,Zig cc,glibc,avx512-runtime,memrchr,65536,first,128,301.53
+4,Zig cc,glibc,avx512-runtime,memrchr,65536,middle,128,121.61
+4,Zig cc,glibc,avx512-runtime,memrchr,65536,last,128,2.76
+4,Zig cc,glibc,avx512-runtime,memrchr,65536,absent,128,296.38
+4,GCC,glibc,libc,memchr,64,first,131072,1.83
+4,GCC,glibc,libc,memchr,64,middle,131072,2.24
+4,GCC,glibc,libc,memchr,64,last,131072,2.52
+4,GCC,glibc,libc,memchr,64,absent,131072,2.27
+4,GCC,glibc,libc,memrchr,64,first,131072,2.25
+4,GCC,glibc,libc,memrchr,64,middle,131072,1.78
+4,GCC,glibc,libc,memrchr,64,last,131072,1.74
+4,GCC,glibc,libc,memrchr,64,absent,131072,2.18
+4,GCC,glibc,libc,memchr,1024,first,8192,1.74
+4,GCC,glibc,libc,memchr,1024,middle,8192,5.94
+4,GCC,glibc,libc,memchr,1024,last,8192,7.75
+4,GCC,glibc,libc,memchr,1024,absent,8192,8.22
+4,GCC,glibc,libc,memrchr,1024,first,8192,8.42
+4,GCC,glibc,libc,memrchr,1024,middle,8192,6.59
+4,GCC,glibc,libc,memrchr,1024,last,8192,1.71
+4,GCC,glibc,libc,memrchr,1024,absent,8192,8.54
+4,GCC,glibc,libc,memchr,2048,first,4096,1.75
+4,GCC,glibc,libc,memchr,2048,middle,4096,8.07
+4,GCC,glibc,libc,memchr,2048,last,4096,13.05
+4,GCC,glibc,libc,memchr,2048,absent,4096,12.96
+4,GCC,glibc,libc,memrchr,2048,first,4096,14.04
+4,GCC,glibc,libc,memrchr,2048,middle,4096,8.82
+4,GCC,glibc,libc,memrchr,2048,last,4096,1.72
+4,GCC,glibc,libc,memrchr,2048,absent,4096,14.61
+4,GCC,glibc,libc,memchr,4096,first,2048,1.71
+4,GCC,glibc,libc,memchr,4096,middle,2048,13.22
+4,GCC,glibc,libc,memchr,4096,last,2048,33.24
+4,GCC,glibc,libc,memchr,4096,absent,2048,27.14
+4,GCC,glibc,libc,memrchr,4096,first,2048,27.61
+4,GCC,glibc,libc,memrchr,4096,middle,2048,14.60
+4,GCC,glibc,libc,memrchr,4096,last,2048,1.75
+4,GCC,glibc,libc,memrchr,4096,absent,2048,25.07
+4,GCC,glibc,libc,memchr,8192,first,1024,1.77
+4,GCC,glibc,libc,memchr,8192,middle,1024,30.55
+4,GCC,glibc,libc,memchr,8192,last,1024,51.97
+4,GCC,glibc,libc,memchr,8192,absent,1024,50.90
+4,GCC,glibc,libc,memrchr,8192,first,1024,51.91
+4,GCC,glibc,libc,memrchr,8192,middle,1024,25.52
+4,GCC,glibc,libc,memrchr,8192,last,1024,1.76
+4,GCC,glibc,libc,memrchr,8192,absent,1024,52.91
+4,GCC,glibc,libc,memchr,65536,first,128,1.97
+4,GCC,glibc,libc,memchr,65536,middle,128,212.49
+4,GCC,glibc,libc,memchr,65536,last,128,567.09
+4,GCC,glibc,libc,memchr,65536,absent,128,784.15
+4,GCC,glibc,libc,memrchr,65536,first,128,504.62
+4,GCC,glibc,libc,memrchr,65536,middle,128,188.85
+4,GCC,glibc,libc,memrchr,65536,last,128,1.94
+4,GCC,glibc,libc,memrchr,65536,absent,128,481.60
+4,GCC,glibc,avx2-only,memchr,64,first,131072,3.13
+4,GCC,glibc,avx2-only,memchr,64,middle,131072,2.51
+4,GCC,glibc,avx2-only,memchr,64,last,131072,2.76
+4,GCC,glibc,avx2-only,memchr,64,absent,131072,2.97
+4,GCC,glibc,avx2-only,memrchr,64,first,131072,2.75
+4,GCC,glibc,avx2-only,memrchr,64,middle,131072,2.63
+4,GCC,glibc,avx2-only,memrchr,64,last,131072,2.91
+4,GCC,glibc,avx2-only,memrchr,64,absent,131072,3.21
+4,GCC,glibc,avx2-only,memchr,1024,first,8192,2.45
+4,GCC,glibc,avx2-only,memchr,1024,middle,8192,9.36
+4,GCC,glibc,avx2-only,memchr,1024,last,8192,15.47
+4,GCC,glibc,avx2-only,memchr,1024,absent,8192,15.58
+4,GCC,glibc,avx2-only,memrchr,1024,first,8192,19.04
+4,GCC,glibc,avx2-only,memrchr,1024,middle,8192,9.11
+4,GCC,glibc,avx2-only,memrchr,1024,last,8192,2.96
+4,GCC,glibc,avx2-only,memrchr,1024,absent,8192,16.40
+4,GCC,glibc,avx2-only,memchr,2048,first,4096,2.97
+4,GCC,glibc,avx2-only,memchr,2048,middle,4096,8.43
+4,GCC,glibc,avx2-only,memchr,2048,last,4096,13.45
+4,GCC,glibc,avx2-only,memchr,2048,absent,4096,13.22
+4,GCC,glibc,avx2-only,memrchr,2048,first,4096,13.75
+4,GCC,glibc,avx2-only,memrchr,2048,middle,4096,8.33
+4,GCC,glibc,avx2-only,memrchr,2048,last,4096,3.43
+4,GCC,glibc,avx2-only,memrchr,2048,absent,4096,13.69
+4,GCC,glibc,avx2-only,memchr,4096,first,2048,4.95
+4,GCC,glibc,avx2-only,memchr,4096,middle,2048,21.01
+4,GCC,glibc,avx2-only,memchr,4096,last,2048,43.98
+4,GCC,glibc,avx2-only,memchr,4096,absent,2048,44.82
+4,GCC,glibc,avx2-only,memrchr,4096,first,2048,24.45
+4,GCC,glibc,avx2-only,memrchr,4096,middle,2048,13.83
+4,GCC,glibc,avx2-only,memrchr,4096,last,2048,3.43
+4,GCC,glibc,avx2-only,memrchr,4096,absent,2048,24.62
+4,GCC,glibc,avx2-only,memchr,8192,first,1024,2.99
+4,GCC,glibc,avx2-only,memchr,8192,middle,1024,33.81
+4,GCC,glibc,avx2-only,memchr,8192,last,1024,54.72
+4,GCC,glibc,avx2-only,memchr,8192,absent,1024,52.25
+4,GCC,glibc,avx2-only,memrchr,8192,first,1024,55.16
+4,GCC,glibc,avx2-only,memrchr,8192,middle,1024,33.43
+4,GCC,glibc,avx2-only,memrchr,8192,last,1024,3.43
+4,GCC,glibc,avx2-only,memrchr,8192,absent,1024,52.98
+4,GCC,glibc,avx2-only,memchr,65536,first,128,3.09
+4,GCC,glibc,avx2-only,memchr,65536,middle,128,189.24
+4,GCC,glibc,avx2-only,memchr,65536,last,128,498.59
+4,GCC,glibc,avx2-only,memchr,65536,absent,128,491.18
+4,GCC,glibc,avx2-only,memrchr,65536,first,128,531.53
+4,GCC,glibc,avx2-only,memrchr,65536,middle,128,182.23
+4,GCC,glibc,avx2-only,memrchr,65536,last,128,3.47
+4,GCC,glibc,avx2-only,memrchr,65536,absent,128,494.27
+4,GCC,glibc,avx512-runtime,memchr,64,first,131072,2.28
+4,GCC,glibc,avx512-runtime,memchr,64,middle,131072,2.45
+4,GCC,glibc,avx512-runtime,memchr,64,last,131072,2.53
+4,GCC,glibc,avx512-runtime,memchr,64,absent,131072,2.69
+4,GCC,glibc,avx512-runtime,memrchr,64,first,131072,2.83
+4,GCC,glibc,avx512-runtime,memrchr,64,middle,131072,2.83
+4,GCC,glibc,avx512-runtime,memrchr,64,last,131072,2.62
+4,GCC,glibc,avx512-runtime,memrchr,64,absent,131072,3.14
+4,GCC,glibc,avx512-runtime,memchr,1024,first,8192,2.13
+4,GCC,glibc,avx512-runtime,memchr,1024,middle,8192,8.75
+4,GCC,glibc,avx512-runtime,memchr,1024,last,8192,15.26
+4,GCC,glibc,avx512-runtime,memchr,1024,absent,8192,15.26
+4,GCC,glibc,avx512-runtime,memrchr,1024,first,8192,19.60
+4,GCC,glibc,avx512-runtime,memrchr,1024,middle,8192,8.97
+4,GCC,glibc,avx512-runtime,memrchr,1024,last,8192,2.67
+4,GCC,glibc,avx512-runtime,memrchr,1024,absent,8192,25.94
+4,GCC,glibc,avx512-runtime,memchr,2048,first,4096,2.97
+4,GCC,glibc,avx512-runtime,memchr,2048,middle,4096,8.07
+4,GCC,glibc,avx512-runtime,memchr,2048,last,4096,12.86
+4,GCC,glibc,avx512-runtime,memchr,2048,absent,4096,12.93
+4,GCC,glibc,avx512-runtime,memrchr,2048,first,4096,12.72
+4,GCC,glibc,avx512-runtime,memrchr,2048,middle,4096,8.14
+4,GCC,glibc,avx512-runtime,memrchr,2048,last,4096,3.27
+4,GCC,glibc,avx512-runtime,memrchr,2048,absent,4096,12.90
+4,GCC,glibc,avx512-runtime,memchr,4096,first,2048,2.84
+4,GCC,glibc,avx512-runtime,memchr,4096,middle,2048,13.31
+4,GCC,glibc,avx512-runtime,memchr,4096,last,2048,23.34
+4,GCC,glibc,avx512-runtime,memchr,4096,absent,2048,25.65
+4,GCC,glibc,avx512-runtime,memrchr,4096,first,2048,22.86
+4,GCC,glibc,avx512-runtime,memrchr,4096,middle,2048,12.89
+4,GCC,glibc,avx512-runtime,memrchr,4096,last,2048,3.21
+4,GCC,glibc,avx512-runtime,memrchr,4096,absent,2048,22.85
+4,GCC,glibc,avx512-runtime,memchr,8192,first,1024,2.93
+4,GCC,glibc,avx512-runtime,memchr,8192,middle,1024,24.32
+4,GCC,glibc,avx512-runtime,memchr,8192,last,1024,52.42
+4,GCC,glibc,avx512-runtime,memchr,8192,absent,1024,49.76
+4,GCC,glibc,avx512-runtime,memrchr,8192,first,1024,52.85
+4,GCC,glibc,avx512-runtime,memrchr,8192,middle,1024,23.38
+4,GCC,glibc,avx512-runtime,memrchr,8192,last,1024,3.28
+4,GCC,glibc,avx512-runtime,memrchr,8192,absent,1024,50.13
+4,GCC,glibc,avx512-runtime,memchr,65536,first,128,10.95
+4,GCC,glibc,avx512-runtime,memchr,65536,middle,128,124.59
+4,GCC,glibc,avx512-runtime,memchr,65536,last,128,302.96
+4,GCC,glibc,avx512-runtime,memchr,65536,absent,128,298.02
+4,GCC,glibc,avx512-runtime,memrchr,65536,first,128,300.73
+4,GCC,glibc,avx512-runtime,memrchr,65536,middle,128,119.80
+4,GCC,glibc,avx512-runtime,memrchr,65536,last,128,2.90
+4,GCC,glibc,avx512-runtime,memrchr,65536,absent,128,288.14
+4,Zig cc,musl,libc,memchr,64,first,131072,1.10
+4,Zig cc,musl,libc,memchr,64,middle,131072,16.87
+4,Zig cc,musl,libc,memchr,64,last,131072,25.17
+4,Zig cc,musl,libc,memchr,64,absent,131072,25.76
+4,Zig cc,musl,libc,memrchr,64,first,131072,25.72
+4,Zig cc,musl,libc,memrchr,64,middle,131072,16.74
+4,Zig cc,musl,libc,memrchr,64,last,131072,1.25
+4,Zig cc,musl,libc,memrchr,64,absent,131072,24.21
+4,Zig cc,musl,libc,memchr,1024,first,8192,1.09
+4,Zig cc,musl,libc,memchr,1024,middle,8192,124.14
+4,Zig cc,musl,libc,memchr,1024,last,8192,231.83
+4,Zig cc,musl,libc,memchr,1024,absent,8192,233.98
+4,Zig cc,musl,libc,memrchr,1024,first,8192,272.63
+4,Zig cc,musl,libc,memrchr,1024,middle,8192,139.67
+4,Zig cc,musl,libc,memrchr,1024,last,8192,1.71
+4,Zig cc,musl,libc,memrchr,1024,absent,8192,272.88
+4,Zig cc,musl,libc,memchr,2048,first,4096,1.07
+4,Zig cc,musl,libc,memchr,2048,middle,4096,226.30
+4,Zig cc,musl,libc,memchr,2048,last,4096,492.21
+4,Zig cc,musl,libc,memchr,2048,absent,4096,472.87
+4,Zig cc,musl,libc,memrchr,2048,first,4096,558.54
+4,Zig cc,musl,libc,memrchr,2048,middle,4096,276.60
+4,Zig cc,musl,libc,memrchr,2048,last,4096,1.31
+4,Zig cc,musl,libc,memrchr,2048,absent,4096,545.39
+4,Zig cc,musl,libc,memchr,4096,first,2048,1.07
+4,Zig cc,musl,libc,memchr,4096,middle,2048,474.24
+4,Zig cc,musl,libc,memchr,4096,last,2048,930.11
+4,Zig cc,musl,libc,memchr,4096,absent,2048,942.61
+4,Zig cc,musl,libc,memrchr,4096,first,2048,1078.31
+4,Zig cc,musl,libc,memrchr,4096,middle,2048,544.27
+4,Zig cc,musl,libc,memrchr,4096,last,2048,2.05
+4,Zig cc,musl,libc,memrchr,4096,absent,2048,1061.52
+4,Zig cc,musl,libc,memchr,8192,first,1024,1.08
+4,Zig cc,musl,libc,memchr,8192,middle,1024,936.63
+4,Zig cc,musl,libc,memchr,8192,last,1024,1871.51
+4,Zig cc,musl,libc,memchr,8192,absent,1024,1807.43
+4,Zig cc,musl,libc,memrchr,8192,first,1024,2140.88
+4,Zig cc,musl,libc,memrchr,8192,middle,1024,1087.81
+4,Zig cc,musl,libc,memrchr,8192,last,1024,1.27
+4,Zig cc,musl,libc,memrchr,8192,absent,1024,2101.72
+4,Zig cc,musl,libc,memchr,65536,first,128,1.20
+4,Zig cc,musl,libc,memchr,65536,middle,128,7203.87
+4,Zig cc,musl,libc,memchr,65536,last,128,14533.64
+4,Zig cc,musl,libc,memchr,65536,absent,128,14594.71
+4,Zig cc,musl,libc,memrchr,65536,first,128,16815.16
+4,Zig cc,musl,libc,memrchr,65536,middle,128,8406.16
+4,Zig cc,musl,libc,memrchr,65536,last,128,1.35
+4,Zig cc,musl,libc,memrchr,65536,absent,128,17011.11
+4,Zig cc,musl,avx2-only,memchr,64,first,131072,2.28
+4,Zig cc,musl,avx2-only,memchr,64,middle,131072,2.55
+4,Zig cc,musl,avx2-only,memchr,64,last,131072,2.74
+4,Zig cc,musl,avx2-only,memchr,64,absent,131072,2.70
+4,Zig cc,musl,avx2-only,memrchr,64,first,131072,2.75
+4,Zig cc,musl,avx2-only,memrchr,64,middle,131072,2.45
+4,Zig cc,musl,avx2-only,memrchr,64,last,131072,2.80
+4,Zig cc,musl,avx2-only,memrchr,64,absent,131072,2.77
+4,Zig cc,musl,avx2-only,memchr,1024,first,8192,2.14
+4,Zig cc,musl,avx2-only,memchr,1024,middle,8192,9.17
+4,Zig cc,musl,avx2-only,memchr,1024,last,8192,15.70
+4,Zig cc,musl,avx2-only,memchr,1024,absent,8192,15.69
+4,Zig cc,musl,avx2-only,memrchr,1024,first,8192,15.70
+4,Zig cc,musl,avx2-only,memrchr,1024,middle,8192,8.72
+4,Zig cc,musl,avx2-only,memrchr,1024,last,8192,2.62
+4,Zig cc,musl,avx2-only,memrchr,1024,absent,8192,16.27
+4,Zig cc,musl,avx2-only,memchr,2048,first,4096,2.91
+4,Zig cc,musl,avx2-only,memchr,2048,middle,4096,8.07
+4,Zig cc,musl,avx2-only,memchr,2048,last,4096,12.96
+4,Zig cc,musl,avx2-only,memchr,2048,absent,4096,12.87
+4,Zig cc,musl,avx2-only,memrchr,2048,first,4096,13.05
+4,Zig cc,musl,avx2-only,memrchr,2048,middle,4096,7.88
+4,Zig cc,musl,avx2-only,memrchr,2048,last,4096,3.06
+4,Zig cc,musl,avx2-only,memrchr,2048,absent,4096,13.08
+4,Zig cc,musl,avx2-only,memchr,4096,first,2048,3.25
+4,Zig cc,musl,avx2-only,memchr,4096,middle,2048,15.27
+4,Zig cc,musl,avx2-only,memchr,4096,last,2048,23.37
+4,Zig cc,musl,avx2-only,memchr,4096,absent,2048,29.44
+4,Zig cc,musl,avx2-only,memrchr,4096,first,2048,22.72
+4,Zig cc,musl,avx2-only,memrchr,4096,middle,2048,12.80
+4,Zig cc,musl,avx2-only,memrchr,4096,last,2048,3.00
+4,Zig cc,musl,avx2-only,memrchr,4096,absent,2048,23.54
+4,Zig cc,musl,avx2-only,memchr,8192,first,1024,2.86
+4,Zig cc,musl,avx2-only,memchr,8192,middle,1024,34.45
+4,Zig cc,musl,avx2-only,memchr,8192,last,1024,51.28
+4,Zig cc,musl,avx2-only,memchr,8192,absent,1024,51.41
+4,Zig cc,musl,avx2-only,memrchr,8192,first,1024,51.53
+4,Zig cc,musl,avx2-only,memrchr,8192,middle,1024,30.83
+4,Zig cc,musl,avx2-only,memrchr,8192,last,1024,2.80
+4,Zig cc,musl,avx2-only,memrchr,8192,absent,1024,49.28
+4,Zig cc,musl,avx2-only,memchr,65536,first,128,2.99
+4,Zig cc,musl,avx2-only,memchr,65536,middle,128,177.00
+4,Zig cc,musl,avx2-only,memchr,65536,last,128,479.11
+4,Zig cc,musl,avx2-only,memchr,65536,absent,128,474.08
+4,Zig cc,musl,avx2-only,memrchr,65536,first,128,477.32
+4,Zig cc,musl,avx2-only,memrchr,65536,middle,128,174.39
+4,Zig cc,musl,avx2-only,memrchr,65536,last,128,3.18
+4,Zig cc,musl,avx2-only,memrchr,65536,absent,128,480.49
+4,Zig cc,musl,avx512-runtime,memchr,64,first,131072,2.20
+4,Zig cc,musl,avx512-runtime,memchr,64,middle,131072,2.37
+4,Zig cc,musl,avx512-runtime,memchr,64,last,131072,2.49
+4,Zig cc,musl,avx512-runtime,memchr,64,absent,131072,2.47
+4,Zig cc,musl,avx512-runtime,memrchr,64,first,131072,2.63
+4,Zig cc,musl,avx512-runtime,memrchr,64,middle,131072,2.40
+4,Zig cc,musl,avx512-runtime,memrchr,64,last,131072,2.40
+4,Zig cc,musl,avx512-runtime,memrchr,64,absent,131072,2.66
+4,Zig cc,musl,avx512-runtime,memchr,1024,first,8192,2.35
+4,Zig cc,musl,avx512-runtime,memchr,1024,middle,8192,8.54
+4,Zig cc,musl,avx512-runtime,memchr,1024,last,8192,15.16
+4,Zig cc,musl,avx512-runtime,memchr,1024,absent,8192,15.26
+4,Zig cc,musl,avx512-runtime,memrchr,1024,first,8192,15.36
+4,Zig cc,musl,avx512-runtime,memrchr,1024,middle,8192,10.10
+4,Zig cc,musl,avx512-runtime,memrchr,1024,last,8192,2.35
+4,Zig cc,musl,avx512-runtime,memrchr,1024,absent,8192,15.36
+4,Zig cc,musl,avx512-runtime,memchr,2048,first,4096,2.99
+4,Zig cc,musl,avx512-runtime,memchr,2048,middle,4096,8.68
+4,Zig cc,musl,avx512-runtime,memchr,2048,last,4096,12.96
+4,Zig cc,musl,avx512-runtime,memchr,2048,absent,4096,12.87
+4,Zig cc,musl,avx512-runtime,memrchr,2048,first,4096,12.92
+4,Zig cc,musl,avx512-runtime,memrchr,2048,middle,4096,7.80
+4,Zig cc,musl,avx512-runtime,memrchr,2048,last,4096,2.87
+4,Zig cc,musl,avx512-runtime,memrchr,2048,absent,4096,12.81
+4,Zig cc,musl,avx512-runtime,memchr,4096,first,2048,2.85
+4,Zig cc,musl,avx512-runtime,memchr,4096,middle,2048,13.83
+4,Zig cc,musl,avx512-runtime,memchr,4096,last,2048,23.45
+4,Zig cc,musl,avx512-runtime,memchr,4096,absent,2048,23.34
+4,Zig cc,musl,avx512-runtime,memrchr,4096,first,2048,23.25
+4,Zig cc,musl,avx512-runtime,memrchr,4096,middle,2048,12.90
+4,Zig cc,musl,avx512-runtime,memrchr,4096,last,2048,3.00
+4,Zig cc,musl,avx512-runtime,memrchr,4096,absent,2048,22.65
+4,Zig cc,musl,avx512-runtime,memchr,8192,first,1024,3.01
+4,Zig cc,musl,avx512-runtime,memchr,8192,middle,1024,25.18
+4,Zig cc,musl,avx512-runtime,memchr,8192,last,1024,51.11
+4,Zig cc,musl,avx512-runtime,memchr,8192,absent,1024,48.75
+4,Zig cc,musl,avx512-runtime,memrchr,8192,first,1024,52.24
+4,Zig cc,musl,avx512-runtime,memrchr,8192,middle,1024,31.70
+4,Zig cc,musl,avx512-runtime,memrchr,8192,last,1024,3.30
+4,Zig cc,musl,avx512-runtime,memrchr,8192,absent,1024,48.84
+4,Zig cc,musl,avx512-runtime,memchr,65536,first,128,10.70
+4,Zig cc,musl,avx512-runtime,memchr,65536,middle,128,122.58
+4,Zig cc,musl,avx512-runtime,memchr,65536,last,128,298.14
+4,Zig cc,musl,avx512-runtime,memchr,65536,absent,128,293.00
+4,Zig cc,musl,avx512-runtime,memrchr,65536,first,128,293.55
+4,Zig cc,musl,avx512-runtime,memrchr,65536,middle,128,119.02
+4,Zig cc,musl,avx512-runtime,memrchr,65536,last,128,2.67
+4,Zig cc,musl,avx512-runtime,memrchr,65536,absent,128,294.44
+4,TinyCC,glibc,libc,memchr,64,first,131072,2.52
+4,TinyCC,glibc,libc,memchr,64,middle,131072,3.09
+4,TinyCC,glibc,libc,memchr,64,last,131072,3.24
+4,TinyCC,glibc,libc,memchr,64,absent,131072,2.94
+4,TinyCC,glibc,libc,memrchr,64,first,131072,2.83
+4,TinyCC,glibc,libc,memrchr,64,middle,131072,2.50
+4,TinyCC,glibc,libc,memrchr,64,last,131072,2.45
+4,TinyCC,glibc,libc,memrchr,64,absent,131072,2.83
+4,TinyCC,glibc,libc,memchr,1024,first,8192,2.35
+4,TinyCC,glibc,libc,memchr,1024,middle,8192,5.76
+4,TinyCC,glibc,libc,memchr,1024,last,8192,7.94
+4,TinyCC,glibc,libc,memchr,1024,absent,8192,7.95
+4,TinyCC,glibc,libc,memrchr,1024,first,8192,10.77
+4,TinyCC,glibc,libc,memrchr,1024,middle,8192,6.01
+4,TinyCC,glibc,libc,memrchr,1024,last,8192,2.40
+4,TinyCC,glibc,libc,memrchr,1024,absent,8192,8.53
+4,TinyCC,glibc,libc,memchr,2048,first,4096,2.40
+4,TinyCC,glibc,libc,memchr,2048,middle,4096,8.72
+4,TinyCC,glibc,libc,memchr,2048,last,4096,13.42
+4,TinyCC,glibc,libc,memchr,2048,absent,4096,13.62
+4,TinyCC,glibc,libc,memrchr,2048,first,4096,14.50
+4,TinyCC,glibc,libc,memrchr,2048,middle,4096,9.41
+4,TinyCC,glibc,libc,memrchr,2048,last,4096,2.46
+4,TinyCC,glibc,libc,memrchr,2048,absent,4096,14.74
+4,TinyCC,glibc,libc,memchr,4096,first,2048,2.51
+4,TinyCC,glibc,libc,memchr,4096,middle,2048,14.63
+4,TinyCC,glibc,libc,memchr,4096,last,2048,27.11
+4,TinyCC,glibc,libc,memchr,4096,absent,2048,24.89
+4,TinyCC,glibc,libc,memrchr,4096,first,2048,30.34
+4,TinyCC,glibc,libc,memrchr,4096,middle,2048,15.08
+4,TinyCC,glibc,libc,memrchr,4096,last,2048,2.45
+4,TinyCC,glibc,libc,memrchr,4096,absent,2048,36.85
+4,TinyCC,glibc,libc,memchr,8192,first,1024,3.35
+4,TinyCC,glibc,libc,memchr,8192,middle,1024,24.91
+4,TinyCC,glibc,libc,memchr,8192,last,1024,53.14
+4,TinyCC,glibc,libc,memchr,8192,absent,1024,52.70
+4,TinyCC,glibc,libc,memrchr,8192,first,1024,52.67
+4,TinyCC,glibc,libc,memrchr,8192,middle,1024,34.15
+4,TinyCC,glibc,libc,memrchr,8192,last,1024,2.53
+4,TinyCC,glibc,libc,memrchr,8192,absent,1024,51.55
+4,TinyCC,glibc,libc,memchr,65536,first,128,2.67
+4,TinyCC,glibc,libc,memchr,65536,middle,128,210.95
+4,TinyCC,glibc,libc,memchr,65536,last,128,519.11
+4,TinyCC,glibc,libc,memchr,65536,absent,128,506.82
+4,TinyCC,glibc,libc,memrchr,65536,first,128,478.59
+4,TinyCC,glibc,libc,memrchr,65536,middle,128,186.38
+4,TinyCC,glibc,libc,memrchr,65536,last,128,2.66
+4,TinyCC,glibc,libc,memrchr,65536,absent,128,487.86
+4,TinyCC,glibc,avx2-only,memchr,64,first,131072,3.92
+4,TinyCC,glibc,avx2-only,memchr,64,middle,131072,3.97
+4,TinyCC,glibc,avx2-only,memchr,64,last,131072,4.10
+4,TinyCC,glibc,avx2-only,memchr,64,absent,131072,4.10
+4,TinyCC,glibc,avx2-only,memrchr,64,first,131072,4.06
+4,TinyCC,glibc,avx2-only,memrchr,64,middle,131072,4.26
+4,TinyCC,glibc,avx2-only,memrchr,64,last,131072,4.03
+4,TinyCC,glibc,avx2-only,memrchr,64,absent,131072,4.23
+4,TinyCC,glibc,avx2-only,memchr,1024,first,8192,3.51
+4,TinyCC,glibc,avx2-only,memchr,1024,middle,8192,10.25
+4,TinyCC,glibc,avx2-only,memchr,1024,last,8192,17.02
+4,TinyCC,glibc,avx2-only,memchr,1024,absent,8192,17.37
+4,TinyCC,glibc,avx2-only,memrchr,1024,first,8192,17.00
+4,TinyCC,glibc,avx2-only,memrchr,1024,middle,8192,10.25
+4,TinyCC,glibc,avx2-only,memrchr,1024,last,8192,4.01
+4,TinyCC,glibc,avx2-only,memrchr,1024,absent,8192,17.61
+4,TinyCC,glibc,avx2-only,memchr,2048,first,4096,4.15
+4,TinyCC,glibc,avx2-only,memchr,2048,middle,4096,10.24
+4,TinyCC,glibc,avx2-only,memchr,2048,last,4096,14.20
+4,TinyCC,glibc,avx2-only,memchr,2048,absent,4096,14.40
+4,TinyCC,glibc,avx2-only,memrchr,2048,first,4096,14.18
+4,TinyCC,glibc,avx2-only,memrchr,2048,middle,4096,8.95
+4,TinyCC,glibc,avx2-only,memrchr,2048,last,4096,4.15
+4,TinyCC,glibc,avx2-only,memrchr,2048,absent,4096,14.17
+4,TinyCC,glibc,avx2-only,memchr,4096,first,2048,4.15
+4,TinyCC,glibc,avx2-only,memchr,4096,middle,2048,14.61
+4,TinyCC,glibc,avx2-only,memchr,4096,last,2048,24.68
+4,TinyCC,glibc,avx2-only,memchr,4096,absent,2048,31.28
+4,TinyCC,glibc,avx2-only,memrchr,4096,first,2048,24.34
+4,TinyCC,glibc,avx2-only,memrchr,4096,middle,2048,14.18
+4,TinyCC,glibc,avx2-only,memrchr,4096,last,2048,4.37
+4,TinyCC,glibc,avx2-only,memrchr,4096,absent,2048,30.73
+4,TinyCC,glibc,avx2-only,memchr,8192,first,1024,4.16
+4,TinyCC,glibc,avx2-only,memchr,8192,middle,1024,33.36
+4,TinyCC,glibc,avx2-only,memchr,8192,last,1024,53.19
+4,TinyCC,glibc,avx2-only,memchr,8192,absent,1024,51.34
+4,TinyCC,glibc,avx2-only,memrchr,8192,first,1024,52.84
+4,TinyCC,glibc,avx2-only,memrchr,8192,middle,1024,31.88
+4,TinyCC,glibc,avx2-only,memrchr,8192,last,1024,4.07
+4,TinyCC,glibc,avx2-only,memrchr,8192,absent,1024,50.50
+4,TinyCC,glibc,avx2-only,memchr,65536,first,128,4.30
+4,TinyCC,glibc,avx2-only,memchr,65536,middle,128,182.02
+4,TinyCC,glibc,avx2-only,memchr,65536,last,128,490.91
+4,TinyCC,glibc,avx2-only,memchr,65536,absent,128,483.43
+4,TinyCC,glibc,avx2-only,memrchr,65536,first,128,491.00
+4,TinyCC,glibc,avx2-only,memrchr,65536,middle,128,172.28
+4,TinyCC,glibc,avx2-only,memrchr,65536,last,128,4.34
+4,TinyCC,glibc,avx2-only,memrchr,65536,absent,128,484.10
+4,TinyCC,glibc,avx512-runtime,memchr,64,first,131072,3.51
+4,TinyCC,glibc,avx512-runtime,memchr,64,middle,131072,3.89
+4,TinyCC,glibc,avx512-runtime,memchr,64,last,131072,4.09
+4,TinyCC,glibc,avx512-runtime,memchr,64,absent,131072,3.86
+4,TinyCC,glibc,avx512-runtime,memrchr,64,first,131072,4.14
+4,TinyCC,glibc,avx512-runtime,memrchr,64,middle,131072,4.07
+4,TinyCC,glibc,avx512-runtime,memrchr,64,last,131072,4.08
+4,TinyCC,glibc,avx512-runtime,memrchr,64,absent,131072,4.51
+4,TinyCC,glibc,avx512-runtime,memchr,1024,first,8192,3.27
+4,TinyCC,glibc,avx512-runtime,memchr,1024,middle,8192,10.25
+4,TinyCC,glibc,avx512-runtime,memchr,1024,last,8192,19.52
+4,TinyCC,glibc,avx512-runtime,memchr,1024,absent,8192,16.78
+4,TinyCC,glibc,avx512-runtime,memrchr,1024,first,8192,17.00
+4,TinyCC,glibc,avx512-runtime,memrchr,1024,middle,8192,11.77
+4,TinyCC,glibc,avx512-runtime,memrchr,1024,last,8192,3.92
+4,TinyCC,glibc,avx512-runtime,memrchr,1024,absent,8192,16.93
+4,TinyCC,glibc,avx512-runtime,memchr,2048,first,4096,4.27
+4,TinyCC,glibc,avx512-runtime,memchr,2048,middle,4096,9.19
+4,TinyCC,glibc,avx512-runtime,memchr,2048,last,4096,14.24
+4,TinyCC,glibc,avx512-runtime,memchr,2048,absent,4096,14.17
+4,TinyCC,glibc,avx512-runtime,memrchr,2048,first,4096,14.03
+4,TinyCC,glibc,avx512-runtime,memrchr,2048,middle,4096,8.61
+4,TinyCC,glibc,avx512-runtime,memrchr,2048,last,4096,4.58
+4,TinyCC,glibc,avx512-runtime,memrchr,2048,absent,4096,14.18
+4,TinyCC,glibc,avx512-runtime,memchr,4096,first,2048,4.28
+4,TinyCC,glibc,avx512-runtime,memchr,4096,middle,2048,14.51
+4,TinyCC,glibc,avx512-runtime,memchr,4096,last,2048,24.12
+4,TinyCC,glibc,avx512-runtime,memchr,4096,absent,2048,30.53
+4,TinyCC,glibc,avx512-runtime,memrchr,4096,first,2048,24.60
+4,TinyCC,glibc,avx512-runtime,memrchr,4096,middle,2048,14.07
+4,TinyCC,glibc,avx512-runtime,memrchr,4096,last,2048,4.59
+4,TinyCC,glibc,avx512-runtime,memrchr,4096,absent,2048,24.54
+4,TinyCC,glibc,avx512-runtime,memchr,8192,first,1024,4.38
+4,TinyCC,glibc,avx512-runtime,memchr,8192,middle,1024,25.31
+4,TinyCC,glibc,avx512-runtime,memchr,8192,last,1024,53.79
+4,TinyCC,glibc,avx512-runtime,memchr,8192,absent,1024,51.12
+4,TinyCC,glibc,avx512-runtime,memrchr,8192,first,1024,54.17
+4,TinyCC,glibc,avx512-runtime,memrchr,8192,middle,1024,23.97
+4,TinyCC,glibc,avx512-runtime,memrchr,8192,last,1024,4.29
+4,TinyCC,glibc,avx512-runtime,memrchr,8192,absent,1024,50.57
+4,TinyCC,glibc,avx512-runtime,memchr,65536,first,128,4.43
+4,TinyCC,glibc,avx512-runtime,memchr,65536,middle,128,126.34
+4,TinyCC,glibc,avx512-runtime,memchr,65536,last,128,306.30
+4,TinyCC,glibc,avx512-runtime,memchr,65536,absent,128,295.38
+4,TinyCC,glibc,avx512-runtime,memrchr,65536,first,128,298.75
+4,TinyCC,glibc,avx512-runtime,memrchr,65536,middle,128,120.92
+4,TinyCC,glibc,avx512-runtime,memrchr,65536,last,128,4.09
+4,TinyCC,glibc,avx512-runtime,memrchr,65536,absent,128,301.85
+5,Zig cc,glibc,avx2-only,memchr,64,first,131072,2.29
+5,Zig cc,glibc,avx2-only,memchr,64,middle,131072,2.45
+5,Zig cc,glibc,avx2-only,memchr,64,last,131072,2.51
+5,Zig cc,glibc,avx2-only,memchr,64,absent,131072,2.45
+5,Zig cc,glibc,avx2-only,memrchr,64,first,131072,2.53
+5,Zig cc,glibc,avx2-only,memrchr,64,middle,131072,2.50
+5,Zig cc,glibc,avx2-only,memrchr,64,last,131072,2.40
+5,Zig cc,glibc,avx2-only,memrchr,64,absent,131072,2.63
+5,Zig cc,glibc,avx2-only,memchr,1024,first,8192,2.18
+5,Zig cc,glibc,avx2-only,memchr,1024,middle,8192,8.22
+5,Zig cc,glibc,avx2-only,memchr,1024,last,8192,15.59
+5,Zig cc,glibc,avx2-only,memchr,1024,absent,8192,15.60
+5,Zig cc,glibc,avx2-only,memrchr,1024,first,8192,16.85
+5,Zig cc,glibc,avx2-only,memrchr,1024,middle,8192,8.11
+5,Zig cc,glibc,avx2-only,memrchr,1024,last,8192,2.35
+5,Zig cc,glibc,avx2-only,memrchr,1024,absent,8192,14.93
+5,Zig cc,glibc,avx2-only,memchr,2048,first,4096,2.78
+5,Zig cc,glibc,avx2-only,memchr,2048,middle,4096,8.07
+5,Zig cc,glibc,avx2-only,memchr,2048,last,4096,12.67
+5,Zig cc,glibc,avx2-only,memchr,2048,absent,4096,12.37
+5,Zig cc,glibc,avx2-only,memrchr,2048,first,4096,12.66
+5,Zig cc,glibc,avx2-only,memrchr,2048,middle,4096,7.66
+5,Zig cc,glibc,avx2-only,memrchr,2048,last,4096,2.99
+5,Zig cc,glibc,avx2-only,memrchr,2048,absent,4096,12.59
+5,Zig cc,glibc,avx2-only,memchr,4096,first,2048,2.79
+5,Zig cc,glibc,avx2-only,memchr,4096,middle,2048,13.10
+5,Zig cc,glibc,avx2-only,memchr,4096,last,2048,22.86
+5,Zig cc,glibc,avx2-only,memchr,4096,absent,2048,22.62
+5,Zig cc,glibc,avx2-only,memrchr,4096,first,2048,22.76
+5,Zig cc,glibc,avx2-only,memrchr,4096,middle,2048,12.94
+5,Zig cc,glibc,avx2-only,memrchr,4096,last,2048,3.06
+5,Zig cc,glibc,avx2-only,memrchr,4096,absent,2048,23.84
+5,Zig cc,glibc,avx2-only,memchr,8192,first,1024,2.85
+5,Zig cc,glibc,avx2-only,memchr,8192,middle,1024,32.22
+5,Zig cc,glibc,avx2-only,memchr,8192,last,1024,52.18
+5,Zig cc,glibc,avx2-only,memchr,8192,absent,1024,50.87
+5,Zig cc,glibc,avx2-only,memrchr,8192,first,1024,53.74
+5,Zig cc,glibc,avx2-only,memrchr,8192,middle,1024,30.88
+5,Zig cc,glibc,avx2-only,memrchr,8192,last,1024,2.79
+5,Zig cc,glibc,avx2-only,memrchr,8192,absent,1024,48.69
+5,Zig cc,glibc,avx2-only,memchr,65536,first,128,2.93
+5,Zig cc,glibc,avx2-only,memchr,65536,middle,128,176.62
+5,Zig cc,glibc,avx2-only,memchr,65536,last,128,488.32
+5,Zig cc,glibc,avx2-only,memchr,65536,absent,128,482.89
+5,Zig cc,glibc,avx2-only,memrchr,65536,first,128,492.83
+5,Zig cc,glibc,avx2-only,memrchr,65536,middle,128,178.15
+5,Zig cc,glibc,avx2-only,memrchr,65536,last,128,2.98
+5,Zig cc,glibc,avx2-only,memrchr,65536,absent,128,482.21
+5,Zig cc,glibc,avx512-runtime,memchr,64,first,131072,2.28
+5,Zig cc,glibc,avx512-runtime,memchr,64,middle,131072,2.33
+5,Zig cc,glibc,avx512-runtime,memchr,64,last,131072,2.72
+5,Zig cc,glibc,avx512-runtime,memchr,64,absent,131072,2.36
+5,Zig cc,glibc,avx512-runtime,memrchr,64,first,131072,2.62
+5,Zig cc,glibc,avx512-runtime,memrchr,64,middle,131072,2.40
+5,Zig cc,glibc,avx512-runtime,memrchr,64,last,131072,2.40
+5,Zig cc,glibc,avx512-runtime,memrchr,64,absent,131072,2.96
+5,Zig cc,glibc,avx512-runtime,memchr,1024,first,8192,1.92
+5,Zig cc,glibc,avx512-runtime,memchr,1024,middle,8192,10.22
+5,Zig cc,glibc,avx512-runtime,memchr,1024,last,8192,17.93
+5,Zig cc,glibc,avx512-runtime,memchr,1024,absent,8192,19.05
+5,Zig cc,glibc,avx512-runtime,memrchr,1024,first,8192,22.02
+5,Zig cc,glibc,avx512-runtime,memrchr,1024,middle,8192,12.79
+5,Zig cc,glibc,avx512-runtime,memrchr,1024,last,8192,2.40
+5,Zig cc,glibc,avx512-runtime,memrchr,1024,absent,8192,15.48
+5,Zig cc,glibc,avx512-runtime,memchr,2048,first,4096,3.06
+5,Zig cc,glibc,avx512-runtime,memchr,2048,middle,4096,8.07
+5,Zig cc,glibc,avx512-runtime,memchr,2048,last,4096,12.93
+5,Zig cc,glibc,avx512-runtime,memchr,2048,absent,4096,12.86
+5,Zig cc,glibc,avx512-runtime,memrchr,2048,first,4096,12.78
+5,Zig cc,glibc,avx512-runtime,memrchr,2048,middle,4096,7.74
+5,Zig cc,glibc,avx512-runtime,memrchr,2048,last,4096,3.05
+5,Zig cc,glibc,avx512-runtime,memrchr,2048,absent,4096,12.76
+5,Zig cc,glibc,avx512-runtime,memchr,4096,first,2048,3.06
+5,Zig cc,glibc,avx512-runtime,memchr,4096,middle,2048,13.53
+5,Zig cc,glibc,avx512-runtime,memchr,4096,last,2048,23.35
+5,Zig cc,glibc,avx512-runtime,memchr,4096,absent,2048,28.34
+5,Zig cc,glibc,avx512-runtime,memrchr,4096,first,2048,23.21
+5,Zig cc,glibc,avx512-runtime,memrchr,4096,middle,2048,13.07
+5,Zig cc,glibc,avx512-runtime,memrchr,4096,last,2048,2.92
+5,Zig cc,glibc,avx512-runtime,memrchr,4096,absent,2048,25.36
+5,Zig cc,glibc,avx512-runtime,memchr,8192,first,1024,2.86
+5,Zig cc,glibc,avx512-runtime,memchr,8192,middle,1024,23.99
+5,Zig cc,glibc,avx512-runtime,memchr,8192,last,1024,52.00
+5,Zig cc,glibc,avx512-runtime,memchr,8192,absent,1024,49.81
+5,Zig cc,glibc,avx512-runtime,memrchr,8192,first,1024,52.72
+5,Zig cc,glibc,avx512-runtime,memrchr,8192,middle,1024,31.55
+5,Zig cc,glibc,avx512-runtime,memrchr,8192,last,1024,3.07
+5,Zig cc,glibc,avx512-runtime,memrchr,8192,absent,1024,50.16
+5,Zig cc,glibc,avx512-runtime,memchr,65536,first,128,10.99
+5,Zig cc,glibc,avx512-runtime,memchr,65536,middle,128,124.52
+5,Zig cc,glibc,avx512-runtime,memchr,65536,last,128,302.71
+5,Zig cc,glibc,avx512-runtime,memchr,65536,absent,128,297.18
+5,Zig cc,glibc,avx512-runtime,memrchr,65536,first,128,299.77
+5,Zig cc,glibc,avx512-runtime,memrchr,65536,middle,128,121.52
+5,Zig cc,glibc,avx512-runtime,memrchr,65536,last,128,2.75
+5,Zig cc,glibc,avx512-runtime,memrchr,65536,absent,128,294.36
+5,Zig cc,glibc,libc,memchr,64,first,131072,1.60
+5,Zig cc,glibc,libc,memchr,64,middle,131072,2.05
+5,Zig cc,glibc,libc,memchr,64,last,131072,2.00
+5,Zig cc,glibc,libc,memchr,64,absent,131072,1.96
+5,Zig cc,glibc,libc,memrchr,64,first,131072,1.96
+5,Zig cc,glibc,libc,memrchr,64,middle,131072,1.57
+5,Zig cc,glibc,libc,memrchr,64,last,131072,1.57
+5,Zig cc,glibc,libc,memrchr,64,absent,131072,2.18
+5,Zig cc,glibc,libc,memchr,1024,first,8192,1.53
+5,Zig cc,glibc,libc,memchr,1024,middle,8192,5.64
+5,Zig cc,glibc,libc,memchr,1024,last,8192,7.71
+5,Zig cc,glibc,libc,memchr,1024,absent,8192,7.48
+5,Zig cc,glibc,libc,memrchr,1024,first,8192,9.62
+5,Zig cc,glibc,libc,memrchr,1024,middle,8192,6.09
+5,Zig cc,glibc,libc,memrchr,1024,last,8192,1.53
+5,Zig cc,glibc,libc,memrchr,1024,absent,8192,8.32
+5,Zig cc,glibc,libc,memchr,2048,first,4096,1.53
+5,Zig cc,glibc,libc,memchr,2048,middle,4096,8.29
+5,Zig cc,glibc,libc,memchr,2048,last,4096,12.75
+5,Zig cc,glibc,libc,memchr,2048,absent,4096,12.67
+5,Zig cc,glibc,libc,memrchr,2048,first,4096,14.18
+5,Zig cc,glibc,libc,memrchr,2048,middle,4096,8.82
+5,Zig cc,glibc,libc,memrchr,2048,last,4096,1.56
+5,Zig cc,glibc,libc,memrchr,2048,absent,4096,13.93
+5,Zig cc,glibc,libc,memchr,4096,first,2048,1.54
+5,Zig cc,glibc,libc,memchr,4096,middle,2048,13.75
+5,Zig cc,glibc,libc,memchr,4096,last,2048,27.67
+5,Zig cc,glibc,libc,memchr,4096,absent,2048,27.00
+5,Zig cc,glibc,libc,memrchr,4096,first,2048,29.81
+5,Zig cc,glibc,libc,memrchr,4096,middle,2048,14.36
+5,Zig cc,glibc,libc,memrchr,4096,last,2048,1.53
+5,Zig cc,glibc,libc,memrchr,4096,absent,2048,28.27
+5,Zig cc,glibc,libc,memchr,8192,first,1024,1.54
+5,Zig cc,glibc,libc,memchr,8192,middle,1024,31.65
+5,Zig cc,glibc,libc,memchr,8192,last,1024,50.41
+5,Zig cc,glibc,libc,memchr,8192,absent,1024,50.29
+5,Zig cc,glibc,libc,memrchr,8192,first,1024,51.24
+5,Zig cc,glibc,libc,memrchr,8192,middle,1024,34.41
+5,Zig cc,glibc,libc,memrchr,8192,last,1024,1.58
+5,Zig cc,glibc,libc,memrchr,8192,absent,1024,52.06
+5,Zig cc,glibc,libc,memchr,65536,first,128,1.63
+5,Zig cc,glibc,libc,memchr,65536,middle,128,205.32
+5,Zig cc,glibc,libc,memchr,65536,last,128,528.54
+5,Zig cc,glibc,libc,memchr,65536,absent,128,494.64
+5,Zig cc,glibc,libc,memrchr,65536,first,128,477.20
+5,Zig cc,glibc,libc,memrchr,65536,middle,128,187.12
+5,Zig cc,glibc,libc,memrchr,65536,last,128,1.73
+5,Zig cc,glibc,libc,memrchr,65536,absent,128,476.81
+5,GCC,glibc,avx2-only,memchr,64,first,131072,2.51
+5,GCC,glibc,avx2-only,memchr,64,middle,131072,2.56
+5,GCC,glibc,avx2-only,memchr,64,last,131072,2.88
+5,GCC,glibc,avx2-only,memchr,64,absent,131072,3.17
+5,GCC,glibc,avx2-only,memrchr,64,first,131072,2.62
+5,GCC,glibc,avx2-only,memrchr,64,middle,131072,2.64
+5,GCC,glibc,avx2-only,memrchr,64,last,131072,2.85
+5,GCC,glibc,avx2-only,memrchr,64,absent,131072,3.07
+5,GCC,glibc,avx2-only,memchr,1024,first,8192,2.40
+5,GCC,glibc,avx2-only,memchr,1024,middle,8192,9.15
+5,GCC,glibc,avx2-only,memchr,1024,last,8192,15.48
+5,GCC,glibc,avx2-only,memchr,1024,absent,8192,15.26
+5,GCC,glibc,avx2-only,memrchr,1024,first,8192,15.47
+5,GCC,glibc,avx2-only,memrchr,1024,middle,8192,8.72
+5,GCC,glibc,avx2-only,memrchr,1024,last,8192,2.84
+5,GCC,glibc,avx2-only,memrchr,1024,absent,8192,15.69
+5,GCC,glibc,avx2-only,memchr,2048,first,4096,2.84
+5,GCC,glibc,avx2-only,memchr,2048,middle,4096,8.09
+5,GCC,glibc,avx2-only,memchr,2048,last,4096,14.17
+5,GCC,glibc,avx2-only,memchr,2048,absent,4096,12.86
+5,GCC,glibc,avx2-only,memrchr,2048,first,4096,13.25
+5,GCC,glibc,avx2-only,memrchr,2048,middle,4096,7.83
+5,GCC,glibc,avx2-only,memrchr,2048,last,4096,3.21
+5,GCC,glibc,avx2-only,memrchr,2048,absent,4096,12.83
+5,GCC,glibc,avx2-only,memchr,4096,first,2048,2.84
+5,GCC,glibc,avx2-only,memchr,4096,middle,2048,13.02
+5,GCC,glibc,avx2-only,memchr,4096,last,2048,30.51
+5,GCC,glibc,avx2-only,memchr,4096,absent,2048,31.38
+5,GCC,glibc,avx2-only,memrchr,4096,first,2048,31.90
+5,GCC,glibc,avx2-only,memrchr,4096,middle,2048,13.20
+5,GCC,glibc,avx2-only,memrchr,4096,last,2048,3.50
+5,GCC,glibc,avx2-only,memrchr,4096,absent,2048,30.23
+5,GCC,glibc,avx2-only,memchr,8192,first,1024,4.29
+5,GCC,glibc,avx2-only,memchr,8192,middle,1024,37.61
+5,GCC,glibc,avx2-only,memchr,8192,last,1024,60.09
+5,GCC,glibc,avx2-only,memchr,8192,absent,1024,49.00
+5,GCC,glibc,avx2-only,memrchr,8192,first,1024,51.53
+5,GCC,glibc,avx2-only,memrchr,8192,middle,1024,31.16
+5,GCC,glibc,avx2-only,memrchr,8192,last,1024,3.51
+5,GCC,glibc,avx2-only,memrchr,8192,absent,1024,49.49
+5,GCC,glibc,avx2-only,memchr,65536,first,128,3.16
+5,GCC,glibc,avx2-only,memchr,65536,middle,128,176.95
+5,GCC,glibc,avx2-only,memchr,65536,last,128,479.09
+5,GCC,glibc,avx2-only,memchr,65536,absent,128,472.37
+5,GCC,glibc,avx2-only,memrchr,65536,first,128,481.62
+5,GCC,glibc,avx2-only,memrchr,65536,middle,128,175.27
+5,GCC,glibc,avx2-only,memrchr,65536,last,128,3.61
+5,GCC,glibc,avx2-only,memrchr,65536,absent,128,516.57
+5,GCC,glibc,avx512-runtime,memchr,64,first,131072,2.35
+5,GCC,glibc,avx512-runtime,memchr,64,middle,131072,2.58
+5,GCC,glibc,avx512-runtime,memchr,64,last,131072,2.61
+5,GCC,glibc,avx512-runtime,memchr,64,absent,131072,2.79
+5,GCC,glibc,avx512-runtime,memrchr,64,first,131072,2.96
+5,GCC,glibc,avx512-runtime,memrchr,64,middle,131072,2.77
+5,GCC,glibc,avx512-runtime,memrchr,64,last,131072,2.73
+5,GCC,glibc,avx512-runtime,memrchr,64,absent,131072,3.15
+5,GCC,glibc,avx512-runtime,memchr,1024,first,8192,2.18
+5,GCC,glibc,avx512-runtime,memchr,1024,middle,8192,9.12
+5,GCC,glibc,avx512-runtime,memchr,1024,last,8192,16.19
+5,GCC,glibc,avx512-runtime,memchr,1024,absent,8192,15.60
+5,GCC,glibc,avx512-runtime,memrchr,1024,first,8192,19.18
+5,GCC,glibc,avx512-runtime,memrchr,1024,middle,8192,8.96
+5,GCC,glibc,avx512-runtime,memrchr,1024,last,8192,2.68
+5,GCC,glibc,avx512-runtime,memrchr,1024,absent,8192,16.30
+5,GCC,glibc,avx512-runtime,memchr,2048,first,4096,2.84
+5,GCC,glibc,avx512-runtime,memchr,2048,middle,4096,8.07
+5,GCC,glibc,avx512-runtime,memchr,2048,last,4096,12.88
+5,GCC,glibc,avx512-runtime,memchr,2048,absent,4096,12.67
+5,GCC,glibc,avx512-runtime,memrchr,2048,first,4096,13.14
+5,GCC,glibc,avx512-runtime,memrchr,2048,middle,4096,8.47
+5,GCC,glibc,avx512-runtime,memrchr,2048,last,4096,3.49
+5,GCC,glibc,avx512-runtime,memrchr,2048,absent,4096,13.25
+5,GCC,glibc,avx512-runtime,memchr,4096,first,2048,2.91
+5,GCC,glibc,avx512-runtime,memchr,4096,middle,2048,13.62
+5,GCC,glibc,avx512-runtime,memchr,4096,last,2048,23.85
+5,GCC,glibc,avx512-runtime,memchr,4096,absent,2048,23.65
+5,GCC,glibc,avx512-runtime,memrchr,4096,first,2048,23.35
+5,GCC,glibc,avx512-runtime,memrchr,4096,middle,2048,13.00
+5,GCC,glibc,avx512-runtime,memrchr,4096,last,2048,3.28
+5,GCC,glibc,avx512-runtime,memrchr,4096,absent,2048,23.43
+5,GCC,glibc,avx512-runtime,memchr,8192,first,1024,2.98
+5,GCC,glibc,avx512-runtime,memchr,8192,middle,1024,24.97
+5,GCC,glibc,avx512-runtime,memchr,8192,last,1024,55.00
+5,GCC,glibc,avx512-runtime,memchr,8192,absent,1024,52.17
+5,GCC,glibc,avx512-runtime,memrchr,8192,first,1024,54.16
+5,GCC,glibc,avx512-runtime,memrchr,8192,middle,1024,23.88
+5,GCC,glibc,avx512-runtime,memrchr,8192,last,1024,3.37
+5,GCC,glibc,avx512-runtime,memrchr,8192,absent,1024,51.67
+5,GCC,glibc,avx512-runtime,memchr,65536,first,128,11.30
+5,GCC,glibc,avx512-runtime,memchr,65536,middle,128,127.90
+5,GCC,glibc,avx512-runtime,memchr,65536,last,128,312.81
+5,GCC,glibc,avx512-runtime,memchr,65536,absent,128,304.88
+5,GCC,glibc,avx512-runtime,memrchr,65536,first,128,308.59
+5,GCC,glibc,avx512-runtime,memrchr,65536,middle,128,124.87
+5,GCC,glibc,avx512-runtime,memrchr,65536,last,128,3.02
+5,GCC,glibc,avx512-runtime,memrchr,65536,absent,128,302.18
+5,GCC,glibc,libc,memchr,64,first,131072,1.93
+5,GCC,glibc,libc,memchr,64,middle,131072,2.84
+5,GCC,glibc,libc,memchr,64,last,131072,2.87
+5,GCC,glibc,libc,memchr,64,absent,131072,2.70
+5,GCC,glibc,libc,memrchr,64,first,131072,3.01
+5,GCC,glibc,libc,memrchr,64,middle,131072,1.80
+5,GCC,glibc,libc,memrchr,64,last,131072,1.78
+5,GCC,glibc,libc,memrchr,64,absent,131072,2.23
+5,GCC,glibc,libc,memchr,1024,first,8192,1.79
+5,GCC,glibc,libc,memchr,1024,middle,8192,5.62
+5,GCC,glibc,libc,memchr,1024,last,8192,7.92
+5,GCC,glibc,libc,memchr,1024,absent,8192,7.85
+5,GCC,glibc,libc,memrchr,1024,first,8192,8.44
+5,GCC,glibc,libc,memrchr,1024,middle,8192,6.12
+5,GCC,glibc,libc,memrchr,1024,last,8192,1.75
+5,GCC,glibc,libc,memrchr,1024,absent,8192,9.10
+5,GCC,glibc,libc,memchr,2048,first,4096,1.75
+5,GCC,glibc,libc,memchr,2048,middle,4096,8.26
+5,GCC,glibc,libc,memchr,2048,last,4096,13.05
+5,GCC,glibc,libc,memchr,2048,absent,4096,12.98
+5,GCC,glibc,libc,memrchr,2048,first,4096,14.36
+5,GCC,glibc,libc,memrchr,2048,middle,4096,8.80
+5,GCC,glibc,libc,memrchr,2048,last,4096,1.71
+5,GCC,glibc,libc,memrchr,2048,absent,4096,14.27
+5,GCC,glibc,libc,memchr,4096,first,2048,1.72
+5,GCC,glibc,libc,memchr,4096,middle,2048,13.21
+5,GCC,glibc,libc,memchr,4096,last,2048,26.54
+5,GCC,glibc,libc,memchr,4096,absent,2048,29.34
+5,GCC,glibc,libc,memrchr,4096,first,2048,28.80
+5,GCC,glibc,libc,memrchr,4096,middle,2048,14.30
+5,GCC,glibc,libc,memrchr,4096,last,2048,1.71
+5,GCC,glibc,libc,memrchr,4096,absent,2048,27.75
+5,GCC,glibc,libc,memchr,8192,first,1024,1.76
+5,GCC,glibc,libc,memchr,8192,middle,1024,32.92
+5,GCC,glibc,libc,memchr,8192,last,1024,50.68
+5,GCC,glibc,libc,memchr,8192,absent,1024,50.72
+5,GCC,glibc,libc,memrchr,8192,first,1024,51.17
+5,GCC,glibc,libc,memrchr,8192,middle,1024,35.08
+5,GCC,glibc,libc,memrchr,8192,last,1024,1.75
+5,GCC,glibc,libc,memrchr,8192,absent,1024,51.32
+5,GCC,glibc,libc,memchr,65536,first,128,1.90
+5,GCC,glibc,libc,memchr,65536,middle,128,205.34
+5,GCC,glibc,libc,memchr,65536,last,128,505.28
+5,GCC,glibc,libc,memchr,65536,absent,128,536.91
+5,GCC,glibc,libc,memrchr,65536,first,128,479.73
+5,GCC,glibc,libc,memrchr,65536,middle,128,197.74
+5,GCC,glibc,libc,memrchr,65536,last,128,1.93
+5,GCC,glibc,libc,memrchr,65536,absent,128,487.31
+5,Zig cc,musl,avx2-only,memchr,64,first,131072,2.37
+5,Zig cc,musl,avx2-only,memchr,64,middle,131072,2.47
+5,Zig cc,musl,avx2-only,memchr,64,last,131072,2.61
+5,Zig cc,musl,avx2-only,memchr,64,absent,131072,2.61
+5,Zig cc,musl,avx2-only,memrchr,64,first,131072,2.84
+5,Zig cc,musl,avx2-only,memrchr,64,middle,131072,2.61
+5,Zig cc,musl,avx2-only,memrchr,64,last,131072,2.66
+5,Zig cc,musl,avx2-only,memrchr,64,absent,131072,2.97
+5,Zig cc,musl,avx2-only,memchr,1024,first,8192,2.62
+5,Zig cc,musl,avx2-only,memchr,1024,middle,8192,9.16
+5,Zig cc,musl,avx2-only,memchr,1024,last,8192,15.36
+5,Zig cc,musl,avx2-only,memchr,1024,absent,8192,16.14
+5,Zig cc,musl,avx2-only,memrchr,1024,first,8192,15.69
+5,Zig cc,musl,avx2-only,memrchr,1024,middle,8192,8.72
+5,Zig cc,musl,avx2-only,memrchr,1024,last,8192,2.62
+5,Zig cc,musl,avx2-only,memrchr,1024,absent,8192,15.70
+5,Zig cc,musl,avx2-only,memchr,2048,first,4096,2.99
+5,Zig cc,musl,avx2-only,memchr,2048,middle,4096,8.11
+5,Zig cc,musl,avx2-only,memchr,2048,last,4096,12.67
+5,Zig cc,musl,avx2-only,memchr,2048,absent,4096,12.80
+5,Zig cc,musl,avx2-only,memrchr,2048,first,4096,12.90
+5,Zig cc,musl,avx2-only,memrchr,2048,middle,4096,8.02
+5,Zig cc,musl,avx2-only,memrchr,2048,last,4096,3.28
+5,Zig cc,musl,avx2-only,memrchr,2048,absent,4096,12.59
+5,Zig cc,musl,avx2-only,memchr,4096,first,2048,2.79
+5,Zig cc,musl,avx2-only,memchr,4096,middle,2048,14.73
+5,Zig cc,musl,avx2-only,memchr,4096,last,2048,25.85
+5,Zig cc,musl,avx2-only,memchr,4096,absent,2048,28.90
+5,Zig cc,musl,avx2-only,memrchr,4096,first,2048,30.72
+5,Zig cc,musl,avx2-only,memrchr,4096,middle,2048,12.80
+5,Zig cc,musl,avx2-only,memrchr,4096,last,2048,3.21
+5,Zig cc,musl,avx2-only,memrchr,4096,absent,2048,23.05
+5,Zig cc,musl,avx2-only,memchr,8192,first,1024,2.80
+5,Zig cc,musl,avx2-only,memchr,8192,middle,1024,31.48
+5,Zig cc,musl,avx2-only,memchr,8192,last,1024,52.07
+5,Zig cc,musl,avx2-only,memchr,8192,absent,1024,50.06
+5,Zig cc,musl,avx2-only,memrchr,8192,first,1024,52.51
+5,Zig cc,musl,avx2-only,memrchr,8192,middle,1024,31.48
+5,Zig cc,musl,avx2-only,memrchr,8192,last,1024,2.86
+5,Zig cc,musl,avx2-only,memrchr,8192,absent,1024,50.33
+5,Zig cc,musl,avx2-only,memchr,65536,first,128,3.05
+5,Zig cc,musl,avx2-only,memchr,65536,middle,128,183.41
+5,Zig cc,musl,avx2-only,memchr,65536,last,128,489.88
+5,Zig cc,musl,avx2-only,memchr,65536,absent,128,491.60
+5,Zig cc,musl,avx2-only,memrchr,65536,first,128,589.02
+5,Zig cc,musl,avx2-only,memrchr,65536,middle,128,190.22
+5,Zig cc,musl,avx2-only,memrchr,65536,last,128,3.34
+5,Zig cc,musl,avx2-only,memrchr,65536,absent,128,633.05
+5,Zig cc,musl,avx512-runtime,memchr,64,first,131072,2.33
+5,Zig cc,musl,avx512-runtime,memchr,64,middle,131072,2.36
+5,Zig cc,musl,avx512-runtime,memchr,64,last,131072,2.45
+5,Zig cc,musl,avx512-runtime,memchr,64,absent,131072,2.92
+5,Zig cc,musl,avx512-runtime,memrchr,64,first,131072,2.78
+5,Zig cc,musl,avx512-runtime,memrchr,64,middle,131072,2.52
+5,Zig cc,musl,avx512-runtime,memrchr,64,last,131072,2.55
+5,Zig cc,musl,avx512-runtime,memrchr,64,absent,131072,2.86
+5,Zig cc,musl,avx512-runtime,memchr,1024,first,8192,2.62
+5,Zig cc,musl,avx512-runtime,memchr,1024,middle,8192,9.57
+5,Zig cc,musl,avx512-runtime,memchr,1024,last,8192,15.26
+5,Zig cc,musl,avx512-runtime,memchr,1024,absent,8192,15.59
+5,Zig cc,musl,avx512-runtime,memrchr,1024,first,8192,15.69
+5,Zig cc,musl,avx512-runtime,memrchr,1024,middle,8192,9.12
+5,Zig cc,musl,avx512-runtime,memrchr,1024,last,8192,2.51
+5,Zig cc,musl,avx512-runtime,memrchr,1024,absent,8192,16.41
+5,Zig cc,musl,avx512-runtime,memchr,2048,first,4096,2.91
+5,Zig cc,musl,avx512-runtime,memchr,2048,middle,4096,8.47
+5,Zig cc,musl,avx512-runtime,memchr,2048,last,4096,13.24
+5,Zig cc,musl,avx512-runtime,memchr,2048,absent,4096,13.08
+5,Zig cc,musl,avx512-runtime,memrchr,2048,first,4096,12.89
+5,Zig cc,musl,avx512-runtime,memrchr,2048,middle,4096,7.80
+5,Zig cc,musl,avx512-runtime,memrchr,2048,last,4096,3.05
+5,Zig cc,musl,avx512-runtime,memrchr,2048,absent,4096,12.80
+5,Zig cc,musl,avx512-runtime,memchr,4096,first,2048,2.85
+5,Zig cc,musl,avx512-runtime,memchr,4096,middle,2048,13.52
+5,Zig cc,musl,avx512-runtime,memchr,4096,last,2048,23.34
+5,Zig cc,musl,avx512-runtime,memchr,4096,absent,2048,23.34
+5,Zig cc,musl,avx512-runtime,memrchr,4096,first,2048,23.18
+5,Zig cc,musl,avx512-runtime,memrchr,4096,middle,2048,12.91
+5,Zig cc,musl,avx512-runtime,memrchr,4096,last,2048,3.06
+5,Zig cc,musl,avx512-runtime,memrchr,4096,absent,2048,23.14
+5,Zig cc,musl,avx512-runtime,memchr,8192,first,1024,3.07
+5,Zig cc,musl,avx512-runtime,memchr,8192,middle,1024,24.00
+5,Zig cc,musl,avx512-runtime,memchr,8192,last,1024,52.48
+5,Zig cc,musl,avx512-runtime,memchr,8192,absent,1024,49.86
+5,Zig cc,musl,avx512-runtime,memrchr,8192,first,1024,52.93
+5,Zig cc,musl,avx512-runtime,memrchr,8192,middle,1024,31.67
+5,Zig cc,musl,avx512-runtime,memrchr,8192,last,1024,3.08
+5,Zig cc,musl,avx512-runtime,memrchr,8192,absent,1024,49.97
+5,Zig cc,musl,avx512-runtime,memchr,65536,first,128,10.97
+5,Zig cc,musl,avx512-runtime,memchr,65536,middle,128,124.49
+5,Zig cc,musl,avx512-runtime,memchr,65536,last,128,305.56
+5,Zig cc,musl,avx512-runtime,memchr,65536,absent,128,301.91
+5,Zig cc,musl,avx512-runtime,memrchr,65536,first,128,358.75
+5,Zig cc,musl,avx512-runtime,memrchr,65536,middle,128,147.45
+5,Zig cc,musl,avx512-runtime,memrchr,65536,last,128,4.72
+5,Zig cc,musl,avx512-runtime,memrchr,65536,absent,128,310.98
+5,Zig cc,musl,libc,memchr,64,first,131072,1.85
+5,Zig cc,musl,libc,memchr,64,middle,131072,17.21
+5,Zig cc,musl,libc,memchr,64,last,131072,23.98
+5,Zig cc,musl,libc,memchr,64,absent,131072,25.74
+5,Zig cc,musl,libc,memrchr,64,first,131072,26.59
+5,Zig cc,musl,libc,memrchr,64,middle,131072,15.78
+5,Zig cc,musl,libc,memrchr,64,last,131072,1.28
+5,Zig cc,musl,libc,memrchr,64,absent,131072,24.58
+5,Zig cc,musl,libc,memchr,1024,first,8192,1.07
+5,Zig cc,musl,libc,memchr,1024,middle,8192,122.94
+5,Zig cc,musl,libc,memchr,1024,last,8192,236.55
+5,Zig cc,musl,libc,memchr,1024,absent,8192,240.07
+5,Zig cc,musl,libc,memrchr,1024,first,8192,289.61
+5,Zig cc,musl,libc,memrchr,1024,middle,8192,146.98
+5,Zig cc,musl,libc,memrchr,1024,last,8192,1.31
+5,Zig cc,musl,libc,memrchr,1024,absent,8192,277.56
+5,Zig cc,musl,libc,memchr,2048,first,4096,1.12
+5,Zig cc,musl,libc,memchr,2048,middle,4096,237.57
+5,Zig cc,musl,libc,memchr,2048,last,4096,468.71
+5,Zig cc,musl,libc,memchr,2048,absent,4096,473.86
+5,Zig cc,musl,libc,memrchr,2048,first,4096,560.33
+5,Zig cc,musl,libc,memrchr,2048,middle,4096,285.76
+5,Zig cc,musl,libc,memrchr,2048,last,4096,1.37
+5,Zig cc,musl,libc,memrchr,2048,absent,4096,562.83
+5,Zig cc,musl,libc,memchr,4096,first,2048,1.15
+5,Zig cc,musl,libc,memchr,4096,middle,2048,478.78
+5,Zig cc,musl,libc,memchr,4096,last,2048,933.20
+5,Zig cc,musl,libc,memchr,4096,absent,2048,933.52
+5,Zig cc,musl,libc,memrchr,4096,first,2048,1055.34
+5,Zig cc,musl,libc,memrchr,4096,middle,2048,524.69
+5,Zig cc,musl,libc,memrchr,4096,last,2048,1.29
+5,Zig cc,musl,libc,memrchr,4096,absent,2048,1065.96
+5,Zig cc,musl,libc,memchr,8192,first,1024,1.05
+5,Zig cc,musl,libc,memchr,8192,middle,1024,902.58
+5,Zig cc,musl,libc,memchr,8192,last,1024,1842.20
+5,Zig cc,musl,libc,memchr,8192,absent,1024,1847.77
+5,Zig cc,musl,libc,memrchr,8192,first,1024,2103.04
+5,Zig cc,musl,libc,memrchr,8192,middle,1024,1042.48
+5,Zig cc,musl,libc,memrchr,8192,last,1024,1.69
+5,Zig cc,musl,libc,memrchr,8192,absent,1024,2111.60
+5,Zig cc,musl,libc,memchr,65536,first,128,1.15
+5,Zig cc,musl,libc,memchr,65536,middle,128,7126.99
+5,Zig cc,musl,libc,memchr,65536,last,128,14560.48
+5,Zig cc,musl,libc,memchr,65536,absent,128,14259.97
+5,Zig cc,musl,libc,memrchr,65536,first,128,16523.91
+5,Zig cc,musl,libc,memrchr,65536,middle,128,8604.48
+5,Zig cc,musl,libc,memrchr,65536,last,128,1.41
+5,Zig cc,musl,libc,memrchr,65536,absent,128,16929.45
+5,TinyCC,glibc,avx2-only,memchr,64,first,131072,3.81
+5,TinyCC,glibc,avx2-only,memchr,64,middle,131072,3.93
+5,TinyCC,glibc,avx2-only,memchr,64,last,131072,4.02
+5,TinyCC,glibc,avx2-only,memchr,64,absent,131072,4.06
+5,TinyCC,glibc,avx2-only,memrchr,64,first,131072,3.84
+5,TinyCC,glibc,avx2-only,memrchr,64,middle,131072,3.81
+5,TinyCC,glibc,avx2-only,memrchr,64,last,131072,4.18
+5,TinyCC,glibc,avx2-only,memrchr,64,absent,131072,4.30
+5,TinyCC,glibc,avx2-only,memchr,1024,first,8192,3.49
+5,TinyCC,glibc,avx2-only,memchr,1024,middle,8192,10.24
+5,TinyCC,glibc,avx2-only,memchr,1024,last,8192,16.56
+5,TinyCC,glibc,avx2-only,memchr,1024,absent,8192,16.67
+5,TinyCC,glibc,avx2-only,memrchr,1024,first,8192,17.03
+5,TinyCC,glibc,avx2-only,memrchr,1024,middle,8192,9.82
+5,TinyCC,glibc,avx2-only,memrchr,1024,last,8192,4.06
+5,TinyCC,glibc,avx2-only,memrchr,1024,absent,8192,16.64
+5,TinyCC,glibc,avx2-only,memchr,2048,first,4096,4.06
+5,TinyCC,glibc,avx2-only,memchr,2048,middle,4096,9.73
+5,TinyCC,glibc,avx2-only,memchr,2048,last,4096,14.58
+5,TinyCC,glibc,avx2-only,memchr,2048,absent,4096,14.39
+5,TinyCC,glibc,avx2-only,memrchr,2048,first,4096,13.66
+5,TinyCC,glibc,avx2-only,memrchr,2048,middle,4096,8.76
+5,TinyCC,glibc,avx2-only,memrchr,2048,last,4096,4.06
+5,TinyCC,glibc,avx2-only,memrchr,2048,absent,4096,17.19
+5,TinyCC,glibc,avx2-only,memchr,4096,first,2048,4.06
+5,TinyCC,glibc,avx2-only,memchr,4096,middle,2048,14.41
+5,TinyCC,glibc,avx2-only,memchr,4096,last,2048,27.87
+5,TinyCC,glibc,avx2-only,memchr,4096,absent,2048,30.47
+5,TinyCC,glibc,avx2-only,memrchr,4096,first,2048,32.35
+5,TinyCC,glibc,avx2-only,memrchr,4096,middle,2048,13.97
+5,TinyCC,glibc,avx2-only,memrchr,4096,last,2048,4.16
+5,TinyCC,glibc,avx2-only,memrchr,4096,absent,2048,30.63
+5,TinyCC,glibc,avx2-only,memchr,8192,first,1024,4.25
+5,TinyCC,glibc,avx2-only,memchr,8192,middle,1024,33.97
+5,TinyCC,glibc,avx2-only,memchr,8192,last,1024,53.40
+5,TinyCC,glibc,avx2-only,memchr,8192,absent,1024,50.30
+5,TinyCC,glibc,avx2-only,memrchr,8192,first,1024,54.07
+5,TinyCC,glibc,avx2-only,memrchr,8192,middle,1024,32.57
+5,TinyCC,glibc,avx2-only,memrchr,8192,last,1024,4.38
+5,TinyCC,glibc,avx2-only,memrchr,8192,absent,1024,50.65
+5,TinyCC,glibc,avx2-only,memchr,65536,first,128,4.45
+5,TinyCC,glibc,avx2-only,memchr,65536,middle,128,178.30
+5,TinyCC,glibc,avx2-only,memchr,65536,last,128,479.89
+5,TinyCC,glibc,avx2-only,memchr,65536,absent,128,473.84
+5,TinyCC,glibc,avx2-only,memrchr,65536,first,128,479.15
+5,TinyCC,glibc,avx2-only,memrchr,65536,middle,128,175.91
+5,TinyCC,glibc,avx2-only,memrchr,65536,last,128,4.81
+5,TinyCC,glibc,avx2-only,memrchr,65536,absent,128,474.33
+5,TinyCC,glibc,avx512-runtime,memchr,64,first,131072,4.03
+5,TinyCC,glibc,avx512-runtime,memchr,64,middle,131072,3.92
+5,TinyCC,glibc,avx512-runtime,memchr,64,last,131072,3.86
+5,TinyCC,glibc,avx512-runtime,memchr,64,absent,131072,3.76
+5,TinyCC,glibc,avx512-runtime,memrchr,64,first,131072,4.14
+5,TinyCC,glibc,avx512-runtime,memrchr,64,middle,131072,4.15
+5,TinyCC,glibc,avx512-runtime,memrchr,64,last,131072,4.45
+5,TinyCC,glibc,avx512-runtime,memrchr,64,absent,131072,4.79
+5,TinyCC,glibc,avx512-runtime,memchr,1024,first,8192,3.65
+5,TinyCC,glibc,avx512-runtime,memchr,1024,middle,8192,10.50
+5,TinyCC,glibc,avx512-runtime,memchr,1024,last,8192,17.52
+5,TinyCC,glibc,avx512-runtime,memchr,1024,absent,8192,16.93
+5,TinyCC,glibc,avx512-runtime,memrchr,1024,first,8192,17.00
+5,TinyCC,glibc,avx512-runtime,memrchr,1024,middle,8192,10.03
+5,TinyCC,glibc,avx512-runtime,memrchr,1024,last,8192,3.93
+5,TinyCC,glibc,avx512-runtime,memrchr,1024,absent,8192,20.05
+5,TinyCC,glibc,avx512-runtime,memchr,2048,first,4096,4.36
+5,TinyCC,glibc,avx512-runtime,memchr,2048,middle,4096,9.81
+5,TinyCC,glibc,avx512-runtime,memchr,2048,last,4096,14.25
+5,TinyCC,glibc,avx512-runtime,memchr,2048,absent,4096,14.17
+5,TinyCC,glibc,avx512-runtime,memrchr,2048,first,4096,14.68
+5,TinyCC,glibc,avx512-runtime,memrchr,2048,middle,4096,9.38
+5,TinyCC,glibc,avx512-runtime,memrchr,2048,last,4096,4.58
+5,TinyCC,glibc,avx512-runtime,memrchr,2048,absent,4096,14.27
+5,TinyCC,glibc,avx512-runtime,memchr,4096,first,2048,4.15
+5,TinyCC,glibc,avx512-runtime,memchr,4096,middle,2048,14.51
+5,TinyCC,glibc,avx512-runtime,memchr,4096,last,2048,24.78
+5,TinyCC,glibc,avx512-runtime,memchr,4096,absent,2048,30.26
+5,TinyCC,glibc,avx512-runtime,memrchr,4096,first,2048,25.06
+5,TinyCC,glibc,avx512-runtime,memrchr,4096,middle,2048,14.35
+5,TinyCC,glibc,avx512-runtime,memrchr,4096,last,2048,4.48
+5,TinyCC,glibc,avx512-runtime,memrchr,4096,absent,2048,30.49
+5,TinyCC,glibc,avx512-runtime,memchr,8192,first,1024,4.16
+5,TinyCC,glibc,avx512-runtime,memchr,8192,middle,1024,33.36
+5,TinyCC,glibc,avx512-runtime,memchr,8192,last,1024,53.72
+5,TinyCC,glibc,avx512-runtime,memchr,8192,absent,1024,49.98
+5,TinyCC,glibc,avx512-runtime,memrchr,8192,first,1024,54.14
+5,TinyCC,glibc,avx512-runtime,memrchr,8192,middle,1024,24.49
+5,TinyCC,glibc,avx512-runtime,memrchr,8192,last,1024,4.60
+5,TinyCC,glibc,avx512-runtime,memrchr,8192,absent,1024,51.64
+5,TinyCC,glibc,avx512-runtime,memchr,65536,first,128,4.27
+5,TinyCC,glibc,avx512-runtime,memchr,65536,middle,128,126.27
+5,TinyCC,glibc,avx512-runtime,memchr,65536,last,128,307.05
+5,TinyCC,glibc,avx512-runtime,memchr,65536,absent,128,300.58
+5,TinyCC,glibc,avx512-runtime,memrchr,65536,first,128,305.30
+5,TinyCC,glibc,avx512-runtime,memrchr,65536,middle,128,123.54
+5,TinyCC,glibc,avx512-runtime,memrchr,65536,last,128,4.07
+5,TinyCC,glibc,avx512-runtime,memrchr,65536,absent,128,298.98
+5,TinyCC,glibc,libc,memchr,64,first,131072,3.45
+5,TinyCC,glibc,libc,memchr,64,middle,131072,2.86
+5,TinyCC,glibc,libc,memchr,64,last,131072,2.98
+5,TinyCC,glibc,libc,memchr,64,absent,131072,2.83
+5,TinyCC,glibc,libc,memrchr,64,first,131072,2.83
+5,TinyCC,glibc,libc,memrchr,64,middle,131072,2.35
+5,TinyCC,glibc,libc,memrchr,64,last,131072,2.35
+5,TinyCC,glibc,libc,memrchr,64,absent,131072,2.99
+5,TinyCC,glibc,libc,memchr,1024,first,8192,2.35
+5,TinyCC,glibc,libc,memchr,1024,middle,8192,5.76
+5,TinyCC,glibc,libc,memchr,1024,last,8192,7.76
+5,TinyCC,glibc,libc,memchr,1024,absent,8192,7.76
+5,TinyCC,glibc,libc,memrchr,1024,first,8192,8.68
+5,TinyCC,glibc,libc,memrchr,1024,middle,8192,6.01
+5,TinyCC,glibc,libc,memrchr,1024,last,8192,2.40
+5,TinyCC,glibc,libc,memrchr,1024,absent,8192,8.40
+5,TinyCC,glibc,libc,memchr,2048,first,4096,2.40
+5,TinyCC,glibc,libc,memchr,2048,middle,4096,8.50
+5,TinyCC,glibc,libc,memchr,2048,last,4096,13.32
+5,TinyCC,glibc,libc,memchr,2048,absent,4096,13.25
+5,TinyCC,glibc,libc,memrchr,2048,first,4096,14.36
+5,TinyCC,glibc,libc,memrchr,2048,middle,4096,9.40
+5,TinyCC,glibc,libc,memrchr,2048,last,4096,2.40
+5,TinyCC,glibc,libc,memrchr,2048,absent,4096,13.94
+5,TinyCC,glibc,libc,memchr,4096,first,2048,2.40
+5,TinyCC,glibc,libc,memchr,4096,middle,2048,13.79
+5,TinyCC,glibc,libc,memchr,4096,last,2048,23.81
+5,TinyCC,glibc,libc,memchr,4096,absent,2048,23.64
+5,TinyCC,glibc,libc,memrchr,4096,first,2048,24.93
+5,TinyCC,glibc,libc,memrchr,4096,middle,2048,14.40
+5,TinyCC,glibc,libc,memrchr,4096,last,2048,2.40
+5,TinyCC,glibc,libc,memrchr,4096,absent,2048,25.34
+5,TinyCC,glibc,libc,memchr,8192,first,1024,2.47
+5,TinyCC,glibc,libc,memchr,8192,middle,1024,24.21
+5,TinyCC,glibc,libc,memchr,8192,last,1024,51.12
+5,TinyCC,glibc,libc,memchr,8192,absent,1024,50.47
+5,TinyCC,glibc,libc,memrchr,8192,first,1024,50.85
+5,TinyCC,glibc,libc,memrchr,8192,middle,1024,33.13
+5,TinyCC,glibc,libc,memrchr,8192,last,1024,2.37
+5,TinyCC,glibc,libc,memrchr,8192,absent,1024,49.77
+5,TinyCC,glibc,libc,memchr,65536,first,128,2.40
+5,TinyCC,glibc,libc,memchr,65536,middle,128,193.88
+5,TinyCC,glibc,libc,memchr,65536,last,128,485.20
+5,TinyCC,glibc,libc,memchr,65536,absent,128,484.94
+5,TinyCC,glibc,libc,memrchr,65536,first,128,459.21
+5,TinyCC,glibc,libc,memrchr,65536,middle,128,182.05
+5,TinyCC,glibc,libc,memrchr,65536,last,128,2.45
+5,TinyCC,glibc,libc,memrchr,65536,absent,128,467.49

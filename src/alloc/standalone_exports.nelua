@@ -1,0 +1,35 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- These standard names are linked only in the no-CRT standalone profile.
+-- Hybrid applications keep host malloc/free paired with host-owned pointers.
+local function nelibc_malloc(size: csize): pointer <cimport> end
+local function nelibc_calloc(count: csize, size: csize): pointer <cimport> end
+local function nelibc_realloc(ptr: pointer, size: csize): pointer <cimport> end
+local function nelibc_free(ptr: pointer): void <cimport> end
+local function nelibc_aligned_alloc(alignment: csize, size: csize): pointer <cimport> end
+local function nelibc_posix_memalign(output: *[0]pointer, alignment: csize, size: csize): cint <cimport> end
+
+local function malloc(size: csize): pointer <cexport, codename 'malloc'>
+  return nelibc_malloc(size)
+end
+
+local function calloc(count: csize, size: csize): pointer <cexport, codename 'calloc'>
+  return nelibc_calloc(count, size)
+end
+
+local function realloc(ptr: pointer, size: csize): pointer <cexport, codename 'realloc'>
+  return nelibc_realloc(ptr, size)
+end
+
+local function free(ptr: pointer): void <cexport, codename 'free'>
+  nelibc_free(ptr)
+end
+
+local function aligned_alloc(alignment: csize, size: csize): pointer <cexport, codename 'aligned_alloc'>
+  return nelibc_aligned_alloc(alignment, size)
+end
+
+local function posix_memalign(output: *[0]pointer, alignment: csize, size: csize): cint <cexport, codename 'posix_memalign'>
+  return nelibc_posix_memalign(output, alignment, size)
+end

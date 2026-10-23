@@ -1,0 +1,97 @@
+compiler,libc,implementation,function,case,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,strcasecmp,equal-short,20000,2.28
+Zig cc,glibc,host-libc,strcasecmp,mismatch-first,20000,2.28
+Zig cc,glibc,host-libc,strcasecmp,mismatch-late,20000,2.96
+Zig cc,glibc,host-libc,strncasecmp,equal-bounded,20000,2.51
+Zig cc,glibc,host-libc,strncasecmp,mismatch-at-bound,20000,2.96
+Zig cc,glibc,host-libc,strncasecmp,mismatch-first-bounded,20000,2.96
+Zig cc,glibc,host-libc,strncasecmp,equal-long-bounded,20000,2.96
+Zig cc,glibc,host-libc,strncasecmp,mismatch-late-bounded,20000,3.19
+Zig cc,glibc,host-libc,strcasecmp,equal-very-long,20000,3.63
+Zig cc,glibc,host-libc,strcasecmp,mismatch-very-late,20000,3.29
+Zig cc,glibc,host-libc,strcasecmp,equal-256,20000,9.71
+Zig cc,glibc,host-libc,strcasecmp,mismatch-late-256,20000,7.90
+Zig cc,glibc,nelibc,strcasecmp,equal-short,20000,4.17
+Zig cc,glibc,nelibc,strcasecmp,mismatch-first,20000,1.38
+Zig cc,glibc,nelibc,strcasecmp,mismatch-late,20000,4.41
+Zig cc,glibc,nelibc,strncasecmp,equal-bounded,20000,9.34
+Zig cc,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,12.24
+Zig cc,glibc,nelibc,strncasecmp,mismatch-first-bounded,20000,5.01
+Zig cc,glibc,nelibc,strncasecmp,equal-long-bounded,20000,4.58
+Zig cc,glibc,nelibc,strncasecmp,mismatch-late-bounded,20000,5.24
+Zig cc,glibc,nelibc,strcasecmp,equal-very-long,20000,6.55
+Zig cc,glibc,nelibc,strcasecmp,mismatch-very-late,20000,7.10
+Zig cc,glibc,nelibc,strcasecmp,equal-256,20000,10.94
+Zig cc,glibc,nelibc,strcasecmp,mismatch-late-256,20000,10.87
+GCC,glibc,host-libc,strcasecmp,equal-short,20000,2.10
+GCC,glibc,host-libc,strcasecmp,mismatch-first,20000,2.10
+GCC,glibc,host-libc,strcasecmp,mismatch-late,20000,2.68
+GCC,glibc,host-libc,strncasecmp,equal-bounded,20000,2.40
+GCC,glibc,host-libc,strncasecmp,mismatch-at-bound,20000,2.83
+GCC,glibc,host-libc,strncasecmp,mismatch-first-bounded,20000,2.83
+GCC,glibc,host-libc,strncasecmp,equal-long-bounded,20000,2.83
+GCC,glibc,host-libc,strncasecmp,mismatch-late-bounded,20000,2.83
+GCC,glibc,host-libc,strcasecmp,equal-very-long,20000,3.27
+GCC,glibc,host-libc,strcasecmp,mismatch-very-late,20000,3.27
+GCC,glibc,host-libc,strcasecmp,equal-256,20000,9.67
+GCC,glibc,host-libc,strcasecmp,mismatch-late-256,20000,7.73
+GCC,glibc,nelibc,strcasecmp,equal-short,20000,4.24
+GCC,glibc,nelibc,strcasecmp,mismatch-first,20000,1.60
+GCC,glibc,nelibc,strcasecmp,mismatch-late,20000,4.56
+GCC,glibc,nelibc,strncasecmp,equal-bounded,20000,11.09
+GCC,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,10.77
+GCC,glibc,nelibc,strncasecmp,mismatch-first-bounded,20000,4.90
+GCC,glibc,nelibc,strncasecmp,equal-long-bounded,20000,4.68
+GCC,glibc,nelibc,strncasecmp,mismatch-late-bounded,20000,4.58
+GCC,glibc,nelibc,strcasecmp,equal-very-long,20000,5.90
+GCC,glibc,nelibc,strcasecmp,mismatch-very-late,20000,6.41
+GCC,glibc,nelibc,strcasecmp,equal-256,20000,10.01
+GCC,glibc,nelibc,strcasecmp,mismatch-late-256,20000,11.05
+Zig cc,musl,host-libc,strcasecmp,equal-short,20000,12.00
+Zig cc,musl,host-libc,strcasecmp,mismatch-first,20000,2.02
+Zig cc,musl,host-libc,strcasecmp,mismatch-late,20000,45.32
+Zig cc,musl,host-libc,strncasecmp,equal-bounded,20000,11.42
+Zig cc,musl,host-libc,strncasecmp,mismatch-at-bound,20000,12.77
+Zig cc,musl,host-libc,strncasecmp,mismatch-first-bounded,20000,1.99
+Zig cc,musl,host-libc,strncasecmp,equal-long-bounded,20000,27.82
+Zig cc,musl,host-libc,strncasecmp,mismatch-late-bounded,20000,31.76
+Zig cc,musl,host-libc,strcasecmp,equal-very-long,20000,99.46
+Zig cc,musl,host-libc,strcasecmp,mismatch-very-late,20000,101.16
+Zig cc,musl,host-libc,strcasecmp,equal-256,20000,252.13
+Zig cc,musl,host-libc,strcasecmp,mismatch-late-256,20000,254.09
+Zig cc,musl,nelibc,strcasecmp,equal-short,20000,7.97
+Zig cc,musl,nelibc,strcasecmp,mismatch-first,20000,2.09
+Zig cc,musl,nelibc,strcasecmp,mismatch-late,20000,4.31
+Zig cc,musl,nelibc,strncasecmp,equal-bounded,20000,9.29
+Zig cc,musl,nelibc,strncasecmp,mismatch-at-bound,20000,9.95
+Zig cc,musl,nelibc,strncasecmp,mismatch-first-bounded,20000,4.40
+Zig cc,musl,nelibc,strncasecmp,equal-long-bounded,20000,4.18
+Zig cc,musl,nelibc,strncasecmp,mismatch-late-bounded,20000,4.69
+Zig cc,musl,nelibc,strcasecmp,equal-very-long,20000,9.03
+Zig cc,musl,nelibc,strcasecmp,mismatch-very-late,20000,6.65
+Zig cc,musl,nelibc,strcasecmp,equal-256,20000,10.79
+Zig cc,musl,nelibc,strcasecmp,mismatch-late-256,20000,11.26
+TinyCC,glibc,host-libc,strcasecmp,equal-short,20000,3.87
+TinyCC,glibc,host-libc,strcasecmp,mismatch-first,20000,3.79
+TinyCC,glibc,host-libc,strcasecmp,mismatch-late,20000,5.02
+TinyCC,glibc,host-libc,strncasecmp,equal-bounded,20000,4.01
+TinyCC,glibc,host-libc,strncasecmp,mismatch-at-bound,20000,4.57
+TinyCC,glibc,host-libc,strncasecmp,mismatch-first-bounded,20000,4.56
+TinyCC,glibc,host-libc,strncasecmp,equal-long-bounded,20000,4.57
+TinyCC,glibc,host-libc,strncasecmp,mismatch-late-bounded,20000,4.56
+TinyCC,glibc,host-libc,strcasecmp,equal-very-long,20000,5.25
+TinyCC,glibc,host-libc,strcasecmp,mismatch-very-late,20000,5.25
+TinyCC,glibc,host-libc,strcasecmp,equal-256,20000,13.13
+TinyCC,glibc,host-libc,strcasecmp,mismatch-late-256,20000,10.76
+TinyCC object; GCC harness,glibc,nelibc,strcasecmp,equal-short,20000,4.80
+TinyCC object; GCC harness,glibc,nelibc,strcasecmp,mismatch-first,20000,2.02
+TinyCC object; GCC harness,glibc,nelibc,strcasecmp,mismatch-late,20000,5.01
+TinyCC object; GCC harness,glibc,nelibc,strncasecmp,equal-bounded,20000,24.35
+TinyCC object; GCC harness,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,26.29
+TinyCC object; GCC harness,glibc,nelibc,strncasecmp,mismatch-first-bounded,20000,5.76
+TinyCC object; GCC harness,glibc,nelibc,strncasecmp,equal-long-bounded,20000,4.91
+TinyCC object; GCC harness,glibc,nelibc,strncasecmp,mismatch-late-bounded,20000,5.23
+TinyCC object; GCC harness,glibc,nelibc,strcasecmp,equal-very-long,20000,6.49
+TinyCC object; GCC harness,glibc,nelibc,strcasecmp,mismatch-very-late,20000,6.83
+TinyCC object; GCC harness,glibc,nelibc,strcasecmp,equal-256,20000,11.07
+TinyCC object; GCC harness,glibc,nelibc,strcasecmp,mismatch-late-256,20000,11.58

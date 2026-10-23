@@ -1,0 +1,17 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_host_atexit(handler: function(): void): cint
+    <cimport, codename '__real_atexit'> end
+local function nelibc_host_exit(status: cint): void
+    <cimport, codename '__real_exit'> end
+
+local function atexit(handler: function(): void): cint
+    <cexport, codename '__wrap_atexit'>
+  if handler == nilptr then return 1 end
+  return nelibc_host_atexit(handler)
+end
+
+local function exit(status: cint): void <cexport, codename '__wrap_exit'>
+  nelibc_host_exit(status)
+end

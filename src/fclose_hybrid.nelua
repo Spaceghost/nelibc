@@ -1,0 +1,8 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_host_fclose(stream: pointer): cint <cimport> end
+
+local function fclose(stream: pointer): cint <cexport, codename 'fclose'>
+  return nelibc_host_fclose(stream)
+end

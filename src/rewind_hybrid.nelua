@@ -1,0 +1,12 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function host_fseek(stream: pointer, offset: clong, whence: cint): cint
+    <cimport, codename 'fseek'> end
+local function host_clearerr(stream: pointer): void
+    <cimport, codename 'clearerr'> end
+
+local function rewind(stream: pointer): void <cexport, codename 'rewind'>
+  host_fseek(stream, 0, 0) -- SEEK_SET
+  host_clearerr(stream)
+end

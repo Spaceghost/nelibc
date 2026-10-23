@@ -1,0 +1,10 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- Bootstrap provider: share the host libc's errno slot so nelibc and host
+-- libc calls observe the same value while both runtimes are in use.
+local function __errno_location(): *[0]cint <cimport> end
+
+local function nelibc_errno_location(): *[0]cint <cexport, codename 'nelibc_errno_location'>
+  return __errno_location()
+end

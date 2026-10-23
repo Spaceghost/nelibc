@@ -1,0 +1,336 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_host_stdout(): pointer <cimport> end
+local function nelibc_host_stdin(): pointer <cimport> end
+local function nelibc_host_stderr(): pointer <cimport> end
+local function nelibc_host_localeconv(): pointer <cimport> end
+local function nelibc_host_setlocale(category: cint, locale: *[0]cchar <const>): *[0]cchar <cimport> end
+local function nelibc_host_fseeko(stream: pointer, offset: clong, whence: cint): cint <cimport> end
+local function nelibc_host_ftello(stream: pointer): clong <cimport> end
+local function nelibc_host_stream_lock(stream: pointer): cint <cimport> end
+local function nelibc_host_stream_unlock(stream: pointer, lock_token: cint): void <cimport> end
+local function fputc_unlocked(character: cint, stream: pointer): cint <cimport> end
+local function getc_unlocked(stream: pointer): cint <cimport> end
+local function fread_unlocked(buffer: pointer, size: csize, count: csize, stream: pointer): csize <cimport> end
+local function fwrite_unlocked(buffer: pointer <const>, size: csize, count: csize, stream: pointer): csize <cimport> end
+local function fflush_unlocked(stream: pointer): cint <cimport> end
+local function fileno_unlocked(stream: pointer): cint <cimport> end
+local function feof_unlocked(stream: pointer): cint <cimport> end
+local function ferror_unlocked(stream: pointer): cint <cimport> end
+local function clearerr_unlocked(stream: pointer): void <cimport> end
+local function _IO_ungetc(character: cint, stream: pointer): cint <cimport> end
+local function nelibc_host_freopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>, stream: pointer): pointer <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function strerror(errnum: cint): *[0]cchar <cimport> end
+local function unlinkat(dirfd: cint, pathname: *[0]cchar <const>, flags: cint): cint <cimport> end
+local function realloc(ptr: pointer, size: csize): pointer <cimport> end
+
+local function putchar(character: cint): cint <cexport, codename 'putchar'>
+  local stream = nelibc_host_stdout()
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = fputc_unlocked((@cint)((@byte)(character)), stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function puts(string: *[0]cchar <const>): cint <cexport, codename 'puts'>
+  local stream = nelibc_host_stdout()
+  local length: csize = 0
+  while string[length] ~= 0 do length = length + 1 end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result: cint
+  if fwrite_unlocked((@pointer)(string), 1, length, stream) ~= length or fputc_unlocked(10, stream) == -1 then result = -1
+  else result = 0 end
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function localeconv(): pointer <cexport, codename 'localeconv'>
+  return nelibc_host_localeconv()
+end
+
+local function setlocale(category: cint, locale: *[0]cchar <const>): *[0]cchar
+    <cexport, codename 'setlocale'>
+  return nelibc_host_setlocale(category, locale)
+end
+
+local function fseeko(stream: pointer, offset: clong, whence: cint): cint
+    <cexport, codename 'fseeko'>
+  return nelibc_host_fseeko(stream, offset, whence)
+end
+
+local function ftello(stream: pointer): clong <cexport, codename 'ftello'>
+  return nelibc_host_ftello(stream)
+end
+
+local function fputc(character: cint, stream: pointer): cint <cexport, codename 'fputc'>
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = fputc_unlocked((@cint)((@byte)(character)), stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function fflush(stream: pointer): cint <cexport, codename 'fflush'>
+  if stream == nilptr then return fflush_unlocked(stream) end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = fflush_unlocked(stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function fileno(stream: pointer): cint <cexport, codename 'fileno'>
+  if stream == nilptr then
+    nelibc_errno_location()[0] = 9 -- EBADF
+    return -1
+  end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = fileno_unlocked(stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function feof(stream: pointer): cint <cexport, codename 'feof'>
+  if stream == nilptr then
+    nelibc_errno_location()[0] = 9 -- EBADF
+    return 0
+  end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = feof_unlocked(stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function ferror(stream: pointer): cint <cexport, codename 'ferror'>
+  if stream == nilptr then
+    nelibc_errno_location()[0] = 9 -- EBADF
+    return 0
+  end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = ferror_unlocked(stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function clearerr(stream: pointer): void <cexport, codename 'clearerr'>
+  if stream == nilptr then return end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  clearerr_unlocked(stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+end
+
+local function fgetc(stream: pointer): cint <cexport, codename 'fgetc'>
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = getc_unlocked(stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function getc(stream: pointer): cint <cexport, codename 'getc'>
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = getc_unlocked(stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function fgets(buffer: *[0]cchar, count: cint, stream: pointer): *[0]cchar <cexport, codename 'fgets'>
+  if buffer == nilptr or stream == nilptr or count <= 0 then return nilptr end
+  local destination: *[0]byte = (@*[0]byte)(buffer)
+  if count == 1 then
+    destination[0] = 0
+    return buffer
+  end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local length: csize = 0
+  local limit: csize = (@csize)(count - 1)
+  while length < limit do
+    local value = getc_unlocked(stream)
+    if value == -1 then break end
+    destination[length] = (@byte)(value)
+    length = length + 1
+    if value == 10 then break end
+  end
+  if length == 0 then
+    nelibc_host_stream_unlock(stream, stream_lock_token)
+    return nilptr
+  end
+  destination[length] = 0
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return buffer
+end
+
+local function getdelim(line_pointer: *[0]*[0]cchar, capacity_pointer: *[0]csize, delimiter: cint, stream: pointer): clong <cexport, codename 'getdelim'>
+  if line_pointer == nilptr or capacity_pointer == nilptr or stream == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local capacity = capacity_pointer[0]
+  local line = line_pointer[0]
+  if line == nilptr or capacity == 0 then
+    capacity = 128
+    local replacement = realloc((@pointer)(line), capacity)
+    if replacement == nilptr then return -1 end
+    line = (@*[0]cchar)(replacement)
+    line_pointer[0] = line
+    capacity_pointer[0] = capacity
+  end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local length: csize = 0
+  local delimiter_byte: byte = (@byte)(delimiter)
+  while true do
+    if length >= capacity - 1 then
+      if capacity > (~0_csize) // 2 then
+        nelibc_host_stream_unlock(stream, stream_lock_token)
+        nelibc_errno_location()[0] = 75 -- EOVERFLOW
+        return -1
+      end
+      local new_capacity: csize = capacity * 2
+      local replacement = realloc((@pointer)(line), new_capacity)
+      if replacement == nilptr then
+        if length == 0 then nelibc_host_stream_unlock(stream, stream_lock_token); return -1 end
+        break
+      end
+      line = (@*[0]cchar)(replacement)
+      line_pointer[0] = line
+      capacity = new_capacity
+      capacity_pointer[0] = capacity
+    end
+    local character = getc_unlocked(stream)
+    if character == -1 then break end
+    line[length] = (@cchar)(character)
+    length = length + 1
+    if (@byte)(character) == delimiter_byte then break end
+  end
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  if length == 0 then return -1 end
+  line[length] = 0
+  if length > 9223372036854775807_csize then
+    nelibc_errno_location()[0] = 75 -- EOVERFLOW
+    return -1
+  end
+  return (@clong)(length)
+end
+
+local function getline(line_pointer: *[0]*[0]cchar, capacity_pointer: *[0]csize, stream: pointer): clong <cexport, codename 'getline'>
+  return getdelim(line_pointer, capacity_pointer, 10, stream)
+end
+
+local function getchar(): cint <cexport, codename 'getchar'>
+  local stream = nelibc_host_stdin()
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = getc_unlocked(stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function getchar_unlocked(): cint <cexport, codename 'getchar_unlocked'>
+  return getc_unlocked(nelibc_host_stdin())
+end
+
+local function putchar_unlocked(character: cint): cint <cexport, codename 'putchar_unlocked'>
+  return fputc_unlocked((@cint)((@byte)(character)), nelibc_host_stdout())
+end
+
+local function nelibc_host_ungetc(character: cint, stream: pointer): cint <cexport, codename 'nelibc_host_ungetc'>
+  return _IO_ungetc(character, stream)
+end
+
+local function ungetc(character: cint, stream: pointer): cint <cexport, codename 'ungetc'>
+  return nelibc_host_ungetc(character, stream)
+end
+
+local function nelibc_host_fputs(string: *[0]cchar <const>, stream: pointer): cint <cexport, codename 'nelibc_host_fputs'>
+  local length: csize = 0
+  while string[length] ~= 0 do length = length + 1 end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result: cint
+  if fwrite_unlocked((@pointer)(string), 1, length, stream) == length then result = 0
+  else result = -1 end
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function fputs(string: *[0]cchar <const>, stream: pointer): cint <cexport, codename 'fputs'>
+  return nelibc_host_fputs(string, stream)
+end
+
+local function fputs_unlocked(string: *[0]cchar <const>, stream: pointer): cint <cexport, codename 'fputs_unlocked'>
+  if string == nilptr or stream == nilptr then return -1 end
+  local length: csize = 0
+  while string[length] ~= 0 do length = length + 1 end
+  if fwrite_unlocked((@pointer)(string), 1, length, stream) == length then return 0 end
+  return -1
+end
+
+local function fgets_unlocked(buffer: *[0]cchar, count: cint, stream: pointer): *[0]cchar <cexport, codename 'fgets_unlocked'>
+  if buffer == nilptr or stream == nilptr or count <= 0 then return nilptr end
+  local destination: *[0]byte = (@*[0]byte)(buffer)
+  if count == 1 then
+    destination[0] = 0
+    return buffer
+  end
+  local length: csize = 0
+  local limit: csize = (@csize)(count - 1)
+  while length < limit do
+    local value = getc_unlocked(stream)
+    if value == -1 then break end
+    destination[length] = (@byte)(value)
+    length = length + 1
+    if value == 10 then break end
+  end
+  if length == 0 then return nilptr end
+  destination[length] = 0
+  return buffer
+end
+
+local function fread(buffer: pointer, size: csize, count: csize, stream: pointer): csize <cexport, codename 'fread'>
+  if size == 0 or count == 0 then return 0 end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = fread_unlocked(buffer, size, count, stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function fwrite(buffer: pointer <const>, size: csize, count: csize, stream: pointer): csize <cexport, codename 'fwrite'>
+  if size == 0 or count == 0 then return 0 end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  local result = fwrite_unlocked(buffer, size, count, stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  return result
+end
+
+local function freopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>, stream: pointer): pointer <cexport, codename 'freopen'>
+  return nelibc_host_freopen(pathname, mode, stream)
+end
+
+local function perror(prefix: *[0]cchar <const>): void <cexport, codename 'perror'>
+  local error_number: cint = nelibc_errno_location()[0]
+  local stream = nelibc_host_stderr()
+  local message = strerror(error_number)
+  local prefix_length: csize = 0
+  local message_length: csize = 0
+  if prefix ~= nilptr then while prefix[prefix_length] ~= 0 do prefix_length = prefix_length + 1 end end
+  while message[message_length] ~= 0 do message_length = message_length + 1 end
+  local stream_lock_token: cint = nelibc_host_stream_lock(stream)
+  if prefix_length ~= 0 then
+    fwrite_unlocked((@pointer)(prefix), 1, prefix_length, stream)
+    fputc_unlocked(58, stream)
+    fputc_unlocked(32, stream)
+  end
+  fwrite_unlocked((@pointer)(message), 1, message_length, stream)
+  fputc_unlocked(10, stream)
+  nelibc_host_stream_unlock(stream, stream_lock_token)
+  nelibc_errno_location()[0] = error_number
+end
+
+local function remove(pathname: *[0]cchar <const>): cint <cexport, codename 'remove'>
+  if pathname == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  if unlinkat(-100, pathname, 0) == 0 then return 0 end -- AT_FDCWD
+  if nelibc_errno_location()[0] == 21 then -- EISDIR
+    return unlinkat(-100, pathname, 512) -- AT_REMOVEDIR
+  end
+  return -1
+end

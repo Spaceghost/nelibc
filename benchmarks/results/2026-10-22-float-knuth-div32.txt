@@ -1,0 +1,54 @@
+TinyCC Knuth 32-bit divide shootout
+===================================
+
+Candidate
+---------
+A TCC/x86-64-only macro used `divl` for the normalized quotient estimate,
+with a saturation case for a 64-bit quotient that reaches the 32-bit base. The
+compiler generated a 32-bit `div ecx` instead of the existing 64-bit `div rcx`.
+The candidate's Knuth function stack frame grew from 0x140 to 0x160 bytes,
+partly because the macro wrote quotient and remainder through output pointers.
+
+Correctness
+-----------
+The candidate matched the TinyCC/glibc host output on the float differential
+corpus (`float-diff-host-tcc.csv` versus `float-diff-nelibc-div32.csv`).
+
+Results
+-------
+Twelve alternating TinyCC parser pairs, current source versus candidate:
+
+| Workload | Parser | Current median ns/call | Candidate median ns/call | Paired median change |
+|---|---|---:|---:|---:|
+| Short | strtof | 611.61 | 615.50 | 0.24% slower |
+| Short | strtod | 578.83 | 578.83 | 0.40% slower |
+| Short | strtold | 699.11 | 707.37 | 0.57% slower |
+| Long | strtof | 43,992.51 | 45,652.75 | 2.98% slower |
+| Long | strtod | 44,030.20 | 45,451.22 | 4.00% slower |
+| Long | strtold | 44,141.96 | 46,171.82 | 5.97% slower |
+
+Reject the output-pointer macro. Its wider stack frame and extra stores outweighed
+the narrower divide. Production source remains unchanged. Raw paired results:
+`2026-10-22-float-knuth-div32-ab.csv`.
+
+Expression-form follow-up
+------------------------
+Changed the inline macro to return the quotient directly and reuse its high-word
+input as the `divl` remainder output, removing the quotient/remainder output
+pointers. TinyCC generated `div ecx` and reduced the frame from 0x160 to 0x150
+bytes, but the parser shootout remained slower. The candidate passed the same
+float differential check.
+
+Twelve alternating parser pairs (current versus expression candidate):
+
+| Workload | Parser | Current ns/call | Candidate ns/call | Paired median change |
+|---|---|---:|---:|---:|
+| Short | strtof | 613.61 | 623.26 | 1.54% slower |
+| Short | strtod | 576.83 | 592.00 | 3.40% slower |
+| Short | strtold | 700.54 | 721.34 | 2.90% slower |
+| Long | strtof | 43,672.82 | 45,104.58 | 3.70% slower |
+| Long | strtod | 43,459.97 | 45,987.93 | 6.31% slower |
+| Long | strtold | 44,382.82 | 46,413.72 | 4.93% slower |
+
+Reject the expression macro too. Raw data:
+`2026-10-22-float-knuth-div32expr-ab.csv`.

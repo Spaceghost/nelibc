@@ -1,0 +1,2305 @@
+candidate,pair,compiler,libc,variant,function,input,median_ns_per_call
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtof,all_zero_14800,55300
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,372491
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtof,long_fraction_600,12571
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtof,short_decimal,851
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtod,all_zero_14800,54055
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,367439
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtod,long_fraction_600,12420
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtod,short_decimal,840
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtold,all_zero_14800,54991
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,354734
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtold,long_fraction_600,13404
+saw_nonzero_guard,1,TinyCC,glibc,baseline,strtold,short_decimal,779
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtof,all_zero_14800,55056
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,187304
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtof,long_fraction_600,6391
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtof,short_decimal,391
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtod,all_zero_14800,51828
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,187097
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtod,long_fraction_600,6238
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtod,short_decimal,369
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtold,all_zero_14800,48527
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,185908
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtold,long_fraction_600,6445
+saw_nonzero_guard,1,Zig cc,glibc,baseline,strtold,short_decimal,294
+saw_nonzero_guard,1,GCC,glibc,baseline,strtof,all_zero_14800,19575
+saw_nonzero_guard,1,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,152187
+saw_nonzero_guard,1,GCC,glibc,baseline,strtof,long_fraction_600,5649
+saw_nonzero_guard,1,GCC,glibc,baseline,strtof,short_decimal,318
+saw_nonzero_guard,1,GCC,glibc,baseline,strtod,all_zero_14800,19546
+saw_nonzero_guard,1,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152483
+saw_nonzero_guard,1,GCC,glibc,baseline,strtod,long_fraction_600,5468
+saw_nonzero_guard,1,GCC,glibc,baseline,strtod,short_decimal,322
+saw_nonzero_guard,1,GCC,glibc,baseline,strtold,all_zero_14800,29148
+saw_nonzero_guard,1,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,152081
+saw_nonzero_guard,1,GCC,glibc,baseline,strtold,long_fraction_600,5855
+saw_nonzero_guard,1,GCC,glibc,baseline,strtold,short_decimal,252
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtof,all_zero_14800,51831
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,194000
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtof,long_fraction_600,6607
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtof,short_decimal,382
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtod,all_zero_14800,48591
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,190247
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtod,long_fraction_600,6604
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtod,short_decimal,399
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtold,all_zero_14800,48522
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,186314
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtold,long_fraction_600,6720
+saw_nonzero_guard,1,Zig cc,musl,baseline,strtold,short_decimal,326
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtof,all_zero_14800,53193
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,331174
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtof,long_fraction_600,11814
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtof,short_decimal,860
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtod,all_zero_14800,52180
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,374873
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtod,long_fraction_600,11859
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtod,short_decimal,761
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtold,all_zero_14800,58418
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,373591
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtold,long_fraction_600,14280
+saw_nonzero_guard,1,TinyCC,glibc,candidate,strtold,short_decimal,841
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtof,all_zero_14800,53032
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,207374
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtof,long_fraction_600,6556
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtof,short_decimal,380
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtod,all_zero_14800,58899
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,198585
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtod,long_fraction_600,6514
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtod,short_decimal,389
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtold,all_zero_14800,51763
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,198564
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtold,long_fraction_600,6636
+saw_nonzero_guard,1,Zig cc,glibc,candidate,strtold,short_decimal,318
+saw_nonzero_guard,1,GCC,glibc,candidate,strtof,all_zero_14800,21276
+saw_nonzero_guard,1,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,156901
+saw_nonzero_guard,1,GCC,glibc,candidate,strtof,long_fraction_600,5776
+saw_nonzero_guard,1,GCC,glibc,candidate,strtof,short_decimal,313
+saw_nonzero_guard,1,GCC,glibc,candidate,strtod,all_zero_14800,21710
+saw_nonzero_guard,1,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,153103
+saw_nonzero_guard,1,GCC,glibc,candidate,strtod,long_fraction_600,5528
+saw_nonzero_guard,1,GCC,glibc,candidate,strtod,short_decimal,311
+saw_nonzero_guard,1,GCC,glibc,candidate,strtold,all_zero_14800,23353
+saw_nonzero_guard,1,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,156634
+saw_nonzero_guard,1,GCC,glibc,candidate,strtold,long_fraction_600,6057
+saw_nonzero_guard,1,GCC,glibc,candidate,strtold,short_decimal,279
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtof,all_zero_14800,54366
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,199241
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtof,long_fraction_600,7219
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtof,short_decimal,373
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtod,all_zero_14800,51841
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,198688
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtod,long_fraction_600,6516
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtod,short_decimal,366
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtold,all_zero_14800,52085
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,194689
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtold,long_fraction_600,6726
+saw_nonzero_guard,1,Zig cc,musl,candidate,strtold,short_decimal,298
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtof,all_zero_14800,54388
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,388768
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtof,long_fraction_600,12601
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtof,short_decimal,832
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtod,all_zero_14800,59079
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,367232
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtod,long_fraction_600,12688
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtod,short_decimal,830
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtold,all_zero_14800,54983
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,390346
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtold,long_fraction_600,13210
+saw_nonzero_guard,2,TinyCC,glibc,candidate,strtold,short_decimal,708
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtof,all_zero_14800,50777
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,197071
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtof,long_fraction_600,6685
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtof,short_decimal,399
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtod,all_zero_14800,52219
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,199006
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtod,long_fraction_600,6413
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtod,short_decimal,383
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtold,all_zero_14800,50676
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,198533
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtold,long_fraction_600,6853
+saw_nonzero_guard,2,Zig cc,glibc,candidate,strtold,short_decimal,318
+saw_nonzero_guard,2,GCC,glibc,candidate,strtof,all_zero_14800,22328
+saw_nonzero_guard,2,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,156837
+saw_nonzero_guard,2,GCC,glibc,candidate,strtof,long_fraction_600,5504
+saw_nonzero_guard,2,GCC,glibc,candidate,strtof,short_decimal,300
+saw_nonzero_guard,2,GCC,glibc,candidate,strtod,all_zero_14800,21030
+saw_nonzero_guard,2,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,155916
+saw_nonzero_guard,2,GCC,glibc,candidate,strtod,long_fraction_600,5471
+saw_nonzero_guard,2,GCC,glibc,candidate,strtod,short_decimal,302
+saw_nonzero_guard,2,GCC,glibc,candidate,strtold,all_zero_14800,23073
+saw_nonzero_guard,2,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,152615
+saw_nonzero_guard,2,GCC,glibc,candidate,strtold,long_fraction_600,5659
+saw_nonzero_guard,2,GCC,glibc,candidate,strtold,short_decimal,240
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtof,all_zero_14800,50762
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,206138
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtof,long_fraction_600,6680
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtof,short_decimal,377
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtod,all_zero_14800,53505
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,194595
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtod,long_fraction_600,6506
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtod,short_decimal,388
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtold,all_zero_14800,51767
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,198547
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtold,long_fraction_600,7023
+saw_nonzero_guard,2,Zig cc,musl,candidate,strtold,short_decimal,312
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtof,all_zero_14800,56379
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,390961
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtof,long_fraction_600,15683
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtof,short_decimal,855
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtod,all_zero_14800,55333
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,359732
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtod,long_fraction_600,11735
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtod,short_decimal,797
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtold,all_zero_14800,54979
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,355641
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtold,long_fraction_600,14082
+saw_nonzero_guard,2,TinyCC,glibc,baseline,strtold,short_decimal,711
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtof,all_zero_14800,48618
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,186527
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtof,long_fraction_600,6455
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtof,short_decimal,368
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtod,all_zero_14800,47577
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,185785
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtod,long_fraction_600,6163
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtod,short_decimal,373
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtold,all_zero_14800,48536
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,182988
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtold,long_fraction_600,6278
+saw_nonzero_guard,2,Zig cc,glibc,baseline,strtold,short_decimal,307
+saw_nonzero_guard,2,GCC,glibc,baseline,strtof,all_zero_14800,19589
+saw_nonzero_guard,2,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,152188
+saw_nonzero_guard,2,GCC,glibc,baseline,strtof,long_fraction_600,5730
+saw_nonzero_guard,2,GCC,glibc,baseline,strtof,short_decimal,320
+saw_nonzero_guard,2,GCC,glibc,baseline,strtod,all_zero_14800,19135
+saw_nonzero_guard,2,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,148868
+saw_nonzero_guard,2,GCC,glibc,baseline,strtod,long_fraction_600,5484
+saw_nonzero_guard,2,GCC,glibc,baseline,strtod,short_decimal,329
+saw_nonzero_guard,2,GCC,glibc,baseline,strtold,all_zero_14800,25751
+saw_nonzero_guard,2,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,148863
+saw_nonzero_guard,2,GCC,glibc,baseline,strtold,long_fraction_600,5607
+saw_nonzero_guard,2,GCC,glibc,baseline,strtold,short_decimal,244
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtof,all_zero_14800,50728
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,202506
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtof,long_fraction_600,6724
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtof,short_decimal,378
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtod,all_zero_14800,48671
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,200640
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtod,long_fraction_600,6646
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtod,short_decimal,349
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtold,all_zero_14800,48589
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,198217
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtold,long_fraction_600,6879
+saw_nonzero_guard,2,Zig cc,musl,baseline,strtold,short_decimal,373
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtof,all_zero_14800,55245
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,334693
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtof,long_fraction_600,14474
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtof,short_decimal,834
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtod,all_zero_14800,55230
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,353754
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtod,long_fraction_600,12121
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtod,short_decimal,894
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtold,all_zero_14800,56303
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,339049
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtold,long_fraction_600,14181
+saw_nonzero_guard,3,TinyCC,glibc,baseline,strtold,short_decimal,674
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtof,all_zero_14800,56278
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,191749
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtof,long_fraction_600,6613
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtof,short_decimal,395
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtod,all_zero_14800,51098
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,186096
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtod,long_fraction_600,6089
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtod,short_decimal,370
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtold,all_zero_14800,51734
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,190617
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtold,long_fraction_600,6251
+saw_nonzero_guard,3,Zig cc,glibc,baseline,strtold,short_decimal,304
+saw_nonzero_guard,3,GCC,glibc,baseline,strtof,all_zero_14800,19576
+saw_nonzero_guard,3,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,152413
+saw_nonzero_guard,3,GCC,glibc,baseline,strtof,long_fraction_600,5639
+saw_nonzero_guard,3,GCC,glibc,baseline,strtof,short_decimal,327
+saw_nonzero_guard,3,GCC,glibc,baseline,strtod,all_zero_14800,19564
+saw_nonzero_guard,3,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152394
+saw_nonzero_guard,3,GCC,glibc,baseline,strtod,long_fraction_600,5366
+saw_nonzero_guard,3,GCC,glibc,baseline,strtod,short_decimal,312
+saw_nonzero_guard,3,GCC,glibc,baseline,strtold,all_zero_14800,19054
+saw_nonzero_guard,3,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,152187
+saw_nonzero_guard,3,GCC,glibc,baseline,strtold,long_fraction_600,5876
+saw_nonzero_guard,3,GCC,glibc,baseline,strtold,short_decimal,235
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtof,all_zero_14800,48620
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,190382
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtof,long_fraction_600,6570
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtof,short_decimal,373
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtod,all_zero_14800,53040
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,183518
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtod,long_fraction_600,6303
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtod,short_decimal,371
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtold,all_zero_14800,48508
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,197032
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtold,long_fraction_600,6633
+saw_nonzero_guard,3,Zig cc,musl,baseline,strtold,short_decimal,283
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtof,all_zero_14800,57166
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,358557
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtof,long_fraction_600,12669
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtof,short_decimal,838
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtod,all_zero_14800,50912
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,355894
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtod,long_fraction_600,11975
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtod,short_decimal,801
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtold,all_zero_14800,50660
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,357676
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtold,long_fraction_600,14552
+saw_nonzero_guard,3,TinyCC,glibc,candidate,strtold,short_decimal,674
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtof,all_zero_14800,50754
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,202178
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtof,long_fraction_600,6566
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtof,short_decimal,393
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtod,all_zero_14800,50800
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,198456
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtod,long_fraction_600,6487
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtod,short_decimal,384
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtold,all_zero_14800,51766
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,194369
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtold,long_fraction_600,6668
+saw_nonzero_guard,3,Zig cc,glibc,candidate,strtold,short_decimal,315
+saw_nonzero_guard,3,GCC,glibc,candidate,strtof,all_zero_14800,26108
+saw_nonzero_guard,3,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,192172
+saw_nonzero_guard,3,GCC,glibc,candidate,strtof,long_fraction_600,8484
+saw_nonzero_guard,3,GCC,glibc,candidate,strtof,short_decimal,473
+saw_nonzero_guard,3,GCC,glibc,candidate,strtod,all_zero_14800,32582
+saw_nonzero_guard,3,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,156697
+saw_nonzero_guard,3,GCC,glibc,candidate,strtod,long_fraction_600,5620
+saw_nonzero_guard,3,GCC,glibc,candidate,strtod,short_decimal,318
+saw_nonzero_guard,3,GCC,glibc,candidate,strtold,all_zero_14800,23625
+saw_nonzero_guard,3,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,154461
+saw_nonzero_guard,3,GCC,glibc,candidate,strtold,long_fraction_600,5909
+saw_nonzero_guard,3,GCC,glibc,candidate,strtold,short_decimal,266
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtof,all_zero_14800,54014
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,214423
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtof,long_fraction_600,6589
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtof,short_decimal,382
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtod,all_zero_14800,50735
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,198587
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtod,long_fraction_600,6795
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtod,short_decimal,379
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtold,all_zero_14800,51751
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,209188
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtold,long_fraction_600,6700
+saw_nonzero_guard,3,Zig cc,musl,candidate,strtold,short_decimal,293
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtof,all_zero_14800,52030
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,364353
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtof,long_fraction_600,11908
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtof,short_decimal,836
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtod,all_zero_14800,52024
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,350274
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtod,long_fraction_600,11993
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtod,short_decimal,821
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtold,all_zero_14800,50910
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,345123
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtold,long_fraction_600,12716
+saw_nonzero_guard,4,TinyCC,glibc,candidate,strtold,short_decimal,706
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtof,all_zero_14800,49719
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,192897
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtof,long_fraction_600,6424
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtof,short_decimal,365
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtod,all_zero_14800,49704
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,194410
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtod,long_fraction_600,6354
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtod,short_decimal,389
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtold,all_zero_14800,50693
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,194302
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtold,long_fraction_600,6743
+saw_nonzero_guard,4,Zig cc,glibc,candidate,strtold,short_decimal,330
+saw_nonzero_guard,4,GCC,glibc,candidate,strtof,all_zero_14800,22962
+saw_nonzero_guard,4,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,162046
+saw_nonzero_guard,4,GCC,glibc,candidate,strtof,long_fraction_600,5435
+saw_nonzero_guard,4,GCC,glibc,candidate,strtof,short_decimal,333
+saw_nonzero_guard,4,GCC,glibc,candidate,strtod,all_zero_14800,22328
+saw_nonzero_guard,4,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,155102
+saw_nonzero_guard,4,GCC,glibc,candidate,strtod,long_fraction_600,5440
+saw_nonzero_guard,4,GCC,glibc,candidate,strtod,short_decimal,301
+saw_nonzero_guard,4,GCC,glibc,candidate,strtold,all_zero_14800,19449
+saw_nonzero_guard,4,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,153470
+saw_nonzero_guard,4,GCC,glibc,candidate,strtold,long_fraction_600,5747
+saw_nonzero_guard,4,GCC,glibc,candidate,strtold,short_decimal,230
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtof,all_zero_14800,51879
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,202736
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtof,long_fraction_600,7098
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtof,short_decimal,387
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtod,all_zero_14800,50746
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,194529
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtod,long_fraction_600,6501
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtod,short_decimal,373
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtold,all_zero_14800,50654
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,194303
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtold,long_fraction_600,6782
+saw_nonzero_guard,4,Zig cc,musl,candidate,strtold,short_decimal,304
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtof,all_zero_14800,55246
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,363102
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtof,long_fraction_600,11338
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtof,short_decimal,826
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtod,all_zero_14800,52964
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,326917
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtod,long_fraction_600,11373
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtod,short_decimal,845
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtold,all_zero_14800,53813
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,383685
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtold,long_fraction_600,14383
+saw_nonzero_guard,4,TinyCC,glibc,baseline,strtold,short_decimal,666
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtof,all_zero_14800,50831
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,202612
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtof,long_fraction_600,6454
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtof,short_decimal,375
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtod,all_zero_14800,46542
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,184095
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtod,long_fraction_600,6138
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtod,short_decimal,384
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtold,all_zero_14800,47500
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,199875
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtold,long_fraction_600,6792
+saw_nonzero_guard,4,Zig cc,glibc,baseline,strtold,short_decimal,309
+saw_nonzero_guard,4,GCC,glibc,baseline,strtof,all_zero_14800,19585
+saw_nonzero_guard,4,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,154109
+saw_nonzero_guard,4,GCC,glibc,baseline,strtof,long_fraction_600,5470
+saw_nonzero_guard,4,GCC,glibc,baseline,strtof,short_decimal,322
+saw_nonzero_guard,4,GCC,glibc,baseline,strtod,all_zero_14800,19139
+saw_nonzero_guard,4,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,164206
+saw_nonzero_guard,4,GCC,glibc,baseline,strtod,long_fraction_600,5358
+saw_nonzero_guard,4,GCC,glibc,baseline,strtod,short_decimal,296
+saw_nonzero_guard,4,GCC,glibc,baseline,strtold,all_zero_14800,19063
+saw_nonzero_guard,4,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,148852
+saw_nonzero_guard,4,GCC,glibc,baseline,strtold,long_fraction_600,5731
+saw_nonzero_guard,4,GCC,glibc,baseline,strtold,short_decimal,247
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtof,all_zero_14800,47588
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,183551
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtof,long_fraction_600,6396
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtof,short_decimal,361
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtod,all_zero_14800,47569
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,186058
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtod,long_fraction_600,6433
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtod,short_decimal,361
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtold,all_zero_14800,47480
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,183319
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtold,long_fraction_600,6727
+saw_nonzero_guard,4,Zig cc,musl,baseline,strtold,short_decimal,288
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtof,all_zero_14800,55251
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,333953
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtof,long_fraction_600,11831
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtof,short_decimal,812
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtod,all_zero_14800,55218
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,384123
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtod,long_fraction_600,12826
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtod,short_decimal,888
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtold,all_zero_14800,56987
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,366047
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtold,long_fraction_600,13685
+saw_nonzero_guard,5,TinyCC,glibc,baseline,strtold,short_decimal,708
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtof,all_zero_14800,48635
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,186427
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtof,long_fraction_600,6275
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtof,short_decimal,365
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtod,all_zero_14800,46755
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,187031
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtod,long_fraction_600,6739
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtod,short_decimal,377
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtold,all_zero_14800,47486
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,199635
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtold,long_fraction_600,6354
+saw_nonzero_guard,5,Zig cc,glibc,baseline,strtold,short_decimal,310
+saw_nonzero_guard,5,GCC,glibc,baseline,strtof,all_zero_14800,19577
+saw_nonzero_guard,5,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,149237
+saw_nonzero_guard,5,GCC,glibc,baseline,strtof,long_fraction_600,5466
+saw_nonzero_guard,5,GCC,glibc,baseline,strtof,short_decimal,308
+saw_nonzero_guard,5,GCC,glibc,baseline,strtod,all_zero_14800,19189
+saw_nonzero_guard,5,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152411
+saw_nonzero_guard,5,GCC,glibc,baseline,strtod,long_fraction_600,5530
+saw_nonzero_guard,5,GCC,glibc,baseline,strtod,short_decimal,352
+saw_nonzero_guard,5,GCC,glibc,baseline,strtold,all_zero_14800,25979
+saw_nonzero_guard,5,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,162057
+saw_nonzero_guard,5,GCC,glibc,baseline,strtold,long_fraction_600,5491
+saw_nonzero_guard,5,GCC,glibc,baseline,strtold,short_decimal,249
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtof,all_zero_14800,47616
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,186640
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtof,long_fraction_600,6408
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtof,short_decimal,352
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtod,all_zero_14800,47576
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,183100
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtod,long_fraction_600,6243
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtod,short_decimal,363
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtold,all_zero_14800,46460
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,183301
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtold,long_fraction_600,6593
+saw_nonzero_guard,5,Zig cc,musl,baseline,strtold,short_decimal,306
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtof,all_zero_14800,52013
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,365260
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtof,long_fraction_600,12871
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtof,short_decimal,815
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtod,all_zero_14800,50895
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,368505
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtod,long_fraction_600,12894
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtod,short_decimal,770
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtold,all_zero_14800,53815
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,382589
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtold,long_fraction_600,14288
+saw_nonzero_guard,5,TinyCC,glibc,candidate,strtold,short_decimal,672
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtof,all_zero_14800,51870
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,200971
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtof,long_fraction_600,6697
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtof,short_decimal,389
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtod,all_zero_14800,51874
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,202314
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtod,long_fraction_600,6471
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtod,short_decimal,395
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtold,all_zero_14800,50703
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,194305
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtold,long_fraction_600,6737
+saw_nonzero_guard,5,Zig cc,glibc,candidate,strtold,short_decimal,325
+saw_nonzero_guard,5,GCC,glibc,candidate,strtof,all_zero_14800,19568
+saw_nonzero_guard,5,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,162186
+saw_nonzero_guard,5,GCC,glibc,candidate,strtof,long_fraction_600,5722
+saw_nonzero_guard,5,GCC,glibc,candidate,strtof,short_decimal,331
+saw_nonzero_guard,5,GCC,glibc,candidate,strtod,all_zero_14800,30137
+saw_nonzero_guard,5,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,155738
+saw_nonzero_guard,5,GCC,glibc,candidate,strtod,long_fraction_600,5475
+saw_nonzero_guard,5,GCC,glibc,candidate,strtod,short_decimal,308
+saw_nonzero_guard,5,GCC,glibc,candidate,strtold,all_zero_14800,21973
+saw_nonzero_guard,5,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,157962
+saw_nonzero_guard,5,GCC,glibc,candidate,strtold,long_fraction_600,5706
+saw_nonzero_guard,5,GCC,glibc,candidate,strtold,short_decimal,267
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtof,all_zero_14800,51864
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,199443
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtof,long_fraction_600,6720
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtof,short_decimal,391
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtod,all_zero_14800,51840
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,198741
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtod,long_fraction_600,6585
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtod,short_decimal,363
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtold,all_zero_14800,51804
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,199617
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtold,long_fraction_600,6887
+saw_nonzero_guard,5,Zig cc,musl,candidate,strtold,short_decimal,296
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtof,all_zero_14800,54391
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,365262
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtof,long_fraction_600,12033
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtof,short_decimal,880
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtod,all_zero_14800,52036
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,378819
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtod,long_fraction_600,12785
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtod,short_decimal,857
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtold,all_zero_14800,51835
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,398366
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtold,long_fraction_600,13836
+saw_nonzero_guard,6,TinyCC,glibc,candidate,strtold,short_decimal,695
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtof,all_zero_14800,53032
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,198643
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtof,long_fraction_600,6604
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtof,short_decimal,395
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtod,all_zero_14800,50749
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,197296
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtod,long_fraction_600,6518
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtod,short_decimal,373
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtold,all_zero_14800,51762
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,198407
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtold,long_fraction_600,6826
+saw_nonzero_guard,6,Zig cc,glibc,candidate,strtold,short_decimal,310
+saw_nonzero_guard,6,GCC,glibc,candidate,strtof,all_zero_14800,24363
+saw_nonzero_guard,6,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,152563
+saw_nonzero_guard,6,GCC,glibc,candidate,strtof,long_fraction_600,5449
+saw_nonzero_guard,6,GCC,glibc,candidate,strtof,short_decimal,292
+saw_nonzero_guard,6,GCC,glibc,candidate,strtod,all_zero_14800,21178
+saw_nonzero_guard,6,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,155397
+saw_nonzero_guard,6,GCC,glibc,candidate,strtod,long_fraction_600,5560
+saw_nonzero_guard,6,GCC,glibc,candidate,strtod,short_decimal,317
+saw_nonzero_guard,6,GCC,glibc,candidate,strtold,all_zero_14800,21605
+saw_nonzero_guard,6,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,156520
+saw_nonzero_guard,6,GCC,glibc,candidate,strtold,long_fraction_600,5640
+saw_nonzero_guard,6,GCC,glibc,candidate,strtold,short_decimal,257
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtof,all_zero_14800,50756
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,195569
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtof,long_fraction_600,6518
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtof,short_decimal,360
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtod,all_zero_14800,50739
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,199526
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtod,long_fraction_600,6450
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtod,short_decimal,376
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtold,all_zero_14800,51756
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,200003
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtold,long_fraction_600,6912
+saw_nonzero_guard,6,Zig cc,musl,candidate,strtold,short_decimal,320
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtof,all_zero_14800,57813
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,379246
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtof,long_fraction_600,13242
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtof,short_decimal,770
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtod,all_zero_14800,55613
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,377864
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtod,long_fraction_600,12788
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtod,short_decimal,905
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtold,all_zero_14800,55007
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,355766
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtold,long_fraction_600,13491
+saw_nonzero_guard,6,TinyCC,glibc,baseline,strtold,short_decimal,649
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtof,all_zero_14800,47614
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,186613
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtof,long_fraction_600,6529
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtof,short_decimal,368
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtod,all_zero_14800,46535
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,182035
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtod,long_fraction_600,5994
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtod,short_decimal,363
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtold,all_zero_14800,47485
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,183443
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtold,long_fraction_600,6343
+saw_nonzero_guard,6,Zig cc,glibc,baseline,strtold,short_decimal,306
+saw_nonzero_guard,6,GCC,glibc,baseline,strtof,all_zero_14800,21184
+saw_nonzero_guard,6,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,149122
+saw_nonzero_guard,6,GCC,glibc,baseline,strtof,long_fraction_600,5501
+saw_nonzero_guard,6,GCC,glibc,baseline,strtof,short_decimal,324
+saw_nonzero_guard,6,GCC,glibc,baseline,strtod,all_zero_14800,22553
+saw_nonzero_guard,6,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152085
+saw_nonzero_guard,6,GCC,glibc,baseline,strtod,long_fraction_600,5524
+saw_nonzero_guard,6,GCC,glibc,baseline,strtod,short_decimal,306
+saw_nonzero_guard,6,GCC,glibc,baseline,strtold,all_zero_14800,19488
+saw_nonzero_guard,6,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,152258
+saw_nonzero_guard,6,GCC,glibc,baseline,strtold,long_fraction_600,5844
+saw_nonzero_guard,6,GCC,glibc,baseline,strtold,short_decimal,248
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtof,all_zero_14800,47589
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,186790
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtof,long_fraction_600,6565
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtof,short_decimal,384
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtod,all_zero_14800,47546
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,191209
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtod,long_fraction_600,6773
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtod,short_decimal,368
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtold,all_zero_14800,48507
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,185830
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtold,long_fraction_600,6846
+saw_nonzero_guard,6,Zig cc,musl,baseline,strtold,short_decimal,311
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtof,all_zero_14800,54074
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,366433
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtof,long_fraction_600,15590
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtof,short_decimal,791
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtod,all_zero_14800,51927
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,372817
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtod,long_fraction_600,12054
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtod,short_decimal,770
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtold,all_zero_14800,53825
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,313384
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtold,long_fraction_600,12577
+saw_nonzero_guard,7,TinyCC,glibc,baseline,strtold,short_decimal,621
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtof,all_zero_14800,50736
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,182686
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtof,long_fraction_600,6200
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtof,short_decimal,377
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtod,all_zero_14800,49667
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,183166
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtod,long_fraction_600,5887
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtod,short_decimal,358
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtold,all_zero_14800,47497
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,183043
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtold,long_fraction_600,6281
+saw_nonzero_guard,7,Zig cc,glibc,baseline,strtold,short_decimal,292
+saw_nonzero_guard,7,GCC,glibc,baseline,strtof,all_zero_14800,19574
+saw_nonzero_guard,7,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,152659
+saw_nonzero_guard,7,GCC,glibc,baseline,strtof,long_fraction_600,5432
+saw_nonzero_guard,7,GCC,glibc,baseline,strtof,short_decimal,309
+saw_nonzero_guard,7,GCC,glibc,baseline,strtod,all_zero_14800,19146
+saw_nonzero_guard,7,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152460
+saw_nonzero_guard,7,GCC,glibc,baseline,strtod,long_fraction_600,5619
+saw_nonzero_guard,7,GCC,glibc,baseline,strtod,short_decimal,321
+saw_nonzero_guard,7,GCC,glibc,baseline,strtold,all_zero_14800,27745
+saw_nonzero_guard,7,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,173601
+saw_nonzero_guard,7,GCC,glibc,baseline,strtold,long_fraction_600,5806
+saw_nonzero_guard,7,GCC,glibc,baseline,strtold,short_decimal,249
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtof,all_zero_14800,60996
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,184251
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtof,long_fraction_600,6337
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtof,short_decimal,374
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtod,all_zero_14800,46585
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,213458
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtod,long_fraction_600,6597
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtod,short_decimal,385
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtold,all_zero_14800,47533
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,183306
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtold,long_fraction_600,6819
+saw_nonzero_guard,7,Zig cc,musl,baseline,strtold,short_decimal,281
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtof,all_zero_14800,54035
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,364379
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtof,long_fraction_600,12862
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtof,short_decimal,846
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtod,all_zero_14800,50925
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,366282
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtod,long_fraction_600,12911
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtod,short_decimal,791
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtold,all_zero_14800,51755
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,366095
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtold,long_fraction_600,13655
+saw_nonzero_guard,7,TinyCC,glibc,candidate,strtold,short_decimal,725
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtof,all_zero_14800,56382
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,194614
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtof,long_fraction_600,6554
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtof,short_decimal,386
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtod,all_zero_14800,50749
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,198711
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtod,long_fraction_600,6443
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtod,short_decimal,379
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtold,all_zero_14800,51779
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,201568
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtold,long_fraction_600,6901
+saw_nonzero_guard,7,Zig cc,glibc,candidate,strtold,short_decimal,336
+saw_nonzero_guard,7,GCC,glibc,candidate,strtof,all_zero_14800,23480
+saw_nonzero_guard,7,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,157113
+saw_nonzero_guard,7,GCC,glibc,candidate,strtof,long_fraction_600,5505
+saw_nonzero_guard,7,GCC,glibc,candidate,strtof,short_decimal,314
+saw_nonzero_guard,7,GCC,glibc,candidate,strtod,all_zero_14800,21763
+saw_nonzero_guard,7,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,153555
+saw_nonzero_guard,7,GCC,glibc,candidate,strtod,long_fraction_600,5478
+saw_nonzero_guard,7,GCC,glibc,candidate,strtod,short_decimal,328
+saw_nonzero_guard,7,GCC,glibc,candidate,strtold,all_zero_14800,20353
+saw_nonzero_guard,7,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,155957
+saw_nonzero_guard,7,GCC,glibc,candidate,strtold,long_fraction_600,5844
+saw_nonzero_guard,7,GCC,glibc,candidate,strtold,short_decimal,245
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtof,all_zero_14800,51858
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,198635
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtof,long_fraction_600,6516
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtof,short_decimal,356
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtod,all_zero_14800,51019
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,197482
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtod,long_fraction_600,6495
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtod,short_decimal,363
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtold,all_zero_14800,50669
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,194379
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtold,long_fraction_600,6650
+saw_nonzero_guard,7,Zig cc,musl,candidate,strtold,short_decimal,301
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtof,all_zero_14800,52026
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,383181
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtof,long_fraction_600,13533
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtof,short_decimal,767
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtod,all_zero_14800,58410
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,379435
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtod,long_fraction_600,12566
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtod,short_decimal,853
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtold,all_zero_14800,53845
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,387039
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtold,long_fraction_600,13096
+saw_nonzero_guard,8,TinyCC,glibc,candidate,strtold,short_decimal,652
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtof,all_zero_14800,55551
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,224722
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtof,long_fraction_600,6678
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtof,short_decimal,390
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtod,all_zero_14800,52248
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,198902
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtod,long_fraction_600,6481
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtod,short_decimal,380
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtold,all_zero_14800,51766
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,198937
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtold,long_fraction_600,7274
+saw_nonzero_guard,8,Zig cc,glibc,candidate,strtold,short_decimal,320
+saw_nonzero_guard,8,GCC,glibc,candidate,strtof,all_zero_14800,24639
+saw_nonzero_guard,8,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,159162
+saw_nonzero_guard,8,GCC,glibc,candidate,strtof,long_fraction_600,5689
+saw_nonzero_guard,8,GCC,glibc,candidate,strtof,short_decimal,329
+saw_nonzero_guard,8,GCC,glibc,candidate,strtod,all_zero_14800,23163
+saw_nonzero_guard,8,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,156915
+saw_nonzero_guard,8,GCC,glibc,candidate,strtod,long_fraction_600,5515
+saw_nonzero_guard,8,GCC,glibc,candidate,strtod,short_decimal,310
+saw_nonzero_guard,8,GCC,glibc,candidate,strtold,all_zero_14800,21727
+saw_nonzero_guard,8,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,155964
+saw_nonzero_guard,8,GCC,glibc,candidate,strtold,long_fraction_600,5798
+saw_nonzero_guard,8,GCC,glibc,candidate,strtold,short_decimal,240
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtof,all_zero_14800,58647
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,212444
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtof,long_fraction_600,6520
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtof,short_decimal,356
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtod,all_zero_14800,49704
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,202447
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtod,long_fraction_600,6398
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtod,short_decimal,342
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtold,all_zero_14800,50675
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,197139
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtold,long_fraction_600,6806
+saw_nonzero_guard,8,Zig cc,musl,candidate,strtold,short_decimal,299
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtof,all_zero_14800,56486
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,334302
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtof,long_fraction_600,11829
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtof,short_decimal,789
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtod,all_zero_14800,58449
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,344672
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtod,long_fraction_600,12597
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtod,short_decimal,829
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtold,all_zero_14800,55026
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,392978
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtold,long_fraction_600,14032
+saw_nonzero_guard,8,TinyCC,glibc,baseline,strtold,short_decimal,657
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtof,all_zero_14800,51843
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,187072
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtof,long_fraction_600,6573
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtof,short_decimal,372
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtod,all_zero_14800,47585
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,183250
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtod,long_fraction_600,6499
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtod,short_decimal,359
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtold,all_zero_14800,50632
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,183396
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtold,long_fraction_600,6876
+saw_nonzero_guard,8,Zig cc,glibc,baseline,strtold,short_decimal,335
+saw_nonzero_guard,8,GCC,glibc,baseline,strtof,all_zero_14800,21628
+saw_nonzero_guard,8,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,148922
+saw_nonzero_guard,8,GCC,glibc,baseline,strtof,long_fraction_600,5534
+saw_nonzero_guard,8,GCC,glibc,baseline,strtof,short_decimal,333
+saw_nonzero_guard,8,GCC,glibc,baseline,strtod,all_zero_14800,26648
+saw_nonzero_guard,8,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152469
+saw_nonzero_guard,8,GCC,glibc,baseline,strtod,long_fraction_600,5566
+saw_nonzero_guard,8,GCC,glibc,baseline,strtod,short_decimal,307
+saw_nonzero_guard,8,GCC,glibc,baseline,strtold,all_zero_14800,19477
+saw_nonzero_guard,8,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,152796
+saw_nonzero_guard,8,GCC,glibc,baseline,strtold,long_fraction_600,5639
+saw_nonzero_guard,8,GCC,glibc,baseline,strtold,short_decimal,240
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtof,all_zero_14800,51834
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,187535
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtof,long_fraction_600,6917
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtof,short_decimal,365
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtod,all_zero_14800,48607
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,187333
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtod,long_fraction_600,6281
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtod,short_decimal,355
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtold,all_zero_14800,46460
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,186871
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtold,long_fraction_600,6965
+saw_nonzero_guard,8,Zig cc,musl,baseline,strtold,short_decimal,310
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtof,all_zero_14800,54084
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,372449
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtof,long_fraction_600,11427
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtof,short_decimal,769
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtod,all_zero_14800,54114
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,371562
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtod,long_fraction_600,11400
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtod,short_decimal,766
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtold,all_zero_14800,53815
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,326628
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtold,long_fraction_600,13536
+saw_nonzero_guard,9,TinyCC,glibc,baseline,strtold,short_decimal,716
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtof,all_zero_14800,48689
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,202928
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtof,long_fraction_600,6335
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtof,short_decimal,378
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtod,all_zero_14800,48605
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,193612
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtod,long_fraction_600,5940
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtod,short_decimal,365
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtold,all_zero_14800,47463
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,182937
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtold,long_fraction_600,6347
+saw_nonzero_guard,9,Zig cc,glibc,baseline,strtold,short_decimal,302
+saw_nonzero_guard,9,GCC,glibc,baseline,strtof,all_zero_14800,19580
+saw_nonzero_guard,9,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,154999
+saw_nonzero_guard,9,GCC,glibc,baseline,strtof,long_fraction_600,5583
+saw_nonzero_guard,9,GCC,glibc,baseline,strtof,short_decimal,379
+saw_nonzero_guard,9,GCC,glibc,baseline,strtod,all_zero_14800,19547
+saw_nonzero_guard,9,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152392
+saw_nonzero_guard,9,GCC,glibc,baseline,strtod,long_fraction_600,5487
+saw_nonzero_guard,9,GCC,glibc,baseline,strtod,short_decimal,295
+saw_nonzero_guard,9,GCC,glibc,baseline,strtold,all_zero_14800,19074
+saw_nonzero_guard,9,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,149191
+saw_nonzero_guard,9,GCC,glibc,baseline,strtold,long_fraction_600,5787
+saw_nonzero_guard,9,GCC,glibc,baseline,strtold,short_decimal,259
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtof,all_zero_14800,48610
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,199018
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtof,long_fraction_600,6432
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtof,short_decimal,381
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtod,all_zero_14800,50724
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,187092
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtod,long_fraction_600,6419
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtod,short_decimal,376
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtold,all_zero_14800,48534
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,192905
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtold,long_fraction_600,6740
+saw_nonzero_guard,9,Zig cc,musl,baseline,strtold,short_decimal,296
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtof,all_zero_14800,52018
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,331015
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtof,long_fraction_600,13576
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtof,short_decimal,833
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtod,all_zero_14800,55208
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,356277
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtod,long_fraction_600,12220
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtod,short_decimal,756
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtold,all_zero_14800,50665
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,356217
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtold,long_fraction_600,13231
+saw_nonzero_guard,9,TinyCC,glibc,candidate,strtold,short_decimal,627
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtof,all_zero_14800,51881
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,200049
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtof,long_fraction_600,7131
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtof,short_decimal,398
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtod,all_zero_14800,51863
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,194352
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtod,long_fraction_600,6407
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtod,short_decimal,379
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtold,all_zero_14800,51824
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,190392
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtold,long_fraction_600,6558
+saw_nonzero_guard,9,Zig cc,glibc,candidate,strtold,short_decimal,315
+saw_nonzero_guard,9,GCC,glibc,candidate,strtof,all_zero_14800,23239
+saw_nonzero_guard,9,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,152167
+saw_nonzero_guard,9,GCC,glibc,candidate,strtof,long_fraction_600,5510
+saw_nonzero_guard,9,GCC,glibc,candidate,strtof,short_decimal,311
+saw_nonzero_guard,9,GCC,glibc,candidate,strtod,all_zero_14800,22828
+saw_nonzero_guard,9,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,155646
+saw_nonzero_guard,9,GCC,glibc,candidate,strtod,long_fraction_600,5369
+saw_nonzero_guard,9,GCC,glibc,candidate,strtod,short_decimal,317
+saw_nonzero_guard,9,GCC,glibc,candidate,strtold,all_zero_14800,19067
+saw_nonzero_guard,9,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,152915
+saw_nonzero_guard,9,GCC,glibc,candidate,strtold,long_fraction_600,5673
+saw_nonzero_guard,9,GCC,glibc,candidate,strtold,short_decimal,260
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtof,all_zero_14800,56839
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,194556
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtof,long_fraction_600,6496
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtof,short_decimal,362
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtod,all_zero_14800,50755
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,198701
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtod,long_fraction_600,6329
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtod,short_decimal,352
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtold,all_zero_14800,50675
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,199548
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtold,long_fraction_600,7441
+saw_nonzero_guard,9,Zig cc,musl,candidate,strtold,short_decimal,318
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtof,all_zero_14800,53184
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,349051
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtof,long_fraction_600,13093
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtof,short_decimal,787
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtod,all_zero_14800,50900
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,361143
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtod,long_fraction_600,19564
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtod,short_decimal,1118
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtold,all_zero_14800,106121
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,392553
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtold,long_fraction_600,13219
+saw_nonzero_guard,10,TinyCC,glibc,candidate,strtold,short_decimal,680
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtof,all_zero_14800,65415
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,197889
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtof,long_fraction_600,6645
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtof,short_decimal,378
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtod,all_zero_14800,50743
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,198524
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtod,long_fraction_600,6550
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtod,short_decimal,386
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtold,all_zero_14800,51754
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,198465
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtold,long_fraction_600,6806
+saw_nonzero_guard,10,Zig cc,glibc,candidate,strtold,short_decimal,313
+saw_nonzero_guard,10,GCC,glibc,candidate,strtof,all_zero_14800,23239
+saw_nonzero_guard,10,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,156453
+saw_nonzero_guard,10,GCC,glibc,candidate,strtof,long_fraction_600,5556
+saw_nonzero_guard,10,GCC,glibc,candidate,strtof,short_decimal,318
+saw_nonzero_guard,10,GCC,glibc,candidate,strtod,all_zero_14800,23651
+saw_nonzero_guard,10,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,156953
+saw_nonzero_guard,10,GCC,glibc,candidate,strtod,long_fraction_600,5569
+saw_nonzero_guard,10,GCC,glibc,candidate,strtod,short_decimal,323
+saw_nonzero_guard,10,GCC,glibc,candidate,strtold,all_zero_14800,22107
+saw_nonzero_guard,10,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,156485
+saw_nonzero_guard,10,GCC,glibc,candidate,strtold,long_fraction_600,5846
+saw_nonzero_guard,10,GCC,glibc,candidate,strtold,short_decimal,256
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtof,all_zero_14800,51858
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,198651
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtof,long_fraction_600,6714
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtof,short_decimal,367
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtod,all_zero_14800,51861
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,198588
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtod,long_fraction_600,6594
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtod,short_decimal,367
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtold,all_zero_14800,51763
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,198407
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtold,long_fraction_600,6786
+saw_nonzero_guard,10,Zig cc,musl,candidate,strtold,short_decimal,309
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtof,all_zero_14800,58522
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,334431
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtof,long_fraction_600,11835
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtof,short_decimal,810
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtod,all_zero_14800,54199
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,368822
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtod,long_fraction_600,12396
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtod,short_decimal,883
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtold,all_zero_14800,54983
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,345395
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtold,long_fraction_600,13736
+saw_nonzero_guard,10,TinyCC,glibc,baseline,strtold,short_decimal,677
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtof,all_zero_14800,48619
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,183240
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtof,long_fraction_600,6397
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtof,short_decimal,385
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtod,all_zero_14800,46559
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,183110
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtod,long_fraction_600,6028
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtod,short_decimal,365
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtold,all_zero_14800,48530
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,187789
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtold,long_fraction_600,6394
+saw_nonzero_guard,10,Zig cc,glibc,baseline,strtold,short_decimal,301
+saw_nonzero_guard,10,GCC,glibc,baseline,strtof,all_zero_14800,19578
+saw_nonzero_guard,10,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,155629
+saw_nonzero_guard,10,GCC,glibc,baseline,strtof,long_fraction_600,5552
+saw_nonzero_guard,10,GCC,glibc,baseline,strtof,short_decimal,307
+saw_nonzero_guard,10,GCC,glibc,baseline,strtod,all_zero_14800,19151
+saw_nonzero_guard,10,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,149254
+saw_nonzero_guard,10,GCC,glibc,baseline,strtod,long_fraction_600,5469
+saw_nonzero_guard,10,GCC,glibc,baseline,strtod,short_decimal,314
+saw_nonzero_guard,10,GCC,glibc,baseline,strtold,all_zero_14800,19062
+saw_nonzero_guard,10,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,149086
+saw_nonzero_guard,10,GCC,glibc,baseline,strtold,long_fraction_600,5743
+saw_nonzero_guard,10,GCC,glibc,baseline,strtold,short_decimal,250
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtof,all_zero_14800,47580
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,196662
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtof,long_fraction_600,6810
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtof,short_decimal,385
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtod,all_zero_14800,61126
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,183724
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtod,long_fraction_600,6342
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtod,short_decimal,347
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtold,all_zero_14800,47491
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,186116
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtold,long_fraction_600,6293
+saw_nonzero_guard,10,Zig cc,musl,baseline,strtold,short_decimal,282
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtof,all_zero_14800,56991
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,358572
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtof,long_fraction_600,11750
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtof,short_decimal,840
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtod,all_zero_14800,55384
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,364303
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtod,long_fraction_600,11907
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtod,short_decimal,778
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtold,all_zero_14800,55003
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,335262
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtold,long_fraction_600,14407
+saw_nonzero_guard,11,TinyCC,glibc,baseline,strtold,short_decimal,696
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtof,all_zero_14800,52855
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,208164
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtof,long_fraction_600,6600
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtof,short_decimal,374
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtod,all_zero_14800,47549
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,190794
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtod,long_fraction_600,6230
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtod,short_decimal,371
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtold,all_zero_14800,48518
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,183526
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtold,long_fraction_600,6566
+saw_nonzero_guard,11,Zig cc,glibc,baseline,strtold,short_decimal,342
+saw_nonzero_guard,11,GCC,glibc,baseline,strtof,all_zero_14800,19579
+saw_nonzero_guard,11,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,152422
+saw_nonzero_guard,11,GCC,glibc,baseline,strtof,long_fraction_600,5586
+saw_nonzero_guard,11,GCC,glibc,baseline,strtof,short_decimal,314
+saw_nonzero_guard,11,GCC,glibc,baseline,strtod,all_zero_14800,26030
+saw_nonzero_guard,11,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,162683
+saw_nonzero_guard,11,GCC,glibc,baseline,strtod,long_fraction_600,5264
+saw_nonzero_guard,11,GCC,glibc,baseline,strtod,short_decimal,308
+saw_nonzero_guard,11,GCC,glibc,baseline,strtold,all_zero_14800,19061
+saw_nonzero_guard,11,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,148816
+saw_nonzero_guard,11,GCC,glibc,baseline,strtold,long_fraction_600,5796
+saw_nonzero_guard,11,GCC,glibc,baseline,strtold,short_decimal,246
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtof,all_zero_14800,55052
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,187225
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtof,long_fraction_600,6249
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtof,short_decimal,358
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtod,all_zero_14800,47577
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,183551
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtod,long_fraction_600,6222
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtod,short_decimal,359
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtold,all_zero_14800,47613
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,183090
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtold,long_fraction_600,6663
+saw_nonzero_guard,11,Zig cc,musl,baseline,strtold,short_decimal,317
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtof,all_zero_14800,53194
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,361187
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtof,long_fraction_600,11609
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtof,short_decimal,760
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtod,all_zero_14800,50915
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,360829
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtod,long_fraction_600,12716
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtod,short_decimal,837
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtold,all_zero_14800,50695
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,371354
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtold,long_fraction_600,13007
+saw_nonzero_guard,11,TinyCC,glibc,candidate,strtold,short_decimal,668
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtof,all_zero_14800,53042
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,197962
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtof,long_fraction_600,6603
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtof,short_decimal,376
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtod,all_zero_14800,51866
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,198638
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtod,long_fraction_600,6329
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtod,short_decimal,395
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtold,all_zero_14800,50806
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,201673
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtold,long_fraction_600,6637
+saw_nonzero_guard,11,Zig cc,glibc,candidate,strtold,short_decimal,321
+saw_nonzero_guard,11,GCC,glibc,candidate,strtof,all_zero_14800,28950
+saw_nonzero_guard,11,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,151615
+saw_nonzero_guard,11,GCC,glibc,candidate,strtof,long_fraction_600,5498
+saw_nonzero_guard,11,GCC,glibc,candidate,strtof,short_decimal,320
+saw_nonzero_guard,11,GCC,glibc,candidate,strtod,all_zero_14800,19149
+saw_nonzero_guard,11,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,151440
+saw_nonzero_guard,11,GCC,glibc,candidate,strtod,long_fraction_600,5321
+saw_nonzero_guard,11,GCC,glibc,candidate,strtod,short_decimal,293
+saw_nonzero_guard,11,GCC,glibc,candidate,strtold,all_zero_14800,22139
+saw_nonzero_guard,11,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,166473
+saw_nonzero_guard,11,GCC,glibc,candidate,strtold,long_fraction_600,5755
+saw_nonzero_guard,11,GCC,glibc,candidate,strtold,short_decimal,249
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtof,all_zero_14800,51862
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,200911
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtof,long_fraction_600,6806
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtof,short_decimal,371
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtod,all_zero_14800,51844
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,202998
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtod,long_fraction_600,6674
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtod,short_decimal,373
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtold,all_zero_14800,52997
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,224617
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtold,long_fraction_600,7090
+saw_nonzero_guard,11,Zig cc,musl,candidate,strtold,short_decimal,286
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtof,all_zero_14800,52025
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,364875
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtof,long_fraction_600,13015
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtof,short_decimal,812
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtod,all_zero_14800,52031
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,375690
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtod,long_fraction_600,11596
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtod,short_decimal,805
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtold,all_zero_14800,55960
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,373746
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtold,long_fraction_600,12461
+saw_nonzero_guard,12,TinyCC,glibc,candidate,strtold,short_decimal,648
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtof,all_zero_14800,53034
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,194941
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtof,long_fraction_600,7126
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtof,short_decimal,398
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtod,all_zero_14800,50754
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,194882
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtod,long_fraction_600,6320
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtod,short_decimal,369
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtold,all_zero_14800,49619
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,194537
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtold,long_fraction_600,6867
+saw_nonzero_guard,12,Zig cc,glibc,candidate,strtold,short_decimal,321
+saw_nonzero_guard,12,GCC,glibc,candidate,strtof,all_zero_14800,19561
+saw_nonzero_guard,12,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,155839
+saw_nonzero_guard,12,GCC,glibc,candidate,strtof,long_fraction_600,5815
+saw_nonzero_guard,12,GCC,glibc,candidate,strtof,short_decimal,315
+saw_nonzero_guard,12,GCC,glibc,candidate,strtod,all_zero_14800,23664
+saw_nonzero_guard,12,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,155520
+saw_nonzero_guard,12,GCC,glibc,candidate,strtod,long_fraction_600,5536
+saw_nonzero_guard,12,GCC,glibc,candidate,strtod,short_decimal,314
+saw_nonzero_guard,12,GCC,glibc,candidate,strtold,all_zero_14800,29033
+saw_nonzero_guard,12,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,153052
+saw_nonzero_guard,12,GCC,glibc,candidate,strtold,long_fraction_600,5699
+saw_nonzero_guard,12,GCC,glibc,candidate,strtold,short_decimal,256
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtof,all_zero_14800,51851
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,220942
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtof,long_fraction_600,6721
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtof,short_decimal,382
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtod,all_zero_14800,50729
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,198844
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtod,long_fraction_600,6575
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtod,short_decimal,368
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtold,all_zero_14800,51904
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,210727
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtold,long_fraction_600,6820
+saw_nonzero_guard,12,Zig cc,musl,candidate,strtold,short_decimal,317
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtof,all_zero_14800,56469
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,372786
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtof,long_fraction_600,11891
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtof,short_decimal,811
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtod,all_zero_14800,54330
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,376517
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtod,long_fraction_600,12083
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtod,short_decimal,817
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtold,all_zero_14800,53882
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,386259
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtold,long_fraction_600,16071
+saw_nonzero_guard,12,TinyCC,glibc,baseline,strtold,short_decimal,692
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtof,all_zero_14800,58441
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,186110
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtof,long_fraction_600,6262
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtof,short_decimal,365
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtod,all_zero_14800,50714
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,187659
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtod,long_fraction_600,6219
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtod,short_decimal,367
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtold,all_zero_14800,46450
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,186836
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtold,long_fraction_600,6397
+saw_nonzero_guard,12,Zig cc,glibc,baseline,strtold,short_decimal,310
+saw_nonzero_guard,12,GCC,glibc,baseline,strtof,all_zero_14800,19577
+saw_nonzero_guard,12,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,173987
+saw_nonzero_guard,12,GCC,glibc,baseline,strtof,long_fraction_600,5636
+saw_nonzero_guard,12,GCC,glibc,baseline,strtof,short_decimal,325
+saw_nonzero_guard,12,GCC,glibc,baseline,strtod,all_zero_14800,19565
+saw_nonzero_guard,12,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,153198
+saw_nonzero_guard,12,GCC,glibc,baseline,strtod,long_fraction_600,5461
+saw_nonzero_guard,12,GCC,glibc,baseline,strtod,short_decimal,302
+saw_nonzero_guard,12,GCC,glibc,baseline,strtold,all_zero_14800,19475
+saw_nonzero_guard,12,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,152873
+saw_nonzero_guard,12,GCC,glibc,baseline,strtold,long_fraction_600,5769
+saw_nonzero_guard,12,GCC,glibc,baseline,strtold,short_decimal,250
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtof,all_zero_14800,51906
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,188589
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtof,long_fraction_600,6569
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtof,short_decimal,367
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtod,all_zero_14800,48053
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,186986
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtod,long_fraction_600,6402
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtod,short_decimal,372
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtold,all_zero_14800,47501
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,183417
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtold,long_fraction_600,6905
+saw_nonzero_guard,12,Zig cc,musl,baseline,strtold,short_decimal,279
+zero_increment_guard,1,TinyCC,glibc,baseline,strtof,all_zero_14800,56465
+zero_increment_guard,1,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,377163
+zero_increment_guard,1,TinyCC,glibc,baseline,strtof,long_fraction_600,12453
+zero_increment_guard,1,TinyCC,glibc,baseline,strtof,short_decimal,840
+zero_increment_guard,1,TinyCC,glibc,baseline,strtod,all_zero_14800,55535
+zero_increment_guard,1,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,365440
+zero_increment_guard,1,TinyCC,glibc,baseline,strtod,long_fraction_600,12372
+zero_increment_guard,1,TinyCC,glibc,baseline,strtod,short_decimal,800
+zero_increment_guard,1,TinyCC,glibc,baseline,strtold,all_zero_14800,72549
+zero_increment_guard,1,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,379956
+zero_increment_guard,1,TinyCC,glibc,baseline,strtold,long_fraction_600,14618
+zero_increment_guard,1,TinyCC,glibc,baseline,strtold,short_decimal,687
+zero_increment_guard,1,Zig cc,glibc,baseline,strtof,all_zero_14800,48630
+zero_increment_guard,1,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,187499
+zero_increment_guard,1,Zig cc,glibc,baseline,strtof,long_fraction_600,6568
+zero_increment_guard,1,Zig cc,glibc,baseline,strtof,short_decimal,392
+zero_increment_guard,1,Zig cc,glibc,baseline,strtod,all_zero_14800,51003
+zero_increment_guard,1,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,196687
+zero_increment_guard,1,Zig cc,glibc,baseline,strtod,long_fraction_600,6603
+zero_increment_guard,1,Zig cc,glibc,baseline,strtod,short_decimal,371
+zero_increment_guard,1,Zig cc,glibc,baseline,strtold,all_zero_14800,48517
+zero_increment_guard,1,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,192624
+zero_increment_guard,1,Zig cc,glibc,baseline,strtold,long_fraction_600,6755
+zero_increment_guard,1,Zig cc,glibc,baseline,strtold,short_decimal,308
+zero_increment_guard,1,GCC,glibc,baseline,strtof,all_zero_14800,20010
+zero_increment_guard,1,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,160540
+zero_increment_guard,1,GCC,glibc,baseline,strtof,long_fraction_600,5671
+zero_increment_guard,1,GCC,glibc,baseline,strtof,short_decimal,330
+zero_increment_guard,1,GCC,glibc,baseline,strtod,all_zero_14800,20040
+zero_increment_guard,1,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,156024
+zero_increment_guard,1,GCC,glibc,baseline,strtod,long_fraction_600,5609
+zero_increment_guard,1,GCC,glibc,baseline,strtod,short_decimal,315
+zero_increment_guard,1,GCC,glibc,baseline,strtold,all_zero_14800,19921
+zero_increment_guard,1,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,155615
+zero_increment_guard,1,GCC,glibc,baseline,strtold,long_fraction_600,5885
+zero_increment_guard,1,GCC,glibc,baseline,strtold,short_decimal,257
+zero_increment_guard,1,Zig cc,musl,baseline,strtof,all_zero_14800,53020
+zero_increment_guard,1,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,195066
+zero_increment_guard,1,Zig cc,musl,baseline,strtof,long_fraction_600,7247
+zero_increment_guard,1,Zig cc,musl,baseline,strtof,short_decimal,408
+zero_increment_guard,1,Zig cc,musl,baseline,strtod,all_zero_14800,49747
+zero_increment_guard,1,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,194103
+zero_increment_guard,1,Zig cc,musl,baseline,strtod,long_fraction_600,6428
+zero_increment_guard,1,Zig cc,musl,baseline,strtod,short_decimal,374
+zero_increment_guard,1,Zig cc,musl,baseline,strtold,all_zero_14800,49043
+zero_increment_guard,1,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,194918
+zero_increment_guard,1,Zig cc,musl,baseline,strtold,long_fraction_600,6665
+zero_increment_guard,1,Zig cc,musl,baseline,strtold,short_decimal,301
+zero_increment_guard,1,TinyCC,glibc,candidate,strtof,all_zero_14800,61210
+zero_increment_guard,1,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,367387
+zero_increment_guard,1,TinyCC,glibc,candidate,strtof,long_fraction_600,13613
+zero_increment_guard,1,TinyCC,glibc,candidate,strtof,short_decimal,821
+zero_increment_guard,1,TinyCC,glibc,candidate,strtod,all_zero_14800,66874
+zero_increment_guard,1,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,371528
+zero_increment_guard,1,TinyCC,glibc,candidate,strtod,long_fraction_600,11754
+zero_increment_guard,1,TinyCC,glibc,candidate,strtod,short_decimal,815
+zero_increment_guard,1,TinyCC,glibc,candidate,strtold,all_zero_14800,58453
+zero_increment_guard,1,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,398609
+zero_increment_guard,1,TinyCC,glibc,candidate,strtold,long_fraction_600,15073
+zero_increment_guard,1,TinyCC,glibc,candidate,strtold,short_decimal,723
+zero_increment_guard,1,Zig cc,glibc,candidate,strtof,all_zero_14800,53122
+zero_increment_guard,1,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,207136
+zero_increment_guard,1,Zig cc,glibc,candidate,strtof,long_fraction_600,7080
+zero_increment_guard,1,Zig cc,glibc,candidate,strtof,short_decimal,389
+zero_increment_guard,1,Zig cc,glibc,candidate,strtod,all_zero_14800,54338
+zero_increment_guard,1,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,221246
+zero_increment_guard,1,Zig cc,glibc,candidate,strtod,long_fraction_600,6728
+zero_increment_guard,1,Zig cc,glibc,candidate,strtod,short_decimal,380
+zero_increment_guard,1,Zig cc,glibc,candidate,strtold,all_zero_14800,51868
+zero_increment_guard,1,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,203233
+zero_increment_guard,1,Zig cc,glibc,candidate,strtold,long_fraction_600,7014
+zero_increment_guard,1,Zig cc,glibc,candidate,strtold,short_decimal,295
+zero_increment_guard,1,GCC,glibc,candidate,strtof,all_zero_14800,26714
+zero_increment_guard,1,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,158702
+zero_increment_guard,1,GCC,glibc,candidate,strtof,long_fraction_600,5775
+zero_increment_guard,1,GCC,glibc,candidate,strtof,short_decimal,326
+zero_increment_guard,1,GCC,glibc,candidate,strtod,all_zero_14800,21701
+zero_increment_guard,1,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,155976
+zero_increment_guard,1,GCC,glibc,candidate,strtod,long_fraction_600,5618
+zero_increment_guard,1,GCC,glibc,candidate,strtod,short_decimal,331
+zero_increment_guard,1,GCC,glibc,candidate,strtold,all_zero_14800,24391
+zero_increment_guard,1,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,152024
+zero_increment_guard,1,GCC,glibc,candidate,strtold,long_fraction_600,5616
+zero_increment_guard,1,GCC,glibc,candidate,strtold,short_decimal,246
+zero_increment_guard,1,Zig cc,musl,candidate,strtof,all_zero_14800,53141
+zero_increment_guard,1,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,211175
+zero_increment_guard,1,Zig cc,musl,candidate,strtof,long_fraction_600,6734
+zero_increment_guard,1,Zig cc,musl,candidate,strtof,short_decimal,354
+zero_increment_guard,1,Zig cc,musl,candidate,strtod,all_zero_14800,49714
+zero_increment_guard,1,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,198871
+zero_increment_guard,1,Zig cc,musl,candidate,strtod,long_fraction_600,6836
+zero_increment_guard,1,Zig cc,musl,candidate,strtod,short_decimal,355
+zero_increment_guard,1,Zig cc,musl,candidate,strtold,all_zero_14800,51758
+zero_increment_guard,1,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,213930
+zero_increment_guard,1,Zig cc,musl,candidate,strtold,long_fraction_600,7070
+zero_increment_guard,1,Zig cc,musl,candidate,strtold,short_decimal,286
+zero_increment_guard,2,TinyCC,glibc,candidate,strtof,all_zero_14800,59782
+zero_increment_guard,2,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,383183
+zero_increment_guard,2,TinyCC,glibc,candidate,strtof,long_fraction_600,12873
+zero_increment_guard,2,TinyCC,glibc,candidate,strtof,short_decimal,846
+zero_increment_guard,2,TinyCC,glibc,candidate,strtod,all_zero_14800,58614
+zero_increment_guard,2,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,387106
+zero_increment_guard,2,TinyCC,glibc,candidate,strtod,long_fraction_600,12610
+zero_increment_guard,2,TinyCC,glibc,candidate,strtod,short_decimal,787
+zero_increment_guard,2,TinyCC,glibc,candidate,strtold,all_zero_14800,58384
+zero_increment_guard,2,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,354325
+zero_increment_guard,2,TinyCC,glibc,candidate,strtold,long_fraction_600,14402
+zero_increment_guard,2,TinyCC,glibc,candidate,strtold,short_decimal,737
+zero_increment_guard,2,Zig cc,glibc,candidate,strtof,all_zero_14800,58414
+zero_increment_guard,2,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,200398
+zero_increment_guard,2,Zig cc,glibc,candidate,strtof,long_fraction_600,6911
+zero_increment_guard,2,Zig cc,glibc,candidate,strtof,short_decimal,367
+zero_increment_guard,2,Zig cc,glibc,candidate,strtod,all_zero_14800,51959
+zero_increment_guard,2,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,204034
+zero_increment_guard,2,Zig cc,glibc,candidate,strtod,long_fraction_600,6692
+zero_increment_guard,2,Zig cc,glibc,candidate,strtod,short_decimal,365
+zero_increment_guard,2,Zig cc,glibc,candidate,strtold,all_zero_14800,55110
+zero_increment_guard,2,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,202158
+zero_increment_guard,2,Zig cc,glibc,candidate,strtold,long_fraction_600,6969
+zero_increment_guard,2,Zig cc,glibc,candidate,strtold,short_decimal,326
+zero_increment_guard,2,GCC,glibc,candidate,strtof,all_zero_14800,24398
+zero_increment_guard,2,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,163726
+zero_increment_guard,2,GCC,glibc,candidate,strtof,long_fraction_600,5619
+zero_increment_guard,2,GCC,glibc,candidate,strtof,short_decimal,338
+zero_increment_guard,2,GCC,glibc,candidate,strtod,all_zero_14800,24146
+zero_increment_guard,2,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,157483
+zero_increment_guard,2,GCC,glibc,candidate,strtod,long_fraction_600,5532
+zero_increment_guard,2,GCC,glibc,candidate,strtod,short_decimal,339
+zero_increment_guard,2,GCC,glibc,candidate,strtold,all_zero_14800,19504
+zero_increment_guard,2,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,157582
+zero_increment_guard,2,GCC,glibc,candidate,strtold,long_fraction_600,5822
+zero_increment_guard,2,GCC,glibc,candidate,strtold,short_decimal,244
+zero_increment_guard,2,Zig cc,musl,candidate,strtof,all_zero_14800,50838
+zero_increment_guard,2,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,202289
+zero_increment_guard,2,Zig cc,musl,candidate,strtof,long_fraction_600,7000
+zero_increment_guard,2,Zig cc,musl,candidate,strtof,short_decimal,368
+zero_increment_guard,2,Zig cc,musl,candidate,strtod,all_zero_14800,55138
+zero_increment_guard,2,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,202701
+zero_increment_guard,2,Zig cc,musl,candidate,strtod,long_fraction_600,6581
+zero_increment_guard,2,Zig cc,musl,candidate,strtod,short_decimal,372
+zero_increment_guard,2,Zig cc,musl,candidate,strtold,all_zero_14800,50720
+zero_increment_guard,2,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,197823
+zero_increment_guard,2,Zig cc,musl,candidate,strtold,long_fraction_600,7082
+zero_increment_guard,2,Zig cc,musl,candidate,strtold,short_decimal,270
+zero_increment_guard,2,TinyCC,glibc,baseline,strtof,all_zero_14800,55235
+zero_increment_guard,2,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,360507
+zero_increment_guard,2,TinyCC,glibc,baseline,strtof,long_fraction_600,11509
+zero_increment_guard,2,TinyCC,glibc,baseline,strtof,short_decimal,788
+zero_increment_guard,2,TinyCC,glibc,baseline,strtod,all_zero_14800,54067
+zero_increment_guard,2,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,342438
+zero_increment_guard,2,TinyCC,glibc,baseline,strtod,long_fraction_600,12768
+zero_increment_guard,2,TinyCC,glibc,baseline,strtod,short_decimal,792
+zero_increment_guard,2,TinyCC,glibc,baseline,strtold,all_zero_14800,53818
+zero_increment_guard,2,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,365597
+zero_increment_guard,2,TinyCC,glibc,baseline,strtold,long_fraction_600,12634
+zero_increment_guard,2,TinyCC,glibc,baseline,strtold,short_decimal,636
+zero_increment_guard,2,Zig cc,glibc,baseline,strtof,all_zero_14800,48630
+zero_increment_guard,2,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,193306
+zero_increment_guard,2,Zig cc,glibc,baseline,strtof,long_fraction_600,6365
+zero_increment_guard,2,Zig cc,glibc,baseline,strtof,short_decimal,388
+zero_increment_guard,2,Zig cc,glibc,baseline,strtod,all_zero_14800,47558
+zero_increment_guard,2,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,186528
+zero_increment_guard,2,Zig cc,glibc,baseline,strtod,long_fraction_600,6033
+zero_increment_guard,2,Zig cc,glibc,baseline,strtod,short_decimal,362
+zero_increment_guard,2,Zig cc,glibc,baseline,strtold,all_zero_14800,47500
+zero_increment_guard,2,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,186809
+zero_increment_guard,2,Zig cc,glibc,baseline,strtold,long_fraction_600,6562
+zero_increment_guard,2,Zig cc,glibc,baseline,strtold,short_decimal,319
+zero_increment_guard,2,GCC,glibc,baseline,strtof,all_zero_14800,20013
+zero_increment_guard,2,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,160782
+zero_increment_guard,2,GCC,glibc,baseline,strtof,long_fraction_600,5566
+zero_increment_guard,2,GCC,glibc,baseline,strtof,short_decimal,359
+zero_increment_guard,2,GCC,glibc,baseline,strtod,all_zero_14800,26034
+zero_increment_guard,2,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,159996
+zero_increment_guard,2,GCC,glibc,baseline,strtod,long_fraction_600,5498
+zero_increment_guard,2,GCC,glibc,baseline,strtod,short_decimal,315
+zero_increment_guard,2,GCC,glibc,baseline,strtold,all_zero_14800,19488
+zero_increment_guard,2,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,152106
+zero_increment_guard,2,GCC,glibc,baseline,strtold,long_fraction_600,6002
+zero_increment_guard,2,GCC,glibc,baseline,strtold,short_decimal,278
+zero_increment_guard,2,Zig cc,musl,baseline,strtof,all_zero_14800,57539
+zero_increment_guard,2,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,193518
+zero_increment_guard,2,Zig cc,musl,baseline,strtof,long_fraction_600,6419
+zero_increment_guard,2,Zig cc,musl,baseline,strtof,short_decimal,359
+zero_increment_guard,2,Zig cc,musl,baseline,strtod,all_zero_14800,50712
+zero_increment_guard,2,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,187118
+zero_increment_guard,2,Zig cc,musl,baseline,strtod,long_fraction_600,6513
+zero_increment_guard,2,Zig cc,musl,baseline,strtod,short_decimal,392
+zero_increment_guard,2,Zig cc,musl,baseline,strtold,all_zero_14800,51762
+zero_increment_guard,2,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,194676
+zero_increment_guard,2,Zig cc,musl,baseline,strtold,long_fraction_600,6880
+zero_increment_guard,2,Zig cc,musl,baseline,strtold,short_decimal,318
+zero_increment_guard,3,TinyCC,glibc,baseline,strtof,all_zero_14800,59101
+zero_increment_guard,3,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,352441
+zero_increment_guard,3,TinyCC,glibc,baseline,strtof,long_fraction_600,11702
+zero_increment_guard,3,TinyCC,glibc,baseline,strtof,short_decimal,831
+zero_increment_guard,3,TinyCC,glibc,baseline,strtod,all_zero_14800,55358
+zero_increment_guard,3,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,340510
+zero_increment_guard,3,TinyCC,glibc,baseline,strtod,long_fraction_600,11402
+zero_increment_guard,3,TinyCC,glibc,baseline,strtod,short_decimal,860
+zero_increment_guard,3,TinyCC,glibc,baseline,strtold,all_zero_14800,54978
+zero_increment_guard,3,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,333770
+zero_increment_guard,3,TinyCC,glibc,baseline,strtold,long_fraction_600,13625
+zero_increment_guard,3,TinyCC,glibc,baseline,strtold,short_decimal,728
+zero_increment_guard,3,Zig cc,glibc,baseline,strtof,all_zero_14800,48637
+zero_increment_guard,3,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,187662
+zero_increment_guard,3,Zig cc,glibc,baseline,strtof,long_fraction_600,6522
+zero_increment_guard,3,Zig cc,glibc,baseline,strtof,short_decimal,379
+zero_increment_guard,3,Zig cc,glibc,baseline,strtod,all_zero_14800,47752
+zero_increment_guard,3,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,194069
+zero_increment_guard,3,Zig cc,glibc,baseline,strtod,long_fraction_600,6145
+zero_increment_guard,3,Zig cc,glibc,baseline,strtod,short_decimal,374
+zero_increment_guard,3,Zig cc,glibc,baseline,strtold,all_zero_14800,49581
+zero_increment_guard,3,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,187074
+zero_increment_guard,3,Zig cc,glibc,baseline,strtold,long_fraction_600,6365
+zero_increment_guard,3,Zig cc,glibc,baseline,strtold,short_decimal,288
+zero_increment_guard,3,GCC,glibc,baseline,strtof,all_zero_14800,20020
+zero_increment_guard,3,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,152470
+zero_increment_guard,3,GCC,glibc,baseline,strtof,long_fraction_600,5600
+zero_increment_guard,3,GCC,glibc,baseline,strtof,short_decimal,345
+zero_increment_guard,3,GCC,glibc,baseline,strtod,all_zero_14800,19576
+zero_increment_guard,3,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152751
+zero_increment_guard,3,GCC,glibc,baseline,strtod,long_fraction_600,5537
+zero_increment_guard,3,GCC,glibc,baseline,strtod,short_decimal,301
+zero_increment_guard,3,GCC,glibc,baseline,strtold,all_zero_14800,19485
+zero_increment_guard,3,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,162858
+zero_increment_guard,3,GCC,glibc,baseline,strtold,long_fraction_600,5647
+zero_increment_guard,3,GCC,glibc,baseline,strtold,short_decimal,278
+zero_increment_guard,3,Zig cc,musl,baseline,strtof,all_zero_14800,50391
+zero_increment_guard,3,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,187893
+zero_increment_guard,3,Zig cc,musl,baseline,strtof,long_fraction_600,6592
+zero_increment_guard,3,Zig cc,musl,baseline,strtof,short_decimal,355
+zero_increment_guard,3,Zig cc,musl,baseline,strtod,all_zero_14800,47538
+zero_increment_guard,3,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,186302
+zero_increment_guard,3,Zig cc,musl,baseline,strtod,long_fraction_600,6647
+zero_increment_guard,3,Zig cc,musl,baseline,strtod,short_decimal,362
+zero_increment_guard,3,Zig cc,musl,baseline,strtold,all_zero_14800,47483
+zero_increment_guard,3,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,200025
+zero_increment_guard,3,Zig cc,musl,baseline,strtold,long_fraction_600,6638
+zero_increment_guard,3,Zig cc,musl,baseline,strtold,short_decimal,302
+zero_increment_guard,3,TinyCC,glibc,candidate,strtof,all_zero_14800,58470
+zero_increment_guard,3,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,362469
+zero_increment_guard,3,TinyCC,glibc,candidate,strtof,long_fraction_600,12257
+zero_increment_guard,3,TinyCC,glibc,candidate,strtof,short_decimal,872
+zero_increment_guard,3,TinyCC,glibc,candidate,strtod,all_zero_14800,57325
+zero_increment_guard,3,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,359626
+zero_increment_guard,3,TinyCC,glibc,candidate,strtod,long_fraction_600,12703
+zero_increment_guard,3,TinyCC,glibc,candidate,strtod,short_decimal,831
+zero_increment_guard,3,TinyCC,glibc,candidate,strtold,all_zero_14800,56965
+zero_increment_guard,3,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,366872
+zero_increment_guard,3,TinyCC,glibc,candidate,strtold,long_fraction_600,13640
+zero_increment_guard,3,TinyCC,glibc,candidate,strtold,short_decimal,702
+zero_increment_guard,3,Zig cc,glibc,candidate,strtof,all_zero_14800,52055
+zero_increment_guard,3,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,195516
+zero_increment_guard,3,Zig cc,glibc,candidate,strtof,long_fraction_600,6655
+zero_increment_guard,3,Zig cc,glibc,candidate,strtof,short_decimal,360
+zero_increment_guard,3,Zig cc,glibc,candidate,strtod,all_zero_14800,51058
+zero_increment_guard,3,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,202152
+zero_increment_guard,3,Zig cc,glibc,candidate,strtod,long_fraction_600,6411
+zero_increment_guard,3,Zig cc,glibc,candidate,strtod,short_decimal,364
+zero_increment_guard,3,Zig cc,glibc,candidate,strtold,all_zero_14800,49645
+zero_increment_guard,3,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,193530
+zero_increment_guard,3,Zig cc,glibc,candidate,strtold,long_fraction_600,6521
+zero_increment_guard,3,Zig cc,glibc,candidate,strtold,short_decimal,287
+zero_increment_guard,3,GCC,glibc,candidate,strtof,all_zero_14800,23293
+zero_increment_guard,3,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,154544
+zero_increment_guard,3,GCC,glibc,candidate,strtof,long_fraction_600,5715
+zero_increment_guard,3,GCC,glibc,candidate,strtof,short_decimal,312
+zero_increment_guard,3,GCC,glibc,candidate,strtod,all_zero_14800,19159
+zero_increment_guard,3,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,155330
+zero_increment_guard,3,GCC,glibc,candidate,strtod,long_fraction_600,5377
+zero_increment_guard,3,GCC,glibc,candidate,strtod,short_decimal,314
+zero_increment_guard,3,GCC,glibc,candidate,strtold,all_zero_14800,23382
+zero_increment_guard,3,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,159390
+zero_increment_guard,3,GCC,glibc,candidate,strtold,long_fraction_600,6142
+zero_increment_guard,3,GCC,glibc,candidate,strtold,short_decimal,302
+zero_increment_guard,3,Zig cc,musl,candidate,strtof,all_zero_14800,55138
+zero_increment_guard,3,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,203963
+zero_increment_guard,3,Zig cc,musl,candidate,strtof,long_fraction_600,7287
+zero_increment_guard,3,Zig cc,musl,candidate,strtof,short_decimal,363
+zero_increment_guard,3,Zig cc,musl,candidate,strtod,all_zero_14800,50819
+zero_increment_guard,3,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,208182
+zero_increment_guard,3,Zig cc,musl,candidate,strtod,long_fraction_600,7295
+zero_increment_guard,3,Zig cc,musl,candidate,strtod,short_decimal,363
+zero_increment_guard,3,Zig cc,musl,candidate,strtold,all_zero_14800,50725
+zero_increment_guard,3,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,202207
+zero_increment_guard,3,Zig cc,musl,candidate,strtold,long_fraction_600,7266
+zero_increment_guard,3,Zig cc,musl,candidate,strtold,short_decimal,311
+zero_increment_guard,4,TinyCC,glibc,candidate,strtof,all_zero_14800,61613
+zero_increment_guard,4,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,383784
+zero_increment_guard,4,TinyCC,glibc,candidate,strtof,long_fraction_600,12479
+zero_increment_guard,4,TinyCC,glibc,candidate,strtof,short_decimal,865
+zero_increment_guard,4,TinyCC,glibc,candidate,strtod,all_zero_14800,62158
+zero_increment_guard,4,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,394807
+zero_increment_guard,4,TinyCC,glibc,candidate,strtod,long_fraction_600,14669
+zero_increment_guard,4,TinyCC,glibc,candidate,strtod,short_decimal,878
+zero_increment_guard,4,TinyCC,glibc,candidate,strtold,all_zero_14800,57001
+zero_increment_guard,4,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,380841
+zero_increment_guard,4,TinyCC,glibc,candidate,strtold,long_fraction_600,15197
+zero_increment_guard,4,TinyCC,glibc,candidate,strtold,short_decimal,667
+zero_increment_guard,4,Zig cc,glibc,candidate,strtof,all_zero_14800,51856
+zero_increment_guard,4,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,203396
+zero_increment_guard,4,Zig cc,glibc,candidate,strtof,long_fraction_600,6789
+zero_increment_guard,4,Zig cc,glibc,candidate,strtof,short_decimal,395
+zero_increment_guard,4,Zig cc,glibc,candidate,strtod,all_zero_14800,53985
+zero_increment_guard,4,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,202325
+zero_increment_guard,4,Zig cc,glibc,candidate,strtod,long_fraction_600,6781
+zero_increment_guard,4,Zig cc,glibc,candidate,strtod,short_decimal,373
+zero_increment_guard,4,Zig cc,glibc,candidate,strtold,all_zero_14800,50699
+zero_increment_guard,4,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,197831
+zero_increment_guard,4,Zig cc,glibc,candidate,strtold,long_fraction_600,6678
+zero_increment_guard,4,Zig cc,glibc,candidate,strtold,short_decimal,297
+zero_increment_guard,4,GCC,glibc,candidate,strtof,all_zero_14800,25896
+zero_increment_guard,4,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,163398
+zero_increment_guard,4,GCC,glibc,candidate,strtof,long_fraction_600,5520
+zero_increment_guard,4,GCC,glibc,candidate,strtof,short_decimal,327
+zero_increment_guard,4,GCC,glibc,candidate,strtod,all_zero_14800,24325
+zero_increment_guard,4,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,154741
+zero_increment_guard,4,GCC,glibc,candidate,strtod,long_fraction_600,5468
+zero_increment_guard,4,GCC,glibc,candidate,strtod,short_decimal,349
+zero_increment_guard,4,GCC,glibc,candidate,strtold,all_zero_14800,22972
+zero_increment_guard,4,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,153413
+zero_increment_guard,4,GCC,glibc,candidate,strtold,long_fraction_600,5746
+zero_increment_guard,4,GCC,glibc,candidate,strtold,short_decimal,241
+zero_increment_guard,4,Zig cc,musl,candidate,strtof,all_zero_14800,54045
+zero_increment_guard,4,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,209915
+zero_increment_guard,4,Zig cc,musl,candidate,strtof,long_fraction_600,6826
+zero_increment_guard,4,Zig cc,musl,candidate,strtof,short_decimal,362
+zero_increment_guard,4,Zig cc,musl,candidate,strtod,all_zero_14800,49695
+zero_increment_guard,4,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,208759
+zero_increment_guard,4,Zig cc,musl,candidate,strtod,long_fraction_600,6643
+zero_increment_guard,4,Zig cc,musl,candidate,strtod,short_decimal,346
+zero_increment_guard,4,Zig cc,musl,candidate,strtold,all_zero_14800,49676
+zero_increment_guard,4,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,194675
+zero_increment_guard,4,Zig cc,musl,candidate,strtold,long_fraction_600,7130
+zero_increment_guard,4,Zig cc,musl,candidate,strtold,short_decimal,292
+zero_increment_guard,4,TinyCC,glibc,baseline,strtof,all_zero_14800,56876
+zero_increment_guard,4,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,334115
+zero_increment_guard,4,TinyCC,glibc,baseline,strtof,long_fraction_600,12031
+zero_increment_guard,4,TinyCC,glibc,baseline,strtof,short_decimal,824
+zero_increment_guard,4,TinyCC,glibc,baseline,strtod,all_zero_14800,54068
+zero_increment_guard,4,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,363781
+zero_increment_guard,4,TinyCC,glibc,baseline,strtod,long_fraction_600,13426
+zero_increment_guard,4,TinyCC,glibc,baseline,strtod,short_decimal,850
+zero_increment_guard,4,TinyCC,glibc,baseline,strtold,all_zero_14800,53810
+zero_increment_guard,4,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,331570
+zero_increment_guard,4,TinyCC,glibc,baseline,strtold,long_fraction_600,12618
+zero_increment_guard,4,TinyCC,glibc,baseline,strtold,short_decimal,647
+zero_increment_guard,4,Zig cc,glibc,baseline,strtof,all_zero_14800,47578
+zero_increment_guard,4,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,188079
+zero_increment_guard,4,Zig cc,glibc,baseline,strtof,long_fraction_600,6250
+zero_increment_guard,4,Zig cc,glibc,baseline,strtof,short_decimal,378
+zero_increment_guard,4,Zig cc,glibc,baseline,strtod,all_zero_14800,48604
+zero_increment_guard,4,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,202667
+zero_increment_guard,4,Zig cc,glibc,baseline,strtod,long_fraction_600,6193
+zero_increment_guard,4,Zig cc,glibc,baseline,strtod,short_decimal,370
+zero_increment_guard,4,Zig cc,glibc,baseline,strtold,all_zero_14800,61083
+zero_increment_guard,4,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,225474
+zero_increment_guard,4,Zig cc,glibc,baseline,strtold,long_fraction_600,8666
+zero_increment_guard,4,Zig cc,glibc,baseline,strtold,short_decimal,403
+zero_increment_guard,4,GCC,glibc,baseline,strtof,all_zero_14800,24863
+zero_increment_guard,4,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,156051
+zero_increment_guard,4,GCC,glibc,baseline,strtof,long_fraction_600,5649
+zero_increment_guard,4,GCC,glibc,baseline,strtof,short_decimal,324
+zero_increment_guard,4,GCC,glibc,baseline,strtod,all_zero_14800,27855
+zero_increment_guard,4,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152523
+zero_increment_guard,4,GCC,glibc,baseline,strtod,long_fraction_600,5671
+zero_increment_guard,4,GCC,glibc,baseline,strtod,short_decimal,309
+zero_increment_guard,4,GCC,glibc,baseline,strtold,all_zero_14800,29815
+zero_increment_guard,4,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,163044
+zero_increment_guard,4,GCC,glibc,baseline,strtold,long_fraction_600,5780
+zero_increment_guard,4,GCC,glibc,baseline,strtold,short_decimal,237
+zero_increment_guard,4,Zig cc,musl,baseline,strtof,all_zero_14800,51820
+zero_increment_guard,4,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,190877
+zero_increment_guard,4,Zig cc,musl,baseline,strtof,long_fraction_600,6791
+zero_increment_guard,4,Zig cc,musl,baseline,strtof,short_decimal,360
+zero_increment_guard,4,Zig cc,musl,baseline,strtod,all_zero_14800,47538
+zero_increment_guard,4,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,187513
+zero_increment_guard,4,Zig cc,musl,baseline,strtod,long_fraction_600,6319
+zero_increment_guard,4,Zig cc,musl,baseline,strtod,short_decimal,375
+zero_increment_guard,4,Zig cc,musl,baseline,strtold,all_zero_14800,48699
+zero_increment_guard,4,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,186989
+zero_increment_guard,4,Zig cc,musl,baseline,strtold,long_fraction_600,6723
+zero_increment_guard,4,Zig cc,musl,baseline,strtold,short_decimal,328
+zero_increment_guard,5,TinyCC,glibc,baseline,strtof,all_zero_14800,55242
+zero_increment_guard,5,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,357383
+zero_increment_guard,5,TinyCC,glibc,baseline,strtof,long_fraction_600,11530
+zero_increment_guard,5,TinyCC,glibc,baseline,strtof,short_decimal,843
+zero_increment_guard,5,TinyCC,glibc,baseline,strtod,all_zero_14800,54061
+zero_increment_guard,5,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,369675
+zero_increment_guard,5,TinyCC,glibc,baseline,strtod,long_fraction_600,12876
+zero_increment_guard,5,TinyCC,glibc,baseline,strtod,short_decimal,782
+zero_increment_guard,5,TinyCC,glibc,baseline,strtold,all_zero_14800,54994
+zero_increment_guard,5,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,350926
+zero_increment_guard,5,TinyCC,glibc,baseline,strtold,long_fraction_600,14357
+zero_increment_guard,5,TinyCC,glibc,baseline,strtold,short_decimal,641
+zero_increment_guard,5,Zig cc,glibc,baseline,strtof,all_zero_14800,47639
+zero_increment_guard,5,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,186482
+zero_increment_guard,5,Zig cc,glibc,baseline,strtof,long_fraction_600,6629
+zero_increment_guard,5,Zig cc,glibc,baseline,strtof,short_decimal,383
+zero_increment_guard,5,Zig cc,glibc,baseline,strtod,all_zero_14800,48651
+zero_increment_guard,5,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,194959
+zero_increment_guard,5,Zig cc,glibc,baseline,strtod,long_fraction_600,6220
+zero_increment_guard,5,Zig cc,glibc,baseline,strtod,short_decimal,372
+zero_increment_guard,5,Zig cc,glibc,baseline,strtold,all_zero_14800,48558
+zero_increment_guard,5,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,186158
+zero_increment_guard,5,Zig cc,glibc,baseline,strtold,long_fraction_600,6374
+zero_increment_guard,5,Zig cc,glibc,baseline,strtold,short_decimal,307
+zero_increment_guard,5,GCC,glibc,baseline,strtof,all_zero_14800,19589
+zero_increment_guard,5,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,155076
+zero_increment_guard,5,GCC,glibc,baseline,strtof,long_fraction_600,5623
+zero_increment_guard,5,GCC,glibc,baseline,strtof,short_decimal,357
+zero_increment_guard,5,GCC,glibc,baseline,strtod,all_zero_14800,26039
+zero_increment_guard,5,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,160032
+zero_increment_guard,5,GCC,glibc,baseline,strtod,long_fraction_600,5397
+zero_increment_guard,5,GCC,glibc,baseline,strtod,short_decimal,299
+zero_increment_guard,5,GCC,glibc,baseline,strtold,all_zero_14800,19061
+zero_increment_guard,5,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,152964
+zero_increment_guard,5,GCC,glibc,baseline,strtold,long_fraction_600,5633
+zero_increment_guard,5,GCC,glibc,baseline,strtold,short_decimal,240
+zero_increment_guard,5,Zig cc,musl,baseline,strtof,all_zero_14800,48580
+zero_increment_guard,5,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,194466
+zero_increment_guard,5,Zig cc,musl,baseline,strtof,long_fraction_600,6736
+zero_increment_guard,5,Zig cc,musl,baseline,strtof,short_decimal,365
+zero_increment_guard,5,Zig cc,musl,baseline,strtod,all_zero_14800,49746
+zero_increment_guard,5,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,183096
+zero_increment_guard,5,Zig cc,musl,baseline,strtod,long_fraction_600,6357
+zero_increment_guard,5,Zig cc,musl,baseline,strtod,short_decimal,396
+zero_increment_guard,5,Zig cc,musl,baseline,strtold,all_zero_14800,48530
+zero_increment_guard,5,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,186985
+zero_increment_guard,5,Zig cc,musl,baseline,strtold,long_fraction_600,6291
+zero_increment_guard,5,Zig cc,musl,baseline,strtold,short_decimal,269
+zero_increment_guard,5,TinyCC,glibc,candidate,strtof,all_zero_14800,61175
+zero_increment_guard,5,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,396773
+zero_increment_guard,5,TinyCC,glibc,candidate,strtof,long_fraction_600,13463
+zero_increment_guard,5,TinyCC,glibc,candidate,strtof,short_decimal,844
+zero_increment_guard,5,TinyCC,glibc,candidate,strtod,all_zero_14800,57224
+zero_increment_guard,5,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,393870
+zero_increment_guard,5,TinyCC,glibc,candidate,strtod,long_fraction_600,12804
+zero_increment_guard,5,TinyCC,glibc,candidate,strtod,short_decimal,797
+zero_increment_guard,5,TinyCC,glibc,candidate,strtold,all_zero_14800,70250
+zero_increment_guard,5,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,391475
+zero_increment_guard,5,TinyCC,glibc,candidate,strtold,long_fraction_600,15750
+zero_increment_guard,5,TinyCC,glibc,candidate,strtold,short_decimal,699
+zero_increment_guard,5,Zig cc,glibc,candidate,strtof,all_zero_14800,51862
+zero_increment_guard,5,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,200452
+zero_increment_guard,5,Zig cc,glibc,candidate,strtof,long_fraction_600,6756
+zero_increment_guard,5,Zig cc,glibc,candidate,strtof,short_decimal,370
+zero_increment_guard,5,Zig cc,glibc,candidate,strtod,all_zero_14800,51839
+zero_increment_guard,5,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,198779
+zero_increment_guard,5,Zig cc,glibc,candidate,strtod,long_fraction_600,6513
+zero_increment_guard,5,Zig cc,glibc,candidate,strtod,short_decimal,366
+zero_increment_guard,5,Zig cc,glibc,candidate,strtold,all_zero_14800,53849
+zero_increment_guard,5,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,198381
+zero_increment_guard,5,Zig cc,glibc,candidate,strtold,long_fraction_600,6626
+zero_increment_guard,5,Zig cc,glibc,candidate,strtold,short_decimal,291
+zero_increment_guard,5,GCC,glibc,candidate,strtof,all_zero_14800,20634
+zero_increment_guard,5,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,154510
+zero_increment_guard,5,GCC,glibc,candidate,strtof,long_fraction_600,5569
+zero_increment_guard,5,GCC,glibc,candidate,strtof,short_decimal,333
+zero_increment_guard,5,GCC,glibc,candidate,strtod,all_zero_14800,21851
+zero_increment_guard,5,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,149921
+zero_increment_guard,5,GCC,glibc,candidate,strtod,long_fraction_600,5414
+zero_increment_guard,5,GCC,glibc,candidate,strtod,short_decimal,314
+zero_increment_guard,5,GCC,glibc,candidate,strtold,all_zero_14800,22849
+zero_increment_guard,5,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,150978
+zero_increment_guard,5,GCC,glibc,candidate,strtold,long_fraction_600,5742
+zero_increment_guard,5,GCC,glibc,candidate,strtold,short_decimal,238
+zero_increment_guard,5,Zig cc,musl,candidate,strtof,all_zero_14800,50843
+zero_increment_guard,5,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,193550
+zero_increment_guard,5,Zig cc,musl,candidate,strtof,long_fraction_600,6838
+zero_increment_guard,5,Zig cc,musl,candidate,strtof,short_decimal,332
+zero_increment_guard,5,Zig cc,musl,candidate,strtod,all_zero_14800,50883
+zero_increment_guard,5,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,194735
+zero_increment_guard,5,Zig cc,musl,candidate,strtod,long_fraction_600,6553
+zero_increment_guard,5,Zig cc,musl,candidate,strtod,short_decimal,344
+zero_increment_guard,5,Zig cc,musl,candidate,strtold,all_zero_14800,49637
+zero_increment_guard,5,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,194838
+zero_increment_guard,5,Zig cc,musl,candidate,strtold,long_fraction_600,6889
+zero_increment_guard,5,Zig cc,musl,candidate,strtold,short_decimal,277
+zero_increment_guard,6,TinyCC,glibc,candidate,strtof,all_zero_14800,57226
+zero_increment_guard,6,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,360610
+zero_increment_guard,6,TinyCC,glibc,candidate,strtof,long_fraction_600,11740
+zero_increment_guard,6,TinyCC,glibc,candidate,strtof,short_decimal,837
+zero_increment_guard,6,TinyCC,glibc,candidate,strtod,all_zero_14800,57197
+zero_increment_guard,6,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,394300
+zero_increment_guard,6,TinyCC,glibc,candidate,strtod,long_fraction_600,13394
+zero_increment_guard,6,TinyCC,glibc,candidate,strtod,short_decimal,783
+zero_increment_guard,6,TinyCC,glibc,candidate,strtold,all_zero_14800,58206
+zero_increment_guard,6,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,399851
+zero_increment_guard,6,TinyCC,glibc,candidate,strtold,long_fraction_600,13912
+zero_increment_guard,6,TinyCC,glibc,candidate,strtold,short_decimal,689
+zero_increment_guard,6,Zig cc,glibc,candidate,strtof,all_zero_14800,53056
+zero_increment_guard,6,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,199130
+zero_increment_guard,6,Zig cc,glibc,candidate,strtof,long_fraction_600,6763
+zero_increment_guard,6,Zig cc,glibc,candidate,strtof,short_decimal,360
+zero_increment_guard,6,Zig cc,glibc,candidate,strtod,all_zero_14800,50825
+zero_increment_guard,6,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,200192
+zero_increment_guard,6,Zig cc,glibc,candidate,strtod,long_fraction_600,6365
+zero_increment_guard,6,Zig cc,glibc,candidate,strtod,short_decimal,362
+zero_increment_guard,6,Zig cc,glibc,candidate,strtold,all_zero_14800,49681
+zero_increment_guard,6,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,193622
+zero_increment_guard,6,Zig cc,glibc,candidate,strtold,long_fraction_600,6895
+zero_increment_guard,6,Zig cc,glibc,candidate,strtold,short_decimal,301
+zero_increment_guard,6,GCC,glibc,candidate,strtof,all_zero_14800,22214
+zero_increment_guard,6,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,152184
+zero_increment_guard,6,GCC,glibc,candidate,strtof,long_fraction_600,5481
+zero_increment_guard,6,GCC,glibc,candidate,strtof,short_decimal,297
+zero_increment_guard,6,GCC,glibc,candidate,strtod,all_zero_14800,19165
+zero_increment_guard,6,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,153419
+zero_increment_guard,6,GCC,glibc,candidate,strtod,long_fraction_600,5401
+zero_increment_guard,6,GCC,glibc,candidate,strtod,short_decimal,310
+zero_increment_guard,6,GCC,glibc,candidate,strtold,all_zero_14800,21443
+zero_increment_guard,6,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,146786
+zero_increment_guard,6,GCC,glibc,candidate,strtold,long_fraction_600,5500
+zero_increment_guard,6,GCC,glibc,candidate,strtold,short_decimal,232
+zero_increment_guard,6,Zig cc,musl,candidate,strtof,all_zero_14800,49741
+zero_increment_guard,6,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,197806
+zero_increment_guard,6,Zig cc,musl,candidate,strtof,long_fraction_600,6792
+zero_increment_guard,6,Zig cc,musl,candidate,strtof,short_decimal,354
+zero_increment_guard,6,Zig cc,musl,candidate,strtod,all_zero_14800,51841
+zero_increment_guard,6,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,194593
+zero_increment_guard,6,Zig cc,musl,candidate,strtod,long_fraction_600,6557
+zero_increment_guard,6,Zig cc,musl,candidate,strtod,short_decimal,340
+zero_increment_guard,6,Zig cc,musl,candidate,strtold,all_zero_14800,55073
+zero_increment_guard,6,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,202311
+zero_increment_guard,6,Zig cc,musl,candidate,strtold,long_fraction_600,7024
+zero_increment_guard,6,Zig cc,musl,candidate,strtold,short_decimal,290
+zero_increment_guard,6,TinyCC,glibc,baseline,strtof,all_zero_14800,56531
+zero_increment_guard,6,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,395345
+zero_increment_guard,6,TinyCC,glibc,baseline,strtof,long_fraction_600,12874
+zero_increment_guard,6,TinyCC,glibc,baseline,strtof,short_decimal,867
+zero_increment_guard,6,TinyCC,glibc,baseline,strtod,all_zero_14800,55239
+zero_increment_guard,6,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,369894
+zero_increment_guard,6,TinyCC,glibc,baseline,strtod,long_fraction_600,12753
+zero_increment_guard,6,TinyCC,glibc,baseline,strtod,short_decimal,825
+zero_increment_guard,6,TinyCC,glibc,baseline,strtold,all_zero_14800,56376
+zero_increment_guard,6,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,350436
+zero_increment_guard,6,TinyCC,glibc,baseline,strtold,long_fraction_600,14769
+zero_increment_guard,6,TinyCC,glibc,baseline,strtold,short_decimal,708
+zero_increment_guard,6,Zig cc,glibc,baseline,strtof,all_zero_14800,52996
+zero_increment_guard,6,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,200564
+zero_increment_guard,6,Zig cc,glibc,baseline,strtof,long_fraction_600,6704
+zero_increment_guard,6,Zig cc,glibc,baseline,strtof,short_decimal,402
+zero_increment_guard,6,Zig cc,glibc,baseline,strtod,all_zero_14800,49679
+zero_increment_guard,6,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,196537
+zero_increment_guard,6,Zig cc,glibc,baseline,strtod,long_fraction_600,6635
+zero_increment_guard,6,Zig cc,glibc,baseline,strtod,short_decimal,387
+zero_increment_guard,6,Zig cc,glibc,baseline,strtold,all_zero_14800,48902
+zero_increment_guard,6,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,186967
+zero_increment_guard,6,Zig cc,glibc,baseline,strtold,long_fraction_600,6420
+zero_increment_guard,6,Zig cc,glibc,baseline,strtold,short_decimal,303
+zero_increment_guard,6,GCC,glibc,baseline,strtof,all_zero_14800,19563
+zero_increment_guard,6,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,155101
+zero_increment_guard,6,GCC,glibc,baseline,strtof,long_fraction_600,5547
+zero_increment_guard,6,GCC,glibc,baseline,strtof,short_decimal,316
+zero_increment_guard,6,GCC,glibc,baseline,strtod,all_zero_14800,19566
+zero_increment_guard,6,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,164574
+zero_increment_guard,6,GCC,glibc,baseline,strtod,long_fraction_600,5341
+zero_increment_guard,6,GCC,glibc,baseline,strtod,short_decimal,308
+zero_increment_guard,6,GCC,glibc,baseline,strtold,all_zero_14800,19073
+zero_increment_guard,6,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,148935
+zero_increment_guard,6,GCC,glibc,baseline,strtold,long_fraction_600,5815
+zero_increment_guard,6,GCC,glibc,baseline,strtold,short_decimal,253
+zero_increment_guard,6,Zig cc,musl,baseline,strtof,all_zero_14800,51822
+zero_increment_guard,6,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,192484
+zero_increment_guard,6,Zig cc,musl,baseline,strtof,long_fraction_600,6714
+zero_increment_guard,6,Zig cc,musl,baseline,strtof,short_decimal,365
+zero_increment_guard,6,Zig cc,musl,baseline,strtod,all_zero_14800,48731
+zero_increment_guard,6,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,197073
+zero_increment_guard,6,Zig cc,musl,baseline,strtod,long_fraction_600,6360
+zero_increment_guard,6,Zig cc,musl,baseline,strtod,short_decimal,354
+zero_increment_guard,6,Zig cc,musl,baseline,strtold,all_zero_14800,48505
+zero_increment_guard,6,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,187494
+zero_increment_guard,6,Zig cc,musl,baseline,strtold,long_fraction_600,7031
+zero_increment_guard,6,Zig cc,musl,baseline,strtold,short_decimal,327
+zero_increment_guard,7,TinyCC,glibc,baseline,strtof,all_zero_14800,59138
+zero_increment_guard,7,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,343984
+zero_increment_guard,7,TinyCC,glibc,baseline,strtof,long_fraction_600,12318
+zero_increment_guard,7,TinyCC,glibc,baseline,strtof,short_decimal,840
+zero_increment_guard,7,TinyCC,glibc,baseline,strtod,all_zero_14800,56838
+zero_increment_guard,7,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,351753
+zero_increment_guard,7,TinyCC,glibc,baseline,strtod,long_fraction_600,13098
+zero_increment_guard,7,TinyCC,glibc,baseline,strtod,short_decimal,822
+zero_increment_guard,7,TinyCC,glibc,baseline,strtold,all_zero_14800,54966
+zero_increment_guard,7,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,359093
+zero_increment_guard,7,TinyCC,glibc,baseline,strtold,long_fraction_600,14000
+zero_increment_guard,7,TinyCC,glibc,baseline,strtold,short_decimal,696
+zero_increment_guard,7,Zig cc,glibc,baseline,strtof,all_zero_14800,46604
+zero_increment_guard,7,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,197104
+zero_increment_guard,7,Zig cc,glibc,baseline,strtof,long_fraction_600,6769
+zero_increment_guard,7,Zig cc,glibc,baseline,strtof,short_decimal,369
+zero_increment_guard,7,Zig cc,glibc,baseline,strtod,all_zero_14800,61262
+zero_increment_guard,7,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,183462
+zero_increment_guard,7,Zig cc,glibc,baseline,strtod,long_fraction_600,5948
+zero_increment_guard,7,Zig cc,glibc,baseline,strtod,short_decimal,367
+zero_increment_guard,7,Zig cc,glibc,baseline,strtold,all_zero_14800,50645
+zero_increment_guard,7,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,199662
+zero_increment_guard,7,Zig cc,glibc,baseline,strtold,long_fraction_600,6252
+zero_increment_guard,7,Zig cc,glibc,baseline,strtold,short_decimal,298
+zero_increment_guard,7,GCC,glibc,baseline,strtof,all_zero_14800,19573
+zero_increment_guard,7,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,156133
+zero_increment_guard,7,GCC,glibc,baseline,strtof,long_fraction_600,5418
+zero_increment_guard,7,GCC,glibc,baseline,strtof,short_decimal,306
+zero_increment_guard,7,GCC,glibc,baseline,strtod,all_zero_14800,28630
+zero_increment_guard,7,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,159200
+zero_increment_guard,7,GCC,glibc,baseline,strtod,long_fraction_600,5597
+zero_increment_guard,7,GCC,glibc,baseline,strtod,short_decimal,302
+zero_increment_guard,7,GCC,glibc,baseline,strtold,all_zero_14800,25949
+zero_increment_guard,7,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,160308
+zero_increment_guard,7,GCC,glibc,baseline,strtold,long_fraction_600,5932
+zero_increment_guard,7,GCC,glibc,baseline,strtold,short_decimal,259
+zero_increment_guard,7,Zig cc,musl,baseline,strtof,all_zero_14800,52983
+zero_increment_guard,7,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,191151
+zero_increment_guard,7,Zig cc,musl,baseline,strtof,long_fraction_600,6687
+zero_increment_guard,7,Zig cc,musl,baseline,strtof,short_decimal,370
+zero_increment_guard,7,Zig cc,musl,baseline,strtod,all_zero_14800,49669
+zero_increment_guard,7,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,194406
+zero_increment_guard,7,Zig cc,musl,baseline,strtod,long_fraction_600,6458
+zero_increment_guard,7,Zig cc,musl,baseline,strtod,short_decimal,372
+zero_increment_guard,7,Zig cc,musl,baseline,strtold,all_zero_14800,48609
+zero_increment_guard,7,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,188510
+zero_increment_guard,7,Zig cc,musl,baseline,strtold,long_fraction_600,6720
+zero_increment_guard,7,Zig cc,musl,baseline,strtold,short_decimal,302
+zero_increment_guard,7,TinyCC,glibc,candidate,strtof,all_zero_14800,61575
+zero_increment_guard,7,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,378690
+zero_increment_guard,7,TinyCC,glibc,candidate,strtof,long_fraction_600,11810
+zero_increment_guard,7,TinyCC,glibc,candidate,strtof,short_decimal,869
+zero_increment_guard,7,TinyCC,glibc,candidate,strtod,all_zero_14800,58655
+zero_increment_guard,7,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,370389
+zero_increment_guard,7,TinyCC,glibc,candidate,strtod,long_fraction_600,12704
+zero_increment_guard,7,TinyCC,glibc,candidate,strtod,short_decimal,850
+zero_increment_guard,7,TinyCC,glibc,candidate,strtold,all_zero_14800,58403
+zero_increment_guard,7,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,397946
+zero_increment_guard,7,TinyCC,glibc,candidate,strtold,long_fraction_600,14165
+zero_increment_guard,7,TinyCC,glibc,candidate,strtold,short_decimal,720
+zero_increment_guard,7,Zig cc,glibc,candidate,strtof,all_zero_14800,53157
+zero_increment_guard,7,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,207871
+zero_increment_guard,7,Zig cc,glibc,candidate,strtof,long_fraction_600,6882
+zero_increment_guard,7,Zig cc,glibc,candidate,strtof,short_decimal,376
+zero_increment_guard,7,Zig cc,glibc,candidate,strtod,all_zero_14800,50820
+zero_increment_guard,7,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,197909
+zero_increment_guard,7,Zig cc,glibc,candidate,strtod,long_fraction_600,6335
+zero_increment_guard,7,Zig cc,glibc,candidate,strtod,short_decimal,347
+zero_increment_guard,7,Zig cc,glibc,candidate,strtold,all_zero_14800,52165
+zero_increment_guard,7,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,201794
+zero_increment_guard,7,Zig cc,glibc,candidate,strtold,long_fraction_600,6785
+zero_increment_guard,7,Zig cc,glibc,candidate,strtold,short_decimal,303
+zero_increment_guard,7,GCC,glibc,candidate,strtof,all_zero_14800,21112
+zero_increment_guard,7,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,155411
+zero_increment_guard,7,GCC,glibc,candidate,strtof,long_fraction_600,5608
+zero_increment_guard,7,GCC,glibc,candidate,strtof,short_decimal,325
+zero_increment_guard,7,GCC,glibc,candidate,strtod,all_zero_14800,30218
+zero_increment_guard,7,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,156663
+zero_increment_guard,7,GCC,glibc,candidate,strtod,long_fraction_600,5516
+zero_increment_guard,7,GCC,glibc,candidate,strtod,short_decimal,318
+zero_increment_guard,7,GCC,glibc,candidate,strtold,all_zero_14800,24987
+zero_increment_guard,7,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,166523
+zero_increment_guard,7,GCC,glibc,candidate,strtold,long_fraction_600,5901
+zero_increment_guard,7,GCC,glibc,candidate,strtold,short_decimal,236
+zero_increment_guard,7,Zig cc,musl,candidate,strtof,all_zero_14800,49716
+zero_increment_guard,7,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,197856
+zero_increment_guard,7,Zig cc,musl,candidate,strtof,long_fraction_600,6926
+zero_increment_guard,7,Zig cc,musl,candidate,strtof,short_decimal,348
+zero_increment_guard,7,Zig cc,musl,candidate,strtod,all_zero_14800,50796
+zero_increment_guard,7,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,197579
+zero_increment_guard,7,Zig cc,musl,candidate,strtod,long_fraction_600,6633
+zero_increment_guard,7,Zig cc,musl,candidate,strtod,short_decimal,370
+zero_increment_guard,7,Zig cc,musl,candidate,strtold,all_zero_14800,52590
+zero_increment_guard,7,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,215336
+zero_increment_guard,7,Zig cc,musl,candidate,strtold,long_fraction_600,7231
+zero_increment_guard,7,Zig cc,musl,candidate,strtold,short_decimal,288
+zero_increment_guard,8,TinyCC,glibc,candidate,strtof,all_zero_14800,64557
+zero_increment_guard,8,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,367074
+zero_increment_guard,8,TinyCC,glibc,candidate,strtof,long_fraction_600,13917
+zero_increment_guard,8,TinyCC,glibc,candidate,strtof,short_decimal,836
+zero_increment_guard,8,TinyCC,glibc,candidate,strtod,all_zero_14800,68789
+zero_increment_guard,8,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,406921
+zero_increment_guard,8,TinyCC,glibc,candidate,strtod,long_fraction_600,11475
+zero_increment_guard,8,TinyCC,glibc,candidate,strtod,short_decimal,832
+zero_increment_guard,8,TinyCC,glibc,candidate,strtold,all_zero_14800,58218
+zero_increment_guard,8,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,381290
+zero_increment_guard,8,TinyCC,glibc,candidate,strtold,long_fraction_600,13477
+zero_increment_guard,8,TinyCC,glibc,candidate,strtold,short_decimal,692
+zero_increment_guard,8,Zig cc,glibc,candidate,strtof,all_zero_14800,53896
+zero_increment_guard,8,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,198673
+zero_increment_guard,8,Zig cc,glibc,candidate,strtof,long_fraction_600,6653
+zero_increment_guard,8,Zig cc,glibc,candidate,strtof,short_decimal,361
+zero_increment_guard,8,Zig cc,glibc,candidate,strtod,all_zero_14800,50825
+zero_increment_guard,8,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,202716
+zero_increment_guard,8,Zig cc,glibc,candidate,strtod,long_fraction_600,6619
+zero_increment_guard,8,Zig cc,glibc,candidate,strtod,short_decimal,383
+zero_increment_guard,8,Zig cc,glibc,candidate,strtold,all_zero_14800,52046
+zero_increment_guard,8,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,209861
+zero_increment_guard,8,Zig cc,glibc,candidate,strtold,long_fraction_600,6945
+zero_increment_guard,8,Zig cc,glibc,candidate,strtold,short_decimal,301
+zero_increment_guard,8,GCC,glibc,candidate,strtof,all_zero_14800,21918
+zero_increment_guard,8,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,152844
+zero_increment_guard,8,GCC,glibc,candidate,strtof,long_fraction_600,5655
+zero_increment_guard,8,GCC,glibc,candidate,strtof,short_decimal,329
+zero_increment_guard,8,GCC,glibc,candidate,strtod,all_zero_14800,23983
+zero_increment_guard,8,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,156682
+zero_increment_guard,8,GCC,glibc,candidate,strtod,long_fraction_600,5454
+zero_increment_guard,8,GCC,glibc,candidate,strtod,short_decimal,322
+zero_increment_guard,8,GCC,glibc,candidate,strtold,all_zero_14800,21911
+zero_increment_guard,8,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,149360
+zero_increment_guard,8,GCC,glibc,candidate,strtold,long_fraction_600,5613
+zero_increment_guard,8,GCC,glibc,candidate,strtold,short_decimal,231
+zero_increment_guard,8,Zig cc,musl,candidate,strtof,all_zero_14800,52998
+zero_increment_guard,8,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,202340
+zero_increment_guard,8,Zig cc,musl,candidate,strtof,long_fraction_600,6878
+zero_increment_guard,8,Zig cc,musl,candidate,strtof,short_decimal,359
+zero_increment_guard,8,Zig cc,musl,candidate,strtod,all_zero_14800,50810
+zero_increment_guard,8,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,202067
+zero_increment_guard,8,Zig cc,musl,candidate,strtod,long_fraction_600,6572
+zero_increment_guard,8,Zig cc,musl,candidate,strtod,short_decimal,367
+zero_increment_guard,8,Zig cc,musl,candidate,strtold,all_zero_14800,54996
+zero_increment_guard,8,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,212091
+zero_increment_guard,8,Zig cc,musl,candidate,strtold,long_fraction_600,7013
+zero_increment_guard,8,Zig cc,musl,candidate,strtold,short_decimal,288
+zero_increment_guard,8,TinyCC,glibc,baseline,strtof,all_zero_14800,57779
+zero_increment_guard,8,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,336598
+zero_increment_guard,8,TinyCC,glibc,baseline,strtof,long_fraction_600,11959
+zero_increment_guard,8,TinyCC,glibc,baseline,strtof,short_decimal,772
+zero_increment_guard,8,TinyCC,glibc,baseline,strtod,all_zero_14800,55385
+zero_increment_guard,8,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,337240
+zero_increment_guard,8,TinyCC,glibc,baseline,strtod,long_fraction_600,12321
+zero_increment_guard,8,TinyCC,glibc,baseline,strtod,short_decimal,800
+zero_increment_guard,8,TinyCC,glibc,baseline,strtold,all_zero_14800,54974
+zero_increment_guard,8,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,336924
+zero_increment_guard,8,TinyCC,glibc,baseline,strtold,long_fraction_600,13184
+zero_increment_guard,8,TinyCC,glibc,baseline,strtold,short_decimal,752
+zero_increment_guard,8,Zig cc,glibc,baseline,strtof,all_zero_14800,52992
+zero_increment_guard,8,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,193942
+zero_increment_guard,8,Zig cc,glibc,baseline,strtof,long_fraction_600,6694
+zero_increment_guard,8,Zig cc,glibc,baseline,strtof,short_decimal,379
+zero_increment_guard,8,Zig cc,glibc,baseline,strtod,all_zero_14800,48611
+zero_increment_guard,8,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,185995
+zero_increment_guard,8,Zig cc,glibc,baseline,strtod,long_fraction_600,6131
+zero_increment_guard,8,Zig cc,glibc,baseline,strtod,short_decimal,369
+zero_increment_guard,8,Zig cc,glibc,baseline,strtold,all_zero_14800,48524
+zero_increment_guard,8,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,187215
+zero_increment_guard,8,Zig cc,glibc,baseline,strtold,long_fraction_600,6436
+zero_increment_guard,8,Zig cc,glibc,baseline,strtold,short_decimal,296
+zero_increment_guard,8,GCC,glibc,baseline,strtof,all_zero_14800,20007
+zero_increment_guard,8,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,152478
+zero_increment_guard,8,GCC,glibc,baseline,strtof,long_fraction_600,5560
+zero_increment_guard,8,GCC,glibc,baseline,strtof,short_decimal,316
+zero_increment_guard,8,GCC,glibc,baseline,strtod,all_zero_14800,19565
+zero_increment_guard,8,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152508
+zero_increment_guard,8,GCC,glibc,baseline,strtod,long_fraction_600,5388
+zero_increment_guard,8,GCC,glibc,baseline,strtod,short_decimal,323
+zero_increment_guard,8,GCC,glibc,baseline,strtold,all_zero_14800,27144
+zero_increment_guard,8,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,152064
+zero_increment_guard,8,GCC,glibc,baseline,strtold,long_fraction_600,5762
+zero_increment_guard,8,GCC,glibc,baseline,strtold,short_decimal,266
+zero_increment_guard,8,Zig cc,musl,baseline,strtof,all_zero_14800,54071
+zero_increment_guard,8,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,190467
+zero_increment_guard,8,Zig cc,musl,baseline,strtof,long_fraction_600,7685
+zero_increment_guard,8,Zig cc,musl,baseline,strtof,short_decimal,365
+zero_increment_guard,8,Zig cc,musl,baseline,strtod,all_zero_14800,48581
+zero_increment_guard,8,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,187091
+zero_increment_guard,8,Zig cc,musl,baseline,strtod,long_fraction_600,6542
+zero_increment_guard,8,Zig cc,musl,baseline,strtod,short_decimal,352
+zero_increment_guard,8,Zig cc,musl,baseline,strtold,all_zero_14800,51721
+zero_increment_guard,8,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,186161
+zero_increment_guard,8,Zig cc,musl,baseline,strtold,long_fraction_600,6971
+zero_increment_guard,8,Zig cc,musl,baseline,strtold,short_decimal,295
+zero_increment_guard,9,TinyCC,glibc,baseline,strtof,all_zero_14800,55243
+zero_increment_guard,9,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,362415
+zero_increment_guard,9,TinyCC,glibc,baseline,strtof,long_fraction_600,11756
+zero_increment_guard,9,TinyCC,glibc,baseline,strtof,short_decimal,806
+zero_increment_guard,9,TinyCC,glibc,baseline,strtod,all_zero_14800,55235
+zero_increment_guard,9,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,336823
+zero_increment_guard,9,TinyCC,glibc,baseline,strtod,long_fraction_600,13078
+zero_increment_guard,9,TinyCC,glibc,baseline,strtod,short_decimal,787
+zero_increment_guard,9,TinyCC,glibc,baseline,strtold,all_zero_14800,67934
+zero_increment_guard,9,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,414867
+zero_increment_guard,9,TinyCC,glibc,baseline,strtold,long_fraction_600,19799
+zero_increment_guard,9,TinyCC,glibc,baseline,strtold,short_decimal,1035
+zero_increment_guard,9,Zig cc,glibc,baseline,strtof,all_zero_14800,50837
+zero_increment_guard,9,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,187151
+zero_increment_guard,9,Zig cc,glibc,baseline,strtof,long_fraction_600,6527
+zero_increment_guard,9,Zig cc,glibc,baseline,strtof,short_decimal,387
+zero_increment_guard,9,Zig cc,glibc,baseline,strtod,all_zero_14800,58012
+zero_increment_guard,9,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,190819
+zero_increment_guard,9,Zig cc,glibc,baseline,strtod,long_fraction_600,6252
+zero_increment_guard,9,Zig cc,glibc,baseline,strtod,short_decimal,387
+zero_increment_guard,9,Zig cc,glibc,baseline,strtold,all_zero_14800,47699
+zero_increment_guard,9,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,190374
+zero_increment_guard,9,Zig cc,glibc,baseline,strtold,long_fraction_600,6458
+zero_increment_guard,9,Zig cc,glibc,baseline,strtold,short_decimal,322
+zero_increment_guard,9,GCC,glibc,baseline,strtof,all_zero_14800,20011
+zero_increment_guard,9,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,152448
+zero_increment_guard,9,GCC,glibc,baseline,strtof,long_fraction_600,5620
+zero_increment_guard,9,GCC,glibc,baseline,strtof,short_decimal,314
+zero_increment_guard,9,GCC,glibc,baseline,strtod,all_zero_14800,19569
+zero_increment_guard,9,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152484
+zero_increment_guard,9,GCC,glibc,baseline,strtod,long_fraction_600,5432
+zero_increment_guard,9,GCC,glibc,baseline,strtod,short_decimal,313
+zero_increment_guard,9,GCC,glibc,baseline,strtold,all_zero_14800,19486
+zero_increment_guard,9,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,153958
+zero_increment_guard,9,GCC,glibc,baseline,strtold,long_fraction_600,5782
+zero_increment_guard,9,GCC,glibc,baseline,strtold,short_decimal,270
+zero_increment_guard,9,Zig cc,musl,baseline,strtof,all_zero_14800,48736
+zero_increment_guard,9,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,189392
+zero_increment_guard,9,Zig cc,musl,baseline,strtof,long_fraction_600,6678
+zero_increment_guard,9,Zig cc,musl,baseline,strtof,short_decimal,381
+zero_increment_guard,9,Zig cc,musl,baseline,strtod,all_zero_14800,49707
+zero_increment_guard,9,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,196647
+zero_increment_guard,9,Zig cc,musl,baseline,strtod,long_fraction_600,6335
+zero_increment_guard,9,Zig cc,musl,baseline,strtod,short_decimal,359
+zero_increment_guard,9,Zig cc,musl,baseline,strtold,all_zero_14800,47476
+zero_increment_guard,9,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,188582
+zero_increment_guard,9,Zig cc,musl,baseline,strtold,long_fraction_600,6740
+zero_increment_guard,9,Zig cc,musl,baseline,strtold,short_decimal,307
+zero_increment_guard,9,TinyCC,glibc,candidate,strtof,all_zero_14800,59787
+zero_increment_guard,9,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,392303
+zero_increment_guard,9,TinyCC,glibc,candidate,strtof,long_fraction_600,13185
+zero_increment_guard,9,TinyCC,glibc,candidate,strtof,short_decimal,782
+zero_increment_guard,9,TinyCC,glibc,candidate,strtod,all_zero_14800,57371
+zero_increment_guard,9,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,389434
+zero_increment_guard,9,TinyCC,glibc,candidate,strtod,long_fraction_600,12172
+zero_increment_guard,9,TinyCC,glibc,candidate,strtod,short_decimal,854
+zero_increment_guard,9,TinyCC,glibc,candidate,strtold,all_zero_14800,57148
+zero_increment_guard,9,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,362187
+zero_increment_guard,9,TinyCC,glibc,candidate,strtold,long_fraction_600,13325
+zero_increment_guard,9,TinyCC,glibc,candidate,strtold,short_decimal,687
+zero_increment_guard,9,Zig cc,glibc,candidate,strtof,all_zero_14800,54474
+zero_increment_guard,9,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,193819
+zero_increment_guard,9,Zig cc,glibc,candidate,strtof,long_fraction_600,6686
+zero_increment_guard,9,Zig cc,glibc,candidate,strtof,short_decimal,365
+zero_increment_guard,9,Zig cc,glibc,candidate,strtod,all_zero_14800,55210
+zero_increment_guard,9,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,199239
+zero_increment_guard,9,Zig cc,glibc,candidate,strtod,long_fraction_600,6361
+zero_increment_guard,9,Zig cc,glibc,candidate,strtod,short_decimal,356
+zero_increment_guard,9,Zig cc,glibc,candidate,strtold,all_zero_14800,49655
+zero_increment_guard,9,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,193715
+zero_increment_guard,9,Zig cc,glibc,candidate,strtold,long_fraction_600,6713
+zero_increment_guard,9,Zig cc,glibc,candidate,strtold,short_decimal,305
+zero_increment_guard,9,GCC,glibc,candidate,strtof,all_zero_14800,22865
+zero_increment_guard,9,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,158622
+zero_increment_guard,9,GCC,glibc,candidate,strtof,long_fraction_600,5522
+zero_increment_guard,9,GCC,glibc,candidate,strtof,short_decimal,309
+zero_increment_guard,9,GCC,glibc,candidate,strtod,all_zero_14800,28621
+zero_increment_guard,9,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,154036
+zero_increment_guard,9,GCC,glibc,candidate,strtod,long_fraction_600,5497
+zero_increment_guard,9,GCC,glibc,candidate,strtod,short_decimal,322
+zero_increment_guard,9,GCC,glibc,candidate,strtold,all_zero_14800,23496
+zero_increment_guard,9,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,151325
+zero_increment_guard,9,GCC,glibc,candidate,strtold,long_fraction_600,6066
+zero_increment_guard,9,GCC,glibc,candidate,strtold,short_decimal,263
+zero_increment_guard,9,Zig cc,musl,candidate,strtof,all_zero_14800,50810
+zero_increment_guard,9,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,198050
+zero_increment_guard,9,Zig cc,musl,candidate,strtof,long_fraction_600,6805
+zero_increment_guard,9,Zig cc,musl,candidate,strtof,short_decimal,342
+zero_increment_guard,9,Zig cc,musl,candidate,strtod,all_zero_14800,50727
+zero_increment_guard,9,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,197670
+zero_increment_guard,9,Zig cc,musl,candidate,strtod,long_fraction_600,6530
+zero_increment_guard,9,Zig cc,musl,candidate,strtod,short_decimal,369
+zero_increment_guard,9,Zig cc,musl,candidate,strtold,all_zero_14800,53908
+zero_increment_guard,9,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,208661
+zero_increment_guard,9,Zig cc,musl,candidate,strtold,long_fraction_600,7047
+zero_increment_guard,9,Zig cc,musl,candidate,strtold,short_decimal,287
+zero_increment_guard,10,TinyCC,glibc,candidate,strtof,all_zero_14800,63265
+zero_increment_guard,10,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,369104
+zero_increment_guard,10,TinyCC,glibc,candidate,strtof,long_fraction_600,13095
+zero_increment_guard,10,TinyCC,glibc,candidate,strtof,short_decimal,843
+zero_increment_guard,10,TinyCC,glibc,candidate,strtod,all_zero_14800,58508
+zero_increment_guard,10,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,368650
+zero_increment_guard,10,TinyCC,glibc,candidate,strtod,long_fraction_600,12132
+zero_increment_guard,10,TinyCC,glibc,candidate,strtod,short_decimal,849
+zero_increment_guard,10,TinyCC,glibc,candidate,strtold,all_zero_14800,57314
+zero_increment_guard,10,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,363064
+zero_increment_guard,10,TinyCC,glibc,candidate,strtold,long_fraction_600,13347
+zero_increment_guard,10,TinyCC,glibc,candidate,strtold,short_decimal,715
+zero_increment_guard,10,Zig cc,glibc,candidate,strtof,all_zero_14800,49757
+zero_increment_guard,10,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,197841
+zero_increment_guard,10,Zig cc,glibc,candidate,strtof,long_fraction_600,6990
+zero_increment_guard,10,Zig cc,glibc,candidate,strtof,short_decimal,350
+zero_increment_guard,10,Zig cc,glibc,candidate,strtod,all_zero_14800,50819
+zero_increment_guard,10,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,194921
+zero_increment_guard,10,Zig cc,glibc,candidate,strtod,long_fraction_600,6312
+zero_increment_guard,10,Zig cc,glibc,candidate,strtod,short_decimal,364
+zero_increment_guard,10,Zig cc,glibc,candidate,strtold,all_zero_14800,50679
+zero_increment_guard,10,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,204070
+zero_increment_guard,10,Zig cc,glibc,candidate,strtold,long_fraction_600,7177
+zero_increment_guard,10,Zig cc,glibc,candidate,strtold,short_decimal,301
+zero_increment_guard,10,GCC,glibc,candidate,strtof,all_zero_14800,22890
+zero_increment_guard,10,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,167380
+zero_increment_guard,10,GCC,glibc,candidate,strtof,long_fraction_600,5480
+zero_increment_guard,10,GCC,glibc,candidate,strtof,short_decimal,321
+zero_increment_guard,10,GCC,glibc,candidate,strtod,all_zero_14800,20264
+zero_increment_guard,10,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,154127
+zero_increment_guard,10,GCC,glibc,candidate,strtod,long_fraction_600,5476
+zero_increment_guard,10,GCC,glibc,candidate,strtod,short_decimal,332
+zero_increment_guard,10,GCC,glibc,candidate,strtold,all_zero_14800,26184
+zero_increment_guard,10,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,154871
+zero_increment_guard,10,GCC,glibc,candidate,strtold,long_fraction_600,5797
+zero_increment_guard,10,GCC,glibc,candidate,strtold,short_decimal,258
+zero_increment_guard,10,Zig cc,musl,candidate,strtof,all_zero_14800,50747
+zero_increment_guard,10,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,198022
+zero_increment_guard,10,Zig cc,musl,candidate,strtof,long_fraction_600,7275
+zero_increment_guard,10,Zig cc,musl,candidate,strtof,short_decimal,354
+zero_increment_guard,10,Zig cc,musl,candidate,strtod,all_zero_14800,50816
+zero_increment_guard,10,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,210131
+zero_increment_guard,10,Zig cc,musl,candidate,strtod,long_fraction_600,6558
+zero_increment_guard,10,Zig cc,musl,candidate,strtod,short_decimal,356
+zero_increment_guard,10,Zig cc,musl,candidate,strtold,all_zero_14800,50655
+zero_increment_guard,10,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,193708
+zero_increment_guard,10,Zig cc,musl,candidate,strtold,long_fraction_600,6893
+zero_increment_guard,10,Zig cc,musl,candidate,strtold,short_decimal,298
+zero_increment_guard,10,TinyCC,glibc,baseline,strtof,all_zero_14800,55254
+zero_increment_guard,10,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,337569
+zero_increment_guard,10,TinyCC,glibc,baseline,strtof,long_fraction_600,12372
+zero_increment_guard,10,TinyCC,glibc,baseline,strtof,short_decimal,769
+zero_increment_guard,10,TinyCC,glibc,baseline,strtod,all_zero_14800,58435
+zero_increment_guard,10,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,334325
+zero_increment_guard,10,TinyCC,glibc,baseline,strtod,long_fraction_600,11826
+zero_increment_guard,10,TinyCC,glibc,baseline,strtod,short_decimal,789
+zero_increment_guard,10,TinyCC,glibc,baseline,strtold,all_zero_14800,53810
+zero_increment_guard,10,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,328668
+zero_increment_guard,10,TinyCC,glibc,baseline,strtold,long_fraction_600,12718
+zero_increment_guard,10,TinyCC,glibc,baseline,strtold,short_decimal,686
+zero_increment_guard,10,Zig cc,glibc,baseline,strtof,all_zero_14800,55057
+zero_increment_guard,10,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,197919
+zero_increment_guard,10,Zig cc,glibc,baseline,strtof,long_fraction_600,6241
+zero_increment_guard,10,Zig cc,glibc,baseline,strtof,short_decimal,375
+zero_increment_guard,10,Zig cc,glibc,baseline,strtod,all_zero_14800,60832
+zero_increment_guard,10,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,187526
+zero_increment_guard,10,Zig cc,glibc,baseline,strtod,long_fraction_600,7001
+zero_increment_guard,10,Zig cc,glibc,baseline,strtod,short_decimal,367
+zero_increment_guard,10,Zig cc,glibc,baseline,strtold,all_zero_14800,47482
+zero_increment_guard,10,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,183570
+zero_increment_guard,10,Zig cc,glibc,baseline,strtold,long_fraction_600,6413
+zero_increment_guard,10,Zig cc,glibc,baseline,strtold,short_decimal,315
+zero_increment_guard,10,GCC,glibc,baseline,strtof,all_zero_14800,19571
+zero_increment_guard,10,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,159927
+zero_increment_guard,10,GCC,glibc,baseline,strtof,long_fraction_600,5518
+zero_increment_guard,10,GCC,glibc,baseline,strtof,short_decimal,335
+zero_increment_guard,10,GCC,glibc,baseline,strtod,all_zero_14800,19167
+zero_increment_guard,10,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,156399
+zero_increment_guard,10,GCC,glibc,baseline,strtod,long_fraction_600,5548
+zero_increment_guard,10,GCC,glibc,baseline,strtod,short_decimal,309
+zero_increment_guard,10,GCC,glibc,baseline,strtold,all_zero_14800,19079
+zero_increment_guard,10,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,162675
+zero_increment_guard,10,GCC,glibc,baseline,strtold,long_fraction_600,5731
+zero_increment_guard,10,GCC,glibc,baseline,strtold,short_decimal,250
+zero_increment_guard,10,Zig cc,musl,baseline,strtof,all_zero_14800,51915
+zero_increment_guard,10,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,200123
+zero_increment_guard,10,Zig cc,musl,baseline,strtof,long_fraction_600,6582
+zero_increment_guard,10,Zig cc,musl,baseline,strtof,short_decimal,391
+zero_increment_guard,10,Zig cc,musl,baseline,strtod,all_zero_14800,48609
+zero_increment_guard,10,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,188613
+zero_increment_guard,10,Zig cc,musl,baseline,strtod,long_fraction_600,6516
+zero_increment_guard,10,Zig cc,musl,baseline,strtod,short_decimal,348
+zero_increment_guard,10,Zig cc,musl,baseline,strtold,all_zero_14800,48938
+zero_increment_guard,10,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,196551
+zero_increment_guard,10,Zig cc,musl,baseline,strtold,long_fraction_600,6902
+zero_increment_guard,10,Zig cc,musl,baseline,strtold,short_decimal,328
+zero_increment_guard,11,TinyCC,glibc,baseline,strtof,all_zero_14800,62982
+zero_increment_guard,11,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,384560
+zero_increment_guard,11,TinyCC,glibc,baseline,strtof,long_fraction_600,17923
+zero_increment_guard,11,TinyCC,glibc,baseline,strtof,short_decimal,1062
+zero_increment_guard,11,TinyCC,glibc,baseline,strtod,all_zero_14800,100218
+zero_increment_guard,11,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,547793
+zero_increment_guard,11,TinyCC,glibc,baseline,strtod,long_fraction_600,12334
+zero_increment_guard,11,TinyCC,glibc,baseline,strtod,short_decimal,822
+zero_increment_guard,11,TinyCC,glibc,baseline,strtold,all_zero_14800,53808
+zero_increment_guard,11,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,372495
+zero_increment_guard,11,TinyCC,glibc,baseline,strtold,long_fraction_600,16043
+zero_increment_guard,11,TinyCC,glibc,baseline,strtold,short_decimal,734
+zero_increment_guard,11,Zig cc,glibc,baseline,strtof,all_zero_14800,47595
+zero_increment_guard,11,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,193737
+zero_increment_guard,11,Zig cc,glibc,baseline,strtof,long_fraction_600,6402
+zero_increment_guard,11,Zig cc,glibc,baseline,strtof,short_decimal,374
+zero_increment_guard,11,Zig cc,glibc,baseline,strtod,all_zero_14800,47555
+zero_increment_guard,11,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,184960
+zero_increment_guard,11,Zig cc,glibc,baseline,strtod,long_fraction_600,6032
+zero_increment_guard,11,Zig cc,glibc,baseline,strtod,short_decimal,366
+zero_increment_guard,11,Zig cc,glibc,baseline,strtold,all_zero_14800,51013
+zero_increment_guard,11,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,183431
+zero_increment_guard,11,Zig cc,glibc,baseline,strtold,long_fraction_600,6626
+zero_increment_guard,11,Zig cc,glibc,baseline,strtold,short_decimal,304
+zero_increment_guard,11,GCC,glibc,baseline,strtof,all_zero_14800,20003
+zero_increment_guard,11,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,158826
+zero_increment_guard,11,GCC,glibc,baseline,strtof,long_fraction_600,5591
+zero_increment_guard,11,GCC,glibc,baseline,strtof,short_decimal,331
+zero_increment_guard,11,GCC,glibc,baseline,strtod,all_zero_14800,19571
+zero_increment_guard,11,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,152131
+zero_increment_guard,11,GCC,glibc,baseline,strtod,long_fraction_600,5396
+zero_increment_guard,11,GCC,glibc,baseline,strtod,short_decimal,321
+zero_increment_guard,11,GCC,glibc,baseline,strtold,all_zero_14800,19064
+zero_increment_guard,11,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,150209
+zero_increment_guard,11,GCC,glibc,baseline,strtold,long_fraction_600,5792
+zero_increment_guard,11,GCC,glibc,baseline,strtold,short_decimal,231
+zero_increment_guard,11,Zig cc,musl,baseline,strtof,all_zero_14800,55048
+zero_increment_guard,11,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,186428
+zero_increment_guard,11,Zig cc,musl,baseline,strtof,long_fraction_600,6621
+zero_increment_guard,11,Zig cc,musl,baseline,strtof,short_decimal,400
+zero_increment_guard,11,Zig cc,musl,baseline,strtod,all_zero_14800,56505
+zero_increment_guard,11,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,194508
+zero_increment_guard,11,Zig cc,musl,baseline,strtod,long_fraction_600,6323
+zero_increment_guard,11,Zig cc,musl,baseline,strtod,short_decimal,361
+zero_increment_guard,11,Zig cc,musl,baseline,strtold,all_zero_14800,46447
+zero_increment_guard,11,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,183133
+zero_increment_guard,11,Zig cc,musl,baseline,strtold,long_fraction_600,6690
+zero_increment_guard,11,Zig cc,musl,baseline,strtold,short_decimal,315
+zero_increment_guard,11,TinyCC,glibc,candidate,strtof,all_zero_14800,60193
+zero_increment_guard,11,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,384668
+zero_increment_guard,11,TinyCC,glibc,candidate,strtof,long_fraction_600,11815
+zero_increment_guard,11,TinyCC,glibc,candidate,strtof,short_decimal,803
+zero_increment_guard,11,TinyCC,glibc,candidate,strtod,all_zero_14800,58463
+zero_increment_guard,11,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,367033
+zero_increment_guard,11,TinyCC,glibc,candidate,strtod,long_fraction_600,12502
+zero_increment_guard,11,TinyCC,glibc,candidate,strtod,short_decimal,847
+zero_increment_guard,11,TinyCC,glibc,candidate,strtold,all_zero_14800,58233
+zero_increment_guard,11,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,398560
+zero_increment_guard,11,TinyCC,glibc,candidate,strtold,long_fraction_600,13750
+zero_increment_guard,11,TinyCC,glibc,candidate,strtold,short_decimal,667
+zero_increment_guard,11,Zig cc,glibc,candidate,strtof,all_zero_14800,49758
+zero_increment_guard,11,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,202323
+zero_increment_guard,11,Zig cc,glibc,candidate,strtof,long_fraction_600,6929
+zero_increment_guard,11,Zig cc,glibc,candidate,strtof,short_decimal,383
+zero_increment_guard,11,Zig cc,glibc,candidate,strtod,all_zero_14800,50803
+zero_increment_guard,11,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,200181
+zero_increment_guard,11,Zig cc,glibc,candidate,strtod,long_fraction_600,6605
+zero_increment_guard,11,Zig cc,glibc,candidate,strtod,short_decimal,382
+zero_increment_guard,11,Zig cc,glibc,candidate,strtold,all_zero_14800,53848
+zero_increment_guard,11,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,210758
+zero_increment_guard,11,Zig cc,glibc,candidate,strtold,long_fraction_600,6763
+zero_increment_guard,11,Zig cc,glibc,candidate,strtold,short_decimal,287
+zero_increment_guard,11,GCC,glibc,candidate,strtof,all_zero_14800,26160
+zero_increment_guard,11,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,157912
+zero_increment_guard,11,GCC,glibc,candidate,strtof,long_fraction_600,5645
+zero_increment_guard,11,GCC,glibc,candidate,strtof,short_decimal,358
+zero_increment_guard,11,GCC,glibc,candidate,strtod,all_zero_14800,22257
+zero_increment_guard,11,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,152918
+zero_increment_guard,11,GCC,glibc,candidate,strtod,long_fraction_600,5402
+zero_increment_guard,11,GCC,glibc,candidate,strtod,short_decimal,303
+zero_increment_guard,11,GCC,glibc,candidate,strtold,all_zero_14800,28532
+zero_increment_guard,11,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,150859
+zero_increment_guard,11,GCC,glibc,candidate,strtold,long_fraction_600,5727
+zero_increment_guard,11,GCC,glibc,candidate,strtold,short_decimal,254
+zero_increment_guard,11,Zig cc,musl,candidate,strtof,all_zero_14800,50835
+zero_increment_guard,11,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,193757
+zero_increment_guard,11,Zig cc,musl,candidate,strtof,long_fraction_600,6803
+zero_increment_guard,11,Zig cc,musl,candidate,strtof,short_decimal,354
+zero_increment_guard,11,Zig cc,musl,candidate,strtod,all_zero_14800,50736
+zero_increment_guard,11,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,197144
+zero_increment_guard,11,Zig cc,musl,candidate,strtod,long_fraction_600,6911
+zero_increment_guard,11,Zig cc,musl,candidate,strtod,short_decimal,355
+zero_increment_guard,11,Zig cc,musl,candidate,strtold,all_zero_14800,49669
+zero_increment_guard,11,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,197545
+zero_increment_guard,11,Zig cc,musl,candidate,strtold,long_fraction_600,7012
+zero_increment_guard,11,Zig cc,musl,candidate,strtold,short_decimal,307
+zero_increment_guard,12,TinyCC,glibc,candidate,strtof,all_zero_14800,58478
+zero_increment_guard,12,TinyCC,glibc,candidate,strtof,leading_zero_14800_then_one,362461
+zero_increment_guard,12,TinyCC,glibc,candidate,strtof,long_fraction_600,11924
+zero_increment_guard,12,TinyCC,glibc,candidate,strtof,short_decimal,836
+zero_increment_guard,12,TinyCC,glibc,candidate,strtod,all_zero_14800,57213
+zero_increment_guard,12,TinyCC,glibc,candidate,strtod,leading_zero_14800_then_one,367107
+zero_increment_guard,12,TinyCC,glibc,candidate,strtod,long_fraction_600,12652
+zero_increment_guard,12,TinyCC,glibc,candidate,strtod,short_decimal,822
+zero_increment_guard,12,TinyCC,glibc,candidate,strtold,all_zero_14800,56963
+zero_increment_guard,12,TinyCC,glibc,candidate,strtold,leading_zero_14800_then_one,382569
+zero_increment_guard,12,TinyCC,glibc,candidate,strtold,long_fraction_600,12838
+zero_increment_guard,12,TinyCC,glibc,candidate,strtold,short_decimal,668
+zero_increment_guard,12,Zig cc,glibc,candidate,strtof,all_zero_14800,50814
+zero_increment_guard,12,Zig cc,glibc,candidate,strtof,leading_zero_14800_then_one,193694
+zero_increment_guard,12,Zig cc,glibc,candidate,strtof,long_fraction_600,7213
+zero_increment_guard,12,Zig cc,glibc,candidate,strtof,short_decimal,356
+zero_increment_guard,12,Zig cc,glibc,candidate,strtod,all_zero_14800,50746
+zero_increment_guard,12,Zig cc,glibc,candidate,strtod,leading_zero_14800_then_one,194754
+zero_increment_guard,12,Zig cc,glibc,candidate,strtod,long_fraction_600,6486
+zero_increment_guard,12,Zig cc,glibc,candidate,strtod,short_decimal,356
+zero_increment_guard,12,Zig cc,glibc,candidate,strtold,all_zero_14800,49650
+zero_increment_guard,12,Zig cc,glibc,candidate,strtold,leading_zero_14800_then_one,194591
+zero_increment_guard,12,Zig cc,glibc,candidate,strtold,long_fraction_600,6707
+zero_increment_guard,12,Zig cc,glibc,candidate,strtold,short_decimal,295
+zero_increment_guard,12,GCC,glibc,candidate,strtof,all_zero_14800,19602
+zero_increment_guard,12,GCC,glibc,candidate,strtof,leading_zero_14800_then_one,157509
+zero_increment_guard,12,GCC,glibc,candidate,strtof,long_fraction_600,5677
+zero_increment_guard,12,GCC,glibc,candidate,strtof,short_decimal,342
+zero_increment_guard,12,GCC,glibc,candidate,strtod,all_zero_14800,24483
+zero_increment_guard,12,GCC,glibc,candidate,strtod,leading_zero_14800_then_one,157362
+zero_increment_guard,12,GCC,glibc,candidate,strtod,long_fraction_600,5480
+zero_increment_guard,12,GCC,glibc,candidate,strtod,short_decimal,343
+zero_increment_guard,12,GCC,glibc,candidate,strtold,all_zero_14800,20981
+zero_increment_guard,12,GCC,glibc,candidate,strtold,leading_zero_14800_then_one,177843
+zero_increment_guard,12,GCC,glibc,candidate,strtold,long_fraction_600,6346
+zero_increment_guard,12,GCC,glibc,candidate,strtold,short_decimal,254
+zero_increment_guard,12,Zig cc,musl,candidate,strtof,all_zero_14800,51850
+zero_increment_guard,12,Zig cc,musl,candidate,strtof,leading_zero_14800_then_one,208822
+zero_increment_guard,12,Zig cc,musl,candidate,strtof,long_fraction_600,6855
+zero_increment_guard,12,Zig cc,musl,candidate,strtof,short_decimal,351
+zero_increment_guard,12,Zig cc,musl,candidate,strtod,all_zero_14800,50287
+zero_increment_guard,12,Zig cc,musl,candidate,strtod,leading_zero_14800_then_one,200079
+zero_increment_guard,12,Zig cc,musl,candidate,strtod,long_fraction_600,6781
+zero_increment_guard,12,Zig cc,musl,candidate,strtod,short_decimal,343
+zero_increment_guard,12,Zig cc,musl,candidate,strtold,all_zero_14800,51770
+zero_increment_guard,12,Zig cc,musl,candidate,strtold,leading_zero_14800_then_one,198358
+zero_increment_guard,12,Zig cc,musl,candidate,strtold,long_fraction_600,7037
+zero_increment_guard,12,Zig cc,musl,candidate,strtold,short_decimal,288
+zero_increment_guard,12,TinyCC,glibc,baseline,strtof,all_zero_14800,57218
+zero_increment_guard,12,TinyCC,glibc,baseline,strtof,leading_zero_14800_then_one,358966
+zero_increment_guard,12,TinyCC,glibc,baseline,strtof,long_fraction_600,12348
+zero_increment_guard,12,TinyCC,glibc,baseline,strtof,short_decimal,1185
+zero_increment_guard,12,TinyCC,glibc,baseline,strtod,all_zero_14800,54045
+zero_increment_guard,12,TinyCC,glibc,baseline,strtod,leading_zero_14800_then_one,371615
+zero_increment_guard,12,TinyCC,glibc,baseline,strtod,long_fraction_600,11360
+zero_increment_guard,12,TinyCC,glibc,baseline,strtod,short_decimal,819
+zero_increment_guard,12,TinyCC,glibc,baseline,strtold,all_zero_14800,53829
+zero_increment_guard,12,TinyCC,glibc,baseline,strtold,leading_zero_14800_then_one,370452
+zero_increment_guard,12,TinyCC,glibc,baseline,strtold,long_fraction_600,16291
+zero_increment_guard,12,TinyCC,glibc,baseline,strtold,short_decimal,634
+zero_increment_guard,12,Zig cc,glibc,baseline,strtof,all_zero_14800,48618
+zero_increment_guard,12,Zig cc,glibc,baseline,strtof,leading_zero_14800_then_one,187615
+zero_increment_guard,12,Zig cc,glibc,baseline,strtof,long_fraction_600,6847
+zero_increment_guard,12,Zig cc,glibc,baseline,strtof,short_decimal,382
+zero_increment_guard,12,Zig cc,glibc,baseline,strtod,all_zero_14800,48612
+zero_increment_guard,12,Zig cc,glibc,baseline,strtod,leading_zero_14800_then_one,185972
+zero_increment_guard,12,Zig cc,glibc,baseline,strtod,long_fraction_600,6418
+zero_increment_guard,12,Zig cc,glibc,baseline,strtod,short_decimal,362
+zero_increment_guard,12,Zig cc,glibc,baseline,strtold,all_zero_14800,48531
+zero_increment_guard,12,Zig cc,glibc,baseline,strtold,leading_zero_14800_then_one,190934
+zero_increment_guard,12,Zig cc,glibc,baseline,strtold,long_fraction_600,6891
+zero_increment_guard,12,Zig cc,glibc,baseline,strtold,short_decimal,307
+zero_increment_guard,12,GCC,glibc,baseline,strtof,all_zero_14800,20061
+zero_increment_guard,12,GCC,glibc,baseline,strtof,leading_zero_14800_then_one,173014
+zero_increment_guard,12,GCC,glibc,baseline,strtof,long_fraction_600,5468
+zero_increment_guard,12,GCC,glibc,baseline,strtof,short_decimal,351
+zero_increment_guard,12,GCC,glibc,baseline,strtod,all_zero_14800,19153
+zero_increment_guard,12,GCC,glibc,baseline,strtod,leading_zero_14800_then_one,149456
+zero_increment_guard,12,GCC,glibc,baseline,strtod,long_fraction_600,5479
+zero_increment_guard,12,GCC,glibc,baseline,strtod,short_decimal,320
+zero_increment_guard,12,GCC,glibc,baseline,strtold,all_zero_14800,19487
+zero_increment_guard,12,GCC,glibc,baseline,strtold,leading_zero_14800_then_one,160197
+zero_increment_guard,12,GCC,glibc,baseline,strtold,long_fraction_600,5830
+zero_increment_guard,12,GCC,glibc,baseline,strtold,short_decimal,254
+zero_increment_guard,12,Zig cc,musl,baseline,strtof,all_zero_14800,52967
+zero_increment_guard,12,Zig cc,musl,baseline,strtof,leading_zero_14800_then_one,196876
+zero_increment_guard,12,Zig cc,musl,baseline,strtof,long_fraction_600,6644
+zero_increment_guard,12,Zig cc,musl,baseline,strtof,short_decimal,374
+zero_increment_guard,12,Zig cc,musl,baseline,strtod,all_zero_14800,48121
+zero_increment_guard,12,Zig cc,musl,baseline,strtod,leading_zero_14800_then_one,190441
+zero_increment_guard,12,Zig cc,musl,baseline,strtod,long_fraction_600,6322
+zero_increment_guard,12,Zig cc,musl,baseline,strtod,short_decimal,379
+zero_increment_guard,12,Zig cc,musl,baseline,strtold,all_zero_14800,48541
+zero_increment_guard,12,Zig cc,musl,baseline,strtold,leading_zero_14800_then_one,190501
+zero_increment_guard,12,Zig cc,musl,baseline,strtold,long_fraction_600,6624
+zero_increment_guard,12,Zig cc,musl,baseline,strtold,short_decimal,304

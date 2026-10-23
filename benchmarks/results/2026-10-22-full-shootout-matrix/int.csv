@@ -1,0 +1,33 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,strtol,1000000,20.97
+Zig cc,glibc,host-libc,strtoul,1000000,20.28
+Zig cc,glibc,host-libc,strtoll,1000000,20.40
+Zig cc,glibc,host-libc,strtoull,1000000,20.17
+Zig cc,glibc,nelibc,strtol,1000000,18.40
+Zig cc,glibc,nelibc,strtoul,1000000,20.03
+Zig cc,glibc,nelibc,strtoll,1000000,19.04
+Zig cc,glibc,nelibc,strtoull,1000000,19.76
+GCC,glibc,host-libc,strtol,1000000,19.53
+GCC,glibc,host-libc,strtoul,1000000,19.01
+GCC,glibc,host-libc,strtoll,1000000,20.48
+GCC,glibc,host-libc,strtoull,1000000,19.89
+GCC,glibc,nelibc,strtol,1000000,15.73
+GCC,glibc,nelibc,strtoul,1000000,15.59
+GCC,glibc,nelibc,strtoll,1000000,16.12
+GCC,glibc,nelibc,strtoull,1000000,15.67
+Zig cc,musl,host-libc,strtol,1000000,16.72
+Zig cc,musl,host-libc,strtoul,1000000,14.88
+Zig cc,musl,host-libc,strtoll,1000000,16.70
+Zig cc,musl,host-libc,strtoull,1000000,14.78
+Zig cc,musl,nelibc,strtol,1000000,20.72
+Zig cc,musl,nelibc,strtoul,1000000,20.88
+Zig cc,musl,nelibc,strtoll,1000000,20.37
+Zig cc,musl,nelibc,strtoull,1000000,19.88
+TinyCC,glibc,host-libc,strtol,1000000,22.14
+TinyCC,glibc,host-libc,strtoul,1000000,22.02
+TinyCC,glibc,host-libc,strtoll,1000000,21.74
+TinyCC,glibc,host-libc,strtoull,1000000,22.01
+TinyCC,glibc,nelibc,strtol,1000000,57.38
+TinyCC,glibc,nelibc,strtoul,1000000,57.77
+TinyCC,glibc,nelibc,strtoll,1000000,57.12
+TinyCC,glibc,nelibc,strtoull,1000000,56.65

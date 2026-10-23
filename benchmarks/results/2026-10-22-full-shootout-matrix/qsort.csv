@@ -1,0 +1,49 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,qsort-16,40000,160.72
+Zig cc,glibc,host-libc,qsort-256,4000,4525.66
+Zig cc,glibc,host-libc,qsort-1024,1000,37951.48
+Zig cc,glibc,host-libc,qsort-2048,500,100596.99
+Zig cc,glibc,host-libc,qsort-4096,250,232944.24
+Zig cc,glibc,host-libc,bsearch-4096,1000000,32.16
+Zig cc,glibc,nelibc,qsort-16,40000,190.20
+Zig cc,glibc,nelibc,qsort-256,4000,5176.11
+Zig cc,glibc,nelibc,qsort-1024,1000,30432.53
+Zig cc,glibc,nelibc,qsort-2048,500,95244.44
+Zig cc,glibc,nelibc,qsort-4096,250,241010.26
+Zig cc,glibc,nelibc,bsearch-4096,1000000,34.28
+GCC,glibc,host-libc,qsort-16,40000,162.04
+GCC,glibc,host-libc,qsort-256,4000,4445.71
+GCC,glibc,host-libc,qsort-1024,1000,38133.01
+GCC,glibc,host-libc,qsort-2048,500,99888.29
+GCC,glibc,host-libc,qsort-4096,250,228327.77
+GCC,glibc,host-libc,bsearch-4096,1000000,33.09
+GCC,glibc,nelibc,qsort-16,40000,263.74
+GCC,glibc,nelibc,qsort-256,4000,4855.73
+GCC,glibc,nelibc,qsort-1024,1000,32780.48
+GCC,glibc,nelibc,qsort-2048,500,103594.80
+GCC,glibc,nelibc,qsort-4096,250,248232.44
+GCC,glibc,nelibc,bsearch-4096,1000000,29.46
+Zig cc,musl,host-libc,qsort-16,40000,396.91
+Zig cc,musl,host-libc,qsort-256,4000,9528.00
+Zig cc,musl,host-libc,qsort-1024,1000,43490.79
+Zig cc,musl,host-libc,qsort-2048,500,92365.43
+Zig cc,musl,host-libc,qsort-4096,250,216945.34
+Zig cc,musl,host-libc,bsearch-4096,1000000,34.79
+Zig cc,musl,nelibc,qsort-16,40000,179.52
+Zig cc,musl,nelibc,qsort-256,4000,4515.97
+Zig cc,musl,nelibc,qsort-1024,1000,40170.06
+Zig cc,musl,nelibc,qsort-2048,500,105068.21
+Zig cc,musl,nelibc,qsort-4096,250,248594.88
+Zig cc,musl,nelibc,bsearch-4096,1000000,33.80
+TinyCC,glibc,host-libc,qsort-16,40000,201.41
+TinyCC,glibc,host-libc,qsort-256,4000,5105.86
+TinyCC,glibc,host-libc,qsort-1024,1000,43302.45
+TinyCC,glibc,host-libc,qsort-2048,500,114685.74
+TinyCC,glibc,host-libc,qsort-4096,250,260924.05
+TinyCC,glibc,host-libc,bsearch-4096,1000000,39.46
+TinyCC,glibc,nelibc,qsort-16,40000,250.52
+TinyCC,glibc,nelibc,qsort-256,4000,6448.79
+TinyCC,glibc,nelibc,qsort-1024,1000,41813.81
+TinyCC,glibc,nelibc,qsort-2048,500,118017.17
+TinyCC,glibc,nelibc,qsort-4096,250,291380.05
+TinyCC,glibc,nelibc,bsearch-4096,1000000,44.41

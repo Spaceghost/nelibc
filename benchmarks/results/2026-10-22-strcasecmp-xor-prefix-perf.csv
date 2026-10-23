@@ -1,0 +1,7 @@
+compiler,libc,implementation,case,cycles,instructions,branches,branch_misses
+Zig cc,glibc,nelibc,equal-256,46,196,17,0
+Zig cc,glibc,nelibc,late-mismatch-256,47,199,18,0
+Zig cc,glibc,nelibc,equal-256,46,196,17,0
+Zig cc,glibc,nelibc,late-mismatch-256,48,199,18,0
+Zig cc,glibc,nelibc,equal-256,46,196,17,0
+Zig cc,glibc,nelibc,late-mismatch-256,47,199,18,0

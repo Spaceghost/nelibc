@@ -1,0 +1,26 @@
+TinyCC Knuth 32-bit carry/borrow shootout
+=========================================
+
+Candidate
+---------
+Changed the TCC limb-subtraction loop to keep product carry and borrow in
+`cuint`, compute the low-word difference with 32-bit wrapping arithmetic, and
+detect borrow with 32-bit comparisons. The Knuth function's stack frame fell
+from 0x140 to 0x130 bytes in TinyCC's generated object.
+
+Results
+-------
+Twelve alternating TinyCC parser pairs, current source versus candidate:
+
+| Workload | Parser | Current median ns/call | Candidate median ns/call | Paired median change |
+|---|---|---:|---:|---:|
+| Short | strtof | 615.05 | 618.68 | 0.52% slower |
+| Short | strtod | 577.97 | 578.84 | 0.84% slower |
+| Short | strtold | 701.76 | 709.03 | 0.44% slower |
+| Long | strtof | 43,793.77 | 45,254.87 | 2.05% slower |
+| Long | strtod | 43,474.76 | 44,557.06 | 3.54% slower |
+| Long | strtold | 44,519.18 | 45,221.28 | 1.68% slower |
+
+Reject the candidate. The smaller frame did not compensate for the extra
+instructions in the common limb loop. Production source remains unchanged.
+Raw paired measurements: `2026-10-22-float-knuth-u32-carry-borrow-ab.csv`.

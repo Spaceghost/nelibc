@@ -1,0 +1,3 @@
+POW5NEW,strtof,tail_calls=400,tail_input_limbs=34800,p13_calls=0,p13_input_limbs=0,p26_calls=27600,p26_input_limbs=985600
+POW5NEW,strtod,tail_calls=400,tail_input_limbs=34800,p13_calls=0,p13_input_limbs=0,p26_calls=27600,p26_input_limbs=985600
+POW5NEW,strtold,tail_calls=400,tail_input_limbs=34800,p13_calls=0,p13_input_limbs=0,p26_calls=27600,p26_input_limbs=985600

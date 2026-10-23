@@ -1,0 +1,65 @@
+compiler,libc,implementation,function,case,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,strcasecmp,equal-short,20000,2.02
+Zig cc,glibc,host-libc,strcasecmp,mismatch-first,20000,2.01
+Zig cc,glibc,host-libc,strcasecmp,mismatch-late,20000,3.42
+Zig cc,glibc,host-libc,strncasecmp,equal-bounded,20000,2.51
+Zig cc,glibc,host-libc,strncasecmp,mismatch-at-bound,20000,2.96
+Zig cc,glibc,host-libc,strncasecmp,mismatch-first-bounded,20000,2.96
+Zig cc,glibc,host-libc,strncasecmp,equal-long-bounded,20000,2.96
+Zig cc,glibc,host-libc,strncasecmp,mismatch-late-bounded,20000,3.12
+Zig cc,glibc,nelibc,strcasecmp,equal-short,20000,3.67
+Zig cc,glibc,nelibc,strcasecmp,mismatch-first,20000,1.39
+Zig cc,glibc,nelibc,strcasecmp,mismatch-late,20000,7.98
+Zig cc,glibc,nelibc,strncasecmp,equal-bounded,20000,9.44
+Zig cc,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,10.03
+Zig cc,glibc,nelibc,strncasecmp,mismatch-first-bounded,20000,1.74
+Zig cc,glibc,nelibc,strncasecmp,equal-long-bounded,20000,17.37
+Zig cc,glibc,nelibc,strncasecmp,mismatch-late-bounded,20000,14.70
+GCC,glibc,host-libc,strcasecmp,equal-short,20000,2.22
+GCC,glibc,host-libc,strcasecmp,mismatch-first,20000,2.16
+GCC,glibc,host-libc,strcasecmp,mismatch-late,20000,2.77
+GCC,glibc,host-libc,strncasecmp,equal-bounded,20000,2.51
+GCC,glibc,host-libc,strncasecmp,mismatch-at-bound,20000,2.96
+GCC,glibc,host-libc,strncasecmp,mismatch-first-bounded,20000,2.96
+GCC,glibc,host-libc,strncasecmp,equal-long-bounded,20000,2.96
+GCC,glibc,host-libc,strncasecmp,mismatch-late-bounded,20000,2.96
+GCC,glibc,nelibc,strcasecmp,equal-short,20000,3.55
+GCC,glibc,nelibc,strcasecmp,mismatch-first,20000,1.60
+GCC,glibc,nelibc,strcasecmp,mismatch-late,20000,7.88
+GCC,glibc,nelibc,strncasecmp,equal-bounded,20000,9.76
+GCC,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,12.20
+GCC,glibc,nelibc,strncasecmp,mismatch-first-bounded,20000,1.96
+GCC,glibc,nelibc,strncasecmp,equal-long-bounded,20000,18.53
+GCC,glibc,nelibc,strncasecmp,mismatch-late-bounded,20000,13.07
+Zig cc,musl,host-libc,strcasecmp,equal-short,20000,11.84
+Zig cc,musl,host-libc,strcasecmp,mismatch-first,20000,2.38
+Zig cc,musl,host-libc,strcasecmp,mismatch-late,20000,43.13
+Zig cc,musl,host-libc,strncasecmp,equal-bounded,20000,11.73
+Zig cc,musl,host-libc,strncasecmp,mismatch-at-bound,20000,14.79
+Zig cc,musl,host-libc,strncasecmp,mismatch-first-bounded,20000,1.92
+Zig cc,musl,host-libc,strncasecmp,equal-long-bounded,20000,36.60
+Zig cc,musl,host-libc,strncasecmp,mismatch-late-bounded,20000,33.37
+Zig cc,musl,nelibc,strcasecmp,equal-short,20000,3.67
+Zig cc,musl,nelibc,strcasecmp,mismatch-first,20000,1.31
+Zig cc,musl,nelibc,strcasecmp,mismatch-late,20000,7.79
+Zig cc,musl,nelibc,strncasecmp,equal-bounded,20000,9.59
+Zig cc,musl,nelibc,strncasecmp,mismatch-at-bound,20000,11.77
+Zig cc,musl,nelibc,strncasecmp,mismatch-first-bounded,20000,1.74
+Zig cc,musl,nelibc,strncasecmp,equal-long-bounded,20000,17.34
+Zig cc,musl,nelibc,strncasecmp,mismatch-late-bounded,20000,13.65
+TinyCC,glibc,host-libc,strcasecmp,equal-short,20000,4.11
+TinyCC,glibc,host-libc,strcasecmp,mismatch-first,20000,3.87
+TinyCC,glibc,host-libc,strcasecmp,mismatch-late,20000,4.85
+TinyCC,glibc,host-libc,strncasecmp,equal-bounded,20000,3.89
+TinyCC,glibc,host-libc,strncasecmp,mismatch-at-bound,20000,5.09
+TinyCC,glibc,host-libc,strncasecmp,mismatch-first-bounded,20000,4.23
+TinyCC,glibc,host-libc,strncasecmp,equal-long-bounded,20000,4.33
+TinyCC,glibc,host-libc,strncasecmp,mismatch-late-bounded,20000,4.33
+TinyCC,glibc,nelibc,strcasecmp,equal-short,20000,6.42
+TinyCC,glibc,nelibc,strcasecmp,mismatch-first,20000,3.83
+TinyCC,glibc,nelibc,strcasecmp,mismatch-late,20000,11.85
+TinyCC,glibc,nelibc,strncasecmp,equal-bounded,20000,27.00
+TinyCC,glibc,nelibc,strncasecmp,mismatch-at-bound,20000,30.43
+TinyCC,glibc,nelibc,strncasecmp,mismatch-first-bounded,20000,4.04
+TinyCC,glibc,nelibc,strncasecmp,equal-long-bounded,20000,17.44
+TinyCC,glibc,nelibc,strncasecmp,mismatch-late-bounded,20000,15.22

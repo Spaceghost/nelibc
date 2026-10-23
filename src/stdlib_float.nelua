@@ -1,0 +1,2009 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+require 'C'
+
+global C.LDBL_MAX: clongdouble <const,cimport,cinclude'<float.h>'>
+global C.LDBL_MIN: clongdouble <const,cimport,cinclude'<float.h>'>
+
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_radix_character(): cint <cimport> end
+local function malloc(size: csize): pointer <cimport> end
+local function free(value: pointer): void <cimport> end
+
+local DoubleBits: type = @union{bits: culonglong, value: cdouble}
+local function nelibc_double_from_bits(bits: culonglong): cdouble <inline>
+  local representation: DoubleBits = {bits = bits}
+  return representation.value
+end
+
+local DynamicBigUInt: type = @record{limbs: *[0]cuint, used: csize, capacity: csize}
+
+local function dynamic_big_init(value: *DynamicBigUInt, capacity: csize): boolean <inline>
+  value.limbs = (@*[0]cuint)(malloc(capacity * (@csize)(#cuint)))
+  if value.limbs == nilptr then return false end
+  value.used = 0
+  value.capacity = capacity
+  return true
+end
+
+local function dynamic_big_free(value: *DynamicBigUInt): void <inline>
+  if value.limbs ~= nilptr then free((@pointer)(value.limbs)) end
+  value.limbs = nilptr
+  value.used = 0
+  value.capacity = 0
+end
+
+local function dynamic_big_set_u64(value: *DynamicBigUInt, integer: culonglong): void <inline>
+  value.limbs[0] = (@cuint)(integer & 0xFFFFFFFF_culonglong)
+  value.limbs[1] = (@cuint)(integer >> 32)
+  if value.limbs[1] ~= 0 then value.used = 2
+  elseif value.limbs[0] ~= 0 then value.used = 1
+  else value.used = 0 end
+end
+
+local function dynamic_big_mul_small(value: *DynamicBigUInt, multiplier: cuint): boolean <inline>
+  local carry: culonglong = 0
+  local index: csize = 0
+  while index < value.used do
+    local product: culonglong = (@culonglong)(value.limbs[index]) *
+        (@culonglong)(multiplier) + carry
+    value.limbs[index] = (@cuint)(product & 0xFFFFFFFF_culonglong)
+    carry = product >> 32
+    index = index + 1
+  end
+  if carry ~= 0 then
+    if value.used == value.capacity then return false end
+    value.limbs[value.used] = (@cuint)(carry)
+    value.used = value.used + 1
+  end
+  return true
+end
+
+local function dynamic_big_mul_power5(value: *DynamicBigUInt, exponent: cint): boolean <inline>
+  while exponent >= 13 do
+    if not dynamic_big_mul_small(value, 1220703125_cuint) then return false end
+    exponent = exponent - 13
+  end
+  local multiplier: cuint = 1
+  while exponent > 0 do
+    multiplier = multiplier * 5
+    exponent = exponent - 1
+  end
+  return multiplier == 1 or dynamic_big_mul_small(value, multiplier)
+end
+
+local function dynamic_big_shift_left(value: *DynamicBigUInt, count: cint): boolean <inline>
+  if count <= 0 or value.used == 0 then return true end
+  local word_shift: csize = (@csize)(count // 32)
+  local bit_shift: cint = count % 32
+  local base_used: csize = value.used + word_shift
+  local carry_out: boolean = bit_shift ~= 0 and
+      (value.limbs[value.used - 1] >> (32 - bit_shift)) ~= 0
+  if base_used > value.capacity or (carry_out and base_used == value.capacity) then return false end
+  local index: csize = value.used
+  while index > 0 do
+    index = index - 1
+    value.limbs[index + word_shift] = value.limbs[index]
+  end
+  index = 0
+  while index < word_shift do
+    value.limbs[index] = 0
+    index = index + 1
+  end
+  if bit_shift ~= 0 then
+    local carry: cuint = 0
+    index = word_shift
+    while index < base_used do
+      local current: cuint = value.limbs[index]
+      value.limbs[index] = (current << bit_shift) | carry
+      carry = current >> (32 - bit_shift)
+      index = index + 1
+    end
+    if carry ~= 0 then value.limbs[base_used] = carry end
+  end
+  value.used = base_used
+  if carry_out then value.used = value.used + 1 end
+  return true
+end
+
+local function dynamic_big_bit_length(value: *DynamicBigUInt): cint <inline>
+  if value.used == 0 then return 0 end
+  local top: cuint = value.limbs[value.used - 1]
+  local bits: cint = 0
+  while top ~= 0 do bits = bits + 1; top = top >> 1 end
+  return (@cint)((value.used - 1) * 32) + bits
+end
+
+local function dynamic_big_add_one(value: *DynamicBigUInt): boolean <inline>
+  local index: csize = 0
+  while index < value.used do
+    value.limbs[index] = value.limbs[index] + 1
+    if value.limbs[index] ~= 0 then return true end
+    index = index + 1
+  end
+  if value.used == value.capacity then return false end
+  value.limbs[value.used] = 1
+  value.used = value.used + 1
+  return true
+end
+
+local function dynamic_big_divide_small(value: *DynamicBigUInt, divisor: cuint): cuint <inline>
+  local remainder: culonglong = 0
+  local index: csize = value.used
+  while index > 0 do
+    index = index - 1
+    local dividend: culonglong = (remainder << 32) | (@culonglong)(value.limbs[index])
+    value.limbs[index] = (@cuint)(dividend // (@culonglong)(divisor))
+    remainder = dividend % (@culonglong)(divisor)
+  end
+  while value.used > 0 and value.limbs[value.used - 1] == 0 do value.used = value.used - 1 end
+  return (@cuint)(remainder)
+end
+
+local function dynamic_big_compare_double(left: *DynamicBigUInt,
+    right: *DynamicBigUInt): cint <inline>
+  local left_used: csize = left.used + 1
+  local count: csize = left_used
+  if right.used > count then count = right.used end
+  while count > 0 do
+    count = count - 1
+    local doubled_limb: cuint = 0
+    if count < left.used then doubled_limb = left.limbs[count] << 1 end
+    if count > 0 and count - 1 < left.used then
+      doubled_limb = doubled_limb | (left.limbs[count - 1] >> 31)
+    end
+    local right_limb: cuint = 0
+    if count < right.used then right_limb = right.limbs[count] end
+    if doubled_limb < right_limb then return -1 end
+    if doubled_limb > right_limb then return 1 end
+  end
+  return 0
+end
+
+local function dynamic_big_divide_round(numerator: *DynamicBigUInt,
+    denominator: *DynamicBigUInt, quotient: *DynamicBigUInt,
+    remainder: *DynamicBigUInt): boolean <inline>
+  quotient.used = 0
+  remainder.used = numerator.used
+  local index: csize = 0
+  while index < numerator.used do
+    remainder.limbs[index] = numerator.limbs[index]
+    index = index + 1
+  end
+  if denominator.used == 0 then return false end
+  if remainder.used >= denominator.used and remainder.used > 0 then
+    local denominator_bits: cint = dynamic_big_bit_length(denominator)
+    local normalization_shift: cint = (@cint)(denominator.used * 32) - denominator_bits
+    if normalization_shift > 0 then
+      if not dynamic_big_shift_left(denominator, normalization_shift) or
+          not dynamic_big_shift_left(remainder, normalization_shift) then return false end
+    end
+    local divisor_length: csize = denominator.used
+    local numerator_length: csize = remainder.used
+    if numerator_length >= remainder.capacity then return false end
+    remainder.limbs[numerator_length] = 0
+    remainder.used = numerator_length + 1
+    local high_quotient_index: csize = numerator_length - divisor_length
+    if high_quotient_index + 1 > quotient.capacity then return false end
+    quotient.used = high_quotient_index + 1
+    index = 0
+    while index < quotient.used do
+      quotient.limbs[index] = 0
+      index = index + 1
+    end
+    local base: culonglong = 0x100000000_culonglong
+    local divisor_top: culonglong = (@culonglong)(denominator.limbs[divisor_length - 1])
+    local quotient_index: csize = high_quotient_index
+    while true do
+      local top_pair: culonglong =
+          ((@culonglong)(remainder.limbs[quotient_index + divisor_length]) << 32) |
+          (@culonglong)(remainder.limbs[quotient_index + divisor_length - 1])
+      local quotient_digit: culonglong = top_pair // divisor_top
+      if quotient_digit >= base then quotient_digit = base - 1 end
+      local remainder_estimate: culonglong = top_pair - quotient_digit * divisor_top
+      if divisor_length > 1 then
+        local next_divisor_limb: culonglong =
+            (@culonglong)(denominator.limbs[divisor_length - 2])
+        local compare_limb: culonglong =
+            (@culonglong)(remainder.limbs[quotient_index + divisor_length - 2])
+        while remainder_estimate < base and quotient_digit * next_divisor_limb >
+            ((remainder_estimate << 32) | compare_limb) do
+          quotient_digit = quotient_digit - 1
+          remainder_estimate = remainder_estimate + divisor_top
+        end
+      end
+      local product_carry: culonglong = 0
+      local borrow: culonglong = 0
+      local limb_index: csize = 0
+      while limb_index < divisor_length do
+        local product: culonglong = quotient_digit *
+            (@culonglong)(denominator.limbs[limb_index]) + product_carry
+        product_carry = product >> 32
+        local product_limb: culonglong = product & 0xFFFFFFFF_culonglong
+        local target_index: csize = quotient_index + limb_index
+        local minuend: culonglong = (@culonglong)(remainder.limbs[target_index])
+        local subtrahend: culonglong = product_limb + borrow
+        local difference: culonglong = minuend - subtrahend
+        remainder.limbs[target_index] = (@cuint)(difference & 0xFFFFFFFF_culonglong)
+        borrow = difference >> 63
+        limb_index = limb_index + 1
+      end
+      local high_index: csize = quotient_index + divisor_length
+      local high_minuend: culonglong = (@culonglong)(remainder.limbs[high_index])
+      local high_subtrahend: culonglong = product_carry + borrow
+      if high_minuend < high_subtrahend then
+        remainder.limbs[high_index] = (@cuint)(high_minuend + base - high_subtrahend)
+        quotient_digit = quotient_digit - 1
+        local add_carry: culonglong = 0
+        limb_index = 0
+        while limb_index < divisor_length do
+          local target_index: csize = quotient_index + limb_index
+          local sum: culonglong = (@culonglong)(remainder.limbs[target_index]) +
+              (@culonglong)(denominator.limbs[limb_index]) + add_carry
+          remainder.limbs[target_index] = (@cuint)(sum & 0xFFFFFFFF_culonglong)
+          add_carry = sum >> 32
+          limb_index = limb_index + 1
+        end
+        remainder.limbs[high_index] = (@cuint)(
+            (@culonglong)(remainder.limbs[high_index]) + add_carry)
+      else
+        remainder.limbs[high_index] = (@cuint)(high_minuend - high_subtrahend)
+      end
+      quotient.limbs[quotient_index] = (@cuint)(quotient_digit)
+      if quotient_index == 0 then break end
+      quotient_index = quotient_index - 1
+    end
+    remainder.used = divisor_length
+    while remainder.used > 0 and remainder.limbs[remainder.used - 1] == 0 do
+      remainder.used = remainder.used - 1
+    end
+    while quotient.used > 0 and quotient.limbs[quotient.used - 1] == 0 do
+      quotient.used = quotient.used - 1
+    end
+  end
+  local comparison: cint = dynamic_big_compare_double(remainder, denominator)
+  local quotient_is_odd: boolean = quotient.used > 0 and (quotient.limbs[0] & 1_cuint) ~= 0
+  if comparison > 0 or (comparison == 0 and quotient_is_odd) then
+    if not dynamic_big_add_one(quotient) then return false end
+  end
+  return true
+end
+
+local function nelibc_double_bits(value: cdouble): culonglong <inline>
+  local representation: DoubleBits = {value = value}
+  return representation.bits
+end
+
+local function nelibc_scale_u64_to_double(value: culonglong, exponent: cint, binary: cint): cdouble <inline>
+  local scaled: clongdouble = (@clongdouble)(value)
+  local power: cuint
+  if exponent < 0 then power = (@cuint)(-exponent)
+  else power = (@cuint)(exponent) end
+  local factor: clongdouble
+  if binary ~= 0 then factor = 2.0_clongdouble
+  else factor = 10.0_clongdouble end
+  while power ~= 0 do
+    if (power & 1) ~= 0 then
+      if exponent < 0 then scaled = scaled / factor
+      else scaled = scaled * factor end
+    end
+    power = power >> 1
+    if power ~= 0 then factor = factor * factor end
+  end
+  return (@cdouble)(scaled)
+end
+
+local function nelibc_scale_u64_to_long_double(value: culonglong, exponent: cint, binary: cint): clongdouble <inline>
+  local scaled: clongdouble = (@clongdouble)(value)
+  if binary ~= 0 then
+    local remaining: cint = exponent
+    while remaining >= 512 do
+      local factor: clongdouble = 2.0_clongdouble
+      for _ = 1, 9 do factor = factor * factor end
+      scaled = scaled * factor
+      remaining = remaining - 512
+    end
+    while remaining <= -512 do
+      local factor: clongdouble = 2.0_clongdouble
+      for _ = 1, 9 do factor = factor * factor end
+      scaled = scaled / factor
+      remaining = remaining + 512
+    end
+    local power: cuint
+    if remaining < 0 then power = (@cuint)(-remaining)
+    else power = (@cuint)(remaining) end
+    local factor: clongdouble = 2.0_clongdouble
+    while power ~= 0 do
+      if (power & 1) ~= 0 then
+        if remaining < 0 then scaled = scaled / factor
+        else scaled = scaled * factor end
+      end
+      power = power >> 1
+      if power ~= 0 then factor = factor * factor end
+    end
+  else
+    local remaining: cint = exponent
+    while remaining >= 16 do
+      scaled = scaled * 1.0e16_clongdouble
+      remaining = remaining - 16
+    end
+    while remaining <= -16 do
+      scaled = scaled / 1.0e16_clongdouble
+      remaining = remaining + 16
+    end
+    while remaining > 0 do
+      scaled = scaled * 10.0_clongdouble
+      remaining = remaining - 1
+    end
+    while remaining < 0 do
+      scaled = scaled / 10.0_clongdouble
+      remaining = remaining + 1
+    end
+  end
+  return scaled
+end
+
+local function nelibc_long_double_range_error(value: clongdouble): cint <inline>
+  if value > C.LDBL_MAX or value < -C.LDBL_MAX or
+     (value ~= 0.0_clongdouble and value > -C.LDBL_MIN and value < C.LDBL_MIN) then
+    return 1
+  end
+  return 0
+end
+
+local BigUInt: type = @record{limbs: [2048]cuint, used: csize}
+local BIG_LIMBS: csize <comptime> = 2048
+local BIG_PARSE_LIMIT: csize <comptime> = 1400
+
+local function big_copy(destination: *BigUInt, source: *BigUInt): void <inline>
+  destination.used = source.used
+  local index: csize = 0
+  while index < source.used do
+    destination.limbs[index] = source.limbs[index]
+    index = index + 1
+  end
+end
+
+local function big_set_u64(value: *BigUInt, integer: culonglong): void <inline>
+  value.limbs[0] = (@cuint)(integer & 0xFFFFFFFF_culonglong)
+  value.limbs[1] = (@cuint)(integer >> 32)
+  if value.limbs[1] ~= 0 then value.used = 2
+  elseif value.limbs[0] ~= 0 then value.used = 1
+  else value.used = 0 end
+end
+
+local function big_mul_small(value: *BigUInt, multiplier: cuint): boolean <inline>
+  local carry: culonglong = 0
+  ## if ccinfo.is_tcc then
+  local limb_pointer: *[0]cuint = (@*[0]cuint)(&value.limbs[0])
+  local limb_end: *[0]cuint = (@*[0]cuint)(&value.limbs[value.used])
+  while limb_pointer ~= limb_end do
+    local product: culonglong = (@culonglong)(limb_pointer[0]) *
+      (@culonglong)(multiplier) + carry
+    limb_pointer[0] = (@cuint)(product & 0xFFFFFFFF_culonglong)
+    carry = product >> 32
+    limb_pointer = &limb_pointer[1]
+  end
+  ## else
+  local index: csize = 0
+  while index < value.used do
+    local product: culonglong = (@culonglong)(value.limbs[index]) * (@culonglong)(multiplier) + carry
+    value.limbs[index] = (@cuint)(product & 0xFFFFFFFF_culonglong)
+    carry = product >> 32
+    index = index + 1
+  end
+  ## end
+  if carry ~= 0 then
+    if value.used == BIG_LIMBS then return false end
+    value.limbs[value.used] = (@cuint)(carry)
+    value.used = value.used + 1
+  end
+  return true
+end
+
+local function big_mul_power5_chunk(value: *BigUInt): boolean <inline>
+  local multiplier_low: cuint = 0x320334B9_cuint -- low word of 5^26
+  local multiplier_high: cuint = 0x14ADF4B7_cuint -- high word of 5^26
+  local carry: culonglong = 0
+  local index: csize = 0
+  while index < value.used do
+    local current: cuint = value.limbs[index]
+    local low_product: culonglong =
+      (@culonglong)(current) * (@culonglong)(multiplier_low) + (carry & 0xFFFFFFFF_culonglong)
+    value.limbs[index] = (@cuint)(low_product & 0xFFFFFFFF_culonglong)
+    carry = (@culonglong)(current) * (@culonglong)(multiplier_high) +
+      (carry >> 32) + (low_product >> 32)
+    index = index + 1
+  end
+  while carry ~= 0 do
+    if value.used == BIG_LIMBS then return false end
+    value.limbs[value.used] = (@cuint)(carry & 0xFFFFFFFF_culonglong)
+    carry = carry >> 32
+    value.used = value.used + 1
+  end
+  return true
+end
+
+local function big_mul_power5(value: *BigUInt, exponent: cint): boolean <inline>
+  -- Wider chunks amortize memory traffic on long conversions; keep small
+  -- powers on the existing scalar path used by common short inputs.
+  local use_wide_chunks: boolean = exponent >= 256
+  while use_wide_chunks and exponent >= 26 do
+    if not big_mul_power5_chunk(value) then return false end
+    exponent = exponent - 26
+  end
+  while exponent >= 13 do
+    if not big_mul_small(value, 1220703125_cuint) then return false end -- 5^13
+    exponent = exponent - 13
+  end
+  local multiplier: cuint = 1
+  while exponent > 0 do
+    multiplier = multiplier * 5
+    exponent = exponent - 1
+  end
+  if multiplier > 1 and not big_mul_small(value, multiplier) then return false end
+  return true
+end
+
+local function big_shift_left(value: *BigUInt, count: cint): boolean <inline>
+  if count <= 0 or value.used == 0 then return true end
+  local word_shift: csize = (@csize)(count // 32)
+  local bit_shift: cint = count % 32
+  if word_shift > BIG_LIMBS - value.used then return false end
+  local base_used: csize = value.used + word_shift
+  local carry_out: boolean = false
+  if bit_shift ~= 0 and
+      (value.limbs[value.used - 1] >> (32 - bit_shift)) ~= 0 then
+    carry_out = true
+  end
+  if carry_out and base_used == BIG_LIMBS then return false end
+  local index: csize = value.used
+  while index > 0 do
+    index = index - 1
+    value.limbs[index + word_shift] = value.limbs[index]
+  end
+  index = 0
+  while index < word_shift do
+    value.limbs[index] = 0
+    index = index + 1
+  end
+  if bit_shift ~= 0 then
+    local carry: cuint = 0
+    index = word_shift
+    while index < base_used do
+      local current: cuint = value.limbs[index]
+      value.limbs[index] = (current << bit_shift) | carry
+      carry = current >> (32 - bit_shift)
+      index = index + 1
+    end
+    if carry ~= 0 then value.limbs[base_used] = carry end
+  end
+  value.used = base_used
+  if carry_out then value.used = value.used + 1 end
+  return true
+end
+
+local function big_shift_left_one(value: *BigUInt): boolean <inline>
+  return big_shift_left(value, 1)
+end
+
+local function big_shift_right_trailing_zeroes(value: *BigUInt,
+    word_shift: csize, bit_shift: cint): void <inline>
+  local old_used: csize = value.used
+  local new_used: csize = old_used - word_shift
+  local index: csize = 0
+  while index < new_used do
+    local source_index: csize = index + word_shift
+    local current: cuint = value.limbs[source_index]
+    if bit_shift ~= 0 and source_index + 1 < old_used then
+      current = (current >> bit_shift) |
+        (value.limbs[source_index + 1] << (32 - bit_shift))
+    elseif bit_shift ~= 0 then
+      current = current >> bit_shift
+    end
+    value.limbs[index] = current
+    index = index + 1
+  end
+  value.used = new_used
+  while value.used > 0 and value.limbs[value.used - 1] == 0 do
+    value.used = value.used - 1
+  end
+end
+
+local function big_divide_small(value: *BigUInt, divisor: cuint): cuint <inline>
+  local remainder: culonglong = 0
+  local index: csize = value.used
+  while index > 0 do
+    index = index - 1
+    local current: culonglong = (remainder << 32) | (@culonglong)(value.limbs[index])
+    value.limbs[index] = (@cuint)(current // (@culonglong)(divisor))
+    remainder = current % (@culonglong)(divisor)
+  end
+  while value.used > 0 and value.limbs[value.used - 1] == 0 do value.used = value.used - 1 end
+  return (@cuint)(remainder)
+end
+
+local function big_get_bit(value: *BigUInt, bit_index: csize): boolean <inline>
+  local limb_index: csize = bit_index // 32
+  return limb_index < value.used and
+      ((value.limbs[limb_index] >> (bit_index % 32)) & 1) ~= 0
+end
+
+local function big_any_low_bits(value: *BigUInt, bit_count: csize): boolean <inline>
+  local full_limbs: csize = bit_count // 32
+  local index: csize = 0
+  while index < full_limbs and index < value.used do
+    if value.limbs[index] ~= 0 then return true end
+    index = index + 1
+  end
+  local remaining_bits: csize = bit_count % 32
+  if remaining_bits ~= 0 and full_limbs < value.used then
+    local mask: cuint = (1_cuint << remaining_bits) - 1
+    if (value.limbs[full_limbs] & mask) ~= 0 then return true end
+  end
+  return false
+end
+
+local function big_shift_right(value: *BigUInt, count: csize): void <inline>
+  if count == 0 or value.used == 0 then return end
+  local word_shift: csize = count // 32
+  local bit_shift: csize = count % 32
+  if word_shift >= value.used then
+    value.used = 0
+    return
+  end
+  local new_used: csize = value.used - word_shift
+  local index: csize = 0
+  while index < new_used do
+    local source_index: csize = index + word_shift
+    local current: cuint = value.limbs[source_index] >> bit_shift
+    if bit_shift ~= 0 and source_index + 1 < value.used then
+      current = current | (value.limbs[source_index + 1] << (32 - bit_shift))
+    end
+    value.limbs[index] = current
+    index = index + 1
+  end
+  value.used = new_used
+  while value.used > 0 and value.limbs[value.used - 1] == 0 do
+    value.used = value.used - 1
+  end
+end
+
+local function big_add_one(value: *BigUInt): boolean <inline>
+  local index: csize = 0
+  while index < value.used do
+    value.limbs[index] = value.limbs[index] + 1
+    if value.limbs[index] ~= 0 then return true end
+    index = index + 1
+  end
+  if value.used == BIG_LIMBS then return false end
+  value.limbs[value.used] = 1
+  value.used = value.used + 1
+  return true
+end
+
+local function nelibc_format_fixed_double(value: cdouble, precision: cint,
+    radix: cint, output: *[0]byte, capacity: csize): csize
+    <cexport, codename 'nelibc_format_fixed_double'>
+  if precision < 0 or precision > 22 or output == nilptr then return 0 end
+  local bits: culonglong = nelibc_double_bits(value)
+  local exponent_bits: cint = (@cint)((bits >> 52) & 2047)
+  local significand: culonglong = bits & 0x000FFFFFFFFFFFFF_culonglong
+  local binary_exponent: cint
+  if exponent_bits == 0 then
+    binary_exponent = -1074
+  else
+    significand = significand | 0x0010000000000000_culonglong
+    binary_exponent = exponent_bits - 1075
+  end
+
+  local integer: BigUInt <noinit>
+  big_set_u64(&integer, significand)
+  if not big_mul_power5(&integer, precision) then return 0 end
+  local binary_shift: cint = binary_exponent + precision
+  if binary_shift >= 0 then
+    if not big_shift_left(&integer, binary_shift) then return 0 end
+  else
+    local discarded_bits: csize = (@csize)(-binary_shift)
+    local guard_bit: boolean = big_get_bit(&integer, discarded_bits - 1)
+    local sticky_bits: boolean = big_any_low_bits(&integer, discarded_bits - 1)
+    big_shift_right(&integer, discarded_bits)
+    local quotient_is_odd: boolean = integer.used > 0 and (integer.limbs[0] & 1) ~= 0
+    if guard_bit and (sticky_bits or quotient_is_odd) then
+      if not big_add_one(&integer) then return 0 end
+    end
+  end
+
+  local reversed_digits: [400]byte
+  local digit_count: csize = 0
+  if integer.used == 0 then
+    reversed_digits[0] = 48
+    digit_count = 1
+  else
+    while integer.used > 0 do
+      reversed_digits[digit_count] = 48 + (@byte)(big_divide_small(&integer, 10))
+      digit_count = digit_count + 1
+    end
+  end
+  local output_index: csize = 0
+  if precision == 0 then
+    while digit_count > 0 do
+      digit_count = digit_count - 1
+      if output_index >= capacity then return 0 end
+      output[output_index] = reversed_digits[digit_count]
+      output_index = output_index + 1
+    end
+    return output_index
+  end
+  if digit_count <= (@csize)(precision) then
+    if capacity < (@csize)(precision) + 2 then return 0 end
+    output[output_index] = 48
+    output_index = output_index + 1
+    output[output_index] = (@byte)(radix)
+    output_index = output_index + 1
+    local leading_fraction_zeroes: csize = (@csize)(precision) - digit_count
+    while leading_fraction_zeroes > 0 do
+      output[output_index] = 48
+      output_index = output_index + 1
+      leading_fraction_zeroes = leading_fraction_zeroes - 1
+    end
+    while digit_count > 0 do
+      digit_count = digit_count - 1
+      output[output_index] = reversed_digits[digit_count]
+      output_index = output_index + 1
+    end
+    return output_index
+  end
+
+  local fractional_digits: csize = (@csize)(precision)
+  local whole_digits: csize = digit_count - fractional_digits
+  while digit_count > fractional_digits do
+    digit_count = digit_count - 1
+    if output_index >= capacity then return 0 end
+    output[output_index] = reversed_digits[digit_count]
+    output_index = output_index + 1
+  end
+  if output_index >= capacity then return 0 end
+  output[output_index] = (@byte)(radix)
+  output_index = output_index + 1
+  while fractional_digits > 0 do
+    fractional_digits = fractional_digits - 1
+    if output_index >= capacity then return 0 end
+    output[output_index] = reversed_digits[fractional_digits]
+    output_index = output_index + 1
+  end
+  return output_index
+end
+
+
+local function big_compare(left: *BigUInt, right: *BigUInt): cint <inline>
+  if left.used < right.used then return -1 end
+  if left.used > right.used then return 1 end
+  local index: csize = left.used
+  while index > 0 do
+    index = index - 1
+    if left.limbs[index] < right.limbs[index] then return -1 end
+    if left.limbs[index] > right.limbs[index] then return 1 end
+  end
+  return 0
+end
+
+local function big_subtract(left: *BigUInt, right: *BigUInt): void <inline>
+  local borrow: culonglong = 0
+  local index: csize = 0
+  while index < left.used do
+    local minuend: culonglong = (@culonglong)(left.limbs[index])
+    local subtrahend: culonglong = borrow
+    if index < right.used then subtrahend = subtrahend + (@culonglong)(right.limbs[index]) end
+    if minuend < subtrahend then
+      left.limbs[index] = (@cuint)(minuend + 0x100000000_culonglong - subtrahend)
+      borrow = 1
+    else
+      left.limbs[index] = (@cuint)(minuend - subtrahend)
+      borrow = 0
+    end
+    index = index + 1
+  end
+  while left.used > 0 and left.limbs[left.used - 1] == 0 do left.used = left.used - 1 end
+end
+
+local function big_shifted_used(value: *BigUInt, shift: cint): csize <inline>
+  if value.used == 0 then return 0 end
+  local word_shift: csize = (@csize)(shift // 32)
+  local bit_shift: cint = shift % 32
+  local used: csize = value.used + word_shift
+  if bit_shift ~= 0 and (value.limbs[value.used - 1] >> (32 - bit_shift)) ~= 0 then
+    used = used + 1
+  end
+  return used
+end
+
+local function big_shifted_limb(value: *BigUInt, index: csize,
+    word_shift: csize, bit_shift: cint): cuint <inline>
+  if index < word_shift then return 0 end
+  local source_index: csize = index - word_shift
+  local result: culonglong = 0
+  if source_index < value.used then
+    result = result | ((@culonglong)(value.limbs[source_index]) << bit_shift)
+  end
+  if bit_shift ~= 0 and source_index > 0 and source_index - 1 < value.used then
+    result = result | ((@culonglong)(value.limbs[source_index - 1]) >> (32 - bit_shift))
+  end
+  return (@cuint)(result & 0xFFFFFFFF_culonglong)
+end
+
+local function big_compare_shifted(left: *BigUInt, right: *BigUInt,
+    shift: cint): cint <inline>
+  local left_used: csize = left.used
+  local right_used: csize = right.used
+  local left_word_shift: csize = 0
+  local right_word_shift: csize = 0
+  local left_bit_shift: cint = 0
+  local right_bit_shift: cint = 0
+  if shift >= 0 then
+    right_used = big_shifted_used(right, shift)
+    right_word_shift = (@csize)(shift // 32)
+    right_bit_shift = shift % 32
+  else
+    local left_shift: cint = -shift
+    left_used = big_shifted_used(left, left_shift)
+    left_word_shift = (@csize)(left_shift // 32)
+    left_bit_shift = left_shift % 32
+  end
+  if left_used < right_used then return -1 end
+  if left_used > right_used then return 1 end
+  local index: csize = left_used
+  while index > 0 do
+    index = index - 1
+    local left_limb: cuint = 0
+    local right_limb: cuint = 0
+    if shift < 0 then
+      left_limb = big_shifted_limb(left, index, left_word_shift, left_bit_shift)
+      if index < right.used then right_limb = right.limbs[index] end
+    else
+      if index < left.used then left_limb = left.limbs[index] end
+      right_limb = big_shifted_limb(right, index, right_word_shift, right_bit_shift)
+    end
+    if left_limb < right_limb then return -1 end
+    if left_limb > right_limb then return 1 end
+  end
+  return 0
+end
+
+## if ccinfo.is_tcc then
+local function big_compare_double(left: *BigUInt, right: *BigUInt): cint <inline>
+  local left_pointer: *[0]BigUInt = (@*[0]BigUInt)(left)
+  local right_pointer: *[0]BigUInt = (@*[0]BigUInt)(right)
+  local left_used: csize = left_pointer[0].used
+  local doubled_used: csize = left_used
+  if left_used > 0 and (left_pointer[0].limbs[left_used - 1] >> 31) ~= 0 then
+    doubled_used = doubled_used + 1
+  end
+  local right_used: csize = right_pointer[0].used
+  if doubled_used < right_used then return -1 end
+  if doubled_used > right_used then return 1 end
+  local index: csize = doubled_used
+  while index > 0 do
+    index = index - 1
+    local left_limb: cuint = 0
+    if index < left_used then
+      left_limb = left_pointer[0].limbs[index] << 1
+    end
+    if index > 0 and index - 1 < left_used then
+      left_limb = left_limb | (left_pointer[0].limbs[index - 1] >> 31)
+    end
+    local right_limb: cuint = 0
+    if index < right_used then right_limb = right_pointer[0].limbs[index] end
+    if left_limb < right_limb then return -1 end
+    if left_limb > right_limb then return 1 end
+  end
+  return 0
+end
+## end
+
+local function big_try_subtract_shifted(left: *BigUInt, right: *BigUInt,
+    shift: cint): boolean <inline>
+  local right_used: csize = big_shifted_used(right, shift)
+  if left.used < right_used then return false end
+  local word_shift: csize = (@csize)(shift // 32)
+  local bit_shift: cint = shift % 32
+  if left.used == right_used then
+    local compare_index: csize = left.used
+    while compare_index > 0 do
+      compare_index = compare_index - 1
+      local shifted_value: culonglong = 0
+      if compare_index >= word_shift then
+        local source_index: csize = compare_index - word_shift
+        if source_index < right.used then
+          shifted_value = shifted_value |
+            ((@culonglong)(right.limbs[source_index]) << bit_shift)
+        end
+        if bit_shift ~= 0 and source_index > 0 and source_index - 1 < right.used then
+          shifted_value = shifted_value |
+            ((@culonglong)(right.limbs[source_index - 1]) >> (32 - bit_shift))
+        end
+      end
+      local shifted_limb: cuint = (@cuint)(shifted_value & 0xFFFFFFFF_culonglong)
+      if left.limbs[compare_index] < shifted_limb then return false end
+      if left.limbs[compare_index] > shifted_limb then break end
+    end
+  end
+  local borrow: culonglong = 0
+  local index: csize = word_shift
+  while index < right_used do
+    local minuend: culonglong = (@culonglong)(left.limbs[index])
+    local source_index: csize = index - word_shift
+    local shifted_value: culonglong = 0
+    if source_index < right.used then
+      shifted_value = shifted_value |
+        ((@culonglong)(right.limbs[source_index]) << bit_shift)
+    end
+    if bit_shift ~= 0 and source_index > 0 and source_index - 1 < right.used then
+      shifted_value = shifted_value |
+        ((@culonglong)(right.limbs[source_index - 1]) >> (32 - bit_shift))
+    end
+    local subtrahend: culonglong = (shifted_value & 0xFFFFFFFF_culonglong) + borrow
+    if minuend < subtrahend then
+      left.limbs[index] = (@cuint)(minuend + 0x100000000_culonglong - subtrahend)
+      borrow = 1
+    else
+      left.limbs[index] = (@cuint)(minuend - subtrahend)
+      borrow = 0
+    end
+    index = index + 1
+  end
+  while borrow ~= 0 and index < left.used do
+    if left.limbs[index] == 0 then
+      left.limbs[index] = 0xFFFFFFFF_cuint
+    else
+      left.limbs[index] = left.limbs[index] - 1
+      borrow = 0
+    end
+    index = index + 1
+  end
+  while left.used > 0 and left.limbs[left.used - 1] == 0 do left.used = left.used - 1 end
+  return true
+end
+
+local function big_bit_length(value: *BigUInt): cint <inline>
+  if value.used == 0 then return 0 end
+  local top: cuint = value.limbs[value.used - 1]
+  local bits: cint = 0
+  while top ~= 0 do
+    bits = bits + 1
+    top = top >> 1
+  end
+  return (@cint)((value.used - 1) * 32) + bits
+end
+
+local function big_divide_knuth_u64(numerator: *BigUInt, denominator: *BigUInt,
+    quotient: *culonglong): boolean
+  local numerator_pointer: *[0]BigUInt = (@*[0]BigUInt)(numerator)
+  local denominator_pointer: *[0]BigUInt = (@*[0]BigUInt)(denominator)
+  local quotient_pointer: *[0]culonglong = (@*[0]culonglong)(quotient)
+  if denominator_pointer[0].used == 0 then return false end
+  if numerator_pointer[0].used < denominator_pointer[0].used then
+    quotient_pointer[0] = 0
+    return true
+  end
+
+  local normalized_numerator: *BigUInt = numerator
+  local normalized_denominator: *BigUInt = denominator
+  local denominator_length: csize = normalized_denominator.used
+  local normalization_shift: cint = (@cint)(denominator_length * 32) -
+    big_bit_length(normalized_denominator)
+  local normalized_numerator_length: csize = big_shifted_used(
+    &numerator_pointer[0], normalization_shift)
+  -- The rounding fallback needs unmodified operands, so finish every capacity
+  -- and quotient-width check before putting both scratch values on one scale.
+  if normalized_numerator_length >= BIG_LIMBS or
+      normalized_numerator_length - denominator_length > 2 or
+      big_compare_shifted(&numerator_pointer[0], &denominator_pointer[0], 64) >= 0 then
+    return false
+  end
+  if normalization_shift > 0 then
+    if not big_shift_left(normalized_denominator, normalization_shift) or
+        not big_shift_left(normalized_numerator, normalization_shift) then return false end
+  end
+
+  local numerator_length: csize = normalized_numerator.used
+  if numerator_length < denominator_length then
+    quotient_pointer[0] = 0
+    return true
+  end
+  local high_quotient_index: csize = numerator_length - denominator_length
+  if high_quotient_index > 2 or numerator_length == BIG_LIMBS then return false end
+  normalized_numerator.limbs[numerator_length] = 0
+  normalized_numerator.used = numerator_length + 1
+
+  local quotient_value: culonglong = 0
+  local base: culonglong = 0x100000000_culonglong
+  local divisor_top: culonglong = (@culonglong)(normalized_denominator.limbs[denominator_length - 1])
+  local quotient_index: csize = high_quotient_index
+  while true do
+    local top_pair: culonglong =
+      ((@culonglong)(normalized_numerator.limbs[quotient_index + denominator_length]) << 32) |
+      (@culonglong)(normalized_numerator.limbs[quotient_index + denominator_length - 1])
+    local quotient_digit: culonglong = top_pair // divisor_top
+    if quotient_digit >= base then
+      quotient_digit = base - 1
+    end
+    -- Derive the remainder so TinyCC emits one 64-bit divide instead of two.
+    local remainder_estimate: culonglong = top_pair - quotient_digit * divisor_top
+    if denominator_length > 1 then
+      local next_divisor_limb: culonglong =
+        (@culonglong)(normalized_denominator.limbs[denominator_length - 2])
+      local compare_limb: culonglong =
+        (@culonglong)(normalized_numerator.limbs[quotient_index + denominator_length - 2])
+      while remainder_estimate < base and
+          quotient_digit * next_divisor_limb >
+            ((remainder_estimate << 32) | compare_limb) do
+        quotient_digit = quotient_digit - 1
+        remainder_estimate = remainder_estimate + divisor_top
+      end
+    end
+
+    local product_carry: culonglong = 0
+    local borrow: culonglong = 0
+    local limb_index: csize = 0
+    ## if ccinfo.is_tcc then
+    local numerator_limb_pointer: *[0]cuint =
+      (@*[0]cuint)(&normalized_numerator.limbs[quotient_index])
+    local denominator_limb_pointer: *[0]cuint =
+      (@*[0]cuint)(&normalized_denominator.limbs[0])
+    while limb_index < denominator_length do
+      local product: culonglong = quotient_digit *
+        (@culonglong)(denominator_limb_pointer[0]) + product_carry
+      product_carry = product >> 32
+      local product_limb: culonglong = product & 0xFFFFFFFF_culonglong
+      local minuend: culonglong = (@culonglong)(numerator_limb_pointer[0])
+      local subtrahend: culonglong = product_limb + borrow
+      local difference: culonglong = minuend - subtrahend
+      numerator_limb_pointer[0] = (@cuint)(difference & 0xFFFFFFFF_culonglong)
+      -- Both operands fit in 33 bits, so unsigned wrap leaves the borrow in bit 63.
+      borrow = difference >> 63
+      numerator_limb_pointer = &numerator_limb_pointer[1]
+      denominator_limb_pointer = &denominator_limb_pointer[1]
+      limb_index = limb_index + 1
+    end
+    ## else
+    while limb_index < denominator_length do
+      local product: culonglong = quotient_digit *
+        (@culonglong)(normalized_denominator.limbs[limb_index]) + product_carry
+      product_carry = product >> 32
+      local product_limb: culonglong = product & 0xFFFFFFFF_culonglong
+      local target_index: csize = quotient_index + limb_index
+      local minuend: culonglong = (@culonglong)(normalized_numerator.limbs[target_index])
+      local subtrahend: culonglong = product_limb + borrow
+      local difference: culonglong = minuend - subtrahend
+      normalized_numerator.limbs[target_index] = (@cuint)(difference & 0xFFFFFFFF_culonglong)
+      -- Both operands fit in 33 bits, so unsigned wrap leaves the borrow in bit 63.
+      borrow = difference >> 63
+      limb_index = limb_index + 1
+    end
+    ## end
+    local high_index: csize = quotient_index + denominator_length
+    local high_minuend: culonglong = (@culonglong)(normalized_numerator.limbs[high_index])
+    local high_subtrahend: culonglong = product_carry + borrow
+    local underflow: boolean = high_minuend < high_subtrahend
+    if underflow then
+      normalized_numerator.limbs[high_index] = (@cuint)(high_minuend + base - high_subtrahend)
+      quotient_digit = quotient_digit - 1
+      local add_carry: culonglong = 0
+      limb_index = 0
+      while limb_index < denominator_length do
+        local target_index: csize = quotient_index + limb_index
+        local sum: culonglong = (@culonglong)(normalized_numerator.limbs[target_index]) +
+          (@culonglong)(normalized_denominator.limbs[limb_index]) + add_carry
+        normalized_numerator.limbs[target_index] = (@cuint)(sum & 0xFFFFFFFF_culonglong)
+        add_carry = sum >> 32
+        limb_index = limb_index + 1
+      end
+      normalized_numerator.limbs[high_index] = (@cuint)(
+        (@culonglong)(normalized_numerator.limbs[high_index]) + add_carry)
+    else
+      normalized_numerator.limbs[high_index] = (@cuint)(high_minuend - high_subtrahend)
+    end
+
+    if quotient_index == 0 then
+      quotient_value = quotient_value | quotient_digit
+      break
+    elseif quotient_index == 1 then
+      quotient_value = quotient_value | (quotient_digit << 32)
+      quotient_index = 0
+    elseif quotient_index == 2 then
+      if quotient_digit ~= 0 then return false end
+      quotient_index = 1
+    else
+      return false
+    end
+  end
+
+  normalized_numerator.used = denominator_length
+  while normalized_numerator.used > 0 and
+      normalized_numerator.limbs[normalized_numerator.used - 1] == 0 do
+    normalized_numerator.used = normalized_numerator.used - 1
+  end
+  quotient_pointer[0] = quotient_value
+  return true
+end
+
+local function big_divide_round(numerator: *BigUInt, denominator: *BigUInt, precision: cint,
+    sticky_tail: boolean, quotient: *culonglong, carry_out: *cint): boolean <inline>
+  local numerator_pointer: *[0]BigUInt = (@*[0]BigUInt)(numerator)
+  local quotient_pointer: *[0]culonglong = (@*[0]culonglong)(quotient)
+  local carry_pointer: *[0]cint = (@*[0]cint)(carry_out)
+  local denominator_pointer: *[0]BigUInt = (@*[0]BigUInt)(denominator)
+  local q: culonglong = 0
+  carry_pointer[0] = 0
+  if not big_divide_knuth_u64(numerator, &denominator_pointer[0], &q) then
+    local bit: cint = precision - 1
+    while bit >= 0 do
+      if big_try_subtract_shifted(numerator, &denominator_pointer[0], bit) then
+        q = q | (1_culonglong << bit)
+      end
+      bit = bit - 1
+    end
+  end
+  -- Division leaves the numerator as its remainder, which is consumed here.
+  local comparison: cint
+  ## if ccinfo.is_tcc then
+  -- The fixed doubled-remainder compare avoids generic shifted-limb helpers.
+  comparison = big_compare_double(&numerator_pointer[0], &denominator_pointer[0])
+  ## else
+  if not big_shift_left_one(&numerator_pointer[0]) then return false end
+  comparison = big_compare(&numerator_pointer[0], &denominator_pointer[0])
+  ## end
+  if comparison > 0 or (comparison == 0 and (sticky_tail or (q & 1_culonglong) ~= 0)) then
+    if precision == 64 and q == 0xFFFFFFFFFFFFFFFF_culonglong then
+      q = 0
+      carry_pointer[0] = 1
+    else
+      q = q + 1_culonglong
+    end
+  end
+  quotient_pointer[0] = q
+  return true
+end
+
+local function nelibc_round_significant_double(value: cdouble, decimal_scale: cint,
+    output_value: *[0]culonglong): cint <cexport, codename 'nelibc_round_significant_double'>
+  if output_value == nilptr or decimal_scale < -342 or decimal_scale > 342 then return 0 end
+  local bits: culonglong = nelibc_double_bits(value)
+  local exponent_bits: cint = (@cint)((bits >> 52) & 2047)
+  local significand: culonglong = bits & 0x000FFFFFFFFFFFFF_culonglong
+  local binary_exponent: cint
+  if exponent_bits == 0 then binary_exponent = -1074
+  else
+    significand = significand | 0x0010000000000000_culonglong
+    binary_exponent = exponent_bits - 1075
+  end
+  local numerator: BigUInt <noinit>
+  local denominator: BigUInt <noinit>
+  big_set_u64(&numerator, significand)
+  big_set_u64(&denominator, 1)
+  local binary_shift: cint = binary_exponent + decimal_scale
+  if decimal_scale >= 0 then
+    if not big_mul_power5(&numerator, decimal_scale) then return 0 end
+  else
+    if not big_mul_power5(&denominator, -decimal_scale) then return 0 end
+  end
+  if binary_shift >= 0 then
+    if not big_shift_left(&numerator, binary_shift) then return 0 end
+  else
+    if not big_shift_left(&denominator, -binary_shift) then return 0 end
+  end
+  local rounded: culonglong = 0
+  local carry: cint = 0
+  if not big_divide_round(&numerator, &denominator, 64, false, &rounded, &carry) then return 0 end
+  if carry ~= 0 then return 0 end
+  output_value[0] = rounded
+  return 1
+end
+
+local function nelibc_format_general_double_impl(value: cdouble, precision: cint,
+    exponent_input: cint, alternate: cint, uppercase: cint, radix: cint,
+    output: *[0]byte, capacity: csize, scratch: *[0]byte,
+    numerator: *DynamicBigUInt, denominator: *DynamicBigUInt,
+    quotient: *DynamicBigUInt, remainder: *DynamicBigUInt): csize
+  if value == 0 then
+    output[0] = 48
+    if alternate == 0 then return 1 end
+    output[1] = (@byte)(radix)
+    local count: cint = 0
+    local length: csize = 2
+    while count < precision - 1 do
+      output[length] = 48
+      length = length + 1
+      count = count + 1
+    end
+    return length
+  end
+  local exponent: cint = exponent_input
+  local digit_count: csize = 0
+  local carried: boolean = false
+  local attempt: cint = 0
+  while attempt < 4 do
+    local decimal_scale: cint = precision - 1 - exponent
+    local bits: culonglong = nelibc_double_bits(value)
+    local exponent_bits: cint = (@cint)((bits >> 52) & 2047)
+    local significand: culonglong = bits & 0x000FFFFFFFFFFFFF_culonglong
+    local binary_exponent: cint
+    if exponent_bits == 0 then binary_exponent = -1074
+    else
+      significand = significand | 0x0010000000000000_culonglong
+      binary_exponent = exponent_bits - 1075
+    end
+    dynamic_big_set_u64(numerator, significand)
+    dynamic_big_set_u64(denominator, 1)
+    local binary_shift: cint = binary_exponent + decimal_scale
+    if decimal_scale >= 0 then
+      if not dynamic_big_mul_power5(numerator, decimal_scale) then return 0 end
+    else
+      if not dynamic_big_mul_power5(denominator, -decimal_scale) then return 0 end
+    end
+    if binary_shift >= 0 then
+      if not dynamic_big_shift_left(numerator, binary_shift) then return 0 end
+    else
+      if not dynamic_big_shift_left(denominator, -binary_shift) then return 0 end
+    end
+    if not dynamic_big_divide_round(numerator, denominator, quotient, remainder) then return 0 end
+    digit_count = 0
+    if quotient.used == 0 then
+      scratch[(@csize)(precision) - 1] = 48
+      digit_count = 1
+    else
+      while quotient.used > 0 do
+        local digit: byte = 48 + (@byte)(dynamic_big_divide_small(quotient, 10))
+        if digit_count < (@csize)(precision) then
+          scratch[(@csize)(precision) - digit_count - 1] = digit
+        end
+        digit_count = digit_count + 1
+      end
+    end
+    if digit_count < (@csize)(precision) then
+      exponent = exponent - 1
+      attempt = attempt + 1
+    elseif digit_count > (@csize)(precision) then
+      if digit_count == (@csize)(precision) + 1 then
+        exponent = exponent + 1
+        digit_count = (@csize)(precision)
+        scratch[0] = 49
+        local zero_index: csize = 1
+        while zero_index < digit_count do
+          scratch[zero_index] = 48
+          zero_index = zero_index + 1
+        end
+        carried = true
+        attempt = 4
+      else
+        exponent = exponent - 1
+        attempt = attempt + 1
+      end
+    else
+      attempt = 4
+    end
+  end
+  if digit_count ~= (@csize)(precision) then return 0 end
+
+  local scientific: boolean = exponent < -4 or exponent >= precision
+  local output_length: csize = 0
+  if scientific then
+    output[output_length] = scratch[0]
+    output_length = output_length + 1
+    local fraction_start: csize = 1
+    local fraction_end: csize = digit_count
+    if alternate == 0 then
+      while fraction_end > fraction_start and scratch[fraction_end - 1] == 48 do
+        fraction_end = fraction_end - 1
+      end
+    end
+    if fraction_end > fraction_start or alternate ~= 0 then
+      output[output_length] = (@byte)(radix)
+      output_length = output_length + 1
+      while fraction_start < fraction_end do
+        if output_length >= capacity then return 0 end
+        output[output_length] = scratch[fraction_start]
+        output_length = output_length + 1
+        fraction_start = fraction_start + 1
+      end
+    end
+    if output_length + 5 >= capacity then return 0 end
+    output[output_length] = 101
+    if uppercase ~= 0 then output[output_length] = 69 end
+    output_length = output_length + 1
+    local written_exponent: cint = exponent
+    if written_exponent < 0 then
+      output[output_length] = 45
+      written_exponent = -written_exponent
+    else
+      output[output_length] = 43
+    end
+    output_length = output_length + 1
+    if written_exponent >= 100 then
+      output[output_length] = (@byte)(48 + written_exponent // 100)
+      output_length = output_length + 1
+      written_exponent = written_exponent % 100
+    elseif written_exponent < 10 then
+      output[output_length] = 48
+      output_length = output_length + 1
+      output[output_length] = (@byte)(48 + written_exponent)
+      output_length = output_length + 1
+      return output_length
+    end
+    output[output_length] = (@byte)(48 + written_exponent // 10)
+    output_length = output_length + 1
+    output[output_length] = (@byte)(48 + written_exponent % 10)
+    output_length = output_length + 1
+    return output_length
+  end
+
+  local decimal_position: cint = exponent + 1
+  local integer_digits: csize
+  if decimal_position <= 0 then integer_digits = 1
+  elseif decimal_position >= precision then integer_digits = (@csize)(decimal_position)
+  else integer_digits = (@csize)(decimal_position) end
+  local fraction_end: csize = digit_count
+  if alternate == 0 then
+    while fraction_end > 0 and scratch[fraction_end - 1] == 48 do
+      fraction_end = fraction_end - 1
+    end
+  end
+  local integer_index: csize = 0
+  while integer_index < integer_digits do
+    if output_length >= capacity then return 0 end
+    if decimal_position <= 0 then output[output_length] = 48
+    elseif integer_index < digit_count then output[output_length] = scratch[integer_index]
+    else output[output_length] = 48 end
+    output_length = output_length + 1
+    integer_index = integer_index + 1
+  end
+  if decimal_position < (@cint)(fraction_end) or alternate ~= 0 then
+    if output_length >= capacity then return 0 end
+    output[output_length] = (@byte)(radix)
+    output_length = output_length + 1
+    if decimal_position < 0 then
+      local zeroes: cint = -decimal_position
+      while zeroes > 0 do
+        if output_length >= capacity then return 0 end
+        output[output_length] = 48
+        output_length = output_length + 1
+        zeroes = zeroes - 1
+      end
+      integer_index = 0
+    else
+      integer_index = (@csize)(decimal_position)
+    end
+    while integer_index < fraction_end do
+      if output_length >= capacity then return 0 end
+      output[output_length] = scratch[integer_index]
+      output_length = output_length + 1
+      integer_index = integer_index + 1
+    end
+  end
+  return output_length
+end
+
+local function nelibc_format_general_double(value: cdouble, precision: cint,
+    exponent: cint, alternate: cint, uppercase: cint, radix: cint,
+    output: *[0]byte, capacity: csize): csize
+    <cexport, codename 'nelibc_format_general_double'>
+  if precision < 1 or precision > 100000 or output == nilptr then return 0 end
+  if capacity < (@csize)(precision) * 2 + 400 then return 0 end
+  local limb_capacity: csize = ((@csize)(precision) * 4 + 4096) // 32
+  local numerator: DynamicBigUInt
+  local denominator: DynamicBigUInt
+  local quotient: DynamicBigUInt
+  local remainder: DynamicBigUInt
+  if not dynamic_big_init(&numerator, limb_capacity) then return 0 end
+  if not dynamic_big_init(&denominator, limb_capacity) then
+    dynamic_big_free(&numerator)
+    return 0
+  end
+  if not dynamic_big_init(&quotient, limb_capacity) then
+    dynamic_big_free(&numerator); dynamic_big_free(&denominator)
+    return 0
+  end
+  if not dynamic_big_init(&remainder, limb_capacity) then
+    dynamic_big_free(&numerator); dynamic_big_free(&denominator); dynamic_big_free(&quotient)
+    return 0
+  end
+  local scratch: *[0]byte = (@*[0]byte)((@usize)(output) + (@usize)(precision) + 400)
+  local length: csize = nelibc_format_general_double_impl(value, precision,
+      exponent, alternate, uppercase, radix, output, capacity, scratch,
+      &numerator, &denominator, &quotient, &remainder)
+  dynamic_big_free(&numerator)
+  dynamic_big_free(&denominator)
+  dynamic_big_free(&quotient)
+  dynamic_big_free(&remainder)
+  return length
+end
+
+local function exact_rational_to_double(numerator_input: *BigUInt, denominator_input: *BigUInt,
+    binary_scale: cint, negative: boolean,
+    precision: cint, sticky_tail: boolean, output: *cdouble, long_output: *clongdouble): boolean <inline>
+  local numerator_pointer: *[0]BigUInt = (@*[0]BigUInt)(numerator_input)
+  local denominator_pointer: *[0]BigUInt = (@*[0]BigUInt)(denominator_input)
+  local output_pointer: *[0]cdouble = (@*[0]cdouble)(output)
+  local long_output_pointer: *[0]clongdouble = (@*[0]clongdouble)(long_output)
+  if numerator_pointer[0].used == 0 then
+    output_pointer[0] = 0.0_cdouble
+    if precision == 64 then long_output_pointer[0] = 0.0_clongdouble end
+    return true
+  end
+  local quotient_exponent: cint =
+    big_bit_length(&numerator_pointer[0]) - big_bit_length(&denominator_pointer[0])
+  local binary_exponent: cint = quotient_exponent + binary_scale
+  if big_compare_shifted(&numerator_pointer[0], &denominator_pointer[0], quotient_exponent) < 0 then
+    binary_exponent = binary_exponent - 1
+  end
+  local maximum_exponent: cint = 1023
+  local minimum_exponent: cint = -1022
+  if precision == 24 then maximum_exponent = 127; minimum_exponent = -126 end
+  if precision == 64 then maximum_exponent = 16383; minimum_exponent = -16382 end
+  local minimum_subnormal_exponent: cint = minimum_exponent - precision + 1
+  if binary_exponent > maximum_exponent then
+    nelibc_errno_location()[0] = 34 -- ERANGE
+    if precision == 64 then
+      local infinity: clongdouble = nelibc_scale_u64_to_long_double(1, maximum_exponent + 1, 1)
+      if negative then long_output_pointer[0] = -infinity else long_output_pointer[0] = infinity end
+      return true
+    end
+    local infinity: cdouble = nelibc_double_from_bits(0x7FF0000000000000_culonglong)
+    if negative then output_pointer[0] = -infinity else output_pointer[0] = infinity end
+    return true
+  end
+  if binary_exponent < minimum_subnormal_exponent - 1 then
+    nelibc_errno_location()[0] = 34 -- ERANGE
+    if precision == 64 then
+      if negative then long_output_pointer[0] = -0.0_clongdouble else long_output_pointer[0] = 0.0_clongdouble end
+      return true
+    end
+    if negative then output_pointer[0] = -0.0_cdouble else output_pointer[0] = 0.0_cdouble end
+    return true
+  end
+  local scale: cint = precision - 1 - minimum_exponent
+  if binary_exponent >= minimum_exponent then scale = precision - 1 - binary_exponent end
+  scale = scale + binary_scale
+  if scale >= 0 then
+    if not big_shift_left(&numerator_pointer[0], scale) then return false end
+  else
+    if not big_shift_left(&denominator_pointer[0], -scale) then return false end
+  end
+  local significand: culonglong = 0
+  local quotient_carry: cint = 0
+  if not big_divide_round(&numerator_pointer[0], &denominator_pointer[0], precision,
+      sticky_tail, &significand, &quotient_carry) then
+    return false
+  end
+  if precision == 64 then
+    if quotient_carry ~= 0 then
+      significand = 0x8000000000000000_culonglong
+      binary_exponent = binary_exponent + 1
+    end
+    if binary_exponent >= minimum_exponent then
+      local value: clongdouble = nelibc_scale_u64_to_long_double(significand, binary_exponent - 63, 1)
+      if negative then value = -value end
+      long_output_pointer[0] = value
+    else
+      local value: clongdouble = nelibc_scale_u64_to_long_double(significand, -16445, 1)
+      if negative then value = -value end
+      long_output_pointer[0] = value
+    end
+    if long_output_pointer[0] == 0.0_clongdouble or nelibc_long_double_range_error(long_output_pointer[0]) ~= 0 then
+      nelibc_errno_location()[0] = 34 -- ERANGE
+    end
+    return true
+  end
+  local bits: culonglong
+  if binary_exponent >= minimum_exponent then
+    local carry_significand: culonglong = 1_culonglong << precision
+    if significand == carry_significand then
+      significand = significand >> 1
+      binary_exponent = binary_exponent + 1
+    end
+    if binary_exponent > maximum_exponent then
+      nelibc_errno_location()[0] = 34 -- ERANGE
+      local infinity: cdouble = nelibc_double_from_bits(0x7FF0000000000000_culonglong)
+      if negative then output_pointer[0] = -infinity else output_pointer[0] = infinity end
+      return true
+    end
+    if precision == 24 then
+      bits = ((@culonglong)(binary_exponent + 1023) << 52) |
+        ((significand & 0x007FFFFF_culonglong) << 29)
+    else
+      bits = ((@culonglong)(binary_exponent + 1023) << 52) |
+        (significand & 0x000FFFFFFFFFFFFF_culonglong)
+    end
+  else
+    if precision == 24 and significand >= 0x00800000_culonglong then
+      bits = ((@culonglong)(-126 + 1023) << 52)
+    elseif precision == 24 then
+      if significand == 0 then nelibc_errno_location()[0] = 34 end -- ERANGE
+      local subnormal: cdouble = nelibc_scale_u64_to_double(significand, -149, 1)
+      if negative then output_pointer[0] = -subnormal else output_pointer[0] = subnormal end
+      return true
+    else
+      bits = significand
+    end
+    nelibc_errno_location()[0] = 34 -- ERANGE for a subnormal binary64 result
+  end
+  if negative then bits = bits | 0x8000000000000000_culonglong end
+  output_pointer[0] = nelibc_double_from_bits(bits)
+  return true
+end
+
+local function exact_decimal_to_double(integer: *BigUInt, exponent10: cint,
+    trailing_zeroes: cint, negative: boolean,
+    precision: cint, sticky_tail: boolean, output: *cdouble, long_output: *clongdouble): boolean <inline>
+  local integer_pointer: *[0]BigUInt = (@*[0]BigUInt)(integer)
+  local numerator: BigUInt <noinit>
+  big_copy(&numerator, &integer_pointer[0])
+  while trailing_zeroes >= 9 do
+    if big_divide_small(&numerator, 1000000000) ~= 0 then return false end
+    exponent10 = exponent10 + 9
+    trailing_zeroes = trailing_zeroes - 9
+  end
+  if trailing_zeroes > 0 then
+    local divisor: cuint = 1
+    local zero_count: cint = trailing_zeroes
+    while zero_count > 0 do
+      divisor = divisor * 10
+      zero_count = zero_count - 1
+    end
+    if big_divide_small(&numerator, divisor) ~= 0 then return false end
+    exponent10 = exponent10 + trailing_zeroes
+  end
+  local denominator: BigUInt <noinit>
+  denominator.limbs[0] = 1
+  denominator.used = 1
+  if exponent10 > 0 then
+    if not big_mul_power5(&numerator, exponent10) then return false end
+  elseif exponent10 < 0 then
+    if not big_mul_power5(&denominator, -exponent10) then return false end
+  end
+  return exact_rational_to_double(&numerator, &denominator, exponent10, negative, precision,
+    sticky_tail, output, long_output)
+end
+
+local function exact_binary_to_double(integer: *BigUInt, exponent2: cint, negative: boolean,
+    precision: cint, sticky_tail: boolean, output: *cdouble, long_output: *clongdouble): boolean <inline>
+  local integer_pointer: *[0]BigUInt = (@*[0]BigUInt)(integer)
+  local numerator: BigUInt <noinit>
+  big_copy(&numerator, &integer_pointer[0])
+  if numerator.used > 0 and (numerator.limbs[0] & 1) == 0 then
+    local word_shift: csize = 0
+    while word_shift < numerator.used and numerator.limbs[word_shift] == 0 do
+      word_shift = word_shift + 1
+    end
+    if word_shift == numerator.used then
+      numerator.used = 0
+    else
+      local bit_shift: cint = 0
+      local low_limb: cuint = numerator.limbs[word_shift]
+      while (low_limb & 1) == 0 do
+        low_limb = low_limb >> 1
+        bit_shift = bit_shift + 1
+      end
+      exponent2 = exponent2 + (@cint)(word_shift * 32) + bit_shift
+      big_shift_right_trailing_zeroes(&numerator, word_shift, bit_shift)
+    end
+  end
+  local denominator: BigUInt <noinit>
+  denominator.limbs[0] = 1
+  denominator.used = 1
+  return exact_rational_to_double(&numerator, &denominator, exponent2, negative, precision,
+    sticky_tail, output, long_output)
+end
+
+local function lower_ascii(character: cchar): cchar <inline>
+  if character >= 65 and character <= 90 then return character + 32 end
+  return character
+end
+
+local function matches(text: *[0]cchar <const>, start: csize, word: *[0]cchar <const>): boolean <inline>
+  local index: csize = 0
+  while word[index] ~= 0 do
+    if lower_ascii(text[start + index]) ~= word[index] then return false end
+    index = index + 1
+  end
+  return true
+end
+
+local function strtod_impl(text: *[0]cchar <const>, end_text: **cchar, precision: cint): clongdouble
+  local end_pointer: *[0]*cchar = (@*[0]*cchar)(end_text)
+  if text == nilptr then
+    if end_text ~= nilptr then end_pointer[0] = text end
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return 0.0_cdouble
+  end
+  local cursor: csize = 0
+  while text[cursor] == 32 or (text[cursor] >= 9 and text[cursor] <= 13) do cursor = cursor + 1 end
+  local negative: boolean = false
+  if text[cursor] == 45 then negative = true; cursor = cursor + 1
+  elseif text[cursor] == 43 then cursor = cursor + 1 end
+  if matches(text, cursor, 'inf'_cstring) then
+    cursor = cursor + 3
+    if matches(text, cursor, 'inity'_cstring) then cursor = cursor + 5 end
+    if end_text ~= nilptr then end_pointer[0] = &text[cursor] end
+    local infinity: cdouble = nelibc_double_from_bits(0x7FF0000000000000_culonglong)
+    if negative then return -infinity end
+    return infinity
+  end
+  if matches(text, cursor, 'nan'_cstring) then
+    cursor = cursor + 3
+    if text[cursor] == 40 then
+      local close: csize = cursor + 1
+      while text[close] ~= 0 and text[close] ~= 41 do close = close + 1 end
+      if text[close] == 41 then cursor = close + 1 end
+    end
+    if end_text ~= nilptr then end_pointer[0] = &text[cursor] end
+    local not_a_number: cdouble = nelibc_double_from_bits(0x7FF8000000000000_culonglong)
+    if negative then return -not_a_number end
+    return not_a_number
+  end
+
+  local hexadecimal: boolean = text[cursor] == 48 and
+      (text[cursor + 1] == 120 or text[cursor + 1] == 88)
+  if hexadecimal then cursor = cursor + 2 end
+  -- The host adapter may call localeconv(); fetch the radix once, not per byte.
+  local radix_character: cint = nelibc_radix_character()
+  local radix: cint = 10
+  if hexadecimal then radix = 16 end
+  local significand: culonglong = 0_culonglong
+  local exact_integer: BigUInt <noinit>
+  exact_integer.used = 0
+  local exact_available: boolean = true
+  local exact_integer_initialized: boolean = false
+  local exact_decimal_trailing_zeroes: cint = 0
+  local pending_decimal_chunk: cuint = 0
+  local pending_decimal_digits: cint = 0
+  local pending_decimal_trailing_zeroes: cint = 0
+  local skipped_digits: csize = 0
+  local skipped_nonzero: boolean = false
+  local decimal_fraction_digits: cint = 0
+  local decimal_point_cursor: csize = 0
+  local hexadecimal_fraction_digits: cint = 0
+  local parsed_decimal_exponent: cint = 0
+  local parsed_binary_exponent: cint = 0
+  local significant_digits: csize = 0
+  local maximum_decimal_digits: csize = 19
+  if precision == 64 then maximum_decimal_digits = 20 end
+  local decimal_exponent: cint = 0
+  local binary_exponent: cint = 0
+  local guard_digit: cint = -1
+  local sticky_digit: boolean = false
+  local after_point: boolean = false
+  local saw_digit: boolean = false
+  local saw_nonzero: boolean = false
+  -- Keep the radix-specific limb update in this loop: TinyCC does not inline
+  -- the generated inline helper, and the constant radix simplifies multiply.
+  while true do
+    if text[cursor] == radix_character and not after_point then
+      if not hexadecimal then decimal_point_cursor = cursor end
+      after_point = true
+      cursor = cursor + 1
+    else
+      local digit: cint = 36
+      if text[cursor] >= 48 and text[cursor] <= 57 then digit = (@cint)(text[cursor] - 48)
+      elseif lower_ascii(text[cursor]) >= 97 and lower_ascii(text[cursor]) <= 122 then
+        digit = (@cint)(lower_ascii(text[cursor]) - 97) + 10
+      end
+      if digit >= radix then break end
+      saw_digit = true
+      if digit ~= 0 then saw_nonzero = true end
+      if hexadecimal then
+        if after_point then hexadecimal_fraction_digits = hexadecimal_fraction_digits + 1 end
+        local store_hex_digit: boolean = saw_nonzero and significant_digits < 16
+        if exact_available and not store_hex_digit and saw_nonzero then
+          if not exact_integer_initialized then
+            big_set_u64(&exact_integer, significand)
+            exact_integer_initialized = true
+          end
+          local append_failed: boolean = exact_integer.used >= BIG_PARSE_LIMIT
+          if not append_failed then
+            local carry: culonglong = (@culonglong)(digit)
+            ## if ccinfo.is_tcc then
+            local limb_pointer: *[0]cuint = (@*[0]cuint)(&exact_integer.limbs[0])
+            local limb_end: *[0]cuint = (@*[0]cuint)(&exact_integer.limbs[exact_integer.used])
+            while limb_pointer ~= limb_end do
+              local product: culonglong =
+                (@culonglong)(limb_pointer[0]) * 16_culonglong + carry
+              limb_pointer[0] = (@cuint)(product & 0xFFFFFFFF_culonglong)
+              carry = product >> 32
+              limb_pointer = &limb_pointer[1]
+            end
+            ## else
+            local limb_index: csize = 0
+            while limb_index < exact_integer.used do
+              local product: culonglong =
+                (@culonglong)(exact_integer.limbs[limb_index]) * 16_culonglong + carry
+              exact_integer.limbs[limb_index] = (@cuint)(product & 0xFFFFFFFF_culonglong)
+              carry = product >> 32
+              limb_index = limb_index + 1
+            end
+            ## end
+            if carry ~= 0 then
+              if exact_integer.used == BIG_LIMBS then
+                append_failed = true
+              else
+                exact_integer.limbs[exact_integer.used] = (@cuint)(carry)
+                exact_integer.used = exact_integer.used + 1
+              end
+            elseif exact_integer.used == 0 and digit ~= 0 then
+              exact_integer.limbs[0] = (@cuint)(digit)
+              exact_integer.used = 1
+            end
+          end
+        if append_failed then
+            exact_available = false
+            skipped_digits = 1
+            skipped_nonzero = digit ~= 0
+          end
+        else
+          if not exact_available then
+            skipped_digits = skipped_digits + 1
+            if not skipped_nonzero and digit ~= 0 then skipped_nonzero = true end
+          end
+        end
+        if after_point and (not saw_nonzero or significant_digits < 16) then
+          binary_exponent = binary_exponent - 4
+        end
+        if store_hex_digit then
+          significand = significand * 16_culonglong + (@culonglong)(digit)
+          significant_digits = significant_digits + 1
+        elseif saw_nonzero then
+          if guard_digit < 0 then guard_digit = digit elseif digit ~= 0 then sticky_digit = true end
+          if not after_point then binary_exponent = binary_exponent + 4 end
+        end
+      else
+        local digit_value_u64: culonglong = (@culonglong)(digit)
+        ## if ccinfo.is_tcc then
+        local store_decimal_digit: boolean = false
+        if saw_nonzero and significant_digits < maximum_decimal_digits then
+          store_decimal_digit = significand <=
+            (0xFFFFFFFFFFFFFFFF_culonglong - digit_value_u64) // 10_culonglong
+        end
+        ## else
+        local can_append_digit: boolean = significand <=
+          (0xFFFFFFFFFFFFFFFF_culonglong - digit_value_u64) // 10_culonglong
+        local store_decimal_digit: boolean = saw_nonzero and
+          significant_digits < maximum_decimal_digits and can_append_digit
+        ## end
+        if exact_available and not store_decimal_digit and saw_nonzero then
+          if not exact_integer_initialized then
+            big_set_u64(&exact_integer, significand)
+            exact_integer_initialized = true
+          end
+          pending_decimal_chunk = pending_decimal_chunk * 10_cuint + (@cuint)(digit)
+          pending_decimal_digits = pending_decimal_digits + 1
+          ## if not ccinfo.is_tcc then
+          if digit == 0 then pending_decimal_trailing_zeroes = pending_decimal_trailing_zeroes + 1
+          else pending_decimal_trailing_zeroes = 0 end
+          ## end
+          if pending_decimal_digits == 9 then
+            local append_failed: boolean = exact_integer.used >= BIG_PARSE_LIMIT
+            if not append_failed then
+              local carry: culonglong = (@culonglong)(pending_decimal_chunk)
+              ## if ccinfo.is_tcc then
+              local limb_pointer: *[0]cuint = (@*[0]cuint)(&exact_integer.limbs[0])
+              local limb_end: *[0]cuint = (@*[0]cuint)(&exact_integer.limbs[exact_integer.used])
+              -- TCC emits a direct low-word store for the narrowing cast.
+              while limb_pointer ~= limb_end do
+                local product: culonglong =
+                  (@culonglong)(limb_pointer[0]) * 1000000000_culonglong + carry
+                limb_pointer[0] = (@cuint)(product)
+                carry = product >> 32
+                limb_pointer = &limb_pointer[1]
+              end
+              ## else
+              local limb_index: csize = 0
+              while limb_index < exact_integer.used do
+                local product: culonglong =
+                  (@culonglong)(exact_integer.limbs[limb_index]) * 1000000000_culonglong + carry
+                exact_integer.limbs[limb_index] = (@cuint)(product & 0xFFFFFFFF_culonglong)
+                carry = product >> 32
+                limb_index = limb_index + 1
+              end
+              ## end
+              if carry ~= 0 then
+                if exact_integer.used == BIG_LIMBS then
+                  append_failed = true
+                else
+                  exact_integer.limbs[exact_integer.used] = (@cuint)(carry)
+                  exact_integer.used = exact_integer.used + 1
+                end
+              end
+              ## if ccinfo.is_tcc then
+              if pending_decimal_chunk == 0 then
+                exact_decimal_trailing_zeroes = exact_decimal_trailing_zeroes + pending_decimal_digits
+              else
+                local trailing_probe: cuint = pending_decimal_chunk
+                local chunk_trailing_zeroes: cint = 0
+                while trailing_probe % 10_cuint == 0_cuint do
+                  chunk_trailing_zeroes = chunk_trailing_zeroes + 1
+                  trailing_probe = trailing_probe // 10_cuint
+                end
+                exact_decimal_trailing_zeroes = chunk_trailing_zeroes
+              end
+              ## else
+              if pending_decimal_chunk == 0 then
+                exact_decimal_trailing_zeroes = exact_decimal_trailing_zeroes + pending_decimal_digits
+              else
+                exact_decimal_trailing_zeroes = pending_decimal_trailing_zeroes
+              end
+              ## end
+            end
+            if append_failed then
+              exact_available = false
+              skipped_digits = (@csize)(pending_decimal_digits)
+              skipped_nonzero = pending_decimal_chunk ~= 0
+            end
+            pending_decimal_chunk = 0
+            pending_decimal_digits = 0
+            ## if not ccinfo.is_tcc then
+            pending_decimal_trailing_zeroes = 0
+            ## end
+          end
+        else
+          if not exact_available then
+            skipped_digits = skipped_digits + 1
+            if not skipped_nonzero and digit ~= 0 then skipped_nonzero = true end
+          end
+          if exact_available then
+            if digit == 0 then exact_decimal_trailing_zeroes = exact_decimal_trailing_zeroes + 1
+            else exact_decimal_trailing_zeroes = 0 end
+          end
+        end
+        if after_point and (not saw_nonzero or store_decimal_digit) then
+          decimal_exponent = decimal_exponent - 1
+        end
+        if store_decimal_digit then
+          significand = significand * 10_culonglong + digit_value_u64
+          significant_digits = significant_digits + 1
+        elseif saw_nonzero then
+          if guard_digit < 0 then guard_digit = digit elseif digit ~= 0 then sticky_digit = true end
+          if not after_point then decimal_exponent = decimal_exponent + 1 end
+        end
+      end
+      cursor = cursor + 1
+    end
+  end
+  if not hexadecimal and after_point then
+    decimal_fraction_digits = (@cint)(cursor - decimal_point_cursor - 1)
+  end
+  if exact_available and pending_decimal_digits > 0 then
+    local multiplier: culonglong = 1
+    local multiplier_digits: cint = 0
+    while multiplier_digits < pending_decimal_digits do
+      multiplier = multiplier * 10_culonglong
+      multiplier_digits = multiplier_digits + 1
+    end
+    local append_failed: boolean = exact_integer.used >= BIG_PARSE_LIMIT
+    if not append_failed then
+      local carry: culonglong = (@culonglong)(pending_decimal_chunk)
+      ## if ccinfo.is_tcc then
+      local limb_pointer: *[0]cuint = (@*[0]cuint)(&exact_integer.limbs[0])
+      local limb_end: *[0]cuint = (@*[0]cuint)(&exact_integer.limbs[exact_integer.used])
+      while limb_pointer ~= limb_end do
+        local product: culonglong = (@culonglong)(limb_pointer[0]) * multiplier + carry
+        limb_pointer[0] = (@cuint)(product)
+        carry = product >> 32
+        limb_pointer = &limb_pointer[1]
+      end
+      ## else
+      local limb_index: csize = 0
+      while limb_index < exact_integer.used do
+        local product: culonglong = (@culonglong)(exact_integer.limbs[limb_index]) * multiplier + carry
+        exact_integer.limbs[limb_index] = (@cuint)(product & 0xFFFFFFFF_culonglong)
+        carry = product >> 32
+        limb_index = limb_index + 1
+      end
+      ## end
+      if carry ~= 0 then
+        if exact_integer.used == BIG_LIMBS then append_failed = true
+        else
+          exact_integer.limbs[exact_integer.used] = (@cuint)(carry)
+          exact_integer.used = exact_integer.used + 1
+        end
+      end
+      ## if ccinfo.is_tcc then
+      if pending_decimal_chunk == 0 then
+        exact_decimal_trailing_zeroes = exact_decimal_trailing_zeroes + pending_decimal_digits
+      else
+        local trailing_probe: cuint = pending_decimal_chunk
+        local chunk_trailing_zeroes: cint = 0
+        while trailing_probe % 10_cuint == 0_cuint do
+          chunk_trailing_zeroes = chunk_trailing_zeroes + 1
+          trailing_probe = trailing_probe // 10_cuint
+        end
+        exact_decimal_trailing_zeroes = chunk_trailing_zeroes
+      end
+      ## else
+      if pending_decimal_chunk == 0 then
+        exact_decimal_trailing_zeroes = exact_decimal_trailing_zeroes + pending_decimal_digits
+      else
+        exact_decimal_trailing_zeroes = pending_decimal_trailing_zeroes
+      end
+      ## end
+    end
+    if append_failed then
+      exact_available = false
+      skipped_digits = (@csize)(pending_decimal_digits)
+      skipped_nonzero = pending_decimal_chunk ~= 0
+    end
+    pending_decimal_chunk = 0
+    pending_decimal_digits = 0
+    ## if not ccinfo.is_tcc then
+    pending_decimal_trailing_zeroes = 0
+    ## end
+  end
+  if exact_available and not exact_integer_initialized and saw_nonzero then
+    big_set_u64(&exact_integer, significand)
+    exact_integer_initialized = true
+  end
+  if not saw_digit then
+    if end_text ~= nilptr then end_pointer[0] = text end
+    return 0.0_cdouble
+  end
+
+  if guard_digit > radix // 2 or
+      (guard_digit == radix // 2 and (sticky_digit or (significand & 1_culonglong) ~= 0)) then
+    if hexadecimal and significand == 0xFFFFFFFFFFFFFFFF_culonglong then
+      significand = 0x1000000000000000_culonglong
+      binary_exponent = binary_exponent + 4
+    else
+      significand = significand + 1_culonglong
+    end
+  end
+
+  if hexadecimal then
+    if text[cursor] == 112 or text[cursor] == 80 then
+      local exponent_start: csize = cursor
+      cursor = cursor + 1
+      local exponent_negative: boolean = false
+      if text[cursor] == 45 then exponent_negative = true; cursor = cursor + 1
+      elseif text[cursor] == 43 then cursor = cursor + 1 end
+      local exponent_digits: csize = 0
+      local exponent_value: cint = 0
+      while text[cursor] >= 48 and text[cursor] <= 57 do
+        if exponent_value < 10000 then exponent_value = exponent_value * 10 + (@cint)(text[cursor] - 48) end
+        exponent_digits = exponent_digits + 1
+        cursor = cursor + 1
+      end
+      if exponent_digits == 0 then cursor = exponent_start
+      elseif exponent_negative then
+        binary_exponent = binary_exponent - exponent_value
+        parsed_binary_exponent = parsed_binary_exponent - exponent_value
+      else
+        binary_exponent = binary_exponent + exponent_value
+        parsed_binary_exponent = parsed_binary_exponent + exponent_value
+      end
+    end
+  else
+    if text[cursor] == 101 or text[cursor] == 69 then
+      local exponent_start: csize = cursor
+      cursor = cursor + 1
+      local exponent_negative: boolean = false
+      if text[cursor] == 45 then exponent_negative = true; cursor = cursor + 1
+      elseif text[cursor] == 43 then cursor = cursor + 1 end
+      local exponent_digits: csize = 0
+      local exponent_value: cint = 0
+      while text[cursor] >= 48 and text[cursor] <= 57 do
+        if exponent_value < 10000 then exponent_value = exponent_value * 10 + (@cint)(text[cursor] - 48) end
+        exponent_digits = exponent_digits + 1
+        cursor = cursor + 1
+      end
+      if exponent_digits == 0 then cursor = exponent_start
+      elseif exponent_negative then
+        decimal_exponent = decimal_exponent - exponent_value
+        parsed_decimal_exponent = parsed_decimal_exponent - exponent_value
+      else
+        decimal_exponent = decimal_exponent + exponent_value
+        parsed_decimal_exponent = parsed_decimal_exponent + exponent_value
+      end
+    end
+  end
+  if end_text ~= nilptr then end_pointer[0] = &text[cursor] end
+  if not saw_nonzero then
+    if negative then return -0.0_cdouble end
+    return 0.0_cdouble
+  end
+
+  if hexadecimal then
+    if exact_available or skipped_digits > 0 then
+      local exact_result: cdouble = 0.0_cdouble
+      local exact_long_result: clongdouble = 0.0_clongdouble
+      local exponent2: cint = parsed_binary_exponent - 4 * (@cint)(hexadecimal_fraction_digits)
+      if skipped_digits > 0 then exponent2 = exponent2 + 4 * (@cint)(skipped_digits) end
+      if exact_binary_to_double(&exact_integer, exponent2, negative, precision,
+          skipped_nonzero, &exact_result, &exact_long_result) then
+        if precision == 64 then return exact_long_result end
+        return exact_result
+      end
+    end
+    local maximum_binary_exponent: cint = 1100
+    local minimum_binary_exponent: cint = -1200
+    if precision == 64 then maximum_binary_exponent = 16400; minimum_binary_exponent = -16500 end
+    if binary_exponent > maximum_binary_exponent then
+      nelibc_errno_location()[0] = 34 -- ERANGE
+      local infinity: cdouble = nelibc_double_from_bits(0x7FF0000000000000_culonglong)
+      if negative then return -infinity end
+      return infinity
+    elseif binary_exponent < minimum_binary_exponent then
+      nelibc_errno_location()[0] = 34 -- ERANGE
+      if negative then return -0.0_cdouble end
+      return 0.0_cdouble
+    end
+  else
+    if exact_available or skipped_digits > 0 then
+      local exact_result: cdouble = 0.0_cdouble
+      local exact_long_result: clongdouble = 0.0_clongdouble
+      local exponent10: cint = parsed_decimal_exponent - decimal_fraction_digits
+      if skipped_digits > 0 then exponent10 = exponent10 + (@cint)(skipped_digits) end
+      if exact_decimal_to_double(&exact_integer,
+          exponent10, exact_decimal_trailing_zeroes, negative, precision, skipped_nonzero,
+          &exact_result, &exact_long_result) then
+        if precision == 64 then return exact_long_result end
+        return exact_result
+      end
+    end
+    local maximum_decimal_exponent: cint = 400
+    local minimum_decimal_exponent: cint = -400
+    if precision == 64 then maximum_decimal_exponent = 5000; minimum_decimal_exponent = -5000 end
+    if decimal_exponent > maximum_decimal_exponent then
+      nelibc_errno_location()[0] = 34 -- ERANGE
+      local infinity: cdouble = nelibc_double_from_bits(0x7FF0000000000000_culonglong)
+      if negative then return -infinity end
+      return infinity
+    elseif decimal_exponent < minimum_decimal_exponent then
+      nelibc_errno_location()[0] = 34 -- ERANGE
+      if negative then return -0.0_cdouble end
+      return 0.0_cdouble
+    end
+  end
+  if precision == 64 then
+    local long_result: clongdouble
+    if hexadecimal then long_result = nelibc_scale_u64_to_long_double(significand, binary_exponent, 1)
+    else long_result = nelibc_scale_u64_to_long_double(significand, decimal_exponent, 0) end
+    if negative then long_result = -long_result end
+    if long_result == 0.0_clongdouble or nelibc_long_double_range_error(long_result) ~= 0 then
+      nelibc_errno_location()[0] = 34 -- ERANGE
+    end
+    return long_result
+  end
+  local result: cdouble = 0.0_cdouble
+  if hexadecimal then result = nelibc_scale_u64_to_double(significand, binary_exponent, 1)
+  else result = nelibc_scale_u64_to_double(significand, decimal_exponent, 0) end
+  if precision == 24 then result = (@cdouble)((@cfloat)(result)) end
+  if negative then result = -result end
+  if result > 1.7976931348623157e308_cdouble or result < -1.7976931348623157e308_cdouble then
+    nelibc_errno_location()[0] = 34 -- ERANGE
+  elseif (result > -2.2250738585072014e-308_cdouble and result < 2.2250738585072014e-308_cdouble) then
+    nelibc_errno_location()[0] = 34 -- ERANGE
+  end
+  return result
+end
+
+local function strtod(text: *[0]cchar <const>, end_text: **cchar): cdouble <cexport, codename 'strtod'>
+  return (@cdouble)(strtod_impl(text, end_text, 53))
+end
+
+local function strtof(text: *[0]cchar <const>, end_text: **cchar): cfloat <cexport, codename 'strtof'>
+  local widened: cdouble = (@cdouble)(strtod_impl(text, end_text, 24))
+  local result: cfloat = (@cfloat)(widened)
+  if (widened > 3.4028234663852886e38_cdouble and widened <= 1.7976931348623157e308_cdouble) or
+      (widened < -3.4028234663852886e38_cdouble and widened >= -1.7976931348623157e308_cdouble) then
+    nelibc_errno_location()[0] = 34 -- ERANGE
+  elseif widened ~= 0.0_cdouble and
+      (result == 0.0_cfloat or result > -1.1754943508222875e-38_cfloat and
+       result < 1.1754943508222875e-38_cfloat) then
+    nelibc_errno_location()[0] = 34 -- ERANGE
+  end
+  return result
+end
+
+local function strtold(text: *[0]cchar <const>, end_text: **cchar): clongdouble <cexport, codename 'strtold'>
+  return strtod_impl(text, end_text, 64)
+end

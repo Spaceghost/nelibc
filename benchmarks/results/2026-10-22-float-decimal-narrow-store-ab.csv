@@ -1,0 +1,217 @@
+compiler,variant,libc,implementation,function,iterations,median_ns_per_call
+TinyCC,baseline,glibc,nelibc,strtof,160,13079.83
+TinyCC,baseline,glibc,nelibc,strtod,160,12677.29
+TinyCC,baseline,glibc,nelibc,strtold,160,13338.81
+TinyCC,cast,glibc,nelibc,strtof,160,12287.87
+TinyCC,cast,glibc,nelibc,strtod,160,13069.08
+TinyCC,cast,glibc,nelibc,strtold,160,12960.01
+TinyCC,cast,glibc,nelibc,strtof,160,12822.85
+TinyCC,cast,glibc,nelibc,strtod,160,12468.76
+TinyCC,cast,glibc,nelibc,strtold,160,12932.80
+TinyCC,baseline,glibc,nelibc,strtof,160,12913.33
+TinyCC,baseline,glibc,nelibc,strtod,160,12734.38
+TinyCC,baseline,glibc,nelibc,strtold,160,13560.81
+TinyCC,baseline,glibc,nelibc,strtof,160,12428.88
+TinyCC,baseline,glibc,nelibc,strtod,160,12945.62
+TinyCC,baseline,glibc,nelibc,strtold,160,14096.96
+TinyCC,cast,glibc,nelibc,strtof,160,13098.37
+TinyCC,cast,glibc,nelibc,strtod,160,12629.66
+TinyCC,cast,glibc,nelibc,strtold,160,13216.61
+TinyCC,cast,glibc,nelibc,strtof,160,12944.20
+TinyCC,cast,glibc,nelibc,strtod,160,12740.29
+TinyCC,cast,glibc,nelibc,strtold,160,13588.28
+TinyCC,baseline,glibc,nelibc,strtof,160,13457.83
+TinyCC,baseline,glibc,nelibc,strtod,160,12394.62
+TinyCC,baseline,glibc,nelibc,strtold,160,14214.21
+TinyCC,baseline,glibc,nelibc,strtof,160,13619.19
+TinyCC,baseline,glibc,nelibc,strtod,160,12839.78
+TinyCC,baseline,glibc,nelibc,strtold,160,13116.34
+TinyCC,cast,glibc,nelibc,strtof,160,12444.48
+TinyCC,cast,glibc,nelibc,strtod,160,12341.24
+TinyCC,cast,glibc,nelibc,strtold,160,13340.29
+TinyCC,cast,glibc,nelibc,strtof,160,12333.30
+TinyCC,cast,glibc,nelibc,strtod,160,12722.36
+TinyCC,cast,glibc,nelibc,strtold,160,13635.81
+TinyCC,baseline,glibc,nelibc,strtof,160,12945.56
+TinyCC,baseline,glibc,nelibc,strtod,160,13251.02
+TinyCC,baseline,glibc,nelibc,strtold,160,13494.08
+TinyCC,baseline,glibc,nelibc,strtof,160,12682.61
+TinyCC,baseline,glibc,nelibc,strtod,160,12943.94
+TinyCC,baseline,glibc,nelibc,strtold,160,13195.41
+TinyCC,cast,glibc,nelibc,strtof,160,12119.87
+TinyCC,cast,glibc,nelibc,strtod,160,12516.97
+TinyCC,cast,glibc,nelibc,strtold,160,13178.33
+TinyCC,cast,glibc,nelibc,strtof,160,12424.33
+TinyCC,cast,glibc,nelibc,strtod,160,12750.03
+TinyCC,cast,glibc,nelibc,strtold,160,13041.02
+TinyCC,baseline,glibc,nelibc,strtof,160,12426.36
+TinyCC,baseline,glibc,nelibc,strtod,160,13126.26
+TinyCC,baseline,glibc,nelibc,strtold,160,13155.44
+TinyCC,baseline,glibc,nelibc,strtof,160,13065.78
+TinyCC,baseline,glibc,nelibc,strtod,160,12621.94
+TinyCC,baseline,glibc,nelibc,strtold,160,12537.33
+TinyCC,cast,glibc,nelibc,strtof,160,12261.56
+TinyCC,cast,glibc,nelibc,strtod,160,11829.79
+TinyCC,cast,glibc,nelibc,strtold,160,12735.95
+TinyCC,cast,glibc,nelibc,strtof,160,12527.06
+TinyCC,cast,glibc,nelibc,strtod,160,12233.75
+TinyCC,cast,glibc,nelibc,strtold,160,13324.78
+TinyCC,baseline,glibc,nelibc,strtof,160,13713.41
+TinyCC,baseline,glibc,nelibc,strtod,160,12607.72
+TinyCC,baseline,glibc,nelibc,strtold,160,13918.73
+TinyCC,baseline,glibc,nelibc,strtof,160,13195.24
+TinyCC,baseline,glibc,nelibc,strtod,160,12876.46
+TinyCC,baseline,glibc,nelibc,strtold,160,13008.03
+TinyCC,cast,glibc,nelibc,strtof,160,12466.06
+TinyCC,cast,glibc,nelibc,strtod,160,12255.47
+TinyCC,cast,glibc,nelibc,strtold,160,12857.11
+TinyCC,cast,glibc,nelibc,strtof,160,12936.17
+TinyCC,cast,glibc,nelibc,strtod,160,12931.00
+TinyCC,cast,glibc,nelibc,strtold,160,13206.19
+TinyCC,baseline,glibc,nelibc,strtof,160,13259.36
+TinyCC,baseline,glibc,nelibc,strtod,160,12424.24
+TinyCC,baseline,glibc,nelibc,strtold,160,13144.82
+Zig cc,baseline,glibc,nelibc,strtof,160,5933.83
+Zig cc,baseline,glibc,nelibc,strtod,160,5773.63
+Zig cc,baseline,glibc,nelibc,strtold,160,5765.43
+Zig cc,cast,glibc,nelibc,strtof,160,5731.29
+Zig cc,cast,glibc,nelibc,strtod,160,5697.84
+Zig cc,cast,glibc,nelibc,strtold,160,5820.99
+Zig cc,cast,glibc,nelibc,strtof,160,5701.25
+Zig cc,cast,glibc,nelibc,strtod,160,5834.66
+Zig cc,cast,glibc,nelibc,strtold,160,5688.83
+Zig cc,baseline,glibc,nelibc,strtof,160,5556.29
+Zig cc,baseline,glibc,nelibc,strtod,160,5575.43
+Zig cc,baseline,glibc,nelibc,strtold,160,5797.42
+Zig cc,baseline,glibc,nelibc,strtof,160,5513.77
+Zig cc,baseline,glibc,nelibc,strtod,160,5693.11
+Zig cc,baseline,glibc,nelibc,strtold,160,5801.17
+Zig cc,cast,glibc,nelibc,strtof,160,5554.61
+Zig cc,cast,glibc,nelibc,strtod,160,5605.43
+Zig cc,cast,glibc,nelibc,strtold,160,5787.30
+Zig cc,cast,glibc,nelibc,strtof,160,5820.88
+Zig cc,cast,glibc,nelibc,strtod,160,5686.38
+Zig cc,cast,glibc,nelibc,strtold,160,5853.80
+Zig cc,baseline,glibc,nelibc,strtof,160,5581.63
+Zig cc,baseline,glibc,nelibc,strtod,160,5810.95
+Zig cc,baseline,glibc,nelibc,strtold,160,5691.54
+Zig cc,baseline,glibc,nelibc,strtof,160,5607.89
+Zig cc,baseline,glibc,nelibc,strtod,160,5616.56
+Zig cc,baseline,glibc,nelibc,strtold,160,5581.63
+Zig cc,cast,glibc,nelibc,strtof,160,5981.94
+Zig cc,cast,glibc,nelibc,strtod,160,5509.26
+Zig cc,cast,glibc,nelibc,strtold,160,5638.26
+Zig cc,cast,glibc,nelibc,strtof,160,5862.87
+Zig cc,cast,glibc,nelibc,strtod,160,5658.22
+Zig cc,cast,glibc,nelibc,strtold,160,5605.98
+Zig cc,baseline,glibc,nelibc,strtof,160,5514.14
+Zig cc,baseline,glibc,nelibc,strtod,160,6094.48
+Zig cc,baseline,glibc,nelibc,strtold,160,5726.59
+Zig cc,baseline,glibc,nelibc,strtof,160,5514.16
+Zig cc,baseline,glibc,nelibc,strtod,160,5502.61
+Zig cc,baseline,glibc,nelibc,strtold,160,5918.24
+Zig cc,cast,glibc,nelibc,strtof,160,5784.61
+Zig cc,cast,glibc,nelibc,strtod,160,5833.33
+Zig cc,cast,glibc,nelibc,strtold,160,5867.63
+Zig cc,cast,glibc,nelibc,strtof,160,5624.25
+Zig cc,cast,glibc,nelibc,strtod,160,5722.89
+Zig cc,cast,glibc,nelibc,strtold,160,5856.91
+Zig cc,baseline,glibc,nelibc,strtof,160,5596.72
+Zig cc,baseline,glibc,nelibc,strtod,160,5633.69
+Zig cc,baseline,glibc,nelibc,strtold,160,5704.66
+Zig cc,baseline,glibc,nelibc,strtof,160,5916.50
+Zig cc,baseline,glibc,nelibc,strtod,160,5535.09
+Zig cc,baseline,glibc,nelibc,strtold,160,5873.17
+Zig cc,cast,glibc,nelibc,strtof,160,5600.61
+Zig cc,cast,glibc,nelibc,strtod,160,5656.49
+Zig cc,cast,glibc,nelibc,strtold,160,5682.91
+Zig cc,cast,glibc,nelibc,strtof,160,5485.70
+Zig cc,cast,glibc,nelibc,strtod,160,5875.93
+Zig cc,cast,glibc,nelibc,strtold,160,5782.29
+Zig cc,baseline,glibc,nelibc,strtof,160,5648.36
+Zig cc,baseline,glibc,nelibc,strtod,160,5558.69
+Zig cc,baseline,glibc,nelibc,strtold,160,5724.13
+Zig cc,baseline,glibc,nelibc,strtof,160,5427.00
+Zig cc,baseline,glibc,nelibc,strtod,160,5511.22
+Zig cc,baseline,glibc,nelibc,strtold,160,6702.54
+Zig cc,cast,glibc,nelibc,strtof,160,5754.38
+Zig cc,cast,glibc,nelibc,strtod,160,5602.56
+Zig cc,cast,glibc,nelibc,strtold,160,5891.83
+Zig cc,cast,glibc,nelibc,strtof,160,5722.69
+Zig cc,cast,glibc,nelibc,strtod,160,5621.68
+Zig cc,cast,glibc,nelibc,strtold,160,5858.54
+Zig cc,baseline,glibc,nelibc,strtof,160,5776.74
+Zig cc,baseline,glibc,nelibc,strtod,160,5511.04
+Zig cc,baseline,glibc,nelibc,strtold,160,5621.41
+GCC,baseline,glibc,nelibc,strtof,160,4934.34
+GCC,baseline,glibc,nelibc,strtod,160,4683.46
+GCC,baseline,glibc,nelibc,strtold,160,4853.04
+GCC,cast,glibc,nelibc,strtof,160,4612.32
+GCC,cast,glibc,nelibc,strtod,160,4613.33
+GCC,cast,glibc,nelibc,strtold,160,4917.71
+GCC,cast,glibc,nelibc,strtof,160,4973.50
+GCC,cast,glibc,nelibc,strtod,160,4714.07
+GCC,cast,glibc,nelibc,strtold,160,5010.28
+GCC,baseline,glibc,nelibc,strtof,160,4884.98
+GCC,baseline,glibc,nelibc,strtod,160,4662.16
+GCC,baseline,glibc,nelibc,strtold,160,4938.48
+GCC,baseline,glibc,nelibc,strtof,160,4967.98
+GCC,baseline,glibc,nelibc,strtod,160,4938.40
+GCC,baseline,glibc,nelibc,strtold,160,5135.59
+GCC,cast,glibc,nelibc,strtof,160,4644.68
+GCC,cast,glibc,nelibc,strtod,160,4704.68
+GCC,cast,glibc,nelibc,strtold,160,4815.17
+GCC,cast,glibc,nelibc,strtof,160,4901.06
+GCC,cast,glibc,nelibc,strtod,160,4819.80
+GCC,cast,glibc,nelibc,strtold,160,4869.23
+GCC,baseline,glibc,nelibc,strtof,160,4570.41
+GCC,baseline,glibc,nelibc,strtod,160,4689.38
+GCC,baseline,glibc,nelibc,strtold,160,4938.58
+GCC,baseline,glibc,nelibc,strtof,160,4744.59
+GCC,baseline,glibc,nelibc,strtod,160,4846.88
+GCC,baseline,glibc,nelibc,strtold,160,5200.72
+GCC,cast,glibc,nelibc,strtof,160,4633.29
+GCC,cast,glibc,nelibc,strtod,160,4760.21
+GCC,cast,glibc,nelibc,strtold,160,4962.33
+GCC,cast,glibc,nelibc,strtof,160,4723.76
+GCC,cast,glibc,nelibc,strtod,160,4604.10
+GCC,cast,glibc,nelibc,strtold,160,4881.19
+GCC,baseline,glibc,nelibc,strtof,160,4771.97
+GCC,baseline,glibc,nelibc,strtod,160,4762.12
+GCC,baseline,glibc,nelibc,strtold,160,4940.29
+GCC,baseline,glibc,nelibc,strtof,160,5064.59
+GCC,baseline,glibc,nelibc,strtod,160,4749.79
+GCC,baseline,glibc,nelibc,strtold,160,5183.29
+GCC,cast,glibc,nelibc,strtof,160,4715.60
+GCC,cast,glibc,nelibc,strtod,160,4881.18
+GCC,cast,glibc,nelibc,strtold,160,4843.38
+GCC,cast,glibc,nelibc,strtof,160,4725.41
+GCC,cast,glibc,nelibc,strtod,160,4888.15
+GCC,cast,glibc,nelibc,strtold,160,5300.21
+GCC,baseline,glibc,nelibc,strtof,160,5091.97
+GCC,baseline,glibc,nelibc,strtod,160,4601.86
+GCC,baseline,glibc,nelibc,strtold,160,4736.61
+GCC,baseline,glibc,nelibc,strtof,160,5028.03
+GCC,baseline,glibc,nelibc,strtod,160,4794.14
+GCC,baseline,glibc,nelibc,strtold,160,4734.42
+GCC,cast,glibc,nelibc,strtof,160,4805.53
+GCC,cast,glibc,nelibc,strtod,160,4916.47
+GCC,cast,glibc,nelibc,strtold,160,4988.03
+GCC,cast,glibc,nelibc,strtof,160,4763.84
+GCC,cast,glibc,nelibc,strtod,160,4709.53
+GCC,cast,glibc,nelibc,strtold,160,4829.56
+GCC,baseline,glibc,nelibc,strtof,160,4719.38
+GCC,baseline,glibc,nelibc,strtod,160,4711.87
+GCC,baseline,glibc,nelibc,strtold,160,4863.01
+GCC,baseline,glibc,nelibc,strtof,160,4823.50
+GCC,baseline,glibc,nelibc,strtod,160,4803.59
+GCC,baseline,glibc,nelibc,strtold,160,4958.62
+GCC,cast,glibc,nelibc,strtof,160,4914.50
+GCC,cast,glibc,nelibc,strtod,160,4867.83
+GCC,cast,glibc,nelibc,strtold,160,4868.35
+GCC,cast,glibc,nelibc,strtof,160,4855.02
+GCC,cast,glibc,nelibc,strtod,160,4720.11
+GCC,cast,glibc,nelibc,strtold,160,5064.76
+GCC,baseline,glibc,nelibc,strtof,160,4853.57
+GCC,baseline,glibc,nelibc,strtod,160,4639.78
+GCC,baseline,glibc,nelibc,strtold,160,4777.44

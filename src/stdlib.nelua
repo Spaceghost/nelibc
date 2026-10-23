@@ -1,0 +1,2298 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_environment_vector(): **cchar <cimport> end
+local function nelibc_environment_set_vector(environment: **cchar): void <cimport> end
+local function nelibc_environment_pointer_size(): csize <cimport> end
+local function malloc(size: csize): pointer <cimport> end
+local function free(ptr: pointer): void <cimport> end
+local function realloc(ptr: pointer, size: csize): pointer <cimport> end
+local function strtod(text: *[0]cchar <const>, end_text: **cchar): cdouble <cimport> end
+local function raise(signal: cint): cint <cimport> end
+local function _Exit(status: cint): void <cimport> end
+local function fork(): cint <cimport> end
+local function execve(pathname: *[0]cchar <const>, argv: *[0]*[0]cchar,
+    envp: *[0]*[0]cchar): cint <cimport> end
+local function waitpid(pid: cint, status: *cint, options: cint): cint <cimport> end
+local function kill(pid: cint, signal: cint): cint <cimport> end
+local function nelibc_system_waitpid(pid: cint, status: *cint, options: cint,
+    cleanup: pointer, context: pointer): cint <cimport> end
+local function access(pathname: *[0]cchar <const>, mode: cint): cint <cimport> end
+local function sigaction(signal: cint, action: pointer <const>, old_action: pointer): cint <cimport> end
+local function sigprocmask(how: cint, set: pointer <const>, old_set: pointer): cint <cimport> end
+local function nelibc_system_lock(): void <cimport> end
+local function nelibc_system_unlock(): void <cimport> end
+local function write(fd: cint, buffer: pointer <const>, count: csize): clong <cimport> end
+local function nelibc_multibyte_state_reset(state: pointer): void <cimport> end
+local function nelibc_multibyte_state_copy(destination: pointer, source: pointer): void <cimport> end
+local function nelibc_multibyte_state_initial(state: pointer): cint <cimport> end
+local function nelibc_multibyte_decode(state: pointer, wide: *[0]cint,
+    text: *[0]cchar <const>, size: csize): csize <cimport> end
+local function nelibc_multibyte_encode(state: pointer, output: *[0]cchar,
+    wide: cint): csize <cimport> end
+local function nelibc_multibyte_mode(): cint <cimport> end
+local function nelibc_thread_state(slot: cuint, size: csize): pointer <cimport> end
+local optarg: *[0]cchar <cimport>
+local optind: cint <cimport>
+local opterr: cint <cimport>
+local optopt: cint <cimport>
+local random_state: cuint <threadlocal> = 1
+local getopt_cluster_argument: *[0]cchar = nilptr
+local getopt_cluster_offset: csize = 0
+local getopt_previous_argv: *[0]*[0]cchar = nilptr
+local getopt_previous_index: cint = 1
+local getopt_first_nonopt: cint = 1
+local getopt_last_nonopt: cint = 1
+local getopt_ordering: cint = 0 -- 0 permute, 1 require order, 2 return non-options
+local GetoptLongOption: type = @record{
+  name: *[0]cchar,
+  has_arg: cint,
+  flag: *[0]cint,
+  val: cint
+}
+
+local function getopt_posixly_correct(): boolean <inline>
+  local environment: *[0]*[0]cchar = (@*[0]*[0]cchar)(nelibc_environment_vector())
+  if environment == nilptr then return false end
+  local index: csize = 0
+  while environment[index] ~= nilptr do
+    local entry: *[0]cchar = environment[index]
+    if entry[0] == 80 and entry[1] == 79 and entry[2] == 83 and entry[3] == 73 and
+        entry[4] == 88 and entry[5] == 76 and entry[6] == 89 and entry[7] == 95 and
+        entry[8] == 67 and entry[9] == 79 and entry[10] == 82 and entry[11] == 82 and
+        entry[12] == 69 and entry[13] == 67 and entry[14] == 84 and entry[15] == 61 then
+      return true
+    end
+    index = index + 1
+  end
+  return false
+end
+
+local function getopt_exchange(argv: *[0]*[0]cchar, bottom: cint,
+    middle: cint, top: cint): void <inline>
+  local left: cint
+  local right: cint
+  local temporary: *[0]cchar
+  left = bottom
+  right = middle - 1
+  while left < right do
+    temporary = argv[left]
+    argv[left] = argv[right]
+    argv[right] = temporary
+    left = left + 1
+    right = right - 1
+  end
+  left = middle
+  right = top - 1
+  while left < right do
+    temporary = argv[left]
+    argv[left] = argv[right]
+    argv[right] = temporary
+    left = left + 1
+    right = right - 1
+  end
+  left = bottom
+  right = top - 1
+  while left < right do
+    temporary = argv[left]
+    argv[left] = argv[right]
+    argv[right] = temporary
+    left = left + 1
+    right = right - 1
+  end
+end
+
+local function getopt_report(program: *[0]cchar <const>, option: cint,
+    missing_argument: boolean): void <inline>
+  if opterr == 0 then return end
+  local name: *[0]cchar = program
+  if name == nilptr or name[0] == 0 then name = 'getopt' end
+  local name_length: csize = 0
+  while name[name_length] ~= 0 do name_length = name_length + 1 end
+  write(2, (@pointer)(name), name_length)
+  local message: *[0]cchar
+  if missing_argument then
+    message = ': option requires an argument -- '
+  else
+    message = ': invalid option -- '
+  end
+  local message_length: csize = 0
+  while message[message_length] ~= 0 do message_length = message_length + 1 end
+  write(2, (@pointer)(message), message_length)
+  local suffix: [3]byte = {(@byte)(option), 10, 0}
+  write(2, (@pointer)(&suffix[0]), 2)
+end
+
+local function getopt(argc: cint, argv: *[0]*[0]cchar,
+    option_string: *[0]cchar <const>): cint <cexport, codename 'getopt'>
+  optarg = nilptr
+  if argc <= 0 or argv == nilptr or option_string == nilptr then return -1 end
+  local effective_option_string: *[0]cchar = (@*[0]cchar)(option_string)
+  if optind == 0 then
+    optind = 1
+    getopt_cluster_argument = nilptr
+    getopt_cluster_offset = 0
+    getopt_first_nonopt = 1
+    getopt_last_nonopt = 1
+    getopt_ordering = 0
+  elseif optind ~= getopt_previous_index or argv ~= getopt_previous_argv then
+    getopt_cluster_argument = nilptr
+    getopt_cluster_offset = 0
+    getopt_first_nonopt = optind
+    getopt_last_nonopt = optind
+    getopt_ordering = 0
+  end
+  if getopt_ordering == 0 then
+    local option_offset: csize = 0
+    if option_string[0] == 43 or option_string[0] == 45 then option_offset = 1 end
+    if option_string[0] == 43 or (option_string[0] ~= 45 and getopt_posixly_correct()) then
+      getopt_ordering = 1
+    elseif option_string[0] == 45 then
+      getopt_ordering = 2
+    end
+    if option_offset ~= 0 then effective_option_string = &effective_option_string[option_offset] end
+  end
+  if optind < 1 then optind = 1 end
+  if getopt_cluster_offset == 0 then
+    if getopt_ordering == 0 and getopt_first_nonopt ~= getopt_last_nonopt and getopt_last_nonopt ~= optind then
+      getopt_exchange(argv, getopt_first_nonopt, getopt_last_nonopt, optind)
+      getopt_first_nonopt = getopt_first_nonopt + optind - getopt_last_nonopt
+      getopt_last_nonopt = optind
+    elseif getopt_first_nonopt == getopt_last_nonopt then
+      getopt_first_nonopt = optind
+    end
+    if getopt_ordering == 0 then
+      while optind < argc and (argv[optind] == nilptr or argv[optind][0] ~= 45 or argv[optind][1] == 0) do
+        optind = optind + 1
+      end
+    elseif optind < argc and (argv[optind] == nilptr or argv[optind][0] ~= 45 or argv[optind][1] == 0) then
+      if getopt_ordering == 2 then
+        optarg = argv[optind]
+        optind = optind + 1
+        getopt_previous_index = optind
+        getopt_previous_argv = argv
+        return 1
+      end
+      getopt_previous_index = optind
+      getopt_previous_argv = argv
+      return -1
+    end
+    getopt_last_nonopt = optind
+  end
+  if optind >= argc then
+    if getopt_ordering == 0 and getopt_first_nonopt ~= getopt_last_nonopt then optind = getopt_first_nonopt end
+    getopt_previous_index = optind
+    getopt_previous_argv = argv
+    return -1
+  end
+
+  local argument: *[0]cchar = argv[optind]
+  if getopt_cluster_offset == 0 or argument ~= getopt_cluster_argument then
+    if argument == nilptr or argument[0] ~= 45 or argument[1] == 0 then
+      if getopt_ordering == 2 then
+        optarg = argument
+        optind = optind + 1
+        getopt_previous_index = optind
+        getopt_previous_argv = argv
+        return 1
+      end
+      getopt_previous_index = optind
+      getopt_previous_argv = argv
+      return -1
+    end
+    if argument[1] == 45 and argument[2] == 0 then
+      optind = optind + 1
+      if getopt_first_nonopt ~= getopt_last_nonopt and getopt_last_nonopt ~= optind then
+        local option_end: cint = optind - 1
+        getopt_exchange(argv, getopt_first_nonopt, getopt_last_nonopt, optind)
+        optind = getopt_first_nonopt + option_end - getopt_last_nonopt + 1
+      end
+      if getopt_first_nonopt == getopt_last_nonopt then getopt_first_nonopt = optind end
+      getopt_last_nonopt = optind
+      getopt_previous_index = optind
+      getopt_previous_argv = argv
+      return -1
+    end
+    getopt_cluster_argument = argument
+    getopt_cluster_offset = 1
+  end
+
+  local option: cint = (@cint)(getopt_cluster_argument[getopt_cluster_offset])
+  local next_offset: csize = getopt_cluster_offset + 1
+  local has_attached_argument: boolean = getopt_cluster_argument[next_offset] ~= 0
+  local option_position: csize = 0
+  if effective_option_string[0] == 58 then option_position = 1 end
+  local found: boolean = false
+  while effective_option_string[option_position] ~= 0 do
+    if (@cint)(effective_option_string[option_position]) == option then
+      found = true
+      break
+    end
+    option_position = option_position + 1
+  end
+  if not found or option == 58 then
+    optopt = option
+    getopt_report(argv[0], option, false)
+    if has_attached_argument then
+      getopt_cluster_offset = next_offset
+    else
+      optind = optind + 1
+      getopt_cluster_offset = 0
+      getopt_cluster_argument = nilptr
+    end
+    getopt_previous_index = optind
+    getopt_previous_argv = argv
+    return 63
+  end
+
+  if effective_option_string[option_position + 1] == 58 and
+      effective_option_string[option_position + 2] == 58 then
+    if has_attached_argument then
+      optarg = (@*[0]cchar)(&getopt_cluster_argument[next_offset])
+    end
+    optind = optind + 1
+    getopt_cluster_offset = 0
+    getopt_cluster_argument = nilptr
+  elseif effective_option_string[option_position + 1] == 58 then
+    if has_attached_argument then
+      optarg = (@*[0]cchar)(&getopt_cluster_argument[next_offset])
+      optind = optind + 1
+    elseif optind + 1 < argc then
+      optarg = argv[optind + 1]
+      optind = optind + 2
+    else
+      optopt = option
+      optind = optind + 1
+      getopt_cluster_offset = 0
+      getopt_cluster_argument = nilptr
+      getopt_previous_index = optind
+      getopt_previous_argv = argv
+      if effective_option_string[0] ~= 58 then getopt_report(argv[0], option, true) end
+      if effective_option_string[0] == 58 then return 58 end
+      return 63
+    end
+    getopt_cluster_offset = 0
+    getopt_cluster_argument = nilptr
+  elseif has_attached_argument then
+    getopt_cluster_offset = next_offset
+  else
+    optind = optind + 1
+    getopt_cluster_offset = 0
+    getopt_cluster_argument = nilptr
+  end
+
+  getopt_previous_index = optind
+  getopt_previous_argv = argv
+  return option
+end
+
+local function getopt_long_impl(argc: cint, argv: *[0]*[0]cchar,
+    option_string: *[0]cchar <const>, long_options: *[0]GetoptLongOption,
+    long_index: *[0]cint, long_only: boolean): cint <inline>
+  optarg = nilptr
+  if argc <= 0 or argv == nilptr or option_string == nilptr then return -1 end
+  local short_option_offset: csize = 0
+  if option_string[0] == 43 or option_string[0] == 45 then short_option_offset = 1 end
+
+  if getopt_cluster_offset == 0 then
+    if optind == 0 then
+      optind = 1
+      getopt_cluster_argument = nilptr
+      getopt_first_nonopt = 1
+      getopt_last_nonopt = 1
+      getopt_ordering = 0
+    elseif optind ~= getopt_previous_index or argv ~= getopt_previous_argv then
+      getopt_cluster_argument = nilptr
+      getopt_first_nonopt = optind
+      getopt_last_nonopt = optind
+      getopt_ordering = 0
+    end
+
+    if getopt_ordering == 0 then
+      if option_string[0] == 43 or
+          (option_string[0] ~= 45 and getopt_posixly_correct()) then
+        getopt_ordering = 1
+      elseif option_string[0] == 45 then
+        getopt_ordering = 2
+      end
+    end
+    if optind < 1 then optind = 1 end
+
+    if getopt_ordering == 0 and getopt_first_nonopt ~= getopt_last_nonopt and
+        getopt_last_nonopt ~= optind then
+      getopt_exchange(argv, getopt_first_nonopt, getopt_last_nonopt, optind)
+      getopt_first_nonopt = getopt_first_nonopt + optind - getopt_last_nonopt
+      getopt_last_nonopt = optind
+    elseif getopt_first_nonopt == getopt_last_nonopt then
+      getopt_first_nonopt = optind
+    end
+
+    if getopt_ordering == 0 then
+      while optind < argc and
+          (argv[optind] == nilptr or argv[optind][0] ~= 45 or argv[optind][1] == 0) do
+        optind = optind + 1
+      end
+    elseif optind < argc and
+        (argv[optind] == nilptr or argv[optind][0] ~= 45 or argv[optind][1] == 0) then
+      if getopt_ordering == 2 then
+        optarg = argv[optind]
+        optind = optind + 1
+        getopt_previous_index = optind
+        getopt_previous_argv = argv
+        return 1
+      end
+      getopt_previous_index = optind
+      getopt_previous_argv = argv
+      return -1
+    end
+    getopt_last_nonopt = optind
+
+    local argument: *[0]cchar = nilptr
+    local name_start: csize = 0
+    local try_long_option: boolean = false
+    if optind < argc and argv[optind] ~= nilptr then
+      argument = argv[optind]
+      if argument[0] == 45 and argument[1] == 45 and argument[2] ~= 0 then
+        name_start = 2
+        try_long_option = true
+      elseif long_only and argument[0] == 45 and argument[1] ~= 0 and argument[1] ~= 45 then
+        name_start = 1
+        try_long_option = true
+        if argument[2] == 0 then
+          local short_position: csize = short_option_offset
+          if option_string[short_position] == 58 then short_position = short_position + 1 end
+          while option_string[short_position] ~= 0 do
+            if option_string[short_position] == argument[1] then
+              try_long_option = false
+              break
+            end
+            short_position = short_position + 1
+          end
+        end
+      end
+    end
+    if try_long_option then
+      local name_end: csize = name_start
+      while argument[name_end] ~= 0 and argument[name_end] ~= 61 do
+        name_end = name_end + 1
+      end
+      local equal_position: csize = name_end
+      local best: *GetoptLongOption = nilptr
+      local best_index: cint = 0
+      local matches: cint = 0
+      local index: cint = 0
+      if long_options ~= nilptr then
+        while long_options[index].name ~= nilptr do
+          local option_name: *[0]cchar = long_options[index].name
+          local name_length: csize = 0
+          while option_name[name_length] ~= 0 do name_length = name_length + 1 end
+          local same_prefix: boolean = true
+          local position: csize = 0
+          while position < name_end - name_start do
+            if option_name[position] == 0 or option_name[position] ~= argument[name_start + position] then
+              same_prefix = false
+              break
+            end
+            position = position + 1
+          end
+          if same_prefix then
+            if name_length == name_end - name_start then
+              best = &long_options[index]
+              best_index = index
+              matches = 1
+              break
+            elseif name_length > name_end - name_start then
+              best = &long_options[index]
+              best_index = index
+              matches = matches + 1
+            end
+          end
+          index = index + 1
+        end
+      end
+
+      if matches ~= 1 or best == nilptr then
+        if long_only and name_start == 1 then
+          getopt_previous_index = optind
+          getopt_previous_argv = argv
+          return getopt(argc, argv, option_string)
+        end
+        optopt = 0
+        optind = optind + 1
+        getopt_previous_index = optind
+        getopt_previous_argv = argv
+        if opterr ~= 0 then getopt_report(argv[0], 0, false) end
+        return 63
+      end
+
+      local has_equal: boolean = argument[equal_position] == 61
+      if has_equal and best.has_arg == 0 then
+        optopt = best.val
+        optind = optind + 1
+        getopt_previous_index = optind
+        getopt_previous_argv = argv
+        return 63
+      end
+      optarg = nilptr
+      if has_equal then
+        optarg = &argument[equal_position + 1]
+      elseif best.has_arg == 1 then
+        if optind + 1 >= argc then
+          optopt = best.val
+          optind = optind + 1
+          getopt_previous_index = optind
+          getopt_previous_argv = argv
+          if option_string[short_option_offset] ~= 58 then getopt_report(argv[0], best.val, true) end
+          if option_string[short_option_offset] == 58 then return 58 end
+          return 63
+        end
+        optarg = argv[optind + 1]
+        optind = optind + 1
+      end
+      optind = optind + 1
+      if long_index ~= nilptr then long_index[0] = best_index end
+      getopt_previous_index = optind
+      getopt_previous_argv = argv
+      if best.flag ~= nilptr then
+        best.flag[0] = best.val
+        return 0
+      end
+      return best.val
+    end
+  end
+
+  getopt_previous_index = optind
+  getopt_previous_argv = argv
+  return getopt(argc, argv, option_string)
+end
+
+local function getopt_long(argc: cint, argv: *[0]*[0]cchar,
+    option_string: *[0]cchar <const>, long_options: *[0]GetoptLongOption,
+    long_index: *[0]cint): cint <cexport, codename 'getopt_long'>
+  return getopt_long_impl(argc, argv, option_string, long_options, long_index, false)
+end
+
+local function getopt_long_only(argc: cint, argv: *[0]*[0]cchar,
+    option_string: *[0]cchar <const>, long_options: *[0]GetoptLongOption,
+    long_index: *[0]cint): cint <cexport, codename 'getopt_long_only'>
+  return getopt_long_impl(argc, argv, option_string, long_options, long_index, true)
+end
+
+local function getsubopt(option_pointer: **cchar, tokens: *[0]*[0]cchar,
+    value_pointer: **cchar): cint <cexport, codename 'getsubopt'>
+  if option_pointer == nilptr then return -1 end
+  local option_slot: *[0]*[0]cchar = (@*[0]*[0]cchar)(option_pointer)
+  local value_slot: *[0]*[0]cchar = (@*[0]*[0]cchar)(value_pointer)
+  local field: *[0]cchar = option_slot[0]
+  if field == nilptr then return -1 end
+  if field[0] == 0 then return -1 end
+
+  local field_length: csize = 0
+  while field[field_length] ~= 0 and field[field_length] ~= 44 do
+    field_length = field_length + 1
+  end
+  if field[field_length] == 44 then
+    field[field_length] = 0
+    option_slot[0] = &field[field_length + 1]
+  else
+    option_slot[0] = &field[field_length]
+  end
+
+  local name_length: csize = 0
+  while name_length < field_length and field[name_length] ~= 61 do
+    name_length = name_length + 1
+  end
+  local has_value: boolean = name_length < field_length
+
+  if value_slot ~= nilptr then value_slot[0] = field end
+  if tokens == nilptr then return -1 end
+  local token_index: cint = 0
+  while tokens[token_index] ~= nilptr do
+    local position: csize = 0
+    while position < name_length and tokens[token_index][position] == field[position] do
+      position = position + 1
+    end
+    if position == name_length and tokens[token_index][position] == 0 then
+      if value_slot ~= nilptr then
+        if has_value then value_slot[0] = &field[name_length + 1]
+        else value_slot[0] = nilptr end
+      end
+      return token_index
+    end
+    token_index = token_index + 1
+  end
+  return -1
+end
+
+local mblen_state: [16]culong = {}
+local mbtowc_state: [16]culong = {}
+local wctomb_state: [16]culong = {}
+local NELIBC_MULTIBYTE_STATE_TAG: cuint = 0x55_cuint
+
+local function decode_multibyte(state: pointer, wide: *[0]cint, text: *[0]cchar <const>,
+    size: csize): csize <inline>
+  local mode: cint = nelibc_multibyte_mode()
+  if mode == 2 then return nelibc_multibyte_decode(state, wide, text, size) end
+  if text == nilptr then return 0 end
+  if size == 0 then return ~1_csize end
+
+  local first: cuint = (@cuint)((@byte)(text[0]))
+  if first == 0 then
+    if wide ~= nilptr then wide[0] = 0 end
+    return 0
+  end
+  if mode == 0 or first < 0x80 then
+    if first > 0x7f then return ~0_csize end
+    if wide ~= nilptr then wide[0] = (@cint)(first) end
+    return 1
+  end
+
+  local count: csize
+  local value: cuint
+  if first >= 0xc2 and first <= 0xdf then
+    count = 2
+    value = first & 0x1f
+  elseif first >= 0xe0 and first <= 0xef then
+    count = 3
+    value = first & 0x0f
+  elseif first >= 0xf0 and first <= 0xf4 then
+    count = 4
+    value = first & 0x07
+  else
+    return ~0_csize
+  end
+  if size < count then return ~1_csize end
+  local index: csize = 1
+  while index < count do
+    local continuation: cuint = (@cuint)((@byte)(text[index]))
+    if continuation < 0x80 or continuation > 0xbf then return ~0_csize end
+    if index == 1 and ((first == 0xe0 and continuation < 0xa0) or
+        (first == 0xed and continuation >= 0xa0) or
+        (first == 0xf0 and continuation < 0x90) or
+        (first == 0xf4 and continuation > 0x8f)) then
+      return ~0_csize
+    end
+    value = (value << 6) | (continuation & 0x3f)
+    index = index + 1
+  end
+  if wide ~= nilptr then wide[0] = (@cint)(value) end
+  return count
+end
+
+local function encode_multibyte(state: pointer, output: *[0]cchar, wide: cint): csize <inline>
+  local mode: cint = nelibc_multibyte_mode()
+  if mode == 2 then return nelibc_multibyte_encode(state, output, wide) end
+  if wide < 0 or wide > 0x10ffff or (wide >= 0xd800 and wide <= 0xdfff) then
+    return ~0_csize
+  end
+  if mode == 0 then
+    if wide > 0x7f then return ~0_csize end
+    if output ~= nilptr then output[0] = (@cchar)(wide) end
+    return 1
+  end
+  if wide < 0x80 then
+    if output ~= nilptr then output[0] = (@cchar)(wide) end
+    return 1
+  elseif wide < 0x800 then
+    if output ~= nilptr then
+      output[0] = (@cchar)(0xc0 | (wide >> 6))
+      output[1] = (@cchar)(0x80 | (wide & 0x3f))
+    end
+    return 2
+  elseif wide < 0x10000 then
+    if output ~= nilptr then
+      output[0] = (@cchar)(0xe0 | (wide >> 12))
+      output[1] = (@cchar)(0x80 | ((wide >> 6) & 0x3f))
+      output[2] = (@cchar)(0x80 | (wide & 0x3f))
+    end
+    return 3
+  end
+  if output ~= nilptr then
+    output[0] = (@cchar)(0xf0 | (wide >> 18))
+    output[1] = (@cchar)(0x80 | ((wide >> 12) & 0x3f))
+    output[2] = (@cchar)(0x80 | ((wide >> 6) & 0x3f))
+    output[3] = (@cchar)(0x80 | (wide & 0x3f))
+  end
+  return 4
+end
+
+local function mblen(text: *[0]cchar <const>, size: csize): cint <cexport, codename 'mblen'>
+  if text == nilptr then
+    nelibc_multibyte_state_reset((@pointer)(&mblen_state[0]))
+    return 0
+  end
+  local converted: csize = decode_multibyte((@pointer)(&mblen_state[0]), nilptr, text, size)
+  if converted == ~0_csize or converted == ~1_csize then
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return -1
+  end
+  return (@cint)(converted)
+end
+
+local function mbtowc(wide: *[0]cint, text: *[0]cchar <const>,
+    size: csize): cint <cexport, codename 'mbtowc'>
+  if text == nilptr then
+    nelibc_multibyte_state_reset((@pointer)(&mbtowc_state[0]))
+    return 0
+  end
+  local converted: csize = decode_multibyte((@pointer)(&mbtowc_state[0]), wide, text, size)
+  if converted == ~0_csize or converted == ~1_csize then
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return -1
+  end
+  return (@cint)(converted)
+end
+
+local function mbrtowc(wide: *[0]cint, text: *[0]cchar <const>, size: csize,
+    state: pointer): csize <cexport, codename 'mbrtowc'>
+  local mode: cint = nelibc_multibyte_mode()
+  local active_state: pointer = state
+  if active_state == nilptr then active_state = nelibc_thread_state(0, 256) end
+  if text == nilptr then
+    if mode == 2 then
+      local empty: [1]cchar = {0}
+      local converted: csize = nelibc_multibyte_decode(active_state, nilptr,
+          (@*[0]cchar)(&empty[0]), 1)
+      if converted == ~0_csize then nelibc_errno_location()[0] = 84 end -- EILSEQ
+      return converted
+    else
+      local words: *[0]cuint = (@*[0]cuint)(active_state)
+      local tagged_state: boolean = (words[0] >> 25) == NELIBC_MULTIBYTE_STATE_TAG
+      if tagged_state then
+        words[0] = 0
+        nelibc_errno_location()[0] = 84 -- EILSEQ
+        return ~0_csize
+      end
+      words[0] = 0
+    end
+    return 0
+  end
+  local converted: csize
+  if mode == 2 then
+    converted = nelibc_multibyte_decode(active_state, wide, text, size)
+  else
+  if size == 0 then return ~1_csize end
+
+  local words: *[0]cuint = (@*[0]cuint)(active_state)
+  local packed_state: cuint = words[0]
+  local tagged_state: boolean = (packed_state >> 25) == NELIBC_MULTIBYTE_STATE_TAG
+  local accumulated: cuint = packed_state & 0x1fffff
+  local pending: cuint = 0
+  local expected: cuint = 0
+  if tagged_state then
+    pending = (packed_state >> 21) & 0x3
+    expected = ((packed_state >> 23) & 0x3) + 2
+  else
+    accumulated = 0
+  end
+  local first_byte: cuint = 0
+  if pending ~= 0 then
+    local prefix: cuint = accumulated >> ((pending - 1) * 6)
+    if expected == 2 then first_byte = 0xc0 | prefix
+    elseif expected == 3 then first_byte = 0xe0 | prefix
+    else first_byte = 0xf0 | prefix end
+  end
+  local consumed: csize = 0
+
+  if pending == 0 then
+    first_byte = (@cuint)((@byte)(text[0]))
+    if first_byte == 0 then
+      if wide ~= nilptr then wide[0] = 0 end
+      words[0] = 0
+      return 0
+    end
+    if mode == 0 or first_byte < 0x80 then
+      if first_byte > 0x7f then
+        words[0] = 0
+        nelibc_errno_location()[0] = 84 -- EILSEQ
+        return ~0_csize
+      end
+      if wide ~= nilptr then wide[0] = (@cint)(first_byte) end
+      words[0] = 0
+      return 1
+    elseif first_byte >= 0xc2 and first_byte <= 0xdf then
+      expected = 2
+      accumulated = first_byte & 0x1f
+    elseif first_byte >= 0xe0 and first_byte <= 0xef then
+      expected = 3
+      accumulated = first_byte & 0x0f
+    elseif first_byte >= 0xf0 and first_byte <= 0xf4 then
+      expected = 4
+      accumulated = first_byte & 0x07
+    else
+      words[0] = 0
+      nelibc_errno_location()[0] = 84 -- EILSEQ
+      return ~0_csize
+    end
+    pending = 1
+    consumed = 1
+  end
+
+  while pending < expected and consumed < size do
+    local continuation: cuint = (@cuint)((@byte)(text[consumed]))
+    if continuation < 0x80 or continuation > 0xbf or
+        (pending == 1 and ((first_byte == 0xe0 and continuation < 0xa0) or
+        (first_byte == 0xed and continuation >= 0xa0) or
+        (first_byte == 0xf0 and continuation < 0x90) or
+        (first_byte == 0xf4 and continuation > 0x8f))) then
+      words[0] = 0
+      nelibc_errno_location()[0] = 84 -- EILSEQ
+      return ~0_csize
+    end
+    accumulated = (accumulated << 6) | (continuation & 0x3f)
+    pending = pending + 1
+    consumed = consumed + 1
+  end
+
+  if pending < expected then
+    words[0] = (NELIBC_MULTIBYTE_STATE_TAG << 25) | (accumulated & 0x1fffff) |
+        (pending << 21) | ((expected - 2) << 23)
+    return ~1_csize
+  end
+  if wide ~= nilptr then wide[0] = (@cint)(accumulated) end
+  words[0] = 0
+  if accumulated == 0 then return 0 end
+    converted = consumed
+  end
+  if converted == ~0_csize then nelibc_errno_location()[0] = 84 end -- EILSEQ
+  return converted
+end
+
+local function mbrlen(text: *[0]cchar <const>, size: csize, state: pointer): csize
+    <cexport, codename 'mbrlen'>
+  local active_state: pointer = state
+  if active_state == nilptr then active_state = nelibc_thread_state(1, 256) end
+  return mbrtowc(nilptr, text, size, active_state)
+end
+
+local function mbsinit(state: pointer): cint <cexport, codename 'mbsinit'>
+  return nelibc_multibyte_state_initial(state)
+end
+
+local function btowc(value: cint): cuint <cexport, codename 'btowc'>
+  if value == -1 then return ~0_cuint end -- EOF maps to WEOF
+  local input: [1]cchar = {(@cchar)(value)}
+  local wide: cint = 0
+  local state: [16]culong = {}
+  local converted: csize = mbrtowc(&wide, &input[0], 1, (@pointer)(&state[0]))
+  if converted == ~0_csize or converted == ~1_csize then return ~0_cuint end
+  return (@cuint)(wide)
+end
+
+local function wctomb(output: *[0]cchar, wide: cint): cint <cexport, codename 'wctomb'>
+  if output == nilptr then
+    nelibc_multibyte_state_reset((@pointer)(&wctomb_state[0]))
+    return 0
+  end
+  local converted: csize = encode_multibyte((@pointer)(&wctomb_state[0]), output, wide)
+  if converted == ~0_csize then
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return -1
+  end
+  return (@cint)(converted)
+end
+
+local function wcrtomb(output: *[0]cchar, wide: cint, state: pointer): csize
+    <cexport, codename 'wcrtomb'>
+  local mode: cint = nelibc_multibyte_mode()
+  local active_state: pointer = state
+  if active_state == nilptr then active_state = nelibc_thread_state(2, 256) end
+  if output == nilptr then
+    if mode == 2 then
+      local reset_output: [64]cchar = {}
+      return encode_multibyte(active_state, (@*[0]cchar)(&reset_output[0]), 0)
+    end
+    local words: *[0]cuint = (@*[0]cuint)(active_state)
+    words[0] = 0
+    local reset_output: [4]cchar = {}
+    return encode_multibyte(active_state, (@*[0]cchar)(&reset_output[0]), 0)
+  end
+  local converted: csize = encode_multibyte(active_state, output, wide)
+  if converted == ~0_csize then nelibc_errno_location()[0] = 84 end -- EILSEQ
+  return converted
+end
+
+local function wctob(wide: cuint): cint <cexport, codename 'wctob'>
+  if wide == ~0_cuint then return -1 end -- WEOF maps to EOF
+  if wide > 0x10ffff then return -1 end
+  local output: [8]cchar = {}
+  local state: [16]culong = {}
+  local converted: csize = wcrtomb((@*[0]cchar)(&output[0]), (@cint)(wide),
+      (@pointer)(&state[0]))
+  if converted ~= 1 then return -1 end
+  return (@cint)((@cuint)((@byte)(output[0])))
+end
+
+local function mbstowcs(output: *[0]cint, text: *[0]cchar <const>,
+    limit: csize): csize <cexport, codename 'mbstowcs'>
+  local state: [16]culong = {}
+  local text_length: csize = 0
+  while text[text_length] ~= 0 do text_length = text_length + 1 end
+  local input_index: csize = 0
+  local output_count: csize = 0
+  while input_index < text_length do
+    if output ~= nilptr and output_count >= limit then return output_count end
+    local wide: cint = 0
+    local converted: csize = decode_multibyte((@pointer)(&state[0]), &wide,
+        &text[input_index], text_length - input_index + 1)
+    if converted == ~0_csize or converted == ~1_csize then
+      nelibc_errno_location()[0] = 84 -- EILSEQ
+      return ~0_csize
+    end
+    if converted == 0 then
+      if output ~= nilptr then output[output_count] = 0 end
+      return output_count
+    end
+    input_index = input_index + converted
+    if output ~= nilptr then output[output_count] = wide end
+    output_count = output_count + 1
+  end
+  if output ~= nilptr and output_count < limit then output[output_count] = 0 end
+  return output_count
+end
+
+local function wcstombs(output: *[0]cchar, wide_text: *[0]cint,
+    limit: csize): csize <cexport, codename 'wcstombs'>
+  local state: [16]culong = {}
+  local temporary: [64]byte = {}
+  local input_index: csize = 0
+  local output_count: csize = 0
+  while wide_text[input_index] ~= 0 do
+    if output ~= nilptr and output_count >= limit then return output_count end
+    local converted: csize = encode_multibyte((@pointer)(&state[0]),
+        (@*[0]cchar)(&temporary[0]), wide_text[input_index])
+    if converted == ~0_csize then
+      nelibc_errno_location()[0] = 84 -- EILSEQ
+      return ~0_csize
+    end
+    if output ~= nilptr and converted > limit - output_count then return output_count end
+    if output ~= nilptr then
+      local byte_index: csize = 0
+      while byte_index < converted do
+        output[output_count + byte_index] = (@cchar)(temporary[byte_index])
+        byte_index = byte_index + 1
+      end
+    end
+    output_count = output_count + converted
+    input_index = input_index + 1
+  end
+
+  local terminator_size: csize = encode_multibyte((@pointer)(&state[0]),
+      (@*[0]cchar)(&temporary[0]), 0)
+  if terminator_size == ~0_csize then
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return ~0_csize
+  end
+  if output ~= nilptr and terminator_size <= limit - output_count then
+    local byte_index: csize = 0
+    while byte_index < terminator_size do
+      output[output_count + byte_index] = (@cchar)(temporary[byte_index])
+      byte_index = byte_index + 1
+    end
+  elseif output == nilptr then
+    output_count = output_count + terminator_size - 1
+  end
+  return output_count
+end
+
+local function mbsrtowcs(output: *[0]cint, source: *[0]*[0]cchar, limit: csize,
+    state: pointer): csize <cexport, codename 'mbsrtowcs'>
+  local work_state: [16]culong = {}
+  local active_state: pointer = state
+  local source_text: *[0]cchar = source[0]
+  local query: boolean = output == nilptr
+  if active_state == nilptr then active_state = nelibc_thread_state(3, 256) end
+  if query then
+    nelibc_multibyte_state_copy((@pointer)(&work_state[0]), active_state)
+    active_state = (@pointer)(&work_state[0])
+  end
+  local input_index: csize = 0
+  local output_count: csize = 0
+  while true do
+    if not query and output_count >= limit then
+      source[0] = &source_text[input_index]
+      return output_count
+    end
+    local wide: cint = 0
+    local converted: csize = mbrtowc(&wide, &source_text[input_index],
+        ~0_csize, active_state)
+    if converted == ~0_csize then
+      if not query then source[0] = &source_text[input_index] end
+      return ~0_csize
+    end
+    if converted == ~1_csize then
+      if not query then source[0] = &source_text[input_index] end
+      nelibc_errno_location()[0] = 84
+      return ~0_csize
+    end
+    if converted == 0 then
+      if not query then
+        output[output_count] = 0
+        source[0] = nilptr
+        nelibc_multibyte_state_reset(active_state)
+      end
+      return output_count
+    end
+    if not query then output[output_count] = wide end
+    input_index = input_index + converted
+    output_count = output_count + 1
+  end
+end
+
+local function mbsnrtowcs(output: *[0]cint, source: *[0]*[0]cchar,
+    input_limit: csize, output_limit: csize, state: pointer): csize
+    <cexport, codename 'mbsnrtowcs'>
+  local work_state: [16]culong = {}
+  local active_state: pointer = state
+  local source_text: *[0]cchar = source[0]
+  local query: boolean = output == nilptr
+  if active_state == nilptr then active_state = nelibc_thread_state(4, 256) end
+  if query then
+    nelibc_multibyte_state_copy((@pointer)(&work_state[0]), active_state)
+    active_state = (@pointer)(&work_state[0])
+  end
+  local input_index: csize = 0
+  local output_count: csize = 0
+  while input_index < input_limit do
+    if not query and output_count >= output_limit then
+      source[0] = &source_text[input_index]
+      return output_count
+    end
+    local wide: cint = 0
+    local converted: csize = mbrtowc(&wide, &source_text[input_index],
+        input_limit - input_index, active_state)
+    if converted == ~0_csize then
+      if not query then source[0] = &source_text[input_index] end
+      return ~0_csize
+    end
+    if converted == ~1_csize then
+      if not query then source[0] = &source_text[input_limit] end
+      return output_count
+    end
+    if converted == 0 then
+      if not query then
+        output[output_count] = 0
+        source[0] = nilptr
+        nelibc_multibyte_state_reset(active_state)
+      end
+      return output_count
+    end
+    if not query then output[output_count] = wide end
+    input_index = input_index + converted
+    output_count = output_count + 1
+  end
+  if not query then source[0] = &source_text[input_index] end
+  return output_count
+end
+
+local function wcsrtombs(output: *[0]cchar, source: *[0]*[0]cint, limit: csize,
+    state: pointer): csize <cexport, codename 'wcsrtombs'>
+  local work_state: [16]culong = {}
+  local character_state: [16]culong = {}
+  local active_state: pointer = state
+  local source_text: *[0]cint = source[0]
+  local query: boolean = output == nilptr
+  if active_state == nilptr then active_state = nelibc_thread_state(5, 256) end
+  if query then
+    nelibc_multibyte_state_copy((@pointer)(&work_state[0]), active_state)
+    active_state = (@pointer)(&work_state[0])
+  end
+  local output_count: csize = 0
+  local input_index: csize = 0
+  local temporary: [64]cchar = {}
+  while true do
+    if not query and output_count >= limit then
+      source[0] = &source_text[input_index]
+      return output_count
+    end
+    nelibc_multibyte_state_copy((@pointer)(&character_state[0]), active_state)
+    local converted: csize = wcrtomb((@*[0]cchar)(&temporary[0]),
+        source_text[input_index], (@pointer)(&character_state[0]))
+    if converted == ~0_csize then return ~0_csize end
+    if converted > limit - output_count and not query then
+      source[0] = &source_text[input_index]
+      return output_count
+    end
+    if source_text[input_index] == 0 then
+      if not query then
+        local byte_index: csize = 0
+        while byte_index < converted do
+          output[output_count + byte_index] = temporary[byte_index]
+          byte_index = byte_index + 1
+        end
+        source[0] = nilptr
+        nelibc_multibyte_state_reset(active_state)
+      else
+        output_count = output_count + converted - 1
+      end
+      return output_count
+    end
+    local byte_index: csize = 0
+    if not query then
+      while byte_index < converted do
+        output[output_count + byte_index] = temporary[byte_index]
+        byte_index = byte_index + 1
+      end
+      nelibc_multibyte_state_copy(active_state, (@pointer)(&character_state[0]))
+    else
+      nelibc_multibyte_state_copy(active_state, (@pointer)(&character_state[0]))
+    end
+    output_count = output_count + converted
+    input_index = input_index + 1
+  end
+end
+
+local function wcsnrtombs(output: *[0]cchar, source: *[0]*[0]cint,
+    input_limit: csize, output_limit: csize, state: pointer): csize
+    <cexport, codename 'wcsnrtombs'>
+  local work_state: [16]culong = {}
+  local character_state: [16]culong = {}
+  local active_state: pointer = state
+  local source_text: *[0]cint = source[0]
+  local query: boolean = output == nilptr
+  if active_state == nilptr then active_state = nelibc_thread_state(6, 256) end
+  if query then
+    nelibc_multibyte_state_copy((@pointer)(&work_state[0]), active_state)
+    active_state = (@pointer)(&work_state[0])
+  end
+  local input_index: csize = 0
+  local output_count: csize = 0
+  local temporary: [64]cchar = {}
+  while input_index < input_limit do
+    if not query and output_count >= output_limit then
+      source[0] = &source_text[input_index]
+      return output_count
+    end
+    nelibc_multibyte_state_copy((@pointer)(&character_state[0]), active_state)
+    local wide: cint = source_text[input_index]
+    local converted: csize = wcrtomb((@*[0]cchar)(&temporary[0]), wide,
+        (@pointer)(&character_state[0]))
+    if converted == ~0_csize then return ~0_csize end
+    if not query and converted > output_limit - output_count then
+      source[0] = &source_text[input_index]
+      return output_count
+    end
+    if wide == 0 then
+      if not query then
+        local byte_index: csize = 0
+        while byte_index < converted do
+          output[output_count + byte_index] = temporary[byte_index]
+          byte_index = byte_index + 1
+        end
+        source[0] = nilptr
+        nelibc_multibyte_state_reset(active_state)
+      else
+        output_count = output_count + converted - 1
+      end
+      return output_count
+    end
+    if not query then
+      local byte_index: csize = 0
+      while byte_index < converted do
+        output[output_count + byte_index] = temporary[byte_index]
+        byte_index = byte_index + 1
+      end
+    end
+    nelibc_multibyte_state_copy(active_state, (@pointer)(&character_state[0]))
+    output_count = output_count + converted
+    input_index = input_index + 1
+  end
+  if not query then source[0] = &source_text[input_index] end
+  return output_count
+end
+
+local SystemSigset: type = @record{bits: [16]culong}
+local SystemSigaction: type = @record{
+  handler: pointer,
+  mask: SystemSigset,
+  flags: cint,
+  restorer: pointer
+}
+local SystemSignalState: type = @record{
+  old_mask: SystemSigset,
+  old_int: SystemSigaction,
+  old_quit: SystemSigaction,
+  restore_int: cint,
+  restore_quit: cint,
+  child_pid: cint
+}
+
+local function system_restore_signals(state: *SystemSignalState): cint <inline>
+  local failed: cint = 0
+  if state.restore_int ~= 0 and sigaction(2, (@pointer)(&state.old_int), nilptr) ~= 0 then failed = 1 end
+  if state.restore_quit ~= 0 and sigaction(3, (@pointer)(&state.old_quit), nilptr) ~= 0 then failed = 1 end
+  if sigprocmask(2, (@pointer)(&state.old_mask), nilptr) ~= 0 then failed = 1 end
+  return failed
+end
+
+local function nelibc_system_cancel_cleanup(context: pointer): void <cexport, codename 'nelibc_system_cancel_cleanup'>
+  local state: *SystemSignalState = (@*SystemSignalState)(context)
+  if state.child_pid > 0 then
+    kill(state.child_pid, 9)
+    while waitpid(state.child_pid, nilptr, 0) < 0 and nelibc_errno_location()[0] == 4 do end
+  end
+  system_restore_signals(state)
+  nelibc_system_unlock()
+end
+
+local function system(command: *[0]cchar <const>): cint <cexport, codename 'system'>
+  local shell: *[0]cchar = '/bin/sh'
+  if command == nilptr then
+    if access(shell, 1) == 0 then return 1 end
+    return 0
+  end
+
+  nelibc_system_lock()
+
+  local state: SystemSignalState = {}
+  local blocked: SystemSigset = {}
+  blocked.bits[0] = 1_culong << 16 -- SIGCHLD
+  if sigprocmask(0, (@pointer)(&blocked), (@pointer)(&state.old_mask)) ~= 0 then
+    nelibc_system_unlock()
+    return -1
+  end
+
+  local ignored: SystemSigaction = {}
+  ignored.handler = (@pointer)(1_usize)
+  if sigaction(2, (@pointer)(&ignored), (@pointer)(&state.old_int)) ~= 0 then
+    local failure_errno: cint = nelibc_errno_location()[0]
+    sigprocmask(2, (@pointer)(&state.old_mask), nilptr)
+    nelibc_errno_location()[0] = failure_errno
+    nelibc_system_unlock()
+    return -1
+  end
+  state.restore_int = 1
+  if state.old_int.handler == (@pointer)(1_usize) then
+    if sigaction(2, (@pointer)(&state.old_int), nilptr) ~= 0 then
+      local failure_errno: cint = nelibc_errno_location()[0]
+      sigprocmask(2, (@pointer)(&state.old_mask), nilptr)
+      nelibc_errno_location()[0] = failure_errno
+      nelibc_system_unlock()
+      return -1
+    end
+    state.restore_int = 0
+  end
+  if sigaction(3, (@pointer)(&ignored), (@pointer)(&state.old_quit)) ~= 0 then
+    local failure_errno: cint = nelibc_errno_location()[0]
+    system_restore_signals(&state)
+    nelibc_errno_location()[0] = failure_errno
+    nelibc_system_unlock()
+    return -1
+  end
+  state.restore_quit = 1
+  if state.old_quit.handler == (@pointer)(1_usize) then
+    if sigaction(3, (@pointer)(&state.old_quit), nilptr) ~= 0 then
+      local failure_errno: cint = nelibc_errno_location()[0]
+      system_restore_signals(&state)
+      nelibc_errno_location()[0] = failure_errno
+      nelibc_system_unlock()
+      return -1
+    end
+    state.restore_quit = 0
+  end
+
+  local child: cint = fork()
+  if child < 0 then
+    local failure_errno: cint = nelibc_errno_location()[0]
+    system_restore_signals(&state)
+    nelibc_errno_location()[0] = failure_errno
+    nelibc_system_unlock()
+    return -1
+  end
+  if child == 0 then
+    if system_restore_signals(&state) ~= 0 then _Exit(127) end
+    local shell_flag: *[0]cchar = '-c'
+    local arguments: [4]*[0]cchar = {shell, shell_flag, (@*[0]cchar)(command), nilptr}
+    execve(shell, &arguments[0], (@*[0]*[0]cchar)(nelibc_environment_vector()))
+    _Exit(127)
+  end
+
+  state.child_pid = child
+  local status: cint = 0
+  while true do
+    local waited: cint = nelibc_system_waitpid(child, &status, 0,
+      (@pointer)(nelibc_system_cancel_cleanup), (@pointer)(&state))
+    if waited == child then
+      state.child_pid = 0
+      local restore_failed: cint = system_restore_signals(&state)
+      nelibc_system_unlock()
+      if restore_failed ~= 0 then return -1 end
+      return status
+    end
+    if waited >= 0 or nelibc_errno_location()[0] ~= 4 then
+      local failure_errno: cint = nelibc_errno_location()[0]
+      state.child_pid = 0
+      system_restore_signals(&state)
+      nelibc_errno_location()[0] = failure_errno
+      nelibc_system_unlock()
+      return -1
+    end
+  end
+end
+
+local function getenv(name: *[0]cchar <const>): *[0]cchar <cexport, codename 'getenv'>
+  if name == nilptr or name[0] == 0 then return nilptr end
+  local name_length: csize = 0
+  while name[name_length] ~= 0 do
+    if name[name_length] == 61 then return nilptr end -- '=' is not valid in a variable name.
+    name_length = name_length + 1
+  end
+  local environment: *[0]*[0]cchar = (@*[0]*[0]cchar)(nelibc_environment_vector())
+  if environment == nilptr then return nilptr end
+  local index: csize = 0
+  while environment[index] ~= nilptr do
+    local character: csize = 0
+    while character < name_length and environment[index][character] == name[character] do
+      character = character + 1
+    end
+    if character == name_length and environment[index][character] == 61 then
+      return &environment[index][character + 1]
+    end
+    index = index + 1
+  end
+  return nilptr
+end
+
+local owned_environment: *[0]*[0]cchar = nilptr
+local owned_environment_flags: *[0]cchar = nilptr
+
+local function environment_entry_matches(entry: *[0]cchar <const>, name: *[0]cchar <const>,
+    name_length: csize): boolean <inline>
+  local index: csize = 0
+  while index < name_length and entry[index] == name[index] do index = index + 1 end
+  return index == name_length and entry[index] == 61
+end
+
+local function install_environment(replacement: *[0]*[0]cchar,
+    replacement_flags: *[0]cchar, environment: *[0]*[0]cchar): void <inline>
+  local previous_owned: *[0]*[0]cchar = owned_environment
+  local previous_flags: *[0]cchar = owned_environment_flags
+  local release_previous: boolean = previous_owned ~= nilptr and environment == previous_owned
+  nelibc_environment_set_vector((@**cchar)(replacement))
+  owned_environment = replacement
+  owned_environment_flags = replacement_flags
+  if release_previous then
+    local previous_count: csize = 0
+    while previous_owned[previous_count] ~= nilptr do
+      if previous_flags[previous_count] ~= 0 then
+        local current: csize = 0
+        while replacement[current] ~= nilptr and replacement[current] ~= previous_owned[previous_count] do
+          current = current + 1
+        end
+        if replacement[current] == nilptr then free((@pointer)(previous_owned[previous_count])) end
+      end
+      previous_count = previous_count + 1
+    end
+    free((@pointer)(previous_owned))
+    free((@pointer)(previous_flags))
+  end
+end
+
+local function setenv(name: *[0]cchar <const>, value: *[0]cchar <const>, overwrite: cint): cint <cexport, codename 'setenv'>
+  if name == nilptr or value == nilptr or name[0] == 0 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local name_length: csize = 0
+  while name[name_length] ~= 0 do
+    if name[name_length] == 61 then
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      return -1
+    end
+    name_length = name_length + 1
+  end
+  local value_length: csize = 0
+  while value[value_length] ~= 0 do value_length = value_length + 1 end
+
+  local environment: *[0]*[0]cchar = (@*[0]*[0]cchar)(nelibc_environment_vector())
+  local environment_flags: *[0]cchar = nilptr
+  if environment == owned_environment then environment_flags = owned_environment_flags end
+  local entry_count: csize = 0
+  local existing_index: csize = 0xFFFFFFFFFFFFFFFF_csize
+  if environment ~= nilptr then
+    while environment[entry_count] ~= nilptr do
+      if existing_index == 0xFFFFFFFFFFFFFFFF_csize and
+          environment_entry_matches(environment[entry_count], name, name_length) then
+        existing_index = entry_count
+      end
+      entry_count = entry_count + 1
+    end
+  end
+  if existing_index ~= 0xFFFFFFFFFFFFFFFF_csize and overwrite == 0 then return 0 end
+
+  local max_size: csize = 0xFFFFFFFFFFFFFFFF_csize
+  local pointer_size: csize = nelibc_environment_pointer_size()
+  if value_length > max_size - name_length - 2 or entry_count > max_size // pointer_size - 2 then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local assignment: *[0]cchar = (@*[0]cchar)(malloc(name_length + value_length + 2))
+  if assignment == nilptr then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local index: csize = 0
+  while index < name_length do
+    assignment[index] = name[index]
+    index = index + 1
+  end
+  assignment[index] = 61
+  index = 0
+  while index < value_length do
+    assignment[name_length + 1 + index] = value[index]
+    index = index + 1
+  end
+  assignment[name_length + value_length + 1] = 0
+
+  local new_count: csize = entry_count
+  if existing_index == 0xFFFFFFFFFFFFFFFF_csize then new_count = entry_count + 1 end
+  local replacement: *[0]*[0]cchar = (@*[0]*[0]cchar)(malloc((new_count + 1) * pointer_size))
+  if replacement == nilptr then
+    free((@pointer)(assignment))
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local replacement_flags: *[0]cchar = (@*[0]cchar)(malloc(new_count + 1))
+  if replacement_flags == nilptr then
+    free((@pointer)(assignment))
+    free((@pointer)(replacement))
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local source_index: csize = 0
+  local target_index: csize = 0
+  while source_index < entry_count do
+    if source_index == existing_index then
+      replacement[target_index] = assignment
+      replacement_flags[target_index] = 1
+    else
+      replacement[target_index] = environment[source_index]
+      if environment_flags ~= nilptr then replacement_flags[target_index] = environment_flags[source_index]
+      else replacement_flags[target_index] = 0 end
+    end
+    source_index = source_index + 1
+    target_index = target_index + 1
+  end
+  if existing_index == 0xFFFFFFFFFFFFFFFF_csize then
+    replacement[target_index] = assignment
+    replacement_flags[target_index] = 1
+    target_index = target_index + 1
+  end
+  replacement[target_index] = nilptr
+  install_environment(replacement, replacement_flags, environment)
+  return 0
+end
+
+local function unsetenv(name: *[0]cchar <const>): cint <cexport, codename 'unsetenv'>
+  if name == nilptr or name[0] == 0 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local name_length: csize = 0
+  while name[name_length] ~= 0 do
+    if name[name_length] == 61 then
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      return -1
+    end
+    name_length = name_length + 1
+  end
+
+  local environment: *[0]*[0]cchar = (@*[0]*[0]cchar)(nelibc_environment_vector())
+  if environment == nilptr then return 0 end
+  local environment_flags: *[0]cchar = nilptr
+  if environment == owned_environment then environment_flags = owned_environment_flags end
+  local entry_count: csize = 0
+  local removed_count: csize = 0
+  while environment[entry_count] ~= nilptr do
+    if environment_entry_matches(environment[entry_count], name, name_length) then
+      removed_count = removed_count + 1
+    end
+    entry_count = entry_count + 1
+  end
+  if removed_count == 0 then return 0 end
+
+  local pointer_size: csize = nelibc_environment_pointer_size()
+  local max_size: csize = 0xFFFFFFFFFFFFFFFF_csize
+  local new_count: csize = entry_count - removed_count
+  if new_count > max_size // pointer_size - 1 then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local replacement: *[0]*[0]cchar = (@*[0]*[0]cchar)(malloc((new_count + 1) * pointer_size))
+  if replacement == nilptr then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local replacement_flags: *[0]cchar = (@*[0]cchar)(malloc(new_count + 1))
+  if replacement_flags == nilptr then
+    free((@pointer)(replacement))
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local source_index: csize = 0
+  local target_index: csize = 0
+  while source_index < entry_count do
+    if not environment_entry_matches(environment[source_index], name, name_length) then
+      replacement[target_index] = environment[source_index]
+      if environment_flags ~= nilptr then replacement_flags[target_index] = environment_flags[source_index]
+      else replacement_flags[target_index] = 0 end
+      target_index = target_index + 1
+    end
+    source_index = source_index + 1
+  end
+  replacement[target_index] = nilptr
+  install_environment(replacement, replacement_flags, environment)
+  return 0
+end
+
+local function putenv(string: *[0]cchar <const>): cint <cexport, codename 'putenv'>
+  if string == nilptr or string[0] == 0 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local name_length: csize = 0
+  while string[name_length] ~= 0 and string[name_length] ~= 61 do name_length = name_length + 1 end
+  if name_length == 0 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  if string[name_length] == 0 then return unsetenv(string) end
+
+  local environment: *[0]*[0]cchar = (@*[0]*[0]cchar)(nelibc_environment_vector())
+  local environment_flags: *[0]cchar = nilptr
+  if environment == owned_environment then environment_flags = owned_environment_flags end
+  local entry_count: csize = 0
+  local existing_index: csize = 0xFFFFFFFFFFFFFFFF_csize
+  if environment ~= nilptr then
+    while environment[entry_count] ~= nilptr do
+      if existing_index == 0xFFFFFFFFFFFFFFFF_csize and
+          environment_entry_matches(environment[entry_count], string, name_length) then
+        existing_index = entry_count
+      end
+      entry_count = entry_count + 1
+    end
+  end
+  local new_count: csize = entry_count
+  if existing_index == 0xFFFFFFFFFFFFFFFF_csize then new_count = entry_count + 1 end
+  local pointer_size: csize = nelibc_environment_pointer_size()
+  local max_size: csize = 0xFFFFFFFFFFFFFFFF_csize
+  if entry_count > max_size // pointer_size - 2 then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local replacement: *[0]*[0]cchar = (@*[0]*[0]cchar)(malloc((new_count + 1) * pointer_size))
+  if replacement == nilptr then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local replacement_flags: *[0]cchar = (@*[0]cchar)(malloc(new_count + 1))
+  if replacement_flags == nilptr then
+    free((@pointer)(replacement))
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local source_index: csize = 0
+  local target_index: csize = 0
+  while source_index < entry_count do
+    if source_index == existing_index then
+      replacement[target_index] = string
+      replacement_flags[target_index] = 0
+    else
+      replacement[target_index] = environment[source_index]
+      if environment_flags ~= nilptr then replacement_flags[target_index] = environment_flags[source_index]
+      else replacement_flags[target_index] = 0 end
+    end
+    source_index = source_index + 1
+    target_index = target_index + 1
+  end
+  if existing_index == 0xFFFFFFFFFFFFFFFF_csize then
+    replacement[target_index] = string
+    replacement_flags[target_index] = 0
+    target_index = target_index + 1
+  end
+  replacement[target_index] = nilptr
+  install_environment(replacement, replacement_flags, environment)
+  return 0
+end
+
+local function digit_value(character: cchar): cint <inline>
+  if character >= 48 and character <= 57 then return (@cint)(character - 48) end
+  if character >= 65 and character <= 90 then return (@cint)(character - 65) + 10 end
+  if character >= 97 and character <= 122 then return (@cint)(character - 97) + 10 end
+  return 36
+end
+
+local function parse_integer(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    c23: boolean,
+    positive_limit: culonglong, negative_limit: culonglong,
+    negative_result: *cint, overflow_result: *cint, digits_result: *cint): culonglong <inline>
+  local end_pointer: *[0]*cchar = (@*[0]*cchar)(end_text)
+  local negative_pointer: *[0]cint = (@*[0]cint)(negative_result)
+  local overflow_pointer: *[0]cint = (@*[0]cint)(overflow_result)
+  local digits_pointer: *[0]cint = (@*[0]cint)(digits_result)
+  negative_pointer[0] = 0
+  overflow_pointer[0] = 0
+  digits_pointer[0] = 0
+  if text == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    if end_text ~= nilptr then end_pointer[0] = text end
+    return 0
+  end
+  if base < 0 or base == 1 or base > 36 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    if end_text ~= nilptr then end_pointer[0] = text end
+    return 0
+  end
+  local cursor: csize = 0
+  while text[cursor] == 32 or (text[cursor] >= 9 and text[cursor] <= 13) do cursor = cursor + 1 end
+  local negative: boolean = false
+  if text[cursor] == 45 then negative = true; cursor = cursor + 1
+  elseif text[cursor] == 43 then cursor = cursor + 1 end
+  if negative then negative_pointer[0] = 1 end
+  local actual_base: cint = base
+  if actual_base == 0 then
+    if text[cursor] == 48 then
+      actual_base = 8
+      if (text[cursor + 1] == 120 or text[cursor + 1] == 88) and digit_value(text[cursor + 2]) < 16 then
+        actual_base = 16
+        cursor = cursor + 2
+      elseif c23 and (text[cursor + 1] == 98 or text[cursor + 1] == 66) and
+          (text[cursor + 2] == 48 or text[cursor + 2] == 49) then
+        actual_base = 2
+        cursor = cursor + 2
+      end
+    else
+      actual_base = 10
+    end
+  elseif actual_base == 16 and text[cursor] == 48 and
+      (text[cursor + 1] == 120 or text[cursor + 1] == 88) and digit_value(text[cursor + 2]) < 16 then
+    cursor = cursor + 2
+  elseif c23 and actual_base == 2 and text[cursor] == 48 and
+      (text[cursor + 1] == 98 or text[cursor + 1] == 66) and
+      (text[cursor + 2] == 48 or text[cursor + 2] == 49) then
+    cursor = cursor + 2
+  end
+  local limit: culonglong = positive_limit
+  if negative then limit = negative_limit end
+  local cutoff: culonglong = limit // (@culonglong)(actual_base)
+  local cutlim: cint = (@cint)(limit % (@culonglong)(actual_base))
+  local magnitude: culonglong = 0
+  local overflow: boolean = false
+  if actual_base == 10 then
+    while true do
+      local character: cchar = text[cursor]
+      local digit: cuint = (@cuint)(character) - 48
+      if digit > 9 then break end
+      digits_pointer[0] = 1
+      if not overflow then
+        if magnitude > cutoff or (magnitude == cutoff and (@cint)(digit) > cutlim) then
+          overflow = true
+          magnitude = limit
+        else
+          magnitude = magnitude * 10_culonglong + (@culonglong)(digit)
+        end
+      end
+      cursor = cursor + 1
+    end
+  elseif actual_base == 8 then
+    while true do
+      local character: cchar = text[cursor]
+      local digit: cuint = (@cuint)(character) - 48
+      if digit > 7 then break end
+      digits_pointer[0] = 1
+      if not overflow then
+        if magnitude > cutoff or (magnitude == cutoff and (@cint)(digit) > cutlim) then
+          overflow = true
+          magnitude = limit
+        else
+          magnitude = magnitude * 8_culonglong + (@culonglong)(digit)
+        end
+      end
+      cursor = cursor + 1
+    end
+  elseif actual_base == 16 then
+    while true do
+      local character: cchar = text[cursor]
+      local folded: cuint = (@cuint)(character) | 32
+      local digit: cuint = folded - 48
+      if digit > 9 then digit = folded - 87 end
+      if digit >= 16 then break end
+      digits_pointer[0] = 1
+      if not overflow then
+        if magnitude > cutoff or (magnitude == cutoff and (@cint)(digit) > cutlim) then
+          overflow = true
+          magnitude = limit
+        else
+          magnitude = magnitude * 16_culonglong + (@culonglong)(digit)
+        end
+      end
+      cursor = cursor + 1
+    end
+  else
+    while true do
+      local digit: cint = digit_value(text[cursor])
+      if digit >= actual_base then break end
+      digits_pointer[0] = 1
+      if not overflow then
+        if magnitude > cutoff or (magnitude == cutoff and digit > cutlim) then
+          overflow = true
+          magnitude = limit
+        else
+          magnitude = magnitude * (@culonglong)(actual_base) + (@culonglong)(digit)
+        end
+      end
+      cursor = cursor + 1
+    end
+  end
+  if digits_pointer[0] == 0 then
+    if end_text ~= nilptr then end_pointer[0] = text end
+    return 0
+  end
+  if overflow then
+    overflow_pointer[0] = 1
+    nelibc_errno_location()[0] = 34 -- ERANGE
+  end
+  if end_text ~= nilptr then end_pointer[0] = &text[cursor] end
+  return magnitude
+end
+
+local function parse_long(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    c23: boolean): clonglong <inline>
+  local negative: cint = 0
+  local overflow: cint = 0
+  local digits: cint = 0
+  local magnitude: culonglong = parse_integer(text, end_text, base, c23,
+    0x7FFFFFFFFFFFFFFF_culonglong, 0x8000000000000000_culonglong,
+    &negative, &overflow, &digits)
+  if digits == 0 then return 0 end
+  if overflow ~= 0 then
+    if negative ~= 0 then return -0x7FFFFFFFFFFFFFFF_clonglong - 1 end
+    return 0x7FFFFFFFFFFFFFFF_clonglong
+  end
+  if negative ~= 0 then
+    if magnitude == 0x8000000000000000_culonglong then return -0x7FFFFFFFFFFFFFFF_clonglong - 1 end
+    return -(@clonglong)(magnitude)
+  end
+  return (@clonglong)(magnitude)
+end
+
+local function parse_ulong(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    c23: boolean): culonglong <inline>
+  local negative: cint = 0
+  local overflow: cint = 0
+  local digits: cint = 0
+  local magnitude: culonglong = parse_integer(text, end_text, base, c23,
+    0xFFFFFFFFFFFFFFFF_culonglong, 0xFFFFFFFFFFFFFFFF_culonglong,
+    &negative, &overflow, &digits)
+  if overflow ~= 0 then return 0xFFFFFFFFFFFFFFFF_culonglong end
+  if negative ~= 0 then return 0_culonglong - magnitude end
+  return magnitude
+end
+
+local function wide_digit_value(character: cint): cint <inline>
+  if character >= 48 and character <= 57 then return character - 48 end
+  if character >= 65 and character <= 90 then return character - 65 + 10 end
+  if character >= 97 and character <= 122 then return character - 97 + 10 end
+  return 36
+end
+
+local function parse_wide_integer(text: *[0]cint <const>, end_text: **cint, base: cint,
+    c23: boolean,
+    positive_limit: culonglong, negative_limit: culonglong,
+    negative_result: *cint, overflow_result: *cint, digits_result: *cint): culonglong <inline>
+  local end_pointer: *[0]*cint = (@*[0]*cint)(end_text)
+  local negative_pointer: *[0]cint = (@*[0]cint)(negative_result)
+  local overflow_pointer: *[0]cint = (@*[0]cint)(overflow_result)
+  local digits_pointer: *[0]cint = (@*[0]cint)(digits_result)
+  negative_pointer[0] = 0
+  overflow_pointer[0] = 0
+  digits_pointer[0] = 0
+  if text == nilptr or base < 0 or base == 1 or base > 36 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    if end_text ~= nilptr then end_pointer[0] = text end
+    return 0
+  end
+
+  local cursor: csize = 0
+  while text[cursor] == 32 or (text[cursor] >= 9 and text[cursor] <= 13) do
+    cursor = cursor + 1
+  end
+  local negative: boolean = false
+  if text[cursor] == 45 then
+    negative = true
+    cursor = cursor + 1
+  elseif text[cursor] == 43 then
+    cursor = cursor + 1
+  end
+  if negative then negative_pointer[0] = 1 end
+
+  local actual_base: cint = base
+  if actual_base == 0 then
+    if text[cursor] == 48 then
+      actual_base = 8
+      if (text[cursor + 1] == 120 or text[cursor + 1] == 88) and
+          wide_digit_value(text[cursor + 2]) < 16 then
+        actual_base = 16
+        cursor = cursor + 2
+      elseif c23 and (text[cursor + 1] == 98 or text[cursor + 1] == 66) and
+          (text[cursor + 2] == 48 or text[cursor + 2] == 49) then
+        actual_base = 2
+        cursor = cursor + 2
+      end
+    else
+      actual_base = 10
+    end
+  elseif actual_base == 16 and text[cursor] == 48 and
+      (text[cursor + 1] == 120 or text[cursor + 1] == 88) and
+      wide_digit_value(text[cursor + 2]) < 16 then
+    cursor = cursor + 2
+  elseif c23 and actual_base == 2 and text[cursor] == 48 and
+      (text[cursor + 1] == 98 or text[cursor + 1] == 66) and
+      (text[cursor + 2] == 48 or text[cursor + 2] == 49) then
+    cursor = cursor + 2
+  end
+
+  local limit: culonglong = positive_limit
+  if negative then limit = negative_limit end
+  local cutoff: culonglong = limit // (@culonglong)(actual_base)
+  local cutlim: cint = (@cint)(limit % (@culonglong)(actual_base))
+  local magnitude: culonglong = 0
+  local overflow: boolean = false
+  while true do
+    local digit: cint = wide_digit_value(text[cursor])
+    if digit >= actual_base then break end
+    digits_pointer[0] = 1
+    if not overflow then
+      if magnitude > cutoff or (magnitude == cutoff and digit > cutlim) then
+        overflow = true
+        magnitude = limit
+      else
+        magnitude = magnitude * (@culonglong)(actual_base) + (@culonglong)(digit)
+      end
+    end
+    cursor = cursor + 1
+  end
+  if digits_pointer[0] == 0 then
+    if end_text ~= nilptr then end_pointer[0] = text end
+    return 0
+  end
+  if overflow then
+    overflow_pointer[0] = 1
+    nelibc_errno_location()[0] = 34 -- ERANGE
+  end
+  if end_text ~= nilptr then end_pointer[0] = &text[cursor] end
+  return magnitude
+end
+
+local function parse_wide_long(text: *[0]cint <const>, end_text: **cint, base: cint,
+    c23: boolean): clonglong <inline>
+  local negative: cint = 0
+  local overflow: cint = 0
+  local digits: cint = 0
+  local magnitude: culonglong = parse_wide_integer(text, end_text, base, c23,
+    0x7FFFFFFFFFFFFFFF_culonglong, 0x8000000000000000_culonglong,
+    &negative, &overflow, &digits)
+  if digits == 0 then return 0 end
+  if overflow ~= 0 then
+    if negative ~= 0 then return -0x7FFFFFFFFFFFFFFF_clonglong - 1 end
+    return 0x7FFFFFFFFFFFFFFF_clonglong
+  end
+  if negative ~= 0 then
+    if magnitude == 0x8000000000000000_culonglong then return -0x7FFFFFFFFFFFFFFF_clonglong - 1 end
+    return -(@clonglong)(magnitude)
+  end
+  return (@clonglong)(magnitude)
+end
+
+local function parse_wide_ulong(text: *[0]cint <const>, end_text: **cint, base: cint,
+    c23: boolean): culonglong <inline>
+  local negative: cint = 0
+  local overflow: cint = 0
+  local digits: cint = 0
+  local magnitude: culonglong = parse_wide_integer(text, end_text, base, c23,
+    0xFFFFFFFFFFFFFFFF_culonglong, 0xFFFFFFFFFFFFFFFF_culonglong,
+    &negative, &overflow, &digits)
+  if overflow ~= 0 then return 0xFFFFFFFFFFFFFFFF_culonglong end
+  if negative ~= 0 then return 0_culonglong - magnitude end
+  return magnitude
+end
+
+local function strtol(text: *[0]cchar <const>, end_text: **cchar, base: cint): clong <cexport, codename 'strtol'>
+  return (@clong)(parse_long(text, end_text, base, false))
+end
+
+local function isoc23_strtol(text: *[0]cchar <const>, end_text: **cchar, base: cint): clong <cexport, codename '__isoc23_strtol'>
+  return (@clong)(parse_long(text, end_text, base, true))
+end
+
+local function strtoll(text: *[0]cchar <const>, end_text: **cchar, base: cint): clonglong <cexport, codename 'strtoll'>
+  return parse_long(text, end_text, base, false)
+end
+
+local function isoc23_strtoll(text: *[0]cchar <const>, end_text: **cchar, base: cint): clonglong <cexport, codename '__isoc23_strtoll'>
+  return parse_long(text, end_text, base, true)
+end
+
+local function strtoul(text: *[0]cchar <const>, end_text: **cchar, base: cint): culong <cexport, codename 'strtoul'>
+  return (@culong)(parse_ulong(text, end_text, base, false))
+end
+
+local function isoc23_strtoul(text: *[0]cchar <const>, end_text: **cchar, base: cint): culong <cexport, codename '__isoc23_strtoul'>
+  return (@culong)(parse_ulong(text, end_text, base, true))
+end
+
+local function strtoull(text: *[0]cchar <const>, end_text: **cchar, base: cint): culonglong <cexport, codename 'strtoull'>
+  return parse_ulong(text, end_text, base, false)
+end
+
+local function wcstol(text: *[0]cint <const>, end_text: **cint, base: cint): clong
+    <cexport, codename 'wcstol'>
+  return (@clong)(parse_wide_long(text, end_text, base, false))
+end
+
+local function isoc23_wcstol(text: *[0]cint <const>, end_text: **cint, base: cint): clong
+    <cexport, codename '__isoc23_wcstol'>
+  return (@clong)(parse_wide_long(text, end_text, base, true))
+end
+
+local function wcstoll(text: *[0]cint <const>, end_text: **cint, base: cint): clonglong
+    <cexport, codename 'wcstoll'>
+  return parse_wide_long(text, end_text, base, false)
+end
+
+local function isoc23_wcstoll(text: *[0]cint <const>, end_text: **cint, base: cint): clonglong
+    <cexport, codename '__isoc23_wcstoll'>
+  return parse_wide_long(text, end_text, base, true)
+end
+
+local function wcstoul(text: *[0]cint <const>, end_text: **cint, base: cint): culong
+    <cexport, codename 'wcstoul'>
+  return (@culong)(parse_wide_ulong(text, end_text, base, false))
+end
+
+local function isoc23_wcstoul(text: *[0]cint <const>, end_text: **cint, base: cint): culong
+    <cexport, codename '__isoc23_wcstoul'>
+  return (@culong)(parse_wide_ulong(text, end_text, base, true))
+end 
+
+local function wcstoull(text: *[0]cint <const>, end_text: **cint, base: cint): culonglong
+    <cexport, codename 'wcstoull'>
+  return parse_wide_ulong(text, end_text, base, false)
+end
+
+local function isoc23_wcstoull(text: *[0]cint <const>, end_text: **cint, base: cint): culonglong
+    <cexport, codename '__isoc23_wcstoull'>
+  return parse_wide_ulong(text, end_text, base, true)
+end
+
+local function isoc23_strtoull(text: *[0]cchar <const>, end_text: **cchar, base: cint): culonglong <cexport, codename '__isoc23_strtoull'>
+  return parse_ulong(text, end_text, base, true)
+end
+
+local function atoi(text: *[0]cchar <const>): cint <cexport, codename 'atoi'>
+  return (@cint)(parse_long(text, nilptr, 10, false))
+end
+
+local function atol(text: *[0]cchar <const>): clong <cexport, codename 'atol'>
+  return (@clong)(parse_long(text, nilptr, 10, false))
+end
+
+local function atoll(text: *[0]cchar <const>): clonglong <cexport, codename 'atoll'>
+  return parse_long(text, nilptr, 10, false)
+end
+
+local function atof(text: *[0]cchar <const>): cdouble <cexport, codename 'atof'>
+  return strtod(text, nilptr)
+end
+
+local function abs(value: cint): cint <cexport, codename 'abs'>
+  if value < 0 then return -value end
+  return value
+end
+
+-- Keep abort in the shared stdlib layer: host libcs provide raise/_Exit while
+-- standalone builds resolve them to nelibc's thread-directed raise and _Exit.
+local function abort(): void <cexport, codename 'abort'>
+  raise(6) -- SIGABRT on the Linux targets supported by this runtime.
+  _Exit(134)
+end
+
+local function labs(value: clong): clong <cexport, codename 'labs'>
+  if value < 0 then return -value end
+  return value
+end
+
+local function llabs(value: clonglong): clonglong <cexport, codename 'llabs'>
+  if value < 0 then return -value end
+  return value
+end
+
+local function ffs(value: cint): cint <cexport, codename 'ffs'>
+  local bits: cuint = (@cuint)(value)
+  if bits == 0 then return 0 end
+  local position: cint = 1
+  while (bits & 1_cuint) == 0 do
+    bits = bits >> 1
+    position = position + 1
+  end
+  return position
+end
+
+local function ffsl(value: clong): cint <cexport, codename 'ffsl'>
+  local bits: culong = (@culong)(value)
+  if bits == 0 then return 0 end
+  local position: cint = 1
+  while (bits & 1_culong) == 0 do
+    bits = bits >> 1
+    position = position + 1
+  end
+  return position
+end
+
+local function ffsll(value: clonglong): cint <cexport, codename 'ffsll'>
+  local bits: culonglong = (@culonglong)(value)
+  if bits == 0 then return 0 end
+  local position: cint = 1
+  while (bits & 1_culonglong) == 0 do
+    bits = bits >> 1
+    position = position + 1
+  end
+  return position
+end
+
+local function srand(seed: cuint): void <cexport, codename 'srand'>
+  if seed == 0 then
+    random_state = 0x6D2B79F5_cuint
+  else
+    random_state = seed
+  end
+end
+
+local function rand(): cint <cexport, codename 'rand'>
+  local state: cuint = random_state
+  state = state ~ (state << 13)
+  state = state ~ (state >> 17)
+  state = state ~ (state << 5)
+  random_state = state
+  return (@cint)(state & 0x7FFFFFFF_cuint)
+end
+
+local function rand_r(seed: *[0]cuint): cint <cexport, codename 'rand_r'>
+  local state: culonglong = (@culonglong)(seed[0]) + 0x9E3779B97F4A7C15_culonglong
+  local value: culonglong = state
+  value = (value ~ (value >> 30)) * 0xBF58476D1CE4E5B9_culonglong
+  value = (value ~ (value >> 27)) * 0x94D049BB133111EB_culonglong
+  value = value ~ (value >> 31)
+  seed[0] = (@cuint)(state & 0xFFFFFFFF_culonglong)
+  return (@cint)(value >> 33)
+end
+
+local function swap_elements(left: *[0]cchar, right: *[0]cchar, width: csize): void <inline>
+  local index: csize = 0
+  while index < width do
+    local temporary: cchar = left[index]
+    left[index] = right[index]
+    right[index] = temporary
+    index = index + 1
+  end
+end
+
+local function sift_down(bytes: *[0]cchar, root: csize, end_index: csize,
+    width: csize, compare: function(pointer, pointer): cint): void <inline>
+  local parent: csize = root
+  -- Build targets enable this path only where the shootout favors hole sifting.
+  ## cemit '#if defined(NELIBC_QSORT_HOLE_SIFT)'
+  if width <= 64 then
+    local temporary: [64]byte = {}
+    local byte_index: csize = 0
+    while byte_index < width do
+      temporary[byte_index] = (@byte)(bytes[parent * width + byte_index])
+      byte_index = byte_index + 1
+    end
+    while end_index >= 2 and parent <= (end_index - 2) // 2 do
+      local child: csize = parent * 2 + 1
+      if child + 1 < end_index and
+          compare((@pointer)(&bytes[child * width]), (@pointer)(&bytes[(child + 1) * width])) < 0 then
+        child = child + 1
+      end
+      if compare((@pointer)(&temporary[0]), (@pointer)(&bytes[child * width])) >= 0 then break end
+      byte_index = 0
+      while byte_index < width do
+        bytes[parent * width + byte_index] = bytes[child * width + byte_index]
+        byte_index = byte_index + 1
+      end
+      parent = child
+    end
+    byte_index = 0
+    while byte_index < width do
+      bytes[parent * width + byte_index] = (@cchar)(temporary[byte_index])
+      byte_index = byte_index + 1
+    end
+    return
+  end
+  ## cemit '#endif'
+
+  while end_index >= 2 and parent <= (end_index - 2) // 2 do
+    local child: csize = parent * 2 + 1
+    if child + 1 < end_index and
+        compare((@pointer)(&bytes[child * width]), (@pointer)(&bytes[(child + 1) * width])) < 0 then
+      child = child + 1
+    end
+    if compare((@pointer)(&bytes[parent * width]), (@pointer)(&bytes[child * width])) >= 0 then return end
+    swap_elements(&bytes[parent * width], &bytes[child * width], width)
+    parent = child
+  end
+end
+
+local function insertion_sort(bytes: *[0]cchar, count: csize, width: csize,
+    compare: function(pointer, pointer): cint): void <inline>
+  local temporary: [64]byte = {}
+  local index: csize = 1
+  while index < count do
+    local position: csize = index
+    local item_offset: csize = index * width
+    local byte_index: csize = 0
+    while byte_index < width do
+      temporary[byte_index] = (@byte)(bytes[item_offset + byte_index])
+      byte_index = byte_index + 1
+    end
+    while position > 0 and compare((@pointer)(&bytes[(position - 1) * width]),
+                                   (@pointer)(&temporary[0])) > 0 do
+      local copy_index: csize = 0
+      while copy_index < width do
+        bytes[position * width + copy_index] = bytes[(position - 1) * width + copy_index]
+        copy_index = copy_index + 1
+      end
+      position = position - 1
+    end
+    byte_index = 0
+    while byte_index < width do
+      bytes[position * width + byte_index] = (@cchar)(temporary[byte_index])
+      byte_index = byte_index + 1
+    end
+    index = index + 1
+  end
+end
+
+local SortRange: type = @record{first: csize, last: csize, depth: csize}
+local qsort_depth_fallbacks: cuint = 0
+
+local function nelibc_test_qsort_depth_fallbacks(): cuint <cexport, codename 'nelibc_test_qsort_depth_fallbacks'>
+  return qsort_depth_fallbacks
+end
+
+local function heap_sort(bytes: *[0]cchar, count: csize, width: csize,
+    compare: function(pointer, pointer): cint): void <inline>
+  local parent: csize = count // 2
+  while parent > 0 do
+    parent = parent - 1
+    sift_down(bytes, parent, count, width, compare)
+  end
+  local end_index: csize = count
+  while end_index > 1 do
+    end_index = end_index - 1
+    swap_elements(&bytes[0], &bytes[end_index * width], width)
+    sift_down(bytes, 0, end_index, width, compare)
+  end
+end
+
+local function qsort(base: pointer, count: csize, width: csize,
+    compare: function(pointer, pointer): cint): void <cexport, codename 'qsort'>
+  if base == nilptr or compare == nilptr or count < 2 or width == 0 then return end
+  local bytes: *[0]cchar = (@*[0]cchar)(base)
+  if count <= 16 and width <= 64 then
+    insertion_sort(bytes, count, width, compare)
+    return
+  end
+
+  local use_heap_sort: boolean = width > 64
+  ## cemit '#if !defined(NELIBC_QSORT_GCC_INTROSORT)'
+  use_heap_sort = use_heap_sort or count > 4096
+  ## cemit '#endif'
+  if use_heap_sort then
+    heap_sort(bytes, count, width, compare)
+    return
+  end
+
+  local ranges: [64]SortRange = {}
+  local stack_size: csize = 0
+  local first: csize = 0
+  local last: csize = count
+  local depth_limit: csize = 0
+  local depth_count: csize = count
+  while depth_count > 1 do
+    depth_count = depth_count // 2
+    depth_limit = depth_limit + 1
+  end
+  depth_limit = depth_limit * 2
+  local running: boolean = true
+
+  while running do
+    while last - first > 16 do
+      if depth_limit == 0 then
+## cemit '#if defined(NELIBC_QSORT_DIAGNOSTICS)'
+        qsort_depth_fallbacks = qsort_depth_fallbacks + 1
+## cemit '#endif'
+        heap_sort((@*[0]cchar)(&bytes[first * width]), last - first, width, compare)
+        first = last
+      else
+        depth_limit = depth_limit - 1
+        local low: csize = first
+        local middle: csize = first + (last - first) // 2
+        local high: csize = last - 1
+        if compare((@pointer)(&bytes[low * width]), (@pointer)(&bytes[middle * width])) > 0 then
+          swap_elements(&bytes[low * width], &bytes[middle * width], width)
+        end
+        if compare((@pointer)(&bytes[middle * width]), (@pointer)(&bytes[high * width])) > 0 then
+          swap_elements(&bytes[middle * width], &bytes[high * width], width)
+        end
+        if compare((@pointer)(&bytes[low * width]), (@pointer)(&bytes[middle * width])) > 0 then
+          swap_elements(&bytes[low * width], &bytes[middle * width], width)
+        end
+
+        local pivot: [64]byte = {}
+        local byte_index: csize = 0
+        while byte_index < width do
+          pivot[byte_index] = (@byte)(bytes[middle * width + byte_index])
+          byte_index = byte_index + 1
+        end
+
+        local left: csize = first
+        local right: csize = last - 1
+        local partitioning: boolean = true
+        while partitioning do
+          while left <= right and
+              compare((@pointer)(&bytes[left * width]), (@pointer)(&pivot[0])) < 0 do
+            left = left + 1
+          end
+          while left <= right and
+              compare((@pointer)(&bytes[right * width]), (@pointer)(&pivot[0])) > 0 do
+            if right > first then
+              right = right - 1
+            else
+              partitioning = false
+              break
+            end
+          end
+          if not partitioning then break end
+          if left >= right then
+            partitioning = false
+          else
+            swap_elements(&bytes[left * width], &bytes[right * width], width)
+            left = left + 1
+            if right > first then
+              right = right - 1
+            else
+              partitioning = false
+            end
+          end
+        end
+
+        local partition: csize = right + 1
+        local left_count: csize = partition - first
+        local right_count: csize = last - partition
+        if left_count < right_count then
+          if right_count > 1 then
+            if stack_size < 64 then
+              ranges[stack_size] = {first = partition, last = last, depth = depth_limit}
+              stack_size = stack_size + 1
+            else
+              heap_sort((@*[0]cchar)(&bytes[partition * width]), right_count, width, compare)
+            end
+          end
+          last = partition
+        else
+          if left_count > 1 then
+            if stack_size < 64 then
+              ranges[stack_size] = {first = first, last = partition, depth = depth_limit}
+              stack_size = stack_size + 1
+            else
+              heap_sort(bytes, left_count, width, compare)
+            end
+          end
+          first = partition
+        end
+      end
+    end
+
+    if last - first > 1 then
+      insertion_sort((@*[0]cchar)(&bytes[first * width]), last - first, width, compare)
+    end
+    if stack_size == 0 then
+      running = false
+    else
+      stack_size = stack_size - 1
+      first = ranges[stack_size].first
+      last = ranges[stack_size].last
+      depth_limit = ranges[stack_size].depth
+    end
+  end
+end
+
+local function bsearch(key: pointer, base: pointer, count: csize, width: csize,
+    compare: function(pointer, pointer): cint): pointer <cexport, codename 'bsearch'>
+  if key == nilptr or base == nilptr or compare == nilptr or width == 0 then return nilptr end
+  local bytes: *[0]cchar = (@*[0]cchar)(base)
+  local first: csize = 0
+  local remaining: csize = count
+  while remaining > 0 do
+    local half: csize = remaining // 2
+    local middle: csize = first + half
+    local element: pointer = (@pointer)(&bytes[middle * width])
+    local order: cint = compare(key, element)
+    if order == 0 then return element end
+    first = middle + 1
+    remaining = remaining - half - 1
+    if order < 0 then remaining = half; first = middle - half end
+  end
+  return nilptr
+end
+
+-- Check multiplication in Nelua, then use this build's matching realloc.
+local function reallocarray(ptr: pointer, count: csize, size: csize): pointer <cexport, codename 'reallocarray'>
+  if size ~= 0_csize and count > (~0_csize) // size then
+    nelibc_errno_location()[0] = 12_cint -- ENOMEM
+    return nilptr
+  end
+  return realloc(ptr, count * size)
+end
+
+-- Subtract after conversion so the time_t operands cannot overflow first.
+local function difftime(time1: clong, time0: clong): cdouble <cexport, codename 'difftime'>
+  return (@cdouble)(time1) - (@cdouble)(time0)
+end
+
+local DivResult: type = @record{quot: cint, rem: cint}
+local LdivResult: type = @record{quot: clong, rem: clong}
+local LldivResult: type = @record{quot: clonglong, rem: clonglong}
+
+local function div(numerator: cint, denominator: cint): DivResult <cexport, codename 'div'>
+  local quotient: cint = numerator // denominator
+  local remainder: cint = numerator % denominator
+  if remainder ~= 0 and ((numerator < 0) ~= (denominator < 0)) then
+    quotient = quotient + 1
+    remainder = remainder - denominator
+  end
+  return {quot = quotient, rem = remainder}
+end
+
+local function ldiv(numerator: clong, denominator: clong): LdivResult <cexport, codename 'ldiv'>
+  local quotient: clong = numerator // denominator
+  local remainder: clong = numerator % denominator
+  if remainder ~= 0 and ((numerator < 0) ~= (denominator < 0)) then
+    quotient = quotient + 1
+    remainder = remainder - denominator
+  end
+  return {quot = quotient, rem = remainder}
+end
+
+local function lldiv(numerator: clonglong, denominator: clonglong): LldivResult <cexport, codename 'lldiv'>
+  local quotient: clonglong = numerator // denominator
+  local remainder: clonglong = numerator % denominator
+  if remainder ~= 0 and ((numerator < 0) ~= (denominator < 0)) then
+    quotient = quotient + 1
+    remainder = remainder - denominator
+  end
+  return {quot = quotient, rem = remainder}
+end

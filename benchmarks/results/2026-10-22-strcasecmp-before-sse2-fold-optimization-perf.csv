@@ -1,0 +1,17 @@
+compiler,libc,implementation,case,cycles,instructions,branches,branch_misses
+Zig cc,glibc,host-libc,equal-256,44,197,15,0
+Zig cc,glibc,host-libc,late-mismatch-256,36,159,14,0
+Zig cc,glibc,nelibc,equal-256,129,601,39,0
+Zig cc,glibc,nelibc,late-mismatch-256,131,604,40,0
+GCC,glibc,host-libc,equal-256,44,197,15,0
+GCC,glibc,host-libc,late-mismatch-256,35,159,14,0
+GCC,glibc,nelibc,equal-256,129,598,39,0
+GCC,glibc,nelibc,late-mismatch-256,131,601,40,0
+Zig cc,musl,host-libc,equal-256,1127,4896,774,1
+Zig cc,musl,host-libc,late-mismatch-256,1138,4881,772,1
+Zig cc,musl,nelibc,equal-256,132,601,39,0
+Zig cc,musl,nelibc,late-mismatch-256,132,604,40,0
+TinyCC object; GCC harness,glibc,host-libc,equal-256,44,197,15,0
+TinyCC object; GCC harness,glibc,host-libc,late-mismatch-256,36,159,14,0
+TinyCC object; GCC harness,glibc,nelibc,equal-256,131,610,41,0
+TinyCC object; GCC harness,glibc,nelibc,late-mismatch-256,141,613,42,0

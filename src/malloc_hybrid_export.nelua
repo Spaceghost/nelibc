@@ -1,0 +1,8 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_malloc(size: csize): pointer <cimport> end
+
+local function malloc(size: csize): pointer <cexport, codename 'malloc'>
+  return nelibc_malloc(size)
+end

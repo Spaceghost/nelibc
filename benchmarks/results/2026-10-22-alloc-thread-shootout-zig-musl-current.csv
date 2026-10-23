@@ -1,0 +1,25 @@
+compiler,libc,implementation,function,size_bytes,threads,iterations_per_thread,median_ns_per_pair
+Zig cc,musl,host-libc,malloc-free,64,1,30000,15.80
+Zig cc,musl,host-libc,malloc-free,64,2,30000,7.78
+Zig cc,musl,host-libc,malloc-free,64,4,30000,4.12
+Zig cc,musl,host-libc,malloc-free,64,8,30000,3.64
+Zig cc,musl,host-libc,malloc-free,128,1,30000,15.75
+Zig cc,musl,host-libc,malloc-free,128,2,30000,7.94
+Zig cc,musl,host-libc,malloc-free,128,4,30000,3.91
+Zig cc,musl,host-libc,malloc-free,128,8,30000,2.88
+Zig cc,musl,host-libc,malloc-free,4096,1,30000,15.63
+Zig cc,musl,host-libc,malloc-free,4096,2,30000,7.83
+Zig cc,musl,host-libc,malloc-free,4096,4,30000,4.00
+Zig cc,musl,host-libc,malloc-free,4096,8,30000,2.75
+Zig cc,musl,nelibc,malloc-free,64,1,30000,8.78
+Zig cc,musl,nelibc,malloc-free,64,2,30000,4.12
+Zig cc,musl,nelibc,malloc-free,64,4,30000,2.11
+Zig cc,musl,nelibc,malloc-free,64,8,30000,1.14
+Zig cc,musl,nelibc,malloc-free,128,1,30000,8.29
+Zig cc,musl,nelibc,malloc-free,128,2,30000,4.27
+Zig cc,musl,nelibc,malloc-free,128,4,30000,2.14
+Zig cc,musl,nelibc,malloc-free,128,8,30000,1.16
+Zig cc,musl,nelibc,malloc-free,4096,1,30000,8.89
+Zig cc,musl,nelibc,malloc-free,4096,2,30000,4.72
+Zig cc,musl,nelibc,malloc-free,4096,4,30000,2.44
+Zig cc,musl,nelibc,malloc-free,4096,8,30000,1.53

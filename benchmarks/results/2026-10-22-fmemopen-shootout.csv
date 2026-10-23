@@ -1,0 +1,7 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,fmemopen-open-write-close,10000,83.25
+Zig cc,glibc,nelibc,fmemopen-open-write-close,10000,93.66
+GCC,glibc,host-libc,fmemopen-open-write-close,10000,84.98
+GCC,glibc,nelibc,fmemopen-open-write-close,10000,88.75
+Zig cc,musl,host-libc,fmemopen-open-write-close,10000,47.04
+Zig cc,musl,nelibc,fmemopen-open-write-close,10000,95.77

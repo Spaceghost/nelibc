@@ -1,0 +1,10 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_strerror_r(errnum: cint, buffer: *[0]cchar,
+    buffer_size: csize): cint <cimport> end
+
+local function hybrid_posix_strerror_r(errnum: cint, buffer: *[0]cchar,
+    buffer_size: csize): cint <cexport, codename 'strerror_r'>
+  return nelibc_strerror_r(errnum, buffer, buffer_size)
+end

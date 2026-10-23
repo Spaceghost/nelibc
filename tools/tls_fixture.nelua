@@ -1,0 +1,19 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local initialized_value: cuint <threadlocal> = 0x13579BDF
+local zero_initialized_value: cuint <threadlocal> = 0
+
+local function nelibc_tls_fixture_check(): cint <cexport, codename 'nelibc_tls_fixture_check'>
+  if initialized_value ~= 0x13579BDF then return 0 end
+  if zero_initialized_value ~= 0 then return 0 end
+  initialized_value = initialized_value + 1
+  zero_initialized_value = 0x2468ACE0
+  return 1
+end
+
+local function nelibc_tls_fixture_recheck(): cint <cexport, codename 'nelibc_tls_fixture_recheck'>
+  if initialized_value ~= 0x13579BE0 then return 0 end
+  if zero_initialized_value == 0x2468ACE0 then return 1 end
+  return 0
+end

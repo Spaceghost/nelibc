@@ -1,0 +1,12 @@
+SHIFT,strtof,shift_left,calls=1200,operand_limb_sum=62000,abs_shift_sum=996800
+SHIFT,strtof,shift_right_one,calls=2400,operand_limb_sum=182800,abs_shift_sum=2400
+SHIFT,strtof,compare_shifted,calls=1200,operand_limb_sum=123200,abs_shift_sum=1967200
+SHIFT,strtof,subtract_shifted,calls=0,operand_limb_sum=0,abs_shift_sum=0
+SHIFT,strtod,shift_left,calls=1200,operand_limb_sum=61600,abs_shift_sum=982800
+SHIFT,strtod,shift_right_one,calls=2400,operand_limb_sum=182800,abs_shift_sum=2400
+SHIFT,strtod,compare_shifted,calls=1200,operand_limb_sum=122800,abs_shift_sum=1967200
+SHIFT,strtod,subtract_shifted,calls=0,operand_limb_sum=0,abs_shift_sum=0
+SHIFT,strtold,shift_left,calls=2400,operand_limb_sum=120800,abs_shift_sum=1896000
+SHIFT,strtold,shift_right_one,calls=2400,operand_limb_sum=182800,abs_shift_sum=2400
+SHIFT,strtold,compare_shifted,calls=1600,operand_limb_sum=181600,abs_shift_sum=1992800
+SHIFT,strtold,subtract_shifted,calls=0,operand_limb_sum=0,abs_shift_sum=0

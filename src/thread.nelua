@@ -1,0 +1,969 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- Experimental Linux x86_64 thread runtime for the standalone profile.
+local TLSLayout: type = @record{
+  image_start: pointer,
+  image_filesz: csize,
+  image_memsz: csize,
+  image_align: csize
+}
+local ThreadContext: type = @record{
+  start: function(pointer): cint,
+  arg: pointer,
+  result: cint
+}
+local ThreadHandle: type = @record{
+  context: ThreadContext,
+  stack: pointer,
+  tls: pointer,
+  tls_size: csize,
+  tid: cint,
+  state: cint,
+  stack_size: csize,
+  cleanup_stack: pointer,
+  cleanup_stack_size: csize,
+  tid_word: *[0]cint
+}
+local PthreadContext: type = @record{
+  start: function(pointer): pointer,
+  arg: pointer,
+  result: pointer,
+  handle: *ThreadHandle,
+  object: pointer,
+  lifecycle: cint
+}
+local PthreadAttr: type = @record{
+  magic: culong,
+  detachstate: cint,
+  stacksize: csize
+}
+local PthreadMutexAttr: type = @record{
+  magic: culong,
+  kind: cint,
+  pshared: cint
+}
+local PthreadCondAttr: type = @record{
+  magic: culong,
+  pshared: cint
+}
+local PthreadMutex: type = @record{
+  magic: culong,
+  state: cint,
+  kind: cint,
+  owner: cint,
+  count: cint,
+  pshared: cint
+}
+local PthreadCond: type = @record{
+  magic: culong,
+  sequence: cint,
+  waiters: cint,
+  pshared: cint
+}
+local PthreadKeyValue: type = @record{
+  key: cuint,
+  value: pointer
+}
+local PthreadObject: type = @record{
+  magic: culong,
+  handle: ThreadHandle,
+  context: PthreadContext
+}
+local Timespec: type = @record{
+  tv_sec: clong,
+  tv_nsec: clong
+}
+
+local STACK_SIZE: csize <comptime> = 1048576
+local PAGE_SIZE: csize <comptime> = 4096
+local PTHREAD_STACK_MINIMUM: csize <comptime> = 16384
+local CLEANUP_STACK_SIZE: csize <comptime> = 16384
+local PTHREAD_ATTR_MAGIC: culong <comptime> = 0x4E454C4154545231
+local PTHREAD_OBJECT_MAGIC: culong <comptime> = 0x4E454C4950544831
+local PTHREAD_MUTEX_ATTR_MAGIC: culong <comptime> = 0x4E4D4154545231
+local PTHREAD_MUTEX_MAGIC: culong <comptime> = 0x4E4D5458
+local PTHREAD_COND_ATTR_MAGIC: culong <comptime> = 0x4E434154545231
+local PTHREAD_COND_MAGIC: culong <comptime> = 0x4E434F4E44
+local PTHREAD_KEY_COUNT: csize <comptime> = 128
+local PTHREAD_KEY_INDEX_MASK: cuint <comptime> = 255
+local pthread_key_lock: cint = 0
+local pthread_key_allocated: [128]cint = {}
+local pthread_key_generations: [128]cuint = {}
+local pthread_key_destructors: [128]pointer = {}
+local MAX_CSIZE: csize <comptime> = ~0_csize
+
+local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
+local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_tls_layout(layout: *TLSLayout): void <cimport> end
+local function nelibc_clone_thread(start: pointer, arg: pointer, stack_top: pointer, tls_tp: pointer, tid: *[0]cint): clong <cimport> end
+local function nelibc_credential_sync_begin(): cint <cimport> end
+local function nelibc_credential_sync_serve(): void <cimport> end
+local function nelibc_credential_sync_end(): void <cimport> end
+local function nelibc_thread_tid_load(tid: pointer): cint <cimport> end
+local function nelibc_thread_current_identity(): pointer <cimport> end
+local function nelibc_thread_current_pthread_context(): *PthreadContext <cimport> end
+local function nelibc_thread_current_key_values(): pointer <cimport> end
+local function nelibc_thread_set_key_values(values: pointer): void <cimport> end
+local function nelibc_thread_detached_exit(stack: pointer, stack_size: csize, tls: pointer, tls_size: csize, cleanup_stack: pointer, cleanup_stack_size: csize): void <cimport> end
+local function nelibc_thread_tid_slot_alloc(): *[0]cint <cimport> end
+local function nelibc_thread_tid_slot_release(tid: *[0]cint): void <cimport> end
+local function nelibc_atomic_load_int(value: *[0]cint): cint <cimport> end
+local function nelibc_atomic_store_int(value: *[0]cint, next: cint): void <cimport> end
+local function nelibc_atomic_cas_int(value: *[0]cint, expected: cint, next: cint): cint <cimport> end
+local function nelibc_atomic_exchange_int(value: *[0]cint, next: cint): cint <cimport> end
+local function nelibc_atomic_fetch_add_int(value: *[0]cint, delta: cint): cint <cimport> end
+local function nelibc_malloc(size: csize): pointer <cimport> end
+local function nelibc_free(ptr: pointer): void <cimport> end
+
+local function pthread_key_lock_acquire(): void <inline>
+  while true do
+    if nelibc_atomic_cas_int(&pthread_key_lock, 0, 1) == 0 then return end
+    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&pthread_key_lock)),
+                        128_culong, 1_culong, 0_culong, 0_culong, 0_culong)
+  end
+end
+
+local function pthread_key_lock_release(): void <inline>
+  nelibc_atomic_store_int(&pthread_key_lock, 0)
+  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&pthread_key_lock)),
+                      129_culong, 1_culong, 0_culong, 0_culong, 0_culong)
+end
+
+local function pthread_key_parts(key: cuint, index: *[0]csize): boolean <inline>
+  local encoded_index: cuint = key & PTHREAD_KEY_INDEX_MASK
+  if encoded_index == 0 or encoded_index > 128 then return false end
+  index[0] = (@csize)(encoded_index - 1)
+  return true
+end
+
+local function pthread_key_valid_locked(key: cuint, index: csize): boolean <inline>
+  return pthread_key_allocated[index] ~= 0 and
+         pthread_key_generations[index] == (key >> 8)
+end
+
+local function pthread_key_reset_values(): void <inline>
+  nelibc_thread_set_key_values(nilptr)
+end
+
+local function pthread_key_run_destructors(): void
+  local values: *[0]PthreadKeyValue = (@*[0]PthreadKeyValue)(nelibc_thread_current_key_values())
+  if values == nilptr then return end
+  local iteration: cint = 0
+  while iteration < 4 do
+    local called: boolean = false
+    local index: csize = 0
+    while index < PTHREAD_KEY_COUNT do
+      local value = values[index].value
+      if value ~= nilptr then
+        local key = values[index].key
+        values[index].value = nilptr
+        local destructor: pointer = nilptr
+        local key_index: csize
+        if pthread_key_parts(key, &key_index) then
+          pthread_key_lock_acquire()
+          if pthread_key_valid_locked(key, key_index) then
+            destructor = pthread_key_destructors[key_index]
+          end
+          pthread_key_lock_release()
+        end
+        if destructor ~= nilptr then
+          called = true
+          ((@function(pointer): void)(destructor))(value)
+        end
+      end
+      index = index + 1
+    end
+    if not called then break end
+    iteration = iteration + 1
+  end
+  local index: csize = 0
+  while index < PTHREAD_KEY_COUNT do
+    values[index].value = nilptr
+    index = index + 1
+  end
+  nelibc_free((@pointer)(values))
+  nelibc_thread_set_key_values(nilptr)
+end
+
+local function pthread_key_create(key: *[0]cuint, destructor: pointer): cint <cexport, codename 'pthread_key_create'>
+  if key == nilptr then return 22 end -- EINVAL
+  pthread_key_lock_acquire()
+  local index: csize = 0
+  while index < PTHREAD_KEY_COUNT and pthread_key_allocated[index] ~= 0 do
+    index = index + 1
+  end
+  if index == PTHREAD_KEY_COUNT then
+    pthread_key_lock_release()
+    return 11 -- EAGAIN
+  end
+  local generation = pthread_key_generations[index] + 1
+  if generation == 0 or generation > 0xFFFFFF then generation = 1 end
+  pthread_key_generations[index] = generation
+  pthread_key_destructors[index] = destructor
+  pthread_key_allocated[index] = 1
+  key[0] = (generation << 8) | (@cuint)(index + 1)
+  pthread_key_lock_release()
+  return 0
+end
+
+local function pthread_key_delete(key: cuint): cint <cexport, codename 'pthread_key_delete'>
+  local index: csize
+  if not pthread_key_parts(key, &index) then return 22 end -- EINVAL
+  pthread_key_lock_acquire()
+  if not pthread_key_valid_locked(key, index) then
+    pthread_key_lock_release()
+    return 22 -- EINVAL
+  end
+  pthread_key_allocated[index] = 0
+  pthread_key_destructors[index] = nilptr
+  pthread_key_lock_release()
+  return 0
+end
+
+local function pthread_getspecific(key: cuint): pointer <cexport, codename 'pthread_getspecific'>
+  local index: csize
+  if not pthread_key_parts(key, &index) then return nilptr end
+  pthread_key_lock_acquire()
+  local valid = pthread_key_valid_locked(key, index)
+  pthread_key_lock_release()
+  if not valid then return nilptr end
+  local values: *[0]PthreadKeyValue = (@*[0]PthreadKeyValue)(nelibc_thread_current_key_values())
+  if values == nilptr or values[index].key ~= key then return nilptr end
+  return values[index].value
+end
+
+local function pthread_setspecific(key: cuint, value: pointer): cint <cexport, codename 'pthread_setspecific'>
+  local index: csize
+  if not pthread_key_parts(key, &index) then return 22 end -- EINVAL
+  pthread_key_lock_acquire()
+  local valid = pthread_key_valid_locked(key, index)
+  pthread_key_lock_release()
+  if not valid then return 22 end -- EINVAL
+  local values: *[0]PthreadKeyValue = (@*[0]PthreadKeyValue)(nelibc_thread_current_key_values())
+  if values == nilptr and value == nilptr then return 0 end
+  if values == nilptr then
+    local allocated = nelibc_malloc(PTHREAD_KEY_COUNT * 16_csize)
+    if allocated == nilptr then return 12 end -- ENOMEM
+    local slots = (@*[0]PthreadKeyValue)(allocated)
+    local slot: csize = 0
+    while slot < PTHREAD_KEY_COUNT do
+      slots[slot].key = 0
+      slots[slot].value = nilptr
+      slot = slot + 1
+    end
+    nelibc_thread_set_key_values(allocated)
+    values = slots
+  end
+  values[index].key = key
+  values[index].value = value
+  return 0
+end
+
+local function thread_trampoline(argument: pointer): cint <cexport, codename 'nelibc_thread_trampoline'>
+  local context = (@*ThreadContext)(argument)
+  context.result = context.start(context.arg)
+  return 0
+end
+
+local function map_rw(size: csize): pointer <inline>
+  local result = nelibc_raw_syscall6(
+    9_culong, 0_culong, (@culong)(size), 3_culong, 34_culong,
+    (@culong)(-1_cint), 0_culong
+  )
+  if result < 0 and result >= -4095 then
+    nelibc_errno_location()[0] = (@cint)(-result)
+    return nilptr
+  end
+  return (@pointer)((@usize)(result))
+end
+
+local function unmap(addr: pointer, size: csize): void <inline>
+  nelibc_raw_syscall3(11_culong, (@culong)((@usize)(addr)), (@culong)(size), 0_culong)
+end
+
+local function pthread_detached_cleanup(context: *PthreadContext): void
+  local handle = context.handle
+  local stack = handle.stack
+  local stack_size = handle.stack_size
+  local tls = handle.tls
+  local tls_size = handle.tls_size
+  local cleanup_stack = handle.cleanup_stack
+  local cleanup_stack_size = handle.cleanup_stack_size
+  local object = context.object
+  local tid_word: *[0]cint = handle.tid_word
+  nelibc_credential_sync_end()
+  nelibc_thread_tid_slot_release(tid_word)
+  nelibc_free(object)
+  nelibc_thread_detached_exit(stack, stack_size, tls, tls_size,
+                              cleanup_stack, cleanup_stack_size)
+end
+
+-- Start a callback on a Linux thread with a private stack and static TLS copy.
+local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer, requested_stack_size: csize, identity: pointer, pthread_context: *PthreadContext, detached: boolean): cint
+  if handle == nilptr or start == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  if handle.state == 1 then
+    nelibc_errno_location()[0] = 16 -- EBUSY
+    return -1
+  end
+  handle.state = 0
+  if requested_stack_size < PTHREAD_STACK_MINIMUM or requested_stack_size > MAX_CSIZE - (PAGE_SIZE - 1) then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local stack_size: csize = (requested_stack_size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1)
+
+  local stack = map_rw(stack_size)
+  if stack == nilptr then return -1 end
+
+  local cleanup_stack: pointer = nilptr
+  if detached or pthread_context ~= nilptr then
+    cleanup_stack = map_rw(CLEANUP_STACK_SIZE)
+    if cleanup_stack == nilptr then
+      unmap(stack, stack_size)
+      return -1
+    end
+  end
+
+  local layout: TLSLayout
+  nelibc_tls_layout(&layout)
+  local align: csize = layout.image_align
+  if align < 16 then align = 16 end
+  if (align & (align - 1)) ~= 0 then
+    if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
+    unmap(stack, stack_size)
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+
+  local rounded_size: csize = layout.image_memsz
+  if rounded_size > MAX_CSIZE - (align - 1) then
+    if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
+    unmap(stack, stack_size)
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  rounded_size = (rounded_size + align - 1) & ~(align - 1)
+  if align > MAX_CSIZE - 16 then
+    if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
+    unmap(stack, stack_size)
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  if rounded_size > MAX_CSIZE - align - 64 then
+    if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
+    unmap(stack, stack_size)
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local tls_map_size: csize = rounded_size + align + 64
+  local tls_map = map_rw(tls_map_size)
+  if tls_map == nilptr then
+    if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
+    unmap(stack, stack_size)
+    return -1
+  end
+
+  local base: usize = (@usize)(tls_map)
+  local tp_address: usize = (base + (@usize)(rounded_size) + (@usize)(align - 1)) & ~(@usize)(align - 1)
+  local tls_address: usize = tp_address - (@usize)(rounded_size)
+  local source: *[0]byte = (@*[0]byte)(layout.image_start)
+  local destination: *[0]byte = (@*[0]byte)(tls_address)
+  local i: csize = 0
+  while i < layout.image_filesz do
+    destination[i] = source[i]
+    i = i + 1
+  end
+  while i < rounded_size do
+    destination[i] = 0
+    i = i + 1
+  end
+  local tcb: *[0]pointer = (@*[0]pointer)(tp_address)
+  tcb[0] = (@pointer)(tp_address)
+  tcb[1] = identity
+  tcb[2] = (@pointer)(pthread_context)
+  if detached then tcb[3] = identity else tcb[3] = nilptr end
+  tcb[4] = nilptr
+  handle.stack = stack
+  handle.tls = tls_map
+  handle.tls_size = tls_map_size
+  handle.stack_size = stack_size
+  handle.cleanup_stack = cleanup_stack
+  if cleanup_stack ~= nilptr then handle.cleanup_stack_size = CLEANUP_STACK_SIZE else handle.cleanup_stack_size = 0 end
+  handle.tid = 0
+  if handle.tid_word == nilptr then handle.tid_word = &handle.tid end
+  if detached then handle.state = 3 end
+  local stack_top: pointer = (@pointer)((@usize)(stack) + (@usize)(stack_size))
+  if nelibc_credential_sync_begin() ~= 0 then
+    unmap(tls_map, tls_map_size)
+    if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
+    unmap(stack, stack_size)
+    return -1
+  end
+  local tid_pointer: *[0]cint = handle.tid_word
+  local child = nelibc_clone_thread(start, arg, stack_top, (@pointer)(tp_address), tid_pointer)
+  if child < 0 then
+    nelibc_credential_sync_end()
+    nelibc_errno_location()[0] = (@cint)(-child)
+    unmap(tls_map, tls_map_size)
+    if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
+    unmap(stack, stack_size)
+    return -1
+  end
+  if not detached then handle.state = 1 end
+  return 0
+end
+
+local function nelibc_thread_create(handle: *ThreadHandle, start: function(pointer): cint, arg: pointer): cint <cexport, codename 'nelibc_thread_create'>
+  if handle == nilptr or start == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  handle.context.start = start
+  handle.context.arg = arg
+  handle.context.result = 0
+  return thread_spawn(handle, (@pointer)(thread_trampoline), &handle.context, STACK_SIZE, (@pointer)(handle), nilptr, false)
+end
+
+-- Wait for a child, service process-wide credential rendezvous, and release maps.
+local function thread_wait(handle: *ThreadHandle): cint
+  if handle == nilptr or handle.state ~= 1 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  -- FUTEX_WAIT is compare-and-block: a concurrent child clear either wakes
+  -- this wait or makes it return -EAGAIN. Credential requests also update
+  -- their shared request state; timed waits let this join service requests
+  -- made by any active child, not only the child being joined.
+  local timeout: Timespec
+  timeout.tv_sec = 0
+  timeout.tv_nsec = 10000000
+  local tid_word: *[0]cint = handle.tid_word
+  if tid_word == nilptr then tid_word = &handle.tid end
+  while nelibc_thread_tid_load((@pointer)(tid_word)) ~= 0 do
+    local expected_tid: cint = nelibc_thread_tid_load((@pointer)(tid_word))
+    nelibc_credential_sync_serve()
+    if nelibc_thread_tid_load((@pointer)(tid_word)) ~= 0 then
+      nelibc_raw_syscall6(
+        202_culong, (@culong)((@usize)(tid_word)), 0_culong,
+        (@culong)(expected_tid), (@culong)((@usize)(&timeout)), 0_culong, 0_culong
+      )
+    end
+  end
+  nelibc_credential_sync_end()
+  unmap(handle.tls, handle.tls_size)
+  unmap(handle.stack, handle.stack_size)
+  if handle.cleanup_stack ~= nilptr then unmap(handle.cleanup_stack, handle.cleanup_stack_size) end
+  handle.stack = nilptr
+  handle.tls = nilptr
+  handle.tls_size = 0
+  handle.stack_size = 0
+  handle.cleanup_stack = nilptr
+  handle.cleanup_stack_size = 0
+  handle.tid_word = nilptr
+  handle.state = 2
+  return 0
+end
+
+local function nelibc_thread_join(handle: *ThreadHandle, result: *[0]cint): cint <cexport, codename 'nelibc_thread_join'>
+  if result == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  if thread_wait(handle) ~= 0 then return -1 end
+  result[0] = handle.context.result
+  return 0
+end
+
+-- Synchronous compatibility wrapper around create and join.
+local function nelibc_thread_run_once(start: function(pointer): cint, arg: pointer): cint <cexport, codename 'nelibc_thread_run_once'>
+  local handle: ThreadHandle
+  local result: cint
+  handle.state = 0
+  handle.tid_word = nilptr
+  if nelibc_thread_create(&handle, start, arg) ~= 0 then return -1 end
+  if nelibc_thread_join(&handle, &result) ~= 0 then return -1 end
+  return result
+end
+
+local function pthread_finish(context: *PthreadContext): void
+  while true do
+    local lifecycle = nelibc_atomic_load_int(&context.lifecycle)
+    if lifecycle == 0 then
+      if nelibc_atomic_cas_int(&context.lifecycle, 0, 2) ~= 0 then continue end
+      return
+    elseif lifecycle == 4 then
+      return
+    elseif lifecycle == 1 or lifecycle == 3 then
+      if nelibc_atomic_cas_int(&context.lifecycle, lifecycle, 5) ~= 0 then continue end
+      pthread_detached_cleanup(context)
+    else
+      return
+    end
+  end
+end
+
+local function pthread_trampoline(argument: pointer): cint <cexport, codename 'nelibc_pthread_trampoline'>
+  local context = (@*PthreadContext)(argument)
+  pthread_key_reset_values()
+  context.result = context.start(context.arg)
+  pthread_key_run_destructors()
+  pthread_finish(context)
+  return 0
+end
+
+local function pthread_attr_valid(attr: *PthreadAttr): boolean <inline>
+  return attr ~= nilptr and attr.magic == PTHREAD_ATTR_MAGIC
+end
+
+local function pthread_attr_init(attr: *PthreadAttr): cint <cexport, codename 'pthread_attr_init'>
+  if attr == nilptr then return 22 end -- EINVAL
+  attr.magic = PTHREAD_ATTR_MAGIC
+  attr.detachstate = 0
+  attr.stacksize = STACK_SIZE
+  return 0
+end
+
+local function pthread_attr_destroy(attr: *PthreadAttr): cint <cexport, codename 'pthread_attr_destroy'>
+  if not pthread_attr_valid(attr) then return 22 end -- EINVAL
+  attr.magic = 0
+  return 0
+end
+
+local function pthread_attr_setdetachstate(attr: *PthreadAttr, state: cint): cint <cexport, codename 'pthread_attr_setdetachstate'>
+  if not pthread_attr_valid(attr) then return 22 end -- EINVAL
+  if state ~= 0 and state ~= 1 then return 22 end -- EINVAL
+  attr.detachstate = state
+  return 0
+end
+
+local function pthread_attr_getdetachstate(attr: *PthreadAttr, state: *[0]cint): cint <cexport, codename 'pthread_attr_getdetachstate'>
+  if not pthread_attr_valid(attr) or state == nilptr then return 22 end -- EINVAL
+  state[0] = attr.detachstate
+  return 0
+end
+
+local function pthread_attr_setstacksize(attr: *PthreadAttr, stacksize: csize): cint <cexport, codename 'pthread_attr_setstacksize'>
+  if not pthread_attr_valid(attr) then return 22 end -- EINVAL
+  if stacksize < PTHREAD_STACK_MINIMUM or stacksize > MAX_CSIZE - (PAGE_SIZE - 1) then return 22 end
+  attr.stacksize = stacksize
+  return 0
+end
+
+local function pthread_attr_getstacksize(attr: *PthreadAttr, stacksize: *[0]csize): cint <cexport, codename 'pthread_attr_getstacksize'>
+  if not pthread_attr_valid(attr) or stacksize == nilptr then return 22 end -- EINVAL
+  stacksize[0] = attr.stacksize
+  return 0
+end
+
+local function pthread_mutex_type_valid(kind: cint): boolean <inline>
+  return kind == 0 or kind == 1 or kind == 2
+end
+
+local function pthread_mutexattr_valid(attr: *PthreadMutexAttr): boolean <inline>
+  return attr ~= nilptr and attr.magic == PTHREAD_MUTEX_ATTR_MAGIC
+end
+
+local function pthread_mutexattr_init(attr: *PthreadMutexAttr): cint <cexport, codename 'pthread_mutexattr_init'>
+  if attr == nilptr then return 22 end -- EINVAL
+  attr.magic = PTHREAD_MUTEX_ATTR_MAGIC
+  attr.kind = 0
+  attr.pshared = 0
+  return 0
+end
+
+local function pthread_mutexattr_destroy(attr: *PthreadMutexAttr): cint <cexport, codename 'pthread_mutexattr_destroy'>
+  if not pthread_mutexattr_valid(attr) then return 22 end -- EINVAL
+  attr.magic = 0
+  return 0
+end
+
+local function pthread_mutexattr_settype(attr: *PthreadMutexAttr, kind: cint): cint <cexport, codename 'pthread_mutexattr_settype'>
+  if not pthread_mutexattr_valid(attr) or not pthread_mutex_type_valid(kind) then return 22 end -- EINVAL
+  attr.kind = kind
+  return 0
+end
+
+local function pthread_mutexattr_gettype(attr: *PthreadMutexAttr, kind: *[0]cint): cint <cexport, codename 'pthread_mutexattr_gettype'>
+  if not pthread_mutexattr_valid(attr) or kind == nilptr then return 22 end -- EINVAL
+  kind[0] = attr.kind
+  return 0
+end
+
+local function pthread_mutexattr_setpshared(attr: *PthreadMutexAttr, pshared: cint): cint <cexport, codename 'pthread_mutexattr_setpshared'>
+  if not pthread_mutexattr_valid(attr) or (pshared ~= 0 and pshared ~= 1) then return 22 end -- EINVAL
+  attr.pshared = pshared
+  return 0
+end
+
+local function pthread_mutexattr_getpshared(attr: *PthreadMutexAttr, pshared: *[0]cint): cint <cexport, codename 'pthread_mutexattr_getpshared'>
+  if not pthread_mutexattr_valid(attr) or pshared == nilptr then return 22 end -- EINVAL
+  pshared[0] = attr.pshared
+  return 0
+end
+
+local function pthread_mutex_valid(mutex: *PthreadMutex): boolean <inline>
+  return mutex ~= nilptr and mutex.magic == PTHREAD_MUTEX_MAGIC and
+         pthread_mutex_type_valid(mutex.kind) and
+         (mutex.pshared == 0 or mutex.pshared == 1)
+end
+
+local function pthread_mutex_init(mutex: *PthreadMutex, attr: *PthreadMutexAttr): cint <cexport, codename 'pthread_mutex_init'>
+  if mutex == nilptr then return 22 end -- EINVAL
+  local kind: cint = 0
+  if attr ~= nilptr then
+    if not pthread_mutexattr_valid(attr) then return 22 end -- EINVAL
+    kind = attr.kind
+  end
+  if not pthread_mutex_type_valid(kind) then return 22 end -- EINVAL
+  if attr ~= nilptr and attr.pshared ~= 0 and attr.pshared ~= 1 then return 22 end -- EINVAL
+  mutex.state = 0
+  mutex.kind = kind
+  mutex.owner = 0
+  mutex.count = 0
+  mutex.pshared = 0
+  if attr ~= nilptr then mutex.pshared = attr.pshared end
+  mutex.magic = PTHREAD_MUTEX_MAGIC
+  return 0
+end
+
+local function pthread_mutex_destroy(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_destroy'>
+  if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
+  if nelibc_atomic_load_int(&mutex.state) ~= 0 then return 16 end -- EBUSY
+  mutex.magic = 0
+  mutex.owner = 0
+  mutex.count = 0
+  return 0
+end
+
+local function pthread_mutex_owner_check(mutex: *PthreadMutex, tid: cint): cint <inline>
+  if nelibc_atomic_load_int(&mutex.owner) ~= tid then return 0 end
+  if mutex.kind == 1 then
+    if mutex.count == 2147483647 then return 11 end -- EAGAIN
+    mutex.count = mutex.count + 1
+    return 1
+  end
+  if mutex.kind == 2 then return 35 end -- EDEADLK
+  return -1 -- A normal mutex self-lock blocks.
+end
+
+local function pthread_mutex_acquire(mutex: *PthreadMutex): void
+  if nelibc_atomic_cas_int(&mutex.state, 0, 1) == 0 then return end
+  local operation: culong = 0_culong
+  if mutex.pshared == 0 then operation = 128_culong end -- FUTEX_WAIT_PRIVATE
+  while true do
+    local previous = nelibc_atomic_exchange_int(&mutex.state, 2)
+    if previous == 0 then return end
+    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
+                        operation, 2_culong, 0_culong, 0_culong, 0_culong)
+  end
+end
+
+local function pthread_mutex_lock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_lock'>
+  if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local owner_result = pthread_mutex_owner_check(mutex, tid)
+  if owner_result == 1 then return 0 end
+  if owner_result > 1 then return owner_result end
+  pthread_mutex_acquire(mutex)
+  mutex.count = 1
+  nelibc_atomic_store_int(&mutex.owner, tid)
+  return 0
+end
+
+local function pthread_mutex_trylock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_trylock'>
+  if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if nelibc_atomic_load_int(&mutex.owner) == tid then
+    if mutex.kind == 1 then
+      if mutex.count == 2147483647 then return 11 end -- EAGAIN
+      mutex.count = mutex.count + 1
+      return 0
+    end
+    return 16 -- EBUSY
+  end
+  if nelibc_atomic_cas_int(&mutex.state, 0, 1) ~= 0 then return 16 end -- EBUSY
+  mutex.count = 1
+  nelibc_atomic_store_int(&mutex.owner, tid)
+  return 0
+end
+
+local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_unlock'>
+  if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if nelibc_atomic_load_int(&mutex.owner) ~= tid then return 1 end -- EPERM
+  if mutex.kind == 1 and mutex.count > 1 then
+    mutex.count = mutex.count - 1
+    return 0
+  end
+  mutex.count = 0
+  nelibc_atomic_store_int(&mutex.owner, 0)
+  local previous = nelibc_atomic_exchange_int(&mutex.state, 0)
+  if previous == 2 then
+    local operation: culong = 1_culong
+    if mutex.pshared == 0 then operation = 129_culong end -- FUTEX_WAKE_PRIVATE
+    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
+                        operation, 1_culong, 0_culong, 0_culong, 0_culong)
+  end
+  return 0
+end
+
+local function pthread_condattr_valid(attr: *PthreadCondAttr): boolean <inline>
+  return attr ~= nilptr and attr.magic == PTHREAD_COND_ATTR_MAGIC
+end
+
+local function pthread_cond_valid(cond: *PthreadCond): boolean <inline>
+  return cond ~= nilptr and cond.magic == PTHREAD_COND_MAGIC and
+         (cond.pshared == 0 or cond.pshared == 1)
+end
+
+local function pthread_condattr_init(attr: *PthreadCondAttr): cint <cexport, codename 'pthread_condattr_init'>
+  if attr == nilptr then return 22 end -- EINVAL
+  attr.magic = PTHREAD_COND_ATTR_MAGIC
+  attr.pshared = 0
+  return 0
+end
+
+local function pthread_condattr_destroy(attr: *PthreadCondAttr): cint <cexport, codename 'pthread_condattr_destroy'>
+  if not pthread_condattr_valid(attr) then return 22 end -- EINVAL
+  attr.magic = 0
+  return 0
+end
+
+local function pthread_condattr_setpshared(attr: *PthreadCondAttr, pshared: cint): cint <cexport, codename 'pthread_condattr_setpshared'>
+  if not pthread_condattr_valid(attr) or (pshared ~= 0 and pshared ~= 1) then return 22 end -- EINVAL
+  attr.pshared = pshared
+  return 0
+end
+
+local function pthread_condattr_getpshared(attr: *PthreadCondAttr, pshared: *[0]cint): cint <cexport, codename 'pthread_condattr_getpshared'>
+  if not pthread_condattr_valid(attr) or pshared == nilptr then return 22 end -- EINVAL
+  pshared[0] = attr.pshared
+  return 0
+end
+
+local function pthread_cond_init(cond: *PthreadCond, attr: *PthreadCondAttr): cint <cexport, codename 'pthread_cond_init'>
+  if cond == nilptr then return 22 end -- EINVAL
+  local pshared: cint = 0
+  if attr ~= nilptr then
+    if not pthread_condattr_valid(attr) then return 22 end -- EINVAL
+    pshared = attr.pshared
+  end
+  cond.sequence = 0
+  cond.waiters = 0
+  cond.pshared = pshared
+  cond.magic = PTHREAD_COND_MAGIC
+  return 0
+end
+
+local function pthread_cond_destroy(cond: *PthreadCond): cint <cexport, codename 'pthread_cond_destroy'>
+  if not pthread_cond_valid(cond) then return 22 end -- EINVAL
+  if nelibc_atomic_load_int(&cond.waiters) ~= 0 then return 16 end -- EBUSY
+  cond.magic = 0
+  return 0
+end
+
+local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMutex, abstime: *Timespec): cint
+  if not pthread_cond_valid(cond) or not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
+  if cond.pshared ~= mutex.pshared then return 22 end -- EINVAL
+  if abstime ~= nilptr and (abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000) then
+    return 22 -- EINVAL
+  end
+  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  if nelibc_atomic_load_int(&mutex.owner) ~= tid then return 1 end -- EPERM
+  if mutex.kind == 1 and mutex.count ~= 1 then return 22 end -- EINVAL
+  local sequence = nelibc_atomic_load_int(&cond.sequence)
+  nelibc_atomic_fetch_add_int(&cond.waiters, 1)
+  local unlock_result = pthread_mutex_unlock(mutex)
+  if unlock_result ~= 0 then
+    nelibc_atomic_fetch_add_int(&cond.waiters, -1)
+    return unlock_result
+  end
+  local wait_operation: culong = 0_culong
+  local timeout_pointer: culong = 0_culong
+  local futex_mask: culong = 0_culong
+  if abstime ~= nilptr then
+    wait_operation = 265_culong -- FUTEX_WAIT_BITSET | FUTEX_CLOCK_REALTIME
+    timeout_pointer = (@culong)((@usize)(abstime))
+    futex_mask = 0xFFFFFFFF_culong -- FUTEX_BITSET_MATCH_ANY
+  end
+  if cond.pshared == 0 then
+    if abstime ~= nilptr then wait_operation = wait_operation | 128_culong
+    else wait_operation = 128_culong end -- FUTEX_PRIVATE_FLAG
+  end
+  local wait_result = nelibc_raw_syscall6(
+    202_culong, (@culong)((@usize)(&cond.sequence)), wait_operation,
+    (@culong)(sequence), timeout_pointer, 0_culong, futex_mask
+  )
+  local wait_error: cint = 0
+  if wait_result < 0 and wait_result >= -4095 then
+    wait_error = (@cint)(-wait_result)
+    if wait_error == 4 or wait_error == 11 then wait_error = 0 end -- EINTR/EAGAIN are spurious returns
+  end
+  nelibc_atomic_fetch_add_int(&cond.waiters, -1)
+  local lock_result = pthread_mutex_lock(mutex)
+  if lock_result ~= 0 then return lock_result end
+  return wait_error
+end
+
+local function pthread_cond_wait(cond: *PthreadCond, mutex: *PthreadMutex): cint <cexport, codename 'pthread_cond_wait'>
+  return pthread_cond_wait_internal(cond, mutex, nilptr)
+end
+
+local function pthread_cond_timedwait(cond: *PthreadCond, mutex: *PthreadMutex, abstime: *Timespec): cint <cexport, codename 'pthread_cond_timedwait'>
+  if abstime == nilptr then return 22 end -- EINVAL
+  return pthread_cond_wait_internal(cond, mutex, abstime)
+end
+
+local function pthread_cond_signal(cond: *PthreadCond): cint <cexport, codename 'pthread_cond_signal'>
+  if not pthread_cond_valid(cond) then return 22 end -- EINVAL
+  nelibc_atomic_fetch_add_int(&cond.sequence, 1)
+  if nelibc_atomic_load_int(&cond.waiters) ~= 0 then
+    local operation: culong = 129_culong
+    if cond.pshared ~= 0 then operation = 1_culong end
+    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&cond.sequence)),
+                        operation, 1_culong, 0_culong, 0_culong, 0_culong)
+  end
+  return 0
+end
+
+local function pthread_cond_broadcast(cond: *PthreadCond): cint <cexport, codename 'pthread_cond_broadcast'>
+  if not pthread_cond_valid(cond) then return 22 end -- EINVAL
+  nelibc_atomic_fetch_add_int(&cond.sequence, 1)
+  if nelibc_atomic_load_int(&cond.waiters) ~= 0 then
+    local operation: culong = 129_culong
+    if cond.pshared ~= 0 then operation = 1_culong end
+    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&cond.sequence)),
+                        operation, 2147483647_culong, 0_culong, 0_culong, 0_culong)
+  end
+  return 0
+end
+
+local function pthread_once(control: *[0]cint, init_routine: function(): void): cint <cexport, codename 'pthread_once'>
+  if control == nilptr or init_routine == nilptr then return 22 end -- EINVAL
+  while true do
+    local state = nelibc_atomic_load_int(control)
+    if state == 2 then return 0 end
+    if state == 0 then
+      if nelibc_atomic_cas_int(control, 0, 1) == 0 then
+        init_routine()
+        nelibc_atomic_store_int(control, 2)
+        nelibc_raw_syscall6(202_culong, (@culong)((@usize)(control)),
+                            129_culong, 2147483647_culong,
+                            0_culong, 0_culong, 0_culong)
+        return 0
+      end
+    elseif state == 1 then
+      nelibc_raw_syscall6(202_culong, (@culong)((@usize)(control)),
+                          128_culong, 1_culong, 0_culong, 0_culong, 0_culong)
+    else
+      return 22 -- EINVAL
+    end
+  end
+end
+
+local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: function(pointer): pointer, arg: pointer): cint <cexport, codename 'pthread_create'>
+  if thread == nilptr or start == nilptr then return 22 end -- EINVAL
+  local stacksize: csize = STACK_SIZE
+  if attr ~= nilptr then
+    if not pthread_attr_valid(attr) then return 22 end -- EINVAL
+    if attr.detachstate ~= 0 and attr.detachstate ~= 1 then return 22 end -- EINVAL
+    stacksize = attr.stacksize
+  end
+  local object = nelibc_malloc(192_csize)
+  if object == nilptr then return 12 end -- ENOMEM
+  local tid_word = nelibc_thread_tid_slot_alloc()
+  if tid_word == nilptr then
+    nelibc_free(object)
+    return 11 -- EAGAIN
+  end
+  local state = (@*PthreadObject)(object)
+  state.magic = PTHREAD_OBJECT_MAGIC
+  state.context.start = start
+  state.context.arg = arg
+  state.context.result = nilptr
+  state.context.handle = &state.handle
+  state.context.object = object
+  if attr ~= nilptr and attr.detachstate == 1 then state.context.lifecycle = 3
+  else state.context.lifecycle = 0 end
+  state.handle.state = 0
+  state.handle.tid_word = tid_word
+  if thread_spawn(&state.handle, (@pointer)(pthread_trampoline), &state.context,
+                  stacksize, object, &state.context, attr ~= nilptr and attr.detachstate == 1) ~= 0 then
+    local error_code = nelibc_errno_location()[0]
+    nelibc_thread_tid_slot_release(tid_word)
+    nelibc_free(object)
+    if error_code == 0 then return 11 end -- EAGAIN
+    return error_code
+  end
+  thread[0] = object
+  return 0
+end
+
+local function pthread_join(thread: pointer, result: *[0]pointer): cint <cexport, codename 'pthread_join'>
+  if thread == nilptr then return 3 end -- ESRCH
+  if thread == nelibc_thread_current_identity() then return 35 end -- EDEADLK
+  local state = (@*PthreadObject)(thread)
+  if state.magic ~= PTHREAD_OBJECT_MAGIC then return 3 end -- ESRCH
+  local lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
+  while true do
+    if lifecycle ~= 0 and lifecycle ~= 2 then return 22 end -- EINVAL
+    if nelibc_atomic_cas_int(&state.context.lifecycle, lifecycle, 4) == 0 then break end
+    lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
+  end
+  local tid_word: *[0]cint = state.handle.tid_word
+  if thread_wait(&state.handle) ~= 0 then return nelibc_errno_location()[0] end
+  if result ~= nilptr then result[0] = state.context.result end
+  nelibc_thread_tid_slot_release(tid_word)
+  state.magic = 0
+  nelibc_free(thread)
+  return 0
+end
+
+local function pthread_detach(thread: pointer): cint <cexport, codename 'pthread_detach'>
+  if thread == nilptr then return 3 end -- ESRCH
+  local state = (@*PthreadObject)(thread)
+  if state.magic ~= PTHREAD_OBJECT_MAGIC then return 3 end -- ESRCH
+  local lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
+  while true do
+    if lifecycle == 0 then
+      if nelibc_atomic_cas_int(&state.context.lifecycle, 0, 1) == 0 then return 0 end
+    elseif lifecycle == 2 then
+      if nelibc_atomic_cas_int(&state.context.lifecycle, 2, 6) == 0 then
+        local tid_word: *[0]cint = state.handle.tid_word
+        if thread_wait(&state.handle) ~= 0 then return nelibc_errno_location()[0] end
+        nelibc_thread_tid_slot_release(tid_word)
+        state.magic = 0
+        nelibc_free(thread)
+        return 0
+      end
+    else
+      return 22 -- EINVAL: detached or already joined/detached
+    end
+    lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
+  end
+end
+
+local function pthread_equal(first: pointer, second: pointer): cint <cexport, codename 'pthread_equal'>
+  if first == second then return 1 end
+  return 0
+end
+
+local function pthread_self(): pointer <cexport, codename 'pthread_self'>
+  return nelibc_thread_current_identity()
+end
+
+local function pthread_exit(result: pointer): void <cexport, codename 'pthread_exit'>
+  pthread_key_run_destructors()
+  local context = nelibc_thread_current_pthread_context()
+  if context ~= nilptr then
+    context.result = result
+    pthread_finish(context)
+  end
+  nelibc_raw_syscall3(60_culong, 0_culong, 0_culong, 0_culong)
+  while true do end
+end

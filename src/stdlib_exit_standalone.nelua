@@ -1,0 +1,29 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function _exit(status: cint): void <cimport> end
+local function fflush(stream: pointer): cint <cimport> end
+
+local exit_handlers: [32]function(): void = {}
+local exit_handler_count: csize = 0
+local exit_started: boolean = false
+
+local function atexit(handler: function(): void): cint <cexport, codename 'atexit'>
+  if handler == nilptr or exit_handler_count == 32 then return 1 end
+  exit_handlers[exit_handler_count] = handler
+  exit_handler_count = exit_handler_count + 1
+  return 0
+end
+
+local function exit(status: cint): void <cexport, codename 'exit'>
+  if exit_started then _exit(status) end
+  exit_started = true
+  while exit_handler_count > 0 do
+    exit_handler_count = exit_handler_count - 1
+    local handler: function(): void = exit_handlers[exit_handler_count]
+    exit_handlers[exit_handler_count] = nilptr
+    handler()
+  end
+  fflush(nilptr)
+  _exit(status)
+end

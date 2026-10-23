@@ -1,0 +1,17 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function setvbuf(stream: pointer, buffer: pointer, mode: cint,
+    size: csize): cint <cimport> end
+
+local function setbuffer(stream: pointer, buffer: *cchar, size: csize): void <cexport, codename 'setbuffer'>
+  if buffer == nilptr then
+    setvbuf(stream, nilptr, 2, size) -- _IONBF
+  else
+    setvbuf(stream, (@pointer)(buffer), 0, size) -- _IOFBF
+  end
+end
+
+local function setlinebuf(stream: pointer): void <cexport, codename 'setlinebuf'>
+  setvbuf(stream, nilptr, 1, 0) -- _IOLBF
+end

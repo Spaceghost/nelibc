@@ -1,0 +1,25 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,strtof,4000,182.64
+Zig cc,glibc,nelibc,strtof,4000,297.35
+Zig cc,glibc,host-libc,strtod,4000,97.75
+Zig cc,glibc,nelibc,strtod,4000,198.21
+Zig cc,glibc,host-libc,strtold,4000,86.27
+Zig cc,glibc,nelibc,strtold,4000,198.05
+GCC,glibc,host-libc,strtof,4000,177.14
+GCC,glibc,nelibc,strtof,4000,241.36
+GCC,glibc,host-libc,strtod,4000,81.55
+GCC,glibc,nelibc,strtod,4000,148.04
+GCC,glibc,host-libc,strtold,4000,81.39
+GCC,glibc,nelibc,strtold,4000,146.69
+Zig cc,musl,host-libc,strtof,4000,296.58
+Zig cc,musl,nelibc,strtof,4000,297.03
+Zig cc,musl,host-libc,strtod,4000,196.68
+Zig cc,musl,nelibc,strtod,4000,202.72
+Zig cc,musl,host-libc,strtold,4000,216.23
+Zig cc,musl,nelibc,strtold,4000,216.26
+TinyCC,glibc,host-libc,strtof,4000,175.23
+TinyCC,glibc,nelibc,strtof,4000,650.94
+TinyCC,glibc,host-libc,strtod,4000,81.06
+TinyCC,glibc,nelibc,strtod,4000,629.65
+TinyCC,glibc,host-libc,strtold,4000,86.63
+TinyCC,glibc,nelibc,strtold,4000,754.46

@@ -1,0 +1,289 @@
+pair,compiler,libc,variant,function,iterations,median_ns_per_call
+1,TinyCC,glibc,baseline,strtof,160,11589.23
+1,TinyCC,glibc,baseline,strtod,160,11984.66
+1,TinyCC,glibc,baseline,strtold,160,12362.25
+1,Zig cc,glibc,baseline,strtof,160,5633.41
+1,Zig cc,glibc,baseline,strtod,160,5652.29
+1,Zig cc,glibc,baseline,strtold,160,5668.96
+1,GCC,glibc,baseline,strtof,160,4754.26
+1,GCC,glibc,baseline,strtod,160,4508.21
+1,GCC,glibc,baseline,strtold,160,4757.49
+1,Zig cc,musl,baseline,strtof,160,5512.37
+1,Zig cc,musl,baseline,strtod,160,5622.96
+1,Zig cc,musl,baseline,strtold,160,5486.00
+1,TinyCC,glibc,candidate,strtof,160,11377.12
+1,TinyCC,glibc,candidate,strtod,160,12567.58
+1,TinyCC,glibc,candidate,strtold,160,13050.01
+1,Zig cc,glibc,candidate,strtof,160,5508.23
+1,Zig cc,glibc,candidate,strtod,160,5615.74
+1,Zig cc,glibc,candidate,strtold,160,5896.96
+1,GCC,glibc,candidate,strtof,160,5028.96
+1,GCC,glibc,candidate,strtod,160,4717.97
+1,GCC,glibc,candidate,strtold,160,4992.15
+1,Zig cc,musl,candidate,strtof,160,5683.37
+1,Zig cc,musl,candidate,strtod,160,5557.39
+1,Zig cc,musl,candidate,strtold,160,6471.76
+2,TinyCC,glibc,candidate,strtof,160,11812.92
+2,TinyCC,glibc,candidate,strtod,160,12109.68
+2,TinyCC,glibc,candidate,strtold,160,12767.64
+2,Zig cc,glibc,candidate,strtof,160,5496.36
+2,Zig cc,glibc,candidate,strtod,160,5556.37
+2,Zig cc,glibc,candidate,strtold,160,5746.22
+2,GCC,glibc,candidate,strtof,160,4986.53
+2,GCC,glibc,candidate,strtod,160,4815.15
+2,GCC,glibc,candidate,strtold,160,4926.69
+2,Zig cc,musl,candidate,strtof,160,5533.88
+2,Zig cc,musl,candidate,strtod,160,5521.74
+2,Zig cc,musl,candidate,strtold,160,5701.68
+2,TinyCC,glibc,baseline,strtof,160,12297.88
+2,TinyCC,glibc,baseline,strtod,160,12577.63
+2,TinyCC,glibc,baseline,strtold,160,12619.08
+2,Zig cc,glibc,baseline,strtof,160,5773.75
+2,Zig cc,glibc,baseline,strtod,160,5695.57
+2,Zig cc,glibc,baseline,strtold,160,5727.73
+2,GCC,glibc,baseline,strtof,160,4703.50
+2,GCC,glibc,baseline,strtod,160,4700.49
+2,GCC,glibc,baseline,strtold,160,4808.47
+2,Zig cc,musl,baseline,strtof,160,5625.83
+2,Zig cc,musl,baseline,strtod,160,5410.20
+2,Zig cc,musl,baseline,strtold,160,6074.33
+3,TinyCC,glibc,baseline,strtof,160,11638.69
+3,TinyCC,glibc,baseline,strtod,160,11674.66
+3,TinyCC,glibc,baseline,strtold,160,11898.21
+3,Zig cc,glibc,baseline,strtof,160,5807.76
+3,Zig cc,glibc,baseline,strtod,160,5639.03
+3,Zig cc,glibc,baseline,strtold,160,5910.26
+3,GCC,glibc,baseline,strtof,160,5113.30
+3,GCC,glibc,baseline,strtod,160,4752.14
+3,GCC,glibc,baseline,strtold,160,5077.98
+3,Zig cc,musl,baseline,strtof,160,5732.06
+3,Zig cc,musl,baseline,strtod,160,5643.48
+3,Zig cc,musl,baseline,strtold,160,5915.22
+3,TinyCC,glibc,candidate,strtof,160,12057.96
+3,TinyCC,glibc,candidate,strtod,160,11391.88
+3,TinyCC,glibc,candidate,strtold,160,12623.72
+3,Zig cc,glibc,candidate,strtof,160,5540.44
+3,Zig cc,glibc,candidate,strtod,160,5511.11
+3,Zig cc,glibc,candidate,strtold,160,5639.91
+3,GCC,glibc,candidate,strtof,160,4876.00
+3,GCC,glibc,candidate,strtod,160,4836.79
+3,GCC,glibc,candidate,strtold,160,4913.11
+3,Zig cc,musl,candidate,strtof,160,5701.41
+3,Zig cc,musl,candidate,strtod,160,5749.71
+3,Zig cc,musl,candidate,strtold,160,5685.88
+4,TinyCC,glibc,candidate,strtof,160,12528.37
+4,TinyCC,glibc,candidate,strtod,160,11980.56
+4,TinyCC,glibc,candidate,strtold,160,12781.24
+4,Zig cc,glibc,candidate,strtof,160,5670.01
+4,Zig cc,glibc,candidate,strtod,160,5529.26
+4,Zig cc,glibc,candidate,strtold,160,5616.50
+4,GCC,glibc,candidate,strtof,160,4731.57
+4,GCC,glibc,candidate,strtod,160,4830.76
+4,GCC,glibc,candidate,strtold,160,4948.18
+4,Zig cc,musl,candidate,strtof,160,5565.23
+4,Zig cc,musl,candidate,strtod,160,5507.95
+4,Zig cc,musl,candidate,strtold,160,5738.67
+4,TinyCC,glibc,baseline,strtof,160,11650.12
+4,TinyCC,glibc,baseline,strtod,160,11748.96
+4,TinyCC,glibc,baseline,strtold,160,12625.59
+4,Zig cc,glibc,baseline,strtof,160,5579.31
+4,Zig cc,glibc,baseline,strtod,160,5499.44
+4,Zig cc,glibc,baseline,strtold,160,5852.30
+4,GCC,glibc,baseline,strtof,160,4857.99
+4,GCC,glibc,baseline,strtod,160,4791.95
+4,GCC,glibc,baseline,strtold,160,4942.39
+4,Zig cc,musl,baseline,strtof,160,5495.99
+4,Zig cc,musl,baseline,strtod,160,5519.76
+4,Zig cc,musl,baseline,strtold,160,5726.63
+5,TinyCC,glibc,baseline,strtof,160,11827.05
+5,TinyCC,glibc,baseline,strtod,160,11783.98
+5,TinyCC,glibc,baseline,strtold,160,12744.23
+5,Zig cc,glibc,baseline,strtof,160,5744.08
+5,Zig cc,glibc,baseline,strtod,160,5593.19
+5,Zig cc,glibc,baseline,strtold,160,5723.57
+5,GCC,glibc,baseline,strtof,160,4800.17
+5,GCC,glibc,baseline,strtod,160,4660.07
+5,GCC,glibc,baseline,strtold,160,4968.35
+5,Zig cc,musl,baseline,strtof,160,5863.99
+5,Zig cc,musl,baseline,strtod,160,5644.26
+5,Zig cc,musl,baseline,strtold,160,5915.07
+5,TinyCC,glibc,candidate,strtof,160,11990.98
+5,TinyCC,glibc,candidate,strtod,160,12078.88
+5,TinyCC,glibc,candidate,strtold,160,18151.67
+5,Zig cc,glibc,candidate,strtof,160,5546.74
+5,Zig cc,glibc,candidate,strtod,160,5452.58
+5,Zig cc,glibc,candidate,strtold,160,5849.54
+5,GCC,glibc,candidate,strtof,160,5196.62
+5,GCC,glibc,candidate,strtod,160,5037.54
+5,GCC,glibc,candidate,strtold,160,5132.27
+5,Zig cc,musl,candidate,strtof,160,5556.68
+5,Zig cc,musl,candidate,strtod,160,5561.06
+5,Zig cc,musl,candidate,strtold,160,5700.61
+6,TinyCC,glibc,candidate,strtof,160,12170.84
+6,TinyCC,glibc,candidate,strtod,160,11704.26
+6,TinyCC,glibc,candidate,strtold,160,12545.26
+6,Zig cc,glibc,candidate,strtof,160,5773.41
+6,Zig cc,glibc,candidate,strtod,160,5481.46
+6,Zig cc,glibc,candidate,strtold,160,5716.51
+6,GCC,glibc,candidate,strtof,160,4772.77
+6,GCC,glibc,candidate,strtod,160,4680.81
+6,GCC,glibc,candidate,strtold,160,4745.24
+6,Zig cc,musl,candidate,strtof,160,5717.72
+6,Zig cc,musl,candidate,strtod,160,5752.94
+6,Zig cc,musl,candidate,strtold,160,5760.19
+6,TinyCC,glibc,baseline,strtof,160,12898.62
+6,TinyCC,glibc,baseline,strtod,160,12611.66
+6,TinyCC,glibc,baseline,strtold,160,13039.96
+6,Zig cc,glibc,baseline,strtof,160,6001.48
+6,Zig cc,glibc,baseline,strtod,160,5805.32
+6,Zig cc,glibc,baseline,strtold,160,6038.05
+6,GCC,glibc,baseline,strtof,160,4769.80
+6,GCC,glibc,baseline,strtod,160,4692.00
+6,GCC,glibc,baseline,strtold,160,4863.79
+6,Zig cc,musl,baseline,strtof,160,5798.88
+6,Zig cc,musl,baseline,strtod,160,5888.29
+6,Zig cc,musl,baseline,strtold,160,6080.43
+7,TinyCC,glibc,baseline,strtof,160,11674.23
+7,TinyCC,glibc,baseline,strtod,160,11454.41
+7,TinyCC,glibc,baseline,strtold,160,12662.49
+7,Zig cc,glibc,baseline,strtof,160,5530.38
+7,Zig cc,glibc,baseline,strtod,160,5530.22
+7,Zig cc,glibc,baseline,strtold,160,5734.12
+7,GCC,glibc,baseline,strtof,160,4758.72
+7,GCC,glibc,baseline,strtod,160,4632.28
+7,GCC,glibc,baseline,strtold,160,4714.41
+7,Zig cc,musl,baseline,strtof,160,5467.90
+7,Zig cc,musl,baseline,strtod,160,5510.62
+7,Zig cc,musl,baseline,strtold,160,5881.26
+7,TinyCC,glibc,candidate,strtof,160,11875.94
+7,TinyCC,glibc,candidate,strtod,160,11773.06
+7,TinyCC,glibc,candidate,strtold,160,12252.00
+7,Zig cc,glibc,candidate,strtof,160,5432.56
+7,Zig cc,glibc,candidate,strtod,160,5517.75
+7,Zig cc,glibc,candidate,strtold,160,5671.62
+7,GCC,glibc,candidate,strtof,160,4818.40
+7,GCC,glibc,candidate,strtod,160,4754.23
+7,GCC,glibc,candidate,strtold,160,4890.28
+7,Zig cc,musl,candidate,strtof,160,5682.86
+7,Zig cc,musl,candidate,strtod,160,5527.31
+7,Zig cc,musl,candidate,strtold,160,5737.79
+8,TinyCC,glibc,candidate,strtof,160,11726.16
+8,TinyCC,glibc,candidate,strtod,160,11571.02
+8,TinyCC,glibc,candidate,strtold,160,12794.31
+8,Zig cc,glibc,candidate,strtof,160,5713.31
+8,Zig cc,glibc,candidate,strtod,160,5590.30
+8,Zig cc,glibc,candidate,strtold,160,5626.16
+8,GCC,glibc,candidate,strtof,160,4916.11
+8,GCC,glibc,candidate,strtod,160,4749.57
+8,GCC,glibc,candidate,strtold,160,4917.88
+8,Zig cc,musl,candidate,strtof,160,5643.37
+8,Zig cc,musl,candidate,strtod,160,5589.81
+8,Zig cc,musl,candidate,strtold,160,5712.08
+8,TinyCC,glibc,baseline,strtof,160,11832.48
+8,TinyCC,glibc,baseline,strtod,160,11439.63
+8,TinyCC,glibc,baseline,strtold,160,12286.06
+8,Zig cc,glibc,baseline,strtof,160,5430.43
+8,Zig cc,glibc,baseline,strtod,160,5416.82
+8,Zig cc,glibc,baseline,strtold,160,5815.82
+8,GCC,glibc,baseline,strtof,160,4557.71
+8,GCC,glibc,baseline,strtod,160,4416.14
+8,GCC,glibc,baseline,strtold,160,4832.54
+8,Zig cc,musl,baseline,strtof,160,5499.57
+8,Zig cc,musl,baseline,strtod,160,5576.32
+8,Zig cc,musl,baseline,strtold,160,5774.67
+9,TinyCC,glibc,baseline,strtof,160,12121.76
+9,TinyCC,glibc,baseline,strtod,160,11790.71
+9,TinyCC,glibc,baseline,strtold,160,12045.12
+9,Zig cc,glibc,baseline,strtof,160,5707.84
+9,Zig cc,glibc,baseline,strtod,160,5526.54
+9,Zig cc,glibc,baseline,strtold,160,5535.27
+9,GCC,glibc,baseline,strtof,160,4731.77
+9,GCC,glibc,baseline,strtod,160,4637.86
+9,GCC,glibc,baseline,strtold,160,4732.01
+9,Zig cc,musl,baseline,strtof,160,5285.34
+9,Zig cc,musl,baseline,strtod,160,5447.67
+9,Zig cc,musl,baseline,strtold,160,5693.37
+9,TinyCC,glibc,candidate,strtof,160,12036.79
+9,TinyCC,glibc,candidate,strtod,160,12612.80
+9,TinyCC,glibc,candidate,strtold,160,13257.06
+9,Zig cc,glibc,candidate,strtof,160,5644.61
+9,Zig cc,glibc,candidate,strtod,160,5705.46
+9,Zig cc,glibc,candidate,strtold,160,5858.42
+9,GCC,glibc,candidate,strtof,160,5471.10
+9,GCC,glibc,candidate,strtod,160,5061.71
+9,GCC,glibc,candidate,strtold,160,5373.49
+9,Zig cc,musl,candidate,strtof,160,5737.72
+9,Zig cc,musl,candidate,strtod,160,5676.64
+9,Zig cc,musl,candidate,strtold,160,5786.49
+10,TinyCC,glibc,candidate,strtof,160,12485.28
+10,TinyCC,glibc,candidate,strtod,160,11759.93
+10,TinyCC,glibc,candidate,strtold,160,13399.38
+10,Zig cc,glibc,candidate,strtof,160,5723.59
+10,Zig cc,glibc,candidate,strtod,160,5598.40
+10,Zig cc,glibc,candidate,strtold,160,5760.97
+10,GCC,glibc,candidate,strtof,160,4955.84
+10,GCC,glibc,candidate,strtod,160,4940.40
+10,GCC,glibc,candidate,strtold,160,4774.79
+10,Zig cc,musl,candidate,strtof,160,5549.01
+10,Zig cc,musl,candidate,strtod,160,5730.84
+10,Zig cc,musl,candidate,strtold,160,5767.37
+10,TinyCC,glibc,baseline,strtof,160,12132.48
+10,TinyCC,glibc,baseline,strtod,160,11690.83
+10,TinyCC,glibc,baseline,strtold,160,12956.11
+10,Zig cc,glibc,baseline,strtof,160,5788.84
+10,Zig cc,glibc,baseline,strtod,160,5481.19
+10,Zig cc,glibc,baseline,strtold,160,5626.65
+10,GCC,glibc,baseline,strtof,160,4644.16
+10,GCC,glibc,baseline,strtod,160,4613.50
+10,GCC,glibc,baseline,strtold,160,4680.27
+10,Zig cc,musl,baseline,strtof,160,5631.29
+10,Zig cc,musl,baseline,strtod,160,5512.25
+10,Zig cc,musl,baseline,strtold,160,5507.63
+11,TinyCC,glibc,baseline,strtof,160,12254.61
+11,TinyCC,glibc,baseline,strtod,160,11636.97
+11,TinyCC,glibc,baseline,strtold,160,12654.02
+11,Zig cc,glibc,baseline,strtof,160,5676.70
+11,Zig cc,glibc,baseline,strtod,160,5681.10
+11,Zig cc,glibc,baseline,strtold,160,5806.51
+11,GCC,glibc,baseline,strtof,160,4630.84
+11,GCC,glibc,baseline,strtod,160,4455.47
+11,GCC,glibc,baseline,strtold,160,4708.23
+11,Zig cc,musl,baseline,strtof,160,5663.29
+11,Zig cc,musl,baseline,strtod,160,5624.53
+11,Zig cc,musl,baseline,strtold,160,5766.99
+11,TinyCC,glibc,candidate,strtof,160,11543.83
+11,TinyCC,glibc,candidate,strtod,160,11677.79
+11,TinyCC,glibc,candidate,strtold,160,12487.76
+11,Zig cc,glibc,candidate,strtof,160,5654.13
+11,Zig cc,glibc,candidate,strtod,160,5556.68
+11,Zig cc,glibc,candidate,strtold,160,5913.25
+11,GCC,glibc,candidate,strtof,160,5054.87
+11,GCC,glibc,candidate,strtod,160,4635.66
+11,GCC,glibc,candidate,strtold,160,4964.11
+11,Zig cc,musl,candidate,strtof,160,5505.57
+11,Zig cc,musl,candidate,strtod,160,5653.76
+11,Zig cc,musl,candidate,strtold,160,5740.21
+12,TinyCC,glibc,candidate,strtof,160,11600.18
+12,TinyCC,glibc,candidate,strtod,160,11527.09
+12,TinyCC,glibc,candidate,strtold,160,12282.63
+12,Zig cc,glibc,candidate,strtof,160,5506.65
+12,Zig cc,glibc,candidate,strtod,160,5412.98
+12,Zig cc,glibc,candidate,strtold,160,5633.09
+12,GCC,glibc,candidate,strtof,160,4742.29
+12,GCC,glibc,candidate,strtod,160,4703.49
+12,GCC,glibc,candidate,strtold,160,5103.32
+12,Zig cc,musl,candidate,strtof,160,5455.89
+12,Zig cc,musl,candidate,strtod,160,5600.06
+12,Zig cc,musl,candidate,strtold,160,6000.48
+12,TinyCC,glibc,baseline,strtof,160,11767.87
+12,TinyCC,glibc,baseline,strtod,160,11423.77
+12,TinyCC,glibc,baseline,strtold,160,12629.35
+12,Zig cc,glibc,baseline,strtof,160,5807.82
+12,Zig cc,glibc,baseline,strtod,160,5730.56
+12,Zig cc,glibc,baseline,strtold,160,5594.45
+12,GCC,glibc,baseline,strtof,160,4625.06
+12,GCC,glibc,baseline,strtod,160,4531.55
+12,GCC,glibc,baseline,strtold,160,4741.86
+12,Zig cc,musl,baseline,strtof,160,5464.29
+12,Zig cc,musl,baseline,strtod,160,5706.48
+12,Zig cc,musl,baseline,strtold,160,5727.45

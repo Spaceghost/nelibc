@@ -1,0 +1,9 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,strverscmp,1000000,7.84
+Zig cc,glibc,nelibc,strverscmp,1000000,6.04
+GCC,glibc,host-libc,strverscmp,1000000,7.46
+GCC,glibc,nelibc,strverscmp,1000000,5.62
+Zig cc,musl,host-libc,strverscmp,1000000,5.32
+Zig cc,musl,nelibc,strverscmp,1000000,5.89
+TinyCC,glibc,host-libc,strverscmp,1000000,8.80
+TinyCC,glibc,nelibc,strverscmp,1000000,18.46

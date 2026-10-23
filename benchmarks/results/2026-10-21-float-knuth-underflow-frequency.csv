@@ -1,0 +1,25 @@
+compiler,libc,workload,function,calls,estimate_decrements,addback_corrections
+TinyCC,glibc,two-long-decimals,strtof,160,0,0
+TinyCC,glibc,two-long-decimals,strtod,160,80,0
+TinyCC,glibc,two-long-decimals,strtold,160,80,0
+TinyCC,glibc,random-80-to-300-digit-decimals,strtof,100000,47,0
+TinyCC,glibc,random-80-to-300-digit-decimals,strtod,100000,35896,0
+TinyCC,glibc,random-80-to-300-digit-decimals,strtold,100000,87626,0
+GCC,glibc,two-long-decimals,strtof,160,0,0
+GCC,glibc,two-long-decimals,strtod,160,80,0
+GCC,glibc,two-long-decimals,strtold,160,80,0
+GCC,glibc,random-80-to-300-digit-decimals,strtof,100000,47,0
+GCC,glibc,random-80-to-300-digit-decimals,strtod,100000,35896,0
+GCC,glibc,random-80-to-300-digit-decimals,strtold,100000,87626,0
+Zig cc,glibc,two-long-decimals,strtof,160,0,0
+Zig cc,glibc,two-long-decimals,strtod,160,80,0
+Zig cc,glibc,two-long-decimals,strtold,160,80,0
+Zig cc,glibc,random-80-to-300-digit-decimals,strtof,100000,47,0
+Zig cc,glibc,random-80-to-300-digit-decimals,strtod,100000,35896,0
+Zig cc,glibc,random-80-to-300-digit-decimals,strtold,100000,87626,0
+Zig cc,musl,two-long-decimals,strtof,160,0,0
+Zig cc,musl,two-long-decimals,strtod,160,80,0
+Zig cc,musl,two-long-decimals,strtold,160,80,0
+Zig cc,musl,random-80-to-300-digit-decimals,strtof,100000,47,0
+Zig cc,musl,random-80-to-300-digit-decimals,strtod,100000,35896,0
+Zig cc,musl,random-80-to-300-digit-decimals,strtold,100000,87626,0

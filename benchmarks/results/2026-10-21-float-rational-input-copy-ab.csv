@@ -1,0 +1,10 @@
+compiler,function,median_normalized_change_percent,rounds_faster,median_raw_nelibc_change_percent
+TinyCC,strtof,1.51,8/20,0.53
+TinyCC,strtod,1.30,9/20,0.72
+TinyCC,strtold,1.86,8/20,0.31
+GCC,strtof,4.09,5/20,1.76
+GCC,strtod,3.16,7/20,1.29
+GCC,strtold,2.54,9/20,2.80
+Zig cc,strtof,1.50,7/20,0.29
+Zig cc,strtod,0.39,10/20,1.19
+Zig cc,strtold,0.33,10/20,0.93

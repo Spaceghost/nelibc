@@ -1,0 +1,3 @@
+BIGNUMTIME,strtof,power5_calls=800,power5_total_ns=3146477,division_calls=400,division_total_ns=465835
+BIGNUMTIME,strtod,power5_calls=800,power5_total_ns=3017043,division_calls=400,division_total_ns=557900
+BIGNUMTIME,strtold,power5_calls=800,power5_total_ns=3300608,division_calls=800,division_total_ns=968418

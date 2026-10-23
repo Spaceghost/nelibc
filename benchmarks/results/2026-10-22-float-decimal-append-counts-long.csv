@@ -1,0 +1,3 @@
+DECAPP,strtof,calls=473200,limb_iterations=15631600,bands_lt8=40000,bands_8_15=61600,bands_16_31=123200,bands_32_63=243600,bands_64plus=4800
+DECAPP,strtod,calls=473200,limb_iterations=15631600,bands_lt8=40000,bands_8_15=61600,bands_16_31=123200,bands_32_63=243600,bands_64plus=4800
+DECAPP,strtold,calls=472400,limb_iterations=15630000,bands_lt8=39200,bands_8_15=61600,bands_16_31=123200,bands_32_63=243600,bands_64plus=4800

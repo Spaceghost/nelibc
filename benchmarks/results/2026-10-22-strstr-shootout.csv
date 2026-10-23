@@ -1,0 +1,545 @@
+compiler,libc,implementation,case,haystack_bytes,needle_bytes,iterations,median_ns_per_call
+Zig cc,glibc,libc,strlen-align0,0,0,4096,1.50
+Zig cc,glibc,libc,strlen-align1,0,0,4096,1.50
+Zig cc,glibc,libc,strlen-align7,0,0,4096,1.50
+Zig cc,glibc,libc,strlen-align15,0,0,4096,1.49
+Zig cc,glibc,libc,strlen-align0,1,0,4096,1.50
+Zig cc,glibc,libc,strlen-align1,1,0,4096,1.50
+Zig cc,glibc,libc,strlen-align7,1,0,4096,1.50
+Zig cc,glibc,libc,strlen-align15,1,0,4096,1.50
+Zig cc,glibc,libc,strlen-align0,4,0,4096,1.53
+Zig cc,glibc,libc,strlen-align1,4,0,4096,1.50
+Zig cc,glibc,libc,strlen-align7,4,0,4096,1.50
+Zig cc,glibc,libc,strlen-align15,4,0,4096,1.49
+Zig cc,glibc,libc,strlen-align0,8,0,4096,1.50
+Zig cc,glibc,libc,strlen-align1,8,0,4096,1.50
+Zig cc,glibc,libc,strlen-align7,8,0,4096,1.50
+Zig cc,glibc,libc,strlen-align15,8,0,4096,1.50
+Zig cc,glibc,libc,strlen-align0,15,0,4096,1.50
+Zig cc,glibc,libc,strlen-align1,15,0,4096,1.50
+Zig cc,glibc,libc,strlen-align7,15,0,4096,1.50
+Zig cc,glibc,libc,strlen-align15,15,0,4096,1.49
+Zig cc,glibc,libc,strlen-align0,16,0,4096,1.50
+Zig cc,glibc,libc,strlen-align1,16,0,4096,1.50
+Zig cc,glibc,libc,strlen-align7,16,0,4096,1.50
+Zig cc,glibc,libc,strlen-align15,16,0,4096,1.50
+Zig cc,glibc,libc,strlen-align0,31,0,4096,1.50
+Zig cc,glibc,libc,strlen-align1,31,0,4096,1.53
+Zig cc,glibc,libc,strlen-align7,31,0,4096,1.50
+Zig cc,glibc,libc,strlen-align15,31,0,4096,1.50
+Zig cc,glibc,libc,strlen-align0,64,0,4096,1.93
+Zig cc,glibc,libc,strlen-align1,64,0,4096,1.96
+Zig cc,glibc,libc,strlen-align7,64,0,4096,1.92
+Zig cc,glibc,libc,strlen-align15,64,0,4096,1.92
+Zig cc,glibc,libc,strlen-align0,4096,0,4096,25.76
+Zig cc,glibc,libc,strlen-align1,4096,0,4096,24.54
+Zig cc,glibc,libc,strlen-align7,4096,0,4096,24.54
+Zig cc,glibc,libc,strlen-align15,4096,0,4096,25.56
+Zig cc,glibc,libc,strlen-align0,65536,0,4096,467.16
+Zig cc,glibc,libc,strlen-align1,65536,0,4096,470.17
+Zig cc,glibc,libc,strlen-align7,65536,0,4096,466.57
+Zig cc,glibc,libc,strlen-align15,65536,0,4096,471.43
+Zig cc,glibc,libc,tail-match,64,4,256,4.79
+Zig cc,glibc,libc,periodic-absent,64,4,256,136.42
+Zig cc,glibc,libc,tail-match,64,8,256,5.98
+Zig cc,glibc,libc,periodic-absent,64,8,256,248.82
+Zig cc,glibc,libc,tail-match,64,16,256,9.43
+Zig cc,glibc,libc,periodic-absent,64,16,256,637.24
+Zig cc,glibc,libc,tail-match,64,64,256,28.93
+Zig cc,glibc,libc,periodic-absent,64,64,256,1225.98
+Zig cc,glibc,libc,tail-match,4096,4,256,110.42
+Zig cc,glibc,libc,periodic-absent,4096,4,256,5471.31
+Zig cc,glibc,libc,tail-match,4096,8,256,114.28
+Zig cc,glibc,libc,periodic-absent,4096,8,256,14017.18
+Zig cc,glibc,libc,tail-match,4096,16,256,117.84
+Zig cc,glibc,libc,periodic-absent,4096,16,256,14137.45
+Zig cc,glibc,libc,tail-match,4096,64,256,134.95
+Zig cc,glibc,libc,periodic-absent,4096,64,256,15239.59
+Zig cc,glibc,libc,tail-match,4096,256,256,176.50
+Zig cc,glibc,libc,periodic-absent,4096,256,256,17719.25
+Zig cc,glibc,libc,tail-match,65536,4,256,1796.61
+Zig cc,glibc,libc,periodic-absent,65536,4,256,81497.40
+Zig cc,glibc,libc,tail-match,65536,8,256,1791.46
+Zig cc,glibc,libc,periodic-absent,65536,8,256,220027.61
+Zig cc,glibc,libc,tail-match,65536,16,256,1804.16
+Zig cc,glibc,libc,periodic-absent,65536,16,256,219734.04
+Zig cc,glibc,libc,tail-match,65536,64,256,1899.13
+Zig cc,glibc,libc,periodic-absent,65536,64,256,224950.00
+Zig cc,glibc,libc,tail-match,65536,256,256,1830.57
+Zig cc,glibc,libc,periodic-absent,65536,256,256,224672.52
+Zig cc,glibc,nelibc,strlen-align0,0,0,4096,1.79
+Zig cc,glibc,nelibc,strlen-align1,0,0,4096,1.34
+Zig cc,glibc,nelibc,strlen-align7,0,0,4096,1.34
+Zig cc,glibc,nelibc,strlen-align15,0,0,4096,1.34
+Zig cc,glibc,nelibc,strlen-align0,1,0,4096,1.79
+Zig cc,glibc,nelibc,strlen-align1,1,0,4096,1.34
+Zig cc,glibc,nelibc,strlen-align7,1,0,4096,1.34
+Zig cc,glibc,nelibc,strlen-align15,1,0,4096,1.79
+Zig cc,glibc,nelibc,strlen-align0,4,0,4096,1.79
+Zig cc,glibc,nelibc,strlen-align1,4,0,4096,1.34
+Zig cc,glibc,nelibc,strlen-align7,4,0,4096,1.34
+Zig cc,glibc,nelibc,strlen-align15,4,0,4096,1.78
+Zig cc,glibc,nelibc,strlen-align0,8,0,4096,1.71
+Zig cc,glibc,nelibc,strlen-align1,8,0,4096,1.28
+Zig cc,glibc,nelibc,strlen-align7,8,0,4096,1.28
+Zig cc,glibc,nelibc,strlen-align15,8,0,4096,1.71
+Zig cc,glibc,nelibc,strlen-align0,15,0,4096,1.71
+Zig cc,glibc,nelibc,strlen-align1,15,0,4096,2.14
+Zig cc,glibc,nelibc,strlen-align7,15,0,4096,1.71
+Zig cc,glibc,nelibc,strlen-align15,15,0,4096,1.71
+Zig cc,glibc,nelibc,strlen-align0,16,0,4096,2.03
+Zig cc,glibc,nelibc,strlen-align1,16,0,4096,1.71
+Zig cc,glibc,nelibc,strlen-align7,16,0,4096,1.71
+Zig cc,glibc,nelibc,strlen-align15,16,0,4096,1.71
+Zig cc,glibc,nelibc,strlen-align0,31,0,4096,2.03
+Zig cc,glibc,nelibc,strlen-align1,31,0,4096,1.92
+Zig cc,glibc,nelibc,strlen-align7,31,0,4096,1.92
+Zig cc,glibc,nelibc,strlen-align15,31,0,4096,1.92
+Zig cc,glibc,nelibc,strlen-align0,64,0,4096,3.20
+Zig cc,glibc,nelibc,strlen-align1,64,0,4096,3.06
+Zig cc,glibc,nelibc,strlen-align7,64,0,4096,3.05
+Zig cc,glibc,nelibc,strlen-align15,64,0,4096,3.05
+Zig cc,glibc,nelibc,strlen-align0,4096,0,4096,49.94
+Zig cc,glibc,nelibc,strlen-align1,4096,0,4096,49.48
+Zig cc,glibc,nelibc,strlen-align7,4096,0,4096,50.56
+Zig cc,glibc,nelibc,strlen-align15,4096,0,4096,50.61
+Zig cc,glibc,nelibc,strlen-align0,65536,0,4096,868.46
+Zig cc,glibc,nelibc,strlen-align1,65536,0,4096,857.86
+Zig cc,glibc,nelibc,strlen-align7,65536,0,4096,842.35
+Zig cc,glibc,nelibc,strlen-align15,65536,0,4096,846.35
+Zig cc,glibc,nelibc,tail-match,64,4,256,16.15
+Zig cc,glibc,nelibc,periodic-absent,64,4,256,80.31
+Zig cc,glibc,nelibc,tail-match,64,8,256,17.65
+Zig cc,glibc,nelibc,periodic-absent,64,8,256,317.86
+Zig cc,glibc,nelibc,tail-match,64,16,256,15.54
+Zig cc,glibc,nelibc,periodic-absent,64,16,256,250.59
+Zig cc,glibc,nelibc,tail-match,64,64,256,160.91
+Zig cc,glibc,nelibc,periodic-absent,64,64,256,164.07
+Zig cc,glibc,nelibc,tail-match,4096,4,256,82.31
+Zig cc,glibc,nelibc,periodic-absent,4096,4,256,4192.16
+Zig cc,glibc,nelibc,tail-match,4096,8,256,84.59
+Zig cc,glibc,nelibc,periodic-absent,4096,8,256,15291.40
+Zig cc,glibc,nelibc,tail-match,4096,16,256,81.48
+Zig cc,glibc,nelibc,periodic-absent,4096,16,256,16043.62
+Zig cc,glibc,nelibc,tail-match,4096,64,256,241.33
+Zig cc,glibc,nelibc,periodic-absent,4096,64,256,16086.63
+Zig cc,glibc,nelibc,tail-match,4096,256,256,633.78
+Zig cc,glibc,nelibc,periodic-absent,4096,256,256,15591.59
+Zig cc,glibc,nelibc,tail-match,65536,4,256,1216.96
+Zig cc,glibc,nelibc,periodic-absent,65536,4,256,68159.36
+Zig cc,glibc,nelibc,tail-match,65536,8,256,1142.64
+Zig cc,glibc,nelibc,periodic-absent,65536,8,256,247594.47
+Zig cc,glibc,nelibc,tail-match,65536,16,256,1241.85
+Zig cc,glibc,nelibc,periodic-absent,65536,16,256,246268.79
+Zig cc,glibc,nelibc,tail-match,65536,64,256,1515.16
+Zig cc,glibc,nelibc,periodic-absent,65536,64,256,246286.21
+Zig cc,glibc,nelibc,tail-match,65536,256,256,1564.87
+Zig cc,glibc,nelibc,periodic-absent,65536,256,256,248430.17
+GCC,glibc,libc,strlen-align0,0,0,4096,1.64
+GCC,glibc,libc,strlen-align1,0,0,4096,1.64
+GCC,glibc,libc,strlen-align7,0,0,4096,1.64
+GCC,glibc,libc,strlen-align15,0,0,4096,1.64
+GCC,glibc,libc,strlen-align0,1,0,4096,1.64
+GCC,glibc,libc,strlen-align1,1,0,4096,1.64
+GCC,glibc,libc,strlen-align7,1,0,4096,1.64
+GCC,glibc,libc,strlen-align15,1,0,4096,1.64
+GCC,glibc,libc,strlen-align0,4,0,4096,1.64
+GCC,glibc,libc,strlen-align1,4,0,4096,1.64
+GCC,glibc,libc,strlen-align7,4,0,4096,1.64
+GCC,glibc,libc,strlen-align15,4,0,4096,1.64
+GCC,glibc,libc,strlen-align0,8,0,4096,1.64
+GCC,glibc,libc,strlen-align1,8,0,4096,1.64
+GCC,glibc,libc,strlen-align7,8,0,4096,1.64
+GCC,glibc,libc,strlen-align15,8,0,4096,1.64
+GCC,glibc,libc,strlen-align0,15,0,4096,1.71
+GCC,glibc,libc,strlen-align1,15,0,4096,1.71
+GCC,glibc,libc,strlen-align7,15,0,4096,1.64
+GCC,glibc,libc,strlen-align15,15,0,4096,1.64
+GCC,glibc,libc,strlen-align0,16,0,4096,1.64
+GCC,glibc,libc,strlen-align1,16,0,4096,1.64
+GCC,glibc,libc,strlen-align7,16,0,4096,1.64
+GCC,glibc,libc,strlen-align15,16,0,4096,1.64
+GCC,glibc,libc,strlen-align0,31,0,4096,1.64
+GCC,glibc,libc,strlen-align1,31,0,4096,1.64
+GCC,glibc,libc,strlen-align7,31,0,4096,1.64
+GCC,glibc,libc,strlen-align15,31,0,4096,1.64
+GCC,glibc,libc,strlen-align0,64,0,4096,2.05
+GCC,glibc,libc,strlen-align1,64,0,4096,2.05
+GCC,glibc,libc,strlen-align7,64,0,4096,2.05
+GCC,glibc,libc,strlen-align15,64,0,4096,2.05
+GCC,glibc,libc,strlen-align0,4096,0,4096,25.54
+GCC,glibc,libc,strlen-align1,4096,0,4096,24.22
+GCC,glibc,libc,strlen-align7,4096,0,4096,24.76
+GCC,glibc,libc,strlen-align15,4096,0,4096,24.62
+GCC,glibc,libc,strlen-align0,65536,0,4096,470.36
+GCC,glibc,libc,strlen-align1,65536,0,4096,464.69
+GCC,glibc,libc,strlen-align7,65536,0,4096,470.12
+GCC,glibc,libc,strlen-align15,65536,0,4096,464.11
+GCC,glibc,libc,tail-match,64,4,256,4.14
+GCC,glibc,libc,periodic-absent,64,4,256,114.21
+GCC,glibc,libc,tail-match,64,8,256,5.80
+GCC,glibc,libc,periodic-absent,64,8,256,208.06
+GCC,glibc,libc,tail-match,64,16,256,8.89
+GCC,glibc,libc,periodic-absent,64,16,256,423.96
+GCC,glibc,libc,tail-match,64,64,256,27.40
+GCC,glibc,libc,periodic-absent,64,64,256,1022.23
+GCC,glibc,libc,tail-match,4096,4,256,110.45
+GCC,glibc,libc,periodic-absent,4096,4,256,5024.71
+GCC,glibc,libc,tail-match,4096,8,256,109.78
+GCC,glibc,libc,periodic-absent,4096,8,256,13983.10
+GCC,glibc,libc,tail-match,4096,16,256,110.30
+GCC,glibc,libc,periodic-absent,4096,16,256,13969.38
+GCC,glibc,libc,tail-match,4096,64,256,128.25
+GCC,glibc,libc,periodic-absent,4096,64,256,15085.28
+GCC,glibc,libc,tail-match,4096,256,256,172.57
+GCC,glibc,libc,periodic-absent,4096,256,256,17300.16
+GCC,glibc,libc,tail-match,65536,4,256,1840.98
+GCC,glibc,libc,periodic-absent,65536,4,256,82006.11
+GCC,glibc,libc,tail-match,65536,8,256,1770.54
+GCC,glibc,libc,periodic-absent,65536,8,256,219205.84
+GCC,glibc,libc,tail-match,65536,16,256,1947.11
+GCC,glibc,libc,periodic-absent,65536,16,256,220718.39
+GCC,glibc,libc,tail-match,65536,64,256,1916.33
+GCC,glibc,libc,periodic-absent,65536,64,256,221309.47
+GCC,glibc,libc,tail-match,65536,256,256,1914.71
+GCC,glibc,libc,periodic-absent,65536,256,256,222502.64
+GCC,glibc,nelibc,strlen-align0,0,0,4096,2.23
+GCC,glibc,nelibc,strlen-align1,0,0,4096,1.75
+GCC,glibc,nelibc,strlen-align7,0,0,4096,1.75
+GCC,glibc,nelibc,strlen-align15,0,0,4096,1.75
+GCC,glibc,nelibc,strlen-align0,1,0,4096,2.18
+GCC,glibc,nelibc,strlen-align1,1,0,4096,1.75
+GCC,glibc,nelibc,strlen-align7,1,0,4096,1.75
+GCC,glibc,nelibc,strlen-align15,1,0,4096,2.24
+GCC,glibc,nelibc,strlen-align0,4,0,4096,2.18
+GCC,glibc,nelibc,strlen-align1,4,0,4096,1.75
+GCC,glibc,nelibc,strlen-align7,4,0,4096,1.75
+GCC,glibc,nelibc,strlen-align15,4,0,4096,1.97
+GCC,glibc,nelibc,strlen-align0,8,0,4096,2.18
+GCC,glibc,nelibc,strlen-align1,8,0,4096,1.75
+GCC,glibc,nelibc,strlen-align7,8,0,4096,1.75
+GCC,glibc,nelibc,strlen-align15,8,0,4096,1.97
+GCC,glibc,nelibc,strlen-align0,15,0,4096,2.18
+GCC,glibc,nelibc,strlen-align1,15,0,4096,2.19
+GCC,glibc,nelibc,strlen-align7,15,0,4096,2.18
+GCC,glibc,nelibc,strlen-align15,15,0,4096,2.18
+GCC,glibc,nelibc,strlen-align0,16,0,4096,2.62
+GCC,glibc,nelibc,strlen-align1,16,0,4096,1.97
+GCC,glibc,nelibc,strlen-align7,16,0,4096,1.97
+GCC,glibc,nelibc,strlen-align15,16,0,4096,2.18
+GCC,glibc,nelibc,strlen-align0,31,0,4096,2.62
+GCC,glibc,nelibc,strlen-align1,31,0,4096,2.41
+GCC,glibc,nelibc,strlen-align7,31,0,4096,2.40
+GCC,glibc,nelibc,strlen-align15,31,0,4096,2.40
+GCC,glibc,nelibc,strlen-align0,64,0,4096,2.19
+GCC,glibc,nelibc,strlen-align1,64,0,4096,3.93
+GCC,glibc,nelibc,strlen-align7,64,0,4096,3.93
+GCC,glibc,nelibc,strlen-align15,64,0,4096,3.93
+GCC,glibc,nelibc,strlen-align0,4096,0,4096,45.09
+GCC,glibc,nelibc,strlen-align1,4096,0,4096,57.60
+GCC,glibc,nelibc,strlen-align7,4096,0,4096,52.51
+GCC,glibc,nelibc,strlen-align15,4096,0,4096,51.59
+GCC,glibc,nelibc,strlen-align0,65536,0,4096,846.59
+GCC,glibc,nelibc,strlen-align1,65536,0,4096,833.70
+GCC,glibc,nelibc,strlen-align7,65536,0,4096,824.66
+GCC,glibc,nelibc,strlen-align15,65536,0,4096,843.00
+GCC,glibc,nelibc,tail-match,64,4,256,14.60
+GCC,glibc,nelibc,periodic-absent,64,4,256,87.31
+GCC,glibc,nelibc,tail-match,64,8,256,17.31
+GCC,glibc,nelibc,periodic-absent,64,8,256,219.65
+GCC,glibc,nelibc,tail-match,64,16,256,15.77
+GCC,glibc,nelibc,periodic-absent,64,16,256,183.71
+GCC,glibc,nelibc,tail-match,64,64,256,130.30
+GCC,glibc,nelibc,periodic-absent,64,64,256,157.14
+GCC,glibc,nelibc,tail-match,4096,4,256,75.38
+GCC,glibc,nelibc,periodic-absent,4096,4,256,5465.86
+GCC,glibc,nelibc,tail-match,4096,8,256,77.12
+GCC,glibc,nelibc,periodic-absent,4096,8,256,12088.07
+GCC,glibc,nelibc,tail-match,4096,16,256,82.34
+GCC,glibc,nelibc,periodic-absent,4096,16,256,12240.68
+GCC,glibc,nelibc,tail-match,4096,64,256,189.14
+GCC,glibc,nelibc,periodic-absent,4096,64,256,12069.37
+GCC,glibc,nelibc,tail-match,4096,256,256,486.16
+GCC,glibc,nelibc,periodic-absent,4096,256,256,11890.45
+GCC,glibc,nelibc,tail-match,65536,4,256,1198.97
+GCC,glibc,nelibc,periodic-absent,65536,4,256,88150.25
+GCC,glibc,nelibc,tail-match,65536,8,256,1126.67
+GCC,glibc,nelibc,periodic-absent,65536,8,256,191976.86
+GCC,glibc,nelibc,tail-match,65536,16,256,1187.39
+GCC,glibc,nelibc,periodic-absent,65536,16,256,194232.30
+GCC,glibc,nelibc,tail-match,65536,64,256,1481.16
+GCC,glibc,nelibc,periodic-absent,65536,64,256,190605.02
+GCC,glibc,nelibc,tail-match,65536,256,256,1390.56
+GCC,glibc,nelibc,periodic-absent,65536,256,256,190927.99
+Zig cc,musl,libc,strlen-align0,0,0,4096,0.75
+Zig cc,musl,libc,strlen-align1,0,0,4096,0.75
+Zig cc,musl,libc,strlen-align7,0,0,4096,0.75
+Zig cc,musl,libc,strlen-align15,0,0,4096,0.75
+Zig cc,musl,libc,strlen-align0,1,0,4096,0.88
+Zig cc,musl,libc,strlen-align1,1,0,4096,0.88
+Zig cc,musl,libc,strlen-align7,1,0,4096,0.83
+Zig cc,musl,libc,strlen-align15,1,0,4096,0.82
+Zig cc,musl,libc,strlen-align0,4,0,4096,1.85
+Zig cc,musl,libc,strlen-align1,4,0,4096,1.84
+Zig cc,musl,libc,strlen-align7,4,0,4096,1.85
+Zig cc,musl,libc,strlen-align15,4,0,4096,1.85
+Zig cc,musl,libc,strlen-align0,8,0,4096,2.67
+Zig cc,musl,libc,strlen-align1,8,0,4096,2.66
+Zig cc,musl,libc,strlen-align7,8,0,4096,2.67
+Zig cc,musl,libc,strlen-align15,8,0,4096,2.67
+Zig cc,musl,libc,strlen-align0,15,0,4096,4.10
+Zig cc,musl,libc,strlen-align1,15,0,4096,4.10
+Zig cc,musl,libc,strlen-align7,15,0,4096,4.10
+Zig cc,musl,libc,strlen-align15,15,0,4096,4.28
+Zig cc,musl,libc,strlen-align0,16,0,4096,4.31
+Zig cc,musl,libc,strlen-align1,16,0,4096,4.70
+Zig cc,musl,libc,strlen-align7,16,0,4096,4.69
+Zig cc,musl,libc,strlen-align15,16,0,4096,4.49
+Zig cc,musl,libc,strlen-align0,31,0,4096,15.42
+Zig cc,musl,libc,strlen-align1,31,0,4096,14.48
+Zig cc,musl,libc,strlen-align7,31,0,4096,14.63
+Zig cc,musl,libc,strlen-align15,31,0,4096,7.89
+Zig cc,musl,libc,strlen-align0,64,0,4096,25.98
+Zig cc,musl,libc,strlen-align1,64,0,4096,26.93
+Zig cc,musl,libc,strlen-align7,64,0,4096,27.08
+Zig cc,musl,libc,strlen-align15,64,0,4096,26.93
+Zig cc,musl,libc,strlen-align0,4096,0,4096,1374.01
+Zig cc,musl,libc,strlen-align1,4096,0,4096,1405.24
+Zig cc,musl,libc,strlen-align7,4096,0,4096,1357.36
+Zig cc,musl,libc,strlen-align15,4096,0,4096,1400.85
+Zig cc,musl,libc,strlen-align0,65536,0,4096,22429.79
+Zig cc,musl,libc,strlen-align1,65536,0,4096,22309.45
+Zig cc,musl,libc,strlen-align7,65536,0,4096,22004.03
+Zig cc,musl,libc,strlen-align15,65536,0,4096,22105.87
+Zig cc,musl,libc,tail-match,64,4,256,138.34
+Zig cc,musl,libc,periodic-absent,64,4,256,134.61
+Zig cc,musl,libc,tail-match,64,8,256,66.77
+Zig cc,musl,libc,periodic-absent,64,8,256,242.36
+Zig cc,musl,libc,tail-match,64,16,256,72.39
+Zig cc,musl,libc,periodic-absent,64,16,256,195.95
+Zig cc,musl,libc,tail-match,64,64,256,98.80
+Zig cc,musl,libc,periodic-absent,64,64,256,100.23
+Zig cc,musl,libc,tail-match,4096,4,256,8641.60
+Zig cc,musl,libc,periodic-absent,4096,4,256,8726.60
+Zig cc,musl,libc,tail-match,4096,8,256,3011.76
+Zig cc,musl,libc,periodic-absent,4096,8,256,14581.26
+Zig cc,musl,libc,tail-match,4096,16,256,2081.77
+Zig cc,musl,libc,periodic-absent,4096,16,256,14443.86
+Zig cc,musl,libc,tail-match,4096,64,256,1647.02
+Zig cc,musl,libc,periodic-absent,4096,64,256,16075.06
+Zig cc,musl,libc,tail-match,4096,256,256,1625.97
+Zig cc,musl,libc,periodic-absent,4096,256,256,32688.05
+Zig cc,musl,libc,tail-match,65536,4,256,138295.98
+Zig cc,musl,libc,periodic-absent,65536,4,256,140053.55
+Zig cc,musl,libc,tail-match,65536,8,256,48485.63
+Zig cc,musl,libc,periodic-absent,65536,8,256,234628.38
+Zig cc,musl,libc,tail-match,65536,16,256,34893.65
+Zig cc,musl,libc,periodic-absent,65536,16,256,238615.36
+Zig cc,musl,libc,tail-match,65536,64,256,25621.14
+Zig cc,musl,libc,periodic-absent,65536,64,256,271829.34
+Zig cc,musl,libc,tail-match,65536,256,256,23059.94
+Zig cc,musl,libc,periodic-absent,65536,256,256,549936.18
+Zig cc,musl,nelibc,strlen-align0,0,0,4096,1.92
+Zig cc,musl,nelibc,strlen-align1,0,0,4096,1.50
+Zig cc,musl,nelibc,strlen-align7,0,0,4096,1.50
+Zig cc,musl,nelibc,strlen-align15,0,0,4096,1.50
+Zig cc,musl,nelibc,strlen-align0,1,0,4096,1.92
+Zig cc,musl,nelibc,strlen-align1,1,0,4096,1.50
+Zig cc,musl,nelibc,strlen-align7,1,0,4096,1.53
+Zig cc,musl,nelibc,strlen-align15,1,0,4096,2.40
+Zig cc,musl,nelibc,strlen-align0,4,0,4096,1.96
+Zig cc,musl,nelibc,strlen-align1,4,0,4096,1.53
+Zig cc,musl,nelibc,strlen-align7,4,0,4096,1.53
+Zig cc,musl,nelibc,strlen-align15,4,0,4096,1.75
+Zig cc,musl,nelibc,strlen-align0,8,0,4096,1.96
+Zig cc,musl,nelibc,strlen-align1,8,0,4096,1.53
+Zig cc,musl,nelibc,strlen-align7,8,0,4096,1.53
+Zig cc,musl,nelibc,strlen-align15,8,0,4096,1.75
+Zig cc,musl,nelibc,strlen-align0,15,0,4096,1.92
+Zig cc,musl,nelibc,strlen-align1,15,0,4096,2.13
+Zig cc,musl,nelibc,strlen-align7,15,0,4096,1.71
+Zig cc,musl,nelibc,strlen-align15,15,0,4096,1.71
+Zig cc,musl,nelibc,strlen-align0,16,0,4096,2.40
+Zig cc,musl,nelibc,strlen-align1,16,0,4096,1.71
+Zig cc,musl,nelibc,strlen-align7,16,0,4096,1.71
+Zig cc,musl,nelibc,strlen-align15,16,0,4096,1.71
+Zig cc,musl,nelibc,strlen-align0,31,0,4096,1.92
+Zig cc,musl,nelibc,strlen-align1,31,0,4096,2.14
+Zig cc,musl,nelibc,strlen-align7,31,0,4096,2.14
+Zig cc,musl,nelibc,strlen-align15,31,0,4096,2.14
+Zig cc,musl,nelibc,strlen-align0,64,0,4096,1.93
+Zig cc,musl,nelibc,strlen-align1,64,0,4096,3.84
+Zig cc,musl,nelibc,strlen-align7,64,0,4096,3.49
+Zig cc,musl,nelibc,strlen-align15,64,0,4096,3.69
+Zig cc,musl,nelibc,strlen-align0,4096,0,4096,46.48
+Zig cc,musl,nelibc,strlen-align1,4096,0,4096,57.28
+Zig cc,musl,nelibc,strlen-align7,4096,0,4096,47.82
+Zig cc,musl,nelibc,strlen-align15,4096,0,4096,48.69
+Zig cc,musl,nelibc,strlen-align0,65536,0,4096,837.58
+Zig cc,musl,nelibc,strlen-align1,65536,0,4096,846.42
+Zig cc,musl,nelibc,strlen-align7,65536,0,4096,835.93
+Zig cc,musl,nelibc,strlen-align15,65536,0,4096,838.41
+Zig cc,musl,nelibc,tail-match,64,4,256,15.02
+Zig cc,musl,nelibc,periodic-absent,64,4,256,74.92
+Zig cc,musl,nelibc,tail-match,64,8,256,17.12
+Zig cc,musl,nelibc,periodic-absent,64,8,256,268.11
+Zig cc,musl,nelibc,tail-match,64,16,256,18.50
+Zig cc,musl,nelibc,periodic-absent,64,16,256,242.56
+Zig cc,musl,nelibc,tail-match,64,64,256,166.03
+Zig cc,musl,nelibc,periodic-absent,64,64,256,172.44
+Zig cc,musl,nelibc,tail-match,4096,4,256,78.22
+Zig cc,musl,nelibc,periodic-absent,4096,4,256,4102.67
+Zig cc,musl,nelibc,tail-match,4096,8,256,76.34
+Zig cc,musl,nelibc,periodic-absent,4096,8,256,15362.53
+Zig cc,musl,nelibc,tail-match,4096,16,256,83.29
+Zig cc,musl,nelibc,periodic-absent,4096,16,256,15707.75
+Zig cc,musl,nelibc,tail-match,4096,64,256,234.41
+Zig cc,musl,nelibc,periodic-absent,4096,64,256,15172.32
+Zig cc,musl,nelibc,tail-match,4096,256,256,700.16
+Zig cc,musl,nelibc,periodic-absent,4096,256,256,14743.55
+Zig cc,musl,nelibc,tail-match,65536,4,256,1113.36
+Zig cc,musl,nelibc,periodic-absent,65536,4,256,66503.53
+Zig cc,musl,nelibc,tail-match,65536,8,256,1196.77
+Zig cc,musl,nelibc,periodic-absent,65536,8,256,249017.53
+Zig cc,musl,nelibc,tail-match,65536,16,256,1093.02
+Zig cc,musl,nelibc,periodic-absent,65536,16,256,247299.52
+Zig cc,musl,nelibc,tail-match,65536,64,256,1579.53
+Zig cc,musl,nelibc,periodic-absent,65536,64,256,248846.34
+Zig cc,musl,nelibc,tail-match,65536,256,256,1594.06
+Zig cc,musl,nelibc,periodic-absent,65536,256,256,246413.84
+TinyCC,glibc,libc,strlen-align0,0,0,4096,1.97
+TinyCC,glibc,libc,strlen-align1,0,0,4096,1.97
+TinyCC,glibc,libc,strlen-align7,0,0,4096,1.97
+TinyCC,glibc,libc,strlen-align15,0,0,4096,1.97
+TinyCC,glibc,libc,strlen-align0,1,0,4096,1.97
+TinyCC,glibc,libc,strlen-align1,1,0,4096,1.97
+TinyCC,glibc,libc,strlen-align7,1,0,4096,1.97
+TinyCC,glibc,libc,strlen-align15,1,0,4096,1.85
+TinyCC,glibc,libc,strlen-align0,4,0,4096,1.85
+TinyCC,glibc,libc,strlen-align1,4,0,4096,1.85
+TinyCC,glibc,libc,strlen-align7,4,0,4096,1.84
+TinyCC,glibc,libc,strlen-align15,4,0,4096,1.85
+TinyCC,glibc,libc,strlen-align0,8,0,4096,1.84
+TinyCC,glibc,libc,strlen-align1,8,0,4096,1.84
+TinyCC,glibc,libc,strlen-align7,8,0,4096,1.84
+TinyCC,glibc,libc,strlen-align15,8,0,4096,1.84
+TinyCC,glibc,libc,strlen-align0,15,0,4096,1.84
+TinyCC,glibc,libc,strlen-align1,15,0,4096,1.84
+TinyCC,glibc,libc,strlen-align7,15,0,4096,1.84
+TinyCC,glibc,libc,strlen-align15,15,0,4096,1.84
+TinyCC,glibc,libc,strlen-align0,16,0,4096,1.84
+TinyCC,glibc,libc,strlen-align1,16,0,4096,1.84
+TinyCC,glibc,libc,strlen-align7,16,0,4096,1.84
+TinyCC,glibc,libc,strlen-align15,16,0,4096,1.96
+TinyCC,glibc,libc,strlen-align0,31,0,4096,1.97
+TinyCC,glibc,libc,strlen-align1,31,0,4096,1.84
+TinyCC,glibc,libc,strlen-align7,31,0,4096,2.04
+TinyCC,glibc,libc,strlen-align15,31,0,4096,1.84
+TinyCC,glibc,libc,strlen-align0,64,0,4096,2.26
+TinyCC,glibc,libc,strlen-align1,64,0,4096,2.25
+TinyCC,glibc,libc,strlen-align7,64,0,4096,2.25
+TinyCC,glibc,libc,strlen-align15,64,0,4096,2.25
+TinyCC,glibc,libc,strlen-align0,4096,0,4096,25.63
+TinyCC,glibc,libc,strlen-align1,4096,0,4096,25.19
+TinyCC,glibc,libc,strlen-align7,4096,0,4096,25.17
+TinyCC,glibc,libc,strlen-align15,4096,0,4096,26.26
+TinyCC,glibc,libc,strlen-align0,65536,0,4096,482.69
+TinyCC,glibc,libc,strlen-align1,65536,0,4096,475.32
+TinyCC,glibc,libc,strlen-align7,65536,0,4096,464.60
+TinyCC,glibc,libc,strlen-align15,65536,0,4096,462.42
+TinyCC,glibc,libc,tail-match,64,4,256,4.77
+TinyCC,glibc,libc,periodic-absent,64,4,256,85.06
+TinyCC,glibc,libc,tail-match,64,8,256,6.48
+TinyCC,glibc,libc,periodic-absent,64,8,256,193.36
+TinyCC,glibc,libc,tail-match,64,16,256,9.04
+TinyCC,glibc,libc,periodic-absent,64,16,256,379.25
+TinyCC,glibc,libc,tail-match,64,64,256,26.35
+TinyCC,glibc,libc,periodic-absent,64,64,256,887.23
+TinyCC,glibc,libc,tail-match,4096,4,256,113.34
+TinyCC,glibc,libc,periodic-absent,4096,4,256,5270.79
+TinyCC,glibc,libc,tail-match,4096,8,256,115.88
+TinyCC,glibc,libc,periodic-absent,4096,8,256,13884.14
+TinyCC,glibc,libc,tail-match,4096,16,256,113.05
+TinyCC,glibc,libc,periodic-absent,4096,16,256,14183.27
+TinyCC,glibc,libc,tail-match,4096,64,256,131.52
+TinyCC,glibc,libc,periodic-absent,4096,64,256,15046.99
+TinyCC,glibc,libc,tail-match,4096,256,256,174.67
+TinyCC,glibc,libc,periodic-absent,4096,256,256,17455.88
+TinyCC,glibc,libc,tail-match,65536,4,256,1796.38
+TinyCC,glibc,libc,periodic-absent,65536,4,256,82642.69
+TinyCC,glibc,libc,tail-match,65536,8,256,1906.29
+TinyCC,glibc,libc,periodic-absent,65536,8,256,221135.00
+TinyCC,glibc,libc,tail-match,65536,16,256,1738.79
+TinyCC,glibc,libc,periodic-absent,65536,16,256,220242.70
+TinyCC,glibc,libc,tail-match,65536,64,256,1815.92
+TinyCC,glibc,libc,periodic-absent,65536,64,256,221429.70
+TinyCC,glibc,libc,tail-match,65536,256,256,1803.18
+TinyCC,glibc,libc,periodic-absent,65536,256,256,222099.78
+TinyCC,glibc,nelibc,strlen-align0,0,0,4096,2.78
+TinyCC,glibc,nelibc,strlen-align1,0,0,4096,2.35
+TinyCC,glibc,nelibc,strlen-align7,0,0,4096,2.26
+TinyCC,glibc,nelibc,strlen-align15,0,0,4096,2.87
+TinyCC,glibc,nelibc,strlen-align0,1,0,4096,2.66
+TinyCC,glibc,nelibc,strlen-align1,1,0,4096,2.25
+TinyCC,glibc,nelibc,strlen-align7,1,0,4096,2.25
+TinyCC,glibc,nelibc,strlen-align15,1,0,4096,3.08
+TinyCC,glibc,nelibc,strlen-align0,4,0,4096,2.66
+TinyCC,glibc,nelibc,strlen-align1,4,0,4096,2.87
+TinyCC,glibc,nelibc,strlen-align7,4,0,4096,2.25
+TinyCC,glibc,nelibc,strlen-align15,4,0,4096,2.67
+TinyCC,glibc,nelibc,strlen-align0,8,0,4096,2.66
+TinyCC,glibc,nelibc,strlen-align1,8,0,4096,2.35
+TinyCC,glibc,nelibc,strlen-align7,8,0,4096,2.99
+TinyCC,glibc,nelibc,strlen-align15,8,0,4096,2.77
+TinyCC,glibc,nelibc,strlen-align0,15,0,4096,2.78
+TinyCC,glibc,nelibc,strlen-align1,15,0,4096,3.20
+TinyCC,glibc,nelibc,strlen-align7,15,0,4096,2.78
+TinyCC,glibc,nelibc,strlen-align15,15,0,4096,2.78
+TinyCC,glibc,nelibc,strlen-align0,16,0,4096,3.00
+TinyCC,glibc,nelibc,strlen-align1,16,0,4096,3.41
+TinyCC,glibc,nelibc,strlen-align7,16,0,4096,3.28
+TinyCC,glibc,nelibc,strlen-align15,16,0,4096,3.28
+TinyCC,glibc,nelibc,strlen-align0,31,0,4096,3.07
+TinyCC,glibc,nelibc,strlen-align1,31,0,4096,2.99
+TinyCC,glibc,nelibc,strlen-align7,31,0,4096,2.87
+TinyCC,glibc,nelibc,strlen-align15,31,0,4096,2.87
+TinyCC,glibc,nelibc,strlen-align0,64,0,4096,4.10
+TinyCC,glibc,nelibc,strlen-align1,64,0,4096,3.90
+TinyCC,glibc,nelibc,strlen-align7,64,0,4096,4.10
+TinyCC,glibc,nelibc,strlen-align15,64,0,4096,3.90
+TinyCC,glibc,nelibc,strlen-align0,4096,0,4096,56.67
+TinyCC,glibc,nelibc,strlen-align1,4096,0,4096,56.26
+TinyCC,glibc,nelibc,strlen-align7,4096,0,4096,59.83
+TinyCC,glibc,nelibc,strlen-align15,4096,0,4096,62.94
+TinyCC,glibc,nelibc,strlen-align0,65536,0,4096,829.55
+TinyCC,glibc,nelibc,strlen-align1,65536,0,4096,841.59
+TinyCC,glibc,nelibc,strlen-align7,65536,0,4096,834.65
+TinyCC,glibc,nelibc,strlen-align15,65536,0,4096,839.09
+TinyCC,glibc,nelibc,tail-match,64,4,256,37.30
+TinyCC,glibc,nelibc,periodic-absent,64,4,256,389.78
+TinyCC,glibc,nelibc,tail-match,64,8,256,41.63
+TinyCC,glibc,nelibc,periodic-absent,64,8,256,647.32
+TinyCC,glibc,nelibc,tail-match,64,16,256,62.05
+TinyCC,glibc,nelibc,periodic-absent,64,16,256,642.95
+TinyCC,glibc,nelibc,tail-match,64,64,256,680.80
+TinyCC,glibc,nelibc,periodic-absent,64,64,256,636.18
+TinyCC,glibc,nelibc,tail-match,4096,4,256,103.57
+TinyCC,glibc,nelibc,periodic-absent,4096,4,256,21085.56
+TinyCC,glibc,nelibc,tail-match,4096,8,256,128.87
+TinyCC,glibc,nelibc,periodic-absent,4096,8,256,16237.62
+TinyCC,glibc,nelibc,tail-match,4096,16,256,104.63
+TinyCC,glibc,nelibc,periodic-absent,4096,16,256,16597.86
+TinyCC,glibc,nelibc,tail-match,4096,64,256,1167.50
+TinyCC,glibc,nelibc,periodic-absent,4096,64,256,16095.04
+TinyCC,glibc,nelibc,tail-match,4096,256,256,2197.20
+TinyCC,glibc,nelibc,periodic-absent,4096,256,256,16732.87
+TinyCC,glibc,nelibc,tail-match,65536,4,256,1238.75
+TinyCC,glibc,nelibc,periodic-absent,65536,4,256,333740.09
+TinyCC,glibc,nelibc,tail-match,65536,8,256,1213.75
+TinyCC,glibc,nelibc,periodic-absent,65536,8,256,258102.41
+TinyCC,glibc,nelibc,tail-match,65536,16,256,1228.83
+TinyCC,glibc,nelibc,periodic-absent,65536,16,256,266717.38
+TinyCC,glibc,nelibc,tail-match,65536,64,256,3470.99
+TinyCC,glibc,nelibc,periodic-absent,65536,64,256,257622.27
+TinyCC,glibc,nelibc,tail-match,65536,256,256,3469.92
+TinyCC,glibc,nelibc,periodic-absent,65536,256,256,257372.17

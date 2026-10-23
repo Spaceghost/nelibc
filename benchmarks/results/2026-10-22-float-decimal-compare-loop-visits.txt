@@ -1,0 +1,6 @@
+Raw instrumented loop-visit totals from the long-decimal workload (TinyCC/glibc):
+COMPARE,strtof,loop_visits=800
+COMPARE,strtod,loop_visits=1200
+COMPARE,strtold,loop_visits=1600
+
+The benchmark performs 800 Nelibc parses per parser function across its five samples. Compare call totals are from 2026-10-22-float-decimal-shift-profile-counters.txt.

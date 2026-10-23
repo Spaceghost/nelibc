@@ -1,0 +1,289 @@
+pair,variant,compiler,libc,implementation,function,iterations,median_ns_per_call
+0,baseline,GCC,glibc,host-libc,strtof,160,312.54
+0,baseline,GCC,glibc,nelibc,strtof,160,14165.23
+0,baseline,GCC,glibc,host-libc,strtod,160,318.52
+0,baseline,GCC,glibc,nelibc,strtod,160,13994.85
+0,baseline,GCC,glibc,host-libc,strtold,160,1093.29
+0,baseline,GCC,glibc,nelibc,strtold,160,13805.41
+0,candidate,GCC unroll2,glibc,host-libc,strtof,160,300.88
+0,candidate,GCC unroll2,glibc,nelibc,strtof,160,14963.93
+0,candidate,GCC unroll2,glibc,host-libc,strtod,160,312.76
+0,candidate,GCC unroll2,glibc,nelibc,strtod,160,13499.27
+0,candidate,GCC unroll2,glibc,host-libc,strtold,160,990.86
+0,candidate,GCC unroll2,glibc,nelibc,strtold,160,13478.88
+1,candidate,GCC unroll2,glibc,host-libc,strtof,160,303.84
+1,candidate,GCC unroll2,glibc,nelibc,strtof,160,13709.29
+1,candidate,GCC unroll2,glibc,host-libc,strtod,160,291.93
+1,candidate,GCC unroll2,glibc,nelibc,strtod,160,13624.75
+1,candidate,GCC unroll2,glibc,host-libc,strtold,160,1008.02
+1,candidate,GCC unroll2,glibc,nelibc,strtold,160,13965.16
+1,baseline,GCC,glibc,host-libc,strtof,160,292.05
+1,baseline,GCC,glibc,nelibc,strtof,160,13462.53
+1,baseline,GCC,glibc,host-libc,strtod,160,299.06
+1,baseline,GCC,glibc,nelibc,strtod,160,14086.39
+1,baseline,GCC,glibc,host-libc,strtold,160,1143.94
+1,baseline,GCC,glibc,nelibc,strtold,160,14302.16
+2,baseline,GCC,glibc,host-libc,strtof,160,343.10
+2,baseline,GCC,glibc,nelibc,strtof,160,13870.84
+2,baseline,GCC,glibc,host-libc,strtod,160,300.02
+2,baseline,GCC,glibc,nelibc,strtod,160,13408.55
+2,baseline,GCC,glibc,host-libc,strtold,160,995.26
+2,baseline,GCC,glibc,nelibc,strtold,160,14008.40
+2,candidate,GCC unroll2,glibc,host-libc,strtof,160,292.42
+2,candidate,GCC unroll2,glibc,nelibc,strtof,160,13606.55
+2,candidate,GCC unroll2,glibc,host-libc,strtod,160,300.90
+2,candidate,GCC unroll2,glibc,nelibc,strtod,160,13510.78
+2,candidate,GCC unroll2,glibc,host-libc,strtold,160,1083.60
+2,candidate,GCC unroll2,glibc,nelibc,strtold,160,13640.41
+3,candidate,GCC unroll2,glibc,host-libc,strtof,160,296.58
+3,candidate,GCC unroll2,glibc,nelibc,strtof,160,13790.13
+3,candidate,GCC unroll2,glibc,host-libc,strtod,160,304.46
+3,candidate,GCC unroll2,glibc,nelibc,strtod,160,13695.56
+3,candidate,GCC unroll2,glibc,host-libc,strtold,160,979.60
+3,candidate,GCC unroll2,glibc,nelibc,strtold,160,13533.77
+3,baseline,GCC,glibc,host-libc,strtof,160,291.07
+3,baseline,GCC,glibc,nelibc,strtof,160,13804.92
+3,baseline,GCC,glibc,host-libc,strtod,160,285.28
+3,baseline,GCC,glibc,nelibc,strtod,160,13654.86
+3,baseline,GCC,glibc,host-libc,strtold,160,1102.89
+3,baseline,GCC,glibc,nelibc,strtold,160,13943.56
+4,baseline,GCC,glibc,host-libc,strtof,160,300.31
+4,baseline,GCC,glibc,nelibc,strtof,160,13436.48
+4,baseline,GCC,glibc,host-libc,strtod,160,298.56
+4,baseline,GCC,glibc,nelibc,strtod,160,13747.47
+4,baseline,GCC,glibc,host-libc,strtold,160,1110.53
+4,baseline,GCC,glibc,nelibc,strtold,160,13515.02
+4,candidate,GCC unroll2,glibc,host-libc,strtof,160,293.09
+4,candidate,GCC unroll2,glibc,nelibc,strtof,160,13500.24
+4,candidate,GCC unroll2,glibc,host-libc,strtod,160,285.16
+4,candidate,GCC unroll2,glibc,nelibc,strtod,160,13462.25
+4,candidate,GCC unroll2,glibc,host-libc,strtold,160,980.74
+4,candidate,GCC unroll2,glibc,nelibc,strtold,160,13347.36
+5,candidate,GCC unroll2,glibc,host-libc,strtof,160,292.85
+5,candidate,GCC unroll2,glibc,nelibc,strtof,160,13709.20
+5,candidate,GCC unroll2,glibc,host-libc,strtod,160,286.24
+5,candidate,GCC unroll2,glibc,nelibc,strtod,160,13667.13
+5,candidate,GCC unroll2,glibc,host-libc,strtold,160,1007.77
+5,candidate,GCC unroll2,glibc,nelibc,strtold,160,14223.91
+5,baseline,GCC,glibc,host-libc,strtof,160,299.95
+5,baseline,GCC,glibc,nelibc,strtof,160,13448.17
+5,baseline,GCC,glibc,host-libc,strtod,160,291.44
+5,baseline,GCC,glibc,nelibc,strtod,160,13416.28
+5,baseline,GCC,glibc,host-libc,strtold,160,1013.53
+5,baseline,GCC,glibc,nelibc,strtold,160,13298.52
+6,baseline,GCC,glibc,host-libc,strtof,160,299.68
+6,baseline,GCC,glibc,nelibc,strtof,160,13247.92
+6,baseline,GCC,glibc,host-libc,strtod,160,290.49
+6,baseline,GCC,glibc,nelibc,strtod,160,13349.82
+6,baseline,GCC,glibc,host-libc,strtold,160,1059.78
+6,baseline,GCC,glibc,nelibc,strtold,160,13283.36
+6,candidate,GCC unroll2,glibc,host-libc,strtof,160,305.19
+6,candidate,GCC unroll2,glibc,nelibc,strtof,160,13301.61
+6,candidate,GCC unroll2,glibc,host-libc,strtod,160,298.16
+6,candidate,GCC unroll2,glibc,nelibc,strtod,160,13166.79
+6,candidate,GCC unroll2,glibc,host-libc,strtold,160,1067.50
+6,candidate,GCC unroll2,glibc,nelibc,strtold,160,13775.72
+7,candidate,GCC unroll2,glibc,host-libc,strtof,160,292.82
+7,candidate,GCC unroll2,glibc,nelibc,strtof,160,13595.47
+7,candidate,GCC unroll2,glibc,host-libc,strtod,160,284.62
+7,candidate,GCC unroll2,glibc,nelibc,strtod,160,13770.76
+7,candidate,GCC unroll2,glibc,host-libc,strtold,160,1049.17
+7,candidate,GCC unroll2,glibc,nelibc,strtold,160,13447.39
+7,baseline,GCC,glibc,host-libc,strtof,160,291.68
+7,baseline,GCC,glibc,nelibc,strtof,160,13363.79
+7,baseline,GCC,glibc,host-libc,strtod,160,297.98
+7,baseline,GCC,glibc,nelibc,strtod,160,12962.31
+7,baseline,GCC,glibc,host-libc,strtold,160,907.57
+7,baseline,GCC,glibc,nelibc,strtold,160,13506.88
+8,baseline,GCC,glibc,host-libc,strtof,160,293.18
+8,baseline,GCC,glibc,nelibc,strtof,160,13350.99
+8,baseline,GCC,glibc,host-libc,strtod,160,286.03
+8,baseline,GCC,glibc,nelibc,strtod,160,13586.71
+8,baseline,GCC,glibc,host-libc,strtold,160,1071.61
+8,baseline,GCC,glibc,nelibc,strtold,160,13278.61
+8,candidate,GCC unroll2,glibc,host-libc,strtof,160,372.54
+8,candidate,GCC unroll2,glibc,nelibc,strtof,160,13260.16
+8,candidate,GCC unroll2,glibc,host-libc,strtod,160,299.34
+8,candidate,GCC unroll2,glibc,nelibc,strtod,160,13859.29
+8,candidate,GCC unroll2,glibc,host-libc,strtold,160,989.12
+8,candidate,GCC unroll2,glibc,nelibc,strtold,160,13652.08
+9,candidate,GCC unroll2,glibc,host-libc,strtof,160,299.74
+9,candidate,GCC unroll2,glibc,nelibc,strtof,160,13519.22
+9,candidate,GCC unroll2,glibc,host-libc,strtod,160,286.93
+9,candidate,GCC unroll2,glibc,nelibc,strtod,160,13343.02
+9,candidate,GCC unroll2,glibc,host-libc,strtold,160,1007.30
+9,candidate,GCC unroll2,glibc,nelibc,strtold,160,13578.94
+9,baseline,GCC,glibc,host-libc,strtof,160,295.38
+9,baseline,GCC,glibc,nelibc,strtof,160,13149.99
+9,baseline,GCC,glibc,host-libc,strtod,160,297.99
+9,baseline,GCC,glibc,nelibc,strtod,160,14079.61
+9,baseline,GCC,glibc,host-libc,strtold,160,1087.51
+9,baseline,GCC,glibc,nelibc,strtold,160,14127.86
+10,baseline,GCC,glibc,host-libc,strtof,160,313.13
+10,baseline,GCC,glibc,nelibc,strtof,160,14012.09
+10,baseline,GCC,glibc,host-libc,strtod,160,318.99
+10,baseline,GCC,glibc,nelibc,strtod,160,13862.17
+10,baseline,GCC,glibc,host-libc,strtold,160,1013.75
+10,baseline,GCC,glibc,nelibc,strtold,160,16009.60
+10,candidate,GCC unroll2,glibc,host-libc,strtof,160,321.57
+10,candidate,GCC unroll2,glibc,nelibc,strtof,160,14161.41
+10,candidate,GCC unroll2,glibc,host-libc,strtod,160,318.18
+10,candidate,GCC unroll2,glibc,nelibc,strtod,160,13710.13
+10,candidate,GCC unroll2,glibc,host-libc,strtold,160,990.09
+10,candidate,GCC unroll2,glibc,nelibc,strtold,160,13676.33
+11,candidate,GCC unroll2,glibc,host-libc,strtof,160,305.96
+11,candidate,GCC unroll2,glibc,nelibc,strtof,160,14648.97
+11,candidate,GCC unroll2,glibc,host-libc,strtod,160,304.31
+11,candidate,GCC unroll2,glibc,nelibc,strtod,160,13503.88
+11,candidate,GCC unroll2,glibc,host-libc,strtold,160,991.37
+11,candidate,GCC unroll2,glibc,nelibc,strtold,160,13380.36
+11,baseline,GCC,glibc,host-libc,strtof,160,300.22
+11,baseline,GCC,glibc,nelibc,strtof,160,13639.67
+11,baseline,GCC,glibc,host-libc,strtod,160,300.39
+11,baseline,GCC,glibc,nelibc,strtod,160,14146.29
+11,baseline,GCC,glibc,host-libc,strtold,160,991.05
+11,baseline,GCC,glibc,nelibc,strtold,160,13740.98
+12,baseline,GCC,glibc,host-libc,strtof,160,299.04
+12,baseline,GCC,glibc,nelibc,strtof,160,13437.99
+12,baseline,GCC,glibc,host-libc,strtod,160,297.03
+12,baseline,GCC,glibc,nelibc,strtod,160,13407.27
+12,baseline,GCC,glibc,host-libc,strtold,160,1088.90
+12,baseline,GCC,glibc,nelibc,strtold,160,13294.48
+12,candidate,GCC unroll2,glibc,host-libc,strtof,160,299.41
+12,candidate,GCC unroll2,glibc,nelibc,strtof,160,13701.08
+12,candidate,GCC unroll2,glibc,host-libc,strtod,160,312.72
+12,candidate,GCC unroll2,glibc,nelibc,strtod,160,13542.68
+12,candidate,GCC unroll2,glibc,host-libc,strtold,160,984.71
+12,candidate,GCC unroll2,glibc,nelibc,strtold,160,13858.83
+13,candidate,GCC unroll2,glibc,host-libc,strtof,160,335.92
+13,candidate,GCC unroll2,glibc,nelibc,strtof,160,13937.89
+13,candidate,GCC unroll2,glibc,host-libc,strtod,160,286.66
+13,candidate,GCC unroll2,glibc,nelibc,strtod,160,13575.58
+13,candidate,GCC unroll2,glibc,host-libc,strtold,160,984.41
+13,candidate,GCC unroll2,glibc,nelibc,strtold,160,13845.27
+13,baseline,GCC,glibc,host-libc,strtof,160,298.93
+13,baseline,GCC,glibc,nelibc,strtof,160,13621.39
+13,baseline,GCC,glibc,host-libc,strtod,160,284.97
+13,baseline,GCC,glibc,nelibc,strtod,160,13553.78
+13,baseline,GCC,glibc,host-libc,strtold,160,961.03
+13,baseline,GCC,glibc,nelibc,strtold,160,13503.94
+14,baseline,GCC,glibc,host-libc,strtof,160,299.18
+14,baseline,GCC,glibc,nelibc,strtof,160,13370.96
+14,baseline,GCC,glibc,host-libc,strtod,160,298.34
+14,baseline,GCC,glibc,nelibc,strtod,160,13569.71
+14,baseline,GCC,glibc,host-libc,strtold,160,979.52
+14,baseline,GCC,glibc,nelibc,strtold,160,13884.11
+14,candidate,GCC unroll2,glibc,host-libc,strtof,160,298.72
+14,candidate,GCC unroll2,glibc,nelibc,strtof,160,13660.29
+14,candidate,GCC unroll2,glibc,host-libc,strtod,160,309.87
+14,candidate,GCC unroll2,glibc,nelibc,strtod,160,13309.76
+14,candidate,GCC unroll2,glibc,host-libc,strtold,160,992.24
+14,candidate,GCC unroll2,glibc,nelibc,strtold,160,13290.09
+15,candidate,GCC unroll2,glibc,host-libc,strtof,160,306.36
+15,candidate,GCC unroll2,glibc,nelibc,strtof,160,13162.01
+15,candidate,GCC unroll2,glibc,host-libc,strtod,160,286.83
+15,candidate,GCC unroll2,glibc,nelibc,strtod,160,13382.17
+15,candidate,GCC unroll2,glibc,host-libc,strtold,160,987.78
+15,candidate,GCC unroll2,glibc,nelibc,strtold,160,13796.57
+15,baseline,GCC,glibc,host-libc,strtof,160,293.02
+15,baseline,GCC,glibc,nelibc,strtof,160,13511.78
+15,baseline,GCC,glibc,host-libc,strtod,160,297.96
+15,baseline,GCC,glibc,nelibc,strtod,160,13464.02
+15,baseline,GCC,glibc,host-libc,strtold,160,1031.93
+15,baseline,GCC,glibc,nelibc,strtold,160,14201.68
+16,baseline,GCC,glibc,host-libc,strtof,160,298.50
+16,baseline,GCC,glibc,nelibc,strtof,160,13766.84
+16,baseline,GCC,glibc,host-libc,strtod,160,298.11
+16,baseline,GCC,glibc,nelibc,strtod,160,13323.88
+16,baseline,GCC,glibc,host-libc,strtold,160,982.89
+16,baseline,GCC,glibc,nelibc,strtold,160,13665.52
+16,candidate,GCC unroll2,glibc,host-libc,strtof,160,299.78
+16,candidate,GCC unroll2,glibc,nelibc,strtof,160,13704.23
+16,candidate,GCC unroll2,glibc,host-libc,strtod,160,345.25
+16,candidate,GCC unroll2,glibc,nelibc,strtod,160,13765.76
+16,candidate,GCC unroll2,glibc,host-libc,strtold,160,1084.23
+16,candidate,GCC unroll2,glibc,nelibc,strtold,160,14291.86
+17,candidate,GCC unroll2,glibc,host-libc,strtof,160,292.02
+17,candidate,GCC unroll2,glibc,nelibc,strtof,160,13739.69
+17,candidate,GCC unroll2,glibc,host-libc,strtod,160,305.02
+17,candidate,GCC unroll2,glibc,nelibc,strtod,160,13710.68
+17,candidate,GCC unroll2,glibc,host-libc,strtold,160,1053.11
+17,candidate,GCC unroll2,glibc,nelibc,strtold,160,13584.61
+17,baseline,GCC,glibc,host-libc,strtof,160,323.80
+17,baseline,GCC,glibc,nelibc,strtof,160,13658.36
+17,baseline,GCC,glibc,host-libc,strtod,160,298.07
+17,baseline,GCC,glibc,nelibc,strtod,160,13697.78
+17,baseline,GCC,glibc,host-libc,strtold,160,1119.85
+17,baseline,GCC,glibc,nelibc,strtold,160,13930.67
+18,baseline,GCC,glibc,host-libc,strtof,160,298.81
+18,baseline,GCC,glibc,nelibc,strtof,160,13603.04
+18,baseline,GCC,glibc,host-libc,strtod,160,367.91
+18,baseline,GCC,glibc,nelibc,strtod,160,14690.41
+18,baseline,GCC,glibc,host-libc,strtold,160,1056.19
+18,baseline,GCC,glibc,nelibc,strtold,160,13636.07
+18,candidate,GCC unroll2,glibc,host-libc,strtof,160,292.99
+18,candidate,GCC unroll2,glibc,nelibc,strtof,160,13478.29
+18,candidate,GCC unroll2,glibc,host-libc,strtod,160,290.92
+18,candidate,GCC unroll2,glibc,nelibc,strtod,160,13627.11
+18,candidate,GCC unroll2,glibc,host-libc,strtold,160,1048.86
+18,candidate,GCC unroll2,glibc,nelibc,strtold,160,13536.71
+19,candidate,GCC unroll2,glibc,host-libc,strtof,160,355.42
+19,candidate,GCC unroll2,glibc,nelibc,strtof,160,13698.64
+19,candidate,GCC unroll2,glibc,host-libc,strtod,160,286.11
+19,candidate,GCC unroll2,glibc,nelibc,strtod,160,14284.69
+19,candidate,GCC unroll2,glibc,host-libc,strtold,160,977.16
+19,candidate,GCC unroll2,glibc,nelibc,strtold,160,14091.87
+19,baseline,GCC,glibc,host-libc,strtof,160,300.40
+19,baseline,GCC,glibc,nelibc,strtof,160,13753.26
+19,baseline,GCC,glibc,host-libc,strtod,160,304.81
+19,baseline,GCC,glibc,nelibc,strtod,160,13529.39
+19,baseline,GCC,glibc,host-libc,strtold,160,1002.52
+19,baseline,GCC,glibc,nelibc,strtold,160,13517.07
+20,baseline,GCC,glibc,host-libc,strtof,160,293.74
+20,baseline,GCC,glibc,nelibc,strtof,160,13945.77
+20,baseline,GCC,glibc,host-libc,strtod,160,338.06
+20,baseline,GCC,glibc,nelibc,strtod,160,13500.47
+20,baseline,GCC,glibc,host-libc,strtold,160,994.74
+20,baseline,GCC,glibc,nelibc,strtold,160,14647.34
+20,candidate,GCC unroll2,glibc,host-libc,strtof,160,316.01
+20,candidate,GCC unroll2,glibc,nelibc,strtof,160,14287.22
+20,candidate,GCC unroll2,glibc,host-libc,strtod,160,317.29
+20,candidate,GCC unroll2,glibc,nelibc,strtod,160,13790.66
+20,candidate,GCC unroll2,glibc,host-libc,strtold,160,1100.17
+20,candidate,GCC unroll2,glibc,nelibc,strtold,160,14319.54
+21,candidate,GCC unroll2,glibc,host-libc,strtof,160,305.59
+21,candidate,GCC unroll2,glibc,nelibc,strtof,160,13927.93
+21,candidate,GCC unroll2,glibc,host-libc,strtod,160,304.16
+21,candidate,GCC unroll2,glibc,nelibc,strtod,160,14431.31
+21,candidate,GCC unroll2,glibc,host-libc,strtold,160,1004.39
+21,candidate,GCC unroll2,glibc,nelibc,strtold,160,13483.21
+21,baseline,GCC,glibc,host-libc,strtof,160,294.39
+21,baseline,GCC,glibc,nelibc,strtof,160,13356.80
+21,baseline,GCC,glibc,host-libc,strtod,160,304.89
+21,baseline,GCC,glibc,nelibc,strtod,160,13355.60
+21,baseline,GCC,glibc,host-libc,strtold,160,929.76
+21,baseline,GCC,glibc,nelibc,strtold,160,13600.39
+22,baseline,GCC,glibc,host-libc,strtof,160,317.18
+22,baseline,GCC,glibc,nelibc,strtof,160,13751.94
+22,baseline,GCC,glibc,host-libc,strtod,160,298.71
+22,baseline,GCC,glibc,nelibc,strtod,160,13649.82
+22,baseline,GCC,glibc,host-libc,strtold,160,1313.85
+22,baseline,GCC,glibc,nelibc,strtold,160,13471.06
+22,candidate,GCC unroll2,glibc,host-libc,strtof,160,335.06
+22,candidate,GCC unroll2,glibc,nelibc,strtof,160,13501.51
+22,candidate,GCC unroll2,glibc,host-libc,strtod,160,300.14
+22,candidate,GCC unroll2,glibc,nelibc,strtod,160,13219.02
+22,candidate,GCC unroll2,glibc,host-libc,strtold,160,995.97
+22,candidate,GCC unroll2,glibc,nelibc,strtold,160,13944.12
+23,candidate,GCC unroll2,glibc,host-libc,strtof,160,306.46
+23,candidate,GCC unroll2,glibc,nelibc,strtof,160,13624.26
+23,candidate,GCC unroll2,glibc,host-libc,strtod,160,404.08
+23,candidate,GCC unroll2,glibc,nelibc,strtod,160,13568.66
+23,candidate,GCC unroll2,glibc,host-libc,strtold,160,1000.70
+23,candidate,GCC unroll2,glibc,nelibc,strtold,160,13532.71
+23,baseline,GCC,glibc,host-libc,strtof,160,306.46
+23,baseline,GCC,glibc,nelibc,strtof,160,13253.55
+23,baseline,GCC,glibc,host-libc,strtod,160,286.99
+23,baseline,GCC,glibc,nelibc,strtod,160,12924.28
+23,baseline,GCC,glibc,host-libc,strtold,160,954.24
+23,baseline,GCC,glibc,nelibc,strtold,160,13937.83

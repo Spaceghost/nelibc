@@ -1,0 +1,217 @@
+compiler,variant,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,baseline,glibc,nelibc,strtof,160,5537.15
+Zig cc,baseline,glibc,nelibc,strtod,160,5696.18
+Zig cc,baseline,glibc,nelibc,strtold,160,5689.51
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,6069.89
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,6008.02
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,6204.24
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,5855.49
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,5941.61
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,5900.67
+Zig cc,baseline,glibc,nelibc,strtof,160,5556.95
+Zig cc,baseline,glibc,nelibc,strtod,160,5500.71
+Zig cc,baseline,glibc,nelibc,strtold,160,5752.82
+Zig cc,baseline,glibc,nelibc,strtof,160,5554.03
+Zig cc,baseline,glibc,nelibc,strtod,160,5595.79
+Zig cc,baseline,glibc,nelibc,strtold,160,5742.91
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,6022.29
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,5988.67
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,6137.99
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,6141.91
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,5837.02
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,5973.38
+Zig cc,baseline,glibc,nelibc,strtof,160,5467.86
+Zig cc,baseline,glibc,nelibc,strtod,160,5744.11
+Zig cc,baseline,glibc,nelibc,strtold,160,5680.70
+Zig cc,baseline,glibc,nelibc,strtof,160,5770.24
+Zig cc,baseline,glibc,nelibc,strtod,160,5507.97
+Zig cc,baseline,glibc,nelibc,strtold,160,5659.35
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,5780.23
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,5825.37
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,6164.20
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,6088.57
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,6305.21
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,6304.44
+Zig cc,baseline,glibc,nelibc,strtof,160,5537.64
+Zig cc,baseline,glibc,nelibc,strtod,160,5707.96
+Zig cc,baseline,glibc,nelibc,strtold,160,5884.38
+Zig cc,baseline,glibc,nelibc,strtof,160,5560.36
+Zig cc,baseline,glibc,nelibc,strtod,160,5535.50
+Zig cc,baseline,glibc,nelibc,strtold,160,5806.28
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,6103.62
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,5870.84
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,6059.38
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,5903.34
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,5913.41
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,6177.34
+Zig cc,baseline,glibc,nelibc,strtof,160,5489.69
+Zig cc,baseline,glibc,nelibc,strtod,160,5493.36
+Zig cc,baseline,glibc,nelibc,strtold,160,5641.37
+Zig cc,baseline,glibc,nelibc,strtof,160,5680.45
+Zig cc,baseline,glibc,nelibc,strtod,160,5502.06
+Zig cc,baseline,glibc,nelibc,strtold,160,5723.95
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,6187.68
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,6084.60
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,6305.28
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,6052.01
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,5978.11
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,6142.25
+Zig cc,baseline,glibc,nelibc,strtof,160,5515.79
+Zig cc,baseline,glibc,nelibc,strtod,160,5426.56
+Zig cc,baseline,glibc,nelibc,strtold,160,5910.17
+Zig cc,baseline,glibc,nelibc,strtof,160,5426.84
+Zig cc,baseline,glibc,nelibc,strtod,160,5518.39
+Zig cc,baseline,glibc,nelibc,strtold,160,5745.02
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,6045.99
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,6052.74
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,6042.87
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtof,160,6377.77
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtod,160,6016.90
+Zig cc,unconditional-skip-divide,glibc,nelibc,strtold,160,6184.96
+Zig cc,baseline,glibc,nelibc,strtof,160,5484.28
+Zig cc,baseline,glibc,nelibc,strtod,160,5619.51
+Zig cc,baseline,glibc,nelibc,strtold,160,5873.54
+GCC,baseline,glibc,nelibc,strtof,160,4791.94
+GCC,baseline,glibc,nelibc,strtod,160,4913.34
+GCC,baseline,glibc,nelibc,strtold,160,4960.20
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,4801.33
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,4988.36
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5226.04
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,5001.36
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,4950.28
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5171.26
+GCC,baseline,glibc,nelibc,strtof,160,5083.46
+GCC,baseline,glibc,nelibc,strtod,160,4894.44
+GCC,baseline,glibc,nelibc,strtold,160,4964.26
+GCC,baseline,glibc,nelibc,strtof,160,5209.22
+GCC,baseline,glibc,nelibc,strtod,160,4772.22
+GCC,baseline,glibc,nelibc,strtold,160,4958.95
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,5069.87
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,5400.41
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5276.03
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,5397.11
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,5459.52
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5063.51
+GCC,baseline,glibc,nelibc,strtof,160,4788.69
+GCC,baseline,glibc,nelibc,strtod,160,4922.37
+GCC,baseline,glibc,nelibc,strtold,160,5005.33
+GCC,baseline,glibc,nelibc,strtof,160,4723.25
+GCC,baseline,glibc,nelibc,strtod,160,4697.97
+GCC,baseline,glibc,nelibc,strtold,160,4899.36
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,5083.43
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,5065.99
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5501.69
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,5275.63
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,4926.70
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5143.96
+GCC,baseline,glibc,nelibc,strtof,160,4859.57
+GCC,baseline,glibc,nelibc,strtod,160,4931.74
+GCC,baseline,glibc,nelibc,strtold,160,5037.28
+GCC,baseline,glibc,nelibc,strtof,160,4872.29
+GCC,baseline,glibc,nelibc,strtod,160,4708.06
+GCC,baseline,glibc,nelibc,strtold,160,4873.88
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,5079.71
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,4879.56
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5251.93
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,4878.09
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,4989.62
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5219.75
+GCC,baseline,glibc,nelibc,strtof,160,5133.62
+GCC,baseline,glibc,nelibc,strtod,160,4824.80
+GCC,baseline,glibc,nelibc,strtold,160,4854.83
+GCC,baseline,glibc,nelibc,strtof,160,4809.25
+GCC,baseline,glibc,nelibc,strtod,160,4954.72
+GCC,baseline,glibc,nelibc,strtold,160,4914.88
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,5203.98
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,5233.71
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5436.68
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,5045.86
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,4851.98
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5154.39
+GCC,baseline,glibc,nelibc,strtof,160,5163.89
+GCC,baseline,glibc,nelibc,strtod,160,4939.97
+GCC,baseline,glibc,nelibc,strtold,160,4870.78
+GCC,baseline,glibc,nelibc,strtof,160,4732.02
+GCC,baseline,glibc,nelibc,strtod,160,4679.61
+GCC,baseline,glibc,nelibc,strtold,160,5017.82
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,4912.59
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,4932.58
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5378.19
+GCC,unconditional-skip-divide,glibc,nelibc,strtof,160,4898.59
+GCC,unconditional-skip-divide,glibc,nelibc,strtod,160,5165.48
+GCC,unconditional-skip-divide,glibc,nelibc,strtold,160,5202.65
+GCC,baseline,glibc,nelibc,strtof,160,4749.87
+GCC,baseline,glibc,nelibc,strtod,160,4630.64
+GCC,baseline,glibc,nelibc,strtold,160,4823.09
+Zig cc,baseline,musl,nelibc,strtof,160,5777.11
+Zig cc,baseline,musl,nelibc,strtod,160,5515.69
+Zig cc,baseline,musl,nelibc,strtold,160,5733.55
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,6050.96
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,5896.51
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,6095.84
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,5899.34
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,5925.71
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,6012.91
+Zig cc,baseline,musl,nelibc,strtof,160,6101.85
+Zig cc,baseline,musl,nelibc,strtod,160,5679.07
+Zig cc,baseline,musl,nelibc,strtold,160,5876.04
+Zig cc,baseline,musl,nelibc,strtof,160,5701.98
+Zig cc,baseline,musl,nelibc,strtod,160,5730.94
+Zig cc,baseline,musl,nelibc,strtold,160,5634.94
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,6007.65
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,6085.58
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,6159.97
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,5957.84
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,6011.17
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,6164.93
+Zig cc,baseline,musl,nelibc,strtof,160,5646.94
+Zig cc,baseline,musl,nelibc,strtod,160,5571.21
+Zig cc,baseline,musl,nelibc,strtold,160,5844.34
+Zig cc,baseline,musl,nelibc,strtof,160,5603.74
+Zig cc,baseline,musl,nelibc,strtod,160,5612.06
+Zig cc,baseline,musl,nelibc,strtold,160,5560.14
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,6169.57
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,6001.47
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,6124.76
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,6065.42
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,5914.74
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,6039.84
+Zig cc,baseline,musl,nelibc,strtof,160,5597.58
+Zig cc,baseline,musl,nelibc,strtod,160,5804.66
+Zig cc,baseline,musl,nelibc,strtold,160,5889.59
+Zig cc,baseline,musl,nelibc,strtof,160,5525.75
+Zig cc,baseline,musl,nelibc,strtod,160,5595.59
+Zig cc,baseline,musl,nelibc,strtold,160,5841.53
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,5916.02
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,5908.29
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,6091.83
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,5891.33
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,5919.64
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,6623.30
+Zig cc,baseline,musl,nelibc,strtof,160,5642.83
+Zig cc,baseline,musl,nelibc,strtod,160,5869.46
+Zig cc,baseline,musl,nelibc,strtold,160,7008.29
+Zig cc,baseline,musl,nelibc,strtof,160,5484.49
+Zig cc,baseline,musl,nelibc,strtod,160,5559.30
+Zig cc,baseline,musl,nelibc,strtold,160,5793.32
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,6163.45
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,5842.54
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,6038.14
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,6141.53
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,5834.08
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,5901.19
+Zig cc,baseline,musl,nelibc,strtof,160,5849.53
+Zig cc,baseline,musl,nelibc,strtod,160,5534.53
+Zig cc,baseline,musl,nelibc,strtold,160,5701.31
+Zig cc,baseline,musl,nelibc,strtof,160,5822.16
+Zig cc,baseline,musl,nelibc,strtod,160,5801.30
+Zig cc,baseline,musl,nelibc,strtold,160,6058.41
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,6192.36
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,6105.71
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,6204.16
+Zig cc,unconditional-skip-divide,musl,nelibc,strtof,160,5948.53
+Zig cc,unconditional-skip-divide,musl,nelibc,strtod,160,5901.81
+Zig cc,unconditional-skip-divide,musl,nelibc,strtold,160,5987.98
+Zig cc,baseline,musl,nelibc,strtof,160,5629.58
+Zig cc,baseline,musl,nelibc,strtod,160,5492.34
+Zig cc,baseline,musl,nelibc,strtold,160,6363.42

@@ -1,0 +1,18 @@
+TinyCC Knuth divider code generation inspection
+Date: 2026-10-22
+
+Nelua --print-code emitted the C translation unit, which was compiled with
+TinyCC -O2 -c and inspected with objdump. TinyCC's divider has a 320-byte
+stack frame. In the per-limb loop, qhat, carry, product, product low limb,
+indices, minuend, subtrahend, difference, and borrow are repeatedly stored to
+and loaded from stack slots. This explains why source-level temporary and type
+changes can affect TinyCC, even when the same changes are optimized away by GCC
+or Zig's Clang backend.
+
+A candidate narrowed product_carry, borrow, product_limb, and minuend from
+64-bit to 32-bit types while preserving the existing 64-bit subtraction and
+high-bit borrow extraction. The candidate passed float differential cases on
+TinyCC/glibc, Zig/glibc, GCC/glibc, and Zig/musl. Twelve alternating pairs show
+small short-input improvements on TinyCC and Zig/glibc, but up to 1.9% long
+input regression on TinyCC and up to 1.9% short-input regression on GCC. It is
+not retained. See 2026-10-22-float-knuth-narrow-carry-matrix-ab.csv.

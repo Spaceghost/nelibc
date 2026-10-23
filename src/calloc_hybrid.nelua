@@ -1,0 +1,21 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- Allocate through Nelibc's hybrid malloc; free/realloc dispatch by recorded
+-- mapping ownership so host-created pointers remain compatible.
+local MAX_CSIZE: csize <comptime> = ~0_csize
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_malloc(size: csize): pointer <cimport> end
+local function memset(destination: pointer, value: cint, size: csize): pointer <cimport> end
+
+local function calloc(count: csize, size: csize): pointer <cexport, codename 'calloc'>
+  if size ~= 0 and count > MAX_CSIZE // size then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return nilptr
+  end
+  local total: csize = count * size
+  local result = nelibc_malloc(total)
+  if result == nilptr then return nilptr end
+  memset(result, 0, total)
+  return result
+end

@@ -1,0 +1,12 @@
+STAGE,strtof,digit_scan_and_accumulate,800,23600.5
+STAGE,strtof,exact_decimal_total,800,12272.5
+STAGE,strtof,power5,800,8565.6
+STAGE,strtof,grouped_chunk_append,52800,175.2
+STAGE,strtod,digit_scan_and_accumulate,800,23977.7
+STAGE,strtod,exact_decimal_total,800,12594.4
+STAGE,strtod,power5,800,8911.4
+STAGE,strtod,grouped_chunk_append,52800,174.8
+STAGE,strtold,digit_scan_and_accumulate,800,22942.5
+STAGE,strtold,exact_decimal_total,800,14677.5
+STAGE,strtold,power5,800,9011.6
+STAGE,strtold,grouped_chunk_append,52800,170.3

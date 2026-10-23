@@ -1,0 +1,49 @@
+compiler,libc,implementation,function,size_bytes,iterations,median_ns_per_call
+Zig cc,glibc,libc,memchr,64,1048576,1.80
+Zig cc,glibc,libc,memrchr,64,1048576,2.11
+Zig cc,glibc,libc,memchr,4096,16384,27.04
+Zig cc,glibc,libc,memrchr,4096,16384,28.95
+Zig cc,glibc,libc,memchr,65536,1024,503.62
+Zig cc,glibc,libc,memrchr,65536,1024,476.10
+Zig cc,glibc,nelibc,memchr,64,1048576,2.26
+Zig cc,glibc,nelibc,memrchr,64,1048576,2.23
+Zig cc,glibc,nelibc,memchr,4096,16384,30.64
+Zig cc,glibc,nelibc,memrchr,4096,16384,30.40
+Zig cc,glibc,nelibc,memchr,65536,1024,310.28
+Zig cc,glibc,nelibc,memrchr,65536,1024,313.12
+GCC,glibc,libc,memchr,64,1048576,2.44
+GCC,glibc,libc,memrchr,64,1048576,2.57
+GCC,glibc,libc,memchr,4096,16384,27.65
+GCC,glibc,libc,memrchr,4096,16384,29.53
+GCC,glibc,libc,memchr,65536,1024,526.43
+GCC,glibc,libc,memrchr,65536,1024,474.27
+GCC,glibc,nelibc,memchr,64,1048576,2.47
+GCC,glibc,nelibc,memrchr,64,1048576,2.97
+GCC,glibc,nelibc,memchr,4096,16384,22.82
+GCC,glibc,nelibc,memrchr,4096,16384,24.87
+GCC,glibc,nelibc,memchr,65536,1024,333.86
+GCC,glibc,nelibc,memrchr,65536,1024,300.63
+Zig cc,musl,libc,memchr,64,1048576,24.07
+Zig cc,musl,libc,memrchr,64,1048576,25.19
+Zig cc,musl,libc,memchr,4096,16384,934.33
+Zig cc,musl,libc,memrchr,4096,16384,1082.23
+Zig cc,musl,libc,memchr,65536,1024,14407.78
+Zig cc,musl,libc,memrchr,65536,1024,16961.00
+Zig cc,musl,nelibc,memchr,64,1048576,2.41
+Zig cc,musl,nelibc,memrchr,64,1048576,2.44
+Zig cc,musl,nelibc,memchr,4096,16384,28.68
+Zig cc,musl,nelibc,memrchr,4096,16384,40.52
+Zig cc,musl,nelibc,memchr,65536,1024,331.93
+Zig cc,musl,nelibc,memrchr,65536,1024,296.60
+TinyCC,glibc,libc,memchr,64,1048576,2.29
+TinyCC,glibc,libc,memrchr,64,1048576,2.46
+TinyCC,glibc,libc,memchr,4096,16384,23.28
+TinyCC,glibc,libc,memrchr,4096,16384,29.26
+TinyCC,glibc,libc,memchr,65536,1024,526.00
+TinyCC,glibc,libc,memrchr,65536,1024,507.62
+TinyCC,glibc,nelibc,memchr,64,1048576,3.65
+TinyCC,glibc,nelibc,memrchr,64,1048576,4.34
+TinyCC,glibc,nelibc,memchr,4096,16384,30.28
+TinyCC,glibc,nelibc,memrchr,4096,16384,36.61
+TinyCC,glibc,nelibc,memchr,65536,1024,331.04
+TinyCC,glibc,nelibc,memrchr,65536,1024,311.73

@@ -1,0 +1,177 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,read-1-byte-dev-zero,200000,142.84
+Zig cc,glibc,host-libc,write-1-byte-dev-null,200000,134.39
+Zig cc,glibc,host-libc,readv-1-byte-dev-zero,200000,174.00
+Zig cc,glibc,host-libc,writev-1-byte-dev-null,200000,160.63
+Zig cc,glibc,host-libc,readv-2-byte-dev-zero,200000,192.60
+Zig cc,glibc,host-libc,writev-2-byte-dev-null,200000,168.98
+Zig cc,glibc,host-libc,readv-4-byte-dev-zero,200000,221.71
+Zig cc,glibc,host-libc,writev-4-byte-dev-null,200000,173.62
+Zig cc,glibc,host-libc,pread-1-byte-tempfile,200000,174.96
+Zig cc,glibc,host-libc,pwrite-1-byte-tempfile,200000,195.46
+Zig cc,glibc,host-libc,preadv-1-byte-tempfile,200000,201.57
+Zig cc,glibc,host-libc,pwritev-1-byte-tempfile,200000,221.82
+Zig cc,glibc,host-libc,preadv2-flags0-1-byte-tempfile,200000,202.54
+Zig cc,glibc,host-libc,pwritev2-flags0-1-byte-tempfile,200000,227.22
+Zig cc,glibc,host-libc,preadv-2-byte-tempfile,200000,219.96
+Zig cc,glibc,host-libc,pwritev-2-byte-tempfile,200000,238.53
+Zig cc,glibc,host-libc,preadv2-flags0-2-byte-tempfile,200000,224.06
+Zig cc,glibc,host-libc,pwritev2-flags0-2-byte-tempfile,200000,242.47
+Zig cc,glibc,host-libc,preadv-4-byte-tempfile,200000,248.90
+Zig cc,glibc,host-libc,pwritev-4-byte-tempfile,200000,271.27
+Zig cc,glibc,host-libc,preadv2-flags0-4-byte-tempfile,200000,253.09
+Zig cc,glibc,host-libc,pwritev2-flags0-4-byte-tempfile,200000,272.27
+Zig cc,glibc,nelibc,read-1-byte-dev-zero,200000,158.26
+Zig cc,glibc,nelibc,write-1-byte-dev-null,200000,145.19
+Zig cc,glibc,nelibc,readv-1-byte-dev-zero,200000,187.55
+Zig cc,glibc,nelibc,writev-1-byte-dev-null,200000,174.80
+Zig cc,glibc,nelibc,readv-2-byte-dev-zero,200000,205.00
+Zig cc,glibc,nelibc,writev-2-byte-dev-null,200000,180.53
+Zig cc,glibc,nelibc,readv-4-byte-dev-zero,200000,230.23
+Zig cc,glibc,nelibc,writev-4-byte-dev-null,200000,184.23
+Zig cc,glibc,nelibc,pread-1-byte-tempfile,200000,184.23
+Zig cc,glibc,nelibc,pwrite-1-byte-tempfile,200000,206.63
+Zig cc,glibc,nelibc,preadv-1-byte-tempfile,200000,216.50
+Zig cc,glibc,nelibc,pwritev-1-byte-tempfile,200000,244.57
+Zig cc,glibc,nelibc,preadv2-flags0-1-byte-tempfile,200000,219.36
+Zig cc,glibc,nelibc,pwritev2-flags0-1-byte-tempfile,200000,248.32
+Zig cc,glibc,nelibc,preadv-2-byte-tempfile,200000,237.13
+Zig cc,glibc,nelibc,pwritev-2-byte-tempfile,200000,260.77
+Zig cc,glibc,nelibc,preadv2-flags0-2-byte-tempfile,200000,233.55
+Zig cc,glibc,nelibc,pwritev2-flags0-2-byte-tempfile,200000,265.27
+Zig cc,glibc,nelibc,preadv-4-byte-tempfile,200000,260.62
+Zig cc,glibc,nelibc,pwritev-4-byte-tempfile,200000,289.61
+Zig cc,glibc,nelibc,preadv2-flags0-4-byte-tempfile,200000,266.91
+Zig cc,glibc,nelibc,pwritev2-flags0-4-byte-tempfile,200000,293.18
+GCC,glibc,host-libc,read-1-byte-dev-zero,200000,145.30
+GCC,glibc,host-libc,write-1-byte-dev-null,200000,135.25
+GCC,glibc,host-libc,readv-1-byte-dev-zero,200000,177.73
+GCC,glibc,host-libc,writev-1-byte-dev-null,200000,166.38
+GCC,glibc,host-libc,readv-2-byte-dev-zero,200000,197.18
+GCC,glibc,host-libc,writev-2-byte-dev-null,200000,172.22
+GCC,glibc,host-libc,readv-4-byte-dev-zero,200000,220.69
+GCC,glibc,host-libc,writev-4-byte-dev-null,200000,174.49
+GCC,glibc,host-libc,pread-1-byte-tempfile,200000,180.27
+GCC,glibc,host-libc,pwrite-1-byte-tempfile,200000,207.50
+GCC,glibc,host-libc,preadv-1-byte-tempfile,200000,206.46
+GCC,glibc,host-libc,pwritev-1-byte-tempfile,200000,231.43
+GCC,glibc,host-libc,preadv2-flags0-1-byte-tempfile,200000,209.18
+GCC,glibc,host-libc,pwritev2-flags0-1-byte-tempfile,200000,223.91
+GCC,glibc,host-libc,preadv-2-byte-tempfile,200000,226.56
+GCC,glibc,host-libc,pwritev-2-byte-tempfile,200000,242.75
+GCC,glibc,host-libc,preadv2-flags0-2-byte-tempfile,200000,228.91
+GCC,glibc,host-libc,pwritev2-flags0-2-byte-tempfile,200000,245.01
+GCC,glibc,host-libc,preadv-4-byte-tempfile,200000,255.48
+GCC,glibc,host-libc,pwritev-4-byte-tempfile,200000,268.74
+GCC,glibc,host-libc,preadv2-flags0-4-byte-tempfile,200000,254.76
+GCC,glibc,host-libc,pwritev2-flags0-4-byte-tempfile,200000,271.18
+GCC,glibc,nelibc,read-1-byte-dev-zero,200000,156.64
+GCC,glibc,nelibc,write-1-byte-dev-null,200000,145.99
+GCC,glibc,nelibc,readv-1-byte-dev-zero,200000,187.64
+GCC,glibc,nelibc,writev-1-byte-dev-null,200000,174.13
+GCC,glibc,nelibc,readv-2-byte-dev-zero,200000,202.41
+GCC,glibc,nelibc,writev-2-byte-dev-null,200000,179.76
+GCC,glibc,nelibc,readv-4-byte-dev-zero,200000,231.06
+GCC,glibc,nelibc,writev-4-byte-dev-null,200000,186.29
+GCC,glibc,nelibc,pread-1-byte-tempfile,200000,188.99
+GCC,glibc,nelibc,pwrite-1-byte-tempfile,200000,211.66
+GCC,glibc,nelibc,preadv-1-byte-tempfile,200000,209.59
+GCC,glibc,nelibc,pwritev-1-byte-tempfile,200000,239.11
+GCC,glibc,nelibc,preadv2-flags0-1-byte-tempfile,200000,211.27
+GCC,glibc,nelibc,pwritev2-flags0-1-byte-tempfile,200000,237.10
+GCC,glibc,nelibc,preadv-2-byte-tempfile,200000,229.89
+GCC,glibc,nelibc,pwritev-2-byte-tempfile,200000,257.53
+GCC,glibc,nelibc,preadv2-flags0-2-byte-tempfile,200000,227.82
+GCC,glibc,nelibc,pwritev2-flags0-2-byte-tempfile,200000,265.43
+GCC,glibc,nelibc,preadv-4-byte-tempfile,200000,259.12
+GCC,glibc,nelibc,pwritev-4-byte-tempfile,200000,288.84
+GCC,glibc,nelibc,preadv2-flags0-4-byte-tempfile,200000,260.17
+GCC,glibc,nelibc,pwritev2-flags0-4-byte-tempfile,200000,291.53
+Zig cc,musl,host-libc,read-1-byte-dev-zero,200000,146.27
+Zig cc,musl,host-libc,write-1-byte-dev-null,200000,135.54
+Zig cc,musl,host-libc,readv-1-byte-dev-zero,200000,174.25
+Zig cc,musl,host-libc,writev-1-byte-dev-null,200000,160.06
+Zig cc,musl,host-libc,readv-2-byte-dev-zero,200000,194.13
+Zig cc,musl,host-libc,writev-2-byte-dev-null,200000,169.44
+Zig cc,musl,host-libc,readv-4-byte-dev-zero,200000,217.06
+Zig cc,musl,host-libc,writev-4-byte-dev-null,200000,170.35
+Zig cc,musl,host-libc,pread-1-byte-tempfile,200000,175.14
+Zig cc,musl,host-libc,pwrite-1-byte-tempfile,200000,193.54
+Zig cc,musl,host-libc,preadv-1-byte-tempfile,200000,204.58
+Zig cc,musl,host-libc,pwritev-1-byte-tempfile,200000,226.37
+Zig cc,musl,host-libc,preadv2-flags0-1-byte-tempfile,200000,206.95
+Zig cc,musl,host-libc,pwritev2-flags0-1-byte-tempfile,200000,224.89
+Zig cc,musl,host-libc,preadv-2-byte-tempfile,200000,231.29
+Zig cc,musl,host-libc,pwritev-2-byte-tempfile,200000,243.82
+Zig cc,musl,host-libc,preadv2-flags0-2-byte-tempfile,200000,231.72
+Zig cc,musl,host-libc,pwritev2-flags0-2-byte-tempfile,200000,239.93
+Zig cc,musl,host-libc,preadv-4-byte-tempfile,200000,274.37
+Zig cc,musl,host-libc,pwritev-4-byte-tempfile,200000,274.23
+Zig cc,musl,host-libc,preadv2-flags0-4-byte-tempfile,200000,277.13
+Zig cc,musl,host-libc,pwritev2-flags0-4-byte-tempfile,200000,272.79
+Zig cc,musl,nelibc,read-1-byte-dev-zero,200000,144.55
+Zig cc,musl,nelibc,write-1-byte-dev-null,200000,133.77
+Zig cc,musl,nelibc,readv-1-byte-dev-zero,200000,177.02
+Zig cc,musl,nelibc,writev-1-byte-dev-null,200000,165.58
+Zig cc,musl,nelibc,readv-2-byte-dev-zero,200000,195.87
+Zig cc,musl,nelibc,writev-2-byte-dev-null,200000,166.71
+Zig cc,musl,nelibc,readv-4-byte-dev-zero,200000,218.04
+Zig cc,musl,nelibc,writev-4-byte-dev-null,200000,170.57
+Zig cc,musl,nelibc,pread-1-byte-tempfile,200000,171.36
+Zig cc,musl,nelibc,pwrite-1-byte-tempfile,200000,193.32
+Zig cc,musl,nelibc,preadv-1-byte-tempfile,200000,202.12
+Zig cc,musl,nelibc,pwritev-1-byte-tempfile,200000,222.83
+Zig cc,musl,nelibc,preadv2-flags0-1-byte-tempfile,200000,201.85
+Zig cc,musl,nelibc,pwritev2-flags0-1-byte-tempfile,200000,222.02
+Zig cc,musl,nelibc,preadv-2-byte-tempfile,200000,222.76
+Zig cc,musl,nelibc,pwritev-2-byte-tempfile,200000,239.17
+Zig cc,musl,nelibc,preadv2-flags0-2-byte-tempfile,200000,225.22
+Zig cc,musl,nelibc,pwritev2-flags0-2-byte-tempfile,200000,243.01
+Zig cc,musl,nelibc,preadv-4-byte-tempfile,200000,254.08
+Zig cc,musl,nelibc,pwritev-4-byte-tempfile,200000,276.37
+Zig cc,musl,nelibc,preadv2-flags0-4-byte-tempfile,200000,251.56
+Zig cc,musl,nelibc,pwritev2-flags0-4-byte-tempfile,200000,270.14
+TinyCC,glibc,host-libc,read-1-byte-dev-zero,200000,147.43
+TinyCC,glibc,host-libc,write-1-byte-dev-null,200000,134.21
+TinyCC,glibc,host-libc,readv-1-byte-dev-zero,200000,183.56
+TinyCC,glibc,host-libc,writev-1-byte-dev-null,200000,166.67
+TinyCC,glibc,host-libc,readv-2-byte-dev-zero,200000,198.49
+TinyCC,glibc,host-libc,writev-2-byte-dev-null,200000,172.23
+TinyCC,glibc,host-libc,readv-4-byte-dev-zero,200000,226.64
+TinyCC,glibc,host-libc,writev-4-byte-dev-null,200000,177.53
+TinyCC,glibc,host-libc,pread-1-byte-tempfile,200000,178.24
+TinyCC,glibc,host-libc,pwrite-1-byte-tempfile,200000,199.61
+TinyCC,glibc,host-libc,preadv-1-byte-tempfile,200000,206.82
+TinyCC,glibc,host-libc,pwritev-1-byte-tempfile,200000,222.83
+TinyCC,glibc,host-libc,preadv2-flags0-1-byte-tempfile,200000,205.86
+TinyCC,glibc,host-libc,pwritev2-flags0-1-byte-tempfile,200000,226.80
+TinyCC,glibc,host-libc,preadv-2-byte-tempfile,200000,224.81
+TinyCC,glibc,host-libc,pwritev-2-byte-tempfile,200000,240.42
+TinyCC,glibc,host-libc,preadv2-flags0-2-byte-tempfile,200000,224.49
+TinyCC,glibc,host-libc,pwritev2-flags0-2-byte-tempfile,200000,242.31
+TinyCC,glibc,host-libc,preadv-4-byte-tempfile,200000,251.90
+TinyCC,glibc,host-libc,pwritev-4-byte-tempfile,200000,268.89
+TinyCC,glibc,host-libc,preadv2-flags0-4-byte-tempfile,200000,255.64
+TinyCC,glibc,host-libc,pwritev2-flags0-4-byte-tempfile,200000,274.77
+TinyCC,glibc,nelibc,read-1-byte-dev-zero,200000,158.72
+TinyCC,glibc,nelibc,write-1-byte-dev-null,200000,146.59
+TinyCC,glibc,nelibc,readv-1-byte-dev-zero,200000,192.59
+TinyCC,glibc,nelibc,writev-1-byte-dev-null,200000,174.58
+TinyCC,glibc,nelibc,readv-2-byte-dev-zero,200000,210.85
+TinyCC,glibc,nelibc,writev-2-byte-dev-null,200000,181.57
+TinyCC,glibc,nelibc,readv-4-byte-dev-zero,200000,235.21
+TinyCC,glibc,nelibc,writev-4-byte-dev-null,200000,187.13
+TinyCC,glibc,nelibc,pread-1-byte-tempfile,200000,190.76
+TinyCC,glibc,nelibc,pwrite-1-byte-tempfile,200000,210.43
+TinyCC,glibc,nelibc,preadv-1-byte-tempfile,200000,217.90
+TinyCC,glibc,nelibc,pwritev-1-byte-tempfile,200000,250.98
+TinyCC,glibc,nelibc,preadv2-flags0-1-byte-tempfile,200000,221.21
+TinyCC,glibc,nelibc,pwritev2-flags0-1-byte-tempfile,200000,252.76
+TinyCC,glibc,nelibc,preadv-2-byte-tempfile,200000,244.76
+TinyCC,glibc,nelibc,pwritev-2-byte-tempfile,200000,268.86
+TinyCC,glibc,nelibc,preadv2-flags0-2-byte-tempfile,200000,240.38
+TinyCC,glibc,nelibc,pwritev2-flags0-2-byte-tempfile,200000,279.58
+TinyCC,glibc,nelibc,preadv-4-byte-tempfile,200000,270.55
+TinyCC,glibc,nelibc,pwritev-4-byte-tempfile,200000,296.00
+TinyCC,glibc,nelibc,preadv2-flags0-4-byte-tempfile,200000,270.03
+TinyCC,glibc,nelibc,pwritev2-flags0-4-byte-tempfile,200000,297.14

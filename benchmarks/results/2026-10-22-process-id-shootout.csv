@@ -1,0 +1,25 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,getpid,500000,94.88
+Zig cc,glibc,host-libc,getppid,500000,96.63
+Zig cc,glibc,host-libc,gettid,500000,94.50
+Zig cc,glibc,nelibc,getpid,500000,94.60
+Zig cc,glibc,nelibc,getppid,500000,96.89
+Zig cc,glibc,nelibc,gettid,500000,95.23
+GCC,glibc,host-libc,getpid,500000,95.96
+GCC,glibc,host-libc,getppid,500000,95.48
+GCC,glibc,host-libc,gettid,500000,94.04
+GCC,glibc,nelibc,getpid,500000,95.77
+GCC,glibc,nelibc,getppid,500000,98.42
+GCC,glibc,nelibc,gettid,500000,96.24
+Zig cc,musl,host-libc,getpid,500000,93.92
+Zig cc,musl,host-libc,getppid,500000,95.93
+Zig cc,musl,host-libc,gettid,500000,1.11
+Zig cc,musl,nelibc,getpid,500000,93.99
+Zig cc,musl,nelibc,getppid,500000,95.93
+Zig cc,musl,nelibc,gettid,500000,95.82
+TinyCC,glibc,host-libc,getpid,500000,102.14
+TinyCC,glibc,host-libc,getppid,500000,100.37
+TinyCC,glibc,host-libc,gettid,500000,97.95
+TinyCC,glibc,nelibc,getpid,500000,99.07
+TinyCC,glibc,nelibc,getppid,500000,101.45
+TinyCC,glibc,nelibc,gettid,500000,97.62

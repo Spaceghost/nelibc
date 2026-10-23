@@ -1,0 +1,4 @@
+compiler,libc,function,input,parsed_characters,fallback_entries,per_digit_skip_updates,nonzero_checks,nonzero_sets
+TinyCC,glibc,strtof,14800_nonzero_integer_digits_e-9999,14806,1,1308,1308,1308
+TinyCC,glibc,strtod,14800_nonzero_integer_digits_e-9999,14806,1,1308,1308,1308
+TinyCC,glibc,strtold,14800_nonzero_integer_digits_e-9999,14806,1,1307,1307,1307

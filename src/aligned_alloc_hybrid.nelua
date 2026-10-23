@@ -1,0 +1,15 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_aligned_alloc(alignment: csize, size: csize): pointer <cimport> end
+
+local function aligned_alloc(alignment: csize, size: csize): pointer
+    <cexport, codename 'aligned_alloc'>
+  if alignment < (@csize)(#pointer) or
+      (alignment & (alignment - 1)) ~= 0 or size % alignment ~= 0 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  return nelibc_aligned_alloc(alignment, size)
+end

@@ -1,0 +1,27 @@
+TinyCC rolling-pointer Knuth limb loop
+Date: 2026-10-22
+
+The TCC-only path keeps rolling pointers to numerator and denominator limbs
+inside the multiply/subtract loop. The other compiler builds retain indexed
+access. The change follows TinyCC disassembly showing repeated stack spills and
+indexed-address calculations in the hot loop.
+
+Twelve alternating baseline/candidate pairs per parser were run on short and
+long inputs. TinyCC/glibc improved 2.2-2.9% on short inputs and 1.6-4.1% on
+long inputs. The universal pointer candidate measured mostly flat under
+Zig/glibc, GCC/glibc, and Zig/musl, with a few small regressions; therefore the
+optimization is compiled only for TinyCC. Full results are in
+2026-10-22-float-knuth-rolling-pointers-ab.csv.
+
+Validation after adding the TCC-only branch:
+  * make float-diff-matrix: 1,250 cases passed on Zig/glibc, GCC/glibc,
+    Zig/musl, and TinyCC/glibc.
+  * make float-divide-precheck-matrix: quotient-boundary checks passed on all
+    four compiler/libc combinations.
+  * make smoke-standalone-tcc: standalone TinyCC binary built and ran.
+  * make float-shootout-matrix and make float-long-shootout-matrix completed.
+
+Single-run final host/Nelibc matrices after the TCC-only source change are in
+2026-10-22-float-knuth-rolling-pointers-final-short.csv and
+2026-10-22-float-knuth-rolling-pointers-final-long.csv. These are final
+implementation shootouts, not paired A/B measurements.

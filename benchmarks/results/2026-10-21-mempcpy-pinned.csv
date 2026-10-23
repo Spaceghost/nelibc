@@ -1,0 +1,19 @@
+compiler,libc,implementation,function,size_bytes,iterations,median_ns_per_call
+Zig cc,glibc,libc,mempcpy,64,1048576,1.86
+Zig cc,glibc,libc,mempcpy,4096,16384,17.67
+Zig cc,glibc,libc,mempcpy,65536,1024,1078.13
+Zig cc,glibc,nelibc,mempcpy,64,1048576,2.21
+Zig cc,glibc,nelibc,mempcpy,4096,16384,42.48
+Zig cc,glibc,nelibc,mempcpy,65536,1024,914.61
+GCC,glibc,libc,mempcpy,64,1048576,2.07
+GCC,glibc,libc,mempcpy,4096,16384,17.18
+GCC,glibc,libc,mempcpy,65536,1024,1107.83
+GCC,glibc,nelibc,mempcpy,64,1048576,4.60
+GCC,glibc,nelibc,mempcpy,4096,16384,132.43
+GCC,glibc,nelibc,mempcpy,65536,1024,2073.25
+Zig cc,musl,libc,mempcpy,64,1048576,22.08
+Zig cc,musl,libc,mempcpy,4096,16384,1026.63
+Zig cc,musl,libc,mempcpy,65536,1024,16268.63
+Zig cc,musl,nelibc,mempcpy,64,1048576,2.81
+Zig cc,musl,nelibc,mempcpy,4096,16384,46.52
+Zig cc,musl,nelibc,mempcpy,65536,1024,1322.00

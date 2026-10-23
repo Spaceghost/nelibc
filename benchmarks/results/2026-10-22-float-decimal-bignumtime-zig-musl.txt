@@ -1,0 +1,7 @@
+HOST_BASELINE_CONTAMINATION: musl *_l wrappers routed through interposed Nelibc public symbols. Timings/counters below are for separated host and Nelibc passes; host baseline is not an independent libc result.
+BIGNUMTIME,host-libc,power5_calls=800,power5_total_ns=1153155,division_calls=400,division_total_ns=92961
+BIGNUMTIME,nelibc,power5_calls=800,power5_total_ns=1119169,division_calls=400,division_total_ns=88878
+BIGNUMTIME,host-libc,power5_calls=800,power5_total_ns=1098147,division_calls=400,division_total_ns=108246
+BIGNUMTIME,nelibc,power5_calls=800,power5_total_ns=1078292,division_calls=400,division_total_ns=106915
+BIGNUMTIME,host-libc,power5_calls=800,power5_total_ns=1118707,division_calls=800,division_total_ns=209744
+BIGNUMTIME,nelibc,power5_calls=800,power5_total_ns=1107756,division_calls=800,division_total_ns=206112

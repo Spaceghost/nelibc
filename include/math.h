@@ -1,0 +1,115 @@
+#ifndef NELIBC_MATH_WRAPPER_H
+#define NELIBC_MATH_WRAPPER_H
+
+#ifdef NELIBC_STANDALONE
+
+#include <float.h>
+
+float fabsf(float value);
+double fabs(double value);
+float copysignf(float magnitude, float sign);
+double copysign(double magnitude, double sign);
+float truncf(float value);
+double trunc(double value);
+float floorf(float value);
+double floor(double value);
+float ceilf(float value);
+double ceil(double value);
+float roundf(float value);
+double round(double value);
+float rintf(float value);
+double rint(double value);
+float nearbyintf(float value);
+double nearbyint(double value);
+float expf(float value);
+double exp(double value);
+float powf(float value, float exponent);
+double pow(double value, double exponent);
+float sinhf(float value);
+double sinh(double value);
+float coshf(float value);
+double cosh(double value);
+float tanhf(float value);
+double tanh(double value);
+float asinhf(float value);
+double asinh(double value);
+float acoshf(float value);
+double acosh(double value);
+float atanhf(float value);
+double atanh(double value);
+float atanf(float value);
+double atan(double value);
+float atan2f(float y, float x);
+double atan2(double y, double x);
+float logf(float value);
+double log(double value);
+float sinf(float value);
+double sin(double value);
+float cosf(float value);
+double cos(double value);
+float tanf(float value);
+double tan(double value);
+float hypotf(float x, float y);
+double hypot(double x, double y);
+float sqrtf(float value);
+double sqrt(double value);
+float fmodf(float x, float y);
+double fmod(double x, double y);
+float remainderf(float x, float y);
+double remainder(double x, double y);
+float fminf(float x, float y);
+double fmin(double x, double y);
+float fmaxf(float x, float y);
+double fmax(double x, double y);
+float fdimf(float x, float y);
+double fdim(double x, double y);
+float frexpf(float value, int *exponent);
+double frexp(double value, int *exponent);
+float modff(float value, float *integral);
+double modf(double value, double *integral);
+float ldexpf(float value, int exponent);
+double ldexp(double value, int exponent);
+float scalbnf(float value, int exponent);
+double scalbn(double value, int exponent);
+float scalblnf(float value, long exponent);
+double scalbln(double value, long exponent);
+int ilogbf(float value);
+int ilogb(double value);
+float logbf(float value);
+double logb(double value);
+float nextafterf(float from, float to);
+double nextafter(double from, double to);
+float nexttowardf(float from, long double to);
+double nexttoward(double from, long double to);
+
+#define FP_NAN 0
+#define FP_INFINITE 1
+#define FP_ZERO 2
+#define FP_SUBNORMAL 3
+#define FP_NORMAL 4
+#define FP_ILOGB0 (-2147483647 - 1)
+#define FP_ILOGBNAN (-2147483647 - 1)
+#define isnan(value) ((value) != (value))
+#define isinf(value) (((value) == (value)) && (value) != 0 && ((value) - (value)) != 0)
+#define isfinite(value) (((value) == (value)) && !isinf(value))
+#define fpclassify(value) \
+  (isnan(value) ? FP_NAN : isinf(value) ? FP_INFINITE : \
+   (value) == 0 ? FP_ZERO : \
+   (sizeof(value) == sizeof(float) ? \
+    ((value) < FLT_MIN && (value) > -FLT_MIN ? FP_SUBNORMAL : FP_NORMAL) : \
+    sizeof(value) == sizeof(long double) ? \
+    ((value) < LDBL_MIN && (value) > -LDBL_MIN ? FP_SUBNORMAL : FP_NORMAL) : \
+    ((value) < DBL_MIN && (value) > -DBL_MIN ? FP_SUBNORMAL : FP_NORMAL)))
+#if defined(__TINYC__)
+#define signbit(value) ((value) < 0 || ((value) == 0 && (1.0 / (value)) < 0))
+#else
+#define signbit(value) __builtin_signbit(value)
+#endif
+
+#else
+
+#include_next <math.h>
+
+#endif
+
+#endif

@@ -1,0 +1,91 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function openat(dirfd: cint, pathname: pointer <const>, flags: cint, mode: cuint): cint <cimport> end
+local function unlinkat(dirfd: cint, pathname: *[0]cchar <const>, flags: cint): cint <cimport> end
+local function close(fd: cint): cint <cimport> end
+local function getpid(): cint <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_host_fdopen(fd: cint, mode: *[0]cchar <const>): pointer <cimport> end
+local function nelibc_stdio_lock(word: *cint, owner: *cint, depth: *cint): void <cimport> end
+local function nelibc_stdio_unlock(word: *cint, owner: *cint, depth: *cint): void <cimport> end
+local function memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+
+local tmpfile_lock_word: cint = 0
+local tmpfile_lock_owner: cint = 0
+local tmpfile_lock_depth: cint = 0
+local tmpfile_sequence: culonglong = 0
+
+local function tmpfile(): pointer <cexport, codename 'tmpfile'>
+  local prefix: *[0]byte = (@*[0]byte)('/tmp/nelibc-tmp-'_cstring)
+  local prefix_length: csize = 0
+  while prefix[prefix_length] ~= 0 do prefix_length = prefix_length + 1 end
+
+  local attempt: cint = 0
+  while attempt < 128 do
+    nelibc_stdio_lock(&tmpfile_lock_word, &tmpfile_lock_owner, &tmpfile_lock_depth)
+    tmpfile_sequence = tmpfile_sequence + 1
+    if tmpfile_sequence == 0 then tmpfile_sequence = 1 end
+    local sequence: culonglong = tmpfile_sequence
+    nelibc_stdio_unlock(&tmpfile_lock_word, &tmpfile_lock_owner, &tmpfile_lock_depth)
+
+    local pathname: [64]byte
+    local path_length: csize = 0
+    memcpy((@pointer)(&pathname[0]), (@pointer)(prefix), prefix_length)
+    path_length = prefix_length
+
+    local pid_digits: [16]byte
+    local pid_count: csize = 0
+    local pid_value: cuint = (@cuint)(getpid())
+    repeat
+      pid_digits[pid_count] = (@byte)(48 + pid_value % 10)
+      pid_count = pid_count + 1
+      pid_value = pid_value // 10
+    until pid_value == 0
+    while pid_count > 0 do
+      pid_count = pid_count - 1
+      pathname[path_length] = pid_digits[pid_count]
+      path_length = path_length + 1
+    end
+
+    pathname[path_length] = 45
+    path_length = path_length + 1
+    local sequence_digits: [24]byte
+    local sequence_count: csize = 0
+    repeat
+      sequence_digits[sequence_count] = (@byte)(48 + sequence % 10)
+      sequence_count = sequence_count + 1
+      sequence = sequence // 10
+    until sequence == 0
+    while sequence_count > 0 do
+      sequence_count = sequence_count - 1
+      pathname[path_length] = sequence_digits[sequence_count]
+      path_length = path_length + 1
+    end
+    pathname[path_length] = 0
+
+    local fd: cint = openat(-100, (@pointer)(&pathname[0]), 2 | 64 | 128 | 524288, 384_cuint)
+    if fd >= 0 then
+      if unlinkat(-100, (@*[0]cchar)(&pathname[0]), 0) < 0 then
+        local saved_errno: cint = nelibc_errno_location()[0]
+        close(fd)
+        nelibc_errno_location()[0] = saved_errno
+        return nilptr
+      end
+
+      local stream = nelibc_host_fdopen(fd, 'w+'_cstring)
+      if stream == nilptr then
+        local saved_errno: cint = nelibc_errno_location()[0]
+        close(fd)
+        nelibc_errno_location()[0] = saved_errno
+      end
+      return stream
+    end
+
+    if nelibc_errno_location()[0] ~= 17 then return nilptr end -- EEXIST
+    attempt = attempt + 1
+  end
+
+  nelibc_errno_location()[0] = 17 -- EEXIST
+  return nilptr
+end

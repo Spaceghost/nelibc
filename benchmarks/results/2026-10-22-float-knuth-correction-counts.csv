@@ -1,0 +1,7 @@
+workload,parser,parser_calls,quotient_estimates,correction_iterations,corrected_estimates,max_corrections_on_one_estimate,iterations_per_call,percent_estimates_corrected
+short,strtof,28000,44800,0,0,0,0.0000,0.000000
+short,strtod,28000,84000,0,0,0,0.0000,0.000000
+short,strtold,28000,84000,0,0,0,0.0000,0.000000
+long,strtof,800,800,0,0,0,0.0000,0.000000
+long,strtod,800,1200,400,400,1,0.5000,33.333333
+long,strtold,800,2400,400,400,1,0.5000,16.666667

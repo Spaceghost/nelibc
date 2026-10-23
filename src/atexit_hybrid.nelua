@@ -1,0 +1,17 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function host_cxa_atexit(handler: function(): void, argument: pointer,
+    dso: pointer): cint <cimport, codename '__cxa_atexit'> end
+local function host_exit(status: cint): void <cimport, codename 'nelibc_host_exit'> end
+local __dso_handle: pointer <cimport>
+
+local function atexit(handler: function(): void): cint
+    <cexport, codename 'atexit'>
+  if handler == nilptr then return 1 end
+  return host_cxa_atexit(handler, nilptr, __dso_handle)
+end
+
+local function exit(status: cint): void <cexport, codename 'exit'>
+  host_exit(status)
+end

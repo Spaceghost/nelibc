@@ -1,0 +1,7 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,musl,host-libc,strtof,4000,424.07
+Zig cc,musl,host-libc,strtod,4000,875.20
+Zig cc,musl,host-libc,strtold,4000,769.01
+Zig cc,musl,nelibc,strtof,4000,288.19
+Zig cc,musl,nelibc,strtod,4000,193.95
+Zig cc,musl,nelibc,strtold,4000,208.04

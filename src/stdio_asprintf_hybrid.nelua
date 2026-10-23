@@ -1,0 +1,52 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+require 'C.stdarg'
+
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_va_copy(destination: cvalist, source: cvalist): void <cimport> end
+local function vsnprintf(buffer: *[0]cchar, size: csize,
+    format: *[0]cchar <const>, arguments: cvalist): cint <cimport> end
+local function malloc(size: csize): pointer <cimport> end
+local function free(memory: pointer): void <cimport> end
+
+local function vasprintf(output: *[0]*[0]cchar, format: *[0]cchar <const>,
+    arguments: cvalist): cint <cexport, codename 'vasprintf'>
+  if output == nilptr or format == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  output[0] = nilptr
+
+  local count_arguments: cvalist
+  nelibc_va_copy(count_arguments, arguments)
+  local count: cint = vsnprintf(nilptr, 0, format, count_arguments)
+  C.va_end(count_arguments)
+  if count < 0 then return -1 end
+
+  local size: csize = (@csize)(count) + 1
+  local output_buffer: pointer = malloc(size)
+  if output_buffer == nilptr then return -1 end
+
+  local write_arguments: cvalist
+  nelibc_va_copy(write_arguments, arguments)
+  local result: cint = vsnprintf((@*[0]cchar)(output_buffer), size,
+      format, write_arguments)
+  C.va_end(write_arguments)
+  if result < 0 then
+    free(output_buffer)
+    return -1
+  end
+
+  output[0] = (@*[0]cchar)(output_buffer)
+  return result
+end
+
+local function asprintf(output: *[0]*[0]cchar, format: *[0]cchar <const>,
+    ...: cvarargs): cint <cexport, codename 'asprintf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vasprintf(output, format, arguments)
+  C.va_end(arguments)
+  return result
+end

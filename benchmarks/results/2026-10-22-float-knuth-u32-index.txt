@@ -1,0 +1,19 @@
+TinyCC Knuth 32-bit loop-index shootout
+=======================================
+
+Changed the Knuth limb-loop counter from `csize` to `cuint` in a temporary
+Nelua source copy. Twelve alternating TinyCC parser pairs gave these medians
+(current versus candidate; paired median change):
+
+| Workload | Parser | Current ns/call | Candidate ns/call | Change |
+|---|---|---:|---:|---:|
+| Short | strtof | 615.29 | 623.35 | 1.20% slower |
+| Short | strtod | 585.57 | 589.53 | 0.08% slower |
+| Short | strtold | 711.14 | 716.20 | 0.93% slower |
+| Long | strtof | 43,870.93 | 45,425.01 | 3.76% slower |
+| Long | strtod | 42,822.31 | 44,853.07 | 6.60% slower |
+| Long | strtold | 43,939.23 | 46,230.04 | 4.58% slower |
+
+Reject the candidate. The loop counter width change makes long parsing slower;
+production source remains unchanged. Raw paired measurements:
+`2026-10-22-float-knuth-u32-index-ab.csv`.

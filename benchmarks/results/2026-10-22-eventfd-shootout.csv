@@ -1,0 +1,17 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,eventfd-create-close,100000,581.52
+Zig cc,glibc,host-libc,eventfd-write-read,100000,291.37
+Zig cc,glibc,nelibc,eventfd-create-close,100000,611.62
+Zig cc,glibc,nelibc,eventfd-write-read,100000,298.48
+GCC,glibc,host-libc,eventfd-create-close,100000,611.65
+GCC,glibc,host-libc,eventfd-write-read,100000,286.61
+GCC,glibc,nelibc,eventfd-create-close,100000,624.92
+GCC,glibc,nelibc,eventfd-write-read,100000,314.49
+Zig cc,musl,host-libc,eventfd-create-close,100000,582.97
+Zig cc,musl,host-libc,eventfd-write-read,100000,285.45
+Zig cc,musl,nelibc,eventfd-create-close,100000,594.35
+Zig cc,musl,nelibc,eventfd-write-read,100000,279.45
+TinyCC,glibc,host-libc,eventfd-create-close,100000,589.87
+TinyCC,glibc,host-libc,eventfd-write-read,100000,283.12
+TinyCC,glibc,nelibc,eventfd-create-close,100000,617.54
+TinyCC,glibc,nelibc,eventfd-write-read,100000,309.66

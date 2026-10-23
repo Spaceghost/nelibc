@@ -1,0 +1,19 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,strtof,4000,183.63
+Zig cc,glibc,nelibc,strtof,4000,723.31
+Zig cc,glibc,host-libc,strtod,4000,138.65
+Zig cc,glibc,nelibc,strtod,4000,849.65
+Zig cc,glibc,host-libc,strtold,4000,85.81
+Zig cc,glibc,nelibc,strtold,4000,1030.52
+GCC,glibc,host-libc,strtof,4000,175.08
+GCC,glibc,nelibc,strtof,4000,729.88
+GCC,glibc,host-libc,strtod,4000,86.57
+GCC,glibc,nelibc,strtod,4000,788.64
+GCC,glibc,host-libc,strtold,4000,86.28
+GCC,glibc,nelibc,strtold,4000,988.50
+Zig cc,musl,host-libc,strtof,4000,701.09
+Zig cc,musl,nelibc,strtof,4000,699.02
+Zig cc,musl,host-libc,strtod,4000,826.36
+Zig cc,musl,nelibc,strtod,4000,825.94
+Zig cc,musl,host-libc,strtold,4000,1034.46
+Zig cc,musl,nelibc,strtold,4000,1036.83

@@ -1,0 +1,13 @@
+toolchain_libc,parser,parse_calls,knuth_calls,knuth_total_ns,knuth_ns_per_parse,instrumented_parse_median_ns,knuth_fraction_percent
+TinyCC/glibc,strtof,800,400,482707,603.38,37713.12,1.6
+TinyCC/glibc,strtod,800,400,593386,741.73,34931.91,2.12
+TinyCC/glibc,strtold,800,800,875985,1094.98,38419.04,2.85
+Zig cc/glibc,strtof,800,400,83599,104.5,16557.54,0.63
+Zig cc/glibc,strtod,800,400,105950,132.44,16162.7,0.82
+Zig cc/glibc,strtold,800,800,211779,264.72,16242.06,1.63
+GCC/glibc,strtof,800,400,121490,151.86,13444.77,1.13
+GCC/glibc,strtod,800,400,126799,158.5,13486.02,1.18
+GCC/glibc,strtold,800,800,219879,274.85,13612.51,2.02
+Zig cc/musl,strtof,800,800,168570,210.71,16312.16,1.29
+Zig cc/musl,strtod,800,800,248596,310.75,16222.03,1.92
+Zig cc/musl,strtold,800,1600,437021,546.28,16052.53,3.4

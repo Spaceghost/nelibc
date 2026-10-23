@@ -1,0 +1,16 @@
+compiler,libc,function,input,parsed_characters,pending_zero_updates,exact_zero_updates
+TinyCC,glibc,strtof,long_fraction_600,607,582,19
+TinyCC,glibc,strtod,long_fraction_600,607,582,19
+TinyCC,glibc,strtold,long_fraction_600,607,581,20
+TinyCC,glibc,strtof,long_integer_620,625,601,19
+TinyCC,glibc,strtod,long_integer_620,625,601,19
+TinyCC,glibc,strtold,long_integer_620,625,600,20
+TinyCC,glibc,strtof,all_zero_14800,14800,0,14800
+TinyCC,glibc,strtod,all_zero_14800,14800,0,14800
+TinyCC,glibc,strtold,all_zero_14800,14800,0,14800
+TinyCC,glibc,strtof,leading_zero_14800_then_one,14807,0,14801
+TinyCC,glibc,strtod,leading_zero_14800_then_one,14807,0,14801
+TinyCC,glibc,strtold,leading_zero_14800_then_one,14807,0,14801
+TinyCC,glibc,strtof,all_one_14800_fallback,14806,13473,19
+TinyCC,glibc,strtod,all_one_14800_fallback,14806,13473,19
+TinyCC,glibc,strtold,all_one_14800_fallback,14806,13473,20

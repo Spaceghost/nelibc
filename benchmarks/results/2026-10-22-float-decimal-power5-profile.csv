@@ -1,0 +1,7 @@
+parser,variant,benchmark_parses,wide_5pow26_calls,wide_input_limb_visits,small_5pow13_calls,small_input_limb_visits,tail_calls,tail_input_limb_visits,total_loop_limb_visits
+strtof,baseline,800,0,0,55200,1996800,400,34800,2031600
+strtof,candidate,800,27600,985600,0,0,400,34800,1020400
+strtod,baseline,800,0,0,55200,1996800,400,34800,2031600
+strtod,candidate,800,27600,985600,0,0,400,34800,1020400
+strtold,baseline,800,0,0,55200,1996800,400,34800,2031600
+strtold,candidate,800,27600,985600,0,0,400,34800,1020400

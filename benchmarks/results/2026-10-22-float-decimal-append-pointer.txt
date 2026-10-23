@@ -1,0 +1,31 @@
+TinyCC decimal digit-append profile and pointer optimization
+============================================================
+
+Profile
+-------
+The exact decimal parser appends digits beyond the 19/20-digit significand to
+`exact_integer` by multiplying its BigUInt by 10 and adding one digit. The
+TinyCC diagnostic counted 473,200 append calls and 15,631,600 limb iterations
+per parser benchmark on the 600-digit corpus (800 parser calls), or about
+591 append calls and 19,539 limb iterations per parse. The short corpus made
+123,200 append calls and 431,200 limb iterations over 28,000 parser calls.
+The long decimal append work is much larger than the 306,800 Knuth limb
+iterations counted across all three parsers in the same benchmark.
+
+Change and shootout
+-------------------
+Added a TCC-only rolling-pointer loop for decimal BigUInt digit appends. Other
+compilers keep the indexed loop. The arithmetic and digit order are unchanged.
+
+Twenty-four alternating TinyCC/glibc pairs show short parser gains of 0.7%,
+2.0%, and 1.0% for `strtof`, `strtod`, and `strtold`; long parser gains are
+14.5%, 13.5%, and 13.4%. The candidate passed the TinyCC 1,250-case float
+differential corpus. Zig/glibc, GCC/glibc, and Zig/musl source builds also
+passed the float differential and Knuth quotient-precheck matrices. Standalone
+TinyCC smoke passed. The TCC-specific implementation is retained.
+
+Raw profile counts are in `2026-10-22-float-decimal-append-counts-short.csv`
+and `2026-10-22-float-decimal-append-counts-long.csv`. Paired shootout data is
+in `2026-10-22-float-decimal-append-pointer-ab.csv`; final compiler/libc
+matrices are in `2026-10-22-float-decimal-pointer-final-short.csv` and
+`2026-10-22-float-decimal-pointer-final-long.csv`.

@@ -1,0 +1,4 @@
+parser,profiled_parser_calls,compare_shifted_calls,compare_loop_visits,visits_per_compare,visits_per_parse
+strtof,800,1200,800,0.667,1.000
+strtod,800,1200,1200,1.000,1.500
+strtold,800,1600,1600,1.000,2.000

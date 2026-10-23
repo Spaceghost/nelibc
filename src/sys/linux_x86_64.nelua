@@ -1,0 +1,15 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- The assembly shim implements the Linux x86_64 syscall register ABI. Return
+-- raw kernel results here; POSIX errno translation is a separate libc layer.
+local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
+
+local function nelibc_linux_write(fd: cint, buf: pointer, count: csize): clong <cexport, codename 'nelibc_linux_write'>
+  return nelibc_raw_syscall3(
+    1_culong,
+    (@culong)(fd),
+    (@culong)((@usize)(buf)),
+    (@culong)(count)
+  )
+end

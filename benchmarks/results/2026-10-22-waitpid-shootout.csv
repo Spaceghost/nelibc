@@ -1,0 +1,9 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,waitpid-wnohang-echild,200000,144.35
+Zig cc,glibc,nelibc,waitpid-wnohang-echild,200000,159.93
+GCC,glibc,host-libc,waitpid-wnohang-echild,200000,143.37
+GCC,glibc,nelibc,waitpid-wnohang-echild,200000,156.96
+Zig cc,musl,host-libc,waitpid-wnohang-echild,200000,144.24
+Zig cc,musl,nelibc,waitpid-wnohang-echild,200000,143.26
+TinyCC,glibc,host-libc,waitpid-wnohang-echild,200000,147.08
+TinyCC,glibc,nelibc,waitpid-wnohang-echild,200000,160.14

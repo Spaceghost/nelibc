@@ -1,0 +1,4 @@
+parser,quotient_digits,zero_correction_digits,one_correction_digits,two_correction_digits,three_plus_correction_digits,total_corrections,clamped_estimates
+strtof,800,800,0,0,0,0,0
+strtod,1200,800,400,0,0,400,0
+strtold,2400,2000,400,0,0,400,0

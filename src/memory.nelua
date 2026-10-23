@@ -1,0 +1,1198 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function malloc(size: csize): pointer <cimport> end
+
+local function nelibc_tcc_memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang or ccinfo.is_tcc) then
+local function nelibc_x86_64_rep_memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+## end
+local function nelibc_tcc_sse_memccpy(dest: pointer, src: pointer <const>, value: cint, n: csize): pointer <cimport> end
+local function nelibc_tcc_sse_memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+local function nelibc_tcc_memmove_512(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+local function nelibc_x86_64_sse_memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+local function nelibc_tcc_memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
+local function nelibc_tcc_sse_memcmp(left: pointer <const>, right: pointer <const>, n: csize): cint <cimport> end
+local function nelibc_x86_64_sse_memcmp(left: pointer <const>, right: pointer <const>, n: csize): cint <cimport> end
+## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
+local function nelibc_x86_64_sse_memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
+## end
+local function nelibc_x86_64_sse_memchr(src: pointer <const>, value: cint, n: csize): pointer <cimport> end
+local function nelibc_x86_64_sse_memrchr(src: pointer <const>, value: cint, n: csize): pointer <cimport> end
+local function nelibc_tcc_sse_memchr(src: pointer <const>, value: cint, n: csize): pointer <cimport> end
+local function nelibc_tcc_sse_memrchr(src: pointer <const>, value: cint, n: csize): pointer <cimport> end
+
+-- Core byte operations. These functions must not call host libc; keep their
+-- loops explicit so later freestanding builds have no hidden dependencies.
+## if ccinfo.is_tcc and ccinfo.is_x86_64 then
+local function memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+## else
+local function memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cexport, codename 'memcpy'>
+  ## if ccinfo.is_tcc then
+  ## if ccinfo.is_x86_64 then
+  return nelibc_x86_64_rep_memcpy(dest, src, n)
+  ## else
+  return nelibc_tcc_memcpy(dest, src, n)
+  ## end
+  ## else
+  ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
+  if n >= 256 then return nelibc_x86_64_rep_memcpy(dest, src, n) end
+  ## end
+  local d: *[0]byte = (@*[0]byte)(dest)
+  local s: *[0]byte = (@*[0]byte)(src)
+  local i: csize = 0
+  ## if ccinfo.is_gcc and not ccinfo.is_clang then
+  while n - i >= 32 do
+    local b0: byte = s[i + 0]
+    local b1: byte = s[i + 1]
+    local b2: byte = s[i + 2]
+    local b3: byte = s[i + 3]
+    local b4: byte = s[i + 4]
+    local b5: byte = s[i + 5]
+    local b6: byte = s[i + 6]
+    local b7: byte = s[i + 7]
+    local b8: byte = s[i + 8]
+    local b9: byte = s[i + 9]
+    local b10: byte = s[i + 10]
+    local b11: byte = s[i + 11]
+    local b12: byte = s[i + 12]
+    local b13: byte = s[i + 13]
+    local b14: byte = s[i + 14]
+    local b15: byte = s[i + 15]
+    local b16: byte = s[i + 16]
+    local b17: byte = s[i + 17]
+    local b18: byte = s[i + 18]
+    local b19: byte = s[i + 19]
+    local b20: byte = s[i + 20]
+    local b21: byte = s[i + 21]
+    local b22: byte = s[i + 22]
+    local b23: byte = s[i + 23]
+    local b24: byte = s[i + 24]
+    local b25: byte = s[i + 25]
+    local b26: byte = s[i + 26]
+    local b27: byte = s[i + 27]
+    local b28: byte = s[i + 28]
+    local b29: byte = s[i + 29]
+    local b30: byte = s[i + 30]
+    local b31: byte = s[i + 31]
+    d[i + 0] = b0
+    d[i + 1] = b1
+    d[i + 2] = b2
+    d[i + 3] = b3
+    d[i + 4] = b4
+    d[i + 5] = b5
+    d[i + 6] = b6
+    d[i + 7] = b7
+    d[i + 8] = b8
+    d[i + 9] = b9
+    d[i + 10] = b10
+    d[i + 11] = b11
+    d[i + 12] = b12
+    d[i + 13] = b13
+    d[i + 14] = b14
+    d[i + 15] = b15
+    d[i + 16] = b16
+    d[i + 17] = b17
+    d[i + 18] = b18
+    d[i + 19] = b19
+    d[i + 20] = b20
+    d[i + 21] = b21
+    d[i + 22] = b22
+    d[i + 23] = b23
+    d[i + 24] = b24
+    d[i + 25] = b25
+    d[i + 26] = b26
+    d[i + 27] = b27
+    d[i + 28] = b28
+    d[i + 29] = b29
+    d[i + 30] = b30
+    d[i + 31] = b31
+    i = i + 32
+  end
+  ## end
+  while n - i >= 8 do
+    local b0: byte = s[i]
+    local b1: byte = s[i + 1]
+    local b2: byte = s[i + 2]
+    local b3: byte = s[i + 3]
+    local b4: byte = s[i + 4]
+    local b5: byte = s[i + 5]
+    local b6: byte = s[i + 6]
+    local b7: byte = s[i + 7]
+    d[i] = b0
+    d[i + 1] = b1
+    d[i + 2] = b2
+    d[i + 3] = b3
+    d[i + 4] = b4
+    d[i + 5] = b5
+    d[i + 6] = b6
+    d[i + 7] = b7
+    i = i + 8
+  end
+  while i < n do
+    d[i] = s[i]
+    i = i + 1
+  end
+  ## end
+  return dest
+end
+## end
+
+local function nelibc_memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cexport, codename 'nelibc_memcpy'>
+  return memcpy(dest, src, n)
+end
+
+local function mempcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cexport, codename 'mempcpy'>
+  ## if ccinfo.is_gcc and not ccinfo.is_clang then
+  if n <= 64 then
+    local d: *[0]byte = (@*[0]byte)(dest)
+    local s: *[0]byte = (@*[0]byte)(src)
+    local i: csize = 0
+    while n - i >= 32 do
+      local b0: byte = s[i + 0]
+      local b1: byte = s[i + 1]
+      local b2: byte = s[i + 2]
+      local b3: byte = s[i + 3]
+      local b4: byte = s[i + 4]
+      local b5: byte = s[i + 5]
+      local b6: byte = s[i + 6]
+      local b7: byte = s[i + 7]
+      local b8: byte = s[i + 8]
+      local b9: byte = s[i + 9]
+      local b10: byte = s[i + 10]
+      local b11: byte = s[i + 11]
+      local b12: byte = s[i + 12]
+      local b13: byte = s[i + 13]
+      local b14: byte = s[i + 14]
+      local b15: byte = s[i + 15]
+      local b16: byte = s[i + 16]
+      local b17: byte = s[i + 17]
+      local b18: byte = s[i + 18]
+      local b19: byte = s[i + 19]
+      local b20: byte = s[i + 20]
+      local b21: byte = s[i + 21]
+      local b22: byte = s[i + 22]
+      local b23: byte = s[i + 23]
+      local b24: byte = s[i + 24]
+      local b25: byte = s[i + 25]
+      local b26: byte = s[i + 26]
+      local b27: byte = s[i + 27]
+      local b28: byte = s[i + 28]
+      local b29: byte = s[i + 29]
+      local b30: byte = s[i + 30]
+      local b31: byte = s[i + 31]
+      d[i + 0] = b0
+      d[i + 1] = b1
+      d[i + 2] = b2
+      d[i + 3] = b3
+      d[i + 4] = b4
+      d[i + 5] = b5
+      d[i + 6] = b6
+      d[i + 7] = b7
+      d[i + 8] = b8
+      d[i + 9] = b9
+      d[i + 10] = b10
+      d[i + 11] = b11
+      d[i + 12] = b12
+      d[i + 13] = b13
+      d[i + 14] = b14
+      d[i + 15] = b15
+      d[i + 16] = b16
+      d[i + 17] = b17
+      d[i + 18] = b18
+      d[i + 19] = b19
+      d[i + 20] = b20
+      d[i + 21] = b21
+      d[i + 22] = b22
+      d[i + 23] = b23
+      d[i + 24] = b24
+      d[i + 25] = b25
+      d[i + 26] = b26
+      d[i + 27] = b27
+      d[i + 28] = b28
+      d[i + 29] = b29
+      d[i + 30] = b30
+      d[i + 31] = b31
+      i = i + 32
+    end
+    while n - i >= 8 do
+      local b0: byte = s[i]
+      local b1: byte = s[i + 1]
+      local b2: byte = s[i + 2]
+      local b3: byte = s[i + 3]
+      local b4: byte = s[i + 4]
+      local b5: byte = s[i + 5]
+      local b6: byte = s[i + 6]
+      local b7: byte = s[i + 7]
+      d[i] = b0
+      d[i + 1] = b1
+      d[i + 2] = b2
+      d[i + 3] = b3
+      d[i + 4] = b4
+      d[i + 5] = b5
+      d[i + 6] = b6
+      d[i + 7] = b7
+      i = i + 8
+    end
+    while i < n do
+      d[i] = s[i]
+      i = i + 1
+    end
+  else
+    memcpy(dest, src, n)
+  end
+  ## else
+  memcpy(dest, src, n)
+  ## end
+  return (@pointer)((@usize)(dest) + n)
+end
+
+local function memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cexport, codename 'memmove'>
+  ## if ccinfo.is_tcc then
+  return nelibc_tcc_memmove_512(dest, src, n)
+  ## end
+  ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
+  if n >= 2048 then return nelibc_x86_64_sse_memmove(dest, src, n) end
+  ## end
+  local d: *[0]byte = (@*[0]byte)(dest)
+  local s: *[0]byte = (@*[0]byte)(src)
+  local da = (@usize)(dest)
+  local sa = (@usize)(src)
+  -- Preserve overlap direction; use memcpy for ranges proven disjoint.
+  if da == sa then return dest end
+  if da < sa then
+    if sa - da >= n then return memcpy(dest, src, n) end
+  elseif da - sa >= n then
+    return memcpy(dest, src, n)
+  end
+  if da <= sa or da - sa >= n then
+    local i: csize = 0
+    ## if ccinfo.is_clang then
+    while i < n do
+      d[i] = s[i]
+      i = i + 1
+    end
+    ## else
+## if ccinfo.is_gcc and not ccinfo.is_clang then
+    while n - i >= 32 do
+      local b0: byte = s[i + 0]
+      local b1: byte = s[i + 1]
+      local b2: byte = s[i + 2]
+      local b3: byte = s[i + 3]
+      local b4: byte = s[i + 4]
+      local b5: byte = s[i + 5]
+      local b6: byte = s[i + 6]
+      local b7: byte = s[i + 7]
+      local b8: byte = s[i + 8]
+      local b9: byte = s[i + 9]
+      local b10: byte = s[i + 10]
+      local b11: byte = s[i + 11]
+      local b12: byte = s[i + 12]
+      local b13: byte = s[i + 13]
+      local b14: byte = s[i + 14]
+      local b15: byte = s[i + 15]
+      local b16: byte = s[i + 16]
+      local b17: byte = s[i + 17]
+      local b18: byte = s[i + 18]
+      local b19: byte = s[i + 19]
+      local b20: byte = s[i + 20]
+      local b21: byte = s[i + 21]
+      local b22: byte = s[i + 22]
+      local b23: byte = s[i + 23]
+      local b24: byte = s[i + 24]
+      local b25: byte = s[i + 25]
+      local b26: byte = s[i + 26]
+      local b27: byte = s[i + 27]
+      local b28: byte = s[i + 28]
+      local b29: byte = s[i + 29]
+      local b30: byte = s[i + 30]
+      local b31: byte = s[i + 31]
+      d[i + 0] = b0
+      d[i + 1] = b1
+      d[i + 2] = b2
+      d[i + 3] = b3
+      d[i + 4] = b4
+      d[i + 5] = b5
+      d[i + 6] = b6
+      d[i + 7] = b7
+      d[i + 8] = b8
+      d[i + 9] = b9
+      d[i + 10] = b10
+      d[i + 11] = b11
+      d[i + 12] = b12
+      d[i + 13] = b13
+      d[i + 14] = b14
+      d[i + 15] = b15
+      d[i + 16] = b16
+      d[i + 17] = b17
+      d[i + 18] = b18
+      d[i + 19] = b19
+      d[i + 20] = b20
+      d[i + 21] = b21
+      d[i + 22] = b22
+      d[i + 23] = b23
+      d[i + 24] = b24
+      d[i + 25] = b25
+      d[i + 26] = b26
+      d[i + 27] = b27
+      d[i + 28] = b28
+      d[i + 29] = b29
+      d[i + 30] = b30
+      d[i + 31] = b31
+      i = i + 32
+    end
+  ## end
+    while n - i >= 8 do
+      local b0: byte = s[i]
+      local b1: byte = s[i + 1]
+      local b2: byte = s[i + 2]
+      local b3: byte = s[i + 3]
+      local b4: byte = s[i + 4]
+      local b5: byte = s[i + 5]
+      local b6: byte = s[i + 6]
+      local b7: byte = s[i + 7]
+      d[i] = b0
+      d[i + 1] = b1
+      d[i + 2] = b2
+      d[i + 3] = b3
+      d[i + 4] = b4
+      d[i + 5] = b5
+      d[i + 6] = b6
+      d[i + 7] = b7
+      i = i + 8
+    end
+    while i < n do
+      d[i] = s[i]
+      i = i + 1
+    end
+    ## end
+  else
+    local i: csize = n
+    ## if ccinfo.is_clang then
+    while i > 0 do
+      i = i - 1
+      d[i] = s[i]
+    end
+    ## else
+## if ccinfo.is_gcc and not ccinfo.is_clang then
+    while i >= 32 do
+      i = i - 32
+      local b0: byte = s[i + 0]
+      local b1: byte = s[i + 1]
+      local b2: byte = s[i + 2]
+      local b3: byte = s[i + 3]
+      local b4: byte = s[i + 4]
+      local b5: byte = s[i + 5]
+      local b6: byte = s[i + 6]
+      local b7: byte = s[i + 7]
+      local b8: byte = s[i + 8]
+      local b9: byte = s[i + 9]
+      local b10: byte = s[i + 10]
+      local b11: byte = s[i + 11]
+      local b12: byte = s[i + 12]
+      local b13: byte = s[i + 13]
+      local b14: byte = s[i + 14]
+      local b15: byte = s[i + 15]
+      local b16: byte = s[i + 16]
+      local b17: byte = s[i + 17]
+      local b18: byte = s[i + 18]
+      local b19: byte = s[i + 19]
+      local b20: byte = s[i + 20]
+      local b21: byte = s[i + 21]
+      local b22: byte = s[i + 22]
+      local b23: byte = s[i + 23]
+      local b24: byte = s[i + 24]
+      local b25: byte = s[i + 25]
+      local b26: byte = s[i + 26]
+      local b27: byte = s[i + 27]
+      local b28: byte = s[i + 28]
+      local b29: byte = s[i + 29]
+      local b30: byte = s[i + 30]
+      local b31: byte = s[i + 31]
+      d[i + 0] = b0
+      d[i + 1] = b1
+      d[i + 2] = b2
+      d[i + 3] = b3
+      d[i + 4] = b4
+      d[i + 5] = b5
+      d[i + 6] = b6
+      d[i + 7] = b7
+      d[i + 8] = b8
+      d[i + 9] = b9
+      d[i + 10] = b10
+      d[i + 11] = b11
+      d[i + 12] = b12
+      d[i + 13] = b13
+      d[i + 14] = b14
+      d[i + 15] = b15
+      d[i + 16] = b16
+      d[i + 17] = b17
+      d[i + 18] = b18
+      d[i + 19] = b19
+      d[i + 20] = b20
+      d[i + 21] = b21
+      d[i + 22] = b22
+      d[i + 23] = b23
+      d[i + 24] = b24
+      d[i + 25] = b25
+      d[i + 26] = b26
+      d[i + 27] = b27
+      d[i + 28] = b28
+      d[i + 29] = b29
+      d[i + 30] = b30
+      d[i + 31] = b31
+    end
+  ## end
+    while i >= 8 do
+      i = i - 8
+      local b0: byte = s[i]
+      local b1: byte = s[i + 1]
+      local b2: byte = s[i + 2]
+      local b3: byte = s[i + 3]
+      local b4: byte = s[i + 4]
+      local b5: byte = s[i + 5]
+      local b6: byte = s[i + 6]
+      local b7: byte = s[i + 7]
+      d[i] = b0
+      d[i + 1] = b1
+      d[i + 2] = b2
+      d[i + 3] = b3
+      d[i + 4] = b4
+      d[i + 5] = b5
+      d[i + 6] = b6
+      d[i + 7] = b7
+    end
+    while i > 0 do
+      i = i - 1
+      d[i] = s[i]
+    end
+    ## end
+  end
+  return dest
+end
+
+local function bcopy(source: pointer <const>, dest: pointer, n: csize): void <cexport, codename 'bcopy'>
+  memmove(dest, source, n)
+end
+
+local function memset(dest: pointer, value: cint, n: csize): pointer <cexport, codename 'memset'>
+  ## if ccinfo.is_tcc then
+  return nelibc_tcc_memset(dest, value, n)
+  ## else
+  ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
+  if n >= 16 then return nelibc_x86_64_sse_memset(dest, value, n) end
+  ## end
+  local d: *[0]byte = (@*[0]byte)(dest)
+  local b: byte = (@byte)(value)
+  local i: csize = 0
+  while n - i >= 8 do
+    d[i] = b
+    d[i + 1] = b
+    d[i + 2] = b
+    d[i + 3] = b
+    d[i + 4] = b
+    d[i + 5] = b
+    d[i + 6] = b
+    d[i + 7] = b
+    i = i + 8
+  end
+  while i < n do
+    d[i] = b
+    i = i + 1
+  end
+  return dest
+  ## end
+end
+
+local function bzero(dest: pointer, n: csize): void <cexport, codename 'bzero'>
+  memset(dest, 0, n)
+end
+
+local function explicit_bzero(dest: pointer, n: csize): void
+    <cexport, codename 'explicit_bzero'>
+  local output: *[0]byte <volatile> = (@*[0]byte)(dest)
+  local index: csize = 0
+  while index < n do
+    output[index] = 0
+    index = index + 1
+  end
+end
+
+local function wmemcpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize): *[0]cwchar_t
+    <cexport, codename 'wmemcpy'>
+  local index: csize = 0
+  while index < n do
+    dest[index] = src[index]
+    index = index + 1
+  end
+  return dest
+end
+
+local function wmemmove(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize): *[0]cwchar_t
+    <cexport, codename 'wmemmove'>
+  if (@usize)(dest) > (@usize)(src) then
+    local index: csize = n
+    while index > 0 do
+      index = index - 1
+      dest[index] = src[index]
+    end
+  else
+    local index: csize = 0
+    while index < n do
+      dest[index] = src[index]
+      index = index + 1
+    end
+  end
+  return dest
+end
+
+local function wmemset(dest: *[0]cwchar_t, value: cwchar_t, n: csize): *[0]cwchar_t
+    <cexport, codename 'wmemset'>
+  local index: csize = 0
+  while index < n do
+    dest[index] = value
+    index = index + 1
+  end
+  return dest
+end
+
+local function wmemcmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>, n: csize): cint
+    <cexport, codename 'wmemcmp'>
+  local index: csize = 0
+  while index < n do
+    if left[index] < right[index] then return -1 end
+    if left[index] > right[index] then return 1 end
+    index = index + 1
+  end
+  return 0
+end
+
+local function wmemchr(text: *[0]cwchar_t <const>, value: cwchar_t, n: csize): *cwchar_t
+    <cexport, codename 'wmemchr'>
+  local index: csize = 0
+  while index < n do
+    if text[index] == value then return &text[index] end
+    index = index + 1
+  end
+  return nilptr
+end
+
+local function wcslen(text: *[0]cwchar_t <const>): csize <cexport, codename 'wcslen'>
+  local length: csize = 0
+  while text[length] ~= 0 do
+    length = length + 1
+  end
+  return length
+end
+
+local function wcsnlen(text: *[0]cwchar_t <const>, limit: csize): csize
+    <cexport, codename 'wcsnlen'>
+  local length: csize = 0
+  while length < limit and text[length] ~= 0 do
+    length = length + 1
+  end
+  return length
+end
+
+local function wcsdup(text: *[0]cwchar_t <const>): *cwchar_t <cexport, codename 'wcsdup'>
+  local length: csize = wcslen(text)
+  local copy: *[0]cwchar_t = (@*[0]cwchar_t)(malloc((length + 1) * (@csize)(#cwchar_t)))
+  if copy == nilptr then return nilptr end
+  local index: csize = 0
+  while index <= length do
+    copy[index] = text[index]
+    index = index + 1
+  end
+  return copy
+end
+
+local function wcscmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>): cint
+    <cexport, codename 'wcscmp'>
+  local index: csize = 0
+  while left[index] == right[index] and left[index] ~= 0 do
+    index = index + 1
+  end
+  if left[index] < right[index] then return -1 end
+  if left[index] > right[index] then return 1 end
+  return 0
+end
+
+local function wcsncmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>, n: csize): cint
+    <cexport, codename 'wcsncmp'>
+  local index: csize = 0
+  while index < n and left[index] == right[index] and left[index] ~= 0 do index = index + 1 end
+  if index == n then return 0 end
+  if left[index] < right[index] then return -1 end
+  if left[index] > right[index] then return 1 end
+  return 0
+end
+
+local function wcschr(text: *[0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'wcschr'>
+  local index: csize = 0
+  while true do
+    if text[index] == value then return &text[index] end
+    if text[index] == 0 then return nilptr end
+    index = index + 1
+  end
+end
+
+local function wcsrchr(text: *[0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'wcsrchr'>
+  local found: *cwchar_t = nilptr
+  local index: csize = 0
+  while true do
+    if text[index] == value then found = &text[index] end
+    if text[index] == 0 then return found end
+    index = index + 1
+  end
+end
+
+local function wcscpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>): *[0]cwchar_t
+    <cexport, codename 'wcscpy'>
+  local index: csize = 0
+  while true do
+    dest[index] = src[index]
+    if src[index] == 0 then return dest end
+    index = index + 1
+  end
+end
+
+local function wcsncpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize): *[0]cwchar_t
+    <cexport, codename 'wcsncpy'>
+  local index: csize = 0
+  while index < n and src[index] ~= 0 do
+    dest[index] = src[index]
+    index = index + 1
+  end
+  while index < n do
+    dest[index] = 0
+    index = index + 1
+  end
+  return dest
+end
+
+local function wcscat(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>): *[0]cwchar_t
+    <cexport, codename 'wcscat'>
+  local offset: csize = wcslen(dest)
+  local index: csize = 0
+  while true do
+    dest[offset + index] = src[index]
+    if src[index] == 0 then return dest end
+    index = index + 1
+  end
+end
+
+local function wcsncat(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize): *[0]cwchar_t
+    <cexport, codename 'wcsncat'>
+  local offset: csize = wcslen(dest)
+  local index: csize = 0
+  while index < n and src[index] ~= 0 do
+    dest[offset + index] = src[index]
+    index = index + 1
+  end
+  dest[offset + index] = 0
+  return dest
+end
+
+local function wcsspn(text: *[0]cwchar_t <const>, accept: *[0]cwchar_t <const>): csize
+    <cexport, codename 'wcsspn'>
+  local length: csize = 0
+  while text[length] ~= 0 do
+    local candidate: csize = 0
+    while accept[candidate] ~= 0 and accept[candidate] ~= text[length] do
+      candidate = candidate + 1
+    end
+    if accept[candidate] == 0 then return length end
+    length = length + 1
+  end
+  return length
+end
+
+local function wcscspn(text: *[0]cwchar_t <const>, reject: *[0]cwchar_t <const>): csize
+    <cexport, codename 'wcscspn'>
+  local length: csize = 0
+  while text[length] ~= 0 do
+    local candidate: csize = 0
+    while reject[candidate] ~= 0 and reject[candidate] ~= text[length] do
+      candidate = candidate + 1
+    end
+    if reject[candidate] ~= 0 then return length end
+    length = length + 1
+  end
+  return length
+end
+
+local function wcspbrk(text: *[0]cwchar_t, accept: *[0]cwchar_t <const>): *cwchar_t
+    <cexport, codename 'wcspbrk'>
+  local index: csize = 0
+  while text[index] ~= 0 do
+    local candidate: csize = 0
+    while accept[candidate] ~= 0 and accept[candidate] ~= text[index] do
+      candidate = candidate + 1
+    end
+    if accept[candidate] ~= 0 then return &text[index] end
+    index = index + 1
+  end
+  return nilptr
+end
+
+local function wcstok(text: *[0]cwchar_t, delimiters: *[0]cwchar_t <const>, saveptr: *[0]*[0]cwchar_t): *cwchar_t
+    <cexport, codename 'wcstok'>
+  if text == nilptr then text = saveptr[0] end
+  if text == nilptr then return nilptr end
+
+  local offset: csize = 0
+  while text[offset] ~= 0 do
+    local delimiter_index: csize = 0
+    while delimiters[delimiter_index] ~= 0 and delimiters[delimiter_index] ~= text[offset] do
+      delimiter_index = delimiter_index + 1
+    end
+    if delimiters[delimiter_index] == 0 then break end
+    offset = offset + 1
+  end
+  if text[offset] == 0 then
+    saveptr[0] = &text[offset]
+    return nilptr
+  end
+
+  local token: *cwchar_t = &text[offset]
+  while text[offset] ~= 0 do
+    local delimiter_index: csize = 0
+    while delimiters[delimiter_index] ~= 0 and delimiters[delimiter_index] ~= text[offset] do
+      delimiter_index = delimiter_index + 1
+    end
+    if delimiters[delimiter_index] ~= 0 then
+      text[offset] = 0
+      saveptr[0] = &text[offset + 1]
+      return token
+    end
+    offset = offset + 1
+  end
+  saveptr[0] = &text[offset]
+  return token
+end
+
+local function wcsstr(haystack: *[0]cwchar_t, needle: *[0]cwchar_t <const>): *cwchar_t
+    <cexport, codename 'wcsstr'>
+  if needle[0] == 0 then return haystack end
+  local start: csize = 0
+  while haystack[start] ~= 0 do
+    local index: csize = 0
+    while needle[index] ~= 0 and haystack[start + index] == needle[index] do
+      index = index + 1
+    end
+    if needle[index] == 0 then return &haystack[start] end
+    start = start + 1
+  end
+  return nilptr
+end
+
+local function nelibc_memset(dest: pointer, value: cint, n: csize): pointer <cexport, codename 'nelibc_memset'>
+  return memset(dest, value, n)
+end
+
+local function memcmp(a: pointer <const>, b: pointer <const>, n: csize): cint <cexport, codename 'memcmp'>
+  ## if ccinfo.is_gcc and not ccinfo.is_clang and ccinfo.is_x86_64 then
+  return nelibc_x86_64_sse_memcmp(a, b, n)
+  ## elseif ccinfo.is_tcc then
+  return nelibc_tcc_sse_memcmp(a, b, n)
+  ## else
+  ## if ccinfo.is_clang and ccinfo.is_x86_64 then
+  if n >= 128 then return nelibc_x86_64_sse_memcmp(a, b, n) end
+  ## end
+  -- Scan 32 byte-safe differences per branch; inspect bytes only in a differing block.
+  local x: *[0]byte = (@*[0]byte)(a)
+  local y: *[0]byte = (@*[0]byte)(b)
+  local i: csize = 0
+  while n - i >= 32 do
+    local different: byte = x[i] ~ y[i]
+    different = different | (x[i + 1] ~ y[i + 1])
+    different = different | (x[i + 2] ~ y[i + 2])
+    different = different | (x[i + 3] ~ y[i + 3])
+    different = different | (x[i + 4] ~ y[i + 4])
+    different = different | (x[i + 5] ~ y[i + 5])
+    different = different | (x[i + 6] ~ y[i + 6])
+    different = different | (x[i + 7] ~ y[i + 7])
+    different = different | (x[i + 8] ~ y[i + 8])
+    different = different | (x[i + 9] ~ y[i + 9])
+    different = different | (x[i + 10] ~ y[i + 10])
+    different = different | (x[i + 11] ~ y[i + 11])
+    different = different | (x[i + 12] ~ y[i + 12])
+    different = different | (x[i + 13] ~ y[i + 13])
+    different = different | (x[i + 14] ~ y[i + 14])
+    different = different | (x[i + 15] ~ y[i + 15])
+    different = different | (x[i + 16] ~ y[i + 16])
+    different = different | (x[i + 17] ~ y[i + 17])
+    different = different | (x[i + 18] ~ y[i + 18])
+    different = different | (x[i + 19] ~ y[i + 19])
+    different = different | (x[i + 20] ~ y[i + 20])
+    different = different | (x[i + 21] ~ y[i + 21])
+    different = different | (x[i + 22] ~ y[i + 22])
+    different = different | (x[i + 23] ~ y[i + 23])
+    different = different | (x[i + 24] ~ y[i + 24])
+    different = different | (x[i + 25] ~ y[i + 25])
+    different = different | (x[i + 26] ~ y[i + 26])
+    different = different | (x[i + 27] ~ y[i + 27])
+    different = different | (x[i + 28] ~ y[i + 28])
+    different = different | (x[i + 29] ~ y[i + 29])
+    different = different | (x[i + 30] ~ y[i + 30])
+    different = different | (x[i + 31] ~ y[i + 31])
+    if different ~= 0 then
+      ## if ccinfo.is_gcc and not ccinfo.is_clang then
+      local j: csize = 0
+      while j < 32 do
+        if x[i + j] ~= y[i + j] then
+          return (@cint)(x[i + j]) - (@cint)(y[i + j])
+        end
+        j = j + 1
+      end
+      ## else
+      if x[i + 0] ~= y[i + 0] then return (@cint)(x[i + 0]) - (@cint)(y[i + 0]) end
+      if x[i + 1] ~= y[i + 1] then return (@cint)(x[i + 1]) - (@cint)(y[i + 1]) end
+      if x[i + 2] ~= y[i + 2] then return (@cint)(x[i + 2]) - (@cint)(y[i + 2]) end
+      if x[i + 3] ~= y[i + 3] then return (@cint)(x[i + 3]) - (@cint)(y[i + 3]) end
+      if x[i + 4] ~= y[i + 4] then return (@cint)(x[i + 4]) - (@cint)(y[i + 4]) end
+      if x[i + 5] ~= y[i + 5] then return (@cint)(x[i + 5]) - (@cint)(y[i + 5]) end
+      if x[i + 6] ~= y[i + 6] then return (@cint)(x[i + 6]) - (@cint)(y[i + 6]) end
+      if x[i + 7] ~= y[i + 7] then return (@cint)(x[i + 7]) - (@cint)(y[i + 7]) end
+      if x[i + 8] ~= y[i + 8] then return (@cint)(x[i + 8]) - (@cint)(y[i + 8]) end
+      if x[i + 9] ~= y[i + 9] then return (@cint)(x[i + 9]) - (@cint)(y[i + 9]) end
+      if x[i + 10] ~= y[i + 10] then return (@cint)(x[i + 10]) - (@cint)(y[i + 10]) end
+      if x[i + 11] ~= y[i + 11] then return (@cint)(x[i + 11]) - (@cint)(y[i + 11]) end
+      if x[i + 12] ~= y[i + 12] then return (@cint)(x[i + 12]) - (@cint)(y[i + 12]) end
+      if x[i + 13] ~= y[i + 13] then return (@cint)(x[i + 13]) - (@cint)(y[i + 13]) end
+      if x[i + 14] ~= y[i + 14] then return (@cint)(x[i + 14]) - (@cint)(y[i + 14]) end
+      if x[i + 15] ~= y[i + 15] then return (@cint)(x[i + 15]) - (@cint)(y[i + 15]) end
+      if x[i + 16] ~= y[i + 16] then return (@cint)(x[i + 16]) - (@cint)(y[i + 16]) end
+      if x[i + 17] ~= y[i + 17] then return (@cint)(x[i + 17]) - (@cint)(y[i + 17]) end
+      if x[i + 18] ~= y[i + 18] then return (@cint)(x[i + 18]) - (@cint)(y[i + 18]) end
+      if x[i + 19] ~= y[i + 19] then return (@cint)(x[i + 19]) - (@cint)(y[i + 19]) end
+      if x[i + 20] ~= y[i + 20] then return (@cint)(x[i + 20]) - (@cint)(y[i + 20]) end
+      if x[i + 21] ~= y[i + 21] then return (@cint)(x[i + 21]) - (@cint)(y[i + 21]) end
+      if x[i + 22] ~= y[i + 22] then return (@cint)(x[i + 22]) - (@cint)(y[i + 22]) end
+      if x[i + 23] ~= y[i + 23] then return (@cint)(x[i + 23]) - (@cint)(y[i + 23]) end
+      if x[i + 24] ~= y[i + 24] then return (@cint)(x[i + 24]) - (@cint)(y[i + 24]) end
+      if x[i + 25] ~= y[i + 25] then return (@cint)(x[i + 25]) - (@cint)(y[i + 25]) end
+      if x[i + 26] ~= y[i + 26] then return (@cint)(x[i + 26]) - (@cint)(y[i + 26]) end
+      if x[i + 27] ~= y[i + 27] then return (@cint)(x[i + 27]) - (@cint)(y[i + 27]) end
+      if x[i + 28] ~= y[i + 28] then return (@cint)(x[i + 28]) - (@cint)(y[i + 28]) end
+      if x[i + 29] ~= y[i + 29] then return (@cint)(x[i + 29]) - (@cint)(y[i + 29]) end
+      if x[i + 30] ~= y[i + 30] then return (@cint)(x[i + 30]) - (@cint)(y[i + 30]) end
+      if x[i + 31] ~= y[i + 31] then return (@cint)(x[i + 31]) - (@cint)(y[i + 31]) end
+      ## end
+    end
+    i = i + 32
+  end
+  while i < n do
+    if x[i] ~= y[i] then return (@cint)(x[i]) - (@cint)(y[i]) end
+    i = i + 1
+  end
+  return 0
+  ## end
+end
+
+local function bcmp(left: pointer <const>, right: pointer <const>, n: csize): cint <cexport, codename 'bcmp'>
+  return memcmp(left, right, n)
+end
+local function memchr(s: pointer <const>, value: cint, n: csize): pointer <cexport, codename 'memchr'>
+  ## if ccinfo.is_tcc then
+  return nelibc_tcc_sse_memchr(s, value, n)
+  ## end
+  ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
+  if n >= 64 then return nelibc_x86_64_sse_memchr(s, value, n) end
+  ## end
+  local bytes: *[0]byte = (@*[0]byte)(s)
+  local target: byte = (@byte)(value)
+  local i: csize = 0
+  while n - i >= 8 do
+    ## if ccinfo.is_clang then
+    local matches: cuint = 0
+    if bytes[i] == target then matches = matches | 1_cuint end
+    if bytes[i + 1] == target then matches = matches | 2_cuint end
+    if bytes[i + 2] == target then matches = matches | 4_cuint end
+    if bytes[i + 3] == target then matches = matches | 8_cuint end
+    if bytes[i + 4] == target then matches = matches | 16_cuint end
+    if bytes[i + 5] == target then matches = matches | 32_cuint end
+    if bytes[i + 6] == target then matches = matches | 64_cuint end
+    if bytes[i + 7] == target then matches = matches | 128_cuint end
+    if matches ~= 0_cuint then
+      if bytes[i] == target then return &bytes[i] end
+      if bytes[i + 1] == target then return &bytes[i + 1] end
+      if bytes[i + 2] == target then return &bytes[i + 2] end
+      if bytes[i + 3] == target then return &bytes[i + 3] end
+      if bytes[i + 4] == target then return &bytes[i + 4] end
+      if bytes[i + 5] == target then return &bytes[i + 5] end
+      if bytes[i + 6] == target then return &bytes[i + 6] end
+      if bytes[i + 7] == target then return &bytes[i + 7] end
+    end
+    ## else
+    if bytes[i] == target then return &bytes[i] end
+    if bytes[i + 1] == target then return &bytes[i + 1] end
+    if bytes[i + 2] == target then return &bytes[i + 2] end
+    if bytes[i + 3] == target then return &bytes[i + 3] end
+    if bytes[i + 4] == target then return &bytes[i + 4] end
+    if bytes[i + 5] == target then return &bytes[i + 5] end
+    if bytes[i + 6] == target then return &bytes[i + 6] end
+    if bytes[i + 7] == target then return &bytes[i + 7] end
+    ## end
+    i = i + 8
+  end
+  while i < n do
+    if bytes[i] == target then return &bytes[i] end
+    i = i + 1
+  end
+  return nilptr
+end
+
+local function memccpy(dest: pointer, src: pointer <const>, value: cint, n: csize): pointer <cexport, codename 'memccpy'>
+  ## if ccinfo.is_tcc then
+  return nelibc_tcc_sse_memccpy(dest, src, value, n)
+  ## end
+  local target: byte = (@byte)(value)
+  local found: pointer = memchr(src, (@cint)(target), n)
+  if found == nilptr then
+    memcpy(dest, src, n)
+    return nilptr
+  end
+  local count: csize = (@csize)((@usize)(found) - (@usize)(src)) + 1
+  memcpy(dest, src, count)
+  local d: *[0]byte = (@*[0]byte)(dest)
+  return &d[count]
+end
+
+-- GNU extension, also provided by musl. Search from the final byte toward the
+-- beginning while returning the address of the last matching byte.
+local function memrchr(s: pointer <const>, value: cint, n: csize): pointer <cexport, codename 'memrchr'>
+  ## if ccinfo.is_tcc then
+  return nelibc_tcc_sse_memrchr(s, value, n)
+  ## end
+  ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
+  if n >= 64 then return nelibc_x86_64_sse_memrchr(s, value, n) end
+  ## end
+  local bytes: *[0]byte = (@*[0]byte)(s)
+  local target: byte = (@byte)(value)
+  ## if ccinfo.is_clang then
+  -- The chunked forward probe helps long strings on other targets, but for a
+  -- short reverse search it does extra work before walking back from the end.
+  if n < 128 then
+    local i: csize = n
+    while i > 0 do
+      i = i - 1
+      if bytes[i] == target then return &bytes[i] end
+    end
+    return nilptr
+  end
+  -- Clang vectorizes memchr's forward scan; test 2 KiB chunks from the end,
+  -- then inspect the first matching chunk backwards to preserve memrchr order.
+  local end_index: csize = n
+  while end_index > 0 do
+    local start_index: csize = 0
+    if end_index > 2048 then start_index = end_index - 2048 end
+    if memchr(&bytes[start_index], (@cint)(target), end_index - start_index) ~= nilptr then
+      local i: csize = end_index
+      while i > start_index do
+        i = i - 1
+        if bytes[i] == target then return &bytes[i] end
+      end
+    end
+    end_index = start_index
+  end
+  return nilptr
+  ## else
+  local i: csize = n
+  while i >= 8 do
+    i = i - 1
+    if bytes[i] == target then return &bytes[i] end
+    i = i - 1
+    if bytes[i] == target then return &bytes[i] end
+    i = i - 1
+    if bytes[i] == target then return &bytes[i] end
+    i = i - 1
+    if bytes[i] == target then return &bytes[i] end
+    i = i - 1
+    if bytes[i] == target then return &bytes[i] end
+    i = i - 1
+    if bytes[i] == target then return &bytes[i] end
+    i = i - 1
+    if bytes[i] == target then return &bytes[i] end
+    i = i - 1
+    if bytes[i] == target then return &bytes[i] end
+  end
+  while i > 0 do
+    i = i - 1
+    if bytes[i] == target then return &bytes[i] end
+  end
+  return nilptr
+  ## end
+end
+
+-- GNU extension, also provided by musl. A zero-length needle matches at the
+-- beginning of the haystack, including when its length is zero.
+-- Two-way substring search with a bad-character shift table. The critical
+-- factor and period keep repeated-prefix needles linear-time.
+local function memmem_twoway(haystack: pointer <const>, haystack_len: csize, needle: pointer <const>, needle_len: csize): pointer
+  local h: *[0]byte = (@*[0]byte)(haystack)
+  local n: *[0]byte = (@*[0]byte)(needle)
+  local shifts: [256]csize
+  local i: csize = 0
+  while i < 256 do
+    shifts[i] = 0
+    i = i + 1
+  end
+  i = 0
+  while i < needle_len do
+    shifts[n[i]] = i + 1
+    i = i + 1
+  end
+
+  -- Store maximal-suffix indices as (index + 1), so zero represents -1.
+  local ip1: csize = 0
+  local jp: csize = 0
+  local k: csize = 1
+  local period: csize = 1
+  while jp + k < needle_len do
+    local left: byte = n[ip1 + k - 1]
+    local right: byte = n[jp + k]
+    if left == right then
+      if k == period then
+        jp = jp + period
+        k = 1
+      else
+        k = k + 1
+      end
+    elseif left > right then
+      jp = jp + k
+      k = 1
+      period = jp + 1 - ip1
+    else
+      ip1 = jp + 1
+      jp = ip1
+      k = 1
+      period = 1
+    end
+  end
+  local critical: csize = ip1
+  local initial_period: csize = period
+
+  ip1 = 0
+  jp = 0
+  k = 1
+  period = 1
+  while jp + k < needle_len do
+    local left: byte = n[ip1 + k - 1]
+    local right: byte = n[jp + k]
+    if left == right then
+      if k == period then
+        jp = jp + period
+        k = 1
+      else
+        k = k + 1
+      end
+    elseif left < right then
+      jp = jp + k
+      k = 1
+      period = jp + 1 - ip1
+    else
+      ip1 = jp + 1
+      jp = ip1
+      k = 1
+      period = 1
+    end
+  end
+  if ip1 > critical then
+    critical = ip1
+  else
+    period = initial_period
+  end
+
+  local memory_zero: csize = 0
+  local periodic: boolean = true
+  if period > needle_len - critical then
+    periodic = false
+  else
+    i = 0
+    while i < critical do
+      if n[i] ~= n[i + period] then
+        periodic = false
+        break
+      end
+      i = i + 1
+    end
+  end
+  if periodic then
+    memory_zero = needle_len - period
+  else
+    local right_period: csize = needle_len - critical + 1
+    if critical > right_period then
+      period = critical
+    else
+      period = right_period
+    end
+  end
+
+  local last_start: csize = haystack_len - needle_len
+  local position: csize = 0
+  local memory: csize = 0
+  while position <= last_start do
+    local shift: csize = needle_len - shifts[h[position + needle_len - 1]]
+    if shift == needle_len then
+      position = position + needle_len
+      memory = 0
+      continue
+    end
+    if shift ~= 0 then
+      if memory_zero ~= 0 and memory ~= 0 and shift < period then
+        shift = needle_len - period
+      end
+      position = position + shift
+      memory = 0
+      continue
+    end
+
+    local right_start: csize = critical
+    if memory > right_start then right_start = memory end
+    k = right_start
+    while k < needle_len and n[k] == h[position + k] do
+      k = k + 1
+    end
+    if k < needle_len then
+      position = position + k - critical + 1
+      memory = 0
+      continue
+    end
+    k = critical
+    while k > memory and n[k - 1] == h[position + k - 1] do
+      k = k - 1
+    end
+    if k <= memory then return &h[position] end
+    position = position + period
+    memory = memory_zero
+  end
+  return nilptr
+end
+
+local function memmem(haystack: pointer <const>, haystack_len: csize, needle: pointer <const>, needle_len: csize): pointer <cexport, codename 'memmem'>
+  local h: *[0]byte = (@*[0]byte)(haystack)
+  local n: *[0]byte = (@*[0]byte)(needle)
+  if needle_len == 0 then return haystack end
+  if needle_len > haystack_len then return nilptr end
+
+  if needle_len >= 8 then
+    return memmem_twoway(haystack, haystack_len, needle, needle_len)
+  end
+
+  local last_start: csize = haystack_len - needle_len
+  local i: csize = 0
+  while i <= last_start do
+    local remaining: csize = last_start - i + 1
+    local found: pointer = memchr(&h[i], (@cint)(n[0]), remaining)
+    if found == nilptr then return nilptr end
+    local offset: csize = (@csize)((@usize)(found) - (@usize)(haystack))
+    local j: csize = 1
+    while j < needle_len and h[offset + j] == n[j] do
+      j = j + 1
+    end
+    if j == needle_len then return found end
+    i = offset + 1
+  end
+  return nilptr
+end

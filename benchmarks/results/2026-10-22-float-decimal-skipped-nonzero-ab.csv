@@ -1,0 +1,1153 @@
+pair,compiler,libc,variant,function,input,median_ns_per_call
+1,TinyCC,glibc,baseline,strtof,ones,2047383
+1,TinyCC,glibc,baseline,strtof,zero_tail,2173752
+1,TinyCC,glibc,baseline,strtod,ones,2019203
+1,TinyCC,glibc,baseline,strtod,zero_tail,2082065
+1,TinyCC,glibc,baseline,strtold,ones,2067283
+1,TinyCC,glibc,baseline,strtold,zero_tail,2124015
+1,Zig cc,glibc,baseline,strtof,ones,728452
+1,Zig cc,glibc,baseline,strtof,zero_tail,722926
+1,Zig cc,glibc,baseline,strtod,ones,740334
+1,Zig cc,glibc,baseline,strtod,zero_tail,743409
+1,Zig cc,glibc,baseline,strtold,ones,735006
+1,Zig cc,glibc,baseline,strtold,zero_tail,777014
+1,GCC,glibc,baseline,strtof,ones,714213
+1,GCC,glibc,baseline,strtof,zero_tail,748839
+1,GCC,glibc,baseline,strtod,ones,707196
+1,GCC,glibc,baseline,strtod,zero_tail,730695
+1,GCC,glibc,baseline,strtold,ones,696571
+1,GCC,glibc,baseline,strtold,zero_tail,743676
+1,Zig cc,musl,baseline,strtof,ones,746595
+1,Zig cc,musl,baseline,strtof,zero_tail,770760
+1,Zig cc,musl,baseline,strtod,ones,732278
+1,Zig cc,musl,baseline,strtod,zero_tail,766946
+1,Zig cc,musl,baseline,strtold,ones,736793
+1,Zig cc,musl,baseline,strtold,zero_tail,771807
+1,TinyCC,glibc,candidate,strtof,ones,2096311
+1,TinyCC,glibc,candidate,strtof,zero_tail,2178555
+1,TinyCC,glibc,candidate,strtod,ones,2233676
+1,TinyCC,glibc,candidate,strtod,zero_tail,2101226
+1,TinyCC,glibc,candidate,strtold,ones,2038772
+1,TinyCC,glibc,candidate,strtold,zero_tail,2105751
+1,Zig cc,glibc,candidate,strtof,ones,714849
+1,Zig cc,glibc,candidate,strtof,zero_tail,754149
+1,Zig cc,glibc,candidate,strtod,ones,687943
+1,Zig cc,glibc,candidate,strtod,zero_tail,714466
+1,Zig cc,glibc,candidate,strtold,ones,710980
+1,Zig cc,glibc,candidate,strtold,zero_tail,748035
+1,GCC,glibc,candidate,strtof,ones,674842
+1,GCC,glibc,candidate,strtof,zero_tail,713191
+1,GCC,glibc,candidate,strtod,ones,677014
+1,GCC,glibc,candidate,strtod,zero_tail,706119
+1,GCC,glibc,candidate,strtold,ones,663639
+1,GCC,glibc,candidate,strtold,zero_tail,734605
+1,Zig cc,musl,candidate,strtof,ones,739254
+1,Zig cc,musl,candidate,strtof,zero_tail,763951
+1,Zig cc,musl,candidate,strtod,ones,727648
+1,Zig cc,musl,candidate,strtod,zero_tail,750786
+1,Zig cc,musl,candidate,strtold,ones,710695
+1,Zig cc,musl,candidate,strtold,zero_tail,713615
+2,TinyCC,glibc,candidate,strtof,ones,1938521
+2,TinyCC,glibc,candidate,strtof,zero_tail,2073979
+2,TinyCC,glibc,candidate,strtod,ones,2001910
+2,TinyCC,glibc,candidate,strtod,zero_tail,2064429
+2,TinyCC,glibc,candidate,strtold,ones,2020307
+2,TinyCC,glibc,candidate,strtold,zero_tail,2032093
+2,Zig cc,glibc,candidate,strtof,ones,700363
+2,Zig cc,glibc,candidate,strtof,zero_tail,710840
+2,Zig cc,glibc,candidate,strtod,ones,687194
+2,Zig cc,glibc,candidate,strtod,zero_tail,741394
+2,Zig cc,glibc,candidate,strtold,ones,725402
+2,Zig cc,glibc,candidate,strtold,zero_tail,722358
+2,GCC,glibc,candidate,strtof,ones,687745
+2,GCC,glibc,candidate,strtof,zero_tail,726491
+2,GCC,glibc,candidate,strtod,ones,687219
+2,GCC,glibc,candidate,strtod,zero_tail,689350
+2,GCC,glibc,candidate,strtold,ones,674576
+2,GCC,glibc,candidate,strtold,zero_tail,694734
+2,Zig cc,musl,candidate,strtof,ones,698671
+2,Zig cc,musl,candidate,strtof,zero_tail,724713
+2,Zig cc,musl,candidate,strtod,ones,684339
+2,Zig cc,musl,candidate,strtod,zero_tail,754517
+2,Zig cc,musl,candidate,strtold,ones,741891
+2,Zig cc,musl,candidate,strtold,zero_tail,751048
+2,TinyCC,glibc,baseline,strtof,ones,2012937
+2,TinyCC,glibc,baseline,strtof,zero_tail,2087008
+2,TinyCC,glibc,baseline,strtod,ones,2006714
+2,TinyCC,glibc,baseline,strtod,zero_tail,2036657
+2,TinyCC,glibc,baseline,strtold,ones,2060406
+2,TinyCC,glibc,baseline,strtold,zero_tail,2077781
+2,Zig cc,glibc,baseline,strtof,ones,705529
+2,Zig cc,glibc,baseline,strtof,zero_tail,736166
+2,Zig cc,glibc,baseline,strtod,ones,722834
+2,Zig cc,glibc,baseline,strtod,zero_tail,711927
+2,Zig cc,glibc,baseline,strtold,ones,723151
+2,Zig cc,glibc,baseline,strtold,zero_tail,741852
+2,GCC,glibc,baseline,strtof,ones,689514
+2,GCC,glibc,baseline,strtof,zero_tail,723924
+2,GCC,glibc,baseline,strtod,ones,703378
+2,GCC,glibc,baseline,strtod,zero_tail,730179
+2,GCC,glibc,baseline,strtold,ones,695245
+2,GCC,glibc,baseline,strtold,zero_tail,729691
+2,Zig cc,musl,baseline,strtof,ones,712744
+2,Zig cc,musl,baseline,strtof,zero_tail,718062
+2,Zig cc,musl,baseline,strtod,ones,712314
+2,Zig cc,musl,baseline,strtod,zero_tail,745044
+2,Zig cc,musl,baseline,strtold,ones,709961
+2,Zig cc,musl,baseline,strtold,zero_tail,753834
+3,TinyCC,glibc,baseline,strtof,ones,2013421
+3,TinyCC,glibc,baseline,strtof,zero_tail,2103682
+3,TinyCC,glibc,baseline,strtod,ones,2031847
+3,TinyCC,glibc,baseline,strtod,zero_tail,2101766
+3,TinyCC,glibc,baseline,strtold,ones,1964798
+3,TinyCC,glibc,baseline,strtold,zero_tail,2073735
+3,Zig cc,glibc,baseline,strtof,ones,749627
+3,Zig cc,glibc,baseline,strtof,zero_tail,747711
+3,Zig cc,glibc,baseline,strtod,ones,712553
+3,Zig cc,glibc,baseline,strtod,zero_tail,756172
+3,Zig cc,glibc,baseline,strtold,ones,739697
+3,Zig cc,glibc,baseline,strtold,zero_tail,758873
+3,GCC,glibc,baseline,strtof,ones,666626
+3,GCC,glibc,baseline,strtof,zero_tail,729460
+3,GCC,glibc,baseline,strtod,ones,699520
+3,GCC,glibc,baseline,strtod,zero_tail,723176
+3,GCC,glibc,baseline,strtold,ones,703744
+3,GCC,glibc,baseline,strtold,zero_tail,703242
+3,Zig cc,musl,baseline,strtof,ones,727222
+3,Zig cc,musl,baseline,strtof,zero_tail,746257
+3,Zig cc,musl,baseline,strtod,ones,708441
+3,Zig cc,musl,baseline,strtod,zero_tail,717186
+3,Zig cc,musl,baseline,strtold,ones,686320
+3,Zig cc,musl,baseline,strtold,zero_tail,737189
+3,TinyCC,glibc,candidate,strtof,ones,1960732
+3,TinyCC,glibc,candidate,strtof,zero_tail,2180439
+3,TinyCC,glibc,candidate,strtod,ones,2067855
+3,TinyCC,glibc,candidate,strtod,zero_tail,2166133
+3,TinyCC,glibc,candidate,strtold,ones,1982563
+3,TinyCC,glibc,candidate,strtold,zero_tail,2254062
+3,Zig cc,glibc,candidate,strtof,ones,708640
+3,Zig cc,glibc,candidate,strtof,zero_tail,740542
+3,Zig cc,glibc,candidate,strtod,ones,711201
+3,Zig cc,glibc,candidate,strtod,zero_tail,738691
+3,Zig cc,glibc,candidate,strtold,ones,735009
+3,Zig cc,glibc,candidate,strtold,zero_tail,741448
+3,GCC,glibc,candidate,strtof,ones,693622
+3,GCC,glibc,candidate,strtof,zero_tail,714927
+3,GCC,glibc,candidate,strtod,ones,686992
+3,GCC,glibc,candidate,strtod,zero_tail,726982
+3,GCC,glibc,candidate,strtold,ones,667805
+3,GCC,glibc,candidate,strtold,zero_tail,728557
+3,Zig cc,musl,candidate,strtof,ones,695058
+3,Zig cc,musl,candidate,strtof,zero_tail,724857
+3,Zig cc,musl,candidate,strtod,ones,700721
+3,Zig cc,musl,candidate,strtod,zero_tail,727901
+3,Zig cc,musl,candidate,strtold,ones,703688
+3,Zig cc,musl,candidate,strtold,zero_tail,749067
+4,TinyCC,glibc,candidate,strtof,ones,1994496
+4,TinyCC,glibc,candidate,strtof,zero_tail,2124649
+4,TinyCC,glibc,candidate,strtod,ones,2048737
+4,TinyCC,glibc,candidate,strtod,zero_tail,2093084
+4,TinyCC,glibc,candidate,strtold,ones,2009540
+4,TinyCC,glibc,candidate,strtold,zero_tail,2092067
+4,Zig cc,glibc,candidate,strtof,ones,722784
+4,Zig cc,glibc,candidate,strtof,zero_tail,713010
+4,Zig cc,glibc,candidate,strtod,ones,718535
+4,Zig cc,glibc,candidate,strtod,zero_tail,741018
+4,Zig cc,glibc,candidate,strtold,ones,731588
+4,Zig cc,glibc,candidate,strtold,zero_tail,751480
+4,GCC,glibc,candidate,strtof,ones,696473
+4,GCC,glibc,candidate,strtof,zero_tail,723939
+4,GCC,glibc,candidate,strtod,ones,686428
+4,GCC,glibc,candidate,strtod,zero_tail,724442
+4,GCC,glibc,candidate,strtold,ones,718662
+4,GCC,glibc,candidate,strtold,zero_tail,734534
+4,Zig cc,musl,candidate,strtof,ones,727452
+4,Zig cc,musl,candidate,strtof,zero_tail,753477
+4,Zig cc,musl,candidate,strtod,ones,715952
+4,Zig cc,musl,candidate,strtod,zero_tail,738275
+4,Zig cc,musl,candidate,strtold,ones,709513
+4,Zig cc,musl,candidate,strtold,zero_tail,739619
+4,TinyCC,glibc,baseline,strtof,ones,2028661
+4,TinyCC,glibc,baseline,strtof,zero_tail,2078976
+4,TinyCC,glibc,baseline,strtod,ones,2036623
+4,TinyCC,glibc,baseline,strtod,zero_tail,2060227
+4,TinyCC,glibc,baseline,strtold,ones,2049319
+4,TinyCC,glibc,baseline,strtold,zero_tail,2075593
+4,Zig cc,glibc,baseline,strtof,ones,709894
+4,Zig cc,glibc,baseline,strtof,zero_tail,715824
+4,Zig cc,glibc,baseline,strtod,ones,687158
+4,Zig cc,glibc,baseline,strtod,zero_tail,744646
+4,Zig cc,glibc,baseline,strtold,ones,740123
+4,Zig cc,glibc,baseline,strtold,zero_tail,749622
+4,GCC,glibc,baseline,strtof,ones,697225
+4,GCC,glibc,baseline,strtof,zero_tail,731951
+4,GCC,glibc,baseline,strtod,ones,675693
+4,GCC,glibc,baseline,strtod,zero_tail,695086
+4,GCC,glibc,baseline,strtold,ones,695254
+4,GCC,glibc,baseline,strtold,zero_tail,705765
+4,Zig cc,musl,baseline,strtof,ones,709678
+4,Zig cc,musl,baseline,strtof,zero_tail,740974
+4,Zig cc,musl,baseline,strtod,ones,699698
+4,Zig cc,musl,baseline,strtod,zero_tail,718771
+4,Zig cc,musl,baseline,strtold,ones,713293
+4,Zig cc,musl,baseline,strtold,zero_tail,763429
+5,TinyCC,glibc,baseline,strtof,ones,2027861
+5,TinyCC,glibc,baseline,strtof,zero_tail,2104940
+5,TinyCC,glibc,baseline,strtod,ones,1990998
+5,TinyCC,glibc,baseline,strtod,zero_tail,1983728
+5,TinyCC,glibc,baseline,strtold,ones,2124673
+5,TinyCC,glibc,baseline,strtold,zero_tail,2247657
+5,Zig cc,glibc,baseline,strtof,ones,739280
+5,Zig cc,glibc,baseline,strtof,zero_tail,753668
+5,Zig cc,glibc,baseline,strtod,ones,701261
+5,Zig cc,glibc,baseline,strtod,zero_tail,753201
+5,Zig cc,glibc,baseline,strtold,ones,734588
+5,Zig cc,glibc,baseline,strtold,zero_tail,772030
+5,GCC,glibc,baseline,strtof,ones,709152
+5,GCC,glibc,baseline,strtof,zero_tail,723937
+5,GCC,glibc,baseline,strtod,ones,704904
+5,GCC,glibc,baseline,strtod,zero_tail,725175
+5,GCC,glibc,baseline,strtold,ones,705648
+5,GCC,glibc,baseline,strtold,zero_tail,720778
+5,Zig cc,musl,baseline,strtof,ones,700978
+5,Zig cc,musl,baseline,strtof,zero_tail,746184
+5,Zig cc,musl,baseline,strtod,ones,712056
+5,Zig cc,musl,baseline,strtod,zero_tail,721207
+5,Zig cc,musl,baseline,strtold,ones,684672
+5,Zig cc,musl,baseline,strtold,zero_tail,751450
+5,TinyCC,glibc,candidate,strtof,ones,2036615
+5,TinyCC,glibc,candidate,strtof,zero_tail,2142203
+5,TinyCC,glibc,candidate,strtod,ones,2006879
+5,TinyCC,glibc,candidate,strtod,zero_tail,2094403
+5,TinyCC,glibc,candidate,strtold,ones,2058239
+5,TinyCC,glibc,candidate,strtold,zero_tail,2202516
+5,Zig cc,glibc,candidate,strtof,ones,735449
+5,Zig cc,glibc,candidate,strtof,zero_tail,795864
+5,Zig cc,glibc,candidate,strtod,ones,729007
+5,Zig cc,glibc,candidate,strtod,zero_tail,745337
+5,Zig cc,glibc,candidate,strtold,ones,731495
+5,Zig cc,glibc,candidate,strtold,zero_tail,755851
+5,GCC,glibc,candidate,strtof,ones,700347
+5,GCC,glibc,candidate,strtof,zero_tail,771481
+5,GCC,glibc,candidate,strtod,ones,713255
+5,GCC,glibc,candidate,strtod,zero_tail,791811
+5,GCC,glibc,candidate,strtold,ones,719656
+5,GCC,glibc,candidate,strtold,zero_tail,748592
+5,Zig cc,musl,candidate,strtof,ones,724495
+5,Zig cc,musl,candidate,strtof,zero_tail,759408
+5,Zig cc,musl,candidate,strtod,ones,735116
+5,Zig cc,musl,candidate,strtod,zero_tail,761613
+5,Zig cc,musl,candidate,strtold,ones,705506
+5,Zig cc,musl,candidate,strtold,zero_tail,716535
+6,TinyCC,glibc,candidate,strtof,ones,2039808
+6,TinyCC,glibc,candidate,strtof,zero_tail,2120676
+6,TinyCC,glibc,candidate,strtod,ones,2060735
+6,TinyCC,glibc,candidate,strtod,zero_tail,2091379
+6,TinyCC,glibc,candidate,strtold,ones,2010735
+6,TinyCC,glibc,candidate,strtold,zero_tail,2170546
+6,Zig cc,glibc,candidate,strtof,ones,730398
+6,Zig cc,glibc,candidate,strtof,zero_tail,724779
+6,Zig cc,glibc,candidate,strtod,ones,708855
+6,Zig cc,glibc,candidate,strtod,zero_tail,738230
+6,Zig cc,glibc,candidate,strtold,ones,687679
+6,Zig cc,glibc,candidate,strtold,zero_tail,730735
+6,GCC,glibc,candidate,strtof,ones,702484
+6,GCC,glibc,candidate,strtof,zero_tail,724459
+6,GCC,glibc,candidate,strtod,ones,657701
+6,GCC,glibc,candidate,strtod,zero_tail,733387
+6,GCC,glibc,candidate,strtold,ones,693794
+6,GCC,glibc,candidate,strtold,zero_tail,746062
+6,Zig cc,musl,candidate,strtof,ones,709352
+6,Zig cc,musl,candidate,strtof,zero_tail,732716
+6,Zig cc,musl,candidate,strtod,ones,706444
+6,Zig cc,musl,candidate,strtod,zero_tail,752107
+6,Zig cc,musl,candidate,strtold,ones,693239
+6,Zig cc,musl,candidate,strtold,zero_tail,717999
+6,TinyCC,glibc,baseline,strtof,ones,2026725
+6,TinyCC,glibc,baseline,strtof,zero_tail,2088026
+6,TinyCC,glibc,baseline,strtod,ones,2126725
+6,TinyCC,glibc,baseline,strtod,zero_tail,2133764
+6,TinyCC,glibc,baseline,strtold,ones,1991030
+6,TinyCC,glibc,baseline,strtold,zero_tail,2155813
+6,Zig cc,glibc,baseline,strtof,ones,703782
+6,Zig cc,glibc,baseline,strtof,zero_tail,743734
+6,Zig cc,glibc,baseline,strtod,ones,723380
+6,Zig cc,glibc,baseline,strtod,zero_tail,775228
+6,Zig cc,glibc,baseline,strtold,ones,717993
+6,Zig cc,glibc,baseline,strtold,zero_tail,769253
+6,GCC,glibc,baseline,strtof,ones,692908
+6,GCC,glibc,baseline,strtof,zero_tail,761972
+6,GCC,glibc,baseline,strtod,ones,692435
+6,GCC,glibc,baseline,strtod,zero_tail,738023
+6,GCC,glibc,baseline,strtold,ones,703501
+6,GCC,glibc,baseline,strtold,zero_tail,699605
+6,Zig cc,musl,baseline,strtof,ones,717111
+6,Zig cc,musl,baseline,strtof,zero_tail,743223
+6,Zig cc,musl,baseline,strtod,ones,698851
+6,Zig cc,musl,baseline,strtod,zero_tail,744763
+6,Zig cc,musl,baseline,strtold,ones,695169
+6,Zig cc,musl,baseline,strtold,zero_tail,766554
+7,TinyCC,glibc,baseline,strtof,ones,2040488
+7,TinyCC,glibc,baseline,strtof,zero_tail,2120433
+7,TinyCC,glibc,baseline,strtod,ones,2021674
+7,TinyCC,glibc,baseline,strtod,zero_tail,2111946
+7,TinyCC,glibc,baseline,strtold,ones,2049979
+7,TinyCC,glibc,baseline,strtold,zero_tail,2103946
+7,Zig cc,glibc,baseline,strtof,ones,700846
+7,Zig cc,glibc,baseline,strtof,zero_tail,726766
+7,Zig cc,glibc,baseline,strtod,ones,695402
+7,Zig cc,glibc,baseline,strtod,zero_tail,743112
+7,Zig cc,glibc,baseline,strtold,ones,707706
+7,Zig cc,glibc,baseline,strtold,zero_tail,754467
+7,GCC,glibc,baseline,strtof,ones,657167
+7,GCC,glibc,baseline,strtof,zero_tail,718856
+7,GCC,glibc,baseline,strtod,ones,661851
+7,GCC,glibc,baseline,strtod,zero_tail,727550
+7,GCC,glibc,baseline,strtold,ones,663716
+7,GCC,glibc,baseline,strtold,zero_tail,702899
+7,Zig cc,musl,baseline,strtof,ones,712033
+7,Zig cc,musl,baseline,strtof,zero_tail,712470
+7,Zig cc,musl,baseline,strtod,ones,672337
+7,Zig cc,musl,baseline,strtod,zero_tail,743864
+7,Zig cc,musl,baseline,strtold,ones,716784
+7,Zig cc,musl,baseline,strtold,zero_tail,736348
+7,TinyCC,glibc,candidate,strtof,ones,2052439
+7,TinyCC,glibc,candidate,strtof,zero_tail,2072139
+7,TinyCC,glibc,candidate,strtod,ones,1906558
+7,TinyCC,glibc,candidate,strtod,zero_tail,2095490
+7,TinyCC,glibc,candidate,strtold,ones,2002666
+7,TinyCC,glibc,candidate,strtold,zero_tail,2031222
+7,Zig cc,glibc,candidate,strtof,ones,705058
+7,Zig cc,glibc,candidate,strtof,zero_tail,743765
+7,Zig cc,glibc,candidate,strtod,ones,710985
+7,Zig cc,glibc,candidate,strtod,zero_tail,708726
+7,Zig cc,glibc,candidate,strtold,ones,689211
+7,Zig cc,glibc,candidate,strtold,zero_tail,743248
+7,GCC,glibc,candidate,strtof,ones,665720
+7,GCC,glibc,candidate,strtof,zero_tail,698500
+7,GCC,glibc,candidate,strtod,ones,663871
+7,GCC,glibc,candidate,strtod,zero_tail,699287
+7,GCC,glibc,candidate,strtold,ones,693785
+7,GCC,glibc,candidate,strtold,zero_tail,757883
+7,Zig cc,musl,candidate,strtof,ones,716888
+7,Zig cc,musl,candidate,strtof,zero_tail,737589
+7,Zig cc,musl,candidate,strtod,ones,707765
+7,Zig cc,musl,candidate,strtod,zero_tail,752125
+7,Zig cc,musl,candidate,strtold,ones,692814
+7,Zig cc,musl,candidate,strtold,zero_tail,758505
+8,TinyCC,glibc,candidate,strtof,ones,2047913
+8,TinyCC,glibc,candidate,strtof,zero_tail,2241507
+8,TinyCC,glibc,candidate,strtod,ones,2002862
+8,TinyCC,glibc,candidate,strtod,zero_tail,2137121
+8,TinyCC,glibc,candidate,strtold,ones,2022139
+8,TinyCC,glibc,candidate,strtold,zero_tail,2254322
+8,Zig cc,glibc,candidate,strtof,ones,693019
+8,Zig cc,glibc,candidate,strtof,zero_tail,757779
+8,Zig cc,glibc,candidate,strtod,ones,712339
+8,Zig cc,glibc,candidate,strtod,zero_tail,734523
+8,Zig cc,glibc,candidate,strtold,ones,718240
+8,Zig cc,glibc,candidate,strtold,zero_tail,769779
+8,GCC,glibc,candidate,strtof,ones,711709
+8,GCC,glibc,candidate,strtof,zero_tail,745022
+8,GCC,glibc,candidate,strtod,ones,708753
+8,GCC,glibc,candidate,strtod,zero_tail,756130
+8,GCC,glibc,candidate,strtold,ones,712084
+8,GCC,glibc,candidate,strtold,zero_tail,752004
+8,Zig cc,musl,candidate,strtof,ones,715227
+8,Zig cc,musl,candidate,strtof,zero_tail,745051
+8,Zig cc,musl,candidate,strtod,ones,716278
+8,Zig cc,musl,candidate,strtod,zero_tail,744916
+8,Zig cc,musl,candidate,strtold,ones,712928
+8,Zig cc,musl,candidate,strtold,zero_tail,725049
+8,TinyCC,glibc,baseline,strtof,ones,2011027
+8,TinyCC,glibc,baseline,strtof,zero_tail,2113433
+8,TinyCC,glibc,baseline,strtod,ones,2028900
+8,TinyCC,glibc,baseline,strtod,zero_tail,2077507
+8,TinyCC,glibc,baseline,strtold,ones,2012657
+8,TinyCC,glibc,baseline,strtold,zero_tail,2218464
+8,Zig cc,glibc,baseline,strtof,ones,722070
+8,Zig cc,glibc,baseline,strtof,zero_tail,754289
+8,Zig cc,glibc,baseline,strtod,ones,740217
+8,Zig cc,glibc,baseline,strtod,zero_tail,781669
+8,Zig cc,glibc,baseline,strtold,ones,721028
+8,Zig cc,glibc,baseline,strtold,zero_tail,753143
+8,GCC,glibc,baseline,strtof,ones,699758
+8,GCC,glibc,baseline,strtof,zero_tail,742274
+8,GCC,glibc,baseline,strtod,ones,686583
+8,GCC,glibc,baseline,strtod,zero_tail,729991
+8,GCC,glibc,baseline,strtold,ones,708957
+8,GCC,glibc,baseline,strtold,zero_tail,735021
+8,Zig cc,musl,baseline,strtof,ones,723015
+8,Zig cc,musl,baseline,strtof,zero_tail,741677
+8,Zig cc,musl,baseline,strtod,ones,708322
+8,Zig cc,musl,baseline,strtod,zero_tail,766048
+8,Zig cc,musl,baseline,strtold,ones,712920
+8,Zig cc,musl,baseline,strtold,zero_tail,751455
+9,TinyCC,glibc,baseline,strtof,ones,2075799
+9,TinyCC,glibc,baseline,strtof,zero_tail,2103573
+9,TinyCC,glibc,baseline,strtod,ones,2126727
+9,TinyCC,glibc,baseline,strtod,zero_tail,2205838
+9,TinyCC,glibc,baseline,strtold,ones,2089202
+9,TinyCC,glibc,baseline,strtold,zero_tail,2147744
+9,Zig cc,glibc,baseline,strtof,ones,734572
+9,Zig cc,glibc,baseline,strtof,zero_tail,740273
+9,Zig cc,glibc,baseline,strtod,ones,759669
+9,Zig cc,glibc,baseline,strtod,zero_tail,746008
+9,Zig cc,glibc,baseline,strtold,ones,709191
+9,Zig cc,glibc,baseline,strtold,zero_tail,750227
+9,GCC,glibc,baseline,strtof,ones,741758
+9,GCC,glibc,baseline,strtof,zero_tail,755112
+9,GCC,glibc,baseline,strtod,ones,702072
+9,GCC,glibc,baseline,strtod,zero_tail,725866
+9,GCC,glibc,baseline,strtold,ones,710557
+9,GCC,glibc,baseline,strtold,zero_tail,750888
+9,Zig cc,musl,baseline,strtof,ones,720963
+9,Zig cc,musl,baseline,strtof,zero_tail,763056
+9,Zig cc,musl,baseline,strtod,ones,712134
+9,Zig cc,musl,baseline,strtod,zero_tail,780653
+9,Zig cc,musl,baseline,strtold,ones,747633
+9,Zig cc,musl,baseline,strtold,zero_tail,754989
+9,TinyCC,glibc,candidate,strtof,ones,1994302
+9,TinyCC,glibc,candidate,strtof,zero_tail,2111413
+9,TinyCC,glibc,candidate,strtod,ones,2052264
+9,TinyCC,glibc,candidate,strtod,zero_tail,2044583
+9,TinyCC,glibc,candidate,strtold,ones,2090873
+9,TinyCC,glibc,candidate,strtold,zero_tail,2165866
+9,Zig cc,glibc,candidate,strtof,ones,717319
+9,Zig cc,glibc,candidate,strtof,zero_tail,751353
+9,Zig cc,glibc,candidate,strtod,ones,741349
+9,Zig cc,glibc,candidate,strtod,zero_tail,738656
+9,Zig cc,glibc,candidate,strtold,ones,710047
+9,Zig cc,glibc,candidate,strtold,zero_tail,720173
+9,GCC,glibc,candidate,strtof,ones,705054
+9,GCC,glibc,candidate,strtof,zero_tail,802912
+9,GCC,glibc,candidate,strtod,ones,692504
+9,GCC,glibc,candidate,strtod,zero_tail,743307
+9,GCC,glibc,candidate,strtold,ones,699561
+9,GCC,glibc,candidate,strtold,zero_tail,736759
+9,Zig cc,musl,candidate,strtof,ones,708826
+9,Zig cc,musl,candidate,strtof,zero_tail,747269
+9,Zig cc,musl,candidate,strtod,ones,718841
+9,Zig cc,musl,candidate,strtod,zero_tail,756984
+9,Zig cc,musl,candidate,strtold,ones,714564
+9,Zig cc,musl,candidate,strtold,zero_tail,765188
+10,TinyCC,glibc,candidate,strtof,ones,2072963
+10,TinyCC,glibc,candidate,strtof,zero_tail,2202509
+10,TinyCC,glibc,candidate,strtod,ones,2059073
+10,TinyCC,glibc,candidate,strtod,zero_tail,2150021
+10,TinyCC,glibc,candidate,strtold,ones,2029210
+10,TinyCC,glibc,candidate,strtold,zero_tail,2223160
+10,Zig cc,glibc,candidate,strtof,ones,711708
+10,Zig cc,glibc,candidate,strtof,zero_tail,738385
+10,Zig cc,glibc,candidate,strtod,ones,702441
+10,Zig cc,glibc,candidate,strtod,zero_tail,731304
+10,Zig cc,glibc,candidate,strtold,ones,719133
+10,Zig cc,glibc,candidate,strtold,zero_tail,743822
+10,GCC,glibc,candidate,strtof,ones,688520
+10,GCC,glibc,candidate,strtof,zero_tail,743025
+10,GCC,glibc,candidate,strtod,ones,701994
+10,GCC,glibc,candidate,strtod,zero_tail,707197
+10,GCC,glibc,candidate,strtold,ones,687483
+10,GCC,glibc,candidate,strtold,zero_tail,735390
+10,Zig cc,musl,candidate,strtof,ones,717113
+10,Zig cc,musl,candidate,strtof,zero_tail,755489
+10,Zig cc,musl,candidate,strtod,ones,682321
+10,Zig cc,musl,candidate,strtod,zero_tail,736794
+10,Zig cc,musl,candidate,strtold,ones,722221
+10,Zig cc,musl,candidate,strtold,zero_tail,779562
+10,TinyCC,glibc,baseline,strtof,ones,2036183
+10,TinyCC,glibc,baseline,strtof,zero_tail,2102514
+10,TinyCC,glibc,baseline,strtod,ones,2038382
+10,TinyCC,glibc,baseline,strtod,zero_tail,2074885
+10,TinyCC,glibc,baseline,strtold,ones,1992800
+10,TinyCC,glibc,baseline,strtold,zero_tail,2174120
+10,Zig cc,glibc,baseline,strtof,ones,713916
+10,Zig cc,glibc,baseline,strtof,zero_tail,742314
+10,Zig cc,glibc,baseline,strtod,ones,713993
+10,Zig cc,glibc,baseline,strtod,zero_tail,753826
+10,Zig cc,glibc,baseline,strtold,ones,703608
+10,Zig cc,glibc,baseline,strtold,zero_tail,739887
+10,GCC,glibc,baseline,strtof,ones,697614
+10,GCC,glibc,baseline,strtof,zero_tail,694242
+10,GCC,glibc,baseline,strtod,ones,703307
+10,GCC,glibc,baseline,strtod,zero_tail,726334
+10,GCC,glibc,baseline,strtold,ones,690733
+10,GCC,glibc,baseline,strtold,zero_tail,751316
+10,Zig cc,musl,baseline,strtof,ones,695537
+10,Zig cc,musl,baseline,strtof,zero_tail,744566
+10,Zig cc,musl,baseline,strtod,ones,707145
+10,Zig cc,musl,baseline,strtod,zero_tail,728367
+10,Zig cc,musl,baseline,strtold,ones,698910
+10,Zig cc,musl,baseline,strtold,zero_tail,729316
+11,TinyCC,glibc,baseline,strtof,ones,2060925
+11,TinyCC,glibc,baseline,strtof,zero_tail,2122454
+11,TinyCC,glibc,baseline,strtod,ones,1986011
+11,TinyCC,glibc,baseline,strtod,zero_tail,2119194
+11,TinyCC,glibc,baseline,strtold,ones,2038557
+11,TinyCC,glibc,baseline,strtold,zero_tail,2080809
+11,Zig cc,glibc,baseline,strtof,ones,712371
+11,Zig cc,glibc,baseline,strtof,zero_tail,805499
+11,Zig cc,glibc,baseline,strtod,ones,724826
+11,Zig cc,glibc,baseline,strtod,zero_tail,745686
+11,Zig cc,glibc,baseline,strtold,ones,721038
+11,Zig cc,glibc,baseline,strtold,zero_tail,747031
+11,GCC,glibc,baseline,strtof,ones,682680
+11,GCC,glibc,baseline,strtof,zero_tail,733311
+11,GCC,glibc,baseline,strtod,ones,680461
+11,GCC,glibc,baseline,strtod,zero_tail,733260
+11,GCC,glibc,baseline,strtold,ones,775219
+11,GCC,glibc,baseline,strtold,zero_tail,713849
+11,Zig cc,musl,baseline,strtof,ones,715824
+11,Zig cc,musl,baseline,strtof,zero_tail,731676
+11,Zig cc,musl,baseline,strtod,ones,705085
+11,Zig cc,musl,baseline,strtod,zero_tail,731342
+11,Zig cc,musl,baseline,strtold,ones,718747
+11,Zig cc,musl,baseline,strtold,zero_tail,735064
+11,TinyCC,glibc,candidate,strtof,ones,2018314
+11,TinyCC,glibc,candidate,strtof,zero_tail,2148998
+11,TinyCC,glibc,candidate,strtod,ones,1957766
+11,TinyCC,glibc,candidate,strtod,zero_tail,2066219
+11,TinyCC,glibc,candidate,strtold,ones,2079404
+11,TinyCC,glibc,candidate,strtold,zero_tail,2108510
+11,Zig cc,glibc,candidate,strtof,ones,707628
+11,Zig cc,glibc,candidate,strtof,zero_tail,735747
+11,Zig cc,glibc,candidate,strtod,ones,769294
+11,Zig cc,glibc,candidate,strtod,zero_tail,751159
+11,Zig cc,glibc,candidate,strtold,ones,721412
+11,Zig cc,glibc,candidate,strtold,zero_tail,723488
+11,GCC,glibc,candidate,strtof,ones,689755
+11,GCC,glibc,candidate,strtof,zero_tail,727182
+11,GCC,glibc,candidate,strtod,ones,670214
+11,GCC,glibc,candidate,strtod,zero_tail,751535
+11,GCC,glibc,candidate,strtold,ones,692834
+11,GCC,glibc,candidate,strtold,zero_tail,729624
+11,Zig cc,musl,candidate,strtof,ones,723041
+11,Zig cc,musl,candidate,strtof,zero_tail,751412
+11,Zig cc,musl,candidate,strtod,ones,714767
+11,Zig cc,musl,candidate,strtod,zero_tail,759416
+11,Zig cc,musl,candidate,strtold,ones,710145
+11,Zig cc,musl,candidate,strtold,zero_tail,740566
+12,TinyCC,glibc,candidate,strtof,ones,2045363
+12,TinyCC,glibc,candidate,strtof,zero_tail,2068402
+12,TinyCC,glibc,candidate,strtod,ones,2006607
+12,TinyCC,glibc,candidate,strtod,zero_tail,2087506
+12,TinyCC,glibc,candidate,strtold,ones,2115226
+12,TinyCC,glibc,candidate,strtold,zero_tail,2145030
+12,Zig cc,glibc,candidate,strtof,ones,706533
+12,Zig cc,glibc,candidate,strtof,zero_tail,725612
+12,Zig cc,glibc,candidate,strtod,ones,685722
+12,Zig cc,glibc,candidate,strtod,zero_tail,738191
+12,Zig cc,glibc,candidate,strtold,ones,712275
+12,Zig cc,glibc,candidate,strtold,zero_tail,744150
+12,GCC,glibc,candidate,strtof,ones,694880
+12,GCC,glibc,candidate,strtof,zero_tail,703853
+12,GCC,glibc,candidate,strtod,ones,686850
+12,GCC,glibc,candidate,strtod,zero_tail,725883
+12,GCC,glibc,candidate,strtold,ones,674690
+12,GCC,glibc,candidate,strtold,zero_tail,701854
+12,Zig cc,musl,candidate,strtof,ones,734113
+12,Zig cc,musl,candidate,strtof,zero_tail,758321
+12,Zig cc,musl,candidate,strtod,ones,714661
+12,Zig cc,musl,candidate,strtod,zero_tail,748332
+12,Zig cc,musl,candidate,strtold,ones,717580
+12,Zig cc,musl,candidate,strtold,zero_tail,738770
+12,TinyCC,glibc,baseline,strtof,ones,2004555
+12,TinyCC,glibc,baseline,strtof,zero_tail,2117429
+12,TinyCC,glibc,baseline,strtod,ones,1992009
+12,TinyCC,glibc,baseline,strtod,zero_tail,2073052
+12,TinyCC,glibc,baseline,strtold,ones,2073373
+12,TinyCC,glibc,baseline,strtold,zero_tail,2054357
+12,Zig cc,glibc,baseline,strtof,ones,704549
+12,Zig cc,glibc,baseline,strtof,zero_tail,732407
+12,Zig cc,glibc,baseline,strtod,ones,698132
+12,Zig cc,glibc,baseline,strtod,zero_tail,743952
+12,Zig cc,glibc,baseline,strtold,ones,720485
+12,Zig cc,glibc,baseline,strtold,zero_tail,780077
+12,GCC,glibc,baseline,strtof,ones,701678
+12,GCC,glibc,baseline,strtof,zero_tail,721940
+12,GCC,glibc,baseline,strtod,ones,672734
+12,GCC,glibc,baseline,strtod,zero_tail,727979
+12,GCC,glibc,baseline,strtold,ones,681379
+12,GCC,glibc,baseline,strtold,zero_tail,705292
+12,Zig cc,musl,baseline,strtof,ones,718781
+12,Zig cc,musl,baseline,strtof,zero_tail,744463
+12,Zig cc,musl,baseline,strtod,ones,747348
+12,Zig cc,musl,baseline,strtod,zero_tail,781363
+12,Zig cc,musl,baseline,strtold,ones,719282
+12,Zig cc,musl,baseline,strtold,zero_tail,755297
+13,TinyCC,glibc,baseline,strtof,ones,2057787
+13,TinyCC,glibc,baseline,strtof,zero_tail,2082579
+13,TinyCC,glibc,baseline,strtod,ones,1999608
+13,TinyCC,glibc,baseline,strtod,zero_tail,2062863
+13,TinyCC,glibc,baseline,strtold,ones,2031439
+13,TinyCC,glibc,baseline,strtold,zero_tail,2205379
+13,Zig cc,glibc,baseline,strtof,ones,731918
+13,Zig cc,glibc,baseline,strtof,zero_tail,713381
+13,Zig cc,glibc,baseline,strtod,ones,728648
+13,Zig cc,glibc,baseline,strtod,zero_tail,747081
+13,Zig cc,glibc,baseline,strtold,ones,704686
+13,Zig cc,glibc,baseline,strtold,zero_tail,754505
+13,GCC,glibc,baseline,strtof,ones,705309
+13,GCC,glibc,baseline,strtof,zero_tail,725232
+13,GCC,glibc,baseline,strtod,ones,651658
+13,GCC,glibc,baseline,strtod,zero_tail,723544
+13,GCC,glibc,baseline,strtold,ones,673352
+13,GCC,glibc,baseline,strtold,zero_tail,731264
+13,Zig cc,musl,baseline,strtof,ones,692400
+13,Zig cc,musl,baseline,strtof,zero_tail,745753
+13,Zig cc,musl,baseline,strtod,ones,705852
+13,Zig cc,musl,baseline,strtod,zero_tail,740102
+13,Zig cc,musl,baseline,strtold,ones,691999
+13,Zig cc,musl,baseline,strtold,zero_tail,723707
+13,TinyCC,glibc,candidate,strtof,ones,2001423
+13,TinyCC,glibc,candidate,strtof,zero_tail,2023635
+13,TinyCC,glibc,candidate,strtod,ones,2073458
+13,TinyCC,glibc,candidate,strtod,zero_tail,2080326
+13,TinyCC,glibc,candidate,strtold,ones,1966621
+13,TinyCC,glibc,candidate,strtold,zero_tail,2120386
+13,Zig cc,glibc,candidate,strtof,ones,708721
+13,Zig cc,glibc,candidate,strtof,zero_tail,740969
+13,Zig cc,glibc,candidate,strtod,ones,704825
+13,Zig cc,glibc,candidate,strtod,zero_tail,733204
+13,Zig cc,glibc,candidate,strtold,ones,711765
+13,Zig cc,glibc,candidate,strtold,zero_tail,736866
+13,GCC,glibc,candidate,strtof,ones,689893
+13,GCC,glibc,candidate,strtof,zero_tail,765369
+13,GCC,glibc,candidate,strtod,ones,683516
+13,GCC,glibc,candidate,strtod,zero_tail,739652
+13,GCC,glibc,candidate,strtold,ones,699047
+13,GCC,glibc,candidate,strtold,zero_tail,704243
+13,Zig cc,musl,candidate,strtof,ones,723948
+13,Zig cc,musl,candidate,strtof,zero_tail,741336
+13,Zig cc,musl,candidate,strtod,ones,705901
+13,Zig cc,musl,candidate,strtod,zero_tail,729959
+13,Zig cc,musl,candidate,strtold,ones,732319
+13,Zig cc,musl,candidate,strtold,zero_tail,759015
+14,TinyCC,glibc,candidate,strtof,ones,1998738
+14,TinyCC,glibc,candidate,strtof,zero_tail,2147724
+14,TinyCC,glibc,candidate,strtod,ones,2009842
+14,TinyCC,glibc,candidate,strtod,zero_tail,2036101
+14,TinyCC,glibc,candidate,strtold,ones,2031713
+14,TinyCC,glibc,candidate,strtold,zero_tail,2086756
+14,Zig cc,glibc,candidate,strtof,ones,719801
+14,Zig cc,glibc,candidate,strtof,zero_tail,730287
+14,Zig cc,glibc,candidate,strtod,ones,727870
+14,Zig cc,glibc,candidate,strtod,zero_tail,727176
+14,Zig cc,glibc,candidate,strtold,ones,700957
+14,Zig cc,glibc,candidate,strtold,zero_tail,753999
+14,GCC,glibc,candidate,strtof,ones,708932
+14,GCC,glibc,candidate,strtof,zero_tail,736060
+14,GCC,glibc,candidate,strtod,ones,727108
+14,GCC,glibc,candidate,strtod,zero_tail,735121
+14,GCC,glibc,candidate,strtold,ones,687944
+14,GCC,glibc,candidate,strtold,zero_tail,711102
+14,Zig cc,musl,candidate,strtof,ones,694578
+14,Zig cc,musl,candidate,strtof,zero_tail,759688
+14,Zig cc,musl,candidate,strtod,ones,707250
+14,Zig cc,musl,candidate,strtod,zero_tail,718177
+14,Zig cc,musl,candidate,strtold,ones,716471
+14,Zig cc,musl,candidate,strtold,zero_tail,745827
+14,TinyCC,glibc,baseline,strtof,ones,2034341
+14,TinyCC,glibc,baseline,strtof,zero_tail,2093591
+14,TinyCC,glibc,baseline,strtod,ones,1992536
+14,TinyCC,glibc,baseline,strtod,zero_tail,2157450
+14,TinyCC,glibc,baseline,strtold,ones,1998294
+14,TinyCC,glibc,baseline,strtold,zero_tail,2089485
+14,Zig cc,glibc,baseline,strtof,ones,729529
+14,Zig cc,glibc,baseline,strtof,zero_tail,759770
+14,Zig cc,glibc,baseline,strtod,ones,708606
+14,Zig cc,glibc,baseline,strtod,zero_tail,725367
+14,Zig cc,glibc,baseline,strtold,ones,679601
+14,Zig cc,glibc,baseline,strtold,zero_tail,742283
+14,GCC,glibc,baseline,strtof,ones,688326
+14,GCC,glibc,baseline,strtof,zero_tail,715279
+14,GCC,glibc,baseline,strtod,ones,692160
+14,GCC,glibc,baseline,strtod,zero_tail,722080
+14,GCC,glibc,baseline,strtold,ones,689371
+14,GCC,glibc,baseline,strtold,zero_tail,720659
+14,Zig cc,musl,baseline,strtof,ones,716873
+14,Zig cc,musl,baseline,strtof,zero_tail,744229
+14,Zig cc,musl,baseline,strtod,ones,716307
+14,Zig cc,musl,baseline,strtod,zero_tail,736310
+14,Zig cc,musl,baseline,strtold,ones,682488
+14,Zig cc,musl,baseline,strtold,zero_tail,721056
+15,TinyCC,glibc,baseline,strtof,ones,2011302
+15,TinyCC,glibc,baseline,strtof,zero_tail,2125374
+15,TinyCC,glibc,baseline,strtod,ones,2007742
+15,TinyCC,glibc,baseline,strtod,zero_tail,2241950
+15,TinyCC,glibc,baseline,strtold,ones,1991780
+15,TinyCC,glibc,baseline,strtold,zero_tail,2110096
+15,Zig cc,glibc,baseline,strtof,ones,785621
+15,Zig cc,glibc,baseline,strtof,zero_tail,747140
+15,Zig cc,glibc,baseline,strtod,ones,687404
+15,Zig cc,glibc,baseline,strtod,zero_tail,722928
+15,Zig cc,glibc,baseline,strtold,ones,683466
+15,Zig cc,glibc,baseline,strtold,zero_tail,755338
+15,GCC,glibc,baseline,strtof,ones,691649
+15,GCC,glibc,baseline,strtof,zero_tail,730391
+15,GCC,glibc,baseline,strtod,ones,680400
+15,GCC,glibc,baseline,strtod,zero_tail,715246
+15,GCC,glibc,baseline,strtold,ones,678050
+15,GCC,glibc,baseline,strtold,zero_tail,697608
+15,Zig cc,musl,baseline,strtof,ones,703115
+15,Zig cc,musl,baseline,strtof,zero_tail,742164
+15,Zig cc,musl,baseline,strtod,ones,697792
+15,Zig cc,musl,baseline,strtod,zero_tail,742186
+15,Zig cc,musl,baseline,strtold,ones,714051
+15,Zig cc,musl,baseline,strtold,zero_tail,721162
+15,TinyCC,glibc,candidate,strtof,ones,2052010
+15,TinyCC,glibc,candidate,strtof,zero_tail,2060894
+15,TinyCC,glibc,candidate,strtod,ones,1935941
+15,TinyCC,glibc,candidate,strtod,zero_tail,2052348
+15,TinyCC,glibc,candidate,strtold,ones,1981544
+15,TinyCC,glibc,candidate,strtold,zero_tail,2079016
+15,Zig cc,glibc,candidate,strtof,ones,678044
+15,Zig cc,glibc,candidate,strtof,zero_tail,720656
+15,Zig cc,glibc,candidate,strtod,ones,712792
+15,Zig cc,glibc,candidate,strtod,zero_tail,731490
+15,Zig cc,glibc,candidate,strtold,ones,740114
+15,Zig cc,glibc,candidate,strtold,zero_tail,731964
+15,GCC,glibc,candidate,strtof,ones,662415
+15,GCC,glibc,candidate,strtof,zero_tail,713724
+15,GCC,glibc,candidate,strtod,ones,678994
+15,GCC,glibc,candidate,strtod,zero_tail,700513
+15,GCC,glibc,candidate,strtold,ones,673818
+15,GCC,glibc,candidate,strtold,zero_tail,752843
+15,Zig cc,musl,candidate,strtof,ones,692400
+15,Zig cc,musl,candidate,strtof,zero_tail,752373
+15,Zig cc,musl,candidate,strtod,ones,722723
+15,Zig cc,musl,candidate,strtod,zero_tail,707409
+15,Zig cc,musl,candidate,strtold,ones,705330
+15,Zig cc,musl,candidate,strtold,zero_tail,748223
+16,TinyCC,glibc,candidate,strtof,ones,2052577
+16,TinyCC,glibc,candidate,strtof,zero_tail,2090522
+16,TinyCC,glibc,candidate,strtod,ones,2059571
+16,TinyCC,glibc,candidate,strtod,zero_tail,2118079
+16,TinyCC,glibc,candidate,strtold,ones,2045429
+16,TinyCC,glibc,candidate,strtold,zero_tail,2122497
+16,Zig cc,glibc,candidate,strtof,ones,725017
+16,Zig cc,glibc,candidate,strtof,zero_tail,741429
+16,Zig cc,glibc,candidate,strtod,ones,701295
+16,Zig cc,glibc,candidate,strtod,zero_tail,739183
+16,Zig cc,glibc,candidate,strtold,ones,723089
+16,Zig cc,glibc,candidate,strtold,zero_tail,750996
+16,GCC,glibc,candidate,strtof,ones,697296
+16,GCC,glibc,candidate,strtof,zero_tail,729725
+16,GCC,glibc,candidate,strtod,ones,690959
+16,GCC,glibc,candidate,strtod,zero_tail,730472
+16,GCC,glibc,candidate,strtold,ones,699388
+16,GCC,glibc,candidate,strtold,zero_tail,705923
+16,Zig cc,musl,candidate,strtof,ones,706821
+16,Zig cc,musl,candidate,strtof,zero_tail,740586
+16,Zig cc,musl,candidate,strtod,ones,711198
+16,Zig cc,musl,candidate,strtod,zero_tail,732633
+16,Zig cc,musl,candidate,strtold,ones,712857
+16,Zig cc,musl,candidate,strtold,zero_tail,743466
+16,TinyCC,glibc,baseline,strtof,ones,2054947
+16,TinyCC,glibc,baseline,strtof,zero_tail,2102497
+16,TinyCC,glibc,baseline,strtod,ones,2012543
+16,TinyCC,glibc,baseline,strtod,zero_tail,2112439
+16,TinyCC,glibc,baseline,strtold,ones,2066849
+16,TinyCC,glibc,baseline,strtold,zero_tail,2122408
+16,Zig cc,glibc,baseline,strtof,ones,707346
+16,Zig cc,glibc,baseline,strtof,zero_tail,741429
+16,Zig cc,glibc,baseline,strtod,ones,712370
+16,Zig cc,glibc,baseline,strtod,zero_tail,755742
+16,Zig cc,glibc,baseline,strtold,ones,684184
+16,Zig cc,glibc,baseline,strtold,zero_tail,741960
+16,GCC,glibc,baseline,strtof,ones,684620
+16,GCC,glibc,baseline,strtof,zero_tail,727690
+16,GCC,glibc,baseline,strtod,ones,692468
+16,GCC,glibc,baseline,strtod,zero_tail,714686
+16,GCC,glibc,baseline,strtold,ones,700904
+16,GCC,glibc,baseline,strtold,zero_tail,733447
+16,Zig cc,musl,baseline,strtof,ones,691430
+16,Zig cc,musl,baseline,strtof,zero_tail,760537
+16,Zig cc,musl,baseline,strtod,ones,716815
+16,Zig cc,musl,baseline,strtod,zero_tail,768207
+16,Zig cc,musl,baseline,strtold,ones,713396
+16,Zig cc,musl,baseline,strtold,zero_tail,727786
+17,TinyCC,glibc,baseline,strtof,ones,2056198
+17,TinyCC,glibc,baseline,strtof,zero_tail,2237142
+17,TinyCC,glibc,baseline,strtod,ones,2102543
+17,TinyCC,glibc,baseline,strtod,zero_tail,2148134
+17,TinyCC,glibc,baseline,strtold,ones,2008484
+17,TinyCC,glibc,baseline,strtold,zero_tail,2062267
+17,Zig cc,glibc,baseline,strtof,ones,711584
+17,Zig cc,glibc,baseline,strtof,zero_tail,735932
+17,Zig cc,glibc,baseline,strtod,ones,712260
+17,Zig cc,glibc,baseline,strtod,zero_tail,731141
+17,Zig cc,glibc,baseline,strtold,ones,708921
+17,Zig cc,glibc,baseline,strtold,zero_tail,749136
+17,GCC,glibc,baseline,strtof,ones,689203
+17,GCC,glibc,baseline,strtof,zero_tail,722101
+17,GCC,glibc,baseline,strtod,ones,701924
+17,GCC,glibc,baseline,strtod,zero_tail,712664
+17,GCC,glibc,baseline,strtold,ones,690510
+17,GCC,glibc,baseline,strtold,zero_tail,732396
+17,Zig cc,musl,baseline,strtof,ones,713667
+17,Zig cc,musl,baseline,strtof,zero_tail,742147
+17,Zig cc,musl,baseline,strtod,ones,712814
+17,Zig cc,musl,baseline,strtod,zero_tail,765740
+17,Zig cc,musl,baseline,strtold,ones,720388
+17,Zig cc,musl,baseline,strtold,zero_tail,754654
+17,TinyCC,glibc,candidate,strtof,ones,1978795
+17,TinyCC,glibc,candidate,strtof,zero_tail,2026214
+17,TinyCC,glibc,candidate,strtod,ones,1943126
+17,TinyCC,glibc,candidate,strtod,zero_tail,2062012
+17,TinyCC,glibc,candidate,strtold,ones,1979759
+17,TinyCC,glibc,candidate,strtold,zero_tail,2032168
+17,Zig cc,glibc,candidate,strtof,ones,683173
+17,Zig cc,glibc,candidate,strtof,zero_tail,741611
+17,Zig cc,glibc,candidate,strtod,ones,680880
+17,Zig cc,glibc,candidate,strtod,zero_tail,740144
+17,Zig cc,glibc,candidate,strtold,ones,714869
+17,Zig cc,glibc,candidate,strtold,zero_tail,740585
+17,GCC,glibc,candidate,strtof,ones,659664
+17,GCC,glibc,candidate,strtof,zero_tail,738141
+17,GCC,glibc,candidate,strtod,ones,686591
+17,GCC,glibc,candidate,strtod,zero_tail,723822
+17,GCC,glibc,candidate,strtold,ones,696982
+17,GCC,glibc,candidate,strtold,zero_tail,714387
+17,Zig cc,musl,candidate,strtof,ones,703997
+17,Zig cc,musl,candidate,strtof,zero_tail,742109
+17,Zig cc,musl,candidate,strtod,ones,704143
+17,Zig cc,musl,candidate,strtod,zero_tail,735383
+17,Zig cc,musl,candidate,strtold,ones,729611
+17,Zig cc,musl,candidate,strtold,zero_tail,717508
+18,TinyCC,glibc,candidate,strtof,ones,1981533
+18,TinyCC,glibc,candidate,strtof,zero_tail,2083099
+18,TinyCC,glibc,candidate,strtod,ones,2006061
+18,TinyCC,glibc,candidate,strtod,zero_tail,2094245
+18,TinyCC,glibc,candidate,strtold,ones,1958675
+18,TinyCC,glibc,candidate,strtold,zero_tail,2038472
+18,Zig cc,glibc,candidate,strtof,ones,760499
+18,Zig cc,glibc,candidate,strtof,zero_tail,747544
+18,Zig cc,glibc,candidate,strtod,ones,717895
+18,Zig cc,glibc,candidate,strtod,zero_tail,757227
+18,Zig cc,glibc,candidate,strtold,ones,689392
+18,Zig cc,glibc,candidate,strtold,zero_tail,749398
+18,GCC,glibc,candidate,strtof,ones,689707
+18,GCC,glibc,candidate,strtof,zero_tail,709231
+18,GCC,glibc,candidate,strtod,ones,682940
+18,GCC,glibc,candidate,strtod,zero_tail,718858
+18,GCC,glibc,candidate,strtold,ones,684573
+18,GCC,glibc,candidate,strtold,zero_tail,720271
+18,Zig cc,musl,candidate,strtof,ones,694889
+18,Zig cc,musl,candidate,strtof,zero_tail,736855
+18,Zig cc,musl,candidate,strtod,ones,701098
+18,Zig cc,musl,candidate,strtod,zero_tail,730369
+18,Zig cc,musl,candidate,strtold,ones,688637
+18,Zig cc,musl,candidate,strtold,zero_tail,727514
+18,TinyCC,glibc,baseline,strtof,ones,1961870
+18,TinyCC,glibc,baseline,strtof,zero_tail,2063212
+18,TinyCC,glibc,baseline,strtod,ones,1996672
+18,TinyCC,glibc,baseline,strtod,zero_tail,2123099
+18,TinyCC,glibc,baseline,strtold,ones,2029414
+18,TinyCC,glibc,baseline,strtold,zero_tail,2123436
+18,Zig cc,glibc,baseline,strtof,ones,725860
+18,Zig cc,glibc,baseline,strtof,zero_tail,751287
+18,Zig cc,glibc,baseline,strtod,ones,689442
+18,Zig cc,glibc,baseline,strtod,zero_tail,723316
+18,Zig cc,glibc,baseline,strtold,ones,698082
+18,Zig cc,glibc,baseline,strtold,zero_tail,728746
+18,GCC,glibc,baseline,strtof,ones,700580
+18,GCC,glibc,baseline,strtof,zero_tail,694867
+18,GCC,glibc,baseline,strtod,ones,666138
+18,GCC,glibc,baseline,strtod,zero_tail,727351
+18,GCC,glibc,baseline,strtold,ones,750765
+18,GCC,glibc,baseline,strtold,zero_tail,765229
+18,Zig cc,musl,baseline,strtof,ones,724203
+18,Zig cc,musl,baseline,strtof,zero_tail,823461
+18,Zig cc,musl,baseline,strtod,ones,729455
+18,Zig cc,musl,baseline,strtod,zero_tail,779236
+18,Zig cc,musl,baseline,strtold,ones,735124
+18,Zig cc,musl,baseline,strtold,zero_tail,771467
+19,TinyCC,glibc,baseline,strtof,ones,2139043
+19,TinyCC,glibc,baseline,strtof,zero_tail,2182582
+19,TinyCC,glibc,baseline,strtod,ones,2092630
+19,TinyCC,glibc,baseline,strtod,zero_tail,2178986
+19,TinyCC,glibc,baseline,strtold,ones,2160534
+19,TinyCC,glibc,baseline,strtold,zero_tail,2125715
+19,Zig cc,glibc,baseline,strtof,ones,724235
+19,Zig cc,glibc,baseline,strtof,zero_tail,767703
+19,Zig cc,glibc,baseline,strtod,ones,727909
+19,Zig cc,glibc,baseline,strtod,zero_tail,745594
+19,Zig cc,glibc,baseline,strtold,ones,717665
+19,Zig cc,glibc,baseline,strtold,zero_tail,749809
+19,GCC,glibc,baseline,strtof,ones,691870
+19,GCC,glibc,baseline,strtof,zero_tail,735921
+19,GCC,glibc,baseline,strtod,ones,688957
+19,GCC,glibc,baseline,strtod,zero_tail,715056
+19,GCC,glibc,baseline,strtold,ones,715833
+19,GCC,glibc,baseline,strtold,zero_tail,738507
+19,Zig cc,musl,baseline,strtof,ones,768717
+19,Zig cc,musl,baseline,strtof,zero_tail,749243
+19,Zig cc,musl,baseline,strtod,ones,716317
+19,Zig cc,musl,baseline,strtod,zero_tail,780969
+19,Zig cc,musl,baseline,strtold,ones,719503
+19,Zig cc,musl,baseline,strtold,zero_tail,734270
+19,TinyCC,glibc,candidate,strtof,ones,2017505
+19,TinyCC,glibc,candidate,strtof,zero_tail,2101476
+19,TinyCC,glibc,candidate,strtod,ones,1958984
+19,TinyCC,glibc,candidate,strtod,zero_tail,2066489
+19,TinyCC,glibc,candidate,strtold,ones,2031339
+19,TinyCC,glibc,candidate,strtold,zero_tail,2045773
+19,Zig cc,glibc,candidate,strtof,ones,706626
+19,Zig cc,glibc,candidate,strtof,zero_tail,722097
+19,Zig cc,glibc,candidate,strtod,ones,724258
+19,Zig cc,glibc,candidate,strtod,zero_tail,742967
+19,Zig cc,glibc,candidate,strtold,ones,723429
+19,Zig cc,glibc,candidate,strtold,zero_tail,774395
+19,GCC,glibc,candidate,strtof,ones,672656
+19,GCC,glibc,candidate,strtof,zero_tail,727025
+19,GCC,glibc,candidate,strtod,ones,680302
+19,GCC,glibc,candidate,strtod,zero_tail,693781
+19,GCC,glibc,candidate,strtold,ones,688394
+19,GCC,glibc,candidate,strtold,zero_tail,742168
+19,Zig cc,musl,candidate,strtof,ones,707597
+19,Zig cc,musl,candidate,strtof,zero_tail,736494
+19,Zig cc,musl,candidate,strtod,ones,693020
+19,Zig cc,musl,candidate,strtod,zero_tail,722834
+19,Zig cc,musl,candidate,strtold,ones,710190
+19,Zig cc,musl,candidate,strtold,zero_tail,697145
+20,TinyCC,glibc,candidate,strtof,ones,1994290
+20,TinyCC,glibc,candidate,strtof,zero_tail,2117641
+20,TinyCC,glibc,candidate,strtod,ones,2031881
+20,TinyCC,glibc,candidate,strtod,zero_tail,2130363
+20,TinyCC,glibc,candidate,strtold,ones,2108762
+20,TinyCC,glibc,candidate,strtold,zero_tail,2128539
+20,Zig cc,glibc,candidate,strtof,ones,707703
+20,Zig cc,glibc,candidate,strtof,zero_tail,748697
+20,Zig cc,glibc,candidate,strtod,ones,702712
+20,Zig cc,glibc,candidate,strtod,zero_tail,760477
+20,Zig cc,glibc,candidate,strtold,ones,736494
+20,Zig cc,glibc,candidate,strtold,zero_tail,754164
+20,GCC,glibc,candidate,strtof,ones,692135
+20,GCC,glibc,candidate,strtof,zero_tail,725850
+20,GCC,glibc,candidate,strtod,ones,693852
+20,GCC,glibc,candidate,strtod,zero_tail,720629
+20,GCC,glibc,candidate,strtold,ones,678123
+20,GCC,glibc,candidate,strtold,zero_tail,697527
+20,Zig cc,musl,candidate,strtof,ones,711799
+20,Zig cc,musl,candidate,strtof,zero_tail,744454
+20,Zig cc,musl,candidate,strtod,ones,705263
+20,Zig cc,musl,candidate,strtod,zero_tail,710186
+20,Zig cc,musl,candidate,strtold,ones,706613
+20,Zig cc,musl,candidate,strtold,zero_tail,734570
+20,TinyCC,glibc,baseline,strtof,ones,1995005
+20,TinyCC,glibc,baseline,strtof,zero_tail,2281954
+20,TinyCC,glibc,baseline,strtod,ones,2066822
+20,TinyCC,glibc,baseline,strtod,zero_tail,2052893
+20,TinyCC,glibc,baseline,strtold,ones,2152289
+20,TinyCC,glibc,baseline,strtold,zero_tail,2196709
+20,Zig cc,glibc,baseline,strtof,ones,722164
+20,Zig cc,glibc,baseline,strtof,zero_tail,750202
+20,Zig cc,glibc,baseline,strtod,ones,710867
+20,Zig cc,glibc,baseline,strtod,zero_tail,744754
+20,Zig cc,glibc,baseline,strtold,ones,720901
+20,Zig cc,glibc,baseline,strtold,zero_tail,738942
+20,GCC,glibc,baseline,strtof,ones,683108
+20,GCC,glibc,baseline,strtof,zero_tail,723381
+20,GCC,glibc,baseline,strtod,ones,693907
+20,GCC,glibc,baseline,strtod,zero_tail,702622
+20,GCC,glibc,baseline,strtold,ones,671808
+20,GCC,glibc,baseline,strtold,zero_tail,738050
+20,Zig cc,musl,baseline,strtof,ones,716392
+20,Zig cc,musl,baseline,strtof,zero_tail,869118
+20,Zig cc,musl,baseline,strtod,ones,750487
+20,Zig cc,musl,baseline,strtod,zero_tail,759657
+20,Zig cc,musl,baseline,strtold,ones,717378
+20,Zig cc,musl,baseline,strtold,zero_tail,788738
+21,TinyCC,glibc,baseline,strtof,ones,2067013
+21,TinyCC,glibc,baseline,strtof,zero_tail,2123205
+21,TinyCC,glibc,baseline,strtod,ones,2032762
+21,TinyCC,glibc,baseline,strtod,zero_tail,2098329
+21,TinyCC,glibc,baseline,strtold,ones,2053326
+21,TinyCC,glibc,baseline,strtold,zero_tail,2127689
+21,Zig cc,glibc,baseline,strtof,ones,720961
+21,Zig cc,glibc,baseline,strtof,zero_tail,746531
+21,Zig cc,glibc,baseline,strtod,ones,723056
+21,Zig cc,glibc,baseline,strtod,zero_tail,745903
+21,Zig cc,glibc,baseline,strtold,ones,720534
+21,Zig cc,glibc,baseline,strtold,zero_tail,821161
+21,GCC,glibc,baseline,strtof,ones,689904
+21,GCC,glibc,baseline,strtof,zero_tail,724779
+21,GCC,glibc,baseline,strtod,ones,687891
+21,GCC,glibc,baseline,strtod,zero_tail,717240
+21,GCC,glibc,baseline,strtold,ones,697592
+21,GCC,glibc,baseline,strtold,zero_tail,727712
+21,Zig cc,musl,baseline,strtof,ones,721132
+21,Zig cc,musl,baseline,strtof,zero_tail,744104
+21,Zig cc,musl,baseline,strtod,ones,711738
+21,Zig cc,musl,baseline,strtod,zero_tail,749422
+21,Zig cc,musl,baseline,strtold,ones,715133
+21,Zig cc,musl,baseline,strtold,zero_tail,725988
+21,TinyCC,glibc,candidate,strtof,ones,1965561
+21,TinyCC,glibc,candidate,strtof,zero_tail,2039197
+21,TinyCC,glibc,candidate,strtod,ones,2071923
+21,TinyCC,glibc,candidate,strtod,zero_tail,2112879
+21,TinyCC,glibc,candidate,strtold,ones,2011216
+21,TinyCC,glibc,candidate,strtold,zero_tail,2166792
+21,Zig cc,glibc,candidate,strtof,ones,712085
+21,Zig cc,glibc,candidate,strtof,zero_tail,736565
+21,Zig cc,glibc,candidate,strtod,ones,706806
+21,Zig cc,glibc,candidate,strtod,zero_tail,729240
+21,Zig cc,glibc,candidate,strtold,ones,708884
+21,Zig cc,glibc,candidate,strtold,zero_tail,732215
+21,GCC,glibc,candidate,strtof,ones,693727
+21,GCC,glibc,candidate,strtof,zero_tail,745730
+21,GCC,glibc,candidate,strtod,ones,673538
+21,GCC,glibc,candidate,strtod,zero_tail,696072
+21,GCC,glibc,candidate,strtold,ones,696830
+21,GCC,glibc,candidate,strtold,zero_tail,699759
+21,Zig cc,musl,candidate,strtof,ones,689853
+21,Zig cc,musl,candidate,strtof,zero_tail,732687
+21,Zig cc,musl,candidate,strtod,ones,688012
+21,Zig cc,musl,candidate,strtod,zero_tail,814821
+21,Zig cc,musl,candidate,strtold,ones,770698
+21,Zig cc,musl,candidate,strtold,zero_tail,755131
+22,TinyCC,glibc,candidate,strtof,ones,2051450
+22,TinyCC,glibc,candidate,strtof,zero_tail,2140275
+22,TinyCC,glibc,candidate,strtod,ones,2017417
+22,TinyCC,glibc,candidate,strtod,zero_tail,2097129
+22,TinyCC,glibc,candidate,strtold,ones,2000005
+22,TinyCC,glibc,candidate,strtold,zero_tail,2146833
+22,Zig cc,glibc,candidate,strtof,ones,718816
+22,Zig cc,glibc,candidate,strtof,zero_tail,769371
+22,Zig cc,glibc,candidate,strtod,ones,714615
+22,Zig cc,glibc,candidate,strtod,zero_tail,739456
+22,Zig cc,glibc,candidate,strtold,ones,692784
+22,Zig cc,glibc,candidate,strtold,zero_tail,754607
+22,GCC,glibc,candidate,strtof,ones,676034
+22,GCC,glibc,candidate,strtof,zero_tail,758325
+22,GCC,glibc,candidate,strtod,ones,684084
+22,GCC,glibc,candidate,strtod,zero_tail,728137
+22,GCC,glibc,candidate,strtold,ones,699867
+22,GCC,glibc,candidate,strtold,zero_tail,717687
+22,Zig cc,musl,candidate,strtof,ones,755501
+22,Zig cc,musl,candidate,strtof,zero_tail,754133
+22,Zig cc,musl,candidate,strtod,ones,725825
+22,Zig cc,musl,candidate,strtod,zero_tail,742015
+22,Zig cc,musl,candidate,strtold,ones,836095
+22,Zig cc,musl,candidate,strtold,zero_tail,768823
+22,TinyCC,glibc,baseline,strtof,ones,1980891
+22,TinyCC,glibc,baseline,strtof,zero_tail,2108305
+22,TinyCC,glibc,baseline,strtod,ones,2027274
+22,TinyCC,glibc,baseline,strtod,zero_tail,2171224
+22,TinyCC,glibc,baseline,strtold,ones,2194636
+22,TinyCC,glibc,baseline,strtold,zero_tail,2207957
+22,Zig cc,glibc,baseline,strtof,ones,735195
+22,Zig cc,glibc,baseline,strtof,zero_tail,768526
+22,Zig cc,glibc,baseline,strtod,ones,731137
+22,Zig cc,glibc,baseline,strtod,zero_tail,767777
+22,Zig cc,glibc,baseline,strtold,ones,738843
+22,Zig cc,glibc,baseline,strtold,zero_tail,775571
+22,GCC,glibc,baseline,strtof,ones,706874
+22,GCC,glibc,baseline,strtof,zero_tail,743477
+22,GCC,glibc,baseline,strtod,ones,704744
+22,GCC,glibc,baseline,strtod,zero_tail,741114
+22,GCC,glibc,baseline,strtold,ones,723237
+22,GCC,glibc,baseline,strtold,zero_tail,748951
+22,Zig cc,musl,baseline,strtof,ones,735840
+22,Zig cc,musl,baseline,strtof,zero_tail,777631
+22,Zig cc,musl,baseline,strtod,ones,744873
+22,Zig cc,musl,baseline,strtod,zero_tail,766992
+22,Zig cc,musl,baseline,strtold,ones,739107
+22,Zig cc,musl,baseline,strtold,zero_tail,750732
+23,TinyCC,glibc,baseline,strtof,ones,2021914
+23,TinyCC,glibc,baseline,strtof,zero_tail,2093357
+23,TinyCC,glibc,baseline,strtod,ones,2008114
+23,TinyCC,glibc,baseline,strtod,zero_tail,2143014
+23,TinyCC,glibc,baseline,strtold,ones,2068784
+23,TinyCC,glibc,baseline,strtold,zero_tail,2202686
+23,Zig cc,glibc,baseline,strtof,ones,739162
+23,Zig cc,glibc,baseline,strtof,zero_tail,752474
+23,Zig cc,glibc,baseline,strtod,ones,724149
+23,Zig cc,glibc,baseline,strtod,zero_tail,754408
+23,Zig cc,glibc,baseline,strtold,ones,738501
+23,Zig cc,glibc,baseline,strtold,zero_tail,737358
+23,GCC,glibc,baseline,strtof,ones,685135
+23,GCC,glibc,baseline,strtof,zero_tail,736921
+23,GCC,glibc,baseline,strtod,ones,691025
+23,GCC,glibc,baseline,strtod,zero_tail,713563
+23,GCC,glibc,baseline,strtold,ones,700535
+23,GCC,glibc,baseline,strtold,zero_tail,725907
+23,Zig cc,musl,baseline,strtof,ones,710362
+23,Zig cc,musl,baseline,strtof,zero_tail,752875
+23,Zig cc,musl,baseline,strtod,ones,745921
+23,Zig cc,musl,baseline,strtod,zero_tail,746936
+23,Zig cc,musl,baseline,strtold,ones,709565
+23,Zig cc,musl,baseline,strtold,zero_tail,763488
+23,TinyCC,glibc,candidate,strtof,ones,1980230
+23,TinyCC,glibc,candidate,strtof,zero_tail,2087119
+23,TinyCC,glibc,candidate,strtod,ones,1953268
+23,TinyCC,glibc,candidate,strtod,zero_tail,2089708
+23,TinyCC,glibc,candidate,strtold,ones,2093245
+23,TinyCC,glibc,candidate,strtold,zero_tail,2095636
+23,Zig cc,glibc,candidate,strtof,ones,752731
+23,Zig cc,glibc,candidate,strtof,zero_tail,776573
+23,Zig cc,glibc,candidate,strtod,ones,725342
+23,Zig cc,glibc,candidate,strtod,zero_tail,737557
+23,Zig cc,glibc,candidate,strtold,ones,690089
+23,Zig cc,glibc,candidate,strtold,zero_tail,755992
+23,GCC,glibc,candidate,strtof,ones,688085
+23,GCC,glibc,candidate,strtof,zero_tail,715746
+23,GCC,glibc,candidate,strtod,ones,720459
+23,GCC,glibc,candidate,strtod,zero_tail,728087
+23,GCC,glibc,candidate,strtold,ones,710012
+23,GCC,glibc,candidate,strtold,zero_tail,727858
+23,Zig cc,musl,candidate,strtof,ones,732071
+23,Zig cc,musl,candidate,strtof,zero_tail,782348
+23,Zig cc,musl,candidate,strtod,ones,725414
+23,Zig cc,musl,candidate,strtod,zero_tail,757200
+23,Zig cc,musl,candidate,strtold,ones,733736
+23,Zig cc,musl,candidate,strtold,zero_tail,769144
+24,TinyCC,glibc,candidate,strtof,ones,2062738
+24,TinyCC,glibc,candidate,strtof,zero_tail,2117780
+24,TinyCC,glibc,candidate,strtod,ones,2009992
+24,TinyCC,glibc,candidate,strtod,zero_tail,2120537
+24,TinyCC,glibc,candidate,strtold,ones,1997764
+24,TinyCC,glibc,candidate,strtold,zero_tail,2107471
+24,Zig cc,glibc,candidate,strtof,ones,709035
+24,Zig cc,glibc,candidate,strtof,zero_tail,772277
+24,Zig cc,glibc,candidate,strtod,ones,716992
+24,Zig cc,glibc,candidate,strtod,zero_tail,732309
+24,Zig cc,glibc,candidate,strtold,ones,712396
+24,Zig cc,glibc,candidate,strtold,zero_tail,775176
+24,GCC,glibc,candidate,strtof,ones,725314
+24,GCC,glibc,candidate,strtof,zero_tail,725744
+24,GCC,glibc,candidate,strtod,ones,662266
+24,GCC,glibc,candidate,strtod,zero_tail,746284
+24,GCC,glibc,candidate,strtold,ones,713059
+24,GCC,glibc,candidate,strtold,zero_tail,745945
+24,Zig cc,musl,candidate,strtof,ones,699730
+24,Zig cc,musl,candidate,strtof,zero_tail,748492
+24,Zig cc,musl,candidate,strtod,ones,710896
+24,Zig cc,musl,candidate,strtod,zero_tail,745894
+24,Zig cc,musl,candidate,strtold,ones,712264
+24,Zig cc,musl,candidate,strtold,zero_tail,733080
+24,TinyCC,glibc,baseline,strtof,ones,2172393
+24,TinyCC,glibc,baseline,strtof,zero_tail,2108911
+24,TinyCC,glibc,baseline,strtod,ones,2058048
+24,TinyCC,glibc,baseline,strtod,zero_tail,2202091
+24,TinyCC,glibc,baseline,strtold,ones,2060737
+24,TinyCC,glibc,baseline,strtold,zero_tail,2146261
+24,Zig cc,glibc,baseline,strtof,ones,707426
+24,Zig cc,glibc,baseline,strtof,zero_tail,790664
+24,Zig cc,glibc,baseline,strtod,ones,719539
+24,Zig cc,glibc,baseline,strtod,zero_tail,744967
+24,Zig cc,glibc,baseline,strtold,ones,717043
+24,Zig cc,glibc,baseline,strtold,zero_tail,748888
+24,GCC,glibc,baseline,strtof,ones,700577
+24,GCC,glibc,baseline,strtof,zero_tail,726196
+24,GCC,glibc,baseline,strtod,ones,688673
+24,GCC,glibc,baseline,strtod,zero_tail,716631
+24,GCC,glibc,baseline,strtold,ones,713506
+24,GCC,glibc,baseline,strtold,zero_tail,768792
+24,Zig cc,musl,baseline,strtof,ones,712731
+24,Zig cc,musl,baseline,strtof,zero_tail,746623
+24,Zig cc,musl,baseline,strtod,ones,700205
+24,Zig cc,musl,baseline,strtod,zero_tail,745032
+24,Zig cc,musl,baseline,strtold,ones,717689
+24,Zig cc,musl,baseline,strtold,zero_tail,748456

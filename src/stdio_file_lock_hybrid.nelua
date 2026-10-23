@@ -1,0 +1,18 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_host_flockfile(stream: pointer): void <cimport> end
+local function nelibc_host_ftrylockfile(stream: pointer): cint <cimport> end
+local function nelibc_host_funlockfile(stream: pointer): void <cimport> end
+
+local function flockfile(stream: pointer): void <cexport, codename 'flockfile'>
+  nelibc_host_flockfile(stream)
+end
+
+local function ftrylockfile(stream: pointer): cint <cexport, codename 'ftrylockfile'>
+  return nelibc_host_ftrylockfile(stream)
+end
+
+local function funlockfile(stream: pointer): void <cexport, codename 'funlockfile'>
+  nelibc_host_funlockfile(stream)
+end

@@ -1,0 +1,13 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_host_fgetpos(stream: pointer, position: pointer): cint <cimport> end
+local function nelibc_host_fsetpos(stream: pointer, position: pointer <const>): cint <cimport> end
+
+local function fgetpos(stream: pointer, position: pointer): cint <cexport, codename 'fgetpos'>
+  return nelibc_host_fgetpos(stream, position)
+end
+
+local function fsetpos(stream: pointer, position: pointer <const>): cint <cexport, codename 'fsetpos'>
+  return nelibc_host_fsetpos(stream, position)
+end

@@ -1,0 +1,27 @@
+TinyCC long-decimal power-of-five scaling profile
+Date: 2026-10-22
+
+Instrumentation measured big_mul_power5 on the two 600-digit decimal cases,
+with 5 samples x 160 calls x 3 parsers. Each parser therefore made 800 scaling
+calls. All calls used absolute exponent >=100; the mean exponent was 898.5,
+with 69 multiplications by 5^13 and 1.5 tail multiplications per call. The
+input had one BigUInt limb before scaling and averaged 65.5 limbs afterward.
+
+Before the TinyCC rolling-pointer loop in big_mul_small, cycles per power5 call
+were 13,207 for strtof, 13,310 for strtod, and 12,776 for strtold. After the
+change they were 10,321, 10,296, and 10,448, reductions of 21.9%, 22.6%, and
+18.2%. Counts of exponents, chunk multiplies, tail multiplies, and limb sizes
+were unchanged.
+
+Twelve alternating TinyCC pairs for total parser time show median paired gains
+of 1.7%, 0.3%, and 1.2% on short strtof, strtod, and strtold; long-input gains
+were 2.2%, 3.0%, and 2.9%. See 2026-10-22-float-power5-mulptr-ab.csv.
+The 32-bit carry-state variant passed differential cases but regressed long
+inputs by 18–21%, so the carry remains 64-bit.
+
+After applying the TinyCC-only pointer path, the 1,250-case float differential
+and Knuth quotient-precheck matrices passed on Zig/glibc, GCC/glibc, Zig/musl,
+and TinyCC/glibc. The standalone TinyCC smoke built and ran. Final short and
+long host/Nelibc matrices are preserved in
+2026-10-22-float-power5-mulptr-final-short.csv and
+2026-10-22-float-power5-mulptr-final-long.csv.

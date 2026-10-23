@@ -1,0 +1,1441 @@
+compiler,libc,implementation,target_path,function,selector,value,iterations,median_ns_per_call,probe,errno
+Zig cc,glibc,host-libc,.,pathconf,LINK_MAX,65535,100000,396.40,value,0
+Zig cc,glibc,host-libc,.,fpathconf,LINK_MAX,65535,100000,210.04,value,0
+Zig cc,glibc,host-libc,.,pathconf,MAX_CANON,255,100000,2.25,value,0
+Zig cc,glibc,host-libc,.,fpathconf,MAX_CANON,255,100000,2.42,value,0
+Zig cc,glibc,host-libc,.,pathconf,MAX_INPUT,255,100000,2.25,value,0
+Zig cc,glibc,host-libc,.,fpathconf,MAX_INPUT,255,100000,2.48,value,0
+Zig cc,glibc,host-libc,.,pathconf,NAME_MAX,255,100000,403.25,value,0
+Zig cc,glibc,host-libc,.,fpathconf,NAME_MAX,255,100000,219.55,value,0
+Zig cc,glibc,host-libc,.,pathconf,PATH_MAX,4096,100000,2.38,value,0
+Zig cc,glibc,host-libc,.,fpathconf,PATH_MAX,4096,100000,2.35,value,0
+Zig cc,glibc,host-libc,.,pathconf,PIPE_BUF,4096,100000,2.35,value,0
+Zig cc,glibc,host-libc,.,fpathconf,PIPE_BUF,4096,100000,2.25,value,0
+Zig cc,glibc,host-libc,.,pathconf,CHOWN_RESTRICTED,1,100000,394.33,value,0
+Zig cc,glibc,host-libc,.,fpathconf,CHOWN_RESTRICTED,1,100000,211.47,value,0
+Zig cc,glibc,host-libc,.,pathconf,NO_TRUNC,1,100000,2.46,value,0
+Zig cc,glibc,host-libc,.,fpathconf,NO_TRUNC,1,100000,2.35,value,0
+Zig cc,glibc,host-libc,.,pathconf,VDISABLE,0,100000,2.42,value,0
+Zig cc,glibc,host-libc,.,fpathconf,VDISABLE,0,100000,2.35,value,0
+Zig cc,glibc,host-libc,.,pathconf,SYNC_IO,-1,100000,2.36,value,0
+Zig cc,glibc,host-libc,.,fpathconf,SYNC_IO,-1,100000,2.41,value,0
+Zig cc,glibc,host-libc,.,pathconf,ASYNC_IO,-1,100000,404.59,value,0
+Zig cc,glibc,host-libc,.,fpathconf,ASYNC_IO,-1,100000,224.34,value,0
+Zig cc,glibc,host-libc,.,pathconf,PRIO_IO,-1,100000,2.41,value,0
+Zig cc,glibc,host-libc,.,fpathconf,PRIO_IO,-1,100000,2.25,value,0
+Zig cc,glibc,host-libc,.,pathconf,SOCK_MAXBUF,-1,100000,2.39,value,0
+Zig cc,glibc,host-libc,.,fpathconf,SOCK_MAXBUF,-1,100000,2.37,value,0
+Zig cc,glibc,host-libc,.,pathconf,FILESIZEBITS,255,100000,390.96,value,0
+Zig cc,glibc,host-libc,.,fpathconf,FILESIZEBITS,255,100000,212.55,value,0
+Zig cc,glibc,host-libc,.,pathconf,REC_INCR_XFER_SIZE,-1,100000,2.65,value,0
+Zig cc,glibc,host-libc,.,fpathconf,REC_INCR_XFER_SIZE,-1,100000,2.62,value,0
+Zig cc,glibc,host-libc,.,pathconf,REC_MAX_XFER_SIZE,-1,100000,2.62,value,0
+Zig cc,glibc,host-libc,.,fpathconf,REC_MAX_XFER_SIZE,-1,100000,2.61,value,0
+Zig cc,glibc,host-libc,.,pathconf,REC_MIN_XFER_SIZE,4096,100000,395.46,value,0
+Zig cc,glibc,host-libc,.,fpathconf,REC_MIN_XFER_SIZE,4096,100000,214.12,value,0
+Zig cc,glibc,host-libc,.,pathconf,REC_XFER_ALIGN,4096,100000,394.82,value,0
+Zig cc,glibc,host-libc,.,fpathconf,REC_XFER_ALIGN,4096,100000,212.23,value,0
+Zig cc,glibc,host-libc,.,pathconf,ALLOC_SIZE_MIN,4096,100000,407.73,value,0
+Zig cc,glibc,host-libc,.,fpathconf,ALLOC_SIZE_MIN,4096,100000,226.44,value,0
+Zig cc,glibc,host-libc,.,pathconf,SYMLINK_MAX,-1,100000,2.56,value,0
+Zig cc,glibc,host-libc,.,fpathconf,SYMLINK_MAX,-1,100000,2.73,value,0
+Zig cc,glibc,host-libc,.,pathconf,2_SYMLINKS,1,100000,387.15,value,0
+Zig cc,glibc,host-libc,.,fpathconf,2_SYMLINKS,1,100000,210.33,value,0
+Zig cc,glibc,host-libc,.,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,glibc,host-libc,.,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,host-libc,.,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,host-libc,/proc,pathconf,LINK_MAX,127,100000,455.13,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,LINK_MAX,127,100000,138.52,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,MAX_CANON,255,100000,2.35,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,MAX_CANON,255,100000,2.40,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,MAX_INPUT,255,100000,2.25,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,MAX_INPUT,255,100000,2.25,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,NAME_MAX,255,100000,446.81,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,NAME_MAX,255,100000,142.23,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,PATH_MAX,4096,100000,2.35,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,PATH_MAX,4096,100000,2.35,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,PIPE_BUF,4096,100000,2.36,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,PIPE_BUF,4096,100000,2.39,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,CHOWN_RESTRICTED,1,100000,452.03,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,CHOWN_RESTRICTED,1,100000,138.00,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,NO_TRUNC,1,100000,2.41,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,NO_TRUNC,1,100000,2.36,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,VDISABLE,0,100000,2.35,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,VDISABLE,0,100000,2.50,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,SYNC_IO,-1,100000,2.35,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,SYNC_IO,-1,100000,2.25,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,ASYNC_IO,-1,100000,602.35,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,ASYNC_IO,-1,100000,290.30,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,PRIO_IO,-1,100000,2.40,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,PRIO_IO,-1,100000,2.57,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,SOCK_MAXBUF,-1,100000,2.35,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,SOCK_MAXBUF,-1,100000,2.49,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,FILESIZEBITS,32,100000,458.68,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,FILESIZEBITS,32,100000,140.54,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,REC_INCR_XFER_SIZE,-1,100000,2.75,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,REC_INCR_XFER_SIZE,-1,100000,2.56,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,REC_MAX_XFER_SIZE,-1,100000,2.63,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,REC_MAX_XFER_SIZE,-1,100000,2.45,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,REC_MIN_XFER_SIZE,4096,100000,448.62,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,REC_MIN_XFER_SIZE,4096,100000,144.83,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,REC_XFER_ALIGN,4096,100000,470.01,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,REC_XFER_ALIGN,4096,100000,143.83,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,ALLOC_SIZE_MIN,4096,100000,453.21,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,ALLOC_SIZE_MIN,4096,100000,143.45,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,SYMLINK_MAX,-1,100000,2.58,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,SYMLINK_MAX,-1,100000,2.75,value,0
+Zig cc,glibc,host-libc,/proc,pathconf,2_SYMLINKS,1,100000,448.64,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,2_SYMLINKS,1,100000,140.53,value,0
+Zig cc,glibc,host-libc,/proc,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,glibc,host-libc,/proc,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,host-libc,/proc,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,LINK_MAX,127,100000,625.04,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,LINK_MAX,127,100000,219.79,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,MAX_CANON,255,100000,2.35,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,MAX_CANON,255,100000,2.37,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,MAX_INPUT,255,100000,2.35,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,MAX_INPUT,255,100000,2.48,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,NAME_MAX,255,100000,625.15,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,NAME_MAX,255,100000,221.92,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,PATH_MAX,4096,100000,2.35,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,PATH_MAX,4096,100000,2.25,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,PIPE_BUF,4096,100000,2.25,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,PIPE_BUF,4096,100000,2.46,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,CHOWN_RESTRICTED,1,100000,622.00,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,CHOWN_RESTRICTED,1,100000,221.37,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,NO_TRUNC,1,100000,2.25,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,NO_TRUNC,1,100000,2.41,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,VDISABLE,0,100000,2.53,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,VDISABLE,0,100000,2.35,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,SYNC_IO,-1,100000,2.36,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,SYNC_IO,-1,100000,2.36,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,ASYNC_IO,-1,100000,642.69,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,ASYNC_IO,-1,100000,216.27,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,PRIO_IO,-1,100000,2.35,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,PRIO_IO,-1,100000,2.35,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,SOCK_MAXBUF,-1,100000,2.39,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,SOCK_MAXBUF,-1,100000,2.39,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,FILESIZEBITS,32,100000,631.84,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,FILESIZEBITS,32,100000,219.05,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,REC_INCR_XFER_SIZE,-1,100000,2.67,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,REC_INCR_XFER_SIZE,-1,100000,2.47,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,REC_MAX_XFER_SIZE,-1,100000,2.45,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,REC_MAX_XFER_SIZE,-1,100000,2.68,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,REC_MIN_XFER_SIZE,4096,100000,644.09,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,REC_MIN_XFER_SIZE,4096,100000,219.89,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,REC_XFER_ALIGN,4096,100000,620.46,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,REC_XFER_ALIGN,4096,100000,223.20,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,ALLOC_SIZE_MIN,4096,100000,629.12,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,ALLOC_SIZE_MIN,4096,100000,220.77,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,SYMLINK_MAX,-1,100000,2.63,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,SYMLINK_MAX,-1,100000,2.63,value,0
+Zig cc,glibc,host-libc,/dev/shm,pathconf,2_SYMLINKS,1,100000,615.66,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,2_SYMLINKS,1,100000,217.89,value,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,glibc,host-libc,/dev/shm,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,host-libc,/dev/shm,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,host-libc,/boot,pathconf,LINK_MAX,65000,100000,3494.78,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,LINK_MAX,65000,100000,2838.15,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,MAX_CANON,255,100000,2.35,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,MAX_CANON,255,100000,2.40,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,MAX_INPUT,255,100000,2.25,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,MAX_INPUT,255,100000,2.25,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,NAME_MAX,255,100000,685.42,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,NAME_MAX,255,100000,378.42,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,PATH_MAX,4096,100000,2.55,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,PATH_MAX,4096,100000,2.25,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,PIPE_BUF,4096,100000,2.25,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,PIPE_BUF,4096,100000,2.35,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,CHOWN_RESTRICTED,1,100000,680.43,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,CHOWN_RESTRICTED,1,100000,370.25,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,NO_TRUNC,1,100000,2.41,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,NO_TRUNC,1,100000,2.25,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,VDISABLE,0,100000,2.64,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,VDISABLE,0,100000,2.36,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,SYNC_IO,-1,100000,2.35,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,SYNC_IO,-1,100000,2.35,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,ASYNC_IO,-1,100000,548.10,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,ASYNC_IO,-1,100000,211.23,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,PRIO_IO,-1,100000,2.52,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,PRIO_IO,-1,100000,2.35,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,SOCK_MAXBUF,-1,100000,2.37,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,SOCK_MAXBUF,-1,100000,2.53,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,FILESIZEBITS,64,100000,693.73,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,FILESIZEBITS,64,100000,371.38,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,REC_INCR_XFER_SIZE,-1,100000,2.56,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,REC_INCR_XFER_SIZE,-1,100000,2.56,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,REC_MAX_XFER_SIZE,-1,100000,2.56,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,REC_MAX_XFER_SIZE,-1,100000,2.58,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,REC_MIN_XFER_SIZE,4096,100000,708.84,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,REC_MIN_XFER_SIZE,4096,100000,380.71,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,REC_XFER_ALIGN,4096,100000,704.39,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,REC_XFER_ALIGN,4096,100000,389.32,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,ALLOC_SIZE_MIN,4096,100000,700.97,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,ALLOC_SIZE_MIN,4096,100000,376.24,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,SYMLINK_MAX,-1,100000,2.64,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,SYMLINK_MAX,-1,100000,2.62,value,0
+Zig cc,glibc,host-libc,/boot,pathconf,2_SYMLINKS,1,100000,685.05,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,2_SYMLINKS,1,100000,374.01,value,0
+Zig cc,glibc,host-libc,/boot,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,glibc,host-libc,/boot,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,host-libc,/boot,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,nelibc,.,pathconf,LINK_MAX,65535,100000,398.47,value,0
+Zig cc,glibc,nelibc,.,fpathconf,LINK_MAX,65535,100000,214.62,value,0
+Zig cc,glibc,nelibc,.,pathconf,MAX_CANON,255,100000,1.43,value,0
+Zig cc,glibc,nelibc,.,fpathconf,MAX_CANON,255,100000,1.28,value,0
+Zig cc,glibc,nelibc,.,pathconf,MAX_INPUT,255,100000,1.31,value,0
+Zig cc,glibc,nelibc,.,fpathconf,MAX_INPUT,255,100000,1.28,value,0
+Zig cc,glibc,nelibc,.,pathconf,NAME_MAX,255,100000,402.54,value,0
+Zig cc,glibc,nelibc,.,fpathconf,NAME_MAX,255,100000,214.82,value,0
+Zig cc,glibc,nelibc,.,pathconf,PATH_MAX,4096,100000,1.28,value,0
+Zig cc,glibc,nelibc,.,fpathconf,PATH_MAX,4096,100000,1.37,value,0
+Zig cc,glibc,nelibc,.,pathconf,PIPE_BUF,4096,100000,1.23,value,0
+Zig cc,glibc,nelibc,.,fpathconf,PIPE_BUF,4096,100000,1.59,value,0
+Zig cc,glibc,nelibc,.,pathconf,CHOWN_RESTRICTED,1,100000,399.91,value,0
+Zig cc,glibc,nelibc,.,fpathconf,CHOWN_RESTRICTED,1,100000,217.66,value,0
+Zig cc,glibc,nelibc,.,pathconf,NO_TRUNC,1,100000,1.34,value,0
+Zig cc,glibc,nelibc,.,fpathconf,NO_TRUNC,1,100000,1.36,value,0
+Zig cc,glibc,nelibc,.,pathconf,VDISABLE,0,100000,1.50,value,0
+Zig cc,glibc,nelibc,.,fpathconf,VDISABLE,0,100000,1.42,value,0
+Zig cc,glibc,nelibc,.,pathconf,SYNC_IO,-1,100000,1.87,value,0
+Zig cc,glibc,nelibc,.,fpathconf,SYNC_IO,-1,100000,1.74,value,0
+Zig cc,glibc,nelibc,.,pathconf,ASYNC_IO,-1,100000,410.08,value,0
+Zig cc,glibc,nelibc,.,fpathconf,ASYNC_IO,-1,100000,219.49,value,0
+Zig cc,glibc,nelibc,.,pathconf,PRIO_IO,-1,100000,1.84,value,0
+Zig cc,glibc,nelibc,.,fpathconf,PRIO_IO,-1,100000,1.64,value,0
+Zig cc,glibc,nelibc,.,pathconf,SOCK_MAXBUF,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,.,fpathconf,SOCK_MAXBUF,-1,100000,1.74,value,0
+Zig cc,glibc,nelibc,.,pathconf,FILESIZEBITS,255,100000,392.32,value,0
+Zig cc,glibc,nelibc,.,fpathconf,FILESIZEBITS,255,100000,210.87,value,0
+Zig cc,glibc,nelibc,.,pathconf,REC_INCR_XFER_SIZE,-1,100000,1.66,value,0
+Zig cc,glibc,nelibc,.,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.64,value,0
+Zig cc,glibc,nelibc,.,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.49,value,0
+Zig cc,glibc,nelibc,.,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.49,value,0
+Zig cc,glibc,nelibc,.,pathconf,REC_MIN_XFER_SIZE,4096,100000,399.25,value,0
+Zig cc,glibc,nelibc,.,fpathconf,REC_MIN_XFER_SIZE,4096,100000,211.96,value,0
+Zig cc,glibc,nelibc,.,pathconf,REC_XFER_ALIGN,4096,100000,394.42,value,0
+Zig cc,glibc,nelibc,.,fpathconf,REC_XFER_ALIGN,4096,100000,211.12,value,0
+Zig cc,glibc,nelibc,.,pathconf,ALLOC_SIZE_MIN,4096,100000,393.13,value,0
+Zig cc,glibc,nelibc,.,fpathconf,ALLOC_SIZE_MIN,4096,100000,213.90,value,0
+Zig cc,glibc,nelibc,.,pathconf,SYMLINK_MAX,-1,100000,1.49,value,0
+Zig cc,glibc,nelibc,.,fpathconf,SYMLINK_MAX,-1,100000,1.49,value,0
+Zig cc,glibc,nelibc,.,pathconf,2_SYMLINKS,1,100000,1.92,value,0
+Zig cc,glibc,nelibc,.,fpathconf,2_SYMLINKS,1,100000,2.00,value,0
+Zig cc,glibc,nelibc,.,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,glibc,nelibc,.,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,nelibc,.,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,nelibc,/proc,pathconf,LINK_MAX,127,100000,454.02,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,LINK_MAX,127,100000,144.08,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,MAX_CANON,255,100000,1.37,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,MAX_CANON,255,100000,1.23,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,MAX_INPUT,255,100000,1.23,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,MAX_INPUT,255,100000,1.28,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,NAME_MAX,255,100000,452.72,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,NAME_MAX,255,100000,142.81,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,PATH_MAX,4096,100000,1.23,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,PATH_MAX,4096,100000,1.23,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,PIPE_BUF,4096,100000,1.23,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,PIPE_BUF,4096,100000,1.41,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,CHOWN_RESTRICTED,1,100000,463.63,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,CHOWN_RESTRICTED,1,100000,150.34,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,NO_TRUNC,1,100000,1.37,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,NO_TRUNC,1,100000,1.37,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,VDISABLE,0,100000,1.48,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,VDISABLE,0,100000,1.48,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,SYNC_IO,-1,100000,1.83,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,SYNC_IO,-1,100000,1.82,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,ASYNC_IO,-1,100000,611.35,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,ASYNC_IO,-1,100000,276.40,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,PRIO_IO,-1,100000,1.66,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,PRIO_IO,-1,100000,1.64,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,SOCK_MAXBUF,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,SOCK_MAXBUF,-1,100000,1.64,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,FILESIZEBITS,32,100000,446.83,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,FILESIZEBITS,32,100000,142.68,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,REC_INCR_XFER_SIZE,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.72,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.43,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.60,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,REC_MIN_XFER_SIZE,4096,100000,453.82,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,REC_MIN_XFER_SIZE,4096,100000,143.87,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,REC_XFER_ALIGN,4096,100000,459.95,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,REC_XFER_ALIGN,4096,100000,145.37,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,ALLOC_SIZE_MIN,4096,100000,451.18,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,ALLOC_SIZE_MIN,4096,100000,145.47,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,SYMLINK_MAX,-1,100000,1.45,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,SYMLINK_MAX,-1,100000,1.49,value,0
+Zig cc,glibc,nelibc,/proc,pathconf,2_SYMLINKS,1,100000,1.92,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,2_SYMLINKS,1,100000,1.92,value,0
+Zig cc,glibc,nelibc,/proc,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,glibc,nelibc,/proc,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,nelibc,/proc,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,LINK_MAX,127,100000,643.44,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,LINK_MAX,127,100000,229.95,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,MAX_CANON,255,100000,1.34,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,MAX_CANON,255,100000,1.34,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,MAX_INPUT,255,100000,1.31,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,MAX_INPUT,255,100000,1.31,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,NAME_MAX,255,100000,637.95,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,NAME_MAX,255,100000,218.98,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,PATH_MAX,4096,100000,1.47,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,PATH_MAX,4096,100000,1.28,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,PIPE_BUF,4096,100000,1.28,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,PIPE_BUF,4096,100000,1.54,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,CHOWN_RESTRICTED,1,100000,629.04,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,CHOWN_RESTRICTED,1,100000,222.02,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,NO_TRUNC,1,100000,1.28,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,NO_TRUNC,1,100000,1.23,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,VDISABLE,0,100000,1.33,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,VDISABLE,0,100000,1.33,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,SYNC_IO,-1,100000,1.64,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,SYNC_IO,-1,100000,1.64,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,ASYNC_IO,-1,100000,634.01,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,ASYNC_IO,-1,100000,210.22,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,PRIO_IO,-1,100000,1.64,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,PRIO_IO,-1,100000,1.64,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,SOCK_MAXBUF,-1,100000,1.64,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,SOCK_MAXBUF,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,FILESIZEBITS,32,100000,623.04,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,FILESIZEBITS,32,100000,217.59,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,REC_INCR_XFER_SIZE,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.83,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.53,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.43,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,REC_MIN_XFER_SIZE,4096,100000,629.60,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,REC_MIN_XFER_SIZE,4096,100000,216.50,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,REC_XFER_ALIGN,4096,100000,622.69,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,REC_XFER_ALIGN,4096,100000,220.27,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,ALLOC_SIZE_MIN,4096,100000,638.27,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,ALLOC_SIZE_MIN,4096,100000,221.80,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,SYMLINK_MAX,-1,100000,1.43,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,SYMLINK_MAX,-1,100000,1.43,value,0
+Zig cc,glibc,nelibc,/dev/shm,pathconf,2_SYMLINKS,1,100000,1.92,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,2_SYMLINKS,1,100000,1.92,value,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,glibc,nelibc,/dev/shm,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,nelibc,/dev/shm,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,nelibc,/boot,pathconf,LINK_MAX,65000,100000,689.31,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,LINK_MAX,65000,100000,377.58,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,MAX_CANON,255,100000,1.23,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,MAX_CANON,255,100000,1.23,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,MAX_INPUT,255,100000,1.28,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,MAX_INPUT,255,100000,1.28,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,NAME_MAX,255,100000,696.67,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,NAME_MAX,255,100000,377.80,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,PATH_MAX,4096,100000,1.28,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,PATH_MAX,4096,100000,1.28,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,PIPE_BUF,4096,100000,1.28,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,PIPE_BUF,4096,100000,1.23,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,CHOWN_RESTRICTED,1,100000,696.02,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,CHOWN_RESTRICTED,1,100000,373.40,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,NO_TRUNC,1,100000,1.28,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,NO_TRUNC,1,100000,1.37,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,VDISABLE,0,100000,1.39,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,VDISABLE,0,100000,1.33,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,SYNC_IO,-1,100000,1.64,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,SYNC_IO,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,ASYNC_IO,-1,100000,531.70,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,ASYNC_IO,-1,100000,209.95,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,PRIO_IO,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,PRIO_IO,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,SOCK_MAXBUF,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,SOCK_MAXBUF,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,FILESIZEBITS,64,100000,686.58,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,FILESIZEBITS,64,100000,370.92,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,REC_INCR_XFER_SIZE,-1,100000,1.71,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.72,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.49,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.43,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,REC_MIN_XFER_SIZE,4096,100000,680.10,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,REC_MIN_XFER_SIZE,4096,100000,369.19,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,REC_XFER_ALIGN,4096,100000,684.88,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,REC_XFER_ALIGN,4096,100000,375.76,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,ALLOC_SIZE_MIN,4096,100000,694.59,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,ALLOC_SIZE_MIN,4096,100000,383.71,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,SYMLINK_MAX,-1,100000,1.68,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,SYMLINK_MAX,-1,100000,1.68,value,0
+Zig cc,glibc,nelibc,/boot,pathconf,2_SYMLINKS,1,100000,1.92,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,2_SYMLINKS,1,100000,1.92,value,0
+Zig cc,glibc,nelibc,/boot,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,glibc,nelibc,/boot,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,glibc,nelibc,/boot,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,host-libc,.,pathconf,LINK_MAX,65535,100000,391.98,value,0
+GCC,glibc,host-libc,.,fpathconf,LINK_MAX,65535,100000,210.88,value,0
+GCC,glibc,host-libc,.,pathconf,MAX_CANON,255,100000,2.13,value,0
+GCC,glibc,host-libc,.,fpathconf,MAX_CANON,255,100000,2.23,value,0
+GCC,glibc,host-libc,.,pathconf,MAX_INPUT,255,100000,2.15,value,0
+GCC,glibc,host-libc,.,fpathconf,MAX_INPUT,255,100000,2.22,value,0
+GCC,glibc,host-libc,.,pathconf,NAME_MAX,255,100000,394.74,value,0
+GCC,glibc,host-libc,.,fpathconf,NAME_MAX,255,100000,215.34,value,0
+GCC,glibc,host-libc,.,pathconf,PATH_MAX,4096,100000,2.15,value,0
+GCC,glibc,host-libc,.,fpathconf,PATH_MAX,4096,100000,2.13,value,0
+GCC,glibc,host-libc,.,pathconf,PIPE_BUF,4096,100000,2.19,value,0
+GCC,glibc,host-libc,.,fpathconf,PIPE_BUF,4096,100000,2.13,value,0
+GCC,glibc,host-libc,.,pathconf,CHOWN_RESTRICTED,1,100000,393.39,value,0
+GCC,glibc,host-libc,.,fpathconf,CHOWN_RESTRICTED,1,100000,208.46,value,0
+GCC,glibc,host-libc,.,pathconf,NO_TRUNC,1,100000,2.15,value,0
+GCC,glibc,host-libc,.,fpathconf,NO_TRUNC,1,100000,2.18,value,0
+GCC,glibc,host-libc,.,pathconf,VDISABLE,0,100000,2.28,value,0
+GCC,glibc,host-libc,.,fpathconf,VDISABLE,0,100000,2.21,value,0
+GCC,glibc,host-libc,.,pathconf,SYNC_IO,-1,100000,2.13,value,0
+GCC,glibc,host-libc,.,fpathconf,SYNC_IO,-1,100000,2.05,value,0
+GCC,glibc,host-libc,.,pathconf,ASYNC_IO,-1,100000,407.64,value,0
+GCC,glibc,host-libc,.,fpathconf,ASYNC_IO,-1,100000,223.11,value,0
+GCC,glibc,host-libc,.,pathconf,PRIO_IO,-1,100000,2.20,value,0
+GCC,glibc,host-libc,.,fpathconf,PRIO_IO,-1,100000,2.13,value,0
+GCC,glibc,host-libc,.,pathconf,SOCK_MAXBUF,-1,100000,2.18,value,0
+GCC,glibc,host-libc,.,fpathconf,SOCK_MAXBUF,-1,100000,2.28,value,0
+GCC,glibc,host-libc,.,pathconf,FILESIZEBITS,255,100000,396.55,value,0
+GCC,glibc,host-libc,.,fpathconf,FILESIZEBITS,255,100000,208.96,value,0
+GCC,glibc,host-libc,.,pathconf,REC_INCR_XFER_SIZE,-1,100000,2.57,value,0
+GCC,glibc,host-libc,.,fpathconf,REC_INCR_XFER_SIZE,-1,100000,2.46,value,0
+GCC,glibc,host-libc,.,pathconf,REC_MAX_XFER_SIZE,-1,100000,2.35,value,0
+GCC,glibc,host-libc,.,fpathconf,REC_MAX_XFER_SIZE,-1,100000,2.36,value,0
+GCC,glibc,host-libc,.,pathconf,REC_MIN_XFER_SIZE,4096,100000,395.55,value,0
+GCC,glibc,host-libc,.,fpathconf,REC_MIN_XFER_SIZE,4096,100000,212.69,value,0
+GCC,glibc,host-libc,.,pathconf,REC_XFER_ALIGN,4096,100000,397.26,value,0
+GCC,glibc,host-libc,.,fpathconf,REC_XFER_ALIGN,4096,100000,216.37,value,0
+GCC,glibc,host-libc,.,pathconf,ALLOC_SIZE_MIN,4096,100000,409.47,value,0
+GCC,glibc,host-libc,.,fpathconf,ALLOC_SIZE_MIN,4096,100000,217.57,value,0
+GCC,glibc,host-libc,.,pathconf,SYMLINK_MAX,-1,100000,2.52,value,0
+GCC,glibc,host-libc,.,fpathconf,SYMLINK_MAX,-1,100000,2.35,value,0
+GCC,glibc,host-libc,.,pathconf,2_SYMLINKS,1,100000,395.16,value,0
+GCC,glibc,host-libc,.,fpathconf,2_SYMLINKS,1,100000,215.38,value,0
+GCC,glibc,host-libc,.,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+GCC,glibc,host-libc,.,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,host-libc,.,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,host-libc,/proc,pathconf,LINK_MAX,127,100000,455.38,value,0
+GCC,glibc,host-libc,/proc,fpathconf,LINK_MAX,127,100000,143.84,value,0
+GCC,glibc,host-libc,/proc,pathconf,MAX_CANON,255,100000,2.13,value,0
+GCC,glibc,host-libc,/proc,fpathconf,MAX_CANON,255,100000,2.29,value,0
+GCC,glibc,host-libc,/proc,pathconf,MAX_INPUT,255,100000,2.18,value,0
+GCC,glibc,host-libc,/proc,fpathconf,MAX_INPUT,255,100000,2.18,value,0
+GCC,glibc,host-libc,/proc,pathconf,NAME_MAX,255,100000,451.18,value,0
+GCC,glibc,host-libc,/proc,fpathconf,NAME_MAX,255,100000,144.15,value,0
+GCC,glibc,host-libc,/proc,pathconf,PATH_MAX,4096,100000,2.25,value,0
+GCC,glibc,host-libc,/proc,fpathconf,PATH_MAX,4096,100000,2.05,value,0
+GCC,glibc,host-libc,/proc,pathconf,PIPE_BUF,4096,100000,2.28,value,0
+GCC,glibc,host-libc,/proc,fpathconf,PIPE_BUF,4096,100000,2.05,value,0
+GCC,glibc,host-libc,/proc,pathconf,CHOWN_RESTRICTED,1,100000,439.86,value,0
+GCC,glibc,host-libc,/proc,fpathconf,CHOWN_RESTRICTED,1,100000,137.76,value,0
+GCC,glibc,host-libc,/proc,pathconf,NO_TRUNC,1,100000,2.05,value,0
+GCC,glibc,host-libc,/proc,fpathconf,NO_TRUNC,1,100000,2.31,value,0
+GCC,glibc,host-libc,/proc,pathconf,VDISABLE,0,100000,2.28,value,0
+GCC,glibc,host-libc,/proc,fpathconf,VDISABLE,0,100000,2.24,value,0
+GCC,glibc,host-libc,/proc,pathconf,SYNC_IO,-1,100000,2.13,value,0
+GCC,glibc,host-libc,/proc,fpathconf,SYNC_IO,-1,100000,2.13,value,0
+GCC,glibc,host-libc,/proc,pathconf,ASYNC_IO,-1,100000,596.00,value,0
+GCC,glibc,host-libc,/proc,fpathconf,ASYNC_IO,-1,100000,271.52,value,0
+GCC,glibc,host-libc,/proc,pathconf,PRIO_IO,-1,100000,2.18,value,0
+GCC,glibc,host-libc,/proc,fpathconf,PRIO_IO,-1,100000,2.18,value,0
+GCC,glibc,host-libc,/proc,pathconf,SOCK_MAXBUF,-1,100000,2.27,value,0
+GCC,glibc,host-libc,/proc,fpathconf,SOCK_MAXBUF,-1,100000,2.13,value,0
+GCC,glibc,host-libc,/proc,pathconf,FILESIZEBITS,32,100000,454.39,value,0
+GCC,glibc,host-libc,/proc,fpathconf,FILESIZEBITS,32,100000,140.89,value,0
+GCC,glibc,host-libc,/proc,pathconf,REC_INCR_XFER_SIZE,-1,100000,2.51,value,0
+GCC,glibc,host-libc,/proc,fpathconf,REC_INCR_XFER_SIZE,-1,100000,2.35,value,0
+GCC,glibc,host-libc,/proc,pathconf,REC_MAX_XFER_SIZE,-1,100000,2.35,value,0
+GCC,glibc,host-libc,/proc,fpathconf,REC_MAX_XFER_SIZE,-1,100000,2.25,value,0
+GCC,glibc,host-libc,/proc,pathconf,REC_MIN_XFER_SIZE,4096,100000,447.99,value,0
+GCC,glibc,host-libc,/proc,fpathconf,REC_MIN_XFER_SIZE,4096,100000,146.04,value,0
+GCC,glibc,host-libc,/proc,pathconf,REC_XFER_ALIGN,4096,100000,446.01,value,0
+GCC,glibc,host-libc,/proc,fpathconf,REC_XFER_ALIGN,4096,100000,142.84,value,0
+GCC,glibc,host-libc,/proc,pathconf,ALLOC_SIZE_MIN,4096,100000,444.83,value,0
+GCC,glibc,host-libc,/proc,fpathconf,ALLOC_SIZE_MIN,4096,100000,143.79,value,0
+GCC,glibc,host-libc,/proc,pathconf,SYMLINK_MAX,-1,100000,2.25,value,0
+GCC,glibc,host-libc,/proc,fpathconf,SYMLINK_MAX,-1,100000,2.25,value,0
+GCC,glibc,host-libc,/proc,pathconf,2_SYMLINKS,1,100000,446.57,value,0
+GCC,glibc,host-libc,/proc,fpathconf,2_SYMLINKS,1,100000,140.76,value,0
+GCC,glibc,host-libc,/proc,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+GCC,glibc,host-libc,/proc,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,host-libc,/proc,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,host-libc,/dev/shm,pathconf,LINK_MAX,127,100000,633.39,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,LINK_MAX,127,100000,214.39,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,MAX_CANON,255,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,MAX_CANON,255,100000,2.18,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,MAX_INPUT,255,100000,2.33,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,MAX_INPUT,255,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,NAME_MAX,255,100000,628.57,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,NAME_MAX,255,100000,222.57,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,PATH_MAX,4096,100000,2.24,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,PATH_MAX,4096,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,PIPE_BUF,4096,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,PIPE_BUF,4096,100000,2.38,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,CHOWN_RESTRICTED,1,100000,627.43,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,CHOWN_RESTRICTED,1,100000,216.49,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,NO_TRUNC,1,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,NO_TRUNC,1,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,VDISABLE,0,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,VDISABLE,0,100000,2.20,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,SYNC_IO,-1,100000,2.18,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,SYNC_IO,-1,100000,2.05,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,ASYNC_IO,-1,100000,635.61,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,ASYNC_IO,-1,100000,209.63,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,PRIO_IO,-1,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,PRIO_IO,-1,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,SOCK_MAXBUF,-1,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,SOCK_MAXBUF,-1,100000,2.13,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,FILESIZEBITS,32,100000,625.10,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,FILESIZEBITS,32,100000,216.36,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,REC_INCR_XFER_SIZE,-1,100000,2.27,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,REC_INCR_XFER_SIZE,-1,100000,2.42,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,REC_MAX_XFER_SIZE,-1,100000,2.36,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,REC_MAX_XFER_SIZE,-1,100000,2.36,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,REC_MIN_XFER_SIZE,4096,100000,627.54,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,REC_MIN_XFER_SIZE,4096,100000,219.47,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,REC_XFER_ALIGN,4096,100000,623.15,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,REC_XFER_ALIGN,4096,100000,225.26,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,ALLOC_SIZE_MIN,4096,100000,631.56,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,ALLOC_SIZE_MIN,4096,100000,220.08,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,SYMLINK_MAX,-1,100000,2.35,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,SYMLINK_MAX,-1,100000,2.48,value,0
+GCC,glibc,host-libc,/dev/shm,pathconf,2_SYMLINKS,1,100000,618.76,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,2_SYMLINKS,1,100000,216.31,value,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+GCC,glibc,host-libc,/dev/shm,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,host-libc,/dev/shm,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,host-libc,/boot,pathconf,LINK_MAX,65000,100000,3506.31,value,0
+GCC,glibc,host-libc,/boot,fpathconf,LINK_MAX,65000,100000,2871.42,value,0
+GCC,glibc,host-libc,/boot,pathconf,MAX_CANON,255,100000,2.16,value,0
+GCC,glibc,host-libc,/boot,fpathconf,MAX_CANON,255,100000,2.13,value,0
+GCC,glibc,host-libc,/boot,pathconf,MAX_INPUT,255,100000,2.13,value,0
+GCC,glibc,host-libc,/boot,fpathconf,MAX_INPUT,255,100000,2.20,value,0
+GCC,glibc,host-libc,/boot,pathconf,NAME_MAX,255,100000,686.13,value,0
+GCC,glibc,host-libc,/boot,fpathconf,NAME_MAX,255,100000,374.67,value,0
+GCC,glibc,host-libc,/boot,pathconf,PATH_MAX,4096,100000,2.13,value,0
+GCC,glibc,host-libc,/boot,fpathconf,PATH_MAX,4096,100000,2.18,value,0
+GCC,glibc,host-libc,/boot,pathconf,PIPE_BUF,4096,100000,2.15,value,0
+GCC,glibc,host-libc,/boot,fpathconf,PIPE_BUF,4096,100000,2.05,value,0
+GCC,glibc,host-libc,/boot,pathconf,CHOWN_RESTRICTED,1,100000,677.97,value,0
+GCC,glibc,host-libc,/boot,fpathconf,CHOWN_RESTRICTED,1,100000,365.51,value,0
+GCC,glibc,host-libc,/boot,pathconf,NO_TRUNC,1,100000,2.13,value,0
+GCC,glibc,host-libc,/boot,fpathconf,NO_TRUNC,1,100000,2.13,value,0
+GCC,glibc,host-libc,/boot,pathconf,VDISABLE,0,100000,2.18,value,0
+GCC,glibc,host-libc,/boot,fpathconf,VDISABLE,0,100000,2.13,value,0
+GCC,glibc,host-libc,/boot,pathconf,SYNC_IO,-1,100000,2.15,value,0
+GCC,glibc,host-libc,/boot,fpathconf,SYNC_IO,-1,100000,2.60,value,0
+GCC,glibc,host-libc,/boot,pathconf,ASYNC_IO,-1,100000,534.69,value,0
+GCC,glibc,host-libc,/boot,fpathconf,ASYNC_IO,-1,100000,210.27,value,0
+GCC,glibc,host-libc,/boot,pathconf,PRIO_IO,-1,100000,2.13,value,0
+GCC,glibc,host-libc,/boot,fpathconf,PRIO_IO,-1,100000,2.05,value,0
+GCC,glibc,host-libc,/boot,pathconf,SOCK_MAXBUF,-1,100000,2.15,value,0
+GCC,glibc,host-libc,/boot,fpathconf,SOCK_MAXBUF,-1,100000,2.05,value,0
+GCC,glibc,host-libc,/boot,pathconf,FILESIZEBITS,64,100000,687.77,value,0
+GCC,glibc,host-libc,/boot,fpathconf,FILESIZEBITS,64,100000,374.88,value,0
+GCC,glibc,host-libc,/boot,pathconf,REC_INCR_XFER_SIZE,-1,100000,2.49,value,0
+GCC,glibc,host-libc,/boot,fpathconf,REC_INCR_XFER_SIZE,-1,100000,2.49,value,0
+GCC,glibc,host-libc,/boot,pathconf,REC_MAX_XFER_SIZE,-1,100000,2.55,value,0
+GCC,glibc,host-libc,/boot,fpathconf,REC_MAX_XFER_SIZE,-1,100000,2.35,value,0
+GCC,glibc,host-libc,/boot,pathconf,REC_MIN_XFER_SIZE,4096,100000,689.75,value,0
+GCC,glibc,host-libc,/boot,fpathconf,REC_MIN_XFER_SIZE,4096,100000,381.72,value,0
+GCC,glibc,host-libc,/boot,pathconf,REC_XFER_ALIGN,4096,100000,677.68,value,0
+GCC,glibc,host-libc,/boot,fpathconf,REC_XFER_ALIGN,4096,100000,380.02,value,0
+GCC,glibc,host-libc,/boot,pathconf,ALLOC_SIZE_MIN,4096,100000,683.90,value,0
+GCC,glibc,host-libc,/boot,fpathconf,ALLOC_SIZE_MIN,4096,100000,370.77,value,0
+GCC,glibc,host-libc,/boot,pathconf,SYMLINK_MAX,-1,100000,2.52,value,0
+GCC,glibc,host-libc,/boot,fpathconf,SYMLINK_MAX,-1,100000,2.51,value,0
+GCC,glibc,host-libc,/boot,pathconf,2_SYMLINKS,1,100000,683.23,value,0
+GCC,glibc,host-libc,/boot,fpathconf,2_SYMLINKS,1,100000,373.75,value,0
+GCC,glibc,host-libc,/boot,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+GCC,glibc,host-libc,/boot,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,host-libc,/boot,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,nelibc,.,pathconf,LINK_MAX,65535,100000,409.91,value,0
+GCC,glibc,nelibc,.,fpathconf,LINK_MAX,65535,100000,215.65,value,0
+GCC,glibc,nelibc,.,pathconf,MAX_CANON,255,100000,1.80,value,0
+GCC,glibc,nelibc,.,fpathconf,MAX_CANON,255,100000,1.43,value,0
+GCC,glibc,nelibc,.,pathconf,MAX_INPUT,255,100000,1.49,value,0
+GCC,glibc,nelibc,.,fpathconf,MAX_INPUT,255,100000,1.43,value,0
+GCC,glibc,nelibc,.,pathconf,NAME_MAX,255,100000,391.82,value,0
+GCC,glibc,nelibc,.,fpathconf,NAME_MAX,255,100000,211.25,value,0
+GCC,glibc,nelibc,.,pathconf,PATH_MAX,4096,100000,1.02,value,0
+GCC,glibc,nelibc,.,fpathconf,PATH_MAX,4096,100000,1.23,value,0
+GCC,glibc,nelibc,.,pathconf,PIPE_BUF,4096,100000,1.02,value,0
+GCC,glibc,nelibc,.,fpathconf,PIPE_BUF,4096,100000,1.23,value,0
+GCC,glibc,nelibc,.,pathconf,CHOWN_RESTRICTED,1,100000,393.35,value,0
+GCC,glibc,nelibc,.,fpathconf,CHOWN_RESTRICTED,1,100000,214.92,value,0
+GCC,glibc,nelibc,.,pathconf,NO_TRUNC,1,100000,1.23,value,0
+GCC,glibc,nelibc,.,fpathconf,NO_TRUNC,1,100000,1.23,value,0
+GCC,glibc,nelibc,.,pathconf,VDISABLE,0,100000,1.23,value,0
+GCC,glibc,nelibc,.,fpathconf,VDISABLE,0,100000,1.43,value,0
+GCC,glibc,nelibc,.,pathconf,SYNC_IO,-1,100000,1.31,value,0
+GCC,glibc,nelibc,.,fpathconf,SYNC_IO,-1,100000,1.02,value,0
+GCC,glibc,nelibc,.,pathconf,ASYNC_IO,-1,100000,404.10,value,0
+GCC,glibc,nelibc,.,fpathconf,ASYNC_IO,-1,100000,218.38,value,0
+GCC,glibc,nelibc,.,pathconf,PRIO_IO,-1,100000,1.23,value,0
+GCC,glibc,nelibc,.,fpathconf,PRIO_IO,-1,100000,1.02,value,0
+GCC,glibc,nelibc,.,pathconf,SOCK_MAXBUF,-1,100000,1.23,value,0
+GCC,glibc,nelibc,.,fpathconf,SOCK_MAXBUF,-1,100000,1.02,value,0
+GCC,glibc,nelibc,.,pathconf,FILESIZEBITS,255,100000,391.75,value,0
+GCC,glibc,nelibc,.,fpathconf,FILESIZEBITS,255,100000,219.73,value,0
+GCC,glibc,nelibc,.,pathconf,REC_INCR_XFER_SIZE,-1,100000,1.31,value,0
+GCC,glibc,nelibc,.,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.07,value,0
+GCC,glibc,nelibc,.,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.38,value,0
+GCC,glibc,nelibc,.,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.02,value,0
+GCC,glibc,nelibc,.,pathconf,REC_MIN_XFER_SIZE,4096,100000,393.79,value,0
+GCC,glibc,nelibc,.,fpathconf,REC_MIN_XFER_SIZE,4096,100000,215.96,value,0
+GCC,glibc,nelibc,.,pathconf,REC_XFER_ALIGN,4096,100000,396.44,value,0
+GCC,glibc,nelibc,.,fpathconf,REC_XFER_ALIGN,4096,100000,215.96,value,0
+GCC,glibc,nelibc,.,pathconf,ALLOC_SIZE_MIN,4096,100000,400.13,value,0
+GCC,glibc,nelibc,.,fpathconf,ALLOC_SIZE_MIN,4096,100000,213.10,value,0
+GCC,glibc,nelibc,.,pathconf,SYMLINK_MAX,-1,100000,1.28,value,0
+GCC,glibc,nelibc,.,fpathconf,SYMLINK_MAX,-1,100000,1.07,value,0
+GCC,glibc,nelibc,.,pathconf,2_SYMLINKS,1,100000,1.28,value,0
+GCC,glibc,nelibc,.,fpathconf,2_SYMLINKS,1,100000,1.31,value,0
+GCC,glibc,nelibc,.,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+GCC,glibc,nelibc,.,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,nelibc,.,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,nelibc,/proc,pathconf,LINK_MAX,127,100000,447.44,value,0
+GCC,glibc,nelibc,/proc,fpathconf,LINK_MAX,127,100000,142.36,value,0
+GCC,glibc,nelibc,/proc,pathconf,MAX_CANON,255,100000,1.49,value,0
+GCC,glibc,nelibc,/proc,fpathconf,MAX_CANON,255,100000,1.53,value,0
+GCC,glibc,nelibc,/proc,pathconf,MAX_INPUT,255,100000,1.63,value,0
+GCC,glibc,nelibc,/proc,fpathconf,MAX_INPUT,255,100000,1.49,value,0
+GCC,glibc,nelibc,/proc,pathconf,NAME_MAX,255,100000,448.67,value,0
+GCC,glibc,nelibc,/proc,fpathconf,NAME_MAX,255,100000,143.52,value,0
+GCC,glibc,nelibc,/proc,pathconf,PATH_MAX,4096,100000,1.07,value,0
+GCC,glibc,nelibc,/proc,fpathconf,PATH_MAX,4096,100000,1.28,value,0
+GCC,glibc,nelibc,/proc,pathconf,PIPE_BUF,4096,100000,1.07,value,0
+GCC,glibc,nelibc,/proc,fpathconf,PIPE_BUF,4096,100000,1.45,value,0
+GCC,glibc,nelibc,/proc,pathconf,CHOWN_RESTRICTED,1,100000,452.53,value,0
+GCC,glibc,nelibc,/proc,fpathconf,CHOWN_RESTRICTED,1,100000,143.88,value,0
+GCC,glibc,nelibc,/proc,pathconf,NO_TRUNC,1,100000,1.23,value,0
+GCC,glibc,nelibc,/proc,fpathconf,NO_TRUNC,1,100000,1.28,value,0
+GCC,glibc,nelibc,/proc,pathconf,VDISABLE,0,100000,1.37,value,0
+GCC,glibc,nelibc,/proc,fpathconf,VDISABLE,0,100000,1.31,value,0
+GCC,glibc,nelibc,/proc,pathconf,SYNC_IO,-1,100000,1.46,value,0
+GCC,glibc,nelibc,/proc,fpathconf,SYNC_IO,-1,100000,1.22,value,0
+GCC,glibc,nelibc,/proc,pathconf,ASYNC_IO,-1,100000,616.01,value,0
+GCC,glibc,nelibc,/proc,fpathconf,ASYNC_IO,-1,100000,278.71,value,0
+GCC,glibc,nelibc,/proc,pathconf,PRIO_IO,-1,100000,1.28,value,0
+GCC,glibc,nelibc,/proc,fpathconf,PRIO_IO,-1,100000,1.12,value,0
+GCC,glibc,nelibc,/proc,pathconf,SOCK_MAXBUF,-1,100000,1.36,value,0
+GCC,glibc,nelibc,/proc,fpathconf,SOCK_MAXBUF,-1,100000,1.07,value,0
+GCC,glibc,nelibc,/proc,pathconf,FILESIZEBITS,32,100000,447.47,value,0
+GCC,glibc,nelibc,/proc,fpathconf,FILESIZEBITS,32,100000,143.70,value,0
+GCC,glibc,nelibc,/proc,pathconf,REC_INCR_XFER_SIZE,-1,100000,1.28,value,0
+GCC,glibc,nelibc,/proc,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.12,value,0
+GCC,glibc,nelibc,/proc,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.23,value,0
+GCC,glibc,nelibc,/proc,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.02,value,0
+GCC,glibc,nelibc,/proc,pathconf,REC_MIN_XFER_SIZE,4096,100000,446.91,value,0
+GCC,glibc,nelibc,/proc,fpathconf,REC_MIN_XFER_SIZE,4096,100000,140.33,value,0
+GCC,glibc,nelibc,/proc,pathconf,REC_XFER_ALIGN,4096,100000,447.61,value,0
+GCC,glibc,nelibc,/proc,fpathconf,REC_XFER_ALIGN,4096,100000,141.71,value,0
+GCC,glibc,nelibc,/proc,pathconf,ALLOC_SIZE_MIN,4096,100000,445.06,value,0
+GCC,glibc,nelibc,/proc,fpathconf,ALLOC_SIZE_MIN,4096,100000,149.86,value,0
+GCC,glibc,nelibc,/proc,pathconf,SYMLINK_MAX,-1,100000,1.34,value,0
+GCC,glibc,nelibc,/proc,fpathconf,SYMLINK_MAX,-1,100000,1.12,value,0
+GCC,glibc,nelibc,/proc,pathconf,2_SYMLINKS,1,100000,1.28,value,0
+GCC,glibc,nelibc,/proc,fpathconf,2_SYMLINKS,1,100000,1.07,value,0
+GCC,glibc,nelibc,/proc,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+GCC,glibc,nelibc,/proc,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,nelibc,/proc,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,nelibc,/dev/shm,pathconf,LINK_MAX,127,100000,636.71,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,LINK_MAX,127,100000,224.91,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,MAX_CANON,255,100000,1.51,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,MAX_CANON,255,100000,1.49,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,MAX_INPUT,255,100000,1.53,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,MAX_INPUT,255,100000,1.43,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,NAME_MAX,255,100000,629.26,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,NAME_MAX,255,100000,222.06,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,PATH_MAX,4096,100000,1.09,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,PATH_MAX,4096,100000,1.23,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,PIPE_BUF,4096,100000,1.07,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,PIPE_BUF,4096,100000,1.23,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,CHOWN_RESTRICTED,1,100000,618.28,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,CHOWN_RESTRICTED,1,100000,220.01,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,NO_TRUNC,1,100000,1.23,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,NO_TRUNC,1,100000,1.23,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,VDISABLE,0,100000,1.23,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,VDISABLE,0,100000,1.28,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,SYNC_IO,-1,100000,1.28,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,SYNC_IO,-1,100000,1.02,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,ASYNC_IO,-1,100000,640.89,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,ASYNC_IO,-1,100000,207.38,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,PRIO_IO,-1,100000,1.28,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,PRIO_IO,-1,100000,1.04,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,SOCK_MAXBUF,-1,100000,1.23,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,SOCK_MAXBUF,-1,100000,1.02,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,FILESIZEBITS,32,100000,626.32,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,FILESIZEBITS,32,100000,222.28,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,REC_INCR_XFER_SIZE,-1,100000,1.28,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.02,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.69,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.07,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,REC_MIN_XFER_SIZE,4096,100000,627.78,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,REC_MIN_XFER_SIZE,4096,100000,223.16,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,REC_XFER_ALIGN,4096,100000,629.30,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,REC_XFER_ALIGN,4096,100000,224.32,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,ALLOC_SIZE_MIN,4096,100000,632.17,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,ALLOC_SIZE_MIN,4096,100000,222.91,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,SYMLINK_MAX,-1,100000,1.28,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,SYMLINK_MAX,-1,100000,1.07,value,0
+GCC,glibc,nelibc,/dev/shm,pathconf,2_SYMLINKS,1,100000,1.23,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,2_SYMLINKS,1,100000,1.02,value,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+GCC,glibc,nelibc,/dev/shm,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,nelibc,/dev/shm,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,nelibc,/boot,pathconf,LINK_MAX,65000,100000,684.26,value,0
+GCC,glibc,nelibc,/boot,fpathconf,LINK_MAX,65000,100000,370.24,value,0
+GCC,glibc,nelibc,/boot,pathconf,MAX_CANON,255,100000,1.43,value,0
+GCC,glibc,nelibc,/boot,fpathconf,MAX_CANON,255,100000,1.49,value,0
+GCC,glibc,nelibc,/boot,pathconf,MAX_INPUT,255,100000,1.43,value,0
+GCC,glibc,nelibc,/boot,fpathconf,MAX_INPUT,255,100000,1.43,value,0
+GCC,glibc,nelibc,/boot,pathconf,NAME_MAX,255,100000,683.00,value,0
+GCC,glibc,nelibc,/boot,fpathconf,NAME_MAX,255,100000,377.08,value,0
+GCC,glibc,nelibc,/boot,pathconf,PATH_MAX,4096,100000,1.07,value,0
+GCC,glibc,nelibc,/boot,fpathconf,PATH_MAX,4096,100000,1.28,value,0
+GCC,glibc,nelibc,/boot,pathconf,PIPE_BUF,4096,100000,1.02,value,0
+GCC,glibc,nelibc,/boot,fpathconf,PIPE_BUF,4096,100000,1.28,value,0
+GCC,glibc,nelibc,/boot,pathconf,CHOWN_RESTRICTED,1,100000,682.59,value,0
+GCC,glibc,nelibc,/boot,fpathconf,CHOWN_RESTRICTED,1,100000,371.17,value,0
+GCC,glibc,nelibc,/boot,pathconf,NO_TRUNC,1,100000,1.28,value,0
+GCC,glibc,nelibc,/boot,fpathconf,NO_TRUNC,1,100000,1.09,value,0
+GCC,glibc,nelibc,/boot,pathconf,VDISABLE,0,100000,1.28,value,0
+GCC,glibc,nelibc,/boot,fpathconf,VDISABLE,0,100000,1.24,value,0
+GCC,glibc,nelibc,/boot,pathconf,SYNC_IO,-1,100000,1.38,value,0
+GCC,glibc,nelibc,/boot,fpathconf,SYNC_IO,-1,100000,1.09,value,0
+GCC,glibc,nelibc,/boot,pathconf,ASYNC_IO,-1,100000,538.54,value,0
+GCC,glibc,nelibc,/boot,fpathconf,ASYNC_IO,-1,100000,210.76,value,0
+GCC,glibc,nelibc,/boot,pathconf,PRIO_IO,-1,100000,1.28,value,0
+GCC,glibc,nelibc,/boot,fpathconf,PRIO_IO,-1,100000,1.02,value,0
+GCC,glibc,nelibc,/boot,pathconf,SOCK_MAXBUF,-1,100000,1.38,value,0
+GCC,glibc,nelibc,/boot,fpathconf,SOCK_MAXBUF,-1,100000,1.07,value,0
+GCC,glibc,nelibc,/boot,pathconf,FILESIZEBITS,64,100000,692.57,value,0
+GCC,glibc,nelibc,/boot,fpathconf,FILESIZEBITS,64,100000,370.52,value,0
+GCC,glibc,nelibc,/boot,pathconf,REC_INCR_XFER_SIZE,-1,100000,1.28,value,0
+GCC,glibc,nelibc,/boot,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.07,value,0
+GCC,glibc,nelibc,/boot,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.28,value,0
+GCC,glibc,nelibc,/boot,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.09,value,0
+GCC,glibc,nelibc,/boot,pathconf,REC_MIN_XFER_SIZE,4096,100000,692.60,value,0
+GCC,glibc,nelibc,/boot,fpathconf,REC_MIN_XFER_SIZE,4096,100000,383.22,value,0
+GCC,glibc,nelibc,/boot,pathconf,REC_XFER_ALIGN,4096,100000,684.94,value,0
+GCC,glibc,nelibc,/boot,fpathconf,REC_XFER_ALIGN,4096,100000,377.11,value,0
+GCC,glibc,nelibc,/boot,pathconf,ALLOC_SIZE_MIN,4096,100000,688.36,value,0
+GCC,glibc,nelibc,/boot,fpathconf,ALLOC_SIZE_MIN,4096,100000,377.86,value,0
+GCC,glibc,nelibc,/boot,pathconf,SYMLINK_MAX,-1,100000,1.28,value,0
+GCC,glibc,nelibc,/boot,fpathconf,SYMLINK_MAX,-1,100000,1.09,value,0
+GCC,glibc,nelibc,/boot,pathconf,2_SYMLINKS,1,100000,1.31,value,0
+GCC,glibc,nelibc,/boot,fpathconf,2_SYMLINKS,1,100000,1.09,value,0
+GCC,glibc,nelibc,/boot,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+GCC,glibc,nelibc,/boot,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+GCC,glibc,nelibc,/boot,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,musl,host-libc,.,pathconf,LINK_MAX,8,100000,1.59,value,0
+Zig cc,musl,host-libc,.,fpathconf,LINK_MAX,8,100000,1.14,value,0
+Zig cc,musl,host-libc,.,pathconf,MAX_CANON,255,100000,1.59,value,0
+Zig cc,musl,host-libc,.,fpathconf,MAX_CANON,255,100000,1.14,value,0
+Zig cc,musl,host-libc,.,pathconf,MAX_INPUT,255,100000,1.56,value,0
+Zig cc,musl,host-libc,.,fpathconf,MAX_INPUT,255,100000,1.11,value,0
+Zig cc,musl,host-libc,.,pathconf,NAME_MAX,255,100000,1.56,value,0
+Zig cc,musl,host-libc,.,fpathconf,NAME_MAX,255,100000,1.11,value,0
+Zig cc,musl,host-libc,.,pathconf,PATH_MAX,4096,100000,1.56,value,0
+Zig cc,musl,host-libc,.,fpathconf,PATH_MAX,4096,100000,1.09,value,0
+Zig cc,musl,host-libc,.,pathconf,PIPE_BUF,4096,100000,1.56,value,0
+Zig cc,musl,host-libc,.,fpathconf,PIPE_BUF,4096,100000,1.09,value,0
+Zig cc,musl,host-libc,.,pathconf,CHOWN_RESTRICTED,1,100000,1.53,value,0
+Zig cc,musl,host-libc,.,fpathconf,CHOWN_RESTRICTED,1,100000,1.09,value,0
+Zig cc,musl,host-libc,.,pathconf,NO_TRUNC,1,100000,1.53,value,0
+Zig cc,musl,host-libc,.,fpathconf,NO_TRUNC,1,100000,1.09,value,0
+Zig cc,musl,host-libc,.,pathconf,VDISABLE,0,100000,1.53,value,0
+Zig cc,musl,host-libc,.,fpathconf,VDISABLE,0,100000,1.09,value,0
+Zig cc,musl,host-libc,.,pathconf,SYNC_IO,1,100000,1.53,value,0
+Zig cc,musl,host-libc,.,fpathconf,SYNC_IO,1,100000,1.09,value,0
+Zig cc,musl,host-libc,.,pathconf,ASYNC_IO,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,.,fpathconf,ASYNC_IO,-1,100000,1.07,value,0
+Zig cc,musl,host-libc,.,pathconf,PRIO_IO,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,.,fpathconf,PRIO_IO,-1,100000,1.07,value,0
+Zig cc,musl,host-libc,.,pathconf,SOCK_MAXBUF,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,.,fpathconf,SOCK_MAXBUF,-1,100000,1.02,value,0
+Zig cc,musl,host-libc,.,pathconf,FILESIZEBITS,64,100000,1.49,value,0
+Zig cc,musl,host-libc,.,fpathconf,FILESIZEBITS,64,100000,1.07,value,0
+Zig cc,musl,host-libc,.,pathconf,REC_INCR_XFER_SIZE,4096,100000,1.43,value,0
+Zig cc,musl,host-libc,.,fpathconf,REC_INCR_XFER_SIZE,4096,100000,1.02,value,0
+Zig cc,musl,host-libc,.,pathconf,REC_MAX_XFER_SIZE,4096,100000,1.43,value,0
+Zig cc,musl,host-libc,.,fpathconf,REC_MAX_XFER_SIZE,4096,100000,1.07,value,0
+Zig cc,musl,host-libc,.,pathconf,REC_MIN_XFER_SIZE,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,.,fpathconf,REC_MIN_XFER_SIZE,4096,100000,1.07,value,0
+Zig cc,musl,host-libc,.,pathconf,REC_XFER_ALIGN,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,.,fpathconf,REC_XFER_ALIGN,4096,100000,1.02,value,0
+Zig cc,musl,host-libc,.,pathconf,ALLOC_SIZE_MIN,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,.,fpathconf,ALLOC_SIZE_MIN,4096,100000,1.09,value,0
+Zig cc,musl,host-libc,.,pathconf,SYMLINK_MAX,-1,100000,1.43,value,0
+Zig cc,musl,host-libc,.,fpathconf,SYMLINK_MAX,-1,100000,1.02,value,0
+Zig cc,musl,host-libc,.,pathconf,2_SYMLINKS,1,100000,1.43,value,0
+Zig cc,musl,host-libc,.,fpathconf,2_SYMLINKS,1,100000,1.07,value,0
+Zig cc,musl,host-libc,.,fpathconf,INVALID_FD,255,0,0.00,invalid_fd,0
+Zig cc,musl,host-libc,.,pathconf,ASYNC_IO_REGULAR,-1,0,0.00,regular_file,0
+Zig cc,musl,host-libc,.,fpathconf,ASYNC_IO_REGULAR,-1,0,0.00,regular_file,0
+Zig cc,musl,host-libc,/proc,pathconf,LINK_MAX,8,100000,1.49,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,LINK_MAX,8,100000,1.07,value,0
+Zig cc,musl,host-libc,/proc,pathconf,MAX_CANON,255,100000,1.53,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,MAX_CANON,255,100000,1.09,value,0
+Zig cc,musl,host-libc,/proc,pathconf,MAX_INPUT,255,100000,1.46,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,MAX_INPUT,255,100000,1.07,value,0
+Zig cc,musl,host-libc,/proc,pathconf,NAME_MAX,255,100000,1.49,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,NAME_MAX,255,100000,1.07,value,0
+Zig cc,musl,host-libc,/proc,pathconf,PATH_MAX,4096,100000,1.46,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,PATH_MAX,4096,100000,1.04,value,0
+Zig cc,musl,host-libc,/proc,pathconf,PIPE_BUF,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,PIPE_BUF,4096,100000,1.16,value,0
+Zig cc,musl,host-libc,/proc,pathconf,CHOWN_RESTRICTED,1,100000,1.53,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,CHOWN_RESTRICTED,1,100000,1.09,value,0
+Zig cc,musl,host-libc,/proc,pathconf,NO_TRUNC,1,100000,1.66,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,NO_TRUNC,1,100000,1.07,value,0
+Zig cc,musl,host-libc,/proc,pathconf,VDISABLE,0,100000,1.50,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,VDISABLE,0,100000,1.07,value,0
+Zig cc,musl,host-libc,/proc,pathconf,SYNC_IO,1,100000,1.49,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,SYNC_IO,1,100000,1.09,value,0
+Zig cc,musl,host-libc,/proc,pathconf,ASYNC_IO,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,ASYNC_IO,-1,100000,1.19,value,0
+Zig cc,musl,host-libc,/proc,pathconf,PRIO_IO,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,PRIO_IO,-1,100000,1.07,value,0
+Zig cc,musl,host-libc,/proc,pathconf,SOCK_MAXBUF,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,SOCK_MAXBUF,-1,100000,1.04,value,0
+Zig cc,musl,host-libc,/proc,pathconf,FILESIZEBITS,64,100000,1.46,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,FILESIZEBITS,64,100000,1.07,value,0
+Zig cc,musl,host-libc,/proc,pathconf,REC_INCR_XFER_SIZE,4096,100000,1.54,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,REC_INCR_XFER_SIZE,4096,100000,1.04,value,0
+Zig cc,musl,host-libc,/proc,pathconf,REC_MAX_XFER_SIZE,4096,100000,1.46,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,REC_MAX_XFER_SIZE,4096,100000,1.07,value,0
+Zig cc,musl,host-libc,/proc,pathconf,REC_MIN_XFER_SIZE,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,REC_MIN_XFER_SIZE,4096,100000,1.07,value,0
+Zig cc,musl,host-libc,/proc,pathconf,REC_XFER_ALIGN,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,REC_XFER_ALIGN,4096,100000,1.04,value,0
+Zig cc,musl,host-libc,/proc,pathconf,ALLOC_SIZE_MIN,4096,100000,1.46,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,ALLOC_SIZE_MIN,4096,100000,1.04,value,0
+Zig cc,musl,host-libc,/proc,pathconf,SYMLINK_MAX,-1,100000,1.46,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,SYMLINK_MAX,-1,100000,1.04,value,0
+Zig cc,musl,host-libc,/proc,pathconf,2_SYMLINKS,1,100000,1.49,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,2_SYMLINKS,1,100000,1.04,value,0
+Zig cc,musl,host-libc,/proc,fpathconf,INVALID_FD,255,0,0.00,invalid_fd,0
+Zig cc,musl,host-libc,/proc,pathconf,ASYNC_IO_REGULAR,-1,0,0.00,regular_file,0
+Zig cc,musl,host-libc,/proc,fpathconf,ASYNC_IO_REGULAR,-1,0,0.00,regular_file,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,LINK_MAX,8,100000,1.62,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,LINK_MAX,8,100000,1.11,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,MAX_CANON,255,100000,1.65,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,MAX_CANON,255,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,MAX_INPUT,255,100000,1.46,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,MAX_INPUT,255,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,NAME_MAX,255,100000,1.56,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,NAME_MAX,255,100000,1.09,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,PATH_MAX,4096,100000,1.53,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,PATH_MAX,4096,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,PIPE_BUF,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,PIPE_BUF,4096,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,CHOWN_RESTRICTED,1,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,CHOWN_RESTRICTED,1,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,NO_TRUNC,1,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,NO_TRUNC,1,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,VDISABLE,0,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,VDISABLE,0,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,SYNC_IO,1,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,SYNC_IO,1,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,ASYNC_IO,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,ASYNC_IO,-1,100000,1.02,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,PRIO_IO,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,PRIO_IO,-1,100000,1.09,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,SOCK_MAXBUF,-1,100000,1.53,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,SOCK_MAXBUF,-1,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,FILESIZEBITS,64,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,FILESIZEBITS,64,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,REC_INCR_XFER_SIZE,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,REC_INCR_XFER_SIZE,4096,100000,1.02,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,REC_MAX_XFER_SIZE,4096,100000,1.58,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,REC_MAX_XFER_SIZE,4096,100000,1.09,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,REC_MIN_XFER_SIZE,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,REC_MIN_XFER_SIZE,4096,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,REC_XFER_ALIGN,4096,100000,1.61,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,REC_XFER_ALIGN,4096,100000,1.09,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,ALLOC_SIZE_MIN,4096,100000,1.59,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,ALLOC_SIZE_MIN,4096,100000,1.15,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,SYMLINK_MAX,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,SYMLINK_MAX,-1,100000,1.07,value,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,2_SYMLINKS,1,100000,1.49,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,2_SYMLINKS,1,100000,1.09,value,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,INVALID_FD,255,0,0.00,invalid_fd,0
+Zig cc,musl,host-libc,/dev/shm,pathconf,ASYNC_IO_REGULAR,-1,0,0.00,regular_file,0
+Zig cc,musl,host-libc,/dev/shm,fpathconf,ASYNC_IO_REGULAR,-1,0,0.00,regular_file,0
+Zig cc,musl,host-libc,/boot,pathconf,LINK_MAX,8,100000,1.53,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,LINK_MAX,8,100000,1.09,value,0
+Zig cc,musl,host-libc,/boot,pathconf,MAX_CANON,255,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,MAX_CANON,255,100000,1.12,value,0
+Zig cc,musl,host-libc,/boot,pathconf,MAX_INPUT,255,100000,1.46,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,MAX_INPUT,255,100000,1.04,value,0
+Zig cc,musl,host-libc,/boot,pathconf,NAME_MAX,255,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,NAME_MAX,255,100000,1.07,value,0
+Zig cc,musl,host-libc,/boot,pathconf,PATH_MAX,4096,100000,1.80,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,PATH_MAX,4096,100000,1.11,value,0
+Zig cc,musl,host-libc,/boot,pathconf,PIPE_BUF,4096,100000,1.56,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,PIPE_BUF,4096,100000,1.09,value,0
+Zig cc,musl,host-libc,/boot,pathconf,CHOWN_RESTRICTED,1,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,CHOWN_RESTRICTED,1,100000,1.07,value,0
+Zig cc,musl,host-libc,/boot,pathconf,NO_TRUNC,1,100000,1.53,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,NO_TRUNC,1,100000,1.09,value,0
+Zig cc,musl,host-libc,/boot,pathconf,VDISABLE,0,100000,1.65,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,VDISABLE,0,100000,1.09,value,0
+Zig cc,musl,host-libc,/boot,pathconf,SYNC_IO,1,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,SYNC_IO,1,100000,1.09,value,0
+Zig cc,musl,host-libc,/boot,pathconf,ASYNC_IO,-1,100000,1.53,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,ASYNC_IO,-1,100000,1.07,value,0
+Zig cc,musl,host-libc,/boot,pathconf,PRIO_IO,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,PRIO_IO,-1,100000,1.07,value,0
+Zig cc,musl,host-libc,/boot,pathconf,SOCK_MAXBUF,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,SOCK_MAXBUF,-1,100000,1.07,value,0
+Zig cc,musl,host-libc,/boot,pathconf,FILESIZEBITS,64,100000,1.53,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,FILESIZEBITS,64,100000,1.07,value,0
+Zig cc,musl,host-libc,/boot,pathconf,REC_INCR_XFER_SIZE,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,REC_INCR_XFER_SIZE,4096,100000,1.07,value,0
+Zig cc,musl,host-libc,/boot,pathconf,REC_MAX_XFER_SIZE,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,REC_MAX_XFER_SIZE,4096,100000,1.09,value,0
+Zig cc,musl,host-libc,/boot,pathconf,REC_MIN_XFER_SIZE,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,REC_MIN_XFER_SIZE,4096,100000,1.02,value,0
+Zig cc,musl,host-libc,/boot,pathconf,REC_XFER_ALIGN,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,REC_XFER_ALIGN,4096,100000,1.02,value,0
+Zig cc,musl,host-libc,/boot,pathconf,ALLOC_SIZE_MIN,4096,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,ALLOC_SIZE_MIN,4096,100000,1.07,value,0
+Zig cc,musl,host-libc,/boot,pathconf,SYMLINK_MAX,-1,100000,1.49,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,SYMLINK_MAX,-1,100000,1.17,value,0
+Zig cc,musl,host-libc,/boot,pathconf,2_SYMLINKS,1,100000,1.43,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,2_SYMLINKS,1,100000,1.02,value,0
+Zig cc,musl,host-libc,/boot,fpathconf,INVALID_FD,255,0,0.00,invalid_fd,0
+Zig cc,musl,host-libc,/boot,pathconf,ASYNC_IO_REGULAR,-1,0,0.00,regular_file,0
+Zig cc,musl,host-libc,/boot,fpathconf,ASYNC_IO_REGULAR,-1,0,0.00,regular_file,0
+Zig cc,musl,nelibc,.,pathconf,LINK_MAX,65535,100000,401.11,value,0
+Zig cc,musl,nelibc,.,fpathconf,LINK_MAX,65535,100000,215.01,value,0
+Zig cc,musl,nelibc,.,pathconf,MAX_CANON,255,100000,1.49,value,0
+Zig cc,musl,nelibc,.,fpathconf,MAX_CANON,255,100000,1.43,value,0
+Zig cc,musl,nelibc,.,pathconf,MAX_INPUT,255,100000,1.49,value,0
+Zig cc,musl,nelibc,.,fpathconf,MAX_INPUT,255,100000,1.43,value,0
+Zig cc,musl,nelibc,.,pathconf,NAME_MAX,255,100000,399.26,value,0
+Zig cc,musl,nelibc,.,fpathconf,NAME_MAX,255,100000,216.39,value,0
+Zig cc,musl,nelibc,.,pathconf,PATH_MAX,4096,100000,1.49,value,0
+Zig cc,musl,nelibc,.,fpathconf,PATH_MAX,4096,100000,1.49,value,0
+Zig cc,musl,nelibc,.,pathconf,PIPE_BUF,4096,100000,1.45,value,0
+Zig cc,musl,nelibc,.,fpathconf,PIPE_BUF,4096,100000,1.43,value,0
+Zig cc,musl,nelibc,.,pathconf,CHOWN_RESTRICTED,1,100000,397.73,value,0
+Zig cc,musl,nelibc,.,fpathconf,CHOWN_RESTRICTED,1,100000,215.22,value,0
+Zig cc,musl,nelibc,.,pathconf,NO_TRUNC,1,100000,1.49,value,0
+Zig cc,musl,nelibc,.,fpathconf,NO_TRUNC,1,100000,1.49,value,0
+Zig cc,musl,nelibc,.,pathconf,VDISABLE,0,100000,1.33,value,0
+Zig cc,musl,nelibc,.,fpathconf,VDISABLE,0,100000,1.53,value,0
+Zig cc,musl,nelibc,.,pathconf,SYNC_IO,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,.,fpathconf,SYNC_IO,-1,100000,1.96,value,0
+Zig cc,musl,nelibc,.,pathconf,ASYNC_IO,-1,100000,413.98,value,0
+Zig cc,musl,nelibc,.,fpathconf,ASYNC_IO,-1,100000,224.77,value,0
+Zig cc,musl,nelibc,.,pathconf,PRIO_IO,-1,100000,2.06,value,0
+Zig cc,musl,nelibc,.,fpathconf,PRIO_IO,-1,100000,2.23,value,0
+Zig cc,musl,nelibc,.,pathconf,SOCK_MAXBUF,-1,100000,2.06,value,0
+Zig cc,musl,nelibc,.,fpathconf,SOCK_MAXBUF,-1,100000,2.26,value,0
+Zig cc,musl,nelibc,.,pathconf,FILESIZEBITS,255,100000,399.76,value,0
+Zig cc,musl,nelibc,.,fpathconf,FILESIZEBITS,255,100000,216.15,value,0
+Zig cc,musl,nelibc,.,pathconf,REC_INCR_XFER_SIZE,-1,100000,1.84,value,0
+Zig cc,musl,nelibc,.,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.84,value,0
+Zig cc,musl,nelibc,.,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,.,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.98,value,0
+Zig cc,musl,nelibc,.,pathconf,REC_MIN_XFER_SIZE,4096,100000,401.23,value,0
+Zig cc,musl,nelibc,.,fpathconf,REC_MIN_XFER_SIZE,4096,100000,220.16,value,0
+Zig cc,musl,nelibc,.,pathconf,REC_XFER_ALIGN,4096,100000,412.79,value,0
+Zig cc,musl,nelibc,.,fpathconf,REC_XFER_ALIGN,4096,100000,214.87,value,0
+Zig cc,musl,nelibc,.,pathconf,ALLOC_SIZE_MIN,4096,100000,398.56,value,0
+Zig cc,musl,nelibc,.,fpathconf,ALLOC_SIZE_MIN,4096,100000,214.32,value,0
+Zig cc,musl,nelibc,.,pathconf,SYMLINK_MAX,-1,100000,1.84,value,0
+Zig cc,musl,nelibc,.,fpathconf,SYMLINK_MAX,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,.,pathconf,2_SYMLINKS,1,100000,1.98,value,0
+Zig cc,musl,nelibc,.,fpathconf,2_SYMLINKS,1,100000,1.92,value,0
+Zig cc,musl,nelibc,.,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,musl,nelibc,.,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,musl,nelibc,.,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,musl,nelibc,/proc,pathconf,LINK_MAX,127,100000,457.34,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,LINK_MAX,127,100000,147.80,value,0
+Zig cc,musl,nelibc,/proc,pathconf,MAX_CANON,255,100000,1.53,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,MAX_CANON,255,100000,1.63,value,0
+Zig cc,musl,nelibc,/proc,pathconf,MAX_INPUT,255,100000,1.53,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,MAX_INPUT,255,100000,1.49,value,0
+Zig cc,musl,nelibc,/proc,pathconf,NAME_MAX,255,100000,448.89,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,NAME_MAX,255,100000,143.83,value,0
+Zig cc,musl,nelibc,/proc,pathconf,PATH_MAX,4096,100000,1.43,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,PATH_MAX,4096,100000,1.57,value,0
+Zig cc,musl,nelibc,/proc,pathconf,PIPE_BUF,4096,100000,1.43,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,PIPE_BUF,4096,100000,1.43,value,0
+Zig cc,musl,nelibc,/proc,pathconf,CHOWN_RESTRICTED,1,100000,449.83,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,CHOWN_RESTRICTED,1,100000,143.41,value,0
+Zig cc,musl,nelibc,/proc,pathconf,NO_TRUNC,1,100000,1.60,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,NO_TRUNC,1,100000,1.60,value,0
+Zig cc,musl,nelibc,/proc,pathconf,VDISABLE,0,100000,1.45,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,VDISABLE,0,100000,1.51,value,0
+Zig cc,musl,nelibc,/proc,pathconf,SYNC_IO,-1,100000,2.07,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,SYNC_IO,-1,100000,1.96,value,0
+Zig cc,musl,nelibc,/proc,pathconf,ASYNC_IO,-1,100000,610.22,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,ASYNC_IO,-1,100000,277.01,value,0
+Zig cc,musl,nelibc,/proc,pathconf,PRIO_IO,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,PRIO_IO,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,/proc,pathconf,SOCK_MAXBUF,-1,100000,1.93,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,SOCK_MAXBUF,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,/proc,pathconf,FILESIZEBITS,32,100000,454.85,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,FILESIZEBITS,32,100000,145.17,value,0
+Zig cc,musl,nelibc,/proc,pathconf,REC_INCR_XFER_SIZE,-1,100000,1.99,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,/proc,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.96,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.96,value,0
+Zig cc,musl,nelibc,/proc,pathconf,REC_MIN_XFER_SIZE,4096,100000,452.26,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,REC_MIN_XFER_SIZE,4096,100000,144.68,value,0
+Zig cc,musl,nelibc,/proc,pathconf,REC_XFER_ALIGN,4096,100000,452.15,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,REC_XFER_ALIGN,4096,100000,145.35,value,0
+Zig cc,musl,nelibc,/proc,pathconf,ALLOC_SIZE_MIN,4096,100000,450.04,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,ALLOC_SIZE_MIN,4096,100000,144.14,value,0
+Zig cc,musl,nelibc,/proc,pathconf,SYMLINK_MAX,-1,100000,1.90,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,SYMLINK_MAX,-1,100000,1.88,value,0
+Zig cc,musl,nelibc,/proc,pathconf,2_SYMLINKS,1,100000,1.92,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,2_SYMLINKS,1,100000,1.84,value,0
+Zig cc,musl,nelibc,/proc,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,musl,nelibc,/proc,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,musl,nelibc,/proc,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,LINK_MAX,127,100000,624.68,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,LINK_MAX,127,100000,221.95,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,MAX_CANON,255,100000,1.49,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,MAX_CANON,255,100000,1.49,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,MAX_INPUT,255,100000,1.43,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,MAX_INPUT,255,100000,1.64,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,NAME_MAX,255,100000,630.01,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,NAME_MAX,255,100000,218.46,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,PATH_MAX,4096,100000,1.43,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,PATH_MAX,4096,100000,1.43,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,PIPE_BUF,4096,100000,1.43,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,PIPE_BUF,4096,100000,1.43,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,CHOWN_RESTRICTED,1,100000,628.51,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,CHOWN_RESTRICTED,1,100000,228.59,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,NO_TRUNC,1,100000,1.49,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,NO_TRUNC,1,100000,1.49,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,VDISABLE,0,100000,1.40,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,VDISABLE,0,100000,1.33,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,SYNC_IO,-1,100000,1.84,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,SYNC_IO,-1,100000,1.86,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,ASYNC_IO,-1,100000,641.51,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,ASYNC_IO,-1,100000,215.59,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,PRIO_IO,-1,100000,2.04,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,PRIO_IO,-1,100000,2.01,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,SOCK_MAXBUF,-1,100000,2.01,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,SOCK_MAXBUF,-1,100000,1.98,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,FILESIZEBITS,32,100000,646.97,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,FILESIZEBITS,32,100000,223.14,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,REC_INCR_XFER_SIZE,-1,100000,2.09,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,REC_MAX_XFER_SIZE,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,REC_MAX_XFER_SIZE,-1,100000,1.84,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,REC_MIN_XFER_SIZE,4096,100000,638.08,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,REC_MIN_XFER_SIZE,4096,100000,218.13,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,REC_XFER_ALIGN,4096,100000,627.23,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,REC_XFER_ALIGN,4096,100000,218.95,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,ALLOC_SIZE_MIN,4096,100000,629.39,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,ALLOC_SIZE_MIN,4096,100000,224.64,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,SYMLINK_MAX,-1,100000,2.05,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,SYMLINK_MAX,-1,100000,1.96,value,0
+Zig cc,musl,nelibc,/dev/shm,pathconf,2_SYMLINKS,1,100000,2.11,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,2_SYMLINKS,1,100000,1.96,value,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,musl,nelibc,/dev/shm,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,musl,nelibc,/dev/shm,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,musl,nelibc,/boot,pathconf,LINK_MAX,65000,100000,691.39,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,LINK_MAX,65000,100000,375.79,value,0
+Zig cc,musl,nelibc,/boot,pathconf,MAX_CANON,255,100000,1.53,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,MAX_CANON,255,100000,1.49,value,0
+Zig cc,musl,nelibc,/boot,pathconf,MAX_INPUT,255,100000,1.56,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,MAX_INPUT,255,100000,1.53,value,0
+Zig cc,musl,nelibc,/boot,pathconf,NAME_MAX,255,100000,689.58,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,NAME_MAX,255,100000,389.28,value,0
+Zig cc,musl,nelibc,/boot,pathconf,PATH_MAX,4096,100000,1.49,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,PATH_MAX,4096,100000,1.49,value,0
+Zig cc,musl,nelibc,/boot,pathconf,PIPE_BUF,4096,100000,1.49,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,PIPE_BUF,4096,100000,1.43,value,0
+Zig cc,musl,nelibc,/boot,pathconf,CHOWN_RESTRICTED,1,100000,697.45,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,CHOWN_RESTRICTED,1,100000,377.06,value,0
+Zig cc,musl,nelibc,/boot,pathconf,NO_TRUNC,1,100000,1.49,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,NO_TRUNC,1,100000,1.67,value,0
+Zig cc,musl,nelibc,/boot,pathconf,VDISABLE,0,100000,1.42,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,VDISABLE,0,100000,1.53,value,0
+Zig cc,musl,nelibc,/boot,pathconf,SYNC_IO,-1,100000,1.96,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,SYNC_IO,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,/boot,pathconf,ASYNC_IO,-1,100000,540.82,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,ASYNC_IO,-1,100000,206.93,value,0
+Zig cc,musl,nelibc,/boot,pathconf,PRIO_IO,-1,100000,1.92,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,PRIO_IO,-1,100000,2.00,value,0
+Zig cc,musl,nelibc,/boot,pathconf,SOCK_MAXBUF,-1,100000,2.02,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,SOCK_MAXBUF,-1,100000,1.84,value,0
+Zig cc,musl,nelibc,/boot,pathconf,FILESIZEBITS,64,100000,683.98,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,FILESIZEBITS,64,100000,370.38,value,0
+Zig cc,musl,nelibc,/boot,pathconf,REC_INCR_XFER_SIZE,-1,100000,2.18,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,REC_INCR_XFER_SIZE,-1,100000,1.98,value,0
+Zig cc,musl,nelibc,/boot,pathconf,REC_MAX_XFER_SIZE,-1,100000,2.02,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,REC_MAX_XFER_SIZE,-1,100000,2.06,value,0
+Zig cc,musl,nelibc,/boot,pathconf,REC_MIN_XFER_SIZE,4096,100000,692.73,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,REC_MIN_XFER_SIZE,4096,100000,376.26,value,0
+Zig cc,musl,nelibc,/boot,pathconf,REC_XFER_ALIGN,4096,100000,693.47,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,REC_XFER_ALIGN,4096,100000,380.37,value,0
+Zig cc,musl,nelibc,/boot,pathconf,ALLOC_SIZE_MIN,4096,100000,692.72,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,ALLOC_SIZE_MIN,4096,100000,381.17,value,0
+Zig cc,musl,nelibc,/boot,pathconf,SYMLINK_MAX,-1,100000,1.99,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,SYMLINK_MAX,-1,100000,1.84,value,0
+Zig cc,musl,nelibc,/boot,pathconf,2_SYMLINKS,1,100000,1.84,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,2_SYMLINKS,1,100000,1.98,value,0
+Zig cc,musl,nelibc,/boot,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+Zig cc,musl,nelibc,/boot,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+Zig cc,musl,nelibc,/boot,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,host-libc,.,pathconf,LINK_MAX,65535,100000,398.37,value,0
+TinyCC,glibc,host-libc,.,fpathconf,LINK_MAX,65535,100000,213.87,value,0
+TinyCC,glibc,host-libc,.,pathconf,MAX_CANON,255,100000,3.24,value,0
+TinyCC,glibc,host-libc,.,fpathconf,MAX_CANON,255,100000,3.23,value,0
+TinyCC,glibc,host-libc,.,pathconf,MAX_INPUT,255,100000,3.54,value,0
+TinyCC,glibc,host-libc,.,fpathconf,MAX_INPUT,255,100000,3.35,value,0
+TinyCC,glibc,host-libc,.,pathconf,NAME_MAX,255,100000,398.14,value,0
+TinyCC,glibc,host-libc,.,fpathconf,NAME_MAX,255,100000,220.57,value,0
+TinyCC,glibc,host-libc,.,pathconf,PATH_MAX,4096,100000,3.48,value,0
+TinyCC,glibc,host-libc,.,fpathconf,PATH_MAX,4096,100000,3.24,value,0
+TinyCC,glibc,host-libc,.,pathconf,PIPE_BUF,4096,100000,3.28,value,0
+TinyCC,glibc,host-libc,.,fpathconf,PIPE_BUF,4096,100000,3.27,value,0
+TinyCC,glibc,host-libc,.,pathconf,CHOWN_RESTRICTED,1,100000,394.18,value,0
+TinyCC,glibc,host-libc,.,fpathconf,CHOWN_RESTRICTED,1,100000,217.02,value,0
+TinyCC,glibc,host-libc,.,pathconf,NO_TRUNC,1,100000,3.24,value,0
+TinyCC,glibc,host-libc,.,fpathconf,NO_TRUNC,1,100000,3.26,value,0
+TinyCC,glibc,host-libc,.,pathconf,VDISABLE,0,100000,3.20,value,0
+TinyCC,glibc,host-libc,.,fpathconf,VDISABLE,0,100000,3.07,value,0
+TinyCC,glibc,host-libc,.,pathconf,SYNC_IO,-1,100000,3.27,value,0
+TinyCC,glibc,host-libc,.,fpathconf,SYNC_IO,-1,100000,3.33,value,0
+TinyCC,glibc,host-libc,.,pathconf,ASYNC_IO,-1,100000,406.30,value,0
+TinyCC,glibc,host-libc,.,fpathconf,ASYNC_IO,-1,100000,220.66,value,0
+TinyCC,glibc,host-libc,.,pathconf,PRIO_IO,-1,100000,3.33,value,0
+TinyCC,glibc,host-libc,.,fpathconf,PRIO_IO,-1,100000,3.28,value,0
+TinyCC,glibc,host-libc,.,pathconf,SOCK_MAXBUF,-1,100000,3.39,value,0
+TinyCC,glibc,host-libc,.,fpathconf,SOCK_MAXBUF,-1,100000,3.07,value,0
+TinyCC,glibc,host-libc,.,pathconf,FILESIZEBITS,255,100000,399.27,value,0
+TinyCC,glibc,host-libc,.,fpathconf,FILESIZEBITS,255,100000,215.55,value,0
+TinyCC,glibc,host-libc,.,pathconf,REC_INCR_XFER_SIZE,-1,100000,3.55,value,0
+TinyCC,glibc,host-libc,.,fpathconf,REC_INCR_XFER_SIZE,-1,100000,3.30,value,0
+TinyCC,glibc,host-libc,.,pathconf,REC_MAX_XFER_SIZE,-1,100000,3.78,value,0
+TinyCC,glibc,host-libc,.,fpathconf,REC_MAX_XFER_SIZE,-1,100000,3.43,value,0
+TinyCC,glibc,host-libc,.,pathconf,REC_MIN_XFER_SIZE,4096,100000,402.91,value,0
+TinyCC,glibc,host-libc,.,fpathconf,REC_MIN_XFER_SIZE,4096,100000,226.92,value,0
+TinyCC,glibc,host-libc,.,pathconf,REC_XFER_ALIGN,4096,100000,400.54,value,0
+TinyCC,glibc,host-libc,.,fpathconf,REC_XFER_ALIGN,4096,100000,219.10,value,0
+TinyCC,glibc,host-libc,.,pathconf,ALLOC_SIZE_MIN,4096,100000,404.04,value,0
+TinyCC,glibc,host-libc,.,fpathconf,ALLOC_SIZE_MIN,4096,100000,226.59,value,0
+TinyCC,glibc,host-libc,.,pathconf,SYMLINK_MAX,-1,100000,3.65,value,0
+TinyCC,glibc,host-libc,.,fpathconf,SYMLINK_MAX,-1,100000,3.68,value,0
+TinyCC,glibc,host-libc,.,pathconf,2_SYMLINKS,1,100000,400.50,value,0
+TinyCC,glibc,host-libc,.,fpathconf,2_SYMLINKS,1,100000,218.56,value,0
+TinyCC,glibc,host-libc,.,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+TinyCC,glibc,host-libc,.,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,host-libc,.,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,host-libc,/proc,pathconf,LINK_MAX,127,100000,462.85,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,LINK_MAX,127,100000,147.93,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,MAX_CANON,255,100000,3.49,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,MAX_CANON,255,100000,3.34,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,MAX_INPUT,255,100000,3.27,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,MAX_INPUT,255,100000,3.27,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,NAME_MAX,255,100000,454.18,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,NAME_MAX,255,100000,143.81,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,PATH_MAX,4096,100000,3.07,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,PATH_MAX,4096,100000,3.07,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,PIPE_BUF,4096,100000,3.20,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,PIPE_BUF,4096,100000,3.34,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,CHOWN_RESTRICTED,1,100000,450.37,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,CHOWN_RESTRICTED,1,100000,140.28,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,NO_TRUNC,1,100000,3.20,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,NO_TRUNC,1,100000,3.20,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,VDISABLE,0,100000,3.37,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,VDISABLE,0,100000,3.27,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,SYNC_IO,-1,100000,3.22,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,SYNC_IO,-1,100000,3.29,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,ASYNC_IO,-1,100000,605.96,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,ASYNC_IO,-1,100000,274.93,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,PRIO_IO,-1,100000,3.23,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,PRIO_IO,-1,100000,3.20,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,SOCK_MAXBUF,-1,100000,3.20,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,SOCK_MAXBUF,-1,100000,3.37,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,FILESIZEBITS,32,100000,450.67,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,FILESIZEBITS,32,100000,139.73,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,REC_INCR_XFER_SIZE,-1,100000,3.41,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,REC_INCR_XFER_SIZE,-1,100000,3.59,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,REC_MAX_XFER_SIZE,-1,100000,3.61,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,REC_MAX_XFER_SIZE,-1,100000,3.48,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,REC_MIN_XFER_SIZE,4096,100000,453.03,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,REC_MIN_XFER_SIZE,4096,100000,143.00,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,REC_XFER_ALIGN,4096,100000,451.87,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,REC_XFER_ALIGN,4096,100000,144.04,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,ALLOC_SIZE_MIN,4096,100000,460.83,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,ALLOC_SIZE_MIN,4096,100000,146.94,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,SYMLINK_MAX,-1,100000,3.68,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,SYMLINK_MAX,-1,100000,3.43,value,0
+TinyCC,glibc,host-libc,/proc,pathconf,2_SYMLINKS,1,100000,453.68,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,2_SYMLINKS,1,100000,142.00,value,0
+TinyCC,glibc,host-libc,/proc,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+TinyCC,glibc,host-libc,/proc,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,host-libc,/proc,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,LINK_MAX,127,100000,637.16,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,LINK_MAX,127,100000,218.94,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,MAX_CANON,255,100000,3.22,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,MAX_CANON,255,100000,3.37,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,MAX_INPUT,255,100000,3.58,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,MAX_INPUT,255,100000,3.27,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,NAME_MAX,255,100000,627.30,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,NAME_MAX,255,100000,221.62,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,PATH_MAX,4096,100000,3.50,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,PATH_MAX,4096,100000,3.20,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,PIPE_BUF,4096,100000,3.07,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,PIPE_BUF,4096,100000,3.52,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,CHOWN_RESTRICTED,1,100000,640.19,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,CHOWN_RESTRICTED,1,100000,226.95,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,NO_TRUNC,1,100000,3.20,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,NO_TRUNC,1,100000,3.20,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,VDISABLE,0,100000,3.08,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,VDISABLE,0,100000,3.22,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,SYNC_IO,-1,100000,3.40,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,SYNC_IO,-1,100000,3.50,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,ASYNC_IO,-1,100000,635.74,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,ASYNC_IO,-1,100000,217.20,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,PRIO_IO,-1,100000,3.45,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,PRIO_IO,-1,100000,3.38,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,SOCK_MAXBUF,-1,100000,3.46,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,SOCK_MAXBUF,-1,100000,3.44,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,FILESIZEBITS,32,100000,633.20,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,FILESIZEBITS,32,100000,221.02,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,REC_INCR_XFER_SIZE,-1,100000,3.72,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,REC_INCR_XFER_SIZE,-1,100000,3.43,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,REC_MAX_XFER_SIZE,-1,100000,3.54,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,REC_MAX_XFER_SIZE,-1,100000,3.76,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,REC_MIN_XFER_SIZE,4096,100000,635.95,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,REC_MIN_XFER_SIZE,4096,100000,228.20,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,REC_XFER_ALIGN,4096,100000,638.41,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,REC_XFER_ALIGN,4096,100000,222.71,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,ALLOC_SIZE_MIN,4096,100000,630.26,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,ALLOC_SIZE_MIN,4096,100000,222.02,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,SYMLINK_MAX,-1,100000,3.43,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,SYMLINK_MAX,-1,100000,3.56,value,0
+TinyCC,glibc,host-libc,/dev/shm,pathconf,2_SYMLINKS,1,100000,625.63,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,2_SYMLINKS,1,100000,217.92,value,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+TinyCC,glibc,host-libc,/dev/shm,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,host-libc,/dev/shm,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,host-libc,/boot,pathconf,LINK_MAX,65000,100000,3501.97,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,LINK_MAX,65000,100000,2848.27,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,MAX_CANON,255,100000,3.21,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,MAX_CANON,255,100000,3.28,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,MAX_INPUT,255,100000,3.56,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,MAX_INPUT,255,100000,3.20,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,NAME_MAX,255,100000,700.56,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,NAME_MAX,255,100000,378.08,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,PATH_MAX,4096,100000,3.30,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,PATH_MAX,4096,100000,3.36,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,PIPE_BUF,4096,100000,3.22,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,PIPE_BUF,4096,100000,3.34,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,CHOWN_RESTRICTED,1,100000,680.99,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,CHOWN_RESTRICTED,1,100000,375.41,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,NO_TRUNC,1,100000,3.26,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,NO_TRUNC,1,100000,3.29,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,VDISABLE,0,100000,3.33,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,VDISABLE,0,100000,3.34,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,SYNC_IO,-1,100000,3.37,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,SYNC_IO,-1,100000,3.39,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,ASYNC_IO,-1,100000,534.02,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,ASYNC_IO,-1,100000,211.24,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,PRIO_IO,-1,100000,3.24,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,PRIO_IO,-1,100000,3.20,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,SOCK_MAXBUF,-1,100000,3.20,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,SOCK_MAXBUF,-1,100000,3.60,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,FILESIZEBITS,64,100000,696.76,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,FILESIZEBITS,64,100000,372.34,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,REC_INCR_XFER_SIZE,-1,100000,3.46,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,REC_INCR_XFER_SIZE,-1,100000,3.42,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,REC_MAX_XFER_SIZE,-1,100000,3.56,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,REC_MAX_XFER_SIZE,-1,100000,3.72,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,REC_MIN_XFER_SIZE,4096,100000,690.01,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,REC_MIN_XFER_SIZE,4096,100000,378.80,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,REC_XFER_ALIGN,4096,100000,692.86,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,REC_XFER_ALIGN,4096,100000,375.84,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,ALLOC_SIZE_MIN,4096,100000,691.70,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,ALLOC_SIZE_MIN,4096,100000,375.22,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,SYMLINK_MAX,-1,100000,3.76,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,SYMLINK_MAX,-1,100000,3.48,value,0
+TinyCC,glibc,host-libc,/boot,pathconf,2_SYMLINKS,1,100000,683.65,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,2_SYMLINKS,1,100000,372.97,value,0
+TinyCC,glibc,host-libc,/boot,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+TinyCC,glibc,host-libc,/boot,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,host-libc,/boot,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,nelibc,.,pathconf,LINK_MAX,65535,100000,457.64,value,0
+TinyCC,glibc,nelibc,.,fpathconf,LINK_MAX,65535,100000,268.30,value,0
+TinyCC,glibc,nelibc,.,pathconf,MAX_CANON,255,100000,2.83,value,0
+TinyCC,glibc,nelibc,.,fpathconf,MAX_CANON,255,100000,3.15,value,0
+TinyCC,glibc,nelibc,.,pathconf,MAX_INPUT,255,100000,2.88,value,0
+TinyCC,glibc,nelibc,.,fpathconf,MAX_INPUT,255,100000,2.99,value,0
+TinyCC,glibc,nelibc,.,pathconf,NAME_MAX,255,100000,452.10,value,0
+TinyCC,glibc,nelibc,.,fpathconf,NAME_MAX,255,100000,268.35,value,0
+TinyCC,glibc,nelibc,.,pathconf,PATH_MAX,4096,100000,3.20,value,0
+TinyCC,glibc,nelibc,.,fpathconf,PATH_MAX,4096,100000,3.54,value,0
+TinyCC,glibc,nelibc,.,pathconf,PIPE_BUF,4096,100000,3.41,value,0
+TinyCC,glibc,nelibc,.,fpathconf,PIPE_BUF,4096,100000,3.27,value,0
+TinyCC,glibc,nelibc,.,pathconf,CHOWN_RESTRICTED,1,100000,449.05,value,0
+TinyCC,glibc,nelibc,.,fpathconf,CHOWN_RESTRICTED,1,100000,269.85,value,0
+TinyCC,glibc,nelibc,.,pathconf,NO_TRUNC,1,100000,3.49,value,0
+TinyCC,glibc,nelibc,.,fpathconf,NO_TRUNC,1,100000,3.63,value,0
+TinyCC,glibc,nelibc,.,pathconf,VDISABLE,0,100000,4.48,value,0
+TinyCC,glibc,nelibc,.,fpathconf,VDISABLE,0,100000,4.48,value,0
+TinyCC,glibc,nelibc,.,pathconf,SYNC_IO,-1,100000,4.08,value,0
+TinyCC,glibc,nelibc,.,fpathconf,SYNC_IO,-1,100000,4.12,value,0
+TinyCC,glibc,nelibc,.,pathconf,ASYNC_IO,-1,100000,433.66,value,0
+TinyCC,glibc,nelibc,.,fpathconf,ASYNC_IO,-1,100000,254.71,value,0
+TinyCC,glibc,nelibc,.,pathconf,PRIO_IO,-1,100000,4.05,value,0
+TinyCC,glibc,nelibc,.,fpathconf,PRIO_IO,-1,100000,4.20,value,0
+TinyCC,glibc,nelibc,.,pathconf,SOCK_MAXBUF,-1,100000,4.21,value,0
+TinyCC,glibc,nelibc,.,fpathconf,SOCK_MAXBUF,-1,100000,4.17,value,0
+TinyCC,glibc,nelibc,.,pathconf,FILESIZEBITS,255,100000,457.69,value,0
+TinyCC,glibc,nelibc,.,fpathconf,FILESIZEBITS,255,100000,277.74,value,0
+TinyCC,glibc,nelibc,.,pathconf,REC_INCR_XFER_SIZE,-1,100000,4.46,value,0
+TinyCC,glibc,nelibc,.,fpathconf,REC_INCR_XFER_SIZE,-1,100000,4.40,value,0
+TinyCC,glibc,nelibc,.,pathconf,REC_MAX_XFER_SIZE,-1,100000,4.35,value,0
+TinyCC,glibc,nelibc,.,fpathconf,REC_MAX_XFER_SIZE,-1,100000,4.41,value,0
+TinyCC,glibc,nelibc,.,pathconf,REC_MIN_XFER_SIZE,4096,100000,451.92,value,0
+TinyCC,glibc,nelibc,.,fpathconf,REC_MIN_XFER_SIZE,4096,100000,268.03,value,0
+TinyCC,glibc,nelibc,.,pathconf,REC_XFER_ALIGN,4096,100000,453.11,value,0
+TinyCC,glibc,nelibc,.,fpathconf,REC_XFER_ALIGN,4096,100000,272.05,value,0
+TinyCC,glibc,nelibc,.,pathconf,ALLOC_SIZE_MIN,4096,100000,454.55,value,0
+TinyCC,glibc,nelibc,.,fpathconf,ALLOC_SIZE_MIN,4096,100000,269.22,value,0
+TinyCC,glibc,nelibc,.,pathconf,SYMLINK_MAX,-1,100000,5.39,value,0
+TinyCC,glibc,nelibc,.,fpathconf,SYMLINK_MAX,-1,100000,5.58,value,0
+TinyCC,glibc,nelibc,.,pathconf,2_SYMLINKS,1,100000,4.69,value,0
+TinyCC,glibc,nelibc,.,fpathconf,2_SYMLINKS,1,100000,4.66,value,0
+TinyCC,glibc,nelibc,.,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+TinyCC,glibc,nelibc,.,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,nelibc,.,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,nelibc,/proc,pathconf,LINK_MAX,127,100000,513.04,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,LINK_MAX,127,100000,197.02,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,MAX_CANON,255,100000,2.87,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,MAX_CANON,255,100000,2.99,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,MAX_INPUT,255,100000,3.10,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,MAX_INPUT,255,100000,3.09,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,NAME_MAX,255,100000,508.80,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,NAME_MAX,255,100000,192.03,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,PATH_MAX,4096,100000,3.39,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,PATH_MAX,4096,100000,3.51,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,PIPE_BUF,4096,100000,3.48,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,PIPE_BUF,4096,100000,3.41,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,CHOWN_RESTRICTED,1,100000,505.81,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,CHOWN_RESTRICTED,1,100000,192.72,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,NO_TRUNC,1,100000,3.60,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,NO_TRUNC,1,100000,3.83,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,VDISABLE,0,100000,4.58,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,VDISABLE,0,100000,4.44,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,SYNC_IO,-1,100000,4.10,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,SYNC_IO,-1,100000,4.29,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,ASYNC_IO,-1,100000,639.47,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,ASYNC_IO,-1,100000,307.97,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,PRIO_IO,-1,100000,4.33,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,PRIO_IO,-1,100000,4.40,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,SOCK_MAXBUF,-1,100000,4.38,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,SOCK_MAXBUF,-1,100000,4.37,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,FILESIZEBITS,32,100000,515.40,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,FILESIZEBITS,32,100000,196.83,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,REC_INCR_XFER_SIZE,-1,100000,4.45,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,REC_INCR_XFER_SIZE,-1,100000,4.48,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,REC_MAX_XFER_SIZE,-1,100000,4.56,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,REC_MAX_XFER_SIZE,-1,100000,4.29,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,REC_MIN_XFER_SIZE,4096,100000,509.17,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,REC_MIN_XFER_SIZE,4096,100000,192.90,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,REC_XFER_ALIGN,4096,100000,518.64,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,REC_XFER_ALIGN,4096,100000,194.98,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,ALLOC_SIZE_MIN,4096,100000,512.74,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,ALLOC_SIZE_MIN,4096,100000,195.66,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,SYMLINK_MAX,-1,100000,5.16,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,SYMLINK_MAX,-1,100000,5.24,value,0
+TinyCC,glibc,nelibc,/proc,pathconf,2_SYMLINKS,1,100000,4.48,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,2_SYMLINKS,1,100000,4.59,value,0
+TinyCC,glibc,nelibc,/proc,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+TinyCC,glibc,nelibc,/proc,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,nelibc,/proc,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,LINK_MAX,127,100000,689.52,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,LINK_MAX,127,100000,275.19,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,MAX_CANON,255,100000,2.80,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,MAX_CANON,255,100000,2.99,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,MAX_INPUT,255,100000,2.99,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,MAX_INPUT,255,100000,3.02,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,NAME_MAX,255,100000,693.16,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,NAME_MAX,255,100000,276.22,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,PATH_MAX,4096,100000,3.27,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,PATH_MAX,4096,100000,3.56,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,PIPE_BUF,4096,100000,3.58,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,PIPE_BUF,4096,100000,3.49,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,CHOWN_RESTRICTED,1,100000,694.75,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,CHOWN_RESTRICTED,1,100000,277.47,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,NO_TRUNC,1,100000,3.64,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,NO_TRUNC,1,100000,3.84,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,VDISABLE,0,100000,4.88,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,VDISABLE,0,100000,4.57,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,SYNC_IO,-1,100000,4.08,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,SYNC_IO,-1,100000,4.34,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,ASYNC_IO,-1,100000,683.15,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,ASYNC_IO,-1,100000,239.34,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,PRIO_IO,-1,100000,4.15,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,PRIO_IO,-1,100000,4.07,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,SOCK_MAXBUF,-1,100000,4.08,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,SOCK_MAXBUF,-1,100000,3.89,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,FILESIZEBITS,32,100000,693.85,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,FILESIZEBITS,32,100000,272.72,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,REC_INCR_XFER_SIZE,-1,100000,4.39,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,REC_INCR_XFER_SIZE,-1,100000,4.11,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,REC_MAX_XFER_SIZE,-1,100000,4.46,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,REC_MAX_XFER_SIZE,-1,100000,4.58,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,REC_MIN_XFER_SIZE,4096,100000,678.94,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,REC_MIN_XFER_SIZE,4096,100000,266.67,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,REC_XFER_ALIGN,4096,100000,703.67,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,REC_XFER_ALIGN,4096,100000,271.69,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,ALLOC_SIZE_MIN,4096,100000,689.21,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,ALLOC_SIZE_MIN,4096,100000,283.19,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,SYMLINK_MAX,-1,100000,5.49,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,SYMLINK_MAX,-1,100000,5.54,value,0
+TinyCC,glibc,nelibc,/dev/shm,pathconf,2_SYMLINKS,1,100000,5.14,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,2_SYMLINKS,1,100000,4.89,value,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+TinyCC,glibc,nelibc,/dev/shm,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,nelibc,/dev/shm,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,nelibc,/boot,pathconf,LINK_MAX,65000,100000,756.09,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,LINK_MAX,65000,100000,424.47,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,MAX_CANON,255,100000,2.91,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,MAX_CANON,255,100000,2.99,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,MAX_INPUT,255,100000,3.16,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,MAX_INPUT,255,100000,2.99,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,NAME_MAX,255,100000,745.19,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,NAME_MAX,255,100000,430.94,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,PATH_MAX,4096,100000,3.41,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,PATH_MAX,4096,100000,3.47,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,PIPE_BUF,4096,100000,3.62,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,PIPE_BUF,4096,100000,3.60,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,CHOWN_RESTRICTED,1,100000,752.25,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,CHOWN_RESTRICTED,1,100000,433.24,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,NO_TRUNC,1,100000,3.74,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,NO_TRUNC,1,100000,3.77,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,VDISABLE,0,100000,4.67,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,VDISABLE,0,100000,4.58,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,SYNC_IO,-1,100000,3.93,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,SYNC_IO,-1,100000,4.28,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,ASYNC_IO,-1,100000,571.47,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,ASYNC_IO,-1,100000,242.09,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,PRIO_IO,-1,100000,4.25,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,PRIO_IO,-1,100000,4.07,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,SOCK_MAXBUF,-1,100000,4.07,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,SOCK_MAXBUF,-1,100000,4.12,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,FILESIZEBITS,64,100000,744.18,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,FILESIZEBITS,64,100000,428.41,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,REC_INCR_XFER_SIZE,-1,100000,4.32,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,REC_INCR_XFER_SIZE,-1,100000,4.43,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,REC_MAX_XFER_SIZE,-1,100000,4.58,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,REC_MAX_XFER_SIZE,-1,100000,4.58,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,REC_MIN_XFER_SIZE,4096,100000,737.20,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,REC_MIN_XFER_SIZE,4096,100000,423.51,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,REC_XFER_ALIGN,4096,100000,748.57,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,REC_XFER_ALIGN,4096,100000,423.45,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,ALLOC_SIZE_MIN,4096,100000,753.37,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,ALLOC_SIZE_MIN,4096,100000,430.55,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,SYMLINK_MAX,-1,100000,5.29,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,SYMLINK_MAX,-1,100000,5.42,value,0
+TinyCC,glibc,nelibc,/boot,pathconf,2_SYMLINKS,1,100000,4.64,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,2_SYMLINKS,1,100000,4.62,value,0
+TinyCC,glibc,nelibc,/boot,fpathconf,INVALID_FD,-1,0,0.00,invalid_fd,9
+TinyCC,glibc,nelibc,/boot,pathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0
+TinyCC,glibc,nelibc,/boot,fpathconf,ASYNC_IO_REGULAR,1,0,0.00,regular_file,0

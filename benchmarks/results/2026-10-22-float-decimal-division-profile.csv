@@ -1,0 +1,4 @@
+parser,benchmark_parses,knuth_successes,knuth_fallbacks,quotient_digits,quotient_limb_visits,estimate_corrections,underflow_addbacks,fallback_bit_attempts,fallback_subtraction_successes
+strtof,800,400,0,800,51200,0,0,0,0
+strtod,800,400,0,1200,75600,400,0,0,0
+strtold,800,800,0,2400,180000,400,0,0,0

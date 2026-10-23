@@ -1,0 +1,14 @@
+TinyCC rounding-increment candidate
+Date: 2026-10-22
+
+The candidate increments q first and sets carry_out if q wraps to zero, instead
+of checking precision==64 and q==UINT64_MAX before incrementing. This is
+correct because q is bounded by the requested precision; only precision 64 can
+wrap, and then only from UINT64_MAX. It passed TinyCC/glibc float differential
+cases, including the current long-double midpoint corpus.
+
+Twelve alternating A/B pairs were mixed. The candidate regressed short strtof
+by 1.4%, improved short strtod/strtold by 1.1-1.4%, improved long strtof and
+strtold by about 1%, and was flat for long strtod. The existing implementation
+is retained because the candidate did not show a consistent win. Full paired
+measurements are in 2026-10-22-float-tcc-roundcarry-ab.csv.

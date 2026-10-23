@@ -1,0 +1,7 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+TinyCC-profile,glibc,host-libc,strtof,160,302.91
+TinyCC-profile,glibc,nelibc,strtof,160,14498.82
+TinyCC-profile,glibc,host-libc,strtod,160,301.58
+TinyCC-profile,glibc,nelibc,strtod,160,14737.46
+TinyCC-profile,glibc,host-libc,strtold,160,1273.29
+TinyCC-profile,glibc,nelibc,strtold,160,15455.26

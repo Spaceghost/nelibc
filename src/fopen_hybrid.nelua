@@ -1,0 +1,71 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function openat(dirfd: cint, pathname: pointer <const>, flags: cint, mode: cuint): cint <cimport> end
+local function close(fd: cint): cint <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_host_fdopen(fd: cint, mode: *[0]cchar <const>): pointer <cimport> end
+
+local function fopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>): pointer <cexport, codename 'fopen'>
+  if pathname == nilptr or mode == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+
+  local flags: cint = 0
+  if mode[0] == 114 then -- 'r'
+    flags = 0 -- O_RDONLY
+  elseif mode[0] == 119 then -- 'w'
+    flags = 1 | 64 | 512 -- O_WRONLY | O_CREAT | O_TRUNC
+  elseif mode[0] == 97 then -- 'a'
+    flags = 1 | 64 | 1024 -- O_WRONLY | O_CREAT | O_APPEND
+  else
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+
+  local plus_seen: boolean = false
+  local exclusive_seen: boolean = false
+  local close_on_exec_seen: boolean = false
+  local index: csize = 1
+  while mode[index] ~= 0 do
+    if mode[index] == 98 then -- 'b'
+      -- Binary mode is equivalent to text mode on Linux.
+    elseif mode[index] == 43 then -- '+'
+      if plus_seen then
+        nelibc_errno_location()[0] = 22 -- EINVAL
+        return nilptr
+      end
+      plus_seen = true
+    elseif mode[index] == 120 then -- 'x'
+      if exclusive_seen or mode[0] ~= 119 then -- 'w'
+        nelibc_errno_location()[0] = 22 -- EINVAL
+        return nilptr
+      end
+      exclusive_seen = true
+      flags = flags | 128 -- O_EXCL
+    elseif mode[index] == 101 then -- 'e'
+      if close_on_exec_seen then
+        nelibc_errno_location()[0] = 22 -- EINVAL
+        return nilptr
+      end
+      close_on_exec_seen = true
+      flags = flags | 524288 -- O_CLOEXEC
+    else
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      return nilptr
+    end
+    index = index + 1
+  end
+  if plus_seen then flags = (flags & ~3) | 2 end -- O_RDWR
+
+  local fd: cint = openat(-100, (@pointer)(pathname), flags, 438_cuint)
+  if fd < 0 then return nilptr end
+  local stream = nelibc_host_fdopen(fd, mode)
+  if stream == nilptr then
+    local saved_errno: cint = nelibc_errno_location()[0]
+    close(fd)
+    nelibc_errno_location()[0] = saved_errno
+  end
+  return stream
+end

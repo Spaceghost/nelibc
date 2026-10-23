@@ -1,0 +1,115 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+## pragmas.cflags = '-D_GNU_SOURCE'
+
+require 'C'
+## cinclude '<locale.h>'
+## cinclude '<string.h>'
+
+global C.locale_t: type <cimport,nodecl> = pointer
+local LC_GLOBAL_LOCALE: C.locale_t <comptime> = (@C.locale_t)(~0_usize)
+global C.LC_COLLATE: cint <const,cimport,cinclude'<locale.h>'>
+
+local function uselocale(locale: C.locale_t): C.locale_t <cimport,nodecl> end
+local function setlocale(category: cint, locale: *[0]cchar <const>): *[0]cchar <cimport,nodecl> end
+local function newlocale(mask: cint, locale: *[0]cchar <const>, base: C.locale_t): C.locale_t <cimport,nodecl> end
+local function freelocale(locale: C.locale_t): void <cimport,nodecl> end
+local function strcoll_l(left: *[0]cchar <const>, right: *[0]cchar <const>, locale: C.locale_t): cint <cimport,nodecl> end
+local function strxfrm_l(dest: *[0]cchar, src: *[0]cchar <const>, size: csize, locale: C.locale_t): csize <cimport,nodecl> end
+local function nelibc_locale_cache_lock(): void <cimport> end
+local function nelibc_locale_cache_unlock(): void <cimport> end
+
+local CollateCacheEntry: type = @record{locale: C.locale_t, name: [128]cchar}
+local LocaleSelection: type = @record{locale: C.locale_t, owned: boolean}
+local CollateCache: type = @record{entries: [8]CollateCacheEntry}
+local collate_cache: CollateCache = {entries = {}}
+
+local function c_locale_strcoll(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <inline>
+  local i: csize = 0
+  while left[i] ~= 0 and left[i] == right[i] do i = i + 1 end
+  return (@cint)((@byte)(left[i])) - (@cint)((@byte)(right[i]))
+end
+
+local function c_locale_strxfrm(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <inline>
+  local length: csize = 0
+  while src[length] ~= 0 do length = length + 1 end
+  if size ~= 0 then
+    local copied: csize = 0
+    while copied < size and src[copied] ~= 0 do
+      dest[copied] = src[copied]
+      copied = copied + 1
+    end
+    if copied < size then dest[copied] = 0 end
+  end
+  return length
+end
+
+local function current_global_is_c_locale(): boolean <inline>
+  local name = setlocale(C.LC_COLLATE, nilptr)
+  if name == nilptr then return true end
+  if name[0] == 67 and name[1] == 0 then return true end
+  return name[0] == 80 and name[1] == 79 and name[2] == 83 and name[3] == 73 and name[4] == 88 and name[5] == 0
+end
+
+local function cached_global_collate_locale(name: *[0]cchar <const>): LocaleSelection
+  local length: csize = 0
+  while name[length] ~= 0 do length = length + 1 end
+  nelibc_locale_cache_lock()
+  if length < 128 then
+    local empty_slot: csize = 8
+    local i: csize = 0
+    while i < 8 do
+      if collate_cache.entries[i].locale == (@C.locale_t)(0) then
+        if empty_slot == 8 then empty_slot = i end
+      else
+        local j: csize = 0
+        while j < length and collate_cache.entries[i].name[j] == name[j] do j = j + 1 end
+        if j == length and collate_cache.entries[i].name[j] == 0 then
+          local result = collate_cache.entries[i].locale
+          nelibc_locale_cache_unlock()
+          return {locale = result, owned = false}
+        end
+      end
+      i = i + 1
+    end
+    if empty_slot ~= 8 then
+      local locale = newlocale(1_cint << C.LC_COLLATE, name, (@C.locale_t)(0))
+      if locale ~= (@C.locale_t)(0) then
+        i = 0
+        while i <= length do
+          collate_cache.entries[empty_slot].name[i] = name[i]
+          i = i + 1
+        end
+        collate_cache.entries[empty_slot].locale = locale
+        nelibc_locale_cache_unlock()
+        return {locale = locale, owned = false}
+      end
+    end
+  end
+  nelibc_locale_cache_unlock()
+  return {locale = newlocale(1_cint << C.LC_COLLATE, name, (@C.locale_t)(0)), owned = true}
+end
+
+local function nelibc_locale_strcoll(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <cexport, codename 'nelibc_locale_strcoll'>
+  local current = uselocale((@C.locale_t)(0))
+  if current ~= LC_GLOBAL_LOCALE then return strcoll_l(left, right, current) end
+  if current_global_is_c_locale() then return c_locale_strcoll(left, right) end
+  local locale_name = setlocale(C.LC_COLLATE, nilptr)
+  local selected = cached_global_collate_locale(locale_name)
+  if selected.locale == (@C.locale_t)(0) then return c_locale_strcoll(left, right) end
+  local result = strcoll_l(left, right, selected.locale)
+  if selected.owned then freelocale(selected.locale) end
+  return result
+end
+
+local function nelibc_locale_strxfrm(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <cexport, codename 'nelibc_locale_strxfrm'>
+  local current = uselocale((@C.locale_t)(0))
+  if current ~= LC_GLOBAL_LOCALE then return strxfrm_l(dest, src, size, current) end
+  if current_global_is_c_locale() then return c_locale_strxfrm(dest, src, size) end
+  local locale_name = setlocale(C.LC_COLLATE, nilptr)
+  local selected = cached_global_collate_locale(locale_name)
+  if selected.locale == (@C.locale_t)(0) then return c_locale_strxfrm(dest, src, size) end
+  local result = strxfrm_l(dest, src, size, selected.locale)
+  if selected.owned then freelocale(selected.locale) end
+  return result
+end

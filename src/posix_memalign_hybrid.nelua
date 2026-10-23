@@ -1,0 +1,14 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_posix_memalign(output: *[0]pointer, alignment: csize, size: csize): cint <cimport> end
+
+local function posix_memalign(output: *[0]pointer, alignment: csize,
+    size: csize): cint <cexport, codename 'posix_memalign'>
+  if output == nilptr or alignment < (@csize)(#pointer) or
+      (alignment & (alignment - 1)) ~= 0 or alignment % (@csize)(#pointer) ~= 0 then
+    return 22 -- EINVAL
+  end
+
+  return nelibc_posix_memalign(output, alignment, size)
+end

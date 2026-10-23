@@ -1,0 +1,487 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- A bootstrap allocator for Linux x86_64. Small blocks come from reusable
+-- mmap-backed size-class slabs; large or highly aligned blocks own one map.
+local AllocationHeader: type = @record{
+  mapping_size: csize,
+  requested_size: csize,
+  pool_index: csize,
+  next_free: *AllocationHeader,
+  alignment: csize
+}
+
+local PoolState: type = @record{
+  free_list: *AllocationHeader,
+  bump: pointer,
+  available: csize
+}
+
+local PoolCursor: type = @record{
+  free_list: *AllocationHeader,
+  bump: pointer,
+  available: csize,
+  free_count: csize
+}
+
+-- Keep a header pointer immediately before each user pointer. The 48-byte
+-- header preserves max_align_t alignment and stores the requested alignment
+-- so direct-map realloc can realign the user pointer after mremap.
+local HEADER_SIZE: csize <comptime> = 48
+local HEADER_SLOT_SIZE: csize <comptime> = 8
+local DEFAULT_ALIGNMENT: csize <comptime> = 16
+local PAGE_SIZE: csize <comptime> = 4096
+local MAX_CSIZE: csize <comptime> = ~0_csize
+local SLAB_SIZE: csize <comptime> = 65536
+local POOL_COUNT: csize <comptime> = 9
+local pools: [9]PoolState = {}
+local slab_mappings: *AllocationHeader = nilptr
+
+local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
+local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_allocator_lock(): void <cimport> end
+local function nelibc_allocator_unlock(): void <cimport> end
+local function nelibc_memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+local function memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+local function nelibc_memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
+local function nelibc_thread_state(slot: cuint, size: csize): pointer <cimport> end
+local function nelibc_allocator_slab_registry_publish(head: pointer): void <cimport> end
+local function nelibc_allocator_slab_registry(): pointer <cimport> end
+local function nelibc_direct_registry_publish(head: pointer): void <cimport> end
+local function nelibc_direct_registry_head(): pointer <cimport> end
+local function nelibc_direct_registry_read_enter(): void <cimport> end
+local function nelibc_direct_registry_read_leave(): void <cimport> end
+local function nelibc_direct_registry_write_begin(): void <cimport> end
+local function nelibc_direct_registry_write_end(): void <cimport> end
+local nelibc_allocator_fastpath_supported: cint <cimport>
+
+local function pool_size(index: csize): csize <inline>
+  return 64_csize << index
+end
+
+local function map_anonymous(size: csize): pointer <inline>
+  local result = nelibc_raw_syscall6(
+    9_culong, 0_culong, (@culong)(size), 3_culong, 34_culong,
+    (@culong)(-1_cint), 0_culong
+  )
+  if result < 0 and result >= -4095 then
+    nelibc_errno_location()[0] = (@cint)(-result)
+    return nilptr
+  end
+  return (@pointer)((@usize)(result))
+end
+
+local function allocate(size: csize, alignment: csize): pointer <inline>
+  local payload: csize = size
+  if payload == 0 then payload = 1 end
+  local total: csize = payload + HEADER_SIZE
+  if total < payload or alignment - 1 > MAX_CSIZE - total then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return nilptr
+  end
+  total = total + alignment - 1
+
+  local pool_index: csize = POOL_COUNT
+  if total <= 64 then pool_index = 0
+  elseif total <= 128 then pool_index = 1
+  elseif total <= 256 then pool_index = 2
+  elseif total <= 512 then pool_index = 3
+  elseif total <= 1024 then pool_index = 4
+  elseif total <= 2048 then pool_index = 5
+  elseif total <= 4096 then pool_index = 6
+  elseif total <= 8192 then pool_index = 7
+  elseif total <= 16384 then pool_index = 8
+  end
+
+  local base: usize
+  local mapping_size: csize = 0
+  if pool_index < POOL_COUNT then
+    local block_size = pool_size(pool_index)
+    local cursor: *PoolCursor = nilptr
+    if nelibc_allocator_fastpath_supported ~= 0 then
+      cursor = (@*PoolCursor)(nelibc_thread_state((@cuint)(7 + pool_index), 256))
+    end
+    local header: *AllocationHeader
+    if cursor ~= nilptr and cursor.free_list ~= nilptr then
+      header = cursor.free_list
+      cursor.free_list = header.next_free
+      header.next_free = nilptr
+      cursor.free_count = cursor.free_count - 1
+    elseif cursor ~= nilptr and cursor.available >= block_size then
+      header = (@*AllocationHeader)(cursor.bump)
+      cursor.bump = (@pointer)((@usize)(cursor.bump) + (@usize)(block_size))
+      cursor.available = cursor.available - block_size
+    else
+      nelibc_allocator_lock()
+      local pool: *PoolState = &pools[pool_index]
+      if pool.free_list ~= nilptr then
+        if cursor == nilptr then
+          header = pool.free_list
+          pool.free_list = header.next_free
+        else
+          local limit: csize = SLAB_SIZE // block_size
+          if limit > 16 then limit = 16 end
+          local count: csize = 0
+          local local_tail: *AllocationHeader = nilptr
+          while pool.free_list ~= nilptr and count < limit do
+            local taken: *AllocationHeader = pool.free_list
+            pool.free_list = taken.next_free
+            taken.next_free = nilptr
+            if cursor.free_list == nilptr then cursor.free_list = taken
+            else local_tail.next_free = taken end
+            local_tail = taken
+            count = count + 1
+          end
+          cursor.free_count = count
+          header = cursor.free_list
+          cursor.free_list = header.next_free
+          header.next_free = nilptr
+          cursor.free_count = cursor.free_count - 1
+        end
+        nelibc_allocator_unlock()
+      else
+        if pool.available < block_size then
+          local slab = map_anonymous(SLAB_SIZE)
+          if slab == nilptr then
+            nelibc_allocator_unlock()
+            return nilptr
+          end
+          -- Keep an in-band descriptor in the first block so provenance
+          -- checks can recognize every slab without probing arbitrary memory.
+          local slab_header: *AllocationHeader = (@*AllocationHeader)(slab)
+          slab_header.mapping_size = SLAB_SIZE
+          slab_header.requested_size = 0
+          slab_header.pool_index = 0
+          slab_header.next_free = slab_mappings
+          slab_mappings = slab_header
+          nelibc_allocator_slab_registry_publish((@pointer)(slab_header))
+          pool.bump = (@pointer)((@usize)(slab) + (@usize)(block_size))
+          pool.available = SLAB_SIZE - block_size
+        end
+        local count: csize = SLAB_SIZE // block_size
+        if count > 16 then count = 16 end
+        local reserve: csize = block_size * count
+        if reserve > pool.available then reserve = pool.available end
+        if cursor ~= nilptr then
+          cursor.bump = pool.bump
+          cursor.available = reserve
+          pool.bump = (@pointer)((@usize)(pool.bump) + (@usize)(reserve))
+          pool.available = pool.available - reserve
+          header = (@*AllocationHeader)(cursor.bump)
+          cursor.bump = (@pointer)((@usize)(cursor.bump) + (@usize)(block_size))
+          cursor.available = cursor.available - block_size
+        else
+          header = (@*AllocationHeader)(pool.bump)
+          pool.bump = (@pointer)((@usize)(pool.bump) + (@usize)(block_size))
+          pool.available = pool.available - block_size
+        end
+        nelibc_allocator_unlock()
+      end
+    end
+    base = (@usize)(header)
+    header.mapping_size = 0
+    header.pool_index = pool_index + 1
+    header.next_free = nilptr
+  else
+    -- Linux rounds mmap lengths up to whole pages. Keep that actual length so
+    -- realloc can use the unused tail of the final page before remapping.
+    local direct_mapping_size = total
+    local page_remainder = direct_mapping_size % PAGE_SIZE
+    if page_remainder ~= 0 then
+      local page_slack = PAGE_SIZE - page_remainder
+      if direct_mapping_size > MAX_CSIZE - page_slack then
+        nelibc_errno_location()[0] = 12 -- ENOMEM
+        return nilptr
+      end
+      direct_mapping_size = direct_mapping_size + page_slack
+    end
+    local mapping = map_anonymous(direct_mapping_size)
+    if mapping == nilptr then return nilptr end
+    base = (@usize)(mapping)
+    mapping_size = direct_mapping_size
+  end
+
+  local header: *AllocationHeader = (@*AllocationHeader)(base)
+  header.mapping_size = mapping_size
+  header.requested_size = size
+  header.alignment = alignment
+  if mapping_size ~= 0 then
+    nelibc_allocator_lock()
+    -- pool_index links direct mappings in the ownership registry.
+    header.pool_index = (@csize)((@usize)(nelibc_direct_registry_head()))
+    nelibc_direct_registry_publish((@pointer)(header))
+    nelibc_allocator_unlock()
+  end
+  local user_address: usize = base + (@usize)(HEADER_SIZE)
+  local mask: usize = (@usize)(alignment - 1)
+  user_address = (user_address + mask) & ~mask
+  local header_slot: *[0]usize = (@*[0]usize)(user_address - (@usize)(HEADER_SLOT_SIZE))
+  header_slot[0] = base
+  return (@pointer)(user_address)
+end
+
+local function nelibc_malloc(size: csize): pointer <cexport, codename 'nelibc_malloc'>
+  return allocate(size, DEFAULT_ALIGNMENT)
+end
+
+local function nelibc_aligned_alloc(alignment: csize, size: csize): pointer <cexport, codename 'nelibc_aligned_alloc'>
+  if alignment == 0 or (alignment & (alignment - 1)) ~= 0 or size % alignment ~= 0 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  local requested_alignment = alignment
+  if requested_alignment < DEFAULT_ALIGNMENT then requested_alignment = DEFAULT_ALIGNMENT end
+  return allocate(size, requested_alignment)
+end
+
+local function nelibc_posix_memalign(output: *[0]pointer, alignment: csize, size: csize): cint <cexport, codename 'nelibc_posix_memalign'>
+  if alignment < HEADER_SLOT_SIZE or (alignment & (alignment - 1)) ~= 0 then return 22 end -- EINVAL
+  local saved_errno: cint = nelibc_errno_location()[0]
+  local requested_alignment = alignment
+  if requested_alignment < DEFAULT_ALIGNMENT then requested_alignment = DEFAULT_ALIGNMENT end
+  local result = allocate(size, requested_alignment)
+  local result_errno: cint = nelibc_errno_location()[0]
+  nelibc_errno_location()[0] = saved_errno
+  if result == nilptr then return result_errno end
+  output[0] = result
+  return 0
+end
+
+local function nelibc_free(ptr: pointer): void <cexport, codename 'nelibc_free'>
+  if ptr == nilptr then return end
+  local user_address = (@usize)(ptr)
+  local header_slot: *[0]usize = (@*[0]usize)(user_address - (@usize)(HEADER_SLOT_SIZE))
+  local base = header_slot[0]
+  local header: *AllocationHeader = (@*AllocationHeader)(base)
+  if header.mapping_size == 0 then
+    local pool_index = header.pool_index - 1
+    if nelibc_allocator_fastpath_supported ~= 0 then
+      local cursor: *PoolCursor = (@*PoolCursor)(nelibc_thread_state(
+        (@cuint)(7 + pool_index), 256))
+      if cursor ~= nilptr and cursor.free_count < 16 then
+        header.next_free = cursor.free_list
+        cursor.free_list = header
+        cursor.free_count = cursor.free_count + 1
+        return
+      end
+    end
+    nelibc_allocator_lock()
+    header.next_free = pools[pool_index].free_list
+    pools[pool_index].free_list = header
+    nelibc_allocator_unlock()
+    return
+  end
+  nelibc_allocator_lock()
+  nelibc_direct_registry_write_begin()
+  local previous: *AllocationHeader = nilptr
+  local current: *AllocationHeader =
+    (@*AllocationHeader)(nelibc_direct_registry_head())
+  while current ~= nilptr and current ~= header do
+    previous = current
+    current = (@*AllocationHeader)((@usize)(current.pool_index))
+  end
+  if current == header then
+    local next_mapping: *AllocationHeader =
+      (@*AllocationHeader)((@usize)(current.pool_index))
+    if previous == nilptr then nelibc_direct_registry_publish((@pointer)(next_mapping))
+    else previous.pool_index = (@csize)((@usize)(next_mapping)) end
+  end
+  local result = nelibc_raw_syscall3(
+    11_culong, -- munmap
+    (@culong)(base),
+    (@culong)(header.mapping_size),
+    0_culong
+  )
+  if result < 0 and result >= -4095 then
+    nelibc_errno_location()[0] = (@cint)(-result)
+  end
+  nelibc_direct_registry_write_end()
+  nelibc_allocator_unlock()
+end
+
+-- Safe provenance test for hybrid adapters: never read metadata before an
+-- untrusted pointer; compare only against mappings Nelibc recorded itself.
+local function nelibc_allocator_owns(ptr: pointer): cint
+    <cexport, codename 'nelibc_allocator_owns'>
+  if ptr == nilptr then return 0 end
+  local address: usize = (@usize)(ptr)
+  -- Slab descriptors and links are immutable once published. Avoid taking
+  -- the global allocator lock for the common Nelibc-owned pointer case.
+  local slab: *AllocationHeader =
+    (@*AllocationHeader)(nelibc_allocator_slab_registry())
+  while slab ~= nilptr do
+    if address >= (@usize)(slab) and
+        address - (@usize)(slab) < SLAB_SIZE then
+      return 1
+    end
+    slab = slab.next_free
+  end
+  nelibc_direct_registry_read_enter()
+  local mapping: *AllocationHeader =
+    (@*AllocationHeader)(nelibc_direct_registry_head())
+  while mapping ~= nilptr do
+    if address >= (@usize)(mapping) and
+        address - (@usize)(mapping) < mapping.mapping_size then
+      nelibc_direct_registry_read_leave()
+      return 1
+    end
+    mapping = (@*AllocationHeader)((@usize)(mapping.pool_index))
+  end
+  nelibc_direct_registry_read_leave()
+  return 0
+end
+
+local function nelibc_allocator_thread_cleanup(state: pointer): void
+    <cexport, codename 'nelibc_allocator_thread_cleanup'>
+  for pool_index: csize = 0, POOL_COUNT - 1 do
+    local cursor_address = (@usize)(state) + (@usize)((7 + pool_index) * 256)
+    local cursor: *PoolCursor = (@*PoolCursor)(cursor_address)
+    local block_size = pool_size(pool_index)
+    local free_head: *AllocationHeader = cursor.free_list
+    local remaining: csize = cursor.available // block_size
+    while remaining ~= 0 do
+      local header: *AllocationHeader = (@*AllocationHeader)(cursor.bump)
+      cursor.bump = (@pointer)((@usize)(cursor.bump) + (@usize)(block_size))
+      header.mapping_size = 0
+      header.requested_size = 0
+      header.pool_index = pool_index + 1
+      header.next_free = free_head
+      free_head = header
+      remaining = remaining - 1
+    end
+
+    if free_head ~= nilptr then
+      local tail: *AllocationHeader = free_head
+      while tail.next_free ~= nilptr do tail = tail.next_free end
+      nelibc_allocator_lock()
+      tail.next_free = pools[pool_index].free_list
+      pools[pool_index].free_list = free_head
+      nelibc_allocator_unlock()
+    end
+    cursor.free_list = nilptr
+    cursor.bump = nilptr
+    cursor.available = 0
+    cursor.free_count = 0
+  end
+end
+
+local function nelibc_calloc(count: csize, size: csize): pointer <cexport, codename 'nelibc_calloc'>
+  if count ~= 0 and size > MAX_CSIZE // count then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return nilptr
+  end
+  local total: csize = count * size
+  local ptr = nelibc_malloc(total)
+  if ptr == nilptr then return nilptr end
+  nelibc_memset(ptr, 0, total)
+  return ptr
+end
+
+local function nelibc_realloc(ptr: pointer, size: csize): pointer <cexport, codename 'nelibc_realloc'>
+  if ptr == nilptr then return nelibc_malloc(size) end
+  if size == 0 then
+    nelibc_free(ptr)
+    return nilptr
+  end
+
+  local user_address = (@usize)(ptr)
+  local header_slot: *[0]usize = (@*[0]usize)(user_address - (@usize)(HEADER_SLOT_SIZE))
+  local base = header_slot[0]
+  local old_header: *AllocationHeader = (@*AllocationHeader)(base)
+  local old_size: csize = old_header.requested_size
+  local offset: csize = user_address - base
+  local capacity: csize = 0
+  if old_header.mapping_size == 0 then
+    capacity = pool_size(old_header.pool_index - 1) - offset
+  else
+    capacity = old_header.mapping_size - offset
+  end
+  if size <= capacity then
+    old_header.requested_size = size
+    return ptr
+  end
+
+  local alignment: csize = old_header.alignment
+  if alignment < DEFAULT_ALIGNMENT then alignment = DEFAULT_ALIGNMENT end
+  if old_header.mapping_size ~= 0 and
+      alignment - 1 <= MAX_CSIZE - HEADER_SIZE and
+      size <= MAX_CSIZE - HEADER_SIZE - (alignment - 1) then
+    -- A moved mapping may have different alignment bits above the page
+    -- boundary. Reserve enough room to realign the user pointer after mremap.
+    local required_size = HEADER_SIZE + (alignment - 1) + size
+    local page_remainder = required_size % PAGE_SIZE
+    if page_remainder ~= 0 and required_size <= MAX_CSIZE - (PAGE_SIZE - page_remainder) then
+      required_size = required_size + (PAGE_SIZE - page_remainder)
+    elseif page_remainder ~= 0 then
+      required_size = 0
+    end
+    if required_size > old_header.mapping_size then
+      nelibc_allocator_lock()
+      nelibc_direct_registry_write_begin()
+      local previous: *AllocationHeader = nilptr
+      local current: *AllocationHeader =
+        (@*AllocationHeader)(nelibc_direct_registry_head())
+      while current ~= nilptr and current ~= old_header do
+        previous = current
+        current = (@*AllocationHeader)((@usize)(current.pool_index))
+      end
+      if current == old_header then
+        local resized_mapping = nelibc_raw_syscall6(
+          25_culong, -- mremap
+          (@culong)(base),
+          (@culong)(old_header.mapping_size),
+          (@culong)(required_size),
+          1_culong, -- MREMAP_MAYMOVE
+          0_culong,
+          0_culong
+        )
+        if not (resized_mapping < 0 and resized_mapping >= -4095) then
+          local new_base: usize = (@usize)(resized_mapping)
+          local new_header: *AllocationHeader = (@*AllocationHeader)(new_base)
+          new_header.mapping_size = required_size
+          new_header.requested_size = size
+          new_header.alignment = alignment
+          local mask: usize = (@usize)(alignment - 1)
+          local new_user_address =
+            (new_base + (@usize)(HEADER_SIZE) + mask) & ~mask
+          local copy_size = old_size
+          if size < copy_size then copy_size = size end
+          local old_user_address = new_base + (@usize)(offset)
+          memmove((@pointer)(new_user_address),
+            (@pointer)(old_user_address), copy_size)
+          if previous == nilptr then
+            nelibc_direct_registry_publish((@pointer)(new_header))
+          else
+            previous.pool_index = (@csize)(new_base)
+          end
+          local new_header_slot: *[0]usize =
+            (@*[0]usize)(new_user_address - (@usize)(HEADER_SLOT_SIZE))
+          new_header_slot[0] = new_base
+          nelibc_direct_registry_write_end()
+          nelibc_allocator_unlock()
+          return (@pointer)(new_user_address)
+        end
+      end
+      nelibc_direct_registry_write_end()
+      nelibc_allocator_unlock()
+    end
+  end
+
+  local new_ptr = allocate(size, alignment)
+  if new_ptr == nilptr then return nilptr end
+
+  local copy_size = old_size
+  if size < copy_size then copy_size = size end
+  nelibc_memcpy(new_ptr, ptr, copy_size)
+  nelibc_free(ptr)
+  return new_ptr
+end
+
+local function nelibc_reallocarray(ptr: pointer, count: csize, size: csize): pointer <cexport, codename 'nelibc_reallocarray'>
+  if count ~= 0 and size > MAX_CSIZE // count then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return nilptr
+  end
+  return nelibc_realloc(ptr, count * size)
+end

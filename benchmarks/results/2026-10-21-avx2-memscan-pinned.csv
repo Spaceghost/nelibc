@@ -1,0 +1,145 @@
+round,compiler,libc,implementation,function,size_bytes,iterations,median_ns_per_call
+1,Zig cc,glibc,libc,memchr,64,1048576,1.75
+1,Zig cc,glibc,libc,memrchr,64,1048576,1.99
+1,Zig cc,glibc,libc,memchr,4096,16384,25.01
+1,Zig cc,glibc,libc,memrchr,4096,16384,25.18
+1,Zig cc,glibc,libc,memchr,65536,1024,568.41
+1,Zig cc,glibc,libc,memrchr,65536,1024,503.83
+1,Zig cc,glibc,nelibc,memchr,64,1048576,6.47
+1,Zig cc,glibc,nelibc,memrchr,64,1048576,33.80
+1,Zig cc,glibc,nelibc,memchr,4096,16384,37.78
+1,Zig cc,glibc,nelibc,memrchr,4096,16384,37.72
+1,Zig cc,glibc,nelibc,memchr,65536,1024,486.19
+1,Zig cc,glibc,nelibc,memrchr,65536,1024,512.46
+1,GCC,glibc,libc,memchr,64,1048576,2.48
+1,GCC,glibc,libc,memrchr,64,1048576,2.50
+1,GCC,glibc,libc,memchr,4096,16384,27.35
+1,GCC,glibc,libc,memrchr,4096,16384,29.39
+1,GCC,glibc,libc,memchr,65536,1024,498.45
+1,GCC,glibc,libc,memrchr,65536,1024,473.71
+1,GCC,glibc,nelibc,memchr,64,1048576,9.95
+1,GCC,glibc,nelibc,memrchr,64,1048576,9.76
+1,GCC,glibc,nelibc,memchr,4096,16384,37.92
+1,GCC,glibc,nelibc,memrchr,4096,16384,39.86
+1,GCC,glibc,nelibc,memchr,65536,1024,476.76
+1,GCC,glibc,nelibc,memrchr,65536,1024,507.10
+1,Zig cc,musl,libc,memchr,64,1048576,23.94
+1,Zig cc,musl,libc,memrchr,64,1048576,24.91
+1,Zig cc,musl,libc,memchr,4096,16384,915.66
+1,Zig cc,musl,libc,memrchr,4096,16384,1077.92
+1,Zig cc,musl,libc,memchr,65536,1024,14385.85
+1,Zig cc,musl,libc,memrchr,65536,1024,16748.77
+1,Zig cc,musl,nelibc,memchr,64,1048576,6.44
+1,Zig cc,musl,nelibc,memrchr,64,1048576,31.66
+1,Zig cc,musl,nelibc,memchr,4096,16384,41.35
+1,Zig cc,musl,nelibc,memrchr,4096,16384,40.67
+1,Zig cc,musl,nelibc,memchr,65536,1024,529.73
+1,Zig cc,musl,nelibc,memrchr,65536,1024,542.04
+1,TinyCC,glibc,libc,memchr,64,1048576,2.30
+1,TinyCC,glibc,libc,memrchr,64,1048576,2.45
+1,TinyCC,glibc,libc,memchr,4096,16384,23.12
+1,TinyCC,glibc,libc,memrchr,4096,16384,25.52
+1,TinyCC,glibc,libc,memchr,65536,1024,503.26
+1,TinyCC,glibc,libc,memrchr,65536,1024,462.70
+1,TinyCC,glibc,nelibc,memchr,64,1048576,3.79
+1,TinyCC,glibc,nelibc,memrchr,64,1048576,4.12
+1,TinyCC,glibc,nelibc,memchr,4096,16384,41.59
+1,TinyCC,glibc,nelibc,memrchr,4096,16384,42.78
+1,TinyCC,glibc,nelibc,memchr,65536,1024,534.92
+1,TinyCC,glibc,nelibc,memrchr,65536,1024,509.36
+2,Zig cc,glibc,libc,memchr,64,1048576,1.82
+2,Zig cc,glibc,libc,memrchr,64,1048576,2.03
+2,Zig cc,glibc,libc,memchr,4096,16384,28.28
+2,Zig cc,glibc,libc,memrchr,4096,16384,29.94
+2,Zig cc,glibc,libc,memchr,65536,1024,527.90
+2,Zig cc,glibc,libc,memrchr,65536,1024,512.71
+2,Zig cc,glibc,nelibc,memchr,64,1048576,6.39
+2,Zig cc,glibc,nelibc,memrchr,64,1048576,33.90
+2,Zig cc,glibc,nelibc,memchr,4096,16384,37.14
+2,Zig cc,glibc,nelibc,memrchr,4096,16384,37.46
+2,Zig cc,glibc,nelibc,memchr,65536,1024,486.59
+2,Zig cc,glibc,nelibc,memrchr,65536,1024,485.72
+2,GCC,glibc,libc,memchr,64,1048576,2.43
+2,GCC,glibc,libc,memrchr,64,1048576,2.40
+2,GCC,glibc,libc,memchr,4096,16384,28.13
+2,GCC,glibc,libc,memrchr,4096,16384,28.96
+2,GCC,glibc,libc,memchr,65536,1024,486.31
+2,GCC,glibc,libc,memrchr,65536,1024,467.51
+2,GCC,glibc,nelibc,memchr,64,1048576,9.84
+2,GCC,glibc,nelibc,memrchr,64,1048576,9.76
+2,GCC,glibc,nelibc,memchr,4096,16384,38.29
+2,GCC,glibc,nelibc,memrchr,4096,16384,39.95
+2,GCC,glibc,nelibc,memchr,65536,1024,488.31
+2,GCC,glibc,nelibc,memrchr,65536,1024,503.39
+2,Zig cc,musl,libc,memchr,64,1048576,23.51
+2,Zig cc,musl,libc,memrchr,64,1048576,24.90
+2,Zig cc,musl,libc,memchr,4096,16384,932.37
+2,Zig cc,musl,libc,memrchr,4096,16384,1076.76
+2,Zig cc,musl,libc,memchr,65536,1024,14295.52
+2,Zig cc,musl,libc,memrchr,65536,1024,17037.26
+2,Zig cc,musl,nelibc,memchr,64,1048576,6.41
+2,Zig cc,musl,nelibc,memrchr,64,1048576,31.65
+2,Zig cc,musl,nelibc,memchr,4096,16384,40.82
+2,Zig cc,musl,nelibc,memrchr,4096,16384,39.76
+2,Zig cc,musl,nelibc,memchr,65536,1024,524.43
+2,Zig cc,musl,nelibc,memrchr,65536,1024,498.56
+2,TinyCC,glibc,libc,memchr,64,1048576,2.27
+2,TinyCC,glibc,libc,memrchr,64,1048576,2.50
+2,TinyCC,glibc,libc,memchr,4096,16384,22.89
+2,TinyCC,glibc,libc,memrchr,4096,16384,28.96
+2,TinyCC,glibc,libc,memchr,65536,1024,537.78
+2,TinyCC,glibc,libc,memrchr,65536,1024,483.60
+2,TinyCC,glibc,nelibc,memchr,64,1048576,3.74
+2,TinyCC,glibc,nelibc,memrchr,64,1048576,4.15
+2,TinyCC,glibc,nelibc,memchr,4096,16384,40.86
+2,TinyCC,glibc,nelibc,memrchr,4096,16384,39.81
+2,TinyCC,glibc,nelibc,memchr,65536,1024,504.36
+2,TinyCC,glibc,nelibc,memrchr,65536,1024,509.87
+3,Zig cc,glibc,libc,memchr,64,1048576,1.76
+3,Zig cc,glibc,libc,memrchr,64,1048576,2.01
+3,Zig cc,glibc,libc,memchr,4096,16384,22.91
+3,Zig cc,glibc,libc,memrchr,4096,16384,27.70
+3,Zig cc,glibc,libc,memchr,65536,1024,523.90
+3,Zig cc,glibc,libc,memrchr,65536,1024,499.27
+3,Zig cc,glibc,nelibc,memchr,64,1048576,6.45
+3,Zig cc,glibc,nelibc,memrchr,64,1048576,34.44
+3,Zig cc,glibc,nelibc,memchr,4096,16384,36.36
+3,Zig cc,glibc,nelibc,memrchr,4096,16384,38.29
+3,Zig cc,glibc,nelibc,memchr,65536,1024,487.98
+3,Zig cc,glibc,nelibc,memrchr,65536,1024,484.15
+3,GCC,glibc,libc,memchr,64,1048576,2.58
+3,GCC,glibc,libc,memrchr,64,1048576,2.57
+3,GCC,glibc,libc,memchr,4096,16384,27.18
+3,GCC,glibc,libc,memrchr,4096,16384,28.84
+3,GCC,glibc,libc,memchr,65536,1024,497.54
+3,GCC,glibc,libc,memrchr,65536,1024,505.64
+3,GCC,glibc,nelibc,memchr,64,1048576,10.25
+3,GCC,glibc,nelibc,memrchr,64,1048576,9.78
+3,GCC,glibc,nelibc,memchr,4096,16384,39.14
+3,GCC,glibc,nelibc,memrchr,4096,16384,38.55
+3,GCC,glibc,nelibc,memchr,65536,1024,501.27
+3,GCC,glibc,nelibc,memrchr,65536,1024,504.68
+3,Zig cc,musl,libc,memchr,64,1048576,23.81
+3,Zig cc,musl,libc,memrchr,64,1048576,25.24
+3,Zig cc,musl,libc,memchr,4096,16384,923.41
+3,Zig cc,musl,libc,memrchr,4096,16384,1069.67
+3,Zig cc,musl,libc,memchr,65536,1024,14663.69
+3,Zig cc,musl,libc,memrchr,65536,1024,17208.86
+3,Zig cc,musl,nelibc,memchr,64,1048576,6.45
+3,Zig cc,musl,nelibc,memrchr,64,1048576,31.90
+3,Zig cc,musl,nelibc,memchr,4096,16384,40.15
+3,Zig cc,musl,nelibc,memrchr,4096,16384,38.62
+3,Zig cc,musl,nelibc,memchr,65536,1024,505.33
+3,Zig cc,musl,nelibc,memrchr,65536,1024,503.73
+3,TinyCC,glibc,libc,memchr,64,1048576,2.32
+3,TinyCC,glibc,libc,memrchr,64,1048576,2.50
+3,TinyCC,glibc,libc,memchr,4096,16384,25.71
+3,TinyCC,glibc,libc,memrchr,4096,16384,30.07
+3,TinyCC,glibc,libc,memchr,65536,1024,533.99
+3,TinyCC,glibc,libc,memrchr,65536,1024,478.43
+3,TinyCC,glibc,nelibc,memchr,64,1048576,3.71
+3,TinyCC,glibc,nelibc,memrchr,64,1048576,4.22
+3,TinyCC,glibc,nelibc,memchr,4096,16384,40.28
+3,TinyCC,glibc,nelibc,memrchr,4096,16384,40.41
+3,TinyCC,glibc,nelibc,memchr,65536,1024,503.87
+3,TinyCC,glibc,nelibc,memrchr,65536,1024,510.02

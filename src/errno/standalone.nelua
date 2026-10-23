@@ -1,0 +1,14 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- Standalone provider: this TLS slot becomes the process/thread errno state
+-- once libc internals no longer need to share the host runtime's slot.
+local errno_value: cint <threadlocal> = 0
+
+local function __errno_location(): *[0]cint <cexport, codename '__errno_location'>
+  return (@*[0]cint)(&errno_value)
+end
+
+local function nelibc_errno_location(): *[0]cint <cexport, codename 'nelibc_errno_location'>
+  return __errno_location()
+end

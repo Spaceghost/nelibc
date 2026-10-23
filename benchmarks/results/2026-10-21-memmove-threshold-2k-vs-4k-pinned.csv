@@ -1,0 +1,961 @@
+repeat,compiler,libc,threshold,function,size_bytes,iterations,median_ns_per_call
+1,Zig cc,glibc,2k,memmove-overlap-backward,2047,32784,19.89
+1,Zig cc,glibc,2k,memmove-overlap-forward,2047,32784,20.21
+1,Zig cc,glibc,2k,memmove-disjoint-dst-after,2047,32784,16.23
+1,Zig cc,glibc,2k,memmove-disjoint-dst-before,2047,32784,16.12
+1,Zig cc,glibc,2k,memmove-overlap-backward,2048,32768,22.36
+1,Zig cc,glibc,2k,memmove-overlap-forward,2048,32768,17.73
+1,Zig cc,glibc,2k,memmove-disjoint-dst-after,2048,32768,27.04
+1,Zig cc,glibc,2k,memmove-disjoint-dst-before,2048,32768,17.42
+1,Zig cc,glibc,2k,memmove-overlap-backward,2049,32752,23.78
+1,Zig cc,glibc,2k,memmove-overlap-forward,2049,32752,18.00
+1,Zig cc,glibc,2k,memmove-disjoint-dst-after,2049,32752,26.09
+1,Zig cc,glibc,2k,memmove-disjoint-dst-before,2049,32752,16.77
+1,Zig cc,glibc,2k,memmove-overlap-backward,2559,26224,23.97
+1,Zig cc,glibc,2k,memmove-overlap-forward,2559,26224,24.22
+1,Zig cc,glibc,2k,memmove-disjoint-dst-after,2559,26224,20.01
+1,Zig cc,glibc,2k,memmove-disjoint-dst-before,2559,26224,19.58
+1,Zig cc,glibc,2k,memmove-overlap-backward,2560,26214,27.36
+1,Zig cc,glibc,2k,memmove-overlap-forward,2560,26214,21.41
+1,Zig cc,glibc,2k,memmove-disjoint-dst-after,2560,26214,32.01
+1,Zig cc,glibc,2k,memmove-disjoint-dst-before,2560,26214,21.67
+1,Zig cc,glibc,2k,memmove-overlap-backward,3072,21845,32.17
+1,Zig cc,glibc,2k,memmove-overlap-forward,3072,21845,26.78
+1,Zig cc,glibc,2k,memmove-disjoint-dst-after,3072,21845,37.39
+1,Zig cc,glibc,2k,memmove-disjoint-dst-before,3072,21845,27.42
+1,Zig cc,glibc,2k,memmove-overlap-backward,3584,18724,38.19
+1,Zig cc,glibc,2k,memmove-overlap-forward,3584,18724,30.50
+1,Zig cc,glibc,2k,memmove-disjoint-dst-after,3584,18724,42.77
+1,Zig cc,glibc,2k,memmove-disjoint-dst-before,3584,18724,45.08
+1,Zig cc,glibc,2k,memmove-overlap-backward,4095,16388,37.21
+1,Zig cc,glibc,2k,memmove-overlap-forward,4095,16388,37.03
+1,Zig cc,glibc,2k,memmove-disjoint-dst-after,4095,16388,28.68
+1,Zig cc,glibc,2k,memmove-disjoint-dst-before,4095,16388,29.26
+1,Zig cc,glibc,2k,memmove-overlap-backward,4096,16384,49.26
+1,Zig cc,glibc,2k,memmove-overlap-forward,4096,16384,34.61
+1,Zig cc,glibc,2k,memmove-disjoint-dst-after,4096,16384,47.81
+1,Zig cc,glibc,2k,memmove-disjoint-dst-before,4096,16384,35.31
+1,Zig cc,glibc,2k,memmove-overlap-backward,4097,16380,48.82
+1,Zig cc,glibc,2k,memmove-overlap-forward,4097,16380,35.11
+1,Zig cc,glibc,2k,memmove-disjoint-dst-after,4097,16380,48.02
+1,Zig cc,glibc,2k,memmove-disjoint-dst-before,4097,16380,34.02
+2,Zig cc,glibc,2k,memmove-overlap-backward,2047,32784,19.45
+2,Zig cc,glibc,2k,memmove-overlap-forward,2047,32784,18.62
+2,Zig cc,glibc,2k,memmove-disjoint-dst-after,2047,32784,15.87
+2,Zig cc,glibc,2k,memmove-disjoint-dst-before,2047,32784,15.24
+2,Zig cc,glibc,2k,memmove-overlap-backward,2048,32768,21.47
+2,Zig cc,glibc,2k,memmove-overlap-forward,2048,32768,15.97
+2,Zig cc,glibc,2k,memmove-disjoint-dst-after,2048,32768,27.63
+2,Zig cc,glibc,2k,memmove-disjoint-dst-before,2048,32768,16.94
+2,Zig cc,glibc,2k,memmove-overlap-backward,2049,32752,23.21
+2,Zig cc,glibc,2k,memmove-overlap-forward,2049,32752,17.58
+2,Zig cc,glibc,2k,memmove-disjoint-dst-after,2049,32752,26.59
+2,Zig cc,glibc,2k,memmove-disjoint-dst-before,2049,32752,16.93
+2,Zig cc,glibc,2k,memmove-overlap-backward,2559,26224,23.97
+2,Zig cc,glibc,2k,memmove-overlap-forward,2559,26224,25.52
+2,Zig cc,glibc,2k,memmove-disjoint-dst-after,2559,26224,19.92
+2,Zig cc,glibc,2k,memmove-disjoint-dst-before,2559,26224,20.05
+2,Zig cc,glibc,2k,memmove-overlap-backward,2560,26214,26.85
+2,Zig cc,glibc,2k,memmove-overlap-forward,2560,26214,21.08
+2,Zig cc,glibc,2k,memmove-disjoint-dst-after,2560,26214,31.77
+2,Zig cc,glibc,2k,memmove-disjoint-dst-before,2560,26214,21.81
+2,Zig cc,glibc,2k,memmove-overlap-backward,3072,21845,32.68
+2,Zig cc,glibc,2k,memmove-overlap-forward,3072,21845,24.99
+2,Zig cc,glibc,2k,memmove-disjoint-dst-after,3072,21845,37.70
+2,Zig cc,glibc,2k,memmove-disjoint-dst-before,3072,21845,29.11
+2,Zig cc,glibc,2k,memmove-overlap-backward,3584,18724,37.74
+2,Zig cc,glibc,2k,memmove-overlap-forward,3584,18724,29.04
+2,Zig cc,glibc,2k,memmove-disjoint-dst-after,3584,18724,41.88
+2,Zig cc,glibc,2k,memmove-disjoint-dst-before,3584,18724,44.34
+2,Zig cc,glibc,2k,memmove-overlap-backward,4095,16388,35.69
+2,Zig cc,glibc,2k,memmove-overlap-forward,4095,16388,35.49
+2,Zig cc,glibc,2k,memmove-disjoint-dst-after,4095,16388,29.45
+2,Zig cc,glibc,2k,memmove-disjoint-dst-before,4095,16388,28.20
+2,Zig cc,glibc,2k,memmove-overlap-backward,4096,16384,46.89
+2,Zig cc,glibc,2k,memmove-overlap-forward,4096,16384,33.39
+2,Zig cc,glibc,2k,memmove-disjoint-dst-after,4096,16384,49.15
+2,Zig cc,glibc,2k,memmove-disjoint-dst-before,4096,16384,35.15
+2,Zig cc,glibc,2k,memmove-overlap-backward,4097,16380,48.92
+2,Zig cc,glibc,2k,memmove-overlap-forward,4097,16380,34.06
+2,Zig cc,glibc,2k,memmove-disjoint-dst-after,4097,16380,47.82
+2,Zig cc,glibc,2k,memmove-disjoint-dst-before,4097,16380,35.06
+3,Zig cc,glibc,2k,memmove-overlap-backward,2047,32784,19.55
+3,Zig cc,glibc,2k,memmove-overlap-forward,2047,32784,19.52
+3,Zig cc,glibc,2k,memmove-disjoint-dst-after,2047,32784,15.21
+3,Zig cc,glibc,2k,memmove-disjoint-dst-before,2047,32784,15.74
+3,Zig cc,glibc,2k,memmove-overlap-backward,2048,32768,21.90
+3,Zig cc,glibc,2k,memmove-overlap-forward,2048,32768,16.92
+3,Zig cc,glibc,2k,memmove-disjoint-dst-after,2048,32768,26.82
+3,Zig cc,glibc,2k,memmove-disjoint-dst-before,2048,32768,17.27
+3,Zig cc,glibc,2k,memmove-overlap-backward,2049,32752,23.73
+3,Zig cc,glibc,2k,memmove-overlap-forward,2049,32752,17.77
+3,Zig cc,glibc,2k,memmove-disjoint-dst-after,2049,32752,26.86
+3,Zig cc,glibc,2k,memmove-disjoint-dst-before,2049,32752,17.87
+3,Zig cc,glibc,2k,memmove-overlap-backward,2559,26224,24.12
+3,Zig cc,glibc,2k,memmove-overlap-forward,2559,26224,23.40
+3,Zig cc,glibc,2k,memmove-disjoint-dst-after,2559,26224,20.25
+3,Zig cc,glibc,2k,memmove-disjoint-dst-before,2559,26224,20.29
+3,Zig cc,glibc,2k,memmove-overlap-backward,2560,26214,26.05
+3,Zig cc,glibc,2k,memmove-overlap-forward,2560,26214,21.12
+3,Zig cc,glibc,2k,memmove-disjoint-dst-after,2560,26214,33.26
+3,Zig cc,glibc,2k,memmove-disjoint-dst-before,2560,26214,21.40
+3,Zig cc,glibc,2k,memmove-overlap-backward,3072,21845,31.04
+3,Zig cc,glibc,2k,memmove-overlap-forward,3072,21845,26.14
+3,Zig cc,glibc,2k,memmove-disjoint-dst-after,3072,21845,37.18
+3,Zig cc,glibc,2k,memmove-disjoint-dst-before,3072,21845,28.53
+3,Zig cc,glibc,2k,memmove-overlap-backward,3584,18724,36.50
+3,Zig cc,glibc,2k,memmove-overlap-forward,3584,18724,30.24
+3,Zig cc,glibc,2k,memmove-disjoint-dst-after,3584,18724,44.00
+3,Zig cc,glibc,2k,memmove-disjoint-dst-before,3584,18724,45.15
+3,Zig cc,glibc,2k,memmove-overlap-backward,4095,16388,36.79
+3,Zig cc,glibc,2k,memmove-overlap-forward,4095,16388,37.07
+3,Zig cc,glibc,2k,memmove-disjoint-dst-after,4095,16388,29.39
+3,Zig cc,glibc,2k,memmove-disjoint-dst-before,4095,16388,29.94
+3,Zig cc,glibc,2k,memmove-overlap-backward,4096,16384,48.26
+3,Zig cc,glibc,2k,memmove-overlap-forward,4096,16384,35.08
+3,Zig cc,glibc,2k,memmove-disjoint-dst-after,4096,16384,47.97
+3,Zig cc,glibc,2k,memmove-disjoint-dst-before,4096,16384,33.70
+3,Zig cc,glibc,2k,memmove-overlap-backward,4097,16380,48.40
+3,Zig cc,glibc,2k,memmove-overlap-forward,4097,16380,33.78
+3,Zig cc,glibc,2k,memmove-disjoint-dst-after,4097,16380,47.87
+3,Zig cc,glibc,2k,memmove-disjoint-dst-before,4097,16380,34.76
+1,Zig cc,glibc,4k,memmove-overlap-backward,2047,32784,19.75
+1,Zig cc,glibc,4k,memmove-overlap-forward,2047,32784,19.38
+1,Zig cc,glibc,4k,memmove-disjoint-dst-after,2047,32784,15.97
+1,Zig cc,glibc,4k,memmove-disjoint-dst-before,2047,32784,16.40
+1,Zig cc,glibc,4k,memmove-overlap-backward,2048,32768,29.53
+1,Zig cc,glibc,4k,memmove-overlap-forward,2048,32768,28.92
+1,Zig cc,glibc,4k,memmove-disjoint-dst-after,2048,32768,33.25
+1,Zig cc,glibc,4k,memmove-disjoint-dst-before,2048,32768,28.24
+1,Zig cc,glibc,4k,memmove-overlap-backward,2049,32752,30.56
+1,Zig cc,glibc,4k,memmove-overlap-forward,2049,32752,29.70
+1,Zig cc,glibc,4k,memmove-disjoint-dst-after,2049,32752,33.64
+1,Zig cc,glibc,4k,memmove-disjoint-dst-before,2049,32752,27.82
+1,Zig cc,glibc,4k,memmove-overlap-backward,2559,26224,35.85
+1,Zig cc,glibc,4k,memmove-overlap-forward,2559,26224,34.01
+1,Zig cc,glibc,4k,memmove-disjoint-dst-after,2559,26224,32.66
+1,Zig cc,glibc,4k,memmove-disjoint-dst-before,2559,26224,32.51
+1,Zig cc,glibc,4k,memmove-overlap-backward,2560,26214,35.93
+1,Zig cc,glibc,4k,memmove-overlap-forward,2560,26214,33.88
+1,Zig cc,glibc,4k,memmove-disjoint-dst-after,2560,26214,40.54
+1,Zig cc,glibc,4k,memmove-disjoint-dst-before,2560,26214,34.50
+1,Zig cc,glibc,4k,memmove-overlap-backward,3072,21845,43.80
+1,Zig cc,glibc,4k,memmove-overlap-forward,3072,21845,39.73
+1,Zig cc,glibc,4k,memmove-disjoint-dst-after,3072,21845,47.52
+1,Zig cc,glibc,4k,memmove-disjoint-dst-before,3072,21845,41.59
+1,Zig cc,glibc,4k,memmove-overlap-backward,3584,18724,51.01
+1,Zig cc,glibc,4k,memmove-overlap-forward,3584,18724,46.46
+1,Zig cc,glibc,4k,memmove-disjoint-dst-after,3584,18724,55.41
+1,Zig cc,glibc,4k,memmove-disjoint-dst-before,3584,18724,46.22
+1,Zig cc,glibc,4k,memmove-overlap-backward,4095,16388,54.38
+1,Zig cc,glibc,4k,memmove-overlap-forward,4095,16388,49.60
+1,Zig cc,glibc,4k,memmove-disjoint-dst-after,4095,16388,48.63
+1,Zig cc,glibc,4k,memmove-disjoint-dst-before,4095,16388,48.26
+1,Zig cc,glibc,4k,memmove-overlap-backward,4096,16384,47.97
+1,Zig cc,glibc,4k,memmove-overlap-forward,4096,16384,32.84
+1,Zig cc,glibc,4k,memmove-disjoint-dst-after,4096,16384,48.18
+1,Zig cc,glibc,4k,memmove-disjoint-dst-before,4096,16384,34.01
+1,Zig cc,glibc,4k,memmove-overlap-backward,4097,16380,48.25
+1,Zig cc,glibc,4k,memmove-overlap-forward,4097,16380,33.46
+1,Zig cc,glibc,4k,memmove-disjoint-dst-after,4097,16380,47.50
+1,Zig cc,glibc,4k,memmove-disjoint-dst-before,4097,16380,34.65
+2,Zig cc,glibc,4k,memmove-overlap-backward,2047,32784,19.41
+2,Zig cc,glibc,4k,memmove-overlap-forward,2047,32784,19.33
+2,Zig cc,glibc,4k,memmove-disjoint-dst-after,2047,32784,15.99
+2,Zig cc,glibc,4k,memmove-disjoint-dst-before,2047,32784,15.60
+2,Zig cc,glibc,4k,memmove-overlap-backward,2048,32768,29.15
+2,Zig cc,glibc,4k,memmove-overlap-forward,2048,32768,28.82
+2,Zig cc,glibc,4k,memmove-disjoint-dst-after,2048,32768,33.59
+2,Zig cc,glibc,4k,memmove-disjoint-dst-before,2048,32768,28.98
+2,Zig cc,glibc,4k,memmove-overlap-backward,2049,32752,29.94
+2,Zig cc,glibc,4k,memmove-overlap-forward,2049,32752,28.44
+2,Zig cc,glibc,4k,memmove-disjoint-dst-after,2049,32752,32.85
+2,Zig cc,glibc,4k,memmove-disjoint-dst-before,2049,32752,27.78
+2,Zig cc,glibc,4k,memmove-overlap-backward,2559,26224,35.01
+2,Zig cc,glibc,4k,memmove-overlap-forward,2559,26224,34.62
+2,Zig cc,glibc,4k,memmove-disjoint-dst-after,2559,26224,33.55
+2,Zig cc,glibc,4k,memmove-disjoint-dst-before,2559,26224,33.60
+2,Zig cc,glibc,4k,memmove-overlap-backward,2560,26214,36.27
+2,Zig cc,glibc,4k,memmove-overlap-forward,2560,26214,34.65
+2,Zig cc,glibc,4k,memmove-disjoint-dst-after,2560,26214,44.69
+2,Zig cc,glibc,4k,memmove-disjoint-dst-before,2560,26214,34.22
+2,Zig cc,glibc,4k,memmove-overlap-backward,3072,21845,45.01
+2,Zig cc,glibc,4k,memmove-overlap-forward,3072,21845,41.24
+2,Zig cc,glibc,4k,memmove-disjoint-dst-after,3072,21845,47.35
+2,Zig cc,glibc,4k,memmove-disjoint-dst-before,3072,21845,43.99
+2,Zig cc,glibc,4k,memmove-overlap-backward,3584,18724,51.84
+2,Zig cc,glibc,4k,memmove-overlap-forward,3584,18724,47.95
+2,Zig cc,glibc,4k,memmove-disjoint-dst-after,3584,18724,57.68
+2,Zig cc,glibc,4k,memmove-disjoint-dst-before,3584,18724,49.48
+2,Zig cc,glibc,4k,memmove-overlap-backward,4095,16388,55.10
+2,Zig cc,glibc,4k,memmove-overlap-forward,4095,16388,50.10
+2,Zig cc,glibc,4k,memmove-disjoint-dst-after,4095,16388,50.22
+2,Zig cc,glibc,4k,memmove-disjoint-dst-before,4095,16388,49.95
+2,Zig cc,glibc,4k,memmove-overlap-backward,4096,16384,47.91
+2,Zig cc,glibc,4k,memmove-overlap-forward,4096,16384,34.21
+2,Zig cc,glibc,4k,memmove-disjoint-dst-after,4096,16384,47.75
+2,Zig cc,glibc,4k,memmove-disjoint-dst-before,4096,16384,32.83
+2,Zig cc,glibc,4k,memmove-overlap-backward,4097,16380,47.25
+2,Zig cc,glibc,4k,memmove-overlap-forward,4097,16380,33.18
+2,Zig cc,glibc,4k,memmove-disjoint-dst-after,4097,16380,47.23
+2,Zig cc,glibc,4k,memmove-disjoint-dst-before,4097,16380,32.68
+3,Zig cc,glibc,4k,memmove-overlap-backward,2047,32784,20.00
+3,Zig cc,glibc,4k,memmove-overlap-forward,2047,32784,19.64
+3,Zig cc,glibc,4k,memmove-disjoint-dst-after,2047,32784,15.90
+3,Zig cc,glibc,4k,memmove-disjoint-dst-before,2047,32784,15.94
+3,Zig cc,glibc,4k,memmove-overlap-backward,2048,32768,29.85
+3,Zig cc,glibc,4k,memmove-overlap-forward,2048,32768,29.32
+3,Zig cc,glibc,4k,memmove-disjoint-dst-after,2048,32768,34.51
+3,Zig cc,glibc,4k,memmove-disjoint-dst-before,2048,32768,29.59
+3,Zig cc,glibc,4k,memmove-overlap-backward,2049,32752,31.30
+3,Zig cc,glibc,4k,memmove-overlap-forward,2049,32752,28.91
+3,Zig cc,glibc,4k,memmove-disjoint-dst-after,2049,32752,34.96
+3,Zig cc,glibc,4k,memmove-disjoint-dst-before,2049,32752,29.37
+3,Zig cc,glibc,4k,memmove-overlap-backward,2559,26224,37.37
+3,Zig cc,glibc,4k,memmove-overlap-forward,2559,26224,34.28
+3,Zig cc,glibc,4k,memmove-disjoint-dst-after,2559,26224,35.91
+3,Zig cc,glibc,4k,memmove-disjoint-dst-before,2559,26224,34.88
+3,Zig cc,glibc,4k,memmove-overlap-backward,2560,26214,37.46
+3,Zig cc,glibc,4k,memmove-overlap-forward,2560,26214,35.69
+3,Zig cc,glibc,4k,memmove-disjoint-dst-after,2560,26214,41.23
+3,Zig cc,glibc,4k,memmove-disjoint-dst-before,2560,26214,34.43
+3,Zig cc,glibc,4k,memmove-overlap-backward,3072,21845,44.31
+3,Zig cc,glibc,4k,memmove-overlap-forward,3072,21845,41.94
+3,Zig cc,glibc,4k,memmove-disjoint-dst-after,3072,21845,47.64
+3,Zig cc,glibc,4k,memmove-disjoint-dst-before,3072,21845,41.00
+3,Zig cc,glibc,4k,memmove-overlap-backward,3584,18724,50.86
+3,Zig cc,glibc,4k,memmove-overlap-forward,3584,18724,46.11
+3,Zig cc,glibc,4k,memmove-disjoint-dst-after,3584,18724,57.80
+3,Zig cc,glibc,4k,memmove-disjoint-dst-before,3584,18724,48.77
+3,Zig cc,glibc,4k,memmove-overlap-backward,4095,16388,53.24
+3,Zig cc,glibc,4k,memmove-overlap-forward,4095,16388,51.93
+3,Zig cc,glibc,4k,memmove-disjoint-dst-after,4095,16388,51.24
+3,Zig cc,glibc,4k,memmove-disjoint-dst-before,4095,16388,53.43
+3,Zig cc,glibc,4k,memmove-overlap-backward,4096,16384,47.80
+3,Zig cc,glibc,4k,memmove-overlap-forward,4096,16384,34.96
+3,Zig cc,glibc,4k,memmove-disjoint-dst-after,4096,16384,48.09
+3,Zig cc,glibc,4k,memmove-disjoint-dst-before,4096,16384,32.46
+3,Zig cc,glibc,4k,memmove-overlap-backward,4097,16380,49.73
+3,Zig cc,glibc,4k,memmove-overlap-forward,4097,16380,34.23
+3,Zig cc,glibc,4k,memmove-disjoint-dst-after,4097,16380,47.97
+3,Zig cc,glibc,4k,memmove-disjoint-dst-before,4097,16380,32.87
+1,GCC,glibc,2k,memmove-overlap-backward,2047,32784,37.04
+1,GCC,glibc,2k,memmove-overlap-forward,2047,32784,34.02
+1,GCC,glibc,2k,memmove-disjoint-dst-after,2047,32784,36.85
+1,GCC,glibc,2k,memmove-disjoint-dst-before,2047,32784,33.97
+1,GCC,glibc,2k,memmove-overlap-backward,2048,32768,21.29
+1,GCC,glibc,2k,memmove-overlap-forward,2048,32768,16.46
+1,GCC,glibc,2k,memmove-disjoint-dst-after,2048,32768,26.46
+1,GCC,glibc,2k,memmove-disjoint-dst-before,2048,32768,16.42
+1,GCC,glibc,2k,memmove-overlap-backward,2049,32752,24.02
+1,GCC,glibc,2k,memmove-overlap-forward,2049,32752,16.67
+1,GCC,glibc,2k,memmove-disjoint-dst-after,2049,32752,26.60
+1,GCC,glibc,2k,memmove-disjoint-dst-before,2049,32752,17.36
+1,GCC,glibc,2k,memmove-overlap-backward,2559,26224,22.97
+1,GCC,glibc,2k,memmove-overlap-forward,2559,26224,23.57
+1,GCC,glibc,2k,memmove-disjoint-dst-after,2559,26224,19.48
+1,GCC,glibc,2k,memmove-disjoint-dst-before,2559,26224,18.67
+1,GCC,glibc,2k,memmove-overlap-backward,2560,26214,26.99
+1,GCC,glibc,2k,memmove-overlap-forward,2560,26214,20.88
+1,GCC,glibc,2k,memmove-disjoint-dst-after,2560,26214,32.07
+1,GCC,glibc,2k,memmove-disjoint-dst-before,2560,26214,20.66
+1,GCC,glibc,2k,memmove-overlap-backward,3072,21845,31.11
+1,GCC,glibc,2k,memmove-overlap-forward,3072,21845,26.24
+1,GCC,glibc,2k,memmove-disjoint-dst-after,3072,21845,37.72
+1,GCC,glibc,2k,memmove-disjoint-dst-before,3072,21845,27.79
+1,GCC,glibc,2k,memmove-overlap-backward,3584,18724,37.59
+1,GCC,glibc,2k,memmove-overlap-forward,3584,18724,28.79
+1,GCC,glibc,2k,memmove-disjoint-dst-after,3584,18724,41.59
+1,GCC,glibc,2k,memmove-disjoint-dst-before,3584,18724,44.22
+1,GCC,glibc,2k,memmove-overlap-backward,4095,16388,36.00
+1,GCC,glibc,2k,memmove-overlap-forward,4095,16388,34.77
+1,GCC,glibc,2k,memmove-disjoint-dst-after,4095,16388,27.93
+1,GCC,glibc,2k,memmove-disjoint-dst-before,4095,16388,27.85
+1,GCC,glibc,2k,memmove-overlap-backward,4096,16384,47.06
+1,GCC,glibc,2k,memmove-overlap-forward,4096,16384,34.21
+1,GCC,glibc,2k,memmove-disjoint-dst-after,4096,16384,46.36
+1,GCC,glibc,2k,memmove-disjoint-dst-before,4096,16384,34.30
+1,GCC,glibc,2k,memmove-overlap-backward,4097,16380,47.80
+1,GCC,glibc,2k,memmove-overlap-forward,4097,16380,33.09
+1,GCC,glibc,2k,memmove-disjoint-dst-after,4097,16380,47.30
+1,GCC,glibc,2k,memmove-disjoint-dst-before,4097,16380,33.25
+2,GCC,glibc,2k,memmove-overlap-backward,2047,32784,35.17
+2,GCC,glibc,2k,memmove-overlap-forward,2047,32784,33.58
+2,GCC,glibc,2k,memmove-disjoint-dst-after,2047,32784,34.19
+2,GCC,glibc,2k,memmove-disjoint-dst-before,2047,32784,33.76
+2,GCC,glibc,2k,memmove-overlap-backward,2048,32768,21.90
+2,GCC,glibc,2k,memmove-overlap-forward,2048,32768,18.14
+2,GCC,glibc,2k,memmove-disjoint-dst-after,2048,32768,26.90
+2,GCC,glibc,2k,memmove-disjoint-dst-before,2048,32768,17.38
+2,GCC,glibc,2k,memmove-overlap-backward,2049,32752,24.41
+2,GCC,glibc,2k,memmove-overlap-forward,2049,32752,16.18
+2,GCC,glibc,2k,memmove-disjoint-dst-after,2049,32752,26.99
+2,GCC,glibc,2k,memmove-disjoint-dst-before,2049,32752,17.73
+2,GCC,glibc,2k,memmove-overlap-backward,2559,26224,24.06
+2,GCC,glibc,2k,memmove-overlap-forward,2559,26224,23.32
+2,GCC,glibc,2k,memmove-disjoint-dst-after,2559,26224,18.82
+2,GCC,glibc,2k,memmove-disjoint-dst-before,2559,26224,19.59
+2,GCC,glibc,2k,memmove-overlap-backward,2560,26214,27.19
+2,GCC,glibc,2k,memmove-overlap-forward,2560,26214,21.59
+2,GCC,glibc,2k,memmove-disjoint-dst-after,2560,26214,31.94
+2,GCC,glibc,2k,memmove-disjoint-dst-before,2560,26214,21.31
+2,GCC,glibc,2k,memmove-overlap-backward,3072,21845,32.34
+2,GCC,glibc,2k,memmove-overlap-forward,3072,21845,24.84
+2,GCC,glibc,2k,memmove-disjoint-dst-after,3072,21845,36.70
+2,GCC,glibc,2k,memmove-disjoint-dst-before,3072,21845,27.33
+2,GCC,glibc,2k,memmove-overlap-backward,3584,18724,38.81
+2,GCC,glibc,2k,memmove-overlap-forward,3584,18724,30.64
+2,GCC,glibc,2k,memmove-disjoint-dst-after,3584,18724,42.78
+2,GCC,glibc,2k,memmove-disjoint-dst-before,3584,18724,44.37
+2,GCC,glibc,2k,memmove-overlap-backward,4095,16388,35.29
+2,GCC,glibc,2k,memmove-overlap-forward,4095,16388,35.23
+2,GCC,glibc,2k,memmove-disjoint-dst-after,4095,16388,28.06
+2,GCC,glibc,2k,memmove-disjoint-dst-before,4095,16388,27.78
+2,GCC,glibc,2k,memmove-overlap-backward,4096,16384,47.20
+2,GCC,glibc,2k,memmove-overlap-forward,4096,16384,33.14
+2,GCC,glibc,2k,memmove-disjoint-dst-after,4096,16384,47.16
+2,GCC,glibc,2k,memmove-disjoint-dst-before,4096,16384,33.76
+2,GCC,glibc,2k,memmove-overlap-backward,4097,16380,47.43
+2,GCC,glibc,2k,memmove-overlap-forward,4097,16380,32.86
+2,GCC,glibc,2k,memmove-disjoint-dst-after,4097,16380,47.83
+2,GCC,glibc,2k,memmove-disjoint-dst-before,4097,16380,33.49
+3,GCC,glibc,2k,memmove-overlap-backward,2047,32784,34.32
+3,GCC,glibc,2k,memmove-overlap-forward,2047,32784,34.45
+3,GCC,glibc,2k,memmove-disjoint-dst-after,2047,32784,33.99
+3,GCC,glibc,2k,memmove-disjoint-dst-before,2047,32784,34.18
+3,GCC,glibc,2k,memmove-overlap-backward,2048,32768,21.28
+3,GCC,glibc,2k,memmove-overlap-forward,2048,32768,16.46
+3,GCC,glibc,2k,memmove-disjoint-dst-after,2048,32768,26.29
+3,GCC,glibc,2k,memmove-disjoint-dst-before,2048,32768,16.49
+3,GCC,glibc,2k,memmove-overlap-backward,2049,32752,23.96
+3,GCC,glibc,2k,memmove-overlap-forward,2049,32752,17.41
+3,GCC,glibc,2k,memmove-disjoint-dst-after,2049,32752,27.10
+3,GCC,glibc,2k,memmove-disjoint-dst-before,2049,32752,17.78
+3,GCC,glibc,2k,memmove-overlap-backward,2559,26224,24.19
+3,GCC,glibc,2k,memmove-overlap-forward,2559,26224,25.17
+3,GCC,glibc,2k,memmove-disjoint-dst-after,2559,26224,19.78
+3,GCC,glibc,2k,memmove-disjoint-dst-before,2559,26224,20.18
+3,GCC,glibc,2k,memmove-overlap-backward,2560,26214,27.09
+3,GCC,glibc,2k,memmove-overlap-forward,2560,26214,21.23
+3,GCC,glibc,2k,memmove-disjoint-dst-after,2560,26214,31.76
+3,GCC,glibc,2k,memmove-disjoint-dst-before,2560,26214,21.53
+3,GCC,glibc,2k,memmove-overlap-backward,3072,21845,31.78
+3,GCC,glibc,2k,memmove-overlap-forward,3072,21845,25.34
+3,GCC,glibc,2k,memmove-disjoint-dst-after,3072,21845,37.76
+3,GCC,glibc,2k,memmove-disjoint-dst-before,3072,21845,28.01
+3,GCC,glibc,2k,memmove-overlap-backward,3584,18724,39.12
+3,GCC,glibc,2k,memmove-overlap-forward,3584,18724,29.82
+3,GCC,glibc,2k,memmove-disjoint-dst-after,3584,18724,41.87
+3,GCC,glibc,2k,memmove-disjoint-dst-before,3584,18724,43.56
+3,GCC,glibc,2k,memmove-overlap-backward,4095,16388,35.77
+3,GCC,glibc,2k,memmove-overlap-forward,4095,16388,35.79
+3,GCC,glibc,2k,memmove-disjoint-dst-after,4095,16388,28.32
+3,GCC,glibc,2k,memmove-disjoint-dst-before,4095,16388,28.46
+3,GCC,glibc,2k,memmove-overlap-backward,4096,16384,47.53
+3,GCC,glibc,2k,memmove-overlap-forward,4096,16384,34.25
+3,GCC,glibc,2k,memmove-disjoint-dst-after,4096,16384,47.56
+3,GCC,glibc,2k,memmove-disjoint-dst-before,4096,16384,32.64
+3,GCC,glibc,2k,memmove-overlap-backward,4097,16380,46.35
+3,GCC,glibc,2k,memmove-overlap-forward,4097,16380,33.42
+3,GCC,glibc,2k,memmove-disjoint-dst-after,4097,16380,46.40
+3,GCC,glibc,2k,memmove-disjoint-dst-before,4097,16380,33.92
+1,GCC,glibc,4k,memmove-overlap-backward,2047,32784,35.30
+1,GCC,glibc,4k,memmove-overlap-forward,2047,32784,36.32
+1,GCC,glibc,4k,memmove-disjoint-dst-after,2047,32784,36.01
+1,GCC,glibc,4k,memmove-disjoint-dst-before,2047,32784,35.59
+1,GCC,glibc,4k,memmove-overlap-backward,2048,32768,30.42
+1,GCC,glibc,4k,memmove-overlap-forward,2048,32768,29.52
+1,GCC,glibc,4k,memmove-disjoint-dst-after,2048,32768,33.06
+1,GCC,glibc,4k,memmove-disjoint-dst-before,2048,32768,29.54
+1,GCC,glibc,4k,memmove-overlap-backward,2049,32752,33.18
+1,GCC,glibc,4k,memmove-overlap-forward,2049,32752,29.67
+1,GCC,glibc,4k,memmove-disjoint-dst-after,2049,32752,33.60
+1,GCC,glibc,4k,memmove-disjoint-dst-before,2049,32752,29.98
+1,GCC,glibc,4k,memmove-overlap-backward,2559,26224,40.86
+1,GCC,glibc,4k,memmove-overlap-forward,2559,26224,39.49
+1,GCC,glibc,4k,memmove-disjoint-dst-after,2559,26224,38.08
+1,GCC,glibc,4k,memmove-disjoint-dst-before,2559,26224,38.64
+1,GCC,glibc,4k,memmove-overlap-backward,2560,26214,38.48
+1,GCC,glibc,4k,memmove-overlap-forward,2560,26214,37.04
+1,GCC,glibc,4k,memmove-disjoint-dst-after,2560,26214,42.74
+1,GCC,glibc,4k,memmove-disjoint-dst-before,2560,26214,37.35
+1,GCC,glibc,4k,memmove-overlap-backward,3072,21845,45.16
+1,GCC,glibc,4k,memmove-overlap-forward,3072,21845,43.45
+1,GCC,glibc,4k,memmove-disjoint-dst-after,3072,21845,47.33
+1,GCC,glibc,4k,memmove-disjoint-dst-before,3072,21845,43.95
+1,GCC,glibc,4k,memmove-overlap-backward,3584,18724,53.08
+1,GCC,glibc,4k,memmove-overlap-forward,3584,18724,50.93
+1,GCC,glibc,4k,memmove-disjoint-dst-after,3584,18724,56.30
+1,GCC,glibc,4k,memmove-disjoint-dst-before,3584,18724,55.24
+1,GCC,glibc,4k,memmove-overlap-backward,4095,16388,61.69
+1,GCC,glibc,4k,memmove-overlap-forward,4095,16388,60.78
+1,GCC,glibc,4k,memmove-disjoint-dst-after,4095,16388,56.62
+1,GCC,glibc,4k,memmove-disjoint-dst-before,4095,16388,56.70
+1,GCC,glibc,4k,memmove-overlap-backward,4096,16384,47.31
+1,GCC,glibc,4k,memmove-overlap-forward,4096,16384,32.99
+1,GCC,glibc,4k,memmove-disjoint-dst-after,4096,16384,46.44
+1,GCC,glibc,4k,memmove-disjoint-dst-before,4096,16384,33.56
+1,GCC,glibc,4k,memmove-overlap-backward,4097,16380,47.73
+1,GCC,glibc,4k,memmove-overlap-forward,4097,16380,32.83
+1,GCC,glibc,4k,memmove-disjoint-dst-after,4097,16380,46.59
+1,GCC,glibc,4k,memmove-disjoint-dst-before,4097,16380,32.95
+2,GCC,glibc,4k,memmove-overlap-backward,2047,32784,33.99
+2,GCC,glibc,4k,memmove-overlap-forward,2047,32784,33.14
+2,GCC,glibc,4k,memmove-disjoint-dst-after,2047,32784,34.27
+2,GCC,glibc,4k,memmove-disjoint-dst-before,2047,32784,33.38
+2,GCC,glibc,4k,memmove-overlap-backward,2048,32768,31.65
+2,GCC,glibc,4k,memmove-overlap-forward,2048,32768,30.71
+2,GCC,glibc,4k,memmove-disjoint-dst-after,2048,32768,32.61
+2,GCC,glibc,4k,memmove-disjoint-dst-before,2048,32768,29.68
+2,GCC,glibc,4k,memmove-overlap-backward,2049,32752,33.01
+2,GCC,glibc,4k,memmove-overlap-forward,2049,32752,29.58
+2,GCC,glibc,4k,memmove-disjoint-dst-after,2049,32752,33.92
+2,GCC,glibc,4k,memmove-disjoint-dst-before,2049,32752,29.27
+2,GCC,glibc,4k,memmove-overlap-backward,2559,26224,41.01
+2,GCC,glibc,4k,memmove-overlap-forward,2559,26224,40.31
+2,GCC,glibc,4k,memmove-disjoint-dst-after,2559,26224,40.98
+2,GCC,glibc,4k,memmove-disjoint-dst-before,2559,26224,38.72
+2,GCC,glibc,4k,memmove-overlap-backward,2560,26214,38.30
+2,GCC,glibc,4k,memmove-overlap-forward,2560,26214,36.95
+2,GCC,glibc,4k,memmove-disjoint-dst-after,2560,26214,44.13
+2,GCC,glibc,4k,memmove-disjoint-dst-before,2560,26214,36.45
+2,GCC,glibc,4k,memmove-overlap-backward,3072,21845,46.85
+2,GCC,glibc,4k,memmove-overlap-forward,3072,21845,45.23
+2,GCC,glibc,4k,memmove-disjoint-dst-after,3072,21845,48.70
+2,GCC,glibc,4k,memmove-disjoint-dst-before,3072,21845,45.25
+2,GCC,glibc,4k,memmove-overlap-backward,3584,18724,53.22
+2,GCC,glibc,4k,memmove-overlap-forward,3584,18724,52.76
+2,GCC,glibc,4k,memmove-disjoint-dst-after,3584,18724,56.10
+2,GCC,glibc,4k,memmove-disjoint-dst-before,3584,18724,56.20
+2,GCC,glibc,4k,memmove-overlap-backward,4095,16388,61.03
+2,GCC,glibc,4k,memmove-overlap-forward,4095,16388,62.49
+2,GCC,glibc,4k,memmove-disjoint-dst-after,4095,16388,55.12
+2,GCC,glibc,4k,memmove-disjoint-dst-before,4095,16388,55.04
+2,GCC,glibc,4k,memmove-overlap-backward,4096,16384,48.61
+2,GCC,glibc,4k,memmove-overlap-forward,4096,16384,33.33
+2,GCC,glibc,4k,memmove-disjoint-dst-after,4096,16384,48.13
+2,GCC,glibc,4k,memmove-disjoint-dst-before,4096,16384,33.16
+2,GCC,glibc,4k,memmove-overlap-backward,4097,16380,48.36
+2,GCC,glibc,4k,memmove-overlap-forward,4097,16380,33.79
+2,GCC,glibc,4k,memmove-disjoint-dst-after,4097,16380,46.82
+2,GCC,glibc,4k,memmove-disjoint-dst-before,4097,16380,33.55
+3,GCC,glibc,4k,memmove-overlap-backward,2047,32784,34.41
+3,GCC,glibc,4k,memmove-overlap-forward,2047,32784,33.45
+3,GCC,glibc,4k,memmove-disjoint-dst-after,2047,32784,34.85
+3,GCC,glibc,4k,memmove-disjoint-dst-before,2047,32784,34.71
+3,GCC,glibc,4k,memmove-overlap-backward,2048,32768,31.17
+3,GCC,glibc,4k,memmove-overlap-forward,2048,32768,29.96
+3,GCC,glibc,4k,memmove-disjoint-dst-after,2048,32768,33.72
+3,GCC,glibc,4k,memmove-disjoint-dst-before,2048,32768,31.92
+3,GCC,glibc,4k,memmove-overlap-backward,2049,32752,34.13
+3,GCC,glibc,4k,memmove-overlap-forward,2049,32752,29.50
+3,GCC,glibc,4k,memmove-disjoint-dst-after,2049,32752,32.59
+3,GCC,glibc,4k,memmove-disjoint-dst-before,2049,32752,29.17
+3,GCC,glibc,4k,memmove-overlap-backward,2559,26224,40.51
+3,GCC,glibc,4k,memmove-overlap-forward,2559,26224,38.77
+3,GCC,glibc,4k,memmove-disjoint-dst-after,2559,26224,38.98
+3,GCC,glibc,4k,memmove-disjoint-dst-before,2559,26224,38.29
+3,GCC,glibc,4k,memmove-overlap-backward,2560,26214,36.82
+3,GCC,glibc,4k,memmove-overlap-forward,2560,26214,38.36
+3,GCC,glibc,4k,memmove-disjoint-dst-after,2560,26214,42.10
+3,GCC,glibc,4k,memmove-disjoint-dst-before,2560,26214,36.55
+3,GCC,glibc,4k,memmove-overlap-backward,3072,21845,43.68
+3,GCC,glibc,4k,memmove-overlap-forward,3072,21845,44.59
+3,GCC,glibc,4k,memmove-disjoint-dst-after,3072,21845,49.00
+3,GCC,glibc,4k,memmove-disjoint-dst-before,3072,21845,46.13
+3,GCC,glibc,4k,memmove-overlap-backward,3584,18724,53.37
+3,GCC,glibc,4k,memmove-overlap-forward,3584,18724,51.58
+3,GCC,glibc,4k,memmove-disjoint-dst-after,3584,18724,55.63
+3,GCC,glibc,4k,memmove-disjoint-dst-before,3584,18724,54.87
+3,GCC,glibc,4k,memmove-overlap-backward,4095,16388,61.31
+3,GCC,glibc,4k,memmove-overlap-forward,4095,16388,60.64
+3,GCC,glibc,4k,memmove-disjoint-dst-after,4095,16388,57.08
+3,GCC,glibc,4k,memmove-disjoint-dst-before,4095,16388,56.19
+3,GCC,glibc,4k,memmove-overlap-backward,4096,16384,48.19
+3,GCC,glibc,4k,memmove-overlap-forward,4096,16384,34.32
+3,GCC,glibc,4k,memmove-disjoint-dst-after,4096,16384,46.55
+3,GCC,glibc,4k,memmove-disjoint-dst-before,4096,16384,33.10
+3,GCC,glibc,4k,memmove-overlap-backward,4097,16380,47.53
+3,GCC,glibc,4k,memmove-overlap-forward,4097,16380,32.62
+3,GCC,glibc,4k,memmove-disjoint-dst-after,4097,16380,48.26
+3,GCC,glibc,4k,memmove-disjoint-dst-before,4097,16380,32.67
+1,Zig cc,musl,2k,memmove-overlap-backward,2047,32784,19.26
+1,Zig cc,musl,2k,memmove-overlap-forward,2047,32784,19.09
+1,Zig cc,musl,2k,memmove-disjoint-dst-after,2047,32784,16.97
+1,Zig cc,musl,2k,memmove-disjoint-dst-before,2047,32784,17.32
+1,Zig cc,musl,2k,memmove-overlap-backward,2048,32768,21.08
+1,Zig cc,musl,2k,memmove-overlap-forward,2048,32768,17.35
+1,Zig cc,musl,2k,memmove-disjoint-dst-after,2048,32768,26.77
+1,Zig cc,musl,2k,memmove-disjoint-dst-before,2048,32768,16.73
+1,Zig cc,musl,2k,memmove-overlap-backward,2049,32752,23.28
+1,Zig cc,musl,2k,memmove-overlap-forward,2049,32752,17.00
+1,Zig cc,musl,2k,memmove-disjoint-dst-after,2049,32752,27.08
+1,Zig cc,musl,2k,memmove-disjoint-dst-before,2049,32752,17.62
+1,Zig cc,musl,2k,memmove-overlap-backward,2559,26224,24.67
+1,Zig cc,musl,2k,memmove-overlap-forward,2559,26224,25.86
+1,Zig cc,musl,2k,memmove-disjoint-dst-after,2559,26224,20.60
+1,Zig cc,musl,2k,memmove-disjoint-dst-before,2559,26224,19.40
+1,Zig cc,musl,2k,memmove-overlap-backward,2560,26214,26.16
+1,Zig cc,musl,2k,memmove-overlap-forward,2560,26214,21.02
+1,Zig cc,musl,2k,memmove-disjoint-dst-after,2560,26214,31.68
+1,Zig cc,musl,2k,memmove-disjoint-dst-before,2560,26214,21.46
+1,Zig cc,musl,2k,memmove-overlap-backward,3072,21845,31.42
+1,Zig cc,musl,2k,memmove-overlap-forward,3072,21845,24.59
+1,Zig cc,musl,2k,memmove-disjoint-dst-after,3072,21845,38.13
+1,Zig cc,musl,2k,memmove-disjoint-dst-before,3072,21845,28.25
+1,Zig cc,musl,2k,memmove-overlap-backward,3584,18724,42.41
+1,Zig cc,musl,2k,memmove-overlap-forward,3584,18724,28.94
+1,Zig cc,musl,2k,memmove-disjoint-dst-after,3584,18724,37.73
+1,Zig cc,musl,2k,memmove-disjoint-dst-before,3584,18724,43.08
+1,Zig cc,musl,2k,memmove-overlap-backward,4095,16388,35.15
+1,Zig cc,musl,2k,memmove-overlap-forward,4095,16388,35.64
+1,Zig cc,musl,2k,memmove-disjoint-dst-after,4095,16388,28.62
+1,Zig cc,musl,2k,memmove-disjoint-dst-before,4095,16388,29.45
+1,Zig cc,musl,2k,memmove-overlap-backward,4096,16384,48.77
+1,Zig cc,musl,2k,memmove-overlap-forward,4096,16384,34.83
+1,Zig cc,musl,2k,memmove-disjoint-dst-after,4096,16384,51.00
+1,Zig cc,musl,2k,memmove-disjoint-dst-before,4096,16384,34.60
+1,Zig cc,musl,2k,memmove-overlap-backward,4097,16380,48.45
+1,Zig cc,musl,2k,memmove-overlap-forward,4097,16380,34.77
+1,Zig cc,musl,2k,memmove-disjoint-dst-after,4097,16380,48.02
+1,Zig cc,musl,2k,memmove-disjoint-dst-before,4097,16380,34.36
+2,Zig cc,musl,2k,memmove-overlap-backward,2047,32784,19.90
+2,Zig cc,musl,2k,memmove-overlap-forward,2047,32784,18.58
+2,Zig cc,musl,2k,memmove-disjoint-dst-after,2047,32784,16.60
+2,Zig cc,musl,2k,memmove-disjoint-dst-before,2047,32784,17.24
+2,Zig cc,musl,2k,memmove-overlap-backward,2048,32768,21.51
+2,Zig cc,musl,2k,memmove-overlap-forward,2048,32768,17.11
+2,Zig cc,musl,2k,memmove-disjoint-dst-after,2048,32768,26.59
+2,Zig cc,musl,2k,memmove-disjoint-dst-before,2048,32768,16.96
+2,Zig cc,musl,2k,memmove-overlap-backward,2049,32752,23.43
+2,Zig cc,musl,2k,memmove-overlap-forward,2049,32752,16.87
+2,Zig cc,musl,2k,memmove-disjoint-dst-after,2049,32752,26.14
+2,Zig cc,musl,2k,memmove-disjoint-dst-before,2049,32752,16.82
+2,Zig cc,musl,2k,memmove-overlap-backward,2559,26224,23.49
+2,Zig cc,musl,2k,memmove-overlap-forward,2559,26224,23.58
+2,Zig cc,musl,2k,memmove-disjoint-dst-after,2559,26224,20.54
+2,Zig cc,musl,2k,memmove-disjoint-dst-before,2559,26224,20.94
+2,Zig cc,musl,2k,memmove-overlap-backward,2560,26214,27.18
+2,Zig cc,musl,2k,memmove-overlap-forward,2560,26214,21.76
+2,Zig cc,musl,2k,memmove-disjoint-dst-after,2560,26214,31.93
+2,Zig cc,musl,2k,memmove-disjoint-dst-before,2560,26214,21.82
+2,Zig cc,musl,2k,memmove-overlap-backward,3072,21845,31.39
+2,Zig cc,musl,2k,memmove-overlap-forward,3072,21845,24.67
+2,Zig cc,musl,2k,memmove-disjoint-dst-after,3072,21845,37.26
+2,Zig cc,musl,2k,memmove-disjoint-dst-before,3072,21845,27.80
+2,Zig cc,musl,2k,memmove-overlap-backward,3584,18724,41.24
+2,Zig cc,musl,2k,memmove-overlap-forward,3584,18724,28.29
+2,Zig cc,musl,2k,memmove-disjoint-dst-after,3584,18724,36.74
+2,Zig cc,musl,2k,memmove-disjoint-dst-before,3584,18724,44.31
+2,Zig cc,musl,2k,memmove-overlap-backward,4095,16388,37.29
+2,Zig cc,musl,2k,memmove-overlap-forward,4095,16388,35.41
+2,Zig cc,musl,2k,memmove-disjoint-dst-after,4095,16388,30.20
+2,Zig cc,musl,2k,memmove-disjoint-dst-before,4095,16388,29.65
+2,Zig cc,musl,2k,memmove-overlap-backward,4096,16384,46.31
+2,Zig cc,musl,2k,memmove-overlap-forward,4096,16384,32.97
+2,Zig cc,musl,2k,memmove-disjoint-dst-after,4096,16384,47.75
+2,Zig cc,musl,2k,memmove-disjoint-dst-before,4096,16384,34.00
+2,Zig cc,musl,2k,memmove-overlap-backward,4097,16380,48.50
+2,Zig cc,musl,2k,memmove-overlap-forward,4097,16380,35.63
+2,Zig cc,musl,2k,memmove-disjoint-dst-after,4097,16380,48.73
+2,Zig cc,musl,2k,memmove-disjoint-dst-before,4097,16380,34.33
+3,Zig cc,musl,2k,memmove-overlap-backward,2047,32784,19.77
+3,Zig cc,musl,2k,memmove-overlap-forward,2047,32784,18.35
+3,Zig cc,musl,2k,memmove-disjoint-dst-after,2047,32784,16.82
+3,Zig cc,musl,2k,memmove-disjoint-dst-before,2047,32784,16.55
+3,Zig cc,musl,2k,memmove-overlap-backward,2048,32768,22.05
+3,Zig cc,musl,2k,memmove-overlap-forward,2048,32768,16.82
+3,Zig cc,musl,2k,memmove-disjoint-dst-after,2048,32768,26.12
+3,Zig cc,musl,2k,memmove-disjoint-dst-before,2048,32768,16.44
+3,Zig cc,musl,2k,memmove-overlap-backward,2049,32752,22.94
+3,Zig cc,musl,2k,memmove-overlap-forward,2049,32752,17.01
+3,Zig cc,musl,2k,memmove-disjoint-dst-after,2049,32752,26.26
+3,Zig cc,musl,2k,memmove-disjoint-dst-before,2049,32752,16.77
+3,Zig cc,musl,2k,memmove-overlap-backward,2559,26224,22.95
+3,Zig cc,musl,2k,memmove-overlap-forward,2559,26224,23.40
+3,Zig cc,musl,2k,memmove-disjoint-dst-after,2559,26224,20.67
+3,Zig cc,musl,2k,memmove-disjoint-dst-before,2559,26224,19.36
+3,Zig cc,musl,2k,memmove-overlap-backward,2560,26214,25.70
+3,Zig cc,musl,2k,memmove-overlap-forward,2560,26214,20.83
+3,Zig cc,musl,2k,memmove-disjoint-dst-after,2560,26214,31.87
+3,Zig cc,musl,2k,memmove-disjoint-dst-before,2560,26214,20.60
+3,Zig cc,musl,2k,memmove-overlap-backward,3072,21845,33.30
+3,Zig cc,musl,2k,memmove-overlap-forward,3072,21845,27.27
+3,Zig cc,musl,2k,memmove-disjoint-dst-after,3072,21845,37.35
+3,Zig cc,musl,2k,memmove-disjoint-dst-before,3072,21845,28.61
+3,Zig cc,musl,2k,memmove-overlap-backward,3584,18724,41.39
+3,Zig cc,musl,2k,memmove-overlap-forward,3584,18724,29.29
+3,Zig cc,musl,2k,memmove-disjoint-dst-after,3584,18724,37.35
+3,Zig cc,musl,2k,memmove-disjoint-dst-before,3584,18724,42.90
+3,Zig cc,musl,2k,memmove-overlap-backward,4095,16388,34.84
+3,Zig cc,musl,2k,memmove-overlap-forward,4095,16388,35.11
+3,Zig cc,musl,2k,memmove-disjoint-dst-after,4095,16388,28.40
+3,Zig cc,musl,2k,memmove-disjoint-dst-before,4095,16388,28.27
+3,Zig cc,musl,2k,memmove-overlap-backward,4096,16384,46.32
+3,Zig cc,musl,2k,memmove-overlap-forward,4096,16384,33.65
+3,Zig cc,musl,2k,memmove-disjoint-dst-after,4096,16384,47.12
+3,Zig cc,musl,2k,memmove-disjoint-dst-before,4096,16384,33.41
+3,Zig cc,musl,2k,memmove-overlap-backward,4097,16380,47.12
+3,Zig cc,musl,2k,memmove-overlap-forward,4097,16380,33.14
+3,Zig cc,musl,2k,memmove-disjoint-dst-after,4097,16380,46.76
+3,Zig cc,musl,2k,memmove-disjoint-dst-before,4097,16380,33.68
+1,Zig cc,musl,4k,memmove-overlap-backward,2047,32784,19.48
+1,Zig cc,musl,4k,memmove-overlap-forward,2047,32784,19.38
+1,Zig cc,musl,4k,memmove-disjoint-dst-after,2047,32784,16.90
+1,Zig cc,musl,4k,memmove-disjoint-dst-before,2047,32784,16.82
+1,Zig cc,musl,4k,memmove-overlap-backward,2048,32768,30.36
+1,Zig cc,musl,4k,memmove-overlap-forward,2048,32768,31.82
+1,Zig cc,musl,4k,memmove-disjoint-dst-after,2048,32768,35.22
+1,Zig cc,musl,4k,memmove-disjoint-dst-before,2048,32768,31.24
+1,Zig cc,musl,4k,memmove-overlap-backward,2049,32752,33.41
+1,Zig cc,musl,4k,memmove-overlap-forward,2049,32752,30.60
+1,Zig cc,musl,4k,memmove-disjoint-dst-after,2049,32752,34.62
+1,Zig cc,musl,4k,memmove-disjoint-dst-before,2049,32752,31.60
+1,Zig cc,musl,4k,memmove-overlap-backward,2559,26224,41.53
+1,Zig cc,musl,4k,memmove-overlap-forward,2559,26224,39.31
+1,Zig cc,musl,4k,memmove-disjoint-dst-after,2559,26224,35.38
+1,Zig cc,musl,4k,memmove-disjoint-dst-before,2559,26224,36.27
+1,Zig cc,musl,4k,memmove-overlap-backward,2560,26214,38.23
+1,Zig cc,musl,4k,memmove-overlap-forward,2560,26214,38.84
+1,Zig cc,musl,4k,memmove-disjoint-dst-after,2560,26214,43.75
+1,Zig cc,musl,4k,memmove-disjoint-dst-before,2560,26214,38.84
+1,Zig cc,musl,4k,memmove-overlap-backward,3072,21845,47.64
+1,Zig cc,musl,4k,memmove-overlap-forward,3072,21845,45.41
+1,Zig cc,musl,4k,memmove-disjoint-dst-after,3072,21845,50.10
+1,Zig cc,musl,4k,memmove-disjoint-dst-before,3072,21845,45.36
+1,Zig cc,musl,4k,memmove-overlap-backward,3584,18724,57.52
+1,Zig cc,musl,4k,memmove-overlap-forward,3584,18724,54.64
+1,Zig cc,musl,4k,memmove-disjoint-dst-after,3584,18724,55.26
+1,Zig cc,musl,4k,memmove-disjoint-dst-before,3584,18724,57.25
+1,Zig cc,musl,4k,memmove-overlap-backward,4095,16388,65.91
+1,Zig cc,musl,4k,memmove-overlap-forward,4095,16388,64.22
+1,Zig cc,musl,4k,memmove-disjoint-dst-after,4095,16388,55.50
+1,Zig cc,musl,4k,memmove-disjoint-dst-before,4095,16388,56.43
+1,Zig cc,musl,4k,memmove-overlap-backward,4096,16384,48.62
+1,Zig cc,musl,4k,memmove-overlap-forward,4096,16384,34.80
+1,Zig cc,musl,4k,memmove-disjoint-dst-after,4096,16384,48.68
+1,Zig cc,musl,4k,memmove-disjoint-dst-before,4096,16384,34.25
+1,Zig cc,musl,4k,memmove-overlap-backward,4097,16380,48.47
+1,Zig cc,musl,4k,memmove-overlap-forward,4097,16380,34.34
+1,Zig cc,musl,4k,memmove-disjoint-dst-after,4097,16380,48.12
+1,Zig cc,musl,4k,memmove-disjoint-dst-before,4097,16380,33.99
+2,Zig cc,musl,4k,memmove-overlap-backward,2047,32784,19.87
+2,Zig cc,musl,4k,memmove-overlap-forward,2047,32784,18.67
+2,Zig cc,musl,4k,memmove-disjoint-dst-after,2047,32784,16.69
+2,Zig cc,musl,4k,memmove-disjoint-dst-before,2047,32784,16.69
+2,Zig cc,musl,4k,memmove-overlap-backward,2048,32768,31.06
+2,Zig cc,musl,4k,memmove-overlap-forward,2048,32768,29.78
+2,Zig cc,musl,4k,memmove-disjoint-dst-after,2048,32768,33.81
+2,Zig cc,musl,4k,memmove-disjoint-dst-before,2048,32768,31.14
+2,Zig cc,musl,4k,memmove-overlap-backward,2049,32752,33.21
+2,Zig cc,musl,4k,memmove-overlap-forward,2049,32752,30.32
+2,Zig cc,musl,4k,memmove-disjoint-dst-after,2049,32752,33.52
+2,Zig cc,musl,4k,memmove-disjoint-dst-before,2049,32752,30.13
+2,Zig cc,musl,4k,memmove-overlap-backward,2559,26224,40.60
+2,Zig cc,musl,4k,memmove-overlap-forward,2559,26224,40.64
+2,Zig cc,musl,4k,memmove-disjoint-dst-after,2559,26224,36.04
+2,Zig cc,musl,4k,memmove-disjoint-dst-before,2559,26224,35.30
+2,Zig cc,musl,4k,memmove-overlap-backward,2560,26214,38.84
+2,Zig cc,musl,4k,memmove-overlap-forward,2560,26214,37.61
+2,Zig cc,musl,4k,memmove-disjoint-dst-after,2560,26214,41.72
+2,Zig cc,musl,4k,memmove-disjoint-dst-before,2560,26214,36.47
+2,Zig cc,musl,4k,memmove-overlap-backward,3072,21845,45.71
+2,Zig cc,musl,4k,memmove-overlap-forward,3072,21845,44.89
+2,Zig cc,musl,4k,memmove-disjoint-dst-after,3072,21845,48.36
+2,Zig cc,musl,4k,memmove-disjoint-dst-before,3072,21845,43.90
+2,Zig cc,musl,4k,memmove-overlap-backward,3584,18724,55.59
+2,Zig cc,musl,4k,memmove-overlap-forward,3584,18724,52.29
+2,Zig cc,musl,4k,memmove-disjoint-dst-after,3584,18724,52.08
+2,Zig cc,musl,4k,memmove-disjoint-dst-before,3584,18724,57.91
+2,Zig cc,musl,4k,memmove-overlap-backward,4095,16388,64.52
+2,Zig cc,musl,4k,memmove-overlap-forward,4095,16388,62.18
+2,Zig cc,musl,4k,memmove-disjoint-dst-after,4095,16388,59.94
+2,Zig cc,musl,4k,memmove-disjoint-dst-before,4095,16388,57.33
+2,Zig cc,musl,4k,memmove-overlap-backward,4096,16384,48.88
+2,Zig cc,musl,4k,memmove-overlap-forward,4096,16384,34.03
+2,Zig cc,musl,4k,memmove-disjoint-dst-after,4096,16384,48.72
+2,Zig cc,musl,4k,memmove-disjoint-dst-before,4096,16384,34.79
+2,Zig cc,musl,4k,memmove-overlap-backward,4097,16380,48.12
+2,Zig cc,musl,4k,memmove-overlap-forward,4097,16380,34.08
+2,Zig cc,musl,4k,memmove-disjoint-dst-after,4097,16380,48.03
+2,Zig cc,musl,4k,memmove-disjoint-dst-before,4097,16380,34.11
+3,Zig cc,musl,4k,memmove-overlap-backward,2047,32784,18.74
+3,Zig cc,musl,4k,memmove-overlap-forward,2047,32784,19.67
+3,Zig cc,musl,4k,memmove-disjoint-dst-after,2047,32784,17.17
+3,Zig cc,musl,4k,memmove-disjoint-dst-before,2047,32784,17.48
+3,Zig cc,musl,4k,memmove-overlap-backward,2048,32768,30.34
+3,Zig cc,musl,4k,memmove-overlap-forward,2048,32768,30.47
+3,Zig cc,musl,4k,memmove-disjoint-dst-after,2048,32768,33.03
+3,Zig cc,musl,4k,memmove-disjoint-dst-before,2048,32768,29.55
+3,Zig cc,musl,4k,memmove-overlap-backward,2049,32752,33.31
+3,Zig cc,musl,4k,memmove-overlap-forward,2049,32752,29.83
+3,Zig cc,musl,4k,memmove-disjoint-dst-after,2049,32752,33.69
+3,Zig cc,musl,4k,memmove-disjoint-dst-before,2049,32752,30.14
+3,Zig cc,musl,4k,memmove-overlap-backward,2559,26224,39.82
+3,Zig cc,musl,4k,memmove-overlap-forward,2559,26224,39.91
+3,Zig cc,musl,4k,memmove-disjoint-dst-after,2559,26224,34.57
+3,Zig cc,musl,4k,memmove-disjoint-dst-before,2559,26224,34.67
+3,Zig cc,musl,4k,memmove-overlap-backward,2560,26214,37.48
+3,Zig cc,musl,4k,memmove-overlap-forward,2560,26214,36.86
+3,Zig cc,musl,4k,memmove-disjoint-dst-after,2560,26214,43.35
+3,Zig cc,musl,4k,memmove-disjoint-dst-before,2560,26214,36.47
+3,Zig cc,musl,4k,memmove-overlap-backward,3072,21845,45.69
+3,Zig cc,musl,4k,memmove-overlap-forward,3072,21845,45.15
+3,Zig cc,musl,4k,memmove-disjoint-dst-after,3072,21845,49.69
+3,Zig cc,musl,4k,memmove-disjoint-dst-before,3072,21845,45.41
+3,Zig cc,musl,4k,memmove-overlap-backward,3584,18724,55.26
+3,Zig cc,musl,4k,memmove-overlap-forward,3584,18724,52.71
+3,Zig cc,musl,4k,memmove-disjoint-dst-after,3584,18724,52.95
+3,Zig cc,musl,4k,memmove-disjoint-dst-before,3584,18724,56.67
+3,Zig cc,musl,4k,memmove-overlap-backward,4095,16388,61.13
+3,Zig cc,musl,4k,memmove-overlap-forward,4095,16388,62.23
+3,Zig cc,musl,4k,memmove-disjoint-dst-after,4095,16388,54.98
+3,Zig cc,musl,4k,memmove-disjoint-dst-before,4095,16388,53.79
+3,Zig cc,musl,4k,memmove-overlap-backward,4096,16384,50.29
+3,Zig cc,musl,4k,memmove-overlap-forward,4096,16384,32.79
+3,Zig cc,musl,4k,memmove-disjoint-dst-after,4096,16384,48.39
+3,Zig cc,musl,4k,memmove-disjoint-dst-before,4096,16384,34.72
+3,Zig cc,musl,4k,memmove-overlap-backward,4097,16380,47.94
+3,Zig cc,musl,4k,memmove-overlap-forward,4097,16380,33.14
+3,Zig cc,musl,4k,memmove-disjoint-dst-after,4097,16380,47.69
+3,Zig cc,musl,4k,memmove-disjoint-dst-before,4097,16380,33.20
+1,TinyCC,glibc,2k,memmove-overlap-backward,2047,32784,34.78
+1,TinyCC,glibc,2k,memmove-overlap-forward,2047,32784,36.27
+1,TinyCC,glibc,2k,memmove-disjoint-dst-after,2047,32784,34.46
+1,TinyCC,glibc,2k,memmove-disjoint-dst-before,2047,32784,35.88
+1,TinyCC,glibc,2k,memmove-overlap-backward,2048,32768,26.54
+1,TinyCC,glibc,2k,memmove-overlap-forward,2048,32768,27.14
+1,TinyCC,glibc,2k,memmove-disjoint-dst-after,2048,32768,23.36
+1,TinyCC,glibc,2k,memmove-disjoint-dst-before,2048,32768,26.60
+1,TinyCC,glibc,2k,memmove-overlap-backward,2049,32752,27.21
+1,TinyCC,glibc,2k,memmove-overlap-forward,2049,32752,27.87
+1,TinyCC,glibc,2k,memmove-disjoint-dst-after,2049,32752,27.92
+1,TinyCC,glibc,2k,memmove-disjoint-dst-before,2049,32752,32.39
+1,TinyCC,glibc,2k,memmove-overlap-backward,2559,26224,37.11
+1,TinyCC,glibc,2k,memmove-overlap-forward,2559,26224,39.84
+1,TinyCC,glibc,2k,memmove-disjoint-dst-after,2559,26224,32.89
+1,TinyCC,glibc,2k,memmove-disjoint-dst-before,2559,26224,36.29
+1,TinyCC,glibc,2k,memmove-overlap-backward,2560,26214,33.88
+1,TinyCC,glibc,2k,memmove-overlap-forward,2560,26214,34.28
+1,TinyCC,glibc,2k,memmove-disjoint-dst-after,2560,26214,36.20
+1,TinyCC,glibc,2k,memmove-disjoint-dst-before,2560,26214,37.04
+1,TinyCC,glibc,2k,memmove-overlap-backward,3072,21845,39.73
+1,TinyCC,glibc,2k,memmove-overlap-forward,3072,21845,39.86
+1,TinyCC,glibc,2k,memmove-disjoint-dst-after,3072,21845,38.85
+1,TinyCC,glibc,2k,memmove-disjoint-dst-before,3072,21845,43.08
+1,TinyCC,glibc,2k,memmove-overlap-backward,3584,18724,43.09
+1,TinyCC,glibc,2k,memmove-overlap-forward,3584,18724,44.31
+1,TinyCC,glibc,2k,memmove-disjoint-dst-after,3584,18724,43.61
+1,TinyCC,glibc,2k,memmove-disjoint-dst-before,3584,18724,60.87
+1,TinyCC,glibc,2k,memmove-overlap-backward,4095,16388,52.25
+1,TinyCC,glibc,2k,memmove-overlap-forward,4095,16388,52.16
+1,TinyCC,glibc,2k,memmove-disjoint-dst-after,4095,16388,50.82
+1,TinyCC,glibc,2k,memmove-disjoint-dst-before,4095,16388,52.69
+1,TinyCC,glibc,2k,memmove-overlap-backward,4096,16384,51.76
+1,TinyCC,glibc,2k,memmove-overlap-forward,4096,16384,50.24
+1,TinyCC,glibc,2k,memmove-disjoint-dst-after,4096,16384,57.45
+1,TinyCC,glibc,2k,memmove-disjoint-dst-before,4096,16384,50.19
+1,TinyCC,glibc,2k,memmove-overlap-backward,4097,16380,49.09
+1,TinyCC,glibc,2k,memmove-overlap-forward,4097,16380,49.99
+1,TinyCC,glibc,2k,memmove-disjoint-dst-after,4097,16380,57.63
+1,TinyCC,glibc,2k,memmove-disjoint-dst-before,4097,16380,50.76
+2,TinyCC,glibc,2k,memmove-overlap-backward,2047,32784,36.73
+2,TinyCC,glibc,2k,memmove-overlap-forward,2047,32784,35.72
+2,TinyCC,glibc,2k,memmove-disjoint-dst-after,2047,32784,32.86
+2,TinyCC,glibc,2k,memmove-disjoint-dst-before,2047,32784,36.01
+2,TinyCC,glibc,2k,memmove-overlap-backward,2048,32768,28.17
+2,TinyCC,glibc,2k,memmove-overlap-forward,2048,32768,28.47
+2,TinyCC,glibc,2k,memmove-disjoint-dst-after,2048,32768,23.42
+2,TinyCC,glibc,2k,memmove-disjoint-dst-before,2048,32768,28.59
+2,TinyCC,glibc,2k,memmove-overlap-backward,2049,32752,29.14
+2,TinyCC,glibc,2k,memmove-overlap-forward,2049,32752,29.05
+2,TinyCC,glibc,2k,memmove-disjoint-dst-after,2049,32752,23.48
+2,TinyCC,glibc,2k,memmove-disjoint-dst-before,2049,32752,27.97
+2,TinyCC,glibc,2k,memmove-overlap-backward,2559,26224,35.91
+2,TinyCC,glibc,2k,memmove-overlap-forward,2559,26224,34.96
+2,TinyCC,glibc,2k,memmove-disjoint-dst-after,2559,26224,32.57
+2,TinyCC,glibc,2k,memmove-disjoint-dst-before,2559,26224,36.19
+2,TinyCC,glibc,2k,memmove-overlap-backward,2560,26214,33.12
+2,TinyCC,glibc,2k,memmove-overlap-forward,2560,26214,33.09
+2,TinyCC,glibc,2k,memmove-disjoint-dst-after,2560,26214,35.81
+2,TinyCC,glibc,2k,memmove-disjoint-dst-before,2560,26214,36.23
+2,TinyCC,glibc,2k,memmove-overlap-backward,3072,21845,38.09
+2,TinyCC,glibc,2k,memmove-overlap-forward,3072,21845,38.97
+2,TinyCC,glibc,2k,memmove-disjoint-dst-after,3072,21845,39.65
+2,TinyCC,glibc,2k,memmove-disjoint-dst-before,3072,21845,45.52
+2,TinyCC,glibc,2k,memmove-overlap-backward,3584,18724,44.83
+2,TinyCC,glibc,2k,memmove-overlap-forward,3584,18724,44.52
+2,TinyCC,glibc,2k,memmove-disjoint-dst-after,3584,18724,44.79
+2,TinyCC,glibc,2k,memmove-disjoint-dst-before,3584,18724,62.12
+2,TinyCC,glibc,2k,memmove-overlap-backward,4095,16388,52.38
+2,TinyCC,glibc,2k,memmove-overlap-forward,4095,16388,53.26
+2,TinyCC,glibc,2k,memmove-disjoint-dst-after,4095,16388,52.27
+2,TinyCC,glibc,2k,memmove-disjoint-dst-before,4095,16388,52.08
+2,TinyCC,glibc,2k,memmove-overlap-backward,4096,16384,50.35
+2,TinyCC,glibc,2k,memmove-overlap-forward,4096,16384,49.68
+2,TinyCC,glibc,2k,memmove-disjoint-dst-after,4096,16384,54.18
+2,TinyCC,glibc,2k,memmove-disjoint-dst-before,4096,16384,53.89
+2,TinyCC,glibc,2k,memmove-overlap-backward,4097,16380,48.84
+2,TinyCC,glibc,2k,memmove-overlap-forward,4097,16380,50.12
+2,TinyCC,glibc,2k,memmove-disjoint-dst-after,4097,16380,55.49
+2,TinyCC,glibc,2k,memmove-disjoint-dst-before,4097,16380,48.84
+3,TinyCC,glibc,2k,memmove-overlap-backward,2047,32784,33.79
+3,TinyCC,glibc,2k,memmove-overlap-forward,2047,32784,35.54
+3,TinyCC,glibc,2k,memmove-disjoint-dst-after,2047,32784,34.64
+3,TinyCC,glibc,2k,memmove-disjoint-dst-before,2047,32784,34.80
+3,TinyCC,glibc,2k,memmove-overlap-backward,2048,32768,27.20
+3,TinyCC,glibc,2k,memmove-overlap-forward,2048,32768,27.51
+3,TinyCC,glibc,2k,memmove-disjoint-dst-after,2048,32768,22.86
+3,TinyCC,glibc,2k,memmove-disjoint-dst-before,2048,32768,27.52
+3,TinyCC,glibc,2k,memmove-overlap-backward,2049,32752,28.59
+3,TinyCC,glibc,2k,memmove-overlap-forward,2049,32752,28.41
+3,TinyCC,glibc,2k,memmove-disjoint-dst-after,2049,32752,23.66
+3,TinyCC,glibc,2k,memmove-disjoint-dst-before,2049,32752,28.04
+3,TinyCC,glibc,2k,memmove-overlap-backward,2559,26224,34.34
+3,TinyCC,glibc,2k,memmove-overlap-forward,2559,26224,33.88
+3,TinyCC,glibc,2k,memmove-disjoint-dst-after,2559,26224,32.68
+3,TinyCC,glibc,2k,memmove-disjoint-dst-before,2559,26224,35.04
+3,TinyCC,glibc,2k,memmove-overlap-backward,2560,26214,32.97
+3,TinyCC,glibc,2k,memmove-overlap-forward,2560,26214,32.78
+3,TinyCC,glibc,2k,memmove-disjoint-dst-after,2560,26214,37.76
+3,TinyCC,glibc,2k,memmove-disjoint-dst-before,2560,26214,36.95
+3,TinyCC,glibc,2k,memmove-overlap-backward,3072,21845,39.52
+3,TinyCC,glibc,2k,memmove-overlap-forward,3072,21845,39.49
+3,TinyCC,glibc,2k,memmove-disjoint-dst-after,3072,21845,38.49
+3,TinyCC,glibc,2k,memmove-disjoint-dst-before,3072,21845,47.32
+3,TinyCC,glibc,2k,memmove-overlap-backward,3584,18724,45.14
+3,TinyCC,glibc,2k,memmove-overlap-forward,3584,18724,46.10
+3,TinyCC,glibc,2k,memmove-disjoint-dst-after,3584,18724,44.74
+3,TinyCC,glibc,2k,memmove-disjoint-dst-before,3584,18724,59.76
+3,TinyCC,glibc,2k,memmove-overlap-backward,4095,16388,52.52
+3,TinyCC,glibc,2k,memmove-overlap-forward,4095,16388,51.29
+3,TinyCC,glibc,2k,memmove-disjoint-dst-after,4095,16388,52.92
+3,TinyCC,glibc,2k,memmove-disjoint-dst-before,4095,16388,54.27
+3,TinyCC,glibc,2k,memmove-overlap-backward,4096,16384,50.46
+3,TinyCC,glibc,2k,memmove-overlap-forward,4096,16384,50.10
+3,TinyCC,glibc,2k,memmove-disjoint-dst-after,4096,16384,58.98
+3,TinyCC,glibc,2k,memmove-disjoint-dst-before,4096,16384,49.71
+3,TinyCC,glibc,2k,memmove-overlap-backward,4097,16380,50.75
+3,TinyCC,glibc,2k,memmove-overlap-forward,4097,16380,50.61
+3,TinyCC,glibc,2k,memmove-disjoint-dst-after,4097,16380,56.54
+3,TinyCC,glibc,2k,memmove-disjoint-dst-before,4097,16380,51.02
+1,TinyCC,glibc,4k,memmove-overlap-backward,2047,32784,34.52
+1,TinyCC,glibc,4k,memmove-overlap-forward,2047,32784,38.12
+1,TinyCC,glibc,4k,memmove-disjoint-dst-after,2047,32784,35.55
+1,TinyCC,glibc,4k,memmove-disjoint-dst-before,2047,32784,35.72
+1,TinyCC,glibc,4k,memmove-overlap-backward,2048,32768,37.01
+1,TinyCC,glibc,4k,memmove-overlap-forward,2048,32768,33.36
+1,TinyCC,glibc,4k,memmove-disjoint-dst-after,2048,32768,33.96
+1,TinyCC,glibc,4k,memmove-disjoint-dst-before,2048,32768,33.26
+1,TinyCC,glibc,4k,memmove-overlap-backward,2049,32752,36.98
+1,TinyCC,glibc,4k,memmove-overlap-forward,2049,32752,31.93
+1,TinyCC,glibc,4k,memmove-disjoint-dst-after,2049,32752,33.40
+1,TinyCC,glibc,4k,memmove-disjoint-dst-before,2049,32752,33.00
+1,TinyCC,glibc,4k,memmove-overlap-backward,2559,26224,41.13
+1,TinyCC,glibc,4k,memmove-overlap-forward,2559,26224,42.31
+1,TinyCC,glibc,4k,memmove-disjoint-dst-after,2559,26224,40.95
+1,TinyCC,glibc,4k,memmove-disjoint-dst-before,2559,26224,39.90
+1,TinyCC,glibc,4k,memmove-overlap-backward,2560,26214,43.58
+1,TinyCC,glibc,4k,memmove-overlap-forward,2560,26214,38.82
+1,TinyCC,glibc,4k,memmove-disjoint-dst-after,2560,26214,42.54
+1,TinyCC,glibc,4k,memmove-disjoint-dst-before,2560,26214,40.60
+1,TinyCC,glibc,4k,memmove-overlap-backward,3072,21845,52.05
+1,TinyCC,glibc,4k,memmove-overlap-forward,3072,21845,46.60
+1,TinyCC,glibc,4k,memmove-disjoint-dst-after,3072,21845,50.49
+1,TinyCC,glibc,4k,memmove-disjoint-dst-before,3072,21845,46.39
+1,TinyCC,glibc,4k,memmove-overlap-backward,3584,18724,55.52
+1,TinyCC,glibc,4k,memmove-overlap-forward,3584,18724,53.92
+1,TinyCC,glibc,4k,memmove-disjoint-dst-after,3584,18724,56.20
+1,TinyCC,glibc,4k,memmove-disjoint-dst-before,3584,18724,56.83
+1,TinyCC,glibc,4k,memmove-overlap-backward,4095,16388,63.33
+1,TinyCC,glibc,4k,memmove-overlap-forward,4095,16388,62.17
+1,TinyCC,glibc,4k,memmove-disjoint-dst-after,4095,16388,57.99
+1,TinyCC,glibc,4k,memmove-disjoint-dst-before,4095,16388,58.08
+1,TinyCC,glibc,4k,memmove-overlap-backward,4096,16384,48.44
+1,TinyCC,glibc,4k,memmove-overlap-forward,4096,16384,50.62
+1,TinyCC,glibc,4k,memmove-disjoint-dst-after,4096,16384,55.34
+1,TinyCC,glibc,4k,memmove-disjoint-dst-before,4096,16384,49.49
+1,TinyCC,glibc,4k,memmove-overlap-backward,4097,16380,48.01
+1,TinyCC,glibc,4k,memmove-overlap-forward,4097,16380,49.24
+1,TinyCC,glibc,4k,memmove-disjoint-dst-after,4097,16380,55.21
+1,TinyCC,glibc,4k,memmove-disjoint-dst-before,4097,16380,50.77
+2,TinyCC,glibc,4k,memmove-overlap-backward,2047,32784,34.82
+2,TinyCC,glibc,4k,memmove-overlap-forward,2047,32784,38.64
+2,TinyCC,glibc,4k,memmove-disjoint-dst-after,2047,32784,36.80
+2,TinyCC,glibc,4k,memmove-disjoint-dst-before,2047,32784,36.19
+2,TinyCC,glibc,4k,memmove-overlap-backward,2048,32768,36.28
+2,TinyCC,glibc,4k,memmove-overlap-forward,2048,32768,32.81
+2,TinyCC,glibc,4k,memmove-disjoint-dst-after,2048,32768,32.80
+2,TinyCC,glibc,4k,memmove-disjoint-dst-before,2048,32768,32.80
+2,TinyCC,glibc,4k,memmove-overlap-backward,2049,32752,36.91
+2,TinyCC,glibc,4k,memmove-overlap-forward,2049,32752,32.09
+2,TinyCC,glibc,4k,memmove-disjoint-dst-after,2049,32752,33.28
+2,TinyCC,glibc,4k,memmove-disjoint-dst-before,2049,32752,32.95
+2,TinyCC,glibc,4k,memmove-overlap-backward,2559,26224,41.13
+2,TinyCC,glibc,4k,memmove-overlap-forward,2559,26224,43.42
+2,TinyCC,glibc,4k,memmove-disjoint-dst-after,2559,26224,39.50
+2,TinyCC,glibc,4k,memmove-disjoint-dst-before,2559,26224,41.25
+2,TinyCC,glibc,4k,memmove-overlap-backward,2560,26214,42.09
+2,TinyCC,glibc,4k,memmove-overlap-forward,2560,26214,39.46
+2,TinyCC,glibc,4k,memmove-disjoint-dst-after,2560,26214,43.01
+2,TinyCC,glibc,4k,memmove-disjoint-dst-before,2560,26214,38.30
+2,TinyCC,glibc,4k,memmove-overlap-backward,3072,21845,49.35
+2,TinyCC,glibc,4k,memmove-overlap-forward,3072,21845,45.68
+2,TinyCC,glibc,4k,memmove-disjoint-dst-after,3072,21845,51.99
+2,TinyCC,glibc,4k,memmove-disjoint-dst-before,3072,21845,48.18
+2,TinyCC,glibc,4k,memmove-overlap-backward,3584,18724,57.44
+2,TinyCC,glibc,4k,memmove-overlap-forward,3584,18724,52.98
+2,TinyCC,glibc,4k,memmove-disjoint-dst-after,3584,18724,57.48
+2,TinyCC,glibc,4k,memmove-disjoint-dst-before,3584,18724,57.41
+2,TinyCC,glibc,4k,memmove-overlap-backward,4095,16388,63.34
+2,TinyCC,glibc,4k,memmove-overlap-forward,4095,16388,65.09
+2,TinyCC,glibc,4k,memmove-disjoint-dst-after,4095,16388,56.62
+2,TinyCC,glibc,4k,memmove-disjoint-dst-before,4095,16388,57.43
+2,TinyCC,glibc,4k,memmove-overlap-backward,4096,16384,48.92
+2,TinyCC,glibc,4k,memmove-overlap-forward,4096,16384,49.84
+2,TinyCC,glibc,4k,memmove-disjoint-dst-after,4096,16384,55.05
+2,TinyCC,glibc,4k,memmove-disjoint-dst-before,4096,16384,49.03
+2,TinyCC,glibc,4k,memmove-overlap-backward,4097,16380,49.14
+2,TinyCC,glibc,4k,memmove-overlap-forward,4097,16380,50.35
+2,TinyCC,glibc,4k,memmove-disjoint-dst-after,4097,16380,53.72
+2,TinyCC,glibc,4k,memmove-disjoint-dst-before,4097,16380,49.27
+3,TinyCC,glibc,4k,memmove-overlap-backward,2047,32784,35.01
+3,TinyCC,glibc,4k,memmove-overlap-forward,2047,32784,36.38
+3,TinyCC,glibc,4k,memmove-disjoint-dst-after,2047,32784,35.58
+3,TinyCC,glibc,4k,memmove-disjoint-dst-before,2047,32784,36.18
+3,TinyCC,glibc,4k,memmove-overlap-backward,2048,32768,35.26
+3,TinyCC,glibc,4k,memmove-overlap-forward,2048,32768,32.75
+3,TinyCC,glibc,4k,memmove-disjoint-dst-after,2048,32768,33.27
+3,TinyCC,glibc,4k,memmove-disjoint-dst-before,2048,32768,32.10
+3,TinyCC,glibc,4k,memmove-overlap-backward,2049,32752,37.98
+3,TinyCC,glibc,4k,memmove-overlap-forward,2049,32752,32.67
+3,TinyCC,glibc,4k,memmove-disjoint-dst-after,2049,32752,32.99
+3,TinyCC,glibc,4k,memmove-disjoint-dst-before,2049,32752,32.16
+3,TinyCC,glibc,4k,memmove-overlap-backward,2559,26224,42.59
+3,TinyCC,glibc,4k,memmove-overlap-forward,2559,26224,43.42
+3,TinyCC,glibc,4k,memmove-disjoint-dst-after,2559,26224,41.41
+3,TinyCC,glibc,4k,memmove-disjoint-dst-before,2559,26224,40.65
+3,TinyCC,glibc,4k,memmove-overlap-backward,2560,26214,45.18
+3,TinyCC,glibc,4k,memmove-overlap-forward,2560,26214,41.29
+3,TinyCC,glibc,4k,memmove-disjoint-dst-after,2560,26214,44.78
+3,TinyCC,glibc,4k,memmove-disjoint-dst-before,2560,26214,40.11
+3,TinyCC,glibc,4k,memmove-overlap-backward,3072,21845,51.53
+3,TinyCC,glibc,4k,memmove-overlap-forward,3072,21845,47.11
+3,TinyCC,glibc,4k,memmove-disjoint-dst-after,3072,21845,50.39
+3,TinyCC,glibc,4k,memmove-disjoint-dst-before,3072,21845,46.07
+3,TinyCC,glibc,4k,memmove-overlap-backward,3584,18724,56.16
+3,TinyCC,glibc,4k,memmove-overlap-forward,3584,18724,52.86
+3,TinyCC,glibc,4k,memmove-disjoint-dst-after,3584,18724,58.67
+3,TinyCC,glibc,4k,memmove-disjoint-dst-before,3584,18724,57.74
+3,TinyCC,glibc,4k,memmove-overlap-backward,4095,16388,62.35
+3,TinyCC,glibc,4k,memmove-overlap-forward,4095,16388,64.31
+3,TinyCC,glibc,4k,memmove-disjoint-dst-after,4095,16388,57.69
+3,TinyCC,glibc,4k,memmove-disjoint-dst-before,4095,16388,56.45
+3,TinyCC,glibc,4k,memmove-overlap-backward,4096,16384,47.76
+3,TinyCC,glibc,4k,memmove-overlap-forward,4096,16384,49.78
+3,TinyCC,glibc,4k,memmove-disjoint-dst-after,4096,16384,55.78
+3,TinyCC,glibc,4k,memmove-disjoint-dst-before,4096,16384,49.33
+3,TinyCC,glibc,4k,memmove-overlap-backward,4097,16380,47.89
+3,TinyCC,glibc,4k,memmove-overlap-forward,4097,16380,48.88
+3,TinyCC,glibc,4k,memmove-disjoint-dst-after,4097,16380,56.36
+3,TinyCC,glibc,4k,memmove-disjoint-dst-before,4097,16380,48.79

@@ -1,0 +1,33 @@
+compiler,libc,implementation,function,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,putchar,200000,3.05
+Zig cc,glibc,host-libc,puts,200000,8.08
+Zig cc,glibc,host-libc,fputc,200000,2.06
+Zig cc,glibc,host-libc,fputs,200000,7.25
+Zig cc,glibc,nelibc,putchar,200000,6.69
+Zig cc,glibc,nelibc,puts,200000,15.73
+Zig cc,glibc,nelibc,fputc,200000,6.03
+Zig cc,glibc,nelibc,fputs,200000,13.72
+GCC,glibc,host-libc,putchar,200000,3.08
+GCC,glibc,host-libc,puts,200000,8.35
+GCC,glibc,host-libc,fputc,200000,1.99
+GCC,glibc,host-libc,fputs,200000,7.90
+GCC,glibc,nelibc,putchar,200000,6.71
+GCC,glibc,nelibc,puts,200000,15.92
+GCC,glibc,nelibc,fputc,200000,6.16
+GCC,glibc,nelibc,fputs,200000,13.59
+Zig cc,musl,host-libc,putchar,200000,1.56
+Zig cc,musl,host-libc,puts,200000,13.58
+Zig cc,musl,host-libc,fputc,200000,1.49
+Zig cc,musl,host-libc,fputs,200000,11.92
+Zig cc,musl,nelibc,putchar,200000,17.53
+Zig cc,musl,nelibc,puts,200000,25.50
+Zig cc,musl,nelibc,fputc,200000,16.53
+Zig cc,musl,nelibc,fputs,200000,23.71
+TinyCC,glibc,host-libc,putchar,200000,4.43
+TinyCC,glibc,host-libc,puts,200000,9.90
+TinyCC,glibc,host-libc,fputc,200000,3.35
+TinyCC,glibc,host-libc,fputs,200000,9.01
+TinyCC,glibc,nelibc,putchar,200000,7.60
+TinyCC,glibc,nelibc,puts,200000,20.12
+TinyCC,glibc,nelibc,fputc,200000,7.03
+TinyCC,glibc,nelibc,fputs,200000,17.48

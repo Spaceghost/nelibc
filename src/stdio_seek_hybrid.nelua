@@ -1,0 +1,13 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function fseeko(stream: pointer, offset: clong, whence: cint): cint <cimport> end
+local function ftello(stream: pointer): clong <cimport> end
+
+local function fseek(stream: pointer, offset: clong, whence: cint): cint <cexport, codename 'fseek'>
+  return fseeko(stream, offset, whence)
+end
+
+local function ftell(stream: pointer): clong <cexport, codename 'ftell'>
+  return ftello(stream)
+end

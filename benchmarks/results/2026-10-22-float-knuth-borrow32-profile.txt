@@ -1,0 +1,14 @@
+Knuth multiply/subtract 32-bit borrow candidate
+Date: 2026-10-22
+
+The candidate replaced the current 64-bit subtraction and high-bit borrow
+extraction with 32-bit subtraction and explicit borrow comparisons. It passed
+the float differential corpus on TinyCC/glibc, Zig/glibc, GCC/glibc, and
+Zig/musl.
+
+Twelve alternating baseline/candidate pairs per parser were measured for
+standard short inputs and the long-decimal workload. The results in the paired
+CSV are mixed: short cases regress up to 3.5% (Zig/musl strtod), while long
+cases range from a 3.1% gain (Zig/glibc strtold) to a 2.1% regression (TinyCC
+strtod). The candidate is rejected; the existing 64-bit borrow formulation
+remains in src/stdlib_float.nelua.

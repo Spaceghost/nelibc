@@ -1,0 +1,29 @@
+TinyCC small-limb multiply gate
+===============================
+
+Profile
+-------
+Instrumented `big_mul_small` calls on the short and long float benchmark
+corpora (28,000 short or 800 long parser calls per function). Every short-case
+call used 16 limbs or fewer: 89,600 multiply calls and 308,000 limb iterations
+per parser. Long cases used 55,600 calls and 2,031,600 limb iterations per
+parser; only the first 109,600 iterations (5.4%) were at 16 limbs or fewer.
+
+Threshold shootouts
+-------------------
+The `<=16` gate used the direct `mull` macro below the threshold and the
+current high-level multiply above it. In 24 alternating pairs, short `strtof`
+and `strtold` gained 0.7% and 0.5%, while short `strtod` regressed 1.7%.
+Long `strtof` regressed 0.8%, `strtod` was flat, and `strtold` gained 0.9%.
+The `<=8` gate regressed all three short cases and was mixed on long cases.
+
+Neither gate gives a consistent parser-wide win. Both candidates passed the
+TinyCC float differential corpus; the guarded fallback compiled with Zig.
+Production remains on the existing high-level multiply. The unconditional
+macro's 48-pair full-parser and function-cycle shootouts are recorded in
+`2026-10-22-float-power5-mul-asm-macro-ab.csv` and
+`2026-10-22-float-power5-mul-asm-macro-cycle-ab.csv`.
+
+Raw limb counts: `2026-10-22-float-power5-mul-limb-counts.csv`.
+Threshold timings: `2026-10-22-float-power5-mul-asm-macro-le16-ab.csv` and
+`2026-10-22-float-power5-mul-asm-macro-le8-ab.csv`.

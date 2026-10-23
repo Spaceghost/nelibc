@@ -1,0 +1,18 @@
+TinyCC Knuth quotient-correction counts
+=======================================
+
+Instrumented a temporary copy of `big_divide_knuth_u64` and ran the existing
+short and long float parser benchmark corpora. Each short parser measurement
+made 28,000 Nelibc calls; each long measurement made 800 calls. The correction
+loop never ran for any of the short cases. On long inputs, it ran once per
+corrected quotient estimate: 400 times in 800 `strtod` calls and 400 times in
+800 `strtold` calls. It did not run in `strtof`. No estimate needed more than
+one correction.
+
+This makes the quotient-correction loop an unlikely source of substantial
+parser time: it does zero work on the short corpus and averages 0.5 iterations
+per long `strtod`/`strtold` call. These are instrumented counts, not timings.
+The instrumentation was compiled with TinyCC and written into a temporary
+source copy; production source is unchanged.
+
+Raw counts: `2026-10-22-float-knuth-correction-counts.csv`.

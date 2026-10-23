@@ -1,0 +1,119 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_standalone_setlocale(category: cint,
+    name: *[0]cchar <const>): *[0]cchar <cimport> end
+
+local function setlocale(category: cint, name: *[0]cchar <const>): *[0]cchar
+    <cexport, codename 'setlocale'>
+  return nelibc_standalone_setlocale(category, name)
+end
+
+local LocaleConv: type = @record{
+  decimal_point: *[0]cchar,
+  thousands_sep: *[0]cchar,
+  grouping: *[0]cchar,
+  int_curr_symbol: *[0]cchar,
+  currency_symbol: *[0]cchar,
+  mon_decimal_point: *[0]cchar,
+  mon_thousands_sep: *[0]cchar,
+  mon_grouping: *[0]cchar,
+  positive_sign: *[0]cchar,
+  negative_sign: *[0]cchar,
+  int_frac_digits: cchar,
+  frac_digits: cchar,
+  p_cs_precedes: cchar,
+  p_sep_by_space: cchar,
+  n_cs_precedes: cchar,
+  n_sep_by_space: cchar,
+  p_sign_posn: cchar,
+  n_sign_posn: cchar,
+  int_p_cs_precedes: cchar,
+  int_p_sep_by_space: cchar,
+  int_n_cs_precedes: cchar,
+  int_n_sep_by_space: cchar,
+  int_p_sign_posn: cchar,
+  int_n_sign_posn: cchar
+}
+
+local function nelibc_standalone_numeric_is_de(): cint <cimport> end
+local function nelibc_standalone_monetary_is_de(): cint <cimport> end
+
+local decimal_dot: [2]cchar = {46_cchar, 0_cchar}
+local decimal_comma: [2]cchar = {44_cchar, 0_cchar}
+local thousands_dot: [2]cchar = {46_cchar, 0_cchar}
+local empty_text: [1]cchar = {0_cchar}
+local grouping_three: [2]cchar = {3_cchar, 0_cchar}
+local euro_code: [5]cchar = {69_cchar, 85_cchar, 82_cchar, 32_cchar, 0_cchar}
+local euro_symbol: [4]cchar = {-30_cchar, -126_cchar, -84_cchar, 0_cchar}
+local minus_sign: [2]cchar = {45_cchar, 0_cchar}
+
+local locale_data: LocaleConv = {}
+
+local function localeconv(): *LocaleConv <cexport, codename 'localeconv'>
+  local numeric_de = nelibc_standalone_numeric_is_de() ~= 0
+  local monetary_de = nelibc_standalone_monetary_is_de() ~= 0
+  if numeric_de then
+    locale_data.decimal_point = (@*[0]cchar)(&decimal_comma[0])
+    locale_data.thousands_sep = (@*[0]cchar)(&thousands_dot[0])
+    locale_data.grouping = (@*[0]cchar)(&grouping_three[0])
+  else
+    locale_data.decimal_point = (@*[0]cchar)(&decimal_dot[0])
+    locale_data.thousands_sep = (@*[0]cchar)(&empty_text[0])
+    locale_data.grouping = (@*[0]cchar)(&empty_text[0])
+  end
+  if monetary_de then
+    locale_data.int_curr_symbol = (@*[0]cchar)(&euro_code[0])
+    locale_data.currency_symbol = (@*[0]cchar)(&euro_symbol[0])
+    locale_data.mon_decimal_point = (@*[0]cchar)(&decimal_comma[0])
+    locale_data.mon_thousands_sep = (@*[0]cchar)(&thousands_dot[0])
+    locale_data.mon_grouping = (@*[0]cchar)(&grouping_three[0])
+    locale_data.positive_sign = (@*[0]cchar)(&empty_text[0])
+    locale_data.negative_sign = (@*[0]cchar)(&minus_sign[0])
+    locale_data.int_frac_digits = 2_cchar
+    locale_data.frac_digits = 2_cchar
+    locale_data.p_cs_precedes = 0_cchar
+    locale_data.p_sep_by_space = 1_cchar
+    locale_data.n_cs_precedes = 0_cchar
+    locale_data.n_sep_by_space = 1_cchar
+    locale_data.p_sign_posn = 1_cchar
+    locale_data.n_sign_posn = 1_cchar
+    locale_data.int_p_cs_precedes = 0_cchar
+    locale_data.int_p_sep_by_space = 1_cchar
+    locale_data.int_n_cs_precedes = 0_cchar
+    locale_data.int_n_sep_by_space = 1_cchar
+    locale_data.int_p_sign_posn = 1_cchar
+    locale_data.int_n_sign_posn = 1_cchar
+  else
+    locale_data.int_curr_symbol = (@*[0]cchar)(&empty_text[0])
+    locale_data.currency_symbol = (@*[0]cchar)(&empty_text[0])
+    locale_data.mon_decimal_point = (@*[0]cchar)(&empty_text[0])
+    locale_data.mon_thousands_sep = (@*[0]cchar)(&empty_text[0])
+    locale_data.mon_grouping = (@*[0]cchar)(&empty_text[0])
+    locale_data.positive_sign = (@*[0]cchar)(&empty_text[0])
+    locale_data.negative_sign = (@*[0]cchar)(&empty_text[0])
+    locale_data.int_frac_digits = 127_cchar
+    locale_data.frac_digits = 127_cchar
+    locale_data.p_cs_precedes = 127_cchar
+    locale_data.p_sep_by_space = 127_cchar
+    locale_data.n_cs_precedes = 127_cchar
+    locale_data.n_sep_by_space = 127_cchar
+    locale_data.p_sign_posn = 127_cchar
+    locale_data.n_sign_posn = 127_cchar
+    locale_data.int_p_cs_precedes = 127_cchar
+    locale_data.int_p_sep_by_space = 127_cchar
+    locale_data.int_n_cs_precedes = 127_cchar
+    locale_data.int_n_sep_by_space = 127_cchar
+    locale_data.int_p_sign_posn = 127_cchar
+    locale_data.int_n_sign_posn = 127_cchar
+  end
+  return &locale_data
+end
+
+local function nelibc_strerror_r(errnum: cint, buffer: *[0]cchar,
+    buffer_size: csize): cint <cimport> end
+
+local function standalone_strerror_r(errnum: cint, buffer: *[0]cchar,
+    buffer_size: csize): cint <cexport, codename 'strerror_r'>
+  return nelibc_strerror_r(errnum, buffer, buffer_size)
+end

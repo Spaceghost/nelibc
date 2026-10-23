@@ -1,0 +1,185 @@
+compiler,libc,implementation,function,size_bytes,iterations,median_ns_per_call
+Zig cc,glibc,host-libc,malloc-free,64,2000,4.96
+Zig cc,glibc,host-libc,calloc-free,64,2000,4.91
+Zig cc,glibc,host-libc,realloc-double-free,64,2000,31.72
+Zig cc,glibc,host-libc,realloc-small-grow-free,64,2000,32.82
+Zig cc,glibc,host-libc,aligned_alloc-free,64,2000,6.16
+Zig cc,glibc,host-libc,malloc-free,128,2000,4.57
+Zig cc,glibc,host-libc,calloc-free,128,2000,6.03
+Zig cc,glibc,host-libc,realloc-double-free,128,2000,19.49
+Zig cc,glibc,host-libc,realloc-small-grow-free,128,2000,19.49
+Zig cc,glibc,host-libc,aligned_alloc-free,128,2000,6.16
+Zig cc,glibc,host-libc,malloc-free,4096,2000,13.22
+Zig cc,glibc,host-libc,calloc-free,4096,2000,33.27
+Zig cc,glibc,host-libc,realloc-double-free,4096,2000,18.75
+Zig cc,glibc,host-libc,realloc-small-grow-free,4096,2000,18.79
+Zig cc,glibc,host-libc,aligned_alloc-free,4096,2000,26.57
+Zig cc,glibc,nelibc,malloc-free,64,2000,7.59
+Zig cc,glibc,nelibc,calloc-free,64,2000,10.93
+Zig cc,glibc,nelibc,realloc-double-free,64,2000,20.95
+Zig cc,glibc,nelibc,realloc-small-grow-free,64,2000,9.20
+Zig cc,glibc,nelibc,aligned_alloc-free,64,2000,9.06
+Zig cc,glibc,nelibc,malloc-free,128,2000,7.79
+Zig cc,glibc,nelibc,calloc-free,128,2000,11.13
+Zig cc,glibc,nelibc,realloc-double-free,128,2000,21.57
+Zig cc,glibc,nelibc,realloc-small-grow-free,128,2000,8.99
+Zig cc,glibc,nelibc,aligned_alloc-free,128,2000,8.34
+Zig cc,glibc,nelibc,malloc-free,4096,2000,8.10
+Zig cc,glibc,nelibc,calloc-free,4096,2000,44.11
+Zig cc,glibc,nelibc,realloc-double-free,4096,2000,38.01
+Zig cc,glibc,nelibc,realloc-small-grow-free,4096,2000,9.60
+Zig cc,glibc,nelibc,aligned_alloc-free,4096,2000,8.99
+Zig cc,glibc,host-pointer,ownership-check,64,2000,7.86
+Zig cc,glibc,nelibc-pointer,ownership-check,64,2000,7.55
+Zig cc,glibc,host-direct-pointer,ownership-check,32768,2000,7.86
+Zig cc,glibc,nelibc-direct-pointer,ownership-check,32768,2000,7.86
+Zig cc,glibc,hybrid-host-pointer,hybrid-free,64,2000,9.29
+Zig cc,glibc,hybrid-host-pointer,hybrid-realloc-free,64,2000,48.10
+Zig cc,glibc,hybrid-host-pointer,hybrid-free,4096,2000,19.64
+Zig cc,glibc,hybrid-host-pointer,hybrid-realloc-free,4096,2000,30.80
+Zig cc,glibc,hybrid-host-pointer,hybrid-free,32768,2000,18.20
+Zig cc,glibc,hybrid-host-pointer,hybrid-realloc-free,32768,2000,30.12
+Zig cc,glibc,hybrid-nelibc-pointer,hybrid-free,64,2000,14.09
+Zig cc,glibc,hybrid-nelibc-pointer,hybrid-realloc-free,64,2000,20.65
+Zig cc,glibc,hybrid-nelibc-pointer,hybrid-free,4096,2000,16.84
+Zig cc,glibc,hybrid-nelibc-pointer,hybrid-realloc-free,4096,2000,30.36
+Zig cc,glibc,hybrid-nelibc-pointer,hybrid-free,32768,2000,2418.33
+Zig cc,glibc,hybrid-nelibc-pointer,hybrid-realloc-free,32768,2000,15472.18
+GCC,glibc,host-libc,malloc-free,64,2000,4.72
+GCC,glibc,host-libc,calloc-free,64,2000,5.03
+GCC,glibc,host-libc,realloc-double-free,64,2000,36.33
+GCC,glibc,host-libc,realloc-small-grow-free,64,2000,31.86
+GCC,glibc,host-libc,aligned_alloc-free,64,2000,6.47
+GCC,glibc,host-libc,malloc-free,128,2000,4.25
+GCC,glibc,host-libc,calloc-free,128,2000,6.12
+GCC,glibc,host-libc,realloc-double-free,128,2000,20.61
+GCC,glibc,host-libc,realloc-small-grow-free,128,2000,19.73
+GCC,glibc,host-libc,aligned_alloc-free,128,2000,6.34
+GCC,glibc,host-libc,malloc-free,4096,2000,12.87
+GCC,glibc,host-libc,calloc-free,4096,2000,32.78
+GCC,glibc,host-libc,realloc-double-free,4096,2000,18.59
+GCC,glibc,host-libc,realloc-small-grow-free,4096,2000,33.05
+GCC,glibc,host-libc,aligned_alloc-free,4096,2000,45.94
+GCC,glibc,nelibc,malloc-free,64,2000,6.34
+GCC,glibc,nelibc,calloc-free,64,2000,9.81
+GCC,glibc,nelibc,realloc-double-free,64,2000,15.92
+GCC,glibc,nelibc,realloc-small-grow-free,64,2000,7.80
+GCC,glibc,nelibc,aligned_alloc-free,64,2000,6.99
+GCC,glibc,nelibc,malloc-free,128,2000,5.94
+GCC,glibc,nelibc,calloc-free,128,2000,9.82
+GCC,glibc,nelibc,realloc-double-free,128,2000,16.79
+GCC,glibc,nelibc,realloc-small-grow-free,128,2000,8.08
+GCC,glibc,nelibc,aligned_alloc-free,128,2000,6.99
+GCC,glibc,nelibc,malloc-free,4096,2000,6.35
+GCC,glibc,nelibc,calloc-free,4096,2000,41.27
+GCC,glibc,nelibc,realloc-double-free,4096,2000,36.90
+GCC,glibc,nelibc,realloc-small-grow-free,4096,2000,7.64
+GCC,glibc,nelibc,aligned_alloc-free,4096,2000,7.04
+GCC,glibc,host-pointer,ownership-check,64,2000,5.47
+GCC,glibc,nelibc-pointer,ownership-check,64,2000,5.68
+GCC,glibc,host-direct-pointer,ownership-check,32768,2000,5.67
+GCC,glibc,nelibc-direct-pointer,ownership-check,32768,2000,5.68
+GCC,glibc,hybrid-host-pointer,hybrid-free,64,2000,9.50
+GCC,glibc,hybrid-host-pointer,hybrid-realloc-free,64,2000,46.82
+GCC,glibc,hybrid-host-pointer,hybrid-free,4096,2000,17.71
+GCC,glibc,hybrid-host-pointer,hybrid-realloc-free,4096,2000,29.80
+GCC,glibc,hybrid-host-pointer,hybrid-free,32768,2000,18.35
+GCC,glibc,hybrid-host-pointer,hybrid-realloc-free,32768,2000,29.45
+GCC,glibc,hybrid-nelibc-pointer,hybrid-free,64,2000,11.15
+GCC,glibc,hybrid-nelibc-pointer,hybrid-realloc-free,64,2000,16.92
+GCC,glibc,hybrid-nelibc-pointer,hybrid-free,4096,2000,10.10
+GCC,glibc,hybrid-nelibc-pointer,hybrid-realloc-free,4096,2000,17.18
+GCC,glibc,hybrid-nelibc-pointer,hybrid-free,32768,2000,2402.79
+GCC,glibc,hybrid-nelibc-pointer,hybrid-realloc-free,32768,2000,15774.72
+Zig cc,musl,host-libc,malloc-free,64,2000,21.47
+Zig cc,musl,host-libc,calloc-free,64,2000,22.46
+Zig cc,musl,host-libc,realloc-double-free,64,2000,56.27
+Zig cc,musl,host-libc,realloc-small-grow-free,64,2000,31.05
+Zig cc,musl,host-libc,aligned_alloc-free,64,2000,21.90
+Zig cc,musl,host-libc,malloc-free,128,2000,21.50
+Zig cc,musl,host-libc,calloc-free,128,2000,23.43
+Zig cc,musl,host-libc,realloc-double-free,128,2000,74.26
+Zig cc,musl,host-libc,realloc-small-grow-free,128,2000,31.09
+Zig cc,musl,host-libc,aligned_alloc-free,128,2000,21.55
+Zig cc,musl,host-libc,malloc-free,4096,2000,21.47
+Zig cc,musl,host-libc,calloc-free,4096,2000,146.76
+Zig cc,musl,host-libc,realloc-double-free,4096,2000,1239.00
+Zig cc,musl,host-libc,realloc-small-grow-free,4096,2000,29.75
+Zig cc,musl,host-libc,aligned_alloc-free,4096,2000,20.50
+Zig cc,musl,nelibc,malloc-free,64,2000,7.40
+Zig cc,musl,nelibc,calloc-free,64,2000,9.82
+Zig cc,musl,nelibc,realloc-double-free,64,2000,20.39
+Zig cc,musl,nelibc,realloc-small-grow-free,64,2000,8.48
+Zig cc,musl,nelibc,aligned_alloc-free,64,2000,7.48
+Zig cc,musl,nelibc,malloc-free,128,2000,6.76
+Zig cc,musl,nelibc,calloc-free,128,2000,9.48
+Zig cc,musl,nelibc,realloc-double-free,128,2000,18.21
+Zig cc,musl,nelibc,realloc-small-grow-free,128,2000,9.83
+Zig cc,musl,nelibc,aligned_alloc-free,128,2000,7.91
+Zig cc,musl,nelibc,malloc-free,4096,2000,7.65
+Zig cc,musl,nelibc,calloc-free,4096,2000,42.45
+Zig cc,musl,nelibc,realloc-double-free,4096,2000,37.98
+Zig cc,musl,nelibc,realloc-small-grow-free,4096,2000,9.18
+Zig cc,musl,nelibc,aligned_alloc-free,4096,2000,8.53
+Zig cc,musl,host-pointer,ownership-check,64,2000,7.70
+Zig cc,musl,nelibc-pointer,ownership-check,64,2000,7.26
+Zig cc,musl,host-direct-pointer,ownership-check,32768,2000,11.26
+Zig cc,musl,nelibc-direct-pointer,ownership-check,32768,2000,7.69
+Zig cc,musl,hybrid-host-pointer,hybrid-free,64,2000,20.79
+Zig cc,musl,hybrid-host-pointer,hybrid-realloc-free,64,2000,30.53
+Zig cc,musl,hybrid-host-pointer,hybrid-free,4096,2000,19.92
+Zig cc,musl,hybrid-host-pointer,hybrid-realloc-free,4096,2000,29.24
+Zig cc,musl,hybrid-host-pointer,hybrid-free,32768,2000,3389.88
+Zig cc,musl,hybrid-host-pointer,hybrid-realloc-free,32768,2000,3894.99
+Zig cc,musl,hybrid-nelibc-pointer,hybrid-free,64,2000,12.50
+Zig cc,musl,hybrid-nelibc-pointer,hybrid-realloc-free,64,2000,20.30
+Zig cc,musl,hybrid-nelibc-pointer,hybrid-free,4096,2000,11.41
+Zig cc,musl,hybrid-nelibc-pointer,hybrid-realloc-free,4096,2000,19.40
+Zig cc,musl,hybrid-nelibc-pointer,hybrid-free,32768,2000,2387.81
+Zig cc,musl,hybrid-nelibc-pointer,hybrid-realloc-free,32768,2000,15790.23
+TinyCC,glibc,host-libc,malloc-free,64,2000,5.55
+TinyCC,glibc,host-libc,calloc-free,64,2000,5.23
+TinyCC,glibc,host-libc,realloc-double-free,64,2000,30.65
+TinyCC,glibc,host-libc,realloc-small-grow-free,64,2000,30.88
+TinyCC,glibc,host-libc,aligned_alloc-free,64,2000,6.34
+TinyCC,glibc,host-libc,malloc-free,128,2000,5.42
+TinyCC,glibc,host-libc,calloc-free,128,2000,6.27
+TinyCC,glibc,host-libc,realloc-double-free,128,2000,19.85
+TinyCC,glibc,host-libc,realloc-small-grow-free,128,2000,21.15
+TinyCC,glibc,host-libc,aligned_alloc-free,128,2000,6.34
+TinyCC,glibc,host-libc,malloc-free,4096,2000,13.29
+TinyCC,glibc,host-libc,calloc-free,4096,2000,33.60
+TinyCC,glibc,host-libc,realloc-double-free,4096,2000,18.97
+TinyCC,glibc,host-libc,realloc-small-grow-free,4096,2000,19.20
+TinyCC,glibc,host-libc,aligned_alloc-free,4096,2000,27.15
+TinyCC,glibc,nelibc,malloc-free,64,2000,19.09
+TinyCC,glibc,nelibc,calloc-free,64,2000,29.43
+TinyCC,glibc,nelibc,realloc-double-free,64,2000,49.30
+TinyCC,glibc,nelibc,realloc-small-grow-free,64,2000,26.70
+TinyCC,glibc,nelibc,aligned_alloc-free,64,2000,21.08
+TinyCC,glibc,nelibc,malloc-free,128,2000,19.99
+TinyCC,glibc,nelibc,calloc-free,128,2000,31.78
+TinyCC,glibc,nelibc,realloc-double-free,128,2000,48.63
+TinyCC,glibc,nelibc,realloc-small-grow-free,128,2000,26.89
+TinyCC,glibc,nelibc,aligned_alloc-free,128,2000,19.37
+TinyCC,glibc,nelibc,malloc-free,4096,2000,19.18
+TinyCC,glibc,nelibc,calloc-free,4096,2000,42.46
+TinyCC,glibc,nelibc,realloc-double-free,4096,2000,69.47
+TinyCC,glibc,nelibc,realloc-small-grow-free,4096,2000,24.68
+TinyCC,glibc,nelibc,aligned_alloc-free,4096,2000,19.38
+TinyCC,glibc,host-pointer,ownership-check,64,2000,7.82
+TinyCC,glibc,nelibc-pointer,ownership-check,64,2000,8.12
+TinyCC,glibc,host-direct-pointer,ownership-check,32768,2000,7.79
+TinyCC,glibc,nelibc-direct-pointer,ownership-check,32768,2000,8.40
+TinyCC,glibc,hybrid-host-pointer,hybrid-free,64,2000,11.65
+TinyCC,glibc,hybrid-host-pointer,hybrid-realloc-free,64,2000,56.94
+TinyCC,glibc,hybrid-host-pointer,hybrid-free,4096,2000,20.54
+TinyCC,glibc,hybrid-host-pointer,hybrid-realloc-free,4096,2000,32.75
+TinyCC,glibc,hybrid-host-pointer,hybrid-free,32768,2000,20.37
+TinyCC,glibc,hybrid-host-pointer,hybrid-realloc-free,32768,2000,38.14
+TinyCC,glibc,hybrid-nelibc-pointer,hybrid-free,64,2000,27.52
+TinyCC,glibc,hybrid-nelibc-pointer,hybrid-realloc-free,64,2000,44.17
+TinyCC,glibc,hybrid-nelibc-pointer,hybrid-free,4096,2000,24.86
+TinyCC,glibc,hybrid-nelibc-pointer,hybrid-realloc-free,4096,2000,34.01
+TinyCC,glibc,hybrid-nelibc-pointer,hybrid-free,32768,2000,2370.65
+TinyCC,glibc,hybrid-nelibc-pointer,hybrid-realloc-free,32768,2000,15697.66

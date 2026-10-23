@@ -1,0 +1,4 @@
+parser,parser_calls,power5_calls,power5_cycles,power5_cycles_per_call,power5_cycles_per_parser_call,knuth_calls,knuth_cycles,knuth_cycles_per_call,knuth_cycles_per_parser_call
+strtof,800,800,8133486,10166.9,10166.9,400,440182,1100.5,550.2
+strtod,800,800,8085970,10107.5,10107.5,400,657094,1642.7,821.4
+strtold,800,800,7914288,9892.9,9892.9,800,1477914,1847.4,1847.4

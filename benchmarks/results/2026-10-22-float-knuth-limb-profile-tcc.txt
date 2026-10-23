@@ -1,0 +1,24 @@
+TinyCC/glibc Knuth division limb profile
+Date: 2026-10-22
+Instrumentation: one C counter call per quotient digit, counting denominator
+limbs processed by multiply/subtract and any add-back. Instrumented timings are
+not comparable to the normal float shootouts.
+
+Short input benchmark (7 samples x 4,000 calls x 3 parsers):
+  denominator < 8 limbs: 179,200 quotient digits; 380,800 limb iterations
+  denominator 8-15 limbs: 33,600 quotient digits; 268,800 limb iterations
+  denominator >= 16 limbs: none
+  add-backs: 0
+
+Long decimal benchmark (5 samples x 160 calls x 3 parsers):
+  denominator 32-63 limbs: 2,400 quotient digits; 151,200 limb iterations
+  denominator >= 64 limbs: 2,000 quotient digits; 155,600 limb iterations
+  denominator below 32 limbs: none
+  add-backs: 0
+  bitwise fallbacks: 0
+
+The long run performs 306,800 limb iterations. The profile points to the
+per-limb multiply/subtract loop as the long-input hotspot. Two-limb unrolling
+and cached limb-array pointers were tested in alternating TinyCC A/B runs and
+rejected as neutral or slower. The cached-pointer candidate matched the host
+float differential corpus under TinyCC/glibc.

@@ -1,0 +1,2331 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+require 'C.stdarg'
+
+local function nelibc_va_arg_int(arguments: cvalist): cint <cimport> end
+local function nelibc_va_arg_pointer(arguments: cvalist): pointer <cimport> end
+local function nelibc_va_arg_long(arguments: cvalist): clong <cimport> end
+local function nelibc_va_arg_long_long(arguments: cvalist): clonglong <cimport> end
+local function nelibc_va_arg_unsigned_long(arguments: cvalist): culong <cimport> end
+local function nelibc_va_arg_unsigned_long_long(arguments: cvalist): culonglong <cimport> end
+local function nelibc_va_arg_size(arguments: cvalist): csize <cimport> end
+local function nelibc_va_arg_unsigned_int(arguments: cvalist): cuint <cimport> end
+local function nelibc_va_arg_double(arguments: cvalist): cdouble <cimport> end
+local function nelibc_va_copy(destination: cvalist, source: cvalist): void <cimport> end
+local function nelibc_store_format_count(pointer: pointer, length: cint, count: csize): void <cimport> end
+
+local DoubleBits: type = @union{bits: culonglong, value: cdouble}
+local function nelibc_double_bits(value: cdouble): culonglong <inline>
+  local representation: DoubleBits = {value = value}
+  return representation.bits
+end
+
+local function write(fd: cint, buffer: pointer <const>, count: csize): clong <cimport> end
+local function read(fd: cint, buffer: pointer, count: csize): clong <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_radix_character(): cint <cimport> end
+local function nelibc_format_fixed_double(value: cdouble, precision: cint,
+    radix: cint, output: *[0]byte, capacity: csize): csize <cimport> end
+local function nelibc_round_significant_double(value: cdouble, decimal_scale: cint,
+    result: *[0]culonglong): cint <cimport> end
+local function nelibc_format_general_double(value: cdouble, precision: cint,
+    exponent: cint, alternate: cint, uppercase: cint, radix: cint,
+    output: *[0]byte, capacity: csize): csize <cimport> end
+local function nelibc_grouping_size(position: cint): cint <cimport> end
+local function nelibc_grouping_separator_length(): cint <cimport> end
+local function nelibc_grouping_separator_byte(index: cint): cint <cimport> end
+local function openat(dirfd: cint, pathname: pointer <const>, flags: cint, mode: cuint): cint <cimport> end
+local function unlinkat(dirfd: cint, pathname: pointer <const>, flags: cint): cint <cimport> end
+local function getpid(): cint <cimport> end
+local function nelibc_raw_fcntl(fd: cint, command: cint, argument: culong): cint <cimport> end
+local function close(fd: cint): cint <cimport> end
+local function nelibc_malloc(size: csize): pointer <cimport> end
+local function nelibc_realloc(ptr: pointer, size: csize): pointer <cimport> end
+local function nelibc_free(ptr: pointer): void <cimport> end
+local function nelibc_stdio_lock(word: *cint, owner: *cint, depth: *cint): void <cimport> end
+local function nelibc_stdio_trylock(word: *cint, owner: *cint, depth: *cint): cint <cimport> end
+local function nelibc_stdio_unlock(word: *cint, owner: *cint, depth: *cint): void <cimport> end
+local function nelibc_host_format_write(stream: pointer, buffer: pointer <const>, count: csize): csize <cimport> end
+local function memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+local function memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+local function memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
+
+-- Standalone FILE ABI. Keep this record in sync with
+-- include/nelibc_stdio_standalone.h.
+local FILE: type = @record{
+  fd: cint,
+  flags: cuint,
+  pushback_value: cint,
+  has_pushback: cint,
+  read_position: csize,
+  read_length: csize,
+  write_length: csize,
+  lock_word: cint,
+  lock_owner: cint,
+  lock_depth: cint,
+  buffer_size: csize,
+  user_buffer: *byte,
+  next: *FILE,
+  buffer: [4096]byte,
+  memstream_buffer: **byte,
+  memstream_size: *csize
+}
+
+local stderr_FILE: FILE <cexport, codename 'nelibc_stderr_FILE'> = {
+  fd = 0, flags = 0, pushback_value = 0, has_pushback = 0, next = nilptr
+}
+local stdout_FILE: FILE <cexport, codename 'nelibc_stdout_FILE'> = {
+  fd = 0, flags = 0, pushback_value = 0, has_pushback = 0, next = nilptr
+}
+local stdin_FILE: FILE <cexport, codename 'nelibc_stdin_FILE'> = {
+  fd = 0, flags = 0, pushback_value = 0, has_pushback = 0, next = nilptr
+}
+local all_streams: *FILE = &stdin_FILE
+local stream_list_lock_word: cint = 0
+local stream_list_lock_owner: cint = 0
+local stream_list_lock_depth: cint = 0
+local tmpfile_sequence: culonglong = 0
+
+local STREAM_EOF: cuint <comptime> = 1
+local STREAM_ERROR: cuint <comptime> = 2
+local MAX_CSIZE: csize <comptime> = ~0_csize
+local READABLE: cuint <comptime> = 4
+local WRITABLE: cuint <comptime> = 8
+local LINE_BUFFERED: cuint <comptime> = 16
+local UNBUFFERED: cuint <comptime> = 32
+local LAST_WRITE: cuint <comptime> = 64
+local LAST_READ: cuint <comptime> = 128
+local MEMORY_OWNED: cuint <comptime> = 256
+local MEMORY_APPEND: cuint <comptime> = 512
+local function lseek(fd: cint, offset: clong, whence: cint): clong <cimport> end
+local function stream_lock(stream: *FILE): void <inline>
+  if stream.fd == -2 or stream.fd == -3 or stream.fd == -6 then return end
+  nelibc_stdio_lock(&stream.lock_word, &stream.lock_owner, &stream.lock_depth)
+end
+local function stream_unlock(stream: *FILE): void <inline>
+  if stream.fd == -2 or stream.fd == -3 or stream.fd == -6 then return end
+  nelibc_stdio_unlock(&stream.lock_word, &stream.lock_owner, &stream.lock_depth)
+end
+local function stream_list_lock(): void <inline>
+  nelibc_stdio_lock(&stream_list_lock_word, &stream_list_lock_owner, &stream_list_lock_depth)
+end
+local function stream_list_unlock(): void <inline>
+  nelibc_stdio_unlock(&stream_list_lock_word, &stream_list_lock_owner, &stream_list_lock_depth)
+end
+local function stream_buffer(stream: *FILE): pointer <inline>
+  if stream.user_buffer == nilptr then return (@pointer)(&stream.buffer[0]) end
+  return (@pointer)(stream.user_buffer)
+end
+
+local function nelibc_stdio_init(): void <cexport, codename 'nelibc_stdio_init'>
+  stderr_FILE.fd = 2
+  stderr_FILE.flags = WRITABLE | UNBUFFERED
+  stderr_FILE.buffer_size = 1
+  stderr_FILE.user_buffer = nilptr
+  stderr_FILE.next = nilptr
+  stdout_FILE.fd = 1
+  stdout_FILE.flags = WRITABLE | LINE_BUFFERED
+  stdout_FILE.buffer_size = 4096
+  stdout_FILE.user_buffer = nilptr
+  stdout_FILE.next = &stderr_FILE
+  stdin_FILE.fd = 0
+  stdin_FILE.flags = READABLE
+  stdin_FILE.buffer_size = 4096
+  stdin_FILE.user_buffer = nilptr
+  stdin_FILE.next = &stdout_FILE
+  all_streams = &stdin_FILE
+end
+
+local function flush_write_buffer(stream: *FILE): cint <inline>
+  if stream.fd == -5 then
+    local memory: *[0]byte = (@*[0]byte)(stream.user_buffer)
+    local published_buffer: *[0]*byte = (@*[0]*byte)(stream.memstream_buffer)
+    local published_size: *[0]csize = (@*[0]csize)(stream.memstream_size)
+    memory[stream.read_length] = 0
+    published_buffer[0] = stream.user_buffer
+    published_size[0] = stream.read_length
+    stream.write_length = 0
+    return 0
+  end
+  if stream.fd == -4 then
+    local memory: *[0]byte = (@*[0]byte)(stream.user_buffer)
+    if stream.read_position < stream.buffer_size then
+      memory[stream.read_position] = 0
+    end
+    stream.write_length = 0
+    return 0
+  end
+  local offset: csize = 0
+  while offset < stream.write_length do
+    local chunk: pointer = (@pointer)((@usize)(stream_buffer(stream)) + offset)
+    local result: clong = write(stream.fd, chunk, stream.write_length - offset)
+    if result <= 0 then
+      stream.flags = stream.flags | STREAM_ERROR
+      if offset ~= 0 then
+        memmove(stream_buffer(stream), chunk, stream.write_length - offset)
+        stream.write_length = stream.write_length - offset
+      end
+      return -1
+    end
+    offset = offset + (@csize)(result)
+  end
+  stream.write_length = 0
+  return 0
+end
+
+local function read_bytes(stream: *FILE, buffer: pointer, count: csize): csize <inline>
+  if (stream.flags & READABLE) == 0 then
+    stream.flags = stream.flags | STREAM_ERROR
+    return 0
+  end
+  if (stream.flags & LAST_WRITE) ~= 0 and flush_write_buffer(stream) < 0 then return 0 end
+  stream.flags = (stream.flags & ~LAST_WRITE) | LAST_READ
+  local destination: *[0]byte = (@*[0]byte)(buffer)
+  local offset: csize = 0
+  if count ~= 0 and stream.has_pushback ~= 0 then
+    destination[0] = (@byte)(stream.pushback_value)
+    stream.has_pushback = 0
+    offset = 1
+  end
+  if stream.fd == -4 or stream.fd == -5 then
+    local memory: *[0]byte = (@*[0]byte)(stream.user_buffer)
+    while offset < count do
+      if stream.read_position >= stream.read_length then
+        stream.flags = stream.flags | STREAM_EOF
+        break
+      end
+      local available: csize = stream.read_length - stream.read_position
+      local wanted: csize = count - offset
+      local amount: csize = available
+      if amount > wanted then amount = wanted end
+      local cursor: pointer = (@pointer)((@usize)(buffer) + offset)
+      local source: pointer <const> = (@pointer)((@usize)(stream.user_buffer) + stream.read_position)
+      memcpy(cursor, source, amount)
+      stream.read_position = stream.read_position + amount
+      offset = offset + amount
+    end
+    return offset
+  end
+  while offset < count do
+    if stream.read_position == stream.read_length then
+      local result: clong = read(stream.fd, stream_buffer(stream), stream.buffer_size)
+      if result < 0 then
+        stream.flags = stream.flags | STREAM_ERROR
+        break
+      elseif result == 0 then
+        stream.flags = stream.flags | STREAM_EOF
+        break
+      end
+      stream.read_position = 0
+      stream.read_length = (@csize)(result)
+    end
+    local available: csize = stream.read_length - stream.read_position
+    local wanted: csize = count - offset
+    local amount: csize = available
+    if amount > wanted then amount = wanted end
+    local cursor: pointer = (@pointer)((@usize)(buffer) + offset)
+    local source: pointer <const> = (@pointer)((@usize)(stream_buffer(stream)) + stream.read_position)
+    memcpy(cursor, source, amount)
+    stream.read_position = stream.read_position + amount
+    offset = offset + amount
+  end
+  return offset
+end
+
+local function write_bytes(stream: *FILE, buffer: pointer <const>, count: csize): csize <inline>
+  if (stream.flags & WRITABLE) == 0 then
+    stream.flags = stream.flags | STREAM_ERROR
+    return 0
+  end
+  if stream.fd == -6 then
+    local written: csize = nelibc_host_format_write((@pointer)(stream.user_buffer), buffer, count)
+    if written ~= count then stream.flags = stream.flags | STREAM_ERROR end
+    return written
+  end
+  if stream.fd == -2 then
+    local copied: csize = 0
+    if stream.buffer_size > 0 and stream.write_length < stream.buffer_size - 1 then
+      copied = stream.buffer_size - 1 - stream.write_length
+      if copied > count then copied = count end
+      local destination: pointer = (@pointer)((@usize)(stream.user_buffer) + stream.write_length)
+      memcpy(destination, buffer, copied)
+    end
+    stream.write_length = stream.write_length + count
+    return count
+  end
+  if stream.fd == -3 then
+    local offset: csize = 0
+    local output_fd: cint = (@cint)(stream.read_position)
+    while offset < count do
+      local cursor: pointer = (@pointer)((@usize)(buffer) + offset)
+      local result: clong = write(output_fd, cursor, count - offset)
+      if result <= 0 then
+        stream.flags = stream.flags | STREAM_ERROR
+        break
+      end
+      offset = offset + (@csize)(result)
+    end
+    return offset
+  end
+  if stream.fd == -5 then
+    local needed: csize = stream.read_position + count
+    if needed < stream.read_position or needed == MAX_CSIZE then
+      stream.flags = stream.flags | STREAM_ERROR
+      nelibc_errno_location()[0] = 75 -- EOVERFLOW
+      return 0
+    end
+    needed = needed + 1
+    if needed > stream.buffer_size then
+      local capacity: csize = stream.buffer_size
+      while capacity < needed and capacity <= MAX_CSIZE // 2 do capacity = capacity * 2 end
+      if capacity < needed then capacity = needed end
+      local grown: pointer = nelibc_realloc((@pointer)(stream.user_buffer), capacity)
+      if grown == nilptr then stream.flags = stream.flags | STREAM_ERROR; return 0 end
+      stream.user_buffer = (@*byte)(grown)
+      stream.buffer_size = capacity
+    end
+    local memory: *[0]byte = (@*[0]byte)(stream.user_buffer)
+    stream.flags = (stream.flags & ~LAST_READ) | LAST_WRITE
+    local gap: csize = stream.read_length
+    while gap < stream.read_position do
+      memory[gap] = 0
+      gap = gap + 1
+    end
+    memcpy((@pointer)((@usize)(stream.user_buffer) + stream.read_position), buffer, count)
+    stream.read_position = stream.read_position + count
+    if stream.read_position > stream.read_length then stream.read_length = stream.read_position end
+    memory[stream.read_length] = 0
+    return count
+  end
+  if stream.fd == -4 then
+    local memory: *[0]byte = (@*[0]byte)(stream.user_buffer)
+    if (stream.flags & MEMORY_APPEND) ~= 0 then stream.read_position = stream.read_length end
+    stream.flags = (stream.flags & ~LAST_READ) | LAST_WRITE
+    local amount: csize = count
+    if stream.read_position >= stream.buffer_size then
+      amount = 0
+    elseif amount > stream.buffer_size - stream.read_position then
+      amount = stream.buffer_size - stream.read_position
+    end
+    if amount ~= 0 then
+      local destination: pointer = (@pointer)((@usize)(stream.user_buffer) + stream.read_position)
+      memcpy(destination, buffer, amount)
+      stream.read_position = stream.read_position + amount
+      if stream.read_position > stream.read_length then stream.read_length = stream.read_position end
+      if stream.read_position < stream.buffer_size then memory[stream.read_position] = 0 end
+    end
+    if amount ~= count then stream.flags = stream.flags | STREAM_ERROR end
+    return amount
+  end
+  local unread: csize = 0
+  if (stream.flags & LAST_READ) ~= 0 then
+    unread = stream.read_length - stream.read_position
+    if stream.has_pushback ~= 0 then unread = unread + 1 end
+  end
+  if unread ~= 0 then
+    if lseek(stream.fd, -(@clong)(unread), 1) < 0 then
+      stream.flags = stream.flags | STREAM_ERROR
+      return 0
+    end
+    stream.read_position = 0
+    stream.read_length = 0
+    stream.has_pushback = 0
+  end
+  stream.flags = (stream.flags & ~LAST_READ) | LAST_WRITE
+  local offset: csize = 0
+  while offset < count do
+    if (stream.flags & UNBUFFERED) ~= 0 then
+      local cursor: pointer = (@pointer)((@usize)(buffer) + offset)
+      local result: clong = write(stream.fd, cursor, count - offset)
+      if result <= 0 then stream.flags = stream.flags | STREAM_ERROR; break end
+      offset = offset + (@csize)(result)
+    else
+      local space: csize = stream.buffer_size - stream.write_length
+      local amount: csize = count - offset
+      if amount > space then amount = space end
+      local cursor: pointer = (@pointer)((@usize)(buffer) + offset)
+      local destination: pointer = (@pointer)((@usize)(stream_buffer(stream)) + stream.write_length)
+      memcpy(destination, cursor, amount)
+      stream.write_length = stream.write_length + amount
+      offset = offset + amount
+      local flush_now: boolean = stream.write_length == stream.buffer_size
+      if (stream.flags & LINE_BUFFERED) ~= 0 then
+        local input: *[0]byte = (@*[0]byte)(buffer)
+        local j: csize = offset - amount
+        while j < offset do
+          if input[j] == 10 then flush_now = true end
+          j = j + 1
+        end
+      end
+      if flush_now and flush_write_buffer(stream) < 0 then break end
+    end
+  end
+  return offset
+end
+
+local function fgetc(stream: *FILE): cint <cexport, codename 'fgetc'>
+  stream_lock(stream)
+  local value: byte = 0
+  if read_bytes(stream, (@pointer)(&value), 1) ~= 1 then stream_unlock(stream); return -1 end
+  stream_unlock(stream)
+  return (@cint)(value)
+end
+
+local function fgetc_unlocked(stream: *FILE): cint <inline>
+  local value: byte = 0
+  if read_bytes(stream, (@pointer)(&value), 1) ~= 1 then return -1 end
+  return (@cint)(value)
+end
+
+local function getc(stream: *FILE): cint <cexport, codename 'getc'>
+  return fgetc(stream)
+end
+
+local function getdelim(line_pointer: *[0]*[0]cchar, capacity_pointer: *[0]csize, delimiter: cint, stream: *FILE): clong <cexport, codename 'getdelim'>
+  if line_pointer == nilptr or capacity_pointer == nilptr or stream == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local capacity: csize = capacity_pointer[0]
+  local line: *[0]cchar = line_pointer[0]
+  if line == nilptr or capacity == 0 then
+    capacity = 128
+    local replacement: pointer = nelibc_realloc((@pointer)(line), capacity)
+    if replacement == nilptr then return -1 end
+    line = (@*[0]cchar)(replacement)
+    line_pointer[0] = line
+    capacity_pointer[0] = capacity
+  end
+  local length: csize = 0
+  local delimiter_byte: byte = (@byte)(delimiter)
+  while true do
+    if length >= capacity - 1 then
+      if capacity > MAX_CSIZE // 2 then
+        nelibc_errno_location()[0] = 75 -- EOVERFLOW
+        return -1
+      end
+      local new_capacity: csize = capacity * 2
+      local replacement: pointer = nelibc_realloc((@pointer)(line), new_capacity)
+      if replacement == nilptr then
+        if length == 0 then return -1 end
+        break
+      end
+      line = (@*[0]cchar)(replacement)
+      line_pointer[0] = line
+      capacity = new_capacity
+      capacity_pointer[0] = capacity
+    end
+    local character: cint = fgetc(stream)
+    if character == -1 then break end
+    line[length] = (@cchar)(character)
+    length = length + 1
+    if (@byte)(character) == delimiter_byte then break end
+  end
+  if length == 0 then return -1 end
+  line[length] = 0
+  if length > 9223372036854775807_csize then
+    nelibc_errno_location()[0] = 75 -- EOVERFLOW
+    return -1
+  end
+  return (@clong)(length)
+end
+
+local function getline(line_pointer: *[0]*[0]cchar, capacity_pointer: *[0]csize, stream: *FILE): clong <cexport, codename 'getline'>
+  return getdelim(line_pointer, capacity_pointer, 10, stream)
+end
+
+local function getchar(): cint <cexport, codename 'getchar'>
+  return fgetc(&stdin_FILE)
+end
+
+local function getchar_unlocked(): cint <cexport, codename 'getchar_unlocked'>
+  return fgetc_unlocked(&stdin_FILE)
+end
+
+local function fgets(buffer: *[0]cchar, count: cint, stream: *FILE): *[0]cchar <cexport, codename 'fgets'>
+  if count <= 0 then return nilptr end
+  local destination: *[0]byte = (@*[0]byte)(buffer)
+  if count == 1 then
+    destination[0] = 0
+    return buffer
+  end
+  stream_lock(stream)
+  local length: csize = 0
+  local limit: csize = (@csize)(count - 1)
+  while length < limit do
+    local value: byte = 0
+    if read_bytes(stream, (@pointer)(&value), 1) ~= 1 then break end
+    destination[length] = value
+    length = length + 1
+    if value == 10 then break end
+  end
+  if length == 0 then
+    stream_unlock(stream)
+    return nilptr
+  end
+  destination[length] = 0
+  stream_unlock(stream)
+  return buffer
+end
+
+local function fgets_unlocked(buffer: *[0]cchar, count: cint, stream: *FILE): *[0]cchar
+    <cexport, codename 'fgets_unlocked'>
+  if count <= 0 then return nilptr end
+  local destination: *[0]byte = (@*[0]byte)(buffer)
+  if count == 1 then
+    destination[0] = 0
+    return buffer
+  end
+  local length: csize = 0
+  local limit: csize = (@csize)(count - 1)
+  while length < limit do
+    local value: byte = 0
+    if read_bytes(stream, (@pointer)(&value), 1) ~= 1 then break end
+    destination[length] = value
+    length = length + 1
+    if value == 10 then break end
+  end
+  if length == 0 then return nilptr end
+  destination[length] = 0
+  return buffer
+end
+
+local function ungetc(character: cint, stream: *FILE): cint <cexport, codename 'ungetc'>
+  stream_lock(stream)
+  if character == -1 or stream.has_pushback ~= 0 or (stream.flags & READABLE) == 0 then stream_unlock(stream); return -1 end
+  stream.pushback_value = character & 255
+  stream.has_pushback = 1
+  stream.flags = stream.flags | LAST_READ
+  stream.flags = stream.flags & 0xFFFFFFFE_cuint
+  stream_unlock(stream)
+  return character & 255
+end
+
+local function fread(buffer: pointer, size: csize, count: csize, stream: *FILE): csize <cexport, codename 'fread'>
+  if size == 0 or count == 0 then return 0 end
+  if count > MAX_CSIZE // size then
+    nelibc_errno_location()[0] = 75 -- EOVERFLOW
+    stream.flags = stream.flags | STREAM_ERROR
+    return 0
+  end
+  stream_lock(stream)
+  local bytes_read = read_bytes(stream, buffer, size * count)
+  stream_unlock(stream)
+  return bytes_read // size
+end
+
+local function fwrite(buffer: pointer <const>, size: csize, count: csize, stream: *FILE): csize <cexport, codename 'fwrite'>
+  if size == 0 or count == 0 then return 0 end
+  if count > MAX_CSIZE // size then
+    nelibc_errno_location()[0] = 75 -- EOVERFLOW
+    stream.flags = stream.flags | STREAM_ERROR
+    return 0
+  end
+  stream_lock(stream)
+  local bytes_written = write_bytes(stream, buffer, size * count)
+  stream_unlock(stream)
+  return bytes_written // size
+end
+
+local function fputc(character: cint, stream: *FILE): cint <cexport, codename 'fputc'>
+  stream_lock(stream)
+  local value: byte = (@byte)(character)
+  if write_bytes(stream, (@pointer)(&value), 1) ~= 1 then stream_unlock(stream); return -1 end
+  stream_unlock(stream)
+  return (@cint)(value)
+end
+
+local function fputc_unlocked(character: cint, stream: *FILE): cint <inline>
+  local value: byte = (@byte)(character)
+  if write_bytes(stream, (@pointer)(&value), 1) ~= 1 then return -1 end
+  return (@cint)(value)
+end
+
+local function fputs(string: *[0]cchar <const>, stream: *FILE): cint <cexport, codename 'fputs'>
+  local bytes: *[0]byte = (@*[0]byte)(string)
+  local length: csize = 0
+  while bytes[length] ~= 0 do length = length + 1 end
+  stream_lock(stream)
+  if write_bytes(stream, (@pointer)(string), length) ~= length then stream_unlock(stream); return -1 end
+  stream_unlock(stream)
+  return 0
+end
+
+local function fputs_unlocked(string: *[0]cchar <const>, stream: *FILE): cint
+    <cexport, codename 'fputs_unlocked'>
+  local bytes: *[0]byte = (@*[0]byte)(string)
+  local length: csize = 0
+  while bytes[length] ~= 0 do length = length + 1 end
+  if write_bytes(stream, (@pointer)(string), length) ~= length then return -1 end
+  return 0
+end
+
+local function putchar(character: cint): cint <cexport, codename 'putchar'>
+  return fputc(character, &stdout_FILE)
+end
+
+local function putchar_unlocked(character: cint): cint <cexport, codename 'putchar_unlocked'>
+  return fputc_unlocked(character, &stdout_FILE)
+end
+
+local function puts(string: *[0]cchar <const>): cint <cexport, codename 'puts'>
+  stream_lock(&stdout_FILE)
+  if fputs(string, &stdout_FILE) == -1 or fputc(10, &stdout_FILE) == -1 then stream_unlock(&stdout_FILE); return -1 end
+  stream_unlock(&stdout_FILE)
+  return 0
+end
+
+local function feof(stream: *FILE): cint <cexport, codename 'feof'>
+  stream_lock(stream)
+  local result: cint = 0
+  if (stream.flags & STREAM_EOF) ~= 0 then result = 1 end
+  stream_unlock(stream)
+  return result
+end
+
+local function ferror(stream: *FILE): cint <cexport, codename 'ferror'>
+  stream_lock(stream)
+  local result: cint = 0
+  if (stream.flags & STREAM_ERROR) ~= 0 then result = 1 end
+  stream_unlock(stream)
+  return result
+end
+
+local function clearerr(stream: *FILE): void <cexport, codename 'clearerr'>
+  stream_lock(stream)
+  stream.flags = stream.flags & 0xFFFFFFFC_cuint
+  stream_unlock(stream)
+end
+
+local function flockfile(stream: *FILE): void <cexport, codename 'flockfile'>
+  stream_lock(stream)
+end
+local function ftrylockfile(stream: *FILE): cint <cexport, codename 'ftrylockfile'>
+  return nelibc_stdio_trylock(&stream.lock_word, &stream.lock_owner, &stream.lock_depth)
+end
+local function funlockfile(stream: *FILE): void <cexport, codename 'funlockfile'>
+  stream_unlock(stream)
+end
+
+local function remove(pathname: *[0]cchar <const>): cint <cexport, codename 'remove'>
+  if pathname == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  if unlinkat(-100, pathname, 0) == 0 then return 0 end -- AT_FDCWD
+  if nelibc_errno_location()[0] == 21 then -- EISDIR
+    return unlinkat(-100, pathname, 512) -- AT_REMOVEDIR
+  end
+  return -1
+end
+
+local function fopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>): *FILE <cexport, codename 'fopen'>
+  if pathname == nilptr or mode == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+
+  local flags: cint = 0
+  if mode[0] == 114 then -- 'r'
+    flags = 0 -- O_RDONLY
+  elseif mode[0] == 119 then -- 'w'
+    flags = 1 | 64 | 512 -- O_WRONLY | O_CREAT | O_TRUNC
+  elseif mode[0] == 97 then -- 'a'
+    flags = 1 | 64 | 1024 -- O_WRONLY | O_CREAT | O_APPEND
+  else
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+
+  local plus_seen: boolean = false
+  local exclusive_seen: boolean = false
+  local close_on_exec_seen: boolean = false
+  local index: csize = 1
+  while mode[index] ~= 0 do
+    if mode[index] == 98 then -- 'b'
+      -- Binary mode is equivalent to text mode on Linux.
+    elseif mode[index] == 43 then -- '+'
+      if plus_seen then
+        nelibc_errno_location()[0] = 22 -- EINVAL
+        return nilptr
+      end
+      plus_seen = true
+    elseif mode[index] == 120 then -- 'x'
+      if exclusive_seen or mode[0] ~= 119 then -- 'w'
+        nelibc_errno_location()[0] = 22 -- EINVAL
+        return nilptr
+      end
+      exclusive_seen = true
+      flags = flags | 128 -- O_EXCL
+    elseif mode[index] == 101 then -- 'e'
+      if close_on_exec_seen then
+        nelibc_errno_location()[0] = 22 -- EINVAL
+        return nilptr
+      end
+      close_on_exec_seen = true
+      flags = flags | 524288 -- O_CLOEXEC
+    else
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      return nilptr
+    end
+    index = index + 1
+  end
+  if plus_seen then flags = (flags & ~3) | 2 end -- O_RDWR
+
+  local fd: cint = openat(-100, (@pointer)(pathname), flags, 438_cuint)
+  if fd < 0 then return nilptr end
+  local stream: *FILE = (@*FILE)(nelibc_malloc((@csize)(#FILE)))
+  if stream == nilptr then
+    local saved_errno: cint = nelibc_errno_location()[0]
+    close(fd)
+    nelibc_errno_location()[0] = saved_errno
+    return nilptr
+  end
+  stream.fd = fd
+  memset((@pointer)(stream), 0, (@csize)(#FILE))
+  stream.fd = fd
+  stream.flags = WRITABLE
+  if mode[0] == 114 then stream.flags = READABLE end
+  if plus_seen then stream.flags = READABLE | WRITABLE end
+  stream.buffer_size = 4096
+  stream.user_buffer = nilptr
+  stream_list_lock()
+  stream.next = all_streams
+  all_streams = stream
+  stream_list_unlock()
+  return stream
+end
+
+local function fmemopen(buffer: pointer, size: csize, mode: *[0]cchar <const>): *FILE <cexport, codename 'fmemopen'>
+  if size == 0 or mode == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  local initial_mode: byte = (@byte)(mode[0])
+  if initial_mode ~= 114 and initial_mode ~= 119 and initial_mode ~= 97 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  local plus_seen: boolean = false
+  local binary_seen: boolean = false
+  local index: csize = 1
+  while mode[index] ~= 0 do
+    if mode[index] == 43 then
+      if plus_seen then nelibc_errno_location()[0] = 22; return nilptr end
+      plus_seen = true
+    elseif mode[index] == 98 then
+      if binary_seen then nelibc_errno_location()[0] = 22; return nilptr end
+      binary_seen = true
+      -- Binary mode is equivalent to text mode on Linux.
+    else
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      return nilptr
+    end
+    index = index + 1
+  end
+  local owned: boolean = buffer == nilptr
+  if owned then
+    buffer = nelibc_malloc(size)
+    if buffer == nilptr then return nilptr end
+    memset(buffer, 0, size)
+  end
+  local bytes: *[0]byte = (@*[0]byte)(buffer)
+  local length: csize = 0
+  if initial_mode == 119 then
+    bytes[0] = 0
+  else
+    while length < size and bytes[length] ~= 0 do length = length + 1 end
+  end
+  local stream: *FILE = (@*FILE)(nelibc_malloc((@csize)(#FILE)))
+  if stream == nilptr then
+    if owned then nelibc_free(buffer) end
+    return nilptr
+  end
+  memset((@pointer)(stream), 0, (@csize)(#FILE))
+  stream.fd = -4
+  stream.flags = 0
+  if initial_mode == 114 or plus_seen then stream.flags = stream.flags | READABLE end
+  if initial_mode ~= 114 or plus_seen then stream.flags = stream.flags | WRITABLE end
+  if owned then stream.flags = stream.flags | MEMORY_OWNED end
+  if initial_mode == 97 then stream.flags = stream.flags | MEMORY_APPEND end
+  stream.buffer_size = size
+  stream.user_buffer = (@*byte)(buffer)
+  stream.read_length = length
+  if initial_mode == 97 then stream.read_position = length end
+  stream_list_lock()
+  stream.next = all_streams
+  all_streams = stream
+  stream_list_unlock()
+  return stream
+end
+
+local function open_memstream(buffer: **byte, size: *csize): *FILE <cexport, codename 'open_memstream'>
+  if buffer == nilptr or size == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  local output_buffer: *[0]*byte = (@*[0]*byte)(buffer)
+  local output_size: *[0]csize = (@*[0]csize)(size)
+  output_buffer[0] = nilptr
+  output_size[0] = 0
+  local memory: pointer = nelibc_malloc(1)
+  if memory == nilptr then return nilptr end
+  ((@*[0]byte)(memory))[0] = 0
+  local stream: *FILE = (@*FILE)(nelibc_malloc((@csize)(#FILE)))
+  if stream == nilptr then
+    nelibc_free(memory)
+    return nilptr
+  end
+  memset((@pointer)(stream), 0, (@csize)(#FILE))
+  stream.fd = -5
+  stream.flags = READABLE | WRITABLE
+  stream.buffer_size = 1
+  stream.user_buffer = (@*byte)(memory)
+  stream.memstream_buffer = buffer
+  stream.memstream_size = size
+  stream_list_lock()
+  stream.next = all_streams
+  all_streams = stream
+  stream_list_unlock()
+  return stream
+end
+
+local function fdopen(fd: cint, mode: *[0]cchar <const>): *FILE <cexport, codename 'fdopen'>
+  if mode == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  if fd < 0 then
+    nelibc_errno_location()[0] = 9 -- EBADF
+    return nilptr
+  end
+  local initial_mode: byte = (@byte)(mode[0])
+  if initial_mode ~= 114 and initial_mode ~= 119 and initial_mode ~= 97 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  local plus_seen: boolean = false
+  local close_on_exec_seen: boolean = false
+  local index: csize = 1
+  while mode[index] ~= 0 do
+    if mode[index] == 43 then
+      if plus_seen then nelibc_errno_location()[0] = 22; return nilptr end
+      plus_seen = true
+    elseif mode[index] == 98 then
+      -- Binary mode is equivalent to text mode on Linux.
+    elseif mode[index] == 101 then
+      if close_on_exec_seen then nelibc_errno_location()[0] = 22; return nilptr end
+      close_on_exec_seen = true
+    else
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      return nilptr
+    end
+    index = index + 1
+  end
+  local descriptor_flags: cint = nelibc_raw_fcntl(fd, 3, 0) -- F_GETFL
+  if descriptor_flags < 0 then return nilptr end
+  local access_mode: cint = descriptor_flags & 3 -- O_ACCMODE
+  local wants_read: boolean = initial_mode == 114 or plus_seen
+  local wants_write: boolean = initial_mode ~= 114 or plus_seen
+  if (wants_read and access_mode == 1) or (wants_write and access_mode == 0) then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  local stream: *FILE = (@*FILE)(nelibc_malloc((@csize)(#FILE)))
+  if stream == nilptr then return nilptr end
+  local fd_flags: cint = 0
+  if close_on_exec_seen then
+    fd_flags = nelibc_raw_fcntl(fd, 1, 0) -- F_GETFD
+    if fd_flags < 0 then
+      nelibc_free((@pointer)(stream))
+      return nilptr
+    end
+  end
+  local append_changed: boolean = false
+  if initial_mode == 97 and (descriptor_flags & 1024) == 0 then
+    if nelibc_raw_fcntl(fd, 4, (@culong)(descriptor_flags | 1024)) < 0 then
+      nelibc_free((@pointer)(stream))
+      return nilptr
+    end -- F_SETFL, O_APPEND
+    append_changed = true
+  end
+  if close_on_exec_seen then
+    if nelibc_raw_fcntl(fd, 2, (@culong)(fd_flags | 1)) < 0 then
+      if append_changed then nelibc_raw_fcntl(fd, 4, (@culong)(descriptor_flags)) end
+      nelibc_free((@pointer)(stream))
+      return nilptr
+    end -- F_SETFD, FD_CLOEXEC
+  end
+  memset((@pointer)(stream), 0, (@csize)(#FILE))
+  stream.fd = fd
+  stream.flags = 0
+  if wants_read then stream.flags = stream.flags | READABLE end
+  if wants_write then stream.flags = stream.flags | WRITABLE end
+  stream.buffer_size = 4096
+  stream.user_buffer = nilptr
+  stream_list_lock()
+  stream.next = all_streams
+  all_streams = stream
+  stream_list_unlock()
+  return stream
+end
+
+local function fileno(stream: *FILE): cint <cexport, codename 'fileno'>
+  if stream == nilptr then
+    nelibc_errno_location()[0] = 9 -- EBADF
+    return -1
+  end
+  stream_lock(stream)
+  local fd: cint = stream.fd
+  stream_unlock(stream)
+  if fd < 0 then nelibc_errno_location()[0] = 9; return -1 end
+  return fd
+end
+
+local function tmpfile(): *FILE <cexport, codename 'tmpfile'>
+  local prefix: *[0]byte = (@*[0]byte)('/tmp/nelibc-tmp-'_cstring)
+  local prefix_length: csize = 0
+  while prefix[prefix_length] ~= 0 do prefix_length = prefix_length + 1 end
+  local attempt: cint = 0
+  while attempt < 128 do
+    stream_list_lock()
+    tmpfile_sequence = tmpfile_sequence + 1
+    if tmpfile_sequence == 0 then tmpfile_sequence = 1 end
+    local sequence: culonglong = tmpfile_sequence
+    stream_list_unlock()
+
+    local pathname: [64]byte
+    local path_length: csize = 0
+    memcpy((@pointer)(&pathname[0]), (@pointer)(prefix), prefix_length)
+    path_length = prefix_length
+    local pid_digits: [16]byte
+    local pid_count: csize = 0
+    local pid_value: cuint = (@cuint)(getpid())
+    repeat
+      pid_digits[pid_count] = (@byte)(48 + pid_value % 10)
+      pid_count = pid_count + 1
+      pid_value = pid_value // 10
+    until pid_value == 0
+    while pid_count > 0 do
+      pid_count = pid_count - 1
+      pathname[path_length] = pid_digits[pid_count]
+      path_length = path_length + 1
+    end
+    pathname[path_length] = 45
+    path_length = path_length + 1
+    local sequence_digits: [24]byte
+    local sequence_count: csize = 0
+    repeat
+      sequence_digits[sequence_count] = (@byte)(48 + sequence % 10)
+      sequence_count = sequence_count + 1
+      sequence = sequence // 10
+    until sequence == 0
+    while sequence_count > 0 do
+      sequence_count = sequence_count - 1
+      pathname[path_length] = sequence_digits[sequence_count]
+      path_length = path_length + 1
+    end
+    pathname[path_length] = 0
+
+    local stream: *FILE = fopen((@*[0]cchar)(&pathname[0]), 'w+xe'_cstring)
+    if stream ~= nilptr then
+      if unlinkat(-100, (@pointer)(&pathname[0]), 0) == 0 then return stream end
+      local saved_errno: cint = nelibc_errno_location()[0]
+      close(stream.fd)
+      stream_list_lock()
+      if all_streams == stream then
+        all_streams = stream.next
+      else
+        local previous: *FILE = all_streams
+        while previous ~= nilptr and previous.next ~= stream do previous = previous.next end
+        if previous ~= nilptr then previous.next = stream.next end
+      end
+      stream_list_unlock()
+      nelibc_free((@pointer)(stream))
+      nelibc_errno_location()[0] = saved_errno
+      return nilptr
+    end
+    if nelibc_errno_location()[0] ~= 17 then
+      unlinkat(-100, (@pointer)(&pathname[0]), 0)
+      return nilptr
+    end -- EEXIST
+    attempt = attempt + 1
+  end
+  nelibc_errno_location()[0] = 17 -- EEXIST
+  return nilptr
+end
+
+local function close_stream(stream: *FILE, release_stream: boolean): cint
+  if stream == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  stream_list_lock()
+  stream_lock(stream)
+  local result: cint = flush_write_buffer(stream)
+  if stream.fd ~= -4 and stream.fd ~= -5 and close(stream.fd) < 0 then result = -1 end
+  local owned_buffer: pointer = nilptr
+  if stream.fd == -5 then
+    if flush_write_buffer(stream) < 0 then result = -1 end
+  elseif (stream.flags & MEMORY_OWNED) ~= 0 then
+    owned_buffer = (@pointer)(stream.user_buffer)
+  end
+  stream_unlock(stream)
+  stream.fd = -1
+  stream.flags = 0
+  stream.pushback_value = 0
+  stream.has_pushback = 0
+  stream.read_position = 0
+  stream.read_length = 0
+  stream.write_length = 0
+  stream.buffer_size = 0
+  stream.user_buffer = nilptr
+  stream.memstream_buffer = nilptr
+  stream.memstream_size = nilptr
+  if release_stream and stream ~= &stdin_FILE and stream ~= &stdout_FILE and stream ~= &stderr_FILE then
+    local previous: *FILE = nilptr
+    local cursor: *FILE = all_streams
+    while cursor ~= nilptr do
+      if cursor == stream then
+        if previous == nilptr then all_streams = cursor.next else previous.next = cursor.next end
+        break
+      end
+      previous = cursor
+      cursor = cursor.next
+    end
+  end
+  stream_list_unlock()
+  if owned_buffer ~= nilptr then nelibc_free(owned_buffer) end
+  if release_stream and stream ~= &stdin_FILE and stream ~= &stdout_FILE and stream ~= &stderr_FILE then
+    nelibc_free((@pointer)(stream))
+  end
+  return result
+end
+
+local function fclose(stream: *FILE): cint <cexport, codename 'fclose'>
+  return close_stream(stream, true)
+end
+
+local function freopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>, stream: *FILE): *FILE <cexport, codename 'freopen'>
+  if stream == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  if pathname == nilptr or mode == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    local saved_errno: cint = nelibc_errno_location()[0]
+    close_stream(stream, true)
+    nelibc_errno_location()[0] = saved_errno
+    return nilptr
+  end
+
+  -- freopen closes the old association even if opening the replacement fails.
+  close_stream(stream, false)
+  local replacement: *FILE = fopen(pathname, mode)
+  if replacement == nilptr then
+    local saved_errno: cint = nelibc_errno_location()[0]
+    close_stream(stream, true)
+    nelibc_errno_location()[0] = saved_errno
+    return nilptr
+  end
+
+  stream_list_lock()
+  stream_lock(stream)
+  stream_lock(replacement)
+  local previous: *FILE = nilptr
+  local cursor: *FILE = all_streams
+  while cursor ~= nilptr and cursor ~= replacement do
+    previous = cursor
+    cursor = cursor.next
+  end
+  if cursor == replacement then
+    if previous == nilptr then all_streams = replacement.next
+    else previous.next = replacement.next end
+  end
+  local old_next: *FILE = stream.next
+  local old_lock_word: cint = stream.lock_word
+  local old_lock_owner: cint = stream.lock_owner
+  local old_lock_depth: cint = stream.lock_depth
+  memcpy((@pointer)(stream), (@pointer)(replacement), (@csize)(#FILE))
+  stream.next = old_next
+  stream.lock_word = old_lock_word
+  stream.lock_owner = old_lock_owner
+  stream.lock_depth = old_lock_depth
+  stream_unlock(replacement)
+  nelibc_stdio_unlock(&stream.lock_word, &stream.lock_owner, &stream.lock_depth)
+  nelibc_free((@pointer)(replacement))
+  stream_list_unlock()
+  return stream
+end
+
+local function discard_read_buffer(stream: *FILE): cint <inline>
+  if stream.fd == -4 or stream.fd == -5 then
+    stream.has_pushback = 0
+    stream.flags = stream.flags & ~LAST_READ
+    return 0
+  end
+  local unread: csize = stream.read_length - stream.read_position
+  if stream.has_pushback ~= 0 then unread = unread + 1 end
+  if unread ~= 0 and lseek(stream.fd, -(@clong)(unread), 1) < 0 then
+    stream.flags = stream.flags | STREAM_ERROR
+    return -1
+  end
+  stream.read_position = 0
+  stream.read_length = 0
+  stream.has_pushback = 0
+  stream.flags = stream.flags & ~LAST_READ
+  return 0
+end
+
+local function setvbuf(stream: *FILE, buffer: pointer, mode: cint, size: csize): cint <cexport, codename 'setvbuf'>
+  if stream == nilptr or (mode ~= 0 and mode ~= 1 and mode ~= 2) then return 1 end
+  if mode ~= 2 and buffer ~= nilptr and size == 0 then return 1 end
+  stream_lock(stream)
+  if stream.fd < 0 then
+    nelibc_errno_location()[0] = 9 -- EBADF
+    stream_unlock(stream)
+    return 1
+  end
+  if (stream.flags & LAST_WRITE) ~= 0 then
+    if flush_write_buffer(stream) < 0 then stream_unlock(stream); return 1 end
+  elseif (stream.flags & LAST_READ) ~= 0 or stream.has_pushback ~= 0 then
+    if discard_read_buffer(stream) < 0 then stream_unlock(stream); return 1 end
+  end
+  stream.flags = stream.flags & ~(LINE_BUFFERED | UNBUFFERED)
+  if mode == 2 then
+    stream.user_buffer = nilptr
+    stream.buffer_size = 1
+    stream.flags = stream.flags | UNBUFFERED
+  elseif buffer ~= nilptr then
+    stream.user_buffer = (@*byte)(buffer)
+    stream.buffer_size = size
+    if mode == 1 then stream.flags = stream.flags | LINE_BUFFERED end
+  else
+    stream.user_buffer = nilptr
+    stream.buffer_size = 4096
+    if size ~= 0 and size < 4096 then stream.buffer_size = size end
+    if mode == 1 then stream.flags = stream.flags | LINE_BUFFERED end
+  end
+  stream_unlock(stream)
+  return 0
+end
+
+local function setbuf(stream: *FILE, buffer: *cchar): void <cexport, codename 'setbuf'>
+  if buffer == nilptr then
+    setvbuf(stream, nilptr, 2, 4096)
+  else
+    setvbuf(stream, (@pointer)(buffer), 0, 4096)
+  end
+end
+
+local function setbuffer(stream: *FILE, buffer: *cchar, size: csize): void
+    <cexport, codename 'setbuffer'>
+  if buffer == nilptr then setvbuf(stream, nilptr, 2, 4096)
+  else setvbuf(stream, (@pointer)(buffer), 0, size) end
+end
+
+local function setlinebuf(stream: *FILE): void <cexport, codename 'setlinebuf'>
+  setvbuf(stream, nilptr, 1, 0)
+end
+
+local function emit_bytes(stream: *FILE, bytes: pointer <const>, count: csize): csize <inline>
+  return write_bytes(stream, bytes, count)
+end
+
+local function emit_padding(stream: *FILE, value: byte, count: csize): csize <inline>
+  local total: csize = 0
+  while total < count do
+    local byte_value: byte = value
+    if write_bytes(stream, (@pointer)(&byte_value), 1) ~= 1 then return total end
+    total = total + 1
+  end
+  return total
+end
+
+local function grouping_separator_count(digit_count: csize): csize <inline>
+  local remaining: csize = digit_count
+  local groups: cint = 0
+  local separators: csize = 0
+  while (@csize)(groups) < digit_count do
+    local group_size: cint = nelibc_grouping_size(groups)
+    if group_size <= 0 or remaining <= (@csize)(group_size) then break end
+    remaining = remaining - (@csize)(group_size)
+    separators = separators + 1
+    groups = groups + 1
+  end
+  return separators
+end
+
+local function vfprintf(stream: *FILE, format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vfprintf'>
+  if stream == nilptr or format == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  stream_lock(stream)
+  local written: csize = 0
+  local index: csize = 0
+  while format[index] ~= 0 do
+    if format[index] ~= 37 then
+      local start: csize = index
+      while format[index] ~= 0 and format[index] ~= 37 do index = index + 1 end
+      local length: csize = index - start
+      local data: pointer <const> = (@pointer)((@usize)(format) + start)
+      local result: csize = emit_bytes(stream, data, length)
+      written = written + result
+      if result ~= length then stream_unlock(stream); return -1 end
+      continue
+    end
+    index = index + 1
+    local left_align: boolean = false
+    local plus_sign: boolean = false
+    local space_sign: boolean = false
+    local alternate: boolean = false
+    local zero_pad: boolean = false
+    local grouping_flag: boolean = false
+    local flags_done: boolean = false
+    while not flags_done do
+      if format[index] == 45 then left_align = true
+      elseif format[index] == 43 then plus_sign = true
+      elseif format[index] == 32 then space_sign = true
+      elseif format[index] == 35 then alternate = true
+      elseif format[index] == 48 then zero_pad = true
+      elseif format[index] == 39 then grouping_flag = true
+      else flags_done = true end
+      if not flags_done then index = index + 1 end
+    end
+    local width: cint = 0
+    if format[index] == 42 then
+      width = nelibc_va_arg_int(arguments)
+      index = index + 1
+      if width < 0 then left_align = true; width = -width end
+    else
+      while format[index] >= 48 and format[index] <= 57 do
+        if width > 100000 then
+          nelibc_errno_location()[0] = 75 -- EOVERFLOW
+          stream_unlock(stream)
+          return -1
+        end
+        width = width * 10 + (@cint)(format[index] - 48)
+        index = index + 1
+      end
+    end
+    local precision: cint = 0
+    local precision_set: boolean = false
+    if format[index] == 46 then
+      precision_set = true
+      index = index + 1
+      if format[index] == 42 then
+        precision = nelibc_va_arg_int(arguments)
+        if precision < 0 then precision_set = false; precision = 0 end
+        index = index + 1
+      else
+        while format[index] >= 48 and format[index] <= 57 do
+          if precision > 100000 then
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            stream_unlock(stream)
+            return -1
+          end
+          precision = precision * 10 + (@cint)(format[index] - 48)
+          index = index + 1
+        end
+      end
+    end
+    local length_mod: cint = 0
+    if format[index] == 108 then
+      length_mod = 1
+      index = index + 1
+      if format[index] == 108 then length_mod = 2; index = index + 1 end
+    elseif format[index] == 122 or format[index] == 106 or format[index] == 116 then
+      length_mod = 3
+      index = index + 1
+    elseif format[index] == 104 then
+      index = index + 1
+      if format[index] == 104 then length_mod = 4; index = index + 1
+      else length_mod = 5 end
+    end
+    local conversion: byte = (@byte)(format[index])
+    if conversion == 0 then
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      stream_unlock(stream)
+      return -1
+    end
+    index = index + 1
+    local field_start: csize = written
+    if conversion == 110 then -- n
+      nelibc_store_format_count(nelibc_va_arg_pointer(arguments), length_mod, written)
+    elseif conversion == 115 then -- s
+      local string_pointer: pointer = nelibc_va_arg_pointer(arguments)
+      if string_pointer == nilptr then string_pointer = (@pointer)('(null)'_cstring) end
+      local string_bytes: *[0]byte = (@*[0]byte)(string_pointer)
+      local string_length: csize = 0
+      while string_bytes[string_length] ~= 0 and
+          (not precision_set or string_length < (@csize)(precision)) do
+        string_length = string_length + 1
+      end
+      local pad: csize = 0
+      if width > (@cint)(string_length) then pad = (@csize)(width - (@cint)(string_length)) end
+      if not left_align then written = written + emit_padding(stream, 32, pad) end
+      written = written + emit_bytes(stream, string_pointer, string_length)
+      if left_align then written = written + emit_padding(stream, 32, pad) end
+    elseif conversion == 99 then -- c
+      local character: byte = (@byte)(nelibc_va_arg_int(arguments))
+      local pad: csize = 0
+      if width > 1 then pad = (@csize)(width - 1) end
+      if not left_align then written = written + emit_padding(stream, 32, pad) end
+      written = written + emit_padding(stream, character, 1)
+      if left_align then written = written + emit_padding(stream, 32, pad) end
+    elseif conversion == 97 or conversion == 65 then -- a/A
+      local bits: culonglong = nelibc_double_bits(nelibc_va_arg_double(arguments))
+      local negative: boolean = (bits >> 63) ~= 0
+      local exponent_bits: culonglong = (bits >> 52) & 2047
+      local fraction_bits: culonglong = bits & 4503599627370495
+      local uppercase_hex: boolean = conversion == 65
+      local sign: byte = 0
+      if negative then sign = 45
+      elseif plus_sign then sign = 43
+      elseif space_sign then sign = 32 end
+      local float_buffer: [2048]byte
+      local float_length: csize = 0
+      local prefix_length: csize = 0
+      local special_value: boolean = false
+      local exponent: cint = 0
+      local leading_digit: byte = 49
+      local digit_count: cint = 13
+      if exponent_bits == 2047 then
+        special_value = true
+        if fraction_bits ~= 0 then
+          if uppercase_hex then
+            float_buffer[0] = 78; float_buffer[1] = 65; float_buffer[2] = 78
+          else
+            float_buffer[0] = 110; float_buffer[1] = 97; float_buffer[2] = 110
+          end
+        else
+          if uppercase_hex then
+            float_buffer[0] = 73; float_buffer[1] = 78; float_buffer[2] = 70
+          else
+            float_buffer[0] = 105; float_buffer[1] = 110; float_buffer[2] = 102
+          end
+        end
+        float_length = 3
+      else
+        if exponent_bits == 0 then
+          leading_digit = 48
+          exponent = -1022
+        else
+          exponent = (@cint)(exponent_bits) - 1023
+        end
+        local hex_precision: cint = 13
+        if precision_set then hex_precision = precision end
+        if hex_precision > 100 then
+          nelibc_errno_location()[0] = 75 -- EOVERFLOW
+          stream_unlock(stream)
+          return -1
+        end
+        if hex_precision < 13 then
+          digit_count = hex_precision
+          local discarded_bits: cint = 52 - 4 * hex_precision
+          local kept: culonglong = fraction_bits >> discarded_bits
+          local remainder_mask: culonglong = (1_culonglong << discarded_bits) - 1
+          local remainder: culonglong = fraction_bits & remainder_mask
+          local halfway: culonglong = 1_culonglong << (discarded_bits - 1)
+          if remainder > halfway or (remainder == halfway and (kept & 1) ~= 0) then
+            kept = kept + 1
+          end
+          local limit: culonglong = 1_culonglong << (4 * hex_precision)
+          if kept == limit then
+            kept = 0
+            if leading_digit == 48 then
+              leading_digit = 49
+            else
+              exponent = exponent + 1
+            end
+          end
+          fraction_bits = kept << discarded_bits
+        end
+        float_buffer[float_length] = leading_digit
+        float_length = float_length + 1
+        if hex_precision > 0 or alternate then
+          float_buffer[float_length] = (@byte)(nelibc_radix_character())
+          float_length = float_length + 1
+        end
+        local emitted_digits: cint = 0
+        while emitted_digits < digit_count do
+          local nibble: culonglong = (fraction_bits >> (48 - 4 * emitted_digits)) & 15
+          local digit: byte = 0
+          if nibble < 10 then digit = (@byte)(48 + nibble)
+          elseif uppercase_hex then digit = (@byte)(55 + nibble)
+          else digit = (@byte)(87 + nibble) end
+          float_buffer[float_length] = digit
+          float_length = float_length + 1
+          emitted_digits = emitted_digits + 1
+        end
+        while emitted_digits < hex_precision do
+          float_buffer[float_length] = 48
+          float_length = float_length + 1
+          emitted_digits = emitted_digits + 1
+        end
+        if not precision_set and not alternate then
+          while float_length > 1 and float_buffer[float_length - 1] == 48 do
+            float_length = float_length - 1
+          end
+          if float_length > 1 and float_buffer[float_length - 1] == (@byte)(nelibc_radix_character()) then
+            float_length = float_length - 1
+          end
+        end
+        float_buffer[float_length] = 112
+        if uppercase_hex then float_buffer[float_length] = 80 end
+        float_length = float_length + 1
+        if exponent < 0 then
+          float_buffer[float_length] = 45
+          exponent = -exponent
+        else
+          float_buffer[float_length] = 43
+        end
+        float_length = float_length + 1
+        local exponent_digits: [4]byte
+        local exponent_count: csize = 0
+        repeat
+          exponent_digits[exponent_count] = (@byte)(48 + exponent % 10)
+          exponent_count = exponent_count + 1
+          exponent = exponent // 10
+        until exponent == 0
+        while exponent_count > 0 do
+          exponent_count = exponent_count - 1
+          float_buffer[float_length] = exponent_digits[exponent_count]
+          float_length = float_length + 1
+        end
+        prefix_length = 2
+      end
+      local core_length: csize = float_length + prefix_length
+      if sign ~= 0 then core_length = core_length + 1 end
+      local padding: csize = 0
+      if width > 0 and (@csize)(width) > core_length then padding = (@csize)(width) - core_length end
+      if not left_align and not zero_pad then written = written + emit_padding(stream, 32, padding) end
+      if sign ~= 0 then written = written + emit_padding(stream, sign, 1) end
+      if prefix_length ~= 0 then
+        written = written + emit_padding(stream, 48, 1)
+        local prefix_char: byte = 120
+        if uppercase_hex then prefix_char = 88 end
+        written = written + emit_padding(stream, prefix_char, 1)
+      end
+      if not left_align and zero_pad then written = written + emit_padding(stream, 48, padding) end
+      written = written + emit_bytes(stream, (@pointer)(&float_buffer), float_length)
+      if left_align then written = written + emit_padding(stream, 32, padding) end
+    elseif conversion == 102 or conversion == 70 or conversion == 101 or conversion == 69 or
+        conversion == 103 or conversion == 71 then -- f/F/e/E/g/G
+      local value: cdouble = nelibc_va_arg_double(arguments)
+      local negative: boolean = value < 0
+      if negative then value = -value end
+      local float_buffer: [2048]byte
+      local float_length: csize = 0
+      local float_emitted: boolean = false
+      local sign: byte = 0
+      local uppercase_float: boolean = conversion == 70 or conversion == 69 or conversion == 71
+      if negative then sign = 45
+      elseif plus_sign then sign = 43
+      elseif space_sign then sign = 32 end
+      if value ~= value then
+        if uppercase_float then
+          float_buffer[0] = 78; float_buffer[1] = 65; float_buffer[2] = 78
+        else
+          float_buffer[0] = 110; float_buffer[1] = 97; float_buffer[2] = 110
+        end
+        float_length = 3
+      elseif value > 1.7976931348623157e308 then
+        if uppercase_float then
+          float_buffer[0] = 73; float_buffer[1] = 78; float_buffer[2] = 70
+        else
+          float_buffer[0] = 105; float_buffer[1] = 110; float_buffer[2] = 102
+        end
+        float_length = 3
+      else
+        local float_precision: cint = 6
+        if precision_set then float_precision = precision end
+        local wide_value: clongdouble = (@clongdouble)(value)
+        local is_general: boolean = conversion == 103 or conversion == 71
+        local use_exponent: boolean = conversion == 101 or conversion == 69
+        if is_general and float_precision == 0 then float_precision = 1 end
+        local significant_digits: cint = float_precision
+        local exponent: cint = 0
+        if value ~= 0 and (use_exponent or is_general) then
+          while wide_value >= 10.0_clongdouble do
+            wide_value = wide_value / 10.0_clongdouble
+            exponent = exponent + 1
+          end
+          while wide_value < 1.0_clongdouble do
+            wide_value = wide_value * 10.0_clongdouble
+            exponent = exponent - 1
+          end
+        end
+        if is_general and float_precision > 17 then
+          if float_precision > 100000 then
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            stream_unlock(stream)
+            return -1
+          end
+          local general_capacity: csize = (@csize)(float_precision) * 2 + 400
+          local general_output: *[0]byte = (@*[0]byte)(nelibc_malloc(general_capacity))
+          if general_output == nilptr then
+            nelibc_errno_location()[0] = 12 -- ENOMEM
+            stream_unlock(stream)
+            return -1
+          end
+          local general_length: csize = nelibc_format_general_double(value,
+              float_precision, exponent, (alternate and 1 or 0),
+              (uppercase_float and 1 or 0), nelibc_radix_character(),
+              general_output, general_capacity)
+          if general_length == 0 then
+            nelibc_free((@pointer)(general_output))
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            stream_unlock(stream)
+            return -1
+          end
+          local integer_length: csize = 0
+          local scientific_output: boolean = false
+          while integer_length < general_length do
+            local character: byte = general_output[integer_length]
+            if character == 101 or character == 69 then
+              scientific_output = true
+              break
+            end
+            if character == (@byte)(nelibc_radix_character()) then break end
+            integer_length = integer_length + 1
+          end
+          local group_output: boolean = grouping_flag and not scientific_output and
+              nelibc_grouping_separator_length() > 0 and nelibc_grouping_size(0) > 0
+          local separator_length: cint = 0
+          local next_separator: csize = integer_length
+          local group_index: cint = 0
+          if group_output then
+            separator_length = nelibc_grouping_separator_length()
+            local right_boundary: csize = 0
+            while (@csize)(group_index) < grouping_separator_count(integer_length) do
+              local group_size: cint = nelibc_grouping_size(group_index)
+              if group_size <= 0 or right_boundary + (@csize)(group_size) >= integer_length then break end
+              right_boundary = right_boundary + (@csize)(group_size)
+              group_index = group_index + 1
+            end
+            next_separator = integer_length - right_boundary
+            group_index = group_index - 1
+          end
+          local separator_count: csize = 0
+          if group_output then separator_count = grouping_separator_count(integer_length) end
+          local core_length: csize = general_length +
+              separator_count * (@csize)(separator_length)
+          if sign ~= 0 then core_length = core_length + 1 end
+          local spaces: csize = 0
+          if width > 0 and (@csize)(width) > core_length then
+            spaces = (@csize)(width) - core_length
+          end
+          local general_write_failed: boolean = false
+          if not left_align and not zero_pad then
+            local emitted_spaces: csize = emit_padding(stream, 32, spaces)
+            written = written + emitted_spaces
+            if emitted_spaces ~= spaces then general_write_failed = true end
+          end
+          if not general_write_failed and sign ~= 0 then
+            local emitted_sign: csize = emit_padding(stream, sign, 1)
+            written = written + emitted_sign
+            if emitted_sign ~= 1 then general_write_failed = true end
+          end
+          if not general_write_failed and not left_align and zero_pad then
+            local emitted_zeroes: csize = emit_padding(stream, 48, spaces)
+            written = written + emitted_zeroes
+            if emitted_zeroes ~= spaces then general_write_failed = true end
+          end
+          local source_index: csize = 0
+          if not general_write_failed and group_output then
+            while source_index < integer_length do
+              if source_index == next_separator and source_index < integer_length then
+                local separator_index: cint = 0
+                while separator_index < separator_length do
+                  local emitted_separator: csize = emit_padding(stream,
+                      (@byte)(nelibc_grouping_separator_byte(separator_index)), 1)
+                  written = written + emitted_separator
+                  if emitted_separator ~= 1 then general_write_failed = true; break end
+                  separator_index = separator_index + 1
+                end
+                if general_write_failed then break end
+                local group_size: cint = nelibc_grouping_size(group_index)
+                if group_size > 0 then
+                  next_separator = next_separator + (@csize)(group_size)
+                  group_index = group_index - 1
+                else
+                  next_separator = integer_length + 1
+                end
+              else
+                local segment_length: csize = next_separator - source_index
+                if segment_length == 0 or next_separator > integer_length then
+                  segment_length = integer_length - source_index
+                end
+                local emitted_segment: csize = emit_bytes(stream,
+                    (@pointer)((@usize)(general_output) + source_index), segment_length)
+                written = written + emitted_segment
+                if emitted_segment ~= segment_length then general_write_failed = true; break end
+                source_index = source_index + segment_length
+              end
+            end
+            if not general_write_failed and source_index < general_length then
+              local emitted_tail: csize = emit_bytes(stream,
+                  (@pointer)((@usize)(general_output) + source_index),
+                  general_length - source_index)
+              written = written + emitted_tail
+              if emitted_tail ~= general_length - source_index then general_write_failed = true end
+            end
+          elseif not general_write_failed then
+            local emitted_general: csize = emit_bytes(stream, (@pointer)(general_output), general_length)
+            written = written + emitted_general
+            if emitted_general ~= general_length then general_write_failed = true end
+          end
+          if not general_write_failed and left_align then
+            local emitted_spaces: csize = emit_padding(stream, 32, spaces)
+            written = written + emitted_spaces
+            if emitted_spaces ~= spaces then general_write_failed = true end
+          end
+          nelibc_free((@pointer)(general_output))
+          if general_write_failed then stream_unlock(stream); return -1 end
+          float_emitted = true
+        else
+        if is_general then
+          if significant_digits > 17 then
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            stream_unlock(stream)
+            return -1
+          end
+        end
+        if is_general or use_exponent then
+          if float_precision > 18 then
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            stream_unlock(stream)
+            return -1
+          end
+          local rounding_digits: cint = float_precision
+          if is_general then rounding_digits = significant_digits - 1 end
+          local significant_factor: culonglong = 1
+          local significant_index: cint = 0
+          while significant_index < rounding_digits do
+            significant_factor = significant_factor * 10
+            significant_index = significant_index + 1
+          end
+          local rounded_significand: culonglong = 0
+          local decimal_scale: cint = rounding_digits - exponent
+          if nelibc_round_significant_double(value, decimal_scale,
+              &rounded_significand) == 0 then
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            stream_unlock(stream)
+            return -1
+          end
+          if rounded_significand >= significant_factor * 10 then
+            rounded_significand = rounded_significand // 10
+            exponent = exponent + 1
+          end
+          wide_value = (@clongdouble)(rounded_significand) /
+              (@clongdouble)(significant_factor)
+        end
+        if is_general then
+          use_exponent = exponent < -4 or exponent >= significant_digits
+          if use_exponent then float_precision = significant_digits - 1
+          else
+            float_precision = significant_digits - exponent - 1
+            if float_precision < 0 then float_precision = 0 end
+          end
+        end
+        if is_general and not use_exponent then
+          local restore_exponent: cint = exponent
+          while restore_exponent > 0 do
+            wide_value = wide_value * 10.0_clongdouble
+            restore_exponent = restore_exponent - 1
+          end
+          while restore_exponent < 0 do
+            wide_value = wide_value / 10.0_clongdouble
+            restore_exponent = restore_exponent + 1
+          end
+        end
+        if float_precision > 22 then
+          nelibc_errno_location()[0] = 75 -- EOVERFLOW
+          stream_unlock(stream)
+          return -1
+        end
+        local factor: culonglong = 1
+        local decimal_index: cint = 0
+        if float_precision <= 18 then
+          while decimal_index < float_precision do
+            factor = factor * 10
+            decimal_index = decimal_index + 1
+          end
+        end
+        local scaled_value: clongdouble = 0.0_clongdouble
+        if float_precision <= 18 then
+          scaled_value = wide_value * (@clongdouble)(factor)
+        end
+        if not use_exponent and (float_precision > 18 or
+            scaled_value > 18446744073709549568.0_clongdouble) then
+          local exact_output: [512]byte
+          local exact_length: csize = nelibc_format_fixed_double(value,
+              float_precision, nelibc_radix_character(), &exact_output,
+              (@csize)(512))
+          if exact_length == 0 then
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            stream_unlock(stream)
+            return -1
+          end
+          local integer_length: csize = 0
+          while integer_length < exact_length and
+              exact_output[integer_length] ~= (@byte)(nelibc_radix_character()) do
+            integer_length = integer_length + 1
+          end
+          local large_grouping: boolean = grouping_flag and
+              nelibc_grouping_separator_length() > 0 and nelibc_grouping_size(0) > 0
+          local separator_length: cint = 0
+          local next_separator: csize = integer_length
+          local group_index: cint = 0
+          if large_grouping then
+            separator_length = nelibc_grouping_separator_length()
+            local right_boundary: csize = 0
+            while (@csize)(group_index) < grouping_separator_count(integer_length) do
+              local group_size: cint = nelibc_grouping_size(group_index)
+              if group_size <= 0 or right_boundary + (@csize)(group_size) >= integer_length then break end
+              right_boundary = right_boundary + (@csize)(group_size)
+              group_index = group_index + 1
+            end
+            next_separator = integer_length - right_boundary
+            group_index = group_index - 1
+          end
+          local digit_index: csize = 0
+          while digit_index < integer_length do
+            float_buffer[float_length] = exact_output[digit_index]
+            float_length = float_length + 1
+            digit_index = digit_index + 1
+            if large_grouping and digit_index == next_separator and digit_index < integer_length then
+              local separator_index: cint = 0
+              while separator_index < separator_length do
+                float_buffer[float_length] = (@byte)(nelibc_grouping_separator_byte(separator_index))
+                float_length = float_length + 1
+                separator_index = separator_index + 1
+              end
+              local group_size: cint = nelibc_grouping_size(group_index)
+              if group_size > 0 then
+                next_separator = next_separator + (@csize)(group_size)
+                group_index = group_index - 1
+              else
+                next_separator = integer_length + 1
+              end
+            end
+          end
+          while digit_index < exact_length do
+            float_buffer[float_length] = exact_output[digit_index]
+            float_length = float_length + 1
+            digit_index = digit_index + 1
+          end
+          if is_general and not alternate then
+            while float_length > 0 and float_buffer[float_length - 1] == 48 and
+                float_buffer[float_length - 1] ~= (@byte)(nelibc_radix_character()) do
+              float_length = float_length - 1
+            end
+            if float_length > 0 and
+                float_buffer[float_length - 1] == (@byte)(nelibc_radix_character()) then
+              float_length = float_length - 1
+            end
+          end
+        else
+        local scaled_integer: culonglong = (@culonglong)(scaled_value)
+        local rounding_remainder: clongdouble = scaled_value - (@clongdouble)(scaled_integer)
+        if rounding_remainder > 0.5_clongdouble or
+            (rounding_remainder == 0.5_clongdouble and
+             (scaled_integer & 1_culonglong) ~= 0) then
+          scaled_integer = scaled_integer + 1
+        end
+        if use_exponent and scaled_integer >= 10 * factor then
+          scaled_integer = scaled_integer // 10
+          exponent = exponent + 1
+        end
+        local whole: culonglong = scaled_integer // factor
+        local fraction: culonglong = scaled_integer % factor
+        local reversed: [32]byte
+        local whole_digits: csize = 0
+        repeat
+          reversed[whole_digits] = (@byte)(48 + whole % 10)
+          whole_digits = whole_digits + 1
+          whole = whole // 10
+        until whole == 0
+        local float_grouping: boolean = grouping_flag and not use_exponent and
+            nelibc_grouping_separator_length() > 0 and nelibc_grouping_size(0) > 0
+        local float_group_separator_length: cint = 0
+        local whole_digit_count: csize = whole_digits
+        local next_float_separator: csize = whole_digits
+        local float_group_size_index: cint = 0
+        if float_grouping then
+          float_group_separator_length = nelibc_grouping_separator_length()
+          local right_boundary: csize = 0
+          while (@csize)(float_group_size_index) < grouping_separator_count(whole_digits) do
+            local group_size: cint = nelibc_grouping_size(float_group_size_index)
+            if group_size <= 0 or right_boundary + (@csize)(group_size) >= whole_digits then break end
+            right_boundary = right_boundary + (@csize)(group_size)
+            float_group_size_index = float_group_size_index + 1
+          end
+          next_float_separator = whole_digits - right_boundary
+          float_group_size_index = float_group_size_index - 1
+        end
+        local emitted_whole_digits: csize = 0
+        while whole_digits > 0 do
+          whole_digits = whole_digits - 1
+          float_buffer[float_length] = reversed[whole_digits]
+          float_length = float_length + 1
+          emitted_whole_digits = emitted_whole_digits + 1
+          if float_grouping and emitted_whole_digits == next_float_separator and
+              emitted_whole_digits < whole_digit_count then
+            local separator_index: cint = 0
+            while separator_index < float_group_separator_length do
+              float_buffer[float_length] = (@byte)(nelibc_grouping_separator_byte(separator_index))
+              float_length = float_length + 1
+              separator_index = separator_index + 1
+            end
+            local group_size: cint = nelibc_grouping_size(float_group_size_index)
+            if group_size > 0 then
+              next_float_separator = next_float_separator + (@csize)(group_size)
+              float_group_size_index = float_group_size_index - 1
+            else
+              next_float_separator = whole_digit_count + 1
+            end
+          end
+        end
+        if float_precision > 0 or alternate or is_general then
+          float_buffer[float_length] = (@byte)(nelibc_radix_character())
+          float_length = float_length + 1
+        end
+        local fraction_digits: [32]byte
+        local fraction_count: csize = 0
+        while fraction_count < (@csize)(float_precision) do
+          fraction_digits[fraction_count] = (@byte)(48 + fraction % 10)
+          fraction_count = fraction_count + 1
+          fraction = fraction // 10
+        end
+        while fraction_count > 0 do
+          fraction_count = fraction_count - 1
+          float_buffer[float_length] = fraction_digits[fraction_count]
+          float_length = float_length + 1
+        end
+        if is_general and not alternate then
+          while float_length > 0 and float_buffer[float_length - 1] == 48 and
+              float_buffer[float_length - 1] ~= (@byte)(nelibc_radix_character()) do
+            float_length = float_length - 1
+          end
+          if float_length > 0 and float_buffer[float_length - 1] == (@byte)(nelibc_radix_character()) then
+            float_length = float_length - 1
+          end
+        end
+        if use_exponent then
+          float_buffer[float_length] = 101
+          if conversion == 69 or conversion == 71 then float_buffer[float_length] = 69 end
+          float_length = float_length + 1
+          if exponent < 0 then
+            float_buffer[float_length] = 45
+            exponent = -exponent
+          else
+            float_buffer[float_length] = 43
+          end
+          float_length = float_length + 1
+          if exponent >= 100 then
+            float_buffer[float_length] = (@byte)(48 + exponent // 100)
+            float_length = float_length + 1
+            exponent = exponent % 100
+            float_buffer[float_length] = (@byte)(48 + exponent // 10)
+            float_length = float_length + 1
+            float_buffer[float_length] = (@byte)(48 + exponent % 10)
+            float_length = float_length + 1
+          elseif exponent < 10 then
+            float_buffer[float_length] = 48
+            float_length = float_length + 1
+            float_buffer[float_length] = (@byte)(48 + exponent)
+            float_length = float_length + 1
+          else
+            float_buffer[float_length] = (@byte)(48 + exponent // 10)
+            float_length = float_length + 1
+            float_buffer[float_length] = (@byte)(48 + exponent % 10)
+            float_length = float_length + 1
+          end
+        end
+        end
+        end
+      end
+      if not float_emitted then
+        local core_length: csize = float_length
+        if sign ~= 0 then core_length = core_length + 1 end
+        local spaces: csize = 0
+        if width > 0 and (@csize)(width) > core_length then
+          spaces = (@csize)(width) - core_length
+        end
+        if not left_align and not zero_pad then written = written + emit_padding(stream, 32, spaces) end
+        if sign ~= 0 then written = written + emit_padding(stream, sign, 1) end
+        if not left_align and zero_pad then written = written + emit_padding(stream, 48, spaces) end
+        written = written + emit_bytes(stream, (@pointer)(&float_buffer), float_length)
+        if left_align then written = written + emit_padding(stream, 32, spaces) end
+      end
+    elseif conversion == 112 or conversion == 100 or conversion == 105 or
+        conversion == 117 or conversion == 111 or conversion == 120 or conversion == 88 then
+      local is_signed: boolean = conversion == 100 or conversion == 105
+      local is_pointer: boolean = conversion == 112
+      local base: culonglong = 10
+      if conversion == 111 then base = 8 end
+      if conversion == 120 or conversion == 88 or is_pointer then base = 16 end
+      local negative: boolean = false
+      local numeric_value: culonglong = 0
+      if is_pointer then
+        numeric_value = (@culonglong)((@usize)(nelibc_va_arg_pointer(arguments)))
+      elseif is_signed then
+        local signed_value: clonglong = 0
+        if length_mod == 1 then signed_value = (@clonglong)(nelibc_va_arg_long(arguments))
+        elseif length_mod == 2 or length_mod == 3 then signed_value = nelibc_va_arg_long_long(arguments)
+        else signed_value = (@clonglong)(nelibc_va_arg_int(arguments)) end
+        if signed_value < 0 then
+          negative = true
+          numeric_value = 0_culonglong - (@culonglong)(signed_value)
+        else
+          numeric_value = (@culonglong)(signed_value)
+        end
+      else
+        if length_mod == 1 then numeric_value = (@culonglong)(nelibc_va_arg_unsigned_long(arguments))
+        elseif length_mod == 2 then numeric_value = nelibc_va_arg_unsigned_long_long(arguments)
+        elseif length_mod == 3 then numeric_value = (@culonglong)(nelibc_va_arg_size(arguments))
+        else numeric_value = (@culonglong)(nelibc_va_arg_unsigned_int(arguments)) end
+      end
+      local digits: [64]byte
+      local digit_count: csize = 0
+      local alphabet: *[0]byte = (@*[0]byte)('0123456789abcdef'_cstring)
+      if conversion == 88 then alphabet = (@*[0]byte)('0123456789ABCDEF'_cstring) end
+      if numeric_value == 0 then
+        if not precision_set or precision ~= 0 then digits[0] = 48; digit_count = 1 end
+      else
+        while numeric_value ~= 0 do
+          digits[digit_count] = alphabet[(@csize)(numeric_value % base)]
+          digit_count = digit_count + 1
+          numeric_value = numeric_value // base
+        end
+      end
+      if alternate and base == 8 and
+          (digit_count == 0 or digits[digit_count - 1] ~= 48) then
+        digits[digit_count] = 48
+        digit_count = digit_count + 1
+      end
+      local sign: byte = 0
+      if negative then sign = 45
+      elseif is_signed and plus_sign then sign = 43
+      elseif is_signed and space_sign then sign = 32 end
+      local prefix: boolean = is_pointer or (alternate and base == 16 and digit_count ~= 0 and
+          not (digit_count == 1 and digits[0] == 48))
+      local zeroes: csize = 0
+      if precision_set and precision > (@cint)(digit_count) then
+        zeroes = (@csize)(precision - (@cint)(digit_count))
+      end
+      local prefix_length: csize = 0
+      if prefix then prefix_length = 2 end
+      local sign_length: csize = 0
+      if sign ~= 0 then sign_length = 1 end
+      local width_value: csize = 0
+      if width > 0 then width_value = (@csize)(width) end
+      local grouping_active: boolean = grouping_flag and base == 10 and not is_pointer and
+          nelibc_grouping_separator_length() > 0 and nelibc_grouping_size(0) > 0
+      local separator_length: csize = 0
+      local total_digits: csize = zeroes + digit_count
+      local grouped_digits: csize = digit_count
+      local separators: csize = 0
+      if grouping_active then
+        separator_length = (@csize)(nelibc_grouping_separator_length())
+        separators = grouping_separator_count(grouped_digits)
+      end
+      local width_zeroes: csize = 0
+      if zero_pad and not left_align and not precision_set then
+        local raw_length: csize = sign_length + prefix_length + total_digits +
+            separators * separator_length
+        if width_value > raw_length then width_zeroes = width_value - raw_length end
+      end
+      local core_length: csize = sign_length + prefix_length + zeroes + width_zeroes +
+          digit_count + separators * separator_length
+      local spaces: csize = 0
+      if width_value > core_length then spaces = width_value - core_length end
+      if not left_align then written = written + emit_padding(stream, 32, spaces) end
+      if sign ~= 0 then written = written + emit_padding(stream, sign, 1) end
+      if prefix then
+        written = written + emit_padding(stream, 48, 1)
+        written = written + emit_padding(stream, 120, 1)
+      end
+      written = written + emit_padding(stream, 48, width_zeroes + zeroes)
+      local emitted_digits: csize = 0
+      local next_separator: csize = grouped_digits
+      local next_group_size_index: cint = 0
+      if grouping_active then
+        local right_boundary: csize = 0
+        while (@csize)(next_group_size_index) < separators do
+          local group_size: cint = nelibc_grouping_size(next_group_size_index)
+          if group_size <= 0 or right_boundary + (@csize)(group_size) >= grouped_digits then break end
+          right_boundary = right_boundary + (@csize)(group_size)
+          next_group_size_index = next_group_size_index + 1
+        end
+        next_separator = grouped_digits - right_boundary
+        next_group_size_index = next_group_size_index - 1
+      end
+      while emitted_digits < grouped_digits do
+        local digit: byte = digits[digit_count - emitted_digits - 1]
+        written = written + emit_padding(stream, digit, 1)
+        emitted_digits = emitted_digits + 1
+        if grouping_active and emitted_digits == next_separator and emitted_digits < grouped_digits then
+          local separator_index: cint = 0
+          while separator_index < (@cint)(separator_length) do
+            written = written + emit_padding(stream,
+                (@byte)(nelibc_grouping_separator_byte(separator_index)), 1)
+            separator_index = separator_index + 1
+          end
+          local group_size: cint = nelibc_grouping_size(next_group_size_index)
+          if group_size > 0 then
+            next_separator = next_separator + (@csize)(group_size)
+            next_group_size_index = next_group_size_index - 1
+          else
+            next_separator = grouped_digits
+          end
+        end
+      end
+      if left_align then written = written + emit_padding(stream, 32, spaces) end
+    elseif conversion == 37 then -- %
+      local pad: csize = 0
+      if width > 1 then pad = (@csize)(width - 1) end
+      if not left_align then written = written + emit_padding(stream, 32, pad) end
+      written = written + emit_padding(stream, 37, 1)
+      if left_align then written = written + emit_padding(stream, 32, pad) end
+    else
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      stream_unlock(stream)
+      return -1
+    end
+    if written < field_start then
+      stream_unlock(stream)
+      return -1
+    end
+    if (stream.flags & STREAM_ERROR) ~= 0 then
+      stream_unlock(stream)
+      return -1
+    end
+    if written > 2147483647_csize then
+      nelibc_errno_location()[0] = 75 -- EOVERFLOW
+      stream_unlock(stream)
+      return -1
+    end
+  end
+  stream_unlock(stream)
+  return (@cint)(written)
+end
+
+local function nelibc_vfprintf_host(host_stream: pointer,
+    format: *[0]cchar <const>, arguments: cvalist): cint
+    <cexport, codename 'nelibc_vfprintf_host'>
+  if host_stream == nilptr or format == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local stream: FILE = {
+    fd = -6, flags = WRITABLE, user_buffer = (@*byte)(host_stream)
+  }
+  return vfprintf(&stream, format, arguments)
+end
+
+local function fprintf(stream: *FILE, format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'fprintf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vfprintf(stream, format, arguments)
+  C.va_end(arguments)
+  return result
+end
+
+local function printf(format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'printf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vfprintf(&stdout_FILE, format, arguments)
+  C.va_end(arguments)
+  return result
+end
+
+local function vprintf(format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vprintf'>
+  return vfprintf(&stdout_FILE, format, arguments)
+end
+
+local function vdprintf(fd: cint, format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vdprintf'>
+  local stream: FILE = {fd = -3, flags = WRITABLE, read_position = (@csize)(fd)}
+  return vfprintf(&stream, format, arguments)
+end
+
+local function dprintf(fd: cint, format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'dprintf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vdprintf(fd, format, arguments)
+  C.va_end(arguments)
+  return result
+end
+
+local function vsnprintf(buffer: *[0]cchar, size: csize, format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vsnprintf'>
+  if size ~= 0 and buffer == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local stream: FILE = {fd = -2, flags = WRITABLE, buffer_size = size, user_buffer = (@*byte)(buffer)}
+  local result: cint = vfprintf(&stream, format, arguments)
+  if size ~= 0 then
+    local terminator: csize = stream.write_length
+    if terminator >= size then terminator = size - 1 end
+    buffer[terminator] = 0
+  end
+  return result
+end
+
+local function snprintf(buffer: *[0]cchar, size: csize, format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'snprintf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vsnprintf(buffer, size, format, arguments)
+  C.va_end(arguments)
+  return result
+end
+
+local function vasprintf(output: *[0]*[0]cchar, format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vasprintf'>
+  if output == nilptr or format == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  output[0] = nilptr
+  local count_arguments: cvalist
+  nelibc_va_copy(count_arguments, arguments)
+  local count: cint = vsnprintf(nilptr, 0, format, count_arguments)
+  C.va_end(count_arguments)
+  if count < 0 then return -1 end
+  local size: csize = (@csize)(count) + 1
+  local output_buffer: pointer = nelibc_malloc(size)
+  if output_buffer == nilptr then return -1 end
+  local write_arguments: cvalist
+  nelibc_va_copy(write_arguments, arguments)
+  local result: cint = vsnprintf((@*[0]cchar)(output_buffer), size, format, write_arguments)
+  C.va_end(write_arguments)
+  if result < 0 then
+    nelibc_free(output_buffer)
+    return -1
+  end
+  output[0] = (@*[0]cchar)(output_buffer)
+  return result
+end
+
+local function asprintf(output: *[0]*[0]cchar, format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'asprintf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vasprintf(output, format, arguments)
+  C.va_end(arguments)
+  return result
+end
+
+local function vsprintf(buffer: *[0]cchar, format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vsprintf'>
+  return vsnprintf(buffer, MAX_CSIZE, format, arguments)
+end
+
+local function sprintf(buffer: *[0]cchar, format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'sprintf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vsprintf(buffer, format, arguments)
+  C.va_end(arguments)
+  return result
+end
+
+local function fflush(stream: *FILE): cint <cexport, codename 'fflush'>
+  if stream == nilptr then
+    stream_list_lock()
+    local cursor: *FILE = all_streams
+    local status: cint = 0
+    while cursor ~= nilptr do
+      stream_lock(cursor)
+      if cursor.fd == -5 or (cursor.flags & LAST_WRITE) ~= 0 then
+        if flush_write_buffer(cursor) < 0 then status = -1 end
+      elseif (cursor.flags & LAST_READ) ~= 0 or cursor.has_pushback ~= 0 then
+        if discard_read_buffer(cursor) < 0 then status = -1 end
+      end
+      stream_unlock(cursor)
+      cursor = cursor.next
+    end
+    stream_list_unlock()
+    return status
+  end
+  stream_lock(stream)
+  if stream.fd < 0 and stream.fd ~= -4 and stream.fd ~= -5 then
+    nelibc_errno_location()[0] = 9 -- EBADF
+    stream_unlock(stream)
+    return -1
+  end
+  local result: cint = 0
+  if stream.fd == -5 or (stream.flags & LAST_WRITE) ~= 0 then
+    result = flush_write_buffer(stream)
+  elseif (stream.flags & LAST_READ) ~= 0 or stream.has_pushback ~= 0 then
+    result = discard_read_buffer(stream)
+  end
+  stream_unlock(stream)
+  return result
+end
+
+local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport, codename 'fseek'>
+  if stream == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  stream_lock(stream)
+  if stream.fd < 0 and stream.fd ~= -4 and stream.fd ~= -5 then
+    nelibc_errno_location()[0] = 9 -- EBADF
+    stream_unlock(stream)
+    return -1
+  end
+  if flush_write_buffer(stream) < 0 then
+    stream_unlock(stream)
+    return -1
+  end
+  if stream.fd == -4 then
+    local base: clong = 0
+    if whence == 1 then base = (@clong)(stream.read_position)
+    elseif whence == 2 then base = (@clong)(stream.read_length)
+    elseif whence ~= 0 then nelibc_errno_location()[0] = 22; stream_unlock(stream); return -1 end
+    if (offset > 0 and base > 0x7FFFFFFFFFFFFFFF_clong - offset) or
+        (offset < 0 and base < (-0x7FFFFFFFFFFFFFFF_clong - 1) - offset) then
+      nelibc_errno_location()[0] = 22
+      stream_unlock(stream)
+      return -1
+    end
+    local target: clong = base + offset
+    if target < 0 or (@culonglong)(target) > (@culonglong)(stream.buffer_size) then
+      nelibc_errno_location()[0] = 22
+      stream_unlock(stream)
+      return -1
+    end
+    stream.read_position = (@csize)(target)
+    stream.has_pushback = 0
+    stream.flags = stream.flags & 0xFFFFFFFE_cuint
+    stream_unlock(stream)
+    return 0
+  end
+  if stream.fd == -5 then
+    local base: clong = 0
+    if whence == 1 then base = (@clong)(stream.read_position)
+    elseif whence == 2 then base = (@clong)(stream.read_length)
+    elseif whence ~= 0 then nelibc_errno_location()[0] = 22; stream_unlock(stream); return -1 end
+    if (offset > 0 and base > 0x7FFFFFFFFFFFFFFF_clong - offset) or
+        (offset < 0 and base < (-0x7FFFFFFFFFFFFFFF_clong - 1) - offset) then
+      nelibc_errno_location()[0] = 22
+      stream_unlock(stream)
+      return -1
+    end
+    local target: clong = base + offset
+    if target < 0 then nelibc_errno_location()[0] = 22; stream_unlock(stream); return -1 end
+    stream.read_position = (@csize)(target)
+    stream.has_pushback = 0
+    stream.flags = stream.flags & 0xFFFFFFFE_cuint
+    stream_unlock(stream)
+    return 0
+  end
+  local unread: csize = stream.read_length - stream.read_position
+  if stream.has_pushback ~= 0 then unread = unread + 1 end
+  local result: clong
+  if whence == 1 and unread ~= 0 then
+    if lseek(stream.fd, -(@clong)(unread), 1) < 0 then
+      stream_unlock(stream)
+      return -1
+    end
+    result = lseek(stream.fd, offset, 1)
+  else
+    result = lseek(stream.fd, offset, whence)
+  end
+  if result < 0 then
+    stream.flags = stream.flags | STREAM_ERROR
+    stream_unlock(stream)
+    return -1
+  end
+  stream.read_position = 0
+  stream.read_length = 0
+  stream.has_pushback = 0
+  stream.flags = stream.flags & 0xFFFFFFFE_cuint
+  stream_unlock(stream)
+  return 0
+end
+
+local function fseeko(stream: *FILE, offset: clong, whence: cint): cint <cexport, codename 'fseeko'>
+  return fseek(stream, offset, whence)
+end
+
+local function ftell(stream: *FILE): clong <cexport, codename 'ftell'>
+  if stream == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  stream_lock(stream)
+  if stream.fd < 0 and stream.fd ~= -4 and stream.fd ~= -5 then
+    nelibc_errno_location()[0] = 9 -- EBADF
+    stream_unlock(stream)
+    return -1
+  end
+  if stream.fd == -4 then
+    local position: clong = (@clong)(stream.read_position)
+    stream_unlock(stream)
+    return position
+  end
+  if stream.fd == -5 then
+    local position: clong = (@clong)(stream.read_position)
+    stream_unlock(stream)
+    return position
+  end
+  local position: clong = lseek(stream.fd, 0, 1)
+  if position < 0 then
+    stream_unlock(stream)
+    return -1
+  end
+  local unread: csize = stream.read_length - stream.read_position
+  if stream.has_pushback ~= 0 then unread = unread + 1 end
+  position = position - (@clong)(unread) + (@clong)(stream.write_length)
+  stream_unlock(stream)
+  return position
+end
+
+local function ftello(stream: *FILE): clong <cexport, codename 'ftello'>
+  return ftell(stream)
+end
+
+local function fgetpos(stream: *FILE, position: *[0]clong): cint <cexport, codename 'fgetpos'>
+  if stream == nilptr or position == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local current: clong = ftell(stream)
+  if current < 0 then return -1 end
+  position[0] = current
+  return 0
+end
+
+local function fsetpos(stream: *FILE, position: *[0]clong <const>): cint <cexport, codename 'fsetpos'>
+  if stream == nilptr or position == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  return fseek(stream, position[0], 0)
+end
+
+local function rewind(stream: *FILE): void <cexport, codename 'rewind'>
+  fseek(stream, 0, 0)
+  clearerr(stream)
+end
+
+local function nelibc_strerror(errnum: cint): *[0]cchar <cimport> end
+
+local function perror(prefix: *[0]cchar <const>): void <cexport, codename 'perror'>
+  local errno_slot: *[0]cint = nelibc_errno_location()
+  local saved_errno: cint = errno_slot[0]
+  if prefix ~= nilptr and prefix[0] ~= 0 then
+    if fputs(prefix, &stderr_FILE) == -1 or fputs(': ', &stderr_FILE) == -1 then
+      errno_slot[0] = saved_errno
+      return
+    end
+  end
+  if fputs(nelibc_strerror(saved_errno), &stderr_FILE) == -1 then
+    errno_slot[0] = saved_errno
+    return
+  end
+  fputc(10, &stderr_FILE)
+  errno_slot[0] = saved_errno
+end
