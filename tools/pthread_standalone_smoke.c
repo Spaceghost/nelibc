@@ -465,6 +465,88 @@ static void *explicit_schedule_worker(void *argument) {
   return policy == SCHED_OTHER && param.sched_priority == 0 ? 0 : (void *)2;
 }
 
+static int priority_protect_schedule_smoke(void) {
+  int original_policy = -1;
+  struct sched_param original_param = {-1};
+  if (pthread_getschedparam(pthread_self(), &original_policy,
+                            &original_param) != 0)
+    return 1;
+  struct sched_param realtime_param = {1};
+  int result = pthread_setschedparam(pthread_self(), SCHED_FIFO,
+                                    &realtime_param);
+  if (result == EPERM || result == EACCES || result == ENOTSUP) return 0;
+  if (result != 0) return 2;
+
+  pthread_mutexattr_t attributes;
+  pthread_mutex_t mutex;
+  int status = 0;
+  int attr_ready = pthread_mutexattr_init(&attributes) == 0;
+  if (!attr_ready) {
+    status = 3;
+    goto restore_policy;
+  }
+  if (pthread_mutexattr_setprotocol(&attributes, PTHREAD_PRIO_PROTECT) != 0 ||
+      pthread_mutexattr_setprioceiling(&attributes, 3) != 0) {
+    status = 3;
+    pthread_mutexattr_destroy(&attributes);
+    goto restore_policy;
+  }
+  if (pthread_mutex_init(&mutex, &attributes) != 0) {
+    status = 3;
+    pthread_mutexattr_destroy(&attributes);
+    goto restore_policy;
+  }
+
+  result = pthread_mutex_lock(&mutex);
+  if (result == EPERM || result == EACCES) {
+    pthread_mutex_destroy(&mutex);
+    pthread_mutexattr_destroy(&attributes);
+    goto restore_policy;
+  }
+  if (result != 0) {
+    status = 4;
+    pthread_mutex_destroy(&mutex);
+    pthread_mutexattr_destroy(&attributes);
+    goto restore_policy;
+  }
+
+  int policy = -1;
+  struct sched_param param = {-1};
+  if (pthread_getschedparam(pthread_self(), &policy, &param) != 0 ||
+      policy != SCHED_FIFO || param.sched_priority != 1)
+    status = 5;
+  param.sched_priority = 2;
+  if (status == 0 &&
+      (pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) != 0 ||
+       pthread_getschedparam(pthread_self(), &policy, &param) != 0 ||
+       policy != SCHED_FIFO || param.sched_priority != 2))
+    status = 6;
+  param.sched_priority = 4;
+  if (status == 0 &&
+      (pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) != EINVAL ||
+       pthread_getschedparam(pthread_self(), &policy, &param) != 0 ||
+       policy != SCHED_FIFO || param.sched_priority != 2))
+    status = 7;
+  if (status == 0 &&
+      (pthread_setschedprio(pthread_self(), 1) != 0 ||
+       pthread_getschedparam(pthread_self(), &policy, &param) != 0 ||
+       policy != SCHED_FIFO || param.sched_priority != 1))
+    status = 8;
+  if (pthread_mutex_unlock(&mutex) != 0 && status == 0) status = 9;
+  if (pthread_getschedparam(pthread_self(), &policy, &param) != 0 ||
+      policy != SCHED_FIFO || param.sched_priority != 1) {
+    if (status == 0) status = 10;
+  }
+  pthread_mutex_destroy(&mutex);
+  pthread_mutexattr_destroy(&attributes);
+
+restore_policy:
+  if (pthread_setschedparam(pthread_self(), original_policy,
+                            &original_param) != 0 && status == 0)
+    status = 11;
+  return status;
+}
+
 static void *spin_increment_worker(void *argument) {
   (void)argument;
   for (int i = 0; i < 10000; ++i) {
@@ -717,6 +799,7 @@ int main(void) {
       pthread_setschedprio(pthread_self(), 0) != 0 ||
       pthread_setschedprio(pthread_self(), 1) != EINVAL)
     return 228;
+  if (priority_protect_schedule_smoke() != 0) return 229;
   size_t guardsize = 0;
   if (pthread_attr_getguardsize(&attributes, &guardsize) != 0 || guardsize != 4096 ||
       pthread_attr_setguardsize(&attributes, 8192) != 0 ||

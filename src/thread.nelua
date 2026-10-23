@@ -62,7 +62,8 @@ local PthreadContext: type = @record{
   robust_pid: cint,
   protect_mutexes: pointer,
   protect_base_policy: cint,
-  protect_base_priority: cint
+  protect_base_priority: cint,
+  protect_lock: cint
 }
 local SchedParam: type = @record{
   sched_priority: cint
@@ -1270,16 +1271,17 @@ local function pthread_robust_mutex_remove(context: *PthreadContext,
   mutex.robust_next = nilptr
 end
 
-local function pthread_priority_set(policy: cint, priority: cint): cint
+local function pthread_priority_set(tid: cint, policy: cint, priority: cint): cint
   local param: SchedParam
   param.sched_priority = priority
-  local result = nelibc_raw_syscall3(144_culong, 0_culong,
+  local result = nelibc_raw_syscall3(144_culong, (@culong)(tid),
       (@culong)(policy), (@culong)((@usize)(&param)))
   if result < 0 and result >= -4095 then return (@cint)(-result) end
   return 0
 end
 
-local function pthread_priority_protect_refresh(context: *PthreadContext): cint
+local function pthread_priority_protect_refresh(context: *PthreadContext,
+    tid: cint): cint
   if context == nilptr or context.protect_mutexes == nilptr then return 0 end
   local effective = context.protect_base_priority
   local cursor: *[0]pointer = &context.protect_mutexes
@@ -1288,16 +1290,43 @@ local function pthread_priority_protect_refresh(context: *PthreadContext): cint
     if held.prioceiling > effective then effective = held.prioceiling end
     cursor = &held.protect_next
   end
-  return pthread_priority_set(context.protect_base_policy, effective)
+  return pthread_priority_set(tid, context.protect_base_policy, effective)
+end
+
+local function pthread_priority_context_lock(context: *PthreadContext): void <inline>
+  while nelibc_atomic_cas_int(&context.protect_lock, 0, 1) ~= 0 do end
+end
+
+local function pthread_priority_context_unlock(context: *PthreadContext): void <inline>
+  nelibc_atomic_store_int(&context.protect_lock, 0)
+end
+
+local function pthread_priority_protect_can_set(context: *PthreadContext,
+    policy: cint, priority: cint): boolean
+  if context == nilptr then return true end
+  local cursor: *[0]pointer = &context.protect_mutexes
+  while cursor[0] ~= nilptr do
+    local held = (@*PthreadMutex)(cursor[0])
+    if priority > held.prioceiling or
+       (policy == SCHED_OTHER and held.prioceiling > 0) then
+      return false
+    end
+    cursor = &held.protect_next
+  end
+  return true
 end
 
 local function pthread_priority_protect_enter(mutex: *PthreadMutex): cint
   local context = pthread_current_context()
   if context == nilptr then return 12 end -- ENOMEM
+  pthread_priority_context_lock(context)
   local cursor: *[0]pointer = &context.protect_mutexes
   while cursor[0] ~= nilptr do
     local held = (@*PthreadMutex)(cursor[0])
-    if held == mutex then return 0 end
+    if held == mutex then
+      pthread_priority_context_unlock(context)
+      return 0
+    end
     cursor = &held.protect_next
   end
 
@@ -1306,12 +1335,16 @@ local function pthread_priority_protect_enter(mutex: *PthreadMutex): cint
   if context.protect_mutexes == nilptr then
     local current_policy = nelibc_raw_syscall3(145_culong, 0_culong, 0_culong, 0_culong)
     if current_policy < 0 and current_policy >= -4095 then
+      pthread_priority_context_unlock(context)
       return (@cint)(-current_policy)
     end
     local param: SchedParam
     local result = nelibc_raw_syscall3(143_culong, 0_culong,
         (@culong)((@usize)(&param)), 0_culong)
-    if result < 0 and result >= -4095 then return (@cint)(-result) end
+    if result < 0 and result >= -4095 then
+      pthread_priority_context_unlock(context)
+      return (@cint)(-result)
+    end
     policy = (@cint)(current_policy)
     priority = param.sched_priority
     context.protect_base_policy = policy
@@ -1322,11 +1355,12 @@ local function pthread_priority_protect_enter(mutex: *PthreadMutex): cint
   end
   if priority > mutex.prioceiling or
      (policy == SCHED_OTHER and mutex.prioceiling > 0) then
+    pthread_priority_context_unlock(context)
     return 22 -- EINVAL
   end
   mutex.protect_next = context.protect_mutexes
   context.protect_mutexes = (@pointer)(mutex)
-  local result = pthread_priority_protect_refresh(context)
+  local result = pthread_priority_protect_refresh(context, 0)
   if result ~= 0 then
     context.protect_mutexes = mutex.protect_next
     mutex.protect_next = nilptr
@@ -1334,27 +1368,38 @@ local function pthread_priority_protect_enter(mutex: *PthreadMutex): cint
       context.protect_base_policy = 0
       context.protect_base_priority = 0
     end
+    pthread_priority_context_unlock(context)
     return result
   end
+  pthread_priority_context_unlock(context)
   return 0
 end
 
 local function pthread_priority_protect_leave(mutex: *PthreadMutex): cint
   local context = pthread_current_context()
   if context == nilptr or context.protect_mutexes == nilptr then return 0 end
+  pthread_priority_context_lock(context)
+  if context.protect_mutexes == nilptr then
+    pthread_priority_context_unlock(context)
+    return 0
+  end
   local cursor: *[0]pointer = &context.protect_mutexes
   while cursor[0] ~= nilptr and cursor[0] ~= (@pointer)(mutex) do
     local held = (@*PthreadMutex)(cursor[0])
     cursor = &held.protect_next
   end
-  if cursor[0] == nilptr then return 0 end
+  if cursor[0] == nilptr then
+    pthread_priority_context_unlock(context)
+    return 0
+  end
   cursor[0] = mutex.protect_next
   mutex.protect_next = nilptr
-  local result = pthread_priority_protect_refresh(context)
+  local result = pthread_priority_protect_refresh(context, 0)
   if context.protect_mutexes == nilptr then
     context.protect_base_policy = 0
     context.protect_base_priority = 0
   end
+  pthread_priority_context_unlock(context)
   return result
 end
 
@@ -1849,15 +1894,17 @@ local function pthread_mutex_setprioceiling(mutex: *PthreadMutex,
   local lock_result = pthread_mutex_lock_for_ceiling(mutex)
   if lock_result ~= 0 and lock_result ~= 130 then return lock_result end
   local previous = nelibc_atomic_load_int(&mutex.prioceiling)
-  nelibc_atomic_store_int(&mutex.prioceiling, prioceiling)
   local context = pthread_current_context()
-  local refresh_result = pthread_priority_protect_refresh(context)
+  pthread_priority_context_lock(context)
+  nelibc_atomic_store_int(&mutex.prioceiling, prioceiling)
+  local refresh_result = pthread_priority_protect_refresh(context, 0)
   if refresh_result ~= 0 then
     nelibc_atomic_store_int(&mutex.prioceiling, previous)
-    pthread_priority_protect_refresh(context)
+    pthread_priority_protect_refresh(context, 0)
   else
     old_ceiling[0] = previous
   end
+  pthread_priority_context_unlock(context)
   local unlock_result = pthread_mutex_unlock(mutex)
   if refresh_result ~= 0 then return refresh_result end
   if unlock_result ~= 0 then return unlock_result end
@@ -2831,6 +2878,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.protect_mutexes = nilptr
   state.context.protect_base_policy = 0
   state.context.protect_base_priority = 0
+  state.context.protect_lock = 0
   state.context.robust_pid = (@cint)(nelibc_raw_syscall3(39_culong,
       0_culong, 0_culong, 0_culong))
   if state.context.robust_slot == nilptr then
@@ -2978,12 +3026,31 @@ local function pthread_getcpuclockid(thread: pointer, clock_id: *[0]cint): cint 
   return 0
 end
 
+local function pthread_target_context(thread: pointer): *PthreadContext <inline>
+  if initial_thread_identity ~= nilptr and thread == initial_thread_identity then
+    return &initial_thread_context
+  end
+  if thread == nilptr then return nilptr end
+  local state = (@*PthreadObject)(thread)
+  if state.magic ~= PTHREAD_OBJECT_MAGIC then return nilptr end
+  return &state.context
+end
+
 local function pthread_getschedparam(thread: pointer, policy: *[0]cint,
     param: *SchedParam): cint <cexport, codename 'pthread_getschedparam'>
   if policy == nilptr or param == nilptr then return 22 end -- EINVAL
   local tid: cint
   local thread_error = pthread_target_tid(thread, &tid)
   if thread_error ~= 0 then return thread_error end
+  local context = pthread_target_context(thread)
+  if context ~= nilptr then pthread_priority_context_lock(context) end
+  if context ~= nilptr and context.protect_mutexes ~= nilptr then
+    policy[0] = context.protect_base_policy
+    param.sched_priority = context.protect_base_priority
+    pthread_priority_context_unlock(context)
+    return 0
+  end
+  if context ~= nilptr then pthread_priority_context_unlock(context) end
   local sched_policy = nelibc_raw_syscall3(145_culong, (@culong)(tid),
                                            0_culong, 0_culong)
   if sched_policy < 0 and sched_policy >= -4095 then return (@cint)(-sched_policy) end
@@ -3004,9 +3071,42 @@ local function pthread_setschedparam(thread: pointer, policy: cint,
   local tid: cint
   local thread_error = pthread_target_tid(thread, &tid)
   if thread_error ~= 0 then return thread_error end
+  local context = pthread_target_context(thread)
+  if context ~= nilptr then pthread_priority_context_lock(context) end
+  if context ~= nilptr and context.protect_mutexes ~= nilptr then
+    if not pthread_priority_protect_can_set(context, policy,
+                                             param.sched_priority) then
+      pthread_priority_context_unlock(context)
+      return 22 -- EINVAL: base priority exceeds an owned ceiling
+    end
+    local old_policy = context.protect_base_policy
+    local old_priority = context.protect_base_priority
+    context.protect_base_policy = policy
+    context.protect_base_priority = param.sched_priority
+    local protect_result = pthread_priority_protect_refresh(context, tid)
+    if protect_result ~= 0 then
+      context.protect_base_policy = old_policy
+      context.protect_base_priority = old_priority
+      pthread_priority_protect_refresh(context, tid)
+      pthread_priority_context_unlock(context)
+      return protect_result
+    end
+    context.sched_policy = policy
+    context.sched_priority = param.sched_priority
+    pthread_priority_context_unlock(context)
+    return 0
+  end
   local result = nelibc_raw_syscall3(144_culong, (@culong)(tid),
       (@culong)(policy), (@culong)((@usize)(param)))
-  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  if result < 0 and result >= -4095 then
+    if context ~= nilptr then pthread_priority_context_unlock(context) end
+    return (@cint)(-result)
+  end
+  if context ~= nilptr then
+    context.sched_policy = policy
+    context.sched_priority = param.sched_priority
+    pthread_priority_context_unlock(context)
+  end
   return 0
 end
 

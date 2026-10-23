@@ -10,7 +10,7 @@ archive; it does not certify every behavior required by C or POSIX.
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
 | P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, and `atan2`; the arithmetic backend is x86-64-specific, and most math entry points remain open | Expand the math set; then long-double coverage and complete fenv semantics |
-| P1 | Standalone threading completeness | Standalone pthread remains a subset; scheduler changes while holding protected mutexes and several process/signal APIs remain gaps | Differentially cover scheduling interactions, then address remaining POSIX gaps |
+| P1 | Standalone threading completeness | Standalone pthread remains a subset; real-time priority transitions and several process/signal APIs remain gaps | Run protected-priority checks with real-time scheduling permission, then address remaining POSIX gaps |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 753 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
@@ -52,8 +52,11 @@ This is a baseline-derived priority list, not a complete POSIX inventory. The
 standalone priority-ceiling attributes and mutex get/set operations are
 implemented. `PTHREAD_PRIO_PROTECT` raises and restores scheduler priority for
 held protected mutexes; on Linux, a `SCHED_OTHER` thread cannot acquire a
-positive ceiling and receives `EINVAL`. Calls to `pthread_setschedparam` while
-holding protected mutexes do not yet recompute the active ceiling. The
+positive ceiling and receives `EINVAL`. Calls to `pthread_setschedparam` and
+`pthread_setschedprio` while holding protected mutexes update the base priority
+while preserving the active ceiling; `pthread_getschedparam` reports that base
+priority. The smoke test attempts this path when the host permits `SCHED_FIFO`
+priority changes and skips it when the host denies real-time scheduling. The
 `pthread_kill`, `pthread_getcpuclockid`, and `pthread_setschedprio` are
 implemented in standalone mode and delegated to the host in hybrid mode.
 `pthread_atfork` is implemented
