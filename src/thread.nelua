@@ -2743,6 +2743,19 @@ local function pthread_target_tid(thread: pointer, tid: *[0]cint): cint <inline>
   return 0
 end
 
+local function pthread_kill(thread: pointer, signal: cint): cint <cexport, codename 'pthread_kill'>
+  if signal < 0 or signal > 64 or signal == 32 then return 22 end -- EINVAL
+  local tid: cint
+  local thread_error = pthread_target_tid(thread, &tid)
+  if thread_error ~= 0 then return thread_error end
+  local pid = nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong)
+  if pid < 0 then return 3 end -- ESRCH
+  local result = nelibc_raw_syscall3(234_culong, (@culong)(pid),
+      (@culong)(tid), (@culong)(signal))
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  return 0
+end
+
 local function pthread_getschedparam(thread: pointer, policy: *[0]cint,
     param: *SchedParam): cint <cexport, codename 'pthread_getschedparam'>
   if policy == nilptr or param == nilptr then return 22 end -- EINVAL

@@ -62,11 +62,11 @@ python3 tools/musl_api_audit.py \
 ```
 
 The current snapshot contains 1,269 APIs: 425 exported by Nelibc in at least
-one tested hybrid profile, 89 intentionally delegated to the host in hybrid
-profiles, and 755 not declared by Nelibc. No baseline API is currently marked
-as an intentional omission; the 755 entries remain visible as unimplemented
+one tested hybrid profile, 90 intentionally delegated to the host in hybrid
+profiles, and 754 not declared by Nelibc. No baseline API is currently marked
+as an intentional omission; the 754 entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
-The largest undeclared groups are pthread (17), complex math (66), wide
+The largest undeclared groups are pthread (16), complex math (66), wide
 characters (49), stdlib (39), unistd (38), and name service/network database
 APIs (32). This is a breadth comparison, not a behavioral conformance score.
 

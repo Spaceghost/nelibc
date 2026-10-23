@@ -34,7 +34,7 @@ HOST_DELEGATED = {
         "pthread_attr_setinheritsched", "pthread_attr_getinheritsched",
         "pthread_attr_setschedpolicy", "pthread_attr_getschedpolicy",
         "pthread_attr_setschedparam", "pthread_attr_getschedparam",
-        "pthread_create", "pthread_cancel", "pthread_sigmask", "pthread_join", "pthread_detach", "pthread_equal",
+        "pthread_create", "pthread_cancel", "pthread_sigmask", "pthread_kill", "pthread_join", "pthread_detach", "pthread_equal",
         "pthread_self", "pthread_exit", "pthread_testcancel",
         "pthread_setcancelstate", "pthread_setcanceltype", "pthread_mutexattr_init",
         "pthread_getschedparam", "pthread_setschedparam",

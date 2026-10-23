@@ -263,7 +263,8 @@ static int pthread_sigmask_probe(void) {
       pthread_sigmask(SIG_BLOCK, &signal_set, &previous_set) != 0 ||
       pthread_sigmask(0, NULL, &observed_set) != 0 ||
       sigismember(&observed_set, SIGUSR1) != 1 ||
-      pthread_sigmask(SIG_SETMASK, &previous_set, NULL) != 0)
+      pthread_sigmask(SIG_SETMASK, &previous_set, NULL) != 0 ||
+      pthread_kill(pthread_self(), 0) != 0)
     return 1;
   return 0;
 }

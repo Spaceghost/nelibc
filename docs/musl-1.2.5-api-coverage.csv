@@ -778,7 +778,7 @@ pthread_getspecific,pthread.h,pthread.h,,host-delegated
 pthread_join,pthread.h,pthread.h,,host-delegated
 pthread_key_create,pthread.h,pthread.h,,host-delegated
 pthread_key_delete,pthread.h,pthread.h,,host-delegated
-pthread_kill,signal.h,,,not-declared
+pthread_kill,signal.h,signal.h,,host-delegated
 pthread_mutex_consistent,pthread.h,pthread.h,,host-delegated
 pthread_mutex_destroy,pthread.h,pthread.h,,host-delegated
 pthread_mutex_getprioceiling,pthread.h,,,not-declared

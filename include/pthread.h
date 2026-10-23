@@ -12,6 +12,7 @@
 #include <time.h>
 
 typedef struct __nelibc_pthread *pthread_t;
+int pthread_kill(pthread_t thread, int signal);
 typedef volatile int pthread_spinlock_t;
 typedef unsigned int pthread_key_t;
 typedef int pthread_once_t;

@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 static volatile int detached_release;
+static volatile int pthread_kill_signal;
 static volatile int detached_done;
 static volatile int mutex_counter;
 static pthread_mutex_t static_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -61,6 +62,10 @@ static struct {
 static void cancel_cleanup(void *argument) {
   ++cancel_cleanup_calls;
   if (argument != 0) pthread_mutex_unlock((pthread_mutex_t *)argument);
+}
+
+static void pthread_kill_handler(int signal) {
+  pthread_kill_signal = signal;
 }
 
 static pthread_key_t initial_exit_key;
@@ -497,6 +502,18 @@ int main(void) {
       sigismember(&observed_signal_mask, SIGUSR1) != 0 ||
       pthread_sigmask(SIG_SETMASK, &original_signal_mask, NULL) != 0)
     return 277;
+
+  struct sigaction pthread_kill_action = {0};
+  struct sigaction previous_pthread_kill_action;
+  pthread_kill_action.sa_handler = pthread_kill_handler;
+  if (sigaction(SIGUSR2, &pthread_kill_action, &previous_pthread_kill_action) != 0 ||
+      pthread_kill(pthread_self(), 0) != 0 ||
+      pthread_kill(0, 0) != ESRCH ||
+      pthread_kill(pthread_self(), 65) != EINVAL ||
+      pthread_kill(pthread_self(), SIGUSR2) != 0 ||
+      pthread_kill_signal != SIGUSR2 ||
+      sigaction(SIGUSR2, &previous_pthread_kill_action, 0) != 0)
+    return 278;
 
   int initial_cancel_type = -1;
   if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &initial_cancel_type) != 0 ||
