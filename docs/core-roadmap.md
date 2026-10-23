@@ -173,7 +173,8 @@ matter more for completeness than for the initial common-program target.
   `CLOCK_REALTIME` and `CLOCK_MONOTONIC` using absolute futex deadlines.
   Hybrid glibc builds use the host function. Hybrid musl builds provide the
   API through musl's public semaphore calls; monotonic waits poll at 1 ms
-  intervals to avoid depending on musl's private `sem_t` layout.
+  intervals to avoid depending on musl's private `sem_t` layout. A musl smoke
+  verifies expiration, wakeup, and cancellation while blocked.
 - Hybrid stdio adapts to host `FILE` implementations in several profiles. The
   standalone `FILE` implementation is Nelua-owned, but full standards and
   edge-case coverage remains a separate conformance task.

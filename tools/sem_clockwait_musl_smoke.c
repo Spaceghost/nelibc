@@ -42,6 +42,14 @@ int main(void) {
   if (sem_post(&blocking_semaphore) != 0) return 10;
   void *result;
   if (pthread_join(thread, &result) != 0 || result != 0) return 11;
-  if (sem_destroy(&blocking_semaphore) != 0) return 12;
+
+  __atomic_store_n(&waiter_started, 0, __ATOMIC_RELAXED);
+  if (pthread_create(&thread, 0, waiter, 0) != 0) return 12;
+  while (!__atomic_load_n(&waiter_started, __ATOMIC_ACQUIRE)) { }
+  if (nanosleep(&pause, 0) != 0) return 13;
+  if (pthread_cancel(thread) != 0) return 14;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED) return 15;
+
+  if (sem_destroy(&blocking_semaphore) != 0) return 16;
   return 0;
 }
