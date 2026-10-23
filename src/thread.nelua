@@ -58,7 +58,8 @@ local PthreadContext: type = @record{
   cleanup_count: cint,
   cleanup_entries: [32]PthreadCleanupEntry,
   robust_slot: *PthreadRobustSlot,
-  robust_registered: cint
+  robust_registered: cint,
+  robust_pid: cint
 }
 local SchedParam: type = @record{
   sched_priority: cint
@@ -289,6 +290,7 @@ local function pthread_robust_register(context: *PthreadContext): boolean
   slot.state = 2
   if result < 0 and result >= -4095 then return false end
   context.robust_registered = 1
+  context.robust_pid = (@cint)(nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong))
   return true
 end
 
@@ -303,12 +305,18 @@ local function pthread_current_context(): *PthreadContext <inline>
     nelibc_thread_cancel_signal_install()
     nelibc_thread_cancel_signal_unblock()
   end
+  local pid = (@cint)(nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong))
+  if context.robust_pid ~= pid then
+    context.robust_registered = 0
+    context.robust_slot = nilptr
+  end
+  if context.robust_slot == nilptr then
+    context.robust_slot = pthread_robust_slot_alloc()
+    context.robust_pid = pid
+  end
+  pthread_robust_register(context)
   if context == &initial_thread_context then
     initial_thread_tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
-    if initial_thread_context.robust_slot == nilptr then
-      initial_thread_context.robust_slot = pthread_robust_slot_alloc()
-    end
-    pthread_robust_register(&initial_thread_context)
   end
   return context
 end
@@ -2330,6 +2338,8 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.lifecycle = 0
   state.context.robust_slot = pthread_robust_slot_alloc()
   state.context.robust_registered = 0
+  state.context.robust_pid = (@cint)(nelibc_raw_syscall3(39_culong,
+      0_culong, 0_culong, 0_culong))
   if state.context.robust_slot == nilptr then
     nelibc_thread_tid_slot_release(tid_word)
     nelibc_free(object)

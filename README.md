@@ -1024,8 +1024,9 @@ attributes cover inherited or explicit `SCHED_OTHER`, `SCHED_FIFO`, and
 before the worker routine starts. Caller-provided stack memory remains owned
 by the application and must outlive the thread; Nelibc does not add a guard
 page to that memory. Cleanup handlers on the initial thread are also supported.
-Robust mutexes recover owner death through Linux robust futex lists; callers
-must call `pthread_mutex_consistent` before unlocking recovered state. Each
+Robust mutexes recover owner death through Linux robust futex lists for both
+private and process-shared locks, including a forked child; callers must call
+`pthread_mutex_consistent` before unlocking recovered state. Each
 created thread has room for 32 pending cleanup handlers.
 Standalone unnamed POSIX semaphores (`sem_init`, `sem_destroy`, `sem_wait`,
 `sem_timedwait`, `sem_trywait`, `sem_post`, and `sem_getvalue`) are implemented

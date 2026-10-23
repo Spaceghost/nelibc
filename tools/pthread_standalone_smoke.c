@@ -1014,6 +1014,35 @@ int main(void) {
       pthread_mutex_destroy(&robust_mutex) != 0)
     return 243;
 
+  struct process_shared_robust_state {
+    pthread_mutex_t mutex;
+  };
+  struct process_shared_robust_state *shared_robust = mmap(
+      0, sizeof(*shared_robust), PROT_READ | PROT_WRITE,
+      MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (shared_robust == MAP_FAILED) return 247;
+  if (pthread_mutexattr_init(&mutex_attributes) != 0 ||
+      pthread_mutexattr_setpshared(&mutex_attributes, PTHREAD_PROCESS_SHARED) != 0 ||
+      pthread_mutexattr_setrobust(&mutex_attributes, PTHREAD_MUTEX_ROBUST) != 0 ||
+      pthread_mutex_init(&shared_robust->mutex, &mutex_attributes) != 0 ||
+      pthread_mutexattr_destroy(&mutex_attributes) != 0)
+    return 248;
+  pid_t robust_child = fork();
+  if (robust_child == 0) {
+    if (pthread_mutex_lock(&shared_robust->mutex) != 0) _exit(249);
+    _exit(0);
+  }
+  int robust_child_status = -1;
+  if (robust_child < 0 ||
+      waitpid(robust_child, &robust_child_status, 0) != robust_child ||
+      robust_child_status != 0 ||
+      pthread_mutex_lock(&shared_robust->mutex) != EOWNERDEAD ||
+      pthread_mutex_consistent(&shared_robust->mutex) != 0 ||
+      pthread_mutex_unlock(&shared_robust->mutex) != 0 ||
+      pthread_mutex_destroy(&shared_robust->mutex) != 0 ||
+      munmap(shared_robust, sizeof(*shared_robust)) != 0)
+    return 250;
+
   pthread_t first_waiter;
   pthread_t second_waiter;
   if (pthread_create(&first_waiter, &attributes, wait_for_condition, 0) != 0 ||
