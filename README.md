@@ -995,9 +995,9 @@ process-wide credential requests from any child.
 Standalone also exports a POSIX thread subset: `pthread_create`,
 `pthread_join`, `pthread_detach`, `pthread_exit`, `pthread_once`,
 `pthread_key_create`, `pthread_key_delete`, `pthread_getspecific`,
-`pthread_setspecific`, `pthread_self`, `pthread_equal`, detach-state and
-stack-size attributes, normal/recursive/error-checking mutexes, recursive-reader
-read-write locks, condition variables, reusable barriers, and detached workers.
+`pthread_setspecific`, `pthread_self`, `pthread_equal`, detach-state, stack-size,
+guard-size, and scheduling attributes, normal/recursive/error-checking mutexes,
+recursive-reader read-write locks, condition variables, reusable barriers, and detached workers.
 Read-write locks support timed operations and process-shared futexes. Readers
 may pass queued writers, so a continuous reader stream can starve writers.
 Thread-specific key values use per-thread storage, key generations prevent
@@ -1015,10 +1015,12 @@ Blocking calls routed through Nelibc's cancellable syscall wrappers (including
 read/write, socket I/O, poll/select, waits, sleeps, openat, and fsync) are
 interrupted for enabled cancellation and unwind cleanup handlers. Ordinary
 CPU-bound code must call `pthread_testcancel`. Linux signal 32 is reserved for
-this mechanism; Nelibc rejects attempts to install or block it. The API
-`pthread_setcanceltype` and asynchronous cancellation are not implemented.
-Cleanup handlers on the initial thread are also unsupported. Each created
-thread has room for 32 pending cleanup handlers.
+this mechanism; Nelibc rejects attempts to install or block it.
+`pthread_setcanceltype` and asynchronous cancellation are supported. Scheduler
+attributes cover inherited or explicit `SCHED_OTHER`, `SCHED_FIFO`, and
+`SCHED_RR`; explicit permission failures are reported by `pthread_create`
+before the worker routine starts. Cleanup handlers on the initial thread are
+also supported. Each created thread has room for 32 pending cleanup handlers.
 Standalone unnamed POSIX semaphores (`sem_init`, `sem_destroy`, `sem_wait`,
 `sem_timedwait`, `sem_trywait`, `sem_post`, and `sem_getvalue`) are implemented
 with futex-backed waits; blocked `sem_wait` calls are deferred-cancellation

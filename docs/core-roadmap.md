@@ -36,14 +36,14 @@ start, allocate, do I/O, handle strings/numbers, and use threads. Math and
 threading are the largest capability gaps; locales and broader portability
 matter more for completeness than for the initial common-program target.
 
-- The current API inventory has 645 declared names: 565 marked implemented,
-  80 intentionally host-delegated across the hybrid profiles, and one
+- The current API inventory has 653 declared names: 565 marked implemented,
+  88 intentionally host-delegated across the hybrid profiles, and one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage.
 - The musl 1.2.5 public-symbol comparison finds 1,269 declarations that are
   also exported by the pinned release archives: Nelibc exports 425 in at least
-  one hybrid profile, delegates 69 to a hybrid host, and does not yet declare
-  775. The largest undeclared groups are pthread, complex math, wide
+  one hybrid profile, delegates 77 to a hybrid host, and does not yet declare
+  767. The largest undeclared groups are pthread, complex math, wide
   characters, stdlib, unistd, and network database APIs. These are gap counts,
   not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
@@ -168,9 +168,13 @@ matter more for completeness than for the initial common-program target.
   context; cancellation state, cleanup handlers, `pthread_exit`, and thread-
   specific destructors use the same path as created threads. The cleanup stack
   is bounded to 32 entries per thread.
-- Standalone pthread attributes support configurable stack sizes and page-
-  protected guard regions; `pthread_attr_getguardsize` reports the requested
-  byte size, while stack mappings round the guard region up to whole pages.
+- Standalone pthread attributes support configurable stack sizes, page-
+  protected guard regions, and scheduler inheritance/policy/priority. Explicit
+  scheduling is applied before a startup gate releases the worker; permission
+  failures are returned from `pthread_create` without running the routine.
+  `pthread_attr_getguardsize` reports the requested byte size, while stack
+  mappings round the guard region up to whole pages. `pthread_getschedparam` and
+  `pthread_setschedparam` query and change live Linux thread scheduling.
 - Standalone unnamed POSIX semaphores now provide `sem_init`, `sem_destroy`,
   `sem_wait`, `sem_timedwait`, `sem_trywait`, `sem_post`, and `sem_getvalue`.
   They use Nelua-owned futex waits, including cancellation at blocking waits.

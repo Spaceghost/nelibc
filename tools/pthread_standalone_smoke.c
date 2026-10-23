@@ -368,6 +368,15 @@ static void *timed_mutex_worker(void *argument) {
   return (void *)(intptr_t)result;
 }
 
+static void *explicit_schedule_worker(void *argument) {
+  (void)argument;
+  int policy = -1;
+  struct sched_param param = {-1};
+  if (pthread_getschedparam(pthread_self(), &policy, &param) != 0)
+    return (void *)1;
+  return policy == SCHED_OTHER && param.sched_priority == 0 ? 0 : (void *)2;
+}
+
 static void *spin_increment_worker(void *argument) {
   (void)argument;
   for (int i = 0; i < 10000; ++i) {
@@ -464,6 +473,34 @@ int main(void) {
 
   pthread_attr_t attributes;
   if (pthread_attr_init(&attributes) != 0) return 1;
+  int inheritsched = -1;
+  int schedpolicy = -1;
+  struct sched_param schedparam = {-1};
+  if (pthread_attr_getinheritsched(&attributes, &inheritsched) != 0 ||
+      inheritsched != PTHREAD_INHERIT_SCHED ||
+      pthread_attr_getschedpolicy(&attributes, &schedpolicy) != 0 ||
+      schedpolicy != SCHED_OTHER ||
+      pthread_attr_getschedparam(&attributes, &schedparam) != 0 ||
+      schedparam.sched_priority != 0 ||
+      pthread_attr_setinheritsched(&attributes, 99) != EINVAL ||
+      pthread_attr_setschedpolicy(&attributes, 99) != EINVAL)
+    return 225;
+  schedparam.sched_priority = 1;
+  if (pthread_attr_setschedpolicy(&attributes, SCHED_FIFO) != 0 ||
+      pthread_attr_setschedparam(&attributes, &schedparam) != 0 ||
+      pthread_attr_getschedpolicy(&attributes, &schedpolicy) != 0 ||
+      schedpolicy != SCHED_FIFO ||
+      pthread_attr_getschedparam(&attributes, &schedparam) != 0 ||
+      schedparam.sched_priority != 1)
+    return 226;
+  schedparam.sched_priority = 0;
+  if (pthread_attr_setschedpolicy(&attributes, SCHED_OTHER) != 0 ||
+      pthread_attr_setschedparam(&attributes, &schedparam) != 0 ||
+      pthread_attr_setinheritsched(&attributes, PTHREAD_EXPLICIT_SCHED) != 0)
+    return 227;
+  if (pthread_setschedparam(pthread_self(), SCHED_OTHER, &schedparam) != 0 ||
+      pthread_setschedparam(pthread_self(), SCHED_OTHER, 0) != EINVAL)
+    return 228;
   size_t guardsize = 0;
   if (pthread_attr_getguardsize(&attributes, &guardsize) != 0 || guardsize != 4096 ||
       pthread_attr_setguardsize(&attributes, 8192) != 0 ||
@@ -479,6 +516,15 @@ int main(void) {
     return 4;
 
   pthread_t thread;
+  if (pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_JOINABLE) != 0 ||
+      pthread_create(&thread, &attributes, explicit_schedule_worker, 0) != 0)
+    return 229;
+  void *schedule_result = 0;
+  if (pthread_join(thread, &schedule_result) != 0 || schedule_result != 0)
+    return 230;
+  if (pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_DETACHED) != 0)
+    return 231;
+
   if (pthread_spin_init(&test_spinlock, PTHREAD_PROCESS_PRIVATE) != 0 ||
       pthread_spin_trylock(&test_spinlock) != 0 ||
       pthread_spin_trylock(&test_spinlock) != EBUSY ||

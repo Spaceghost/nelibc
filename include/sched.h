@@ -6,6 +6,17 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+#define SCHED_OTHER 0
+#define SCHED_FIFO 1
+#define SCHED_RR 2
+#define SCHED_BATCH 3
+#define SCHED_IDLE 5
+#define SCHED_RESET_ON_FORK 0x40000000
+
+struct sched_param {
+  int sched_priority;
+};
+
 #define CPU_SETSIZE 1024
 #define __NELIBC_CPU_BITS (8 * sizeof(unsigned long))
 

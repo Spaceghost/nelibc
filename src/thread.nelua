@@ -39,16 +39,26 @@ local PthreadContext: type = @record{
   cancel_pending: cint,
   cancel_state: cint,
   cancel_type: cint,
+  sched_policy: cint,
+  sched_priority: cint,
+  sched_inherit: cint,
+  startup_gate: cint,
   cancel_wait_address: pointer,
   cancel_wait_wake_operation: cint,
   cleanup_count: cint,
   cleanup_entries: [32]PthreadCleanupEntry
 }
+local SchedParam: type = @record{
+  sched_priority: cint
+}
 local PthreadAttr: type = @record{
   magic: culong,
   detachstate: cint,
   stacksize: csize,
-  guardsize: csize
+  guardsize: csize,
+  inheritsched: cint,
+  schedpolicy: cint,
+  schedparam: SchedParam
 }
 local PthreadMutexAttr: type = @record{
   magic: culong,
@@ -120,7 +130,6 @@ local Timespec: type = @record{
   tv_sec: clong,
   tv_nsec: clong
 }
-
 local STACK_SIZE: csize <comptime> = 1048576
 local PAGE_SIZE: csize <comptime> = 4096
 local PTHREAD_STACK_MINIMUM: csize <comptime> = 16384
@@ -141,6 +150,11 @@ local PTHREAD_CANCEL_ENABLE: cint <comptime> = 0
 local PTHREAD_CANCEL_DISABLE: cint <comptime> = 1
 local PTHREAD_CANCEL_DEFERRED: cint <comptime> = 0
 local PTHREAD_CANCEL_ASYNCHRONOUS: cint <comptime> = 1
+local PTHREAD_INHERIT_SCHED: cint <comptime> = 0
+local PTHREAD_EXPLICIT_SCHED: cint <comptime> = 1
+local SCHED_OTHER: cint <comptime> = 0
+local SCHED_FIFO: cint <comptime> = 1
+local SCHED_RR: cint <comptime> = 2
 local PTHREAD_KEY_COUNT: csize <comptime> = 128
 local PTHREAD_KEY_INDEX_MASK: cuint <comptime> = 255
 local pthread_key_lock: cint = 0
@@ -720,6 +734,12 @@ end
 
 local function pthread_trampoline(argument: pointer): cint <cexport, codename 'nelibc_pthread_trampoline'>
   local context = (@*PthreadContext)(argument)
+  while nelibc_atomic_load_int(&context.startup_gate) == 0 do
+    nelibc_raw_syscall6(202_culong,
+      (@culong)((@usize)(&context.startup_gate)), 128_culong,
+      0_culong, 0_culong, 0_culong, 0_culong)
+  end
+  if nelibc_atomic_load_int(&context.startup_gate) < 0 then return 0 end
   nelibc_thread_cancel_signal_unblock()
   pthread_key_reset_values()
   pthread_testcancel()
@@ -740,6 +760,9 @@ local function pthread_attr_init(attr: *PthreadAttr): cint <cexport, codename 'p
   attr.detachstate = 0
   attr.stacksize = STACK_SIZE
   attr.guardsize = PAGE_SIZE
+  attr.inheritsched = PTHREAD_INHERIT_SCHED
+  attr.schedpolicy = SCHED_OTHER
+  attr.schedparam.sched_priority = 0
   return 0
 end
 
@@ -788,6 +811,66 @@ local function pthread_attr_getguardsize(attr: *PthreadAttr, guardsize: *[0]csiz
     <cexport, codename 'pthread_attr_getguardsize'>
   if not pthread_attr_valid(attr) or guardsize == nilptr then return 22 end -- EINVAL
   guardsize[0] = attr.guardsize
+  return 0
+end
+
+local function pthread_sched_policy_valid(policy: cint): boolean <inline>
+  return policy == SCHED_OTHER or policy == SCHED_FIFO or policy == SCHED_RR
+end
+
+local function pthread_sched_priority_valid(policy: cint, priority: cint): boolean <inline>
+  if policy == SCHED_OTHER then return priority == 0 end
+  return pthread_sched_policy_valid(policy) and priority >= 1 and priority <= 99
+end
+
+local function pthread_attr_setinheritsched(attr: *PthreadAttr,
+    inheritsched: cint): cint <cexport, codename 'pthread_attr_setinheritsched'>
+  if not pthread_attr_valid(attr) or
+     (inheritsched ~= PTHREAD_INHERIT_SCHED and
+      inheritsched ~= PTHREAD_EXPLICIT_SCHED) then
+    return 22 -- EINVAL
+  end
+  attr.inheritsched = inheritsched
+  return 0
+end
+
+local function pthread_attr_getinheritsched(attr: *PthreadAttr,
+    inheritsched: *[0]cint): cint <cexport, codename 'pthread_attr_getinheritsched'>
+  if not pthread_attr_valid(attr) or inheritsched == nilptr then return 22 end -- EINVAL
+  inheritsched[0] = attr.inheritsched
+  return 0
+end
+
+local function pthread_attr_setschedpolicy(attr: *PthreadAttr,
+    policy: cint): cint <cexport, codename 'pthread_attr_setschedpolicy'>
+  if not pthread_attr_valid(attr) or not pthread_sched_policy_valid(policy) then
+    return 22 -- EINVAL
+  end
+  attr.schedpolicy = policy
+  return 0
+end
+
+local function pthread_attr_getschedpolicy(attr: *PthreadAttr,
+    policy: *[0]cint): cint <cexport, codename 'pthread_attr_getschedpolicy'>
+  if not pthread_attr_valid(attr) or policy == nilptr then return 22 end -- EINVAL
+  policy[0] = attr.schedpolicy
+  return 0
+end
+
+local function pthread_attr_setschedparam(attr: *PthreadAttr,
+    param: *SchedParam): cint <cexport, codename 'pthread_attr_setschedparam'>
+  if not pthread_attr_valid(attr) or param == nilptr or
+     not pthread_sched_priority_valid(attr.schedpolicy, param.sched_priority) then
+    return 22 -- EINVAL
+  end
+  attr.schedparam.sched_priority = param.sched_priority
+  return 0
+end
+
+local function pthread_attr_getschedparam(attr: *PthreadAttr,
+    param: *SchedParam): cint <cexport, codename 'pthread_attr_getschedparam'>
+  if not pthread_attr_valid(attr) or param == nilptr then return 22 end -- EINVAL
+  param.sched_priority = attr.schedparam.sched_priority
   return 0
 end
 
@@ -1853,11 +1936,24 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   if thread == nilptr or start == nilptr then return 22 end -- EINVAL
   local stacksize: csize = STACK_SIZE
   local guardsize: csize = PAGE_SIZE
+  local inheritsched: cint = PTHREAD_INHERIT_SCHED
+  local schedpolicy: cint = SCHED_OTHER
+  local schedpriority: cint = 0
   if attr ~= nilptr then
     if not pthread_attr_valid(attr) then return 22 end -- EINVAL
     if attr.detachstate ~= 0 and attr.detachstate ~= 1 then return 22 end -- EINVAL
+    if attr.inheritsched ~= PTHREAD_INHERIT_SCHED and
+       attr.inheritsched ~= PTHREAD_EXPLICIT_SCHED then return 22 end -- EINVAL
+    if not pthread_sched_policy_valid(attr.schedpolicy) or
+       not pthread_sched_priority_valid(attr.schedpolicy,
+                                       attr.schedparam.sched_priority) then
+      return 22 -- EINVAL
+    end
     stacksize = attr.stacksize
     guardsize = attr.guardsize
+    inheritsched = attr.inheritsched
+    schedpolicy = attr.schedpolicy
+    schedpriority = attr.schedparam.sched_priority
   end
   local signal_error = nelibc_thread_cancel_signal_install()
   if signal_error ~= 0 then return signal_error end
@@ -1879,11 +1975,14 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.cancel_pending = 0
   state.context.cancel_state = PTHREAD_CANCEL_ENABLE
   state.context.cancel_type = PTHREAD_CANCEL_DEFERRED
+  state.context.sched_policy = schedpolicy
+  state.context.sched_priority = schedpriority
+  state.context.sched_inherit = inheritsched
+  state.context.startup_gate = 0
   state.context.cancel_wait_address = nilptr
   state.context.cancel_wait_wake_operation = 0
   state.context.cleanup_count = 0
-  if attr ~= nilptr and attr.detachstate == 1 then state.context.lifecycle = 3
-  else state.context.lifecycle = 0 end
+  state.context.lifecycle = 0
   state.handle.state = 0
   state.handle.tid_word = tid_word
   if thread_spawn(&state.handle, (@pointer)(pthread_trampoline), &state.context,
@@ -1895,7 +1994,35 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
     if error_code == 0 then return 11 end -- EAGAIN
     return error_code
   end
+  local scheduling_error: cint = 0
+  if inheritsched == PTHREAD_EXPLICIT_SCHED then
+    local param: SchedParam
+    param.sched_priority = schedpriority
+    local result = nelibc_raw_syscall3(144_culong,
+        (@culong)(nelibc_thread_tid_load((@pointer)(state.handle.tid_word))),
+        (@culong)(schedpolicy), (@culong)((@usize)(&param)))
+    if result < 0 and result >= -4095 then
+      scheduling_error = (@cint)(-result)
+    end
+  end
+  if scheduling_error ~= 0 then
+    state.handle.state = 1
+    nelibc_atomic_store_int(&state.context.startup_gate, -1)
+    nelibc_raw_syscall6(202_culong,
+      (@culong)((@usize)(&state.context.startup_gate)), 129_culong,
+      1_culong, 0_culong, 0_culong, 0_culong)
+    thread_wait(&state.handle)
+    nelibc_thread_tid_slot_release(tid_word)
+    state.magic = 0
+    nelibc_free(object)
+    return scheduling_error
+  end
+  if attr ~= nilptr and attr.detachstate == 1 then state.context.lifecycle = 3 end
   thread[0] = object
+  nelibc_atomic_store_int(&state.context.startup_gate, 1)
+  nelibc_raw_syscall6(202_culong,
+    (@culong)((@usize)(&state.context.startup_gate)), 129_culong,
+    1_culong, 0_culong, 0_culong, 0_culong)
   return 0
 end
 
@@ -1951,6 +2078,54 @@ end
 local function pthread_self(): pointer <cexport, codename 'pthread_self'>
   pthread_current_context()
   return nelibc_thread_current_identity()
+end
+
+local function pthread_target_tid(thread: pointer, tid: *[0]cint): cint <inline>
+  if thread == nilptr or tid == nilptr then return 3 end -- ESRCH
+  if initial_thread_identity ~= nilptr and thread == initial_thread_identity then
+    tid[0] = initial_thread_tid
+    if tid[0] > 0 then return 0 end
+    return 3 -- ESRCH
+  end
+  local state = (@*PthreadObject)(thread)
+  if state.magic ~= PTHREAD_OBJECT_MAGIC or state.handle.tid_word == nilptr then
+    return 3 -- ESRCH
+  end
+  tid[0] = nelibc_thread_tid_load((@pointer)(state.handle.tid_word))
+  if tid[0] <= 0 then return 3 end -- ESRCH
+  return 0
+end
+
+local function pthread_getschedparam(thread: pointer, policy: *[0]cint,
+    param: *SchedParam): cint <cexport, codename 'pthread_getschedparam'>
+  if policy == nilptr or param == nilptr then return 22 end -- EINVAL
+  local tid: cint
+  local thread_error = pthread_target_tid(thread, &tid)
+  if thread_error ~= 0 then return thread_error end
+  local sched_policy = nelibc_raw_syscall3(145_culong, (@culong)(tid),
+                                           0_culong, 0_culong)
+  if sched_policy < 0 and sched_policy >= -4095 then return (@cint)(-sched_policy) end
+  local sched_param: SchedParam
+  local result = nelibc_raw_syscall3(143_culong, (@culong)(tid),
+      (@culong)((@usize)(&sched_param)), 0_culong)
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  policy[0] = (@cint)(sched_policy)
+  param.sched_priority = sched_param.sched_priority
+  return 0
+end
+
+local function pthread_setschedparam(thread: pointer, policy: cint,
+    param: *SchedParam): cint <cexport, codename 'pthread_setschedparam'>
+  if param == nilptr or not pthread_sched_priority_valid(policy, param.sched_priority) then
+    return 22 -- EINVAL
+  end
+  local tid: cint
+  local thread_error = pthread_target_tid(thread, &tid)
+  if thread_error ~= 0 then return thread_error end
+  local result = nelibc_raw_syscall3(144_culong, (@culong)(tid),
+      (@culong)(policy), (@culong)((@usize)(param)))
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  return 0
 end
 
 local function pthread_exit(result: pointer): void <cexport, codename 'pthread_exit'>

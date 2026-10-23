@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <sched.h>
 
 struct timespec;
 
@@ -19,6 +20,9 @@ typedef struct {
   int __detachstate;
   size_t __stacksize;
   size_t __guardsize;
+  int __inheritsched;
+  int __schedpolicy;
+  struct sched_param __schedparam;
 } pthread_attr_t;
 typedef struct {
   uintptr_t __magic;
@@ -77,6 +81,8 @@ typedef struct {
 #define PTHREAD_CANCEL_DISABLE 1
 #define PTHREAD_CANCEL_DEFERRED 0
 #define PTHREAD_CANCEL_ASYNCHRONOUS 1
+#define PTHREAD_INHERIT_SCHED 0
+#define PTHREAD_EXPLICIT_SCHED 1
 #define PTHREAD_CANCELED ((void *)(intptr_t)-1)
 #define PTHREAD_MUTEX_NORMAL 0
 #define PTHREAD_MUTEX_DEFAULT PTHREAD_MUTEX_NORMAL
@@ -98,6 +104,14 @@ int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize);
 int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stacksize);
 int pthread_attr_setguardsize(pthread_attr_t *attr, size_t guardsize);
 int pthread_attr_getguardsize(const pthread_attr_t *attr, size_t *guardsize);
+int pthread_attr_setinheritsched(pthread_attr_t *attr, int inheritsched);
+int pthread_attr_getinheritsched(const pthread_attr_t *attr, int *inheritsched);
+int pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy);
+int pthread_attr_getschedpolicy(const pthread_attr_t *attr, int *policy);
+int pthread_attr_setschedparam(pthread_attr_t *attr,
+                               const struct sched_param *param);
+int pthread_attr_getschedparam(const pthread_attr_t *attr,
+                               struct sched_param *param);
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
                    void *(*start_routine)(void *), void *arg);
 int pthread_cancel(pthread_t thread);
@@ -109,6 +123,10 @@ void pthread_exit(void *retval);
 void pthread_testcancel(void);
 int pthread_setcancelstate(int state, int *oldstate);
 int pthread_setcanceltype(int type, int *oldtype);
+int pthread_getschedparam(pthread_t thread, int *policy,
+                          struct sched_param *param);
+int pthread_setschedparam(pthread_t thread, int policy,
+                          const struct sched_param *param);
 void __nelibc_pthread_cleanup_push(void (*routine)(void *), void *arg);
 void __nelibc_pthread_cleanup_pop(int execute);
 #define pthread_cleanup_push(routine, arg) \
