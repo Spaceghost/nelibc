@@ -12,6 +12,10 @@ x86-64 project; the standalone runtime is a separate, incomplete profile.
 - GCC for the GCC comparison profile
 - TinyCC and its `libtcc1.a` for the TinyCC profile
 
+Zig builds default to `-mcpu=x86_64`, so binaries run on baseline x86-64
+machines. Override this with `make ZIGFLAGS='-mcpu=x86_64_v3'` when you
+intentionally want a newer CPU baseline.
+
 ## Build and run a real C consumer
 
 From the repository root:
@@ -110,6 +114,8 @@ memory, strings, integer conversion, and the current Nelua math slice.
   GCC/glibc, Zig/musl, and TinyCC/glibc.
 - `make pthread-standalone-matrix` exercises the standalone pthread subset with
   Zig, GCC, and TinyCC, including process-shared barriers and read-write locks.
+  Its join checks include `pthread_tryjoin_np` returning `EBUSY` for a live
+  thread and reclaiming the thread after it exits.
 - `make sem-clockwait-musl-smoke` compiles and runs a static musl consumer of
   `sem_clockwait`, including deadline, wakeup, and cancellation behavior.
 - `make sem-clockwait-shootout-zig` compares Nelibc's immediate, empty-timeout,

@@ -2952,6 +2952,35 @@ local function pthread_join(thread: pointer, result: *[0]pointer): cint <cexport
   return 0
 end
 
+local function pthread_tryjoin_np(thread: pointer, result: *[0]pointer): cint
+    <cexport, codename 'pthread_tryjoin_np'>
+  if thread == nilptr then return 3 end -- ESRCH
+  if thread == nelibc_thread_current_identity() then return 35 end -- EDEADLK
+  local state = (@*PthreadObject)(thread)
+  if state.magic ~= PTHREAD_OBJECT_MAGIC then return 3 end -- ESRCH
+  local lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
+  while true do
+    if lifecycle ~= 0 and lifecycle ~= 2 then return 22 end -- EINVAL
+    if nelibc_atomic_cas_int(&state.context.lifecycle, lifecycle, 4) == 0 then break end
+    lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
+  end
+  if nelibc_thread_tid_load((@pointer)(state.handle.tid_word)) ~= 0 then
+    nelibc_atomic_store_int(&state.context.lifecycle, lifecycle)
+    return 16 -- EBUSY: the thread has not terminated
+  end
+  local tid_word: *[0]cint = state.handle.tid_word
+  if thread_wait(&state.handle) ~= 0 then
+    nelibc_atomic_store_int(&state.context.lifecycle, lifecycle)
+    return nelibc_errno_location()[0]
+  end
+  if result ~= nilptr then result[0] = state.context.result end
+  pthread_robust_slot_release(state.context.robust_slot)
+  nelibc_thread_tid_slot_release(tid_word)
+  state.magic = 0
+  nelibc_free(thread)
+  return 0
+end
+
 local function pthread_detach(thread: pointer): cint <cexport, codename 'pthread_detach'>
   if thread == nilptr then return 3 end -- ESRCH
   local state = (@*PthreadObject)(thread)
