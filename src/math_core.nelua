@@ -759,6 +759,63 @@ local function exp2f(value: cfloat): cfloat <cexport, codename 'exp2f'>
   return result
 end
 
+local function integer_power_of_ten(exponent: cint): cdouble
+  local remaining = exponent
+  local positive_powers: [9]cdouble = {
+    1e1_cdouble, 1e2_cdouble, 1e4_cdouble, 1e8_cdouble, 1e16_cdouble,
+    1e32_cdouble, 1e64_cdouble, 1e128_cdouble, 1e256_cdouble,
+  }
+  local negative_powers: [9]cdouble = {
+    1e-1_cdouble, 1e-2_cdouble, 1e-4_cdouble, 1e-8_cdouble, 1e-16_cdouble,
+    1e-32_cdouble, 1e-64_cdouble, 1e-128_cdouble, 1e-256_cdouble,
+  }
+  local powers = &positive_powers
+  if remaining < 0_cint then
+    remaining = -remaining
+    powers = &negative_powers
+  end
+  local result = 1_cdouble
+  local index: cint = 0_cint
+  while remaining > 0_cint and index < 9_cint do
+    if (remaining & 1_cint) ~= 0_cint then result = result * powers[index] end
+    remaining = remaining >> 1
+    index = index + 1_cint
+  end
+  return result
+end
+
+local function exp10(value: cdouble): cdouble <cexport, codename 'exp10'>
+  if value ~= value or is_infinite64(value) then
+    if value < 0_cdouble then return 0_cdouble end
+    return value
+  end
+  if value > 310_cdouble then
+    math_range_error()
+    return nelibc_exp_overflow_hw()
+  end
+  if value < -324_cdouble then
+    math_range_error()
+    return nelibc_exp_underflow_hw()
+  end
+  local scale: cint = (@cint)(round_binary64(value, 3_cint))
+  local fraction = value - (@cdouble)(scale)
+  local residual = fraction * 0x1.26BB1C0000000P+1_cdouble +
+    fraction * -0x1.12AABA8000000P-25_cdouble
+  local result = integer_power_of_ten(scale) * exp_core(residual)
+  if is_infinite64(result) or result == 0_cdouble then math_range_error() end
+  return result
+end
+
+local function exp10f(value: cfloat): cfloat <cexport, codename 'exp10f'>
+  local result = (@cfloat)(exp10((@cdouble)(value)))
+  local result_bits: FloatBits = {value = result}
+  local result_field = result_bits.bits & 0x7F800000_cuint
+  if result_field == 0x7F800000_cuint or result_field == 0_cuint then
+    if value == value and not is_infinite32(value) then math_range_error() end
+  end
+  return result
+end
+
 -- Compute exp(value - ln(2)) without losing the low subtraction bits near the
 -- binary64 overflow boundary, where exp(value) itself no longer fits.
 local function exp_minus_ln2(value: cdouble): cdouble
@@ -1070,6 +1127,14 @@ end
 
 local function log2f(value: cfloat): cfloat <cexport, codename 'log2f'>
   return (@cfloat)(log2((@cdouble)(value)))
+end
+
+local function log10(value: cdouble): cdouble <cexport, codename 'log10'>
+  return log(value) * 0x1.BCB7B1526E50EP-2_cdouble
+end
+
+local function log10f(value: cfloat): cfloat <cexport, codename 'log10f'>
+  return (@cfloat)(log10((@cdouble)(value)))
 end
 
 local function cbrt(value: cdouble): cdouble <cexport, codename 'cbrt'>

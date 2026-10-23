@@ -36,7 +36,7 @@ start, allocate, do I/O, handle strings/numbers, and use threads. Math and
 threading are the largest capability gaps; locales and broader portability
 matter more for completeness than for the initial common-program target.
 
-- The current API inventory has 597 declared names: 559 marked implemented,
+- The current API inventory has 601 declared names: 563 marked implemented,
   38 intentionally host-delegated across the hybrid profiles, and one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage.
@@ -49,7 +49,7 @@ matter more for completeness than for the initial common-program target.
   syscall smoke checks UTC and negative epochs, leap days, POSIX TZ rules,
   TZif zone files, DST transitions, formatting bounds, and CPU clocks. Broader
   locale-specific time names and cross-libc differential coverage remain open.
-- The current math slice in `src/math_core.nelua` exports 86 float and double
+- The current math slice in `src/math_core.nelua` exports 90 float and double
   functions through all four hybrid profiles and standalone archives. Its
   Nelua functions implement `fmin`/`fmax` NaN behavior and rounding rules;
   x86-64 hardware instructions implement correctly rounded square root and
@@ -85,12 +85,17 @@ matter more for completeness than for the initial common-program target.
   Differential checks compare normal inputs within four ULP. For binary64
   subnormal inputs, the harness also checks a finite in-range result because
   Zig's bundled compiler math returns inaccurate reference values there;
-  GCC/glibc comparisons cover those inputs directly.
+  GCC/glibc comparisons cover those inputs directly. The same bundled Zig
+  reference issue affects `log10` subnormals; the harness checks result range
+  there and uses full ULP comparisons with GCC/glibc.
   `log1p` uses a compensated `log(1+x)` path for larger inputs and an atanh
   series for small values; `expm1` uses a Taylor series around zero and the
   exponential core for larger magnitudes. Float variants widen to binary64
   and narrow. Differential checks cover domain edges and generated values
-  within four ULP.
+  within four ULP. `log10` uses the natural-log core and log10(e). The GNU
+  `exp10` extension splits its input into an integer decimal scale and a
+  fractional remainder, then uses powers-of-ten constants and the exponential
+  core; observed differential error stays within eight ULP across the matrix.
   `hypot`/`hypotf` scale by the larger input before squaring, prioritize infinity
   over NaN, and avoid underflow from insignificant operand ratios. Pairwise
   differential checks cover edge values and generated inputs.

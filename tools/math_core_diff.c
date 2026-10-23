@@ -26,6 +26,8 @@ extern float nelibc_expf(float);
 extern double nelibc_exp(double);
 extern float nelibc_exp2f(float);
 extern double nelibc_exp2(double);
+extern float nelibc_exp10f(float);
+extern double nelibc_exp10(double);
 extern float nelibc_expm1f(float);
 extern double nelibc_expm1(double);
 extern float nelibc_cbrtf(float);
@@ -36,6 +38,8 @@ extern float nelibc_logf(float);
 extern double nelibc_log(double);
 extern float nelibc_log2f(float);
 extern double nelibc_log2(double);
+extern float nelibc_log10f(float);
+extern double nelibc_log10(double);
 extern float nelibc_log1pf(float);
 extern double nelibc_log1p(double);
 extern float nelibc_sinhf(float);
@@ -284,6 +288,10 @@ static int check_exp_log(double value, float valuef) {
   const float expected_expm1f = expm1f(valuef), actual_expm1f = nelibc_expm1f(valuef);
   const double expected_log1p = log1p(value), actual_log1p = nelibc_log1p(value);
   const float expected_log1pf = log1pf(valuef), actual_log1pf = nelibc_log1pf(valuef);
+  const double expected_exp10 = exp10(value), actual_exp10 = nelibc_exp10(value);
+  const float expected_exp10f = exp10f(valuef), actual_exp10f = nelibc_exp10f(valuef);
+  const double expected_log10 = log10(log_input), actual_log10 = nelibc_log10(log_input);
+  const float expected_log10f = log10f(log_inputf), actual_log10f = nelibc_log10f(log_inputf);
   if (isnan(expected_expm1) != isnan(actual_expm1) ||
       (!isnan(expected_expm1) && !isinf(expected_expm1) && ulps_double(expected_expm1, actual_expm1) > 4) ||
       isnan(expected_expm1f) != isnan(actual_expm1f) ||
@@ -291,10 +299,23 @@ static int check_exp_log(double value, float valuef) {
       isnan(expected_log1p) != isnan(actual_log1p) ||
       (!isnan(expected_log1p) && !isinf(expected_log1p) && ulps_double(expected_log1p, actual_log1p) > 4) ||
       isnan(expected_log1pf) != isnan(actual_log1pf) ||
-      (!isnan(expected_log1pf) && !isinf(expected_log1pf) && ulps_float(expected_log1pf, actual_log1pf) > 4)) {
-    fprintf(stderr, "expm1/log1p mismatch x=%.17g/%.9g expm1 %.17g %.17g expm1f %.9g %.9g log1p %.17g %.17g log1pf %.9g %.9g\n",
+      (!isnan(expected_log1pf) && !isinf(expected_log1pf) && ulps_float(expected_log1pf, actual_log1pf) > 4) ||
+      isnan(expected_exp10) != isnan(actual_exp10) ||
+      (!isnan(expected_exp10) && !isinf(expected_exp10) && ulps_double(expected_exp10, actual_exp10) > 8) ||
+      isnan(expected_exp10f) != isnan(actual_exp10f) ||
+      (!isnan(expected_exp10f) && !isinf(expected_exp10f) && ulps_float(expected_exp10f, actual_exp10f) > 8) ||
+      isnan(expected_log10) != isnan(actual_log10) ||
+      (!isnan(expected_log10) && !isinf(expected_log10) && log_input >= DBL_MIN &&
+       ulps_double(expected_log10, actual_log10) > 4) ||
+      (log_input > 0.0 && log_input < DBL_MIN &&
+       (!(actual_log10 <= -307.0 && actual_log10 >= -324.0))) ||
+      isnan(expected_log10f) != isnan(actual_log10f) ||
+      (!isnan(expected_log10f) && !isinf(expected_log10f) && ulps_float(expected_log10f, actual_log10f) > 4)) {
+    fprintf(stderr, "expm1/log1p/exp10/log10 mismatch x=%.17g/%.9g expm1 %.17g %.17g expm1f %.9g %.9g log1p %.17g %.17g log1pf %.9g %.9g exp10 %.17g %.17g exp10f %.9g %.9g log10 %.17g %.17g log10f %.9g %.9g\n",
             value, valuef, expected_expm1, actual_expm1, expected_expm1f, actual_expm1f,
-            expected_log1p, actual_log1p, expected_log1pf, actual_log1pf);
+            expected_log1p, actual_log1p, expected_log1pf, actual_log1pf,
+            expected_exp10, actual_exp10, expected_exp10f, actual_exp10f,
+            expected_log10, actual_log10, expected_log10f, actual_log10f);
     return 1;
   }
   const double expected_cbrt = cbrt(value);
@@ -1102,7 +1123,7 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
-  printf("86 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+  printf("90 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
          (double)max_exp_ulps, (double)max_log_ulps,
          (double)max_expf_ulps, (double)max_logf_ulps,
          (unsigned long long)max_sin_ulps, (unsigned long long)max_cos_ulps,

@@ -25,6 +25,8 @@ float expf(float value);
 double exp(double value);
 float exp2f(float value);
 double exp2(double value);
+float exp10f(float value);
+double exp10(double value);
 float expm1f(float value);
 double expm1(double value);
 float powf(float value, float exponent);
@@ -49,6 +51,8 @@ float logf(float value);
 double log(double value);
 float log2f(float value);
 double log2(double value);
+float log10f(float value);
+double log10(double value);
 float log1pf(float value);
 double log1p(double value);
 float cbrtf(float value);
@@ -119,6 +123,10 @@ double nexttoward(double from, long double to);
 #else
 
 #include_next <math.h>
+/* GNU math extensions implemented by Nelibc but not exposed by every
+   system header feature-test configuration. */
+float exp10f(float value);
+double exp10(double value);
 
 #endif
 
