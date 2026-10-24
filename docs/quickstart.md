@@ -54,7 +54,7 @@ for unrelated host-owned objects.
 The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`,
 `log`, `log1p`, `log2`, `log10`, `exp2`, `exp10`, `expm1`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `hypot`, `sqrt`, `fmod`,
-`remainder`, `fmin`, `fmax`, `fdim`, `cbrt`, `frexp`, `modf`, `ldexp`, `scalbn`,
+`remainder`, `fmin`, `fmax`, `fdim`, `fma`, `fmaf`, `cbrt`, `frexp`, `modf`, `ldexp`, `scalbn`,
 `scalbln`, `pow`, `atan`, `atan2`, `asinh`, `acosh`, `atanh`, `ilogb`,
 `logb`, `nextafter`, and `nexttoward`.
 `rint` observes the active rounding direction and may raise `FE_INEXACT`;

@@ -51,6 +51,8 @@ float asinf(float value);
 double asin(double value);
 float acosf(float value);
 double acos(double value);
+float fmaf(float x, float y, float z);
+double fma(double x, double y, double z);
 float logf(float value);
 double log(double value);
 float log2f(float value);

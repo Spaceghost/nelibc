@@ -62,6 +62,8 @@ extern float nelibc_asinf(float);
 extern double nelibc_asin(double);
 extern float nelibc_acosf(float);
 extern double nelibc_acos(double);
+extern float nelibc_fmaf(float, float, float);
+extern double nelibc_fma(double, double, double);
 extern float nelibc_sinf(float);
 extern double nelibc_sin(double);
 extern float nelibc_cosf(float);
@@ -209,6 +211,25 @@ static int check_inverse_trig(double value, float valuef) {
       (!isnan(expected_acosf) && ulps_float(expected_acosf, actual_acosf) > 4)) {
     fprintf(stderr, "inverse trig float mismatch x=%.9g asinf=%.9g/%.9g acosf=%.9g/%.9g\n",
             valuef, expected_asinf, actual_asinf, expected_acosf, actual_acosf);
+    return 1;
+  }
+  return 0;
+}
+
+static int check_fma(double x, double y, double z,
+                     float xf, float yf, float zf) {
+  const double expected = fma(x, y, z), actual = nelibc_fma(x, y, z);
+  if (isnan(expected) != isnan(actual) ||
+      (!isnan(expected) && !equal_double(expected, actual))) {
+    fprintf(stderr, "fma mismatch x=%a y=%a z=%a expected=%a actual=%a\n",
+            x, y, z, expected, actual);
+    return 1;
+  }
+  const float expectedf = fmaf(xf, yf, zf), actualf = nelibc_fmaf(xf, yf, zf);
+  if (isnan(expectedf) != isnan(actualf) ||
+      (!isnan(expectedf) && !equal_float(expectedf, actualf))) {
+    fprintf(stderr, "fmaf mismatch x=%a y=%a z=%a expected=%a actual=%a\n",
+            xf, yf, zf, expectedf, actualf);
     return 1;
   }
   return 0;
@@ -1085,6 +1106,16 @@ int main(void) {
     const float valuef = 2.0f * (float)(next_bits() >> 40) * 0x1p-24f - 1.0f;
     if (check_inverse_trig(value, valuef)) return 1;
   }
+  static const double fma_edges[][3] = {
+      {0x1.0000000000001p0, 0x1.ffffffffffffep-1, -1.0},
+      {0x1p-1022, 0.5, -0x1p-1023},
+      {0x1.fffffffffffffp1023, 2.0, -0x1.fffffffffffffp1023},
+      {-0.0, 1.0, -0.0},
+  };
+  for (size_t i = 0; i < sizeof fma_edges / sizeof fma_edges[0]; ++i)
+    if (check_fma(fma_edges[i][0], fma_edges[i][1], fma_edges[i][2],
+                  (float)fma_edges[i][0], (float)fma_edges[i][1],
+                  (float)fma_edges[i][2])) return 1;
   for (size_t i = 0; i < sizeof exp_edges / sizeof exp_edges[0]; ++i)
     if (check_exp_log(exp_edges[i], (float)exp_edges[i])) return 1;
   const double log10_edges[] = {
@@ -1132,6 +1163,12 @@ int main(void) {
         (right32 & UINT32_C(0x007FFFFF)) != 0)
       right32 |= UINT32_C(0x00400000);
     if (check_double(bits) || check_float((uint32_t)(bits >> 17)) ||
+        check_fma(((double_bits){.bits = bits}).value,
+                  ((double_bits){.bits = other}).value,
+                  ((double_bits){.bits = next_bits()}).value,
+                  ((float_bits){.bits = (uint32_t)(bits >> 17)}).value,
+                  ((float_bits){.bits = left32}).value,
+                  ((float_bits){.bits = right32}).value) ||
         check_inverse_trig(((double_bits){.bits = bits}).value,
                            ((float_bits){.bits = (uint32_t)(bits >> 17)}).value) ||
         check_exp_log(((double_bits){.bits = bits}).value,
@@ -1201,7 +1238,7 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
-  printf("94 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+  printf("96 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
          (double)max_exp_ulps, (double)max_log_ulps,
          (double)max_expf_ulps, (double)max_logf_ulps,
          (unsigned long long)max_sin_ulps, (unsigned long long)max_cos_ulps,

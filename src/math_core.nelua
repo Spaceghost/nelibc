@@ -7,6 +7,8 @@
 -- separate work.
 local FloatBits: type = @union{bits: cuint, value: cfloat}
 local DoubleBits: type = @union{bits: culonglong, value: cdouble}
+local FmaNumber: type = @record{mantissa: culonglong, exponent: cint, sign: cint}
+local FmaProduct: type = @record{high: culonglong, low: culonglong}
 -- The 2/pi digits and math-kernel coefficients follow FreeBSD libmsun/musl fdlibm
 -- constants. Copyright (C) 1993 by Sun Microsystems, Inc.; developed at
 -- SunSoft. Permission to use, copy, modify, and distribute is freely granted
@@ -297,6 +299,205 @@ local function scalblnf(value: cfloat, exponent: clong): cfloat <cexport, codena
     bounded = (@cint)(exponent)
   end
   return ldexpf(value, bounded)
+end
+
+local function fma_normalize(value: cdouble): FmaNumber <inline>
+  local representation: DoubleBits = {value = value}
+  local exponent = (@cint)(representation.bits >> 52)
+  local sign = exponent & 0x800_cint
+  exponent = exponent & 0x7FF_cint
+  if exponent == 0_cint then
+    local scaled_representation: DoubleBits = {value = value * 0x1p63_cdouble}
+    representation.bits = scaled_representation.bits
+    exponent = (@cint)((representation.bits >> 52) & 0x7FF_culonglong)
+    if exponent ~= 0_cint then
+      exponent = exponent - 63_cint
+    else
+      exponent = 0x800_cint
+    end
+  end
+  local mantissa = (representation.bits & 0x000FFFFFFFFFFFFF_culonglong) |
+    0x0010000000000000_culonglong
+  return {mantissa = mantissa << 1,
+          exponent = exponent - 0x3FF_cint - 52_cint - 1_cint,
+          sign = sign}
+end
+
+local function fma_multiply(x: culonglong, y: culonglong): FmaProduct <inline>
+  local x_low = x & 0xFFFFFFFF_culonglong
+  local x_high = x >> 32
+  local y_low = y & 0xFFFFFFFF_culonglong
+  local y_high = y >> 32
+  local term1 = x_low * y_low
+  local term2 = x_low * y_high + x_high * y_low
+  local term3 = x_high * y_high
+  local low = term1 + (term2 << 32)
+  local high = term3 + (term2 >> 32)
+  if low < term1 then high = high + 1_culonglong end
+  return {high = high, low = low}
+end
+
+local function fma_clz64(value: culonglong): cint <inline>
+  local count: cint = 0_cint
+  local bit = 0x8000000000000000_culonglong
+  while (value & bit) == 0_culonglong and count < 64_cint do
+    count = count + 1_cint
+    bit = bit >> 1
+  end
+  return count
+end
+
+local function fma_boolean_bit(value: boolean): culonglong <inline>
+  if value then return 1_culonglong end
+  return 0_culonglong
+end
+
+local function fma(x: cdouble, y: cdouble, z: cdouble): cdouble
+    <cexport, codename 'fma'>
+  local nx = fma_normalize(x)
+  local ny = fma_normalize(y)
+  local nz = fma_normalize(z)
+  local zero_inf_nan_exponent = 0x7FF_cint - 0x3FF_cint - 52_cint - 1_cint
+  if nx.exponent >= zero_inf_nan_exponent or ny.exponent >= zero_inf_nan_exponent then
+    return x * y + z
+  end
+  if nz.exponent >= zero_inf_nan_exponent then
+    if nz.exponent > zero_inf_nan_exponent then return x * y + z end
+    return z
+  end
+
+  local product = fma_multiply(nx.mantissa, ny.mantissa)
+  local exponent = nx.exponent + ny.exponent
+  local distance = nz.exponent - exponent
+  local z_high: culonglong
+  local z_low: culonglong
+  if distance > 0_cint then
+    if distance < 64_cint then
+      z_low = nz.mantissa << distance
+      z_high = nz.mantissa >> (64_cint - distance)
+    else
+      z_low = 0_culonglong
+      z_high = nz.mantissa
+      exponent = nz.exponent - 64_cint
+      distance = distance - 64_cint
+      if distance > 0_cint then
+        if distance < 64_cint then
+          product.low = (product.high << (64_cint - distance)) |
+            (product.low >> distance) |
+            fma_boolean_bit((product.low << (64_cint - distance)) ~= 0_culonglong)
+          product.high = product.high >> distance
+        else
+          product.low = 1_culonglong
+          product.high = 0_culonglong
+        end
+      end
+    end
+  else
+    z_high = 0_culonglong
+    distance = -distance
+    if distance == 0_cint then
+      z_low = nz.mantissa
+    elseif distance < 64_cint then
+      z_low = (nz.mantissa >> distance) |
+        fma_boolean_bit((nz.mantissa << (64_cint - distance)) ~= 0_culonglong)
+    else
+      z_low = 1_culonglong
+    end
+  end
+
+  local sign = nx.sign ~ ny.sign
+  local same_sign = (sign ~ nz.sign) == 0_cint
+  local nonzero = true
+  if same_sign then
+    local previous_low = product.low
+    product.low = product.low + z_low
+    product.high = product.high + z_high + fma_boolean_bit(product.low < previous_low)
+  else
+    local previous_low = product.low
+    product.low = product.low - z_low
+    product.high = product.high - z_high - fma_boolean_bit(previous_low < z_low)
+    if (product.high >> 63) ~= 0_culonglong then
+      product.low = 0_culonglong - product.low
+      product.high = 0_culonglong - product.high - fma_boolean_bit(product.low ~= 0_culonglong)
+      sign = sign ~ 0x800_cint
+    end
+    nonzero = product.high ~= 0_culonglong
+  end
+
+  local result_high: culonglong
+  local shift: cint
+  if nonzero then
+    exponent = exponent + 64_cint
+    shift = fma_clz64(product.high) - 1_cint
+    result_high = (product.high << shift) | (product.low >> (64_cint - shift)) |
+      fma_boolean_bit((product.low << shift) ~= 0_culonglong)
+  elseif product.low ~= 0_culonglong then
+    shift = fma_clz64(product.low) - 1_cint
+    if shift < 0_cint then
+      result_high = (product.low >> 1) | (product.low & 1_culonglong)
+    else
+      result_high = product.low << shift
+    end
+  else
+    return x * y + z
+  end
+  exponent = exponent - shift
+
+  local signed_integer = (@clonglong)(result_high)
+  if sign ~= 0_cint then signed_integer = -signed_integer end
+  local result = (@cdouble)(signed_integer)
+  if exponent < -1022_cint - 62_cint then
+    if exponent == -1022_cint - 63_cint then
+      local cutoff = 0x1p63_cdouble
+      if sign ~= 0_cint then cutoff = -cutoff end
+      if result == cutoff then
+        local float_min = 0x0.ffffff8p-63_cdouble * 0x1p-126_cdouble * result
+        return 0x1p-896_cdouble * float_min
+      end
+      if (result_high << 53) ~= 0_culonglong then
+        signed_integer = (@clonglong)((result_high >> 1) |
+          (result_high & 1_culonglong) | 0x4000000000000000_culonglong)
+        if sign ~= 0_cint then signed_integer = -signed_integer end
+        result = (@cdouble)(signed_integer)
+        result = 2_cdouble * result - cutoff
+        local tiny = 0x1p-896_cdouble * result
+        result = result + (tiny * tiny) * (result - result)
+      end
+    else
+      shift = 10_cint
+      signed_integer = (@clonglong)((result_high >> shift) |
+        fma_boolean_bit((result_high << (64_cint - shift)) ~= 0_culonglong)) << shift
+      if sign ~= 0_cint then signed_integer = -signed_integer end
+      result = (@cdouble)(signed_integer)
+    end
+  end
+  return scalbn(result, exponent)
+end
+
+local function fmaf(x: cfloat, y: cfloat, z: cfloat): cfloat
+    <cexport, codename 'fmaf'>
+  local product = (@cdouble)(x) * (@cdouble)(y)
+  local result = product + (@cdouble)(z)
+  local representation: DoubleBits = {value = result}
+  local exponent = (@cint)((representation.bits >> 52) & 0x7FF_culonglong)
+  if (representation.bits & 0x1FFFFFFF_culonglong) ~= 0x10000000_culonglong or
+      exponent == 0x7FF_cint or (result - product == (@cdouble)(z) and
+      result - (@cdouble)(z) == product) then
+    return (@cfloat)(result)
+  end
+  local negative = (representation.bits >> 63) ~= 0_culonglong
+  local error: cdouble
+  if negative == ((@cdouble)(z) > product) then
+    error = product - result + (@cdouble)(z)
+  else
+    error = (@cdouble)(z) - result + product
+  end
+  if negative == (error < 0_cdouble) then
+    representation.bits = representation.bits + 1_culonglong
+  else
+    representation.bits = representation.bits - 1_culonglong
+  end
+  return (@cfloat)(representation.value)
 end
 
 local function nextafter(x: cdouble, y: cdouble): cdouble <cexport, codename 'nextafter'>

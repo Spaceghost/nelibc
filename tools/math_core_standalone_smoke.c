@@ -84,6 +84,9 @@ int main(void) {
       !(acos(0.5) > 1.04719755119659 && acos(0.5) < 1.04719755119660) ||
       !(asinf(-0.5f) < -0.5235987f && asinf(-0.5f) > -0.5235989f) ||
       !(acosf(-0.5f) > 2.0943950f && acosf(-0.5f) < 2.0943953f)) return 142;
+  if (fma(0x1.0000000000001p0, 0x1.ffffffffffffep-1, -1.0) != -0x1p-104 ||
+      fmaf(0x1.000002p0f, 0x1.fffffcp-1f, -1.0f) != -0x1p-46f)
+    return 145;
   errno = 0;
   if (!is_nan_double(asin(2.0)) || errno != EDOM) return 143;
   errno = 0;
