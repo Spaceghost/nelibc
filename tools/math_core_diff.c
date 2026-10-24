@@ -68,6 +68,14 @@ extern float nelibc_erff(float);
 extern double nelibc_erf(double);
 extern float nelibc_erfcf(float);
 extern double nelibc_erfc(double);
+extern double nelibc_j0(double);
+extern float nelibc_j0f(float);
+extern double nelibc_j1(double);
+extern float nelibc_j1f(float);
+extern double nelibc_y0(double);
+extern float nelibc_y0f(float);
+extern double nelibc_y1(double);
+extern float nelibc_y1f(float);
 extern double nelibc_tgamma(double);
 extern float nelibc_tgammaf(float);
 extern double nelibc_lgamma(double);
@@ -995,6 +1003,28 @@ static int check_rint_mode(int mode, double value, float valuef) {
   return 0;
 }
 
+static int check_bessel(double x, float xf) {
+  const double ax = fabs(x), ay = fabs((double)xf);
+  const double j0e = j0(x), j1e = j1(x), y0e = y0(ax), y1e = y1(ax);
+  const float j0ef = j0f(xf), j1ef = j1f(xf), y0ef = y0f((float)ay), y1ef = y1f((float)ay);
+  const double j0a = nelibc_j0(x), j1a = nelibc_j1(x), y0a = nelibc_y0(ax), y1a = nelibc_y1(ax);
+  const float j0af = nelibc_j0f(xf), j1af = nelibc_j1f(xf), y0af = nelibc_y0f((float)ay), y1af = nelibc_y1f((float)ay);
+  const double tolerance = 2e-9;
+  if ((!isnan(j0e) && fabs(j0a-j0e) > tolerance*(1+fabs(j0e))) ||
+      (!isnan(j1e) && fabs(j1a-j1e) > tolerance*(1+fabs(j1e))) ||
+      (!isnan(y0e) && fabs(y0a-y0e) > tolerance*(1+fabs(y0e))) ||
+      (!isnan(y1e) && fabs(y1a-y1e) > tolerance*(1+fabs(y1e))) ||
+      (!isnan(j0ef) && fabsf(j0af-j0ef) > 2e-6f*(1+fabsf(j0ef))) ||
+      (!isnan(j1ef) && fabsf(j1af-j1ef) > 2e-6f*(1+fabsf(j1ef))) ||
+      (!isnan(y0ef) && fabsf(y0af-y0ef) > 2e-6f*(1+fabsf(y0ef))) ||
+      (!isnan(y1ef) && fabsf(y1af-y1ef) > 2e-6f*(1+fabsf(y1ef)))) {
+    fprintf(stderr, "Bessel mismatch x=%.17g xf=%.9g J0 %.17g/%.17g J1 %.17g/%.17g Y0 %.17g/%.17g Y1 %.17g/%.17g\n",
+      x, xf, j0e,j0a,j1e,j1a,y0e,y0a,y1e,y1a);
+    return 1;
+  }
+  return 0;
+}
+
 static int check_gamma(double x, float xf) {
   const double ge = tgamma(x), le = lgamma(x);
   const float gef = tgammaf(xf), lef = lgammaf(xf);
@@ -1049,6 +1079,11 @@ static int check_erf(double x, float xf) {
 }
 
 int main(void) {
+  static const double bessel_edges[] = {0x1p-1074, 0x1p-54, 0.1, 0.5, 1.0, 1.25, 2.0, 3.8317059702075125, 5.520078110286311, 8.0, 11.999999, 12.0, 16.0, 20.0, 50.0, 100.0, 1e6, 1e100};
+  for (size_t i=0; i<sizeof bessel_edges/sizeof bessel_edges[0]; ++i) {
+    double x=bessel_edges[i]; float xf=(float)x;
+    if (check_bessel(x,xf) || check_bessel(-x,-xf)) return 1;
+  }
   if (check_gamma(0.5, 0.5f) || check_gamma(1.0, 1.0f) || check_gamma(2.0, 2.0f) ||
       check_gamma(5.5, 5.5f) || check_gamma(-0.5, -0.5f) || check_gamma(-1.5, -1.5f) ||
       check_gamma(-2.5, -2.5f) || check_gamma(20.25, 20.25f) || check_gamma(-10.25, -10.25f) ||
@@ -1256,6 +1291,8 @@ int main(void) {
         check_pair_float(left32, right32) ||
         check_gamma((((double_bits){.bits = bits}).value / DBL_MAX) * 20.0,
                    (((float_bits){.bits = left32}).value / FLT_MAX) * 20.0f) ||
+        check_bessel(((((bits & UINT64_C(0x000FFFFFFFFFFFFF)) / (double)UINT64_C(0x0010000000000000)) * 30.0) * ((bits >> 63) ? -1.0 : 1.0)),
+                     (float)((((left32 & UINT32_C(0x007FFFFF)) / (float)UINT32_C(0x00800000)) * 30.0f) * ((left32 >> 31) ? -1.0f : 1.0f))) ||
         check_erf((((double_bits){.bits = bits}).value / DBL_MAX) * 28.0,
                   (((float_bits){.bits = (uint32_t)(bits >> 17)}).value / FLT_MAX) * 28.0f)) return 1;
   }
@@ -1321,7 +1358,7 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
-  printf("106 binary32/binary64 core math functions matched; erf/erfc max ULP: %llu/%llu (float %u/%u); exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+  printf("114 binary32/binary64 core math functions matched; erf/erfc max ULP: %llu/%llu (float %u/%u); exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
          (unsigned long long)max_erf_ulps, (unsigned long long)max_erfc_ulps, max_erff_ulps, max_erfcf_ulps,
          (double)max_exp_ulps, (double)max_log_ulps,
          (double)max_expf_ulps, (double)max_logf_ulps,

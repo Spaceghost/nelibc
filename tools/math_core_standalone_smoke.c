@@ -91,6 +91,17 @@ int main(void) {
       !(erfc(1.0) > 0.1572992070502851 && erfc(1.0) < 0.1572992070502852)) return 146;
   if (!(erff(1.0f) > 0.8427007f && erff(1.0f) < 0.8427009f) ||
       !(erfcf(1.0f) > 0.1572991f && erfcf(1.0f) < 0.1572993f)) return 147;
+  if (j0(0.0) != 1.0 || j0(-0.0) != 1.0 || j1(0.0) != 0.0 || !signbit(j1(-0.0))) return 152;
+  if (fabs(j0(1.0) - 0.7651976865579666) > 2e-15 || fabs(j1(1.0) - 0.4400505857449335) > 2e-15) return 153;
+  if (fabs(y0(1.0) - 0.08825696421567696) > 2e-15 || fabs(y1(1.0) + 0.7812128213002887) > 2e-15) return 154;
+  errno = 0;
+  if (!isinf(y0(0.0)) || y0(0.0) > 0.0 || errno != ERANGE) return 157;
+  errno = 0;
+  if (!isinf(y1(0.0)) || y1(0.0) > 0.0 || errno != ERANGE) return 158;
+  errno = 0;
+  if (!is_nan_double(y0(-1.0)) || errno != EDOM) return 159;
+  if (fabsf(j0f(1.0f) - 0.7651977f) > 2e-7f || fabsf(j1f(1.0f) - 0.4400506f) > 2e-7f) return 155;
+  if (fabsf(y0f(1.0f) - 0.08825696f) > 2e-7f || fabsf(y1f(1.0f) + 0.7812128f) > 2e-7f) return 156;
   if (fabs(tgamma(5.0) - 24.0) > 0x1p-42 || fabs(tgamma(-0.5) + 3.544907701811032) > 0x1p-42) return 148;
   int gamma_sign = 0;
   if (fabs(lgamma_r(-0.5, &gamma_sign) - 1.2655121234846454) > 0x1p-45 || gamma_sign != -1) return 149;

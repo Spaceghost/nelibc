@@ -2192,3 +2192,150 @@ end
 local function roundf(value: cfloat): cfloat <cexport, codename 'roundf'>
   return round_binary32(value, 3_cint)
 end
+
+local BesselPair: type = @record{j: cdouble, y: cdouble}
+local bessel_pi: cdouble = 3.141592653589793238462643383279502884_cdouble
+local bessel_euler: cdouble = 0.577215664901532860606512090082402431_cdouble
+local bessel_sqrt_two_over_pi: cdouble = 0.797884560802865355879892119868763737_cdouble
+
+-- Power series for the first 12 units; the order-zero and order-one Y series
+-- share their J series and harmonic-number terms.
+local function bessel_series(x: cdouble, order: cint): BesselPair
+  local q = x * x * 0.25_cdouble
+  local term0: cdouble = 1_cdouble
+  local j0sum: cdouble = 1_cdouble
+  local y0sum: cdouble = 0_cdouble
+  local harmonic: cdouble = 0_cdouble
+  for k = 1, 80 do
+    local kd: cdouble = (@cdouble)(k)
+    term0 = -term0 * q / (kd * kd)
+    j0sum = j0sum + term0
+    harmonic = harmonic + 1_cdouble / kd
+    y0sum = y0sum - harmonic * term0
+  end
+  local term1: cdouble = x * 0.5_cdouble
+  local j1sum = term1
+  local y1sum = term1 -- H_0 + H_1 = 1
+  local harmonic1: cdouble = 0_cdouble
+  for k = 1, 80 do
+    local kd: cdouble = (@cdouble)(k)
+    term1 = -term1 * q / (kd * (kd + 1_cdouble))
+    j1sum = j1sum + term1
+    harmonic1 = harmonic1 + 1_cdouble / kd
+    y1sum = y1sum + (harmonic1 + harmonic1 + 1_cdouble / (kd + 1_cdouble)) * term1
+  end
+  local logarithm = log(x) - 0.693147180559945309417232121458176568_cdouble + bessel_euler
+  local result: BesselPair
+  if order == 0_cint then
+    result.j = j0sum
+    result.y = (2_cdouble / bessel_pi) * (logarithm * j0sum + y0sum)
+  else
+    result.j = j1sum
+    result.y = -2_cdouble / (bessel_pi * x) + (2_cdouble / bessel_pi) * logarithm * j1sum - y1sum / bessel_pi
+  end
+  return result
+end
+
+-- Optimally truncated Hankel expansions for large arguments. The sine and
+-- cosine phase shifts are formed from sin(x), cos(x), preserving reduction at
+-- large magnitudes where subtracting pi/4 or 3pi/4 would lose phase bits.
+local function bessel_asymptotic(x: cdouble, order: cint): BesselPair
+  local p: cdouble = 1_cdouble
+  local q: cdouble = 0_cdouble
+  local term: cdouble = 1_cdouble
+  local previous: cdouble = 1_cdouble
+  local phase: cdouble = 1_cdouble
+  local nu: cdouble = (@cdouble)(order)
+  for k = 1, 80 do
+    local kd: cdouble = (@cdouble)(k)
+    local odd: cdouble = 2_cdouble * kd - 1_cdouble
+    term = term * (4_cdouble * nu * nu - odd * odd) / (8_cdouble * kd * x)
+    local magnitude = fabs(term)
+    if magnitude > previous then break end
+    if k % 2 == 0 then phase = -phase end
+    if k % 2 == 0 then p = p + phase * term else q = q + phase * term end
+    previous = magnitude
+  end
+  local sx = sin(x)
+  local cx = cos(x)
+  local cosine_phase: cdouble
+  local sine_phase: cdouble
+  if order == 0_cint then
+    cosine_phase = (sx + cx) * 0.707106781186547524400844362104849039_cdouble
+    sine_phase = (sx - cx) * 0.707106781186547524400844362104849039_cdouble
+  else
+    cosine_phase = (sx - cx) * 0.707106781186547524400844362104849039_cdouble
+    sine_phase = -(sx + cx) * 0.707106781186547524400844362104849039_cdouble
+  end
+  local j = cosine_phase * p - sine_phase * q
+  local y = sine_phase * p + cosine_phase * q
+  local scale = bessel_sqrt_two_over_pi / sqrt(x)
+  local result: BesselPair
+  result.j = scale * j
+  result.y = scale * y
+  return result
+end
+
+local function bessel_pair(x: cdouble, order: cint): BesselPair
+  if x < 12_cdouble then return bessel_series(x, order) end
+  return bessel_asymptotic(x, order)
+end
+
+local function j0(value: cdouble): cdouble <cexport, codename 'j0'>
+  if is_nan64(value) then return value + value end
+  if value == 0_cdouble then return 1_cdouble end
+  if is_infinite64(value) then return 0_cdouble end
+  return bessel_pair(fabs(value), 0_cint).j
+end
+
+local function j1(value: cdouble): cdouble <cexport, codename 'j1'>
+  if is_nan64(value) then return value + value end
+  if value == 0_cdouble then return value end
+  if is_infinite64(value) then return 0_cdouble end
+  local result = bessel_pair(fabs(value), 1_cint).j
+  if value < 0_cdouble or is_negative_zero64(value) then return -result end
+  return result
+end
+
+local function y0(value: cdouble): cdouble <cexport, codename 'y0'>
+  if is_nan64(value) then return value + value end
+  if value == 0_cdouble then
+    math_range_error()
+    return double_from_bits(0xFFF0000000000000_culonglong)
+  end
+  if value < 0_cdouble then
+    math_domain_error()
+    return double_from_bits(0x7FF8000000000000_culonglong)
+  end
+  if is_infinite64(value) then return 0_cdouble end
+  return bessel_pair(value, 0_cint).y
+end
+
+local function y1(value: cdouble): cdouble <cexport, codename 'y1'>
+  if is_nan64(value) then return value + value end
+  if value == 0_cdouble then
+    math_range_error()
+    return double_from_bits(0xFFF0000000000000_culonglong)
+  end
+  if value < 0_cdouble then
+    math_domain_error()
+    return double_from_bits(0x7FF8000000000000_culonglong)
+  end
+  if is_infinite64(value) then return 0_cdouble end
+  local result = bessel_pair(value, 1_cint).y
+  if is_infinite64(result) then math_range_error() end
+  return result
+end
+
+local function j0f(value: cfloat): cfloat <cexport, codename 'j0f'>
+  return (@cfloat)(j0((@cdouble)(value)))
+end
+local function j1f(value: cfloat): cfloat <cexport, codename 'j1f'>
+  return (@cfloat)(j1((@cdouble)(value)))
+end
+local function y0f(value: cfloat): cfloat <cexport, codename 'y0f'>
+  return (@cfloat)(y0((@cdouble)(value)))
+end
+local function y1f(value: cfloat): cfloat <cexport, codename 'y1f'>
+  return (@cfloat)(y1((@cdouble)(value)))
+end
