@@ -154,6 +154,9 @@ local PthreadKeyValue: type = @record{
 local PthreadObject: type = @record{
   magic: culong,
   handle: ThreadHandle,
+  stack_addr: pointer,
+  stack_size: csize,
+  guard_size: csize,
   context: PthreadContext
 }
 local Timespec: type = @record{
@@ -2943,6 +2946,16 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
     if error_code == 0 then return 11 end -- EAGAIN
     return error_code
   end
+  if stackaddr ~= nilptr then
+    state.stack_addr = stackaddr
+    state.stack_size = stacksize
+    state.guard_size = 0_csize
+  else
+    local actual_guard_size = (guardsize + PAGE_SIZE - 1_csize) & ~(PAGE_SIZE - 1_csize)
+    state.stack_addr = (@pointer)((@usize)(state.handle.stack) + (@usize)(actual_guard_size))
+    state.stack_size = (stacksize + PAGE_SIZE - 1_csize) & ~(PAGE_SIZE - 1_csize)
+    state.guard_size = actual_guard_size
+  end
   local scheduling_error: cint = 0
   if inheritsched == PTHREAD_EXPLICIT_SCHED then
     local param: SchedParam
@@ -3102,6 +3115,140 @@ local function pthread_target_tid(thread: pointer, tid: *[0]cint): cint <inline>
   end
   tid[0] = nelibc_thread_tid_load((@pointer)(state.handle.tid_word))
   if tid[0] <= 0 then return 3 end -- ESRCH
+  return 0
+end
+
+local function pthread_find_current_stack(probe: usize, stack_start: *[0]usize,
+    stack_end: *[0]usize): cint
+  if stack_start == nilptr or stack_end == nilptr then return 22 end -- EINVAL
+  local path: [16]cchar = {
+    47_cchar, 112_cchar, 114_cchar, 111_cchar, 99_cchar, 47_cchar,
+    115_cchar, 101_cchar, 108_cchar, 102_cchar, 47_cchar,
+    109_cchar, 97_cchar, 112_cchar, 115_cchar, 0_cchar
+  }
+  local fd = openat(-100_cint, &path[0], 0_cint, 0_cuint)
+  if fd < 0 then return nelibc_errno_location()[0] end
+  local input: [4096]cchar = {}
+  local line: [512]cchar = {}
+  local line_length: csize = 0
+  local dropping_line = false
+  while true do
+    local count = nelibc_raw_syscall3(0_culong, (@culong)(fd),
+        (@culong)((@usize)(&input[0])), 4096_culong)
+    if count < 0 and count >= -4095 then
+      close(fd)
+      return (@cint)(-count)
+    end
+    if count == 0 then break end
+    local i: csize = 0
+    while i < (@csize)(count) do
+      if input[i] == 10_cchar then
+        if not dropping_line and line_length > 0_csize then
+          local j: csize = 0
+          local first: usize = 0
+          local last: usize = 0
+          local have_first_digit = false
+          while j < line_length and line[j] ~= 45_cchar do -- '-'
+            local ch = (@cuint)(line[j])
+            local digit: cuint
+            if ch >= 48_cuint and ch <= 57_cuint then digit = ch - 48_cuint
+            elseif ch >= 97_cuint and ch <= 102_cuint then digit = ch - 87_cuint
+            elseif ch >= 65_cuint and ch <= 70_cuint then digit = ch - 55_cuint
+            else break end
+            first = first * 16_usize + (@usize)(digit)
+            have_first_digit = true
+            j = j + 1_csize
+          end
+          if have_first_digit and j < line_length and line[j] == 45_cchar then
+            j = j + 1_csize
+            local have_last_digit = false
+            while j < line_length and line[j] ~= 32_cchar do -- space
+              local ch = (@cuint)(line[j])
+              local digit: cuint
+              if ch >= 48_cuint and ch <= 57_cuint then digit = ch - 48_cuint
+              elseif ch >= 97_cuint and ch <= 102_cuint then digit = ch - 87_cuint
+              elseif ch >= 65_cuint and ch <= 70_cuint then digit = ch - 55_cuint
+              else break end
+              last = last * 16_usize + (@usize)(digit)
+              have_last_digit = true
+              j = j + 1_csize
+            end
+            if have_last_digit and probe >= first and probe < last then
+              stack_start[0] = first
+              stack_end[0] = last
+              close(fd)
+              return 0
+            end
+          end
+        end
+        line_length = 0_csize
+        dropping_line = false
+      elseif not dropping_line then
+        if line_length < 511_csize then
+          line[line_length] = input[i]
+          line_length = line_length + 1_csize
+        else
+          line_length = 0_csize
+          dropping_line = true
+        end
+      end
+      i = i + 1_csize
+    end
+  end
+  close(fd)
+  return 5 -- EIO: current stack mapping was not found
+end
+
+local function pthread_getattr_np(thread: pointer, attr: *PthreadAttr): cint
+    <cexport, codename 'pthread_getattr_np'>
+  if attr == nilptr then return 22 end -- EINVAL
+  local tid: cint
+  local thread_error = pthread_target_tid(thread, &tid)
+  if thread_error ~= 0 then return thread_error end
+  local stack_addr: pointer
+  local stack_size: csize
+  local guard_size: csize
+  local detachstate: cint = 0
+  local schedpolicy: cint = SCHED_OTHER
+  local schedpriority: cint = 0
+  local inheritsched: cint = PTHREAD_INHERIT_SCHED
+  if initial_thread_identity ~= nilptr and thread == initial_thread_identity then
+    local probe: cint = 0
+    local stack_start: usize
+    local stack_end: usize
+    local stack_error = pthread_find_current_stack((@usize)(&probe),
+        &stack_start, &stack_end)
+    if stack_error ~= 0 then return stack_error end
+    stack_addr = (@pointer)(stack_start)
+    stack_size = (@csize)(stack_end - stack_start)
+    guard_size = 0_csize
+    local context = pthread_current_context()
+    schedpolicy = context.sched_policy
+    schedpriority = context.sched_priority
+    inheritsched = context.sched_inherit
+  else
+    local state = (@*PthreadObject)(thread)
+    if state.magic ~= PTHREAD_OBJECT_MAGIC then return 3 end -- ESRCH
+    stack_addr = state.stack_addr
+    stack_size = state.stack_size
+    guard_size = state.guard_size
+    local lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
+    if lifecycle == 1 or lifecycle == 3 or lifecycle == 5 or lifecycle == 6 then
+      detachstate = 1
+    end
+    schedpolicy = state.context.sched_policy
+    schedpriority = state.context.sched_priority
+    inheritsched = state.context.sched_inherit
+  end
+  local init_error = pthread_attr_init(attr)
+  if init_error ~= 0 then return init_error end
+  attr.stackaddr = stack_addr
+  attr.stacksize = stack_size
+  attr.guardsize = guard_size
+  attr.detachstate = detachstate
+  attr.schedpolicy = schedpolicy
+  attr.schedparam.sched_priority = schedpriority
+  attr.inheritsched = inheritsched
   return 0
 end
 

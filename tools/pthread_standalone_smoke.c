@@ -766,11 +766,37 @@ int main(void) {
   if (pthread_create(&user_stack_thread, &user_stack_attributes,
                      user_stack_worker, 0) != 0)
     return 233;
+  pthread_attr_t observed_user_stack_attributes;
+  void *observed_user_stack = 0;
+  size_t observed_user_stack_size = 0;
+  size_t observed_user_guard_size = 1;
+  if (pthread_getattr_np(user_stack_thread, &observed_user_stack_attributes) != 0 ||
+      pthread_attr_getstack(&observed_user_stack_attributes,
+                            &observed_user_stack,
+                            &observed_user_stack_size) != 0 ||
+      pthread_attr_getguardsize(&observed_user_stack_attributes,
+                                &observed_user_guard_size) != 0 ||
+      observed_user_stack != user_thread_stack ||
+      observed_user_stack_size != sizeof(user_thread_stack) ||
+      observed_user_guard_size != 0)
+    return 243;
   void *user_stack_result = 0;
   if (pthread_join(user_stack_thread, &user_stack_result) != 0 ||
       user_stack_result != 0 || user_thread_stack[0] != 0x5a)
     return 234;
   if (pthread_attr_destroy(&user_stack_attributes) != 0) return 235;
+  pthread_attr_t observed_main_attributes;
+  void *observed_main_stack = 0;
+  size_t observed_main_stack_size = 0;
+  volatile unsigned char main_stack_marker = 0;
+  if (pthread_getattr_np(pthread_self(), &observed_main_attributes) != 0 ||
+      pthread_attr_getstack(&observed_main_attributes, &observed_main_stack,
+                            &observed_main_stack_size) != 0 ||
+      (uintptr_t)&main_stack_marker < (uintptr_t)observed_main_stack ||
+      (uintptr_t)&main_stack_marker >= (uintptr_t)observed_main_stack +
+                                           observed_main_stack_size)
+    return 244;
+  if (pthread_attr_destroy(&observed_main_attributes) != 0) return 245;
   int scope = -1;
   int inheritsched = -1;
   int schedpolicy = -1;
@@ -923,6 +949,19 @@ int main(void) {
 
   atomic_store_explicit(&join_release, 0, memory_order_release);
   if (pthread_create(&thread, 0, gated_join_worker, exit_value) != 0) return 18;
+  pthread_attr_t observed_worker_attributes;
+  void *observed_worker_stack = 0;
+  size_t observed_worker_stack_size = 0;
+  size_t observed_worker_guard_size = 0;
+  if (pthread_getattr_np(thread, &observed_worker_attributes) != 0 ||
+      pthread_attr_getstack(&observed_worker_attributes, &observed_worker_stack,
+                            &observed_worker_stack_size) != 0 ||
+      pthread_attr_getguardsize(&observed_worker_attributes,
+                                &observed_worker_guard_size) != 0 ||
+      observed_worker_stack == 0 || observed_worker_stack_size != 1048576 ||
+      observed_worker_guard_size != 4096 ||
+      pthread_attr_destroy(&observed_worker_attributes) != 0)
+    return 246;
   cpu_set_t worker_affinity;
   cpu_set_t current_affinity;
   if (pthread_getaffinity_np(thread, sizeof(worker_affinity),

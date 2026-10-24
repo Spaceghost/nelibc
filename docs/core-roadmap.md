@@ -12,7 +12,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, and `atan2`; the arithmetic backend is x86-64-specific, and most math entry points remain open | Expand the math set; then long-double coverage and complete fenv semantics |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 733 undeclared candidates and record explicit intentional omissions |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 732 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -38,16 +38,16 @@ matter more for completeness than for the initial common-program target.
 
 ### Standalone pthread gap audit
 
-The generated API inventory currently records 104 pthread declarations, and
-all 104 export from the Zig, GCC, and TinyCC standalone archives. This verifies
+The generated API inventory currently records 105 pthread declarations, and
+all 105 export from the Zig, GCC, and TinyCC standalone archives. This verifies
 symbol presence, not full behavior. The pinned musl 1.2.5 public-symbol baseline
-has 7 pthread entries without project declarations: five public extension
+has 6 pthread entries without project declarations: four public extension
 functions listed below and two internal cleanup helpers. Prioritize the public
 gaps by portability impact:
 
 | Priority | Missing APIs | Why they matter | Scope |
 |---|---|---|---|
-| P3 | `pthread_getattr_np`, `pthread_getattr_default_np`, `pthread_setattr_default_np`, `pthread_getconcurrency`, `pthread_setconcurrency` | Adds Linux/glibc and musl nonstandard thread controls and convenience calls | Implementation-specific extensions |
+| P3 | `pthread_getattr_default_np`, `pthread_setattr_default_np`, `pthread_getconcurrency`, `pthread_setconcurrency` | Adds Linux/glibc and musl nonstandard thread controls and convenience calls | Implementation-specific extensions |
 
 This is a baseline-derived priority list, not a complete POSIX inventory. The
 standalone priority-ceiling attributes and mutex get/set operations are
@@ -70,6 +70,9 @@ bytes, and get-name buffers must hold at least 16 bytes.
 `pthread_getaffinity_np` and `pthread_setaffinity_np` operate on live thread IDs
 through Linux scheduler affinity syscalls; tests read and reapply the existing
 mask for both a worker and the calling thread.
+`pthread_getattr_np` reports the current thread's stack mapping or the recorded
+usable stack, guard size, detach state, and scheduling attributes for Nelibc
+threads. The initial thread's stack mapping is found through `/proc/self/maps`.
 The `pthread_kill`, `pthread_getcpuclockid`, and `pthread_setschedprio` are
 implemented in standalone mode and delegated to the host in hybrid mode.
 `pthread_atfork` is implemented
@@ -77,15 +80,15 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The current API inventory has 679 declared names: 566 exported in hybrid
-  archives, 109 host-delegated across all hybrid profiles, and four standalone
+- The current API inventory has 680 declared names: 566 exported in hybrid
+  archives, 110 host-delegated across all hybrid profiles, and four standalone
   priority-ceiling exports that glibc supplies in hybrid mode but musl does
   not. There is also one implementation-only entry. This is an
   inventory signal, not a completeness percentage.
 - The musl 1.2.5 public-symbol comparison finds 1,269 declarations that are
   also exported by the pinned release archives: Nelibc exports 426 in at least
-  one hybrid profile, delegates 110 to a hybrid host, and does not yet declare
-  733. The largest undeclared groups are pthread, complex math, wide
+  one hybrid profile, delegates 111 to a hybrid host, and does not yet declare
+  732. The largest undeclared groups are pthread, complex math, wide
   characters, stdlib, unistd, and network database APIs. These are gap counts,
   not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
