@@ -923,6 +923,17 @@ int main(void) {
 
   atomic_store_explicit(&join_release, 0, memory_order_release);
   if (pthread_create(&thread, 0, gated_join_worker, exit_value) != 0) return 18;
+  cpu_set_t worker_affinity;
+  cpu_set_t current_affinity;
+  if (pthread_getaffinity_np(thread, sizeof(worker_affinity),
+                             &worker_affinity) != 0 ||
+      pthread_setaffinity_np(thread, sizeof(worker_affinity),
+                             &worker_affinity) != 0 ||
+      pthread_getaffinity_np(pthread_self(), sizeof(current_affinity),
+                             &current_affinity) != 0 ||
+      memcmp(&worker_affinity, &current_affinity, sizeof(worker_affinity)) != 0 ||
+      pthread_getaffinity_np(thread, 0, &worker_affinity) != EINVAL)
+    return 29;
   char thread_name[16] = {0};
   char small_thread_name[15] = {0};
   if (pthread_setname_np(thread, "nelibc-worker") != 0 ||

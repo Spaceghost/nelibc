@@ -118,6 +118,8 @@ memory, strings, integer conversion, and the current Nelua math slice.
   thread, and `pthread_timedjoin_np` timing out without consuming the join.
   Thread-name checks cover self and remote names, the 15-byte name limit, and
   the minimum 16-byte get buffer.
+  Thread-affinity checks read and reapply masks for the calling thread and a
+  worker, and check the invalid zero-size case.
 - `make sem-clockwait-musl-smoke` compiles and runs a static musl consumer of
   `sem_clockwait`, including deadline, wakeup, and cancellation behavior.
 - `make sem-clockwait-shootout-zig` compares Nelibc's immediate, empty-timeout,

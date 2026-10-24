@@ -3105,6 +3105,28 @@ local function pthread_target_tid(thread: pointer, tid: *[0]cint): cint <inline>
   return 0
 end
 
+local function pthread_getaffinity_np(thread: pointer, cpusetsize: csize,
+    cpuset: pointer): cint <cexport, codename 'pthread_getaffinity_np'>
+  local tid: cint
+  local thread_error = pthread_target_tid(thread, &tid)
+  if thread_error ~= 0 then return thread_error end
+  local result = nelibc_raw_syscall3(204_culong, (@culong)(tid),
+      (@culong)(cpusetsize), (@culong)((@usize)(cpuset))) -- sched_getaffinity
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  return 0
+end
+
+local function pthread_setaffinity_np(thread: pointer, cpusetsize: csize,
+    cpuset: pointer <const>): cint <cexport, codename 'pthread_setaffinity_np'>
+  local tid: cint
+  local thread_error = pthread_target_tid(thread, &tid)
+  if thread_error ~= 0 then return thread_error end
+  local result = nelibc_raw_syscall3(203_culong, (@culong)(tid),
+      (@culong)(cpusetsize), (@culong)((@usize)(cpuset))) -- sched_setaffinity
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  return 0
+end
+
 local function pthread_comm_path(tid: cint, path: *[0]cchar): void
   local prefix: [16]cchar = {
     47_cchar, 112_cchar, 114_cchar, 111_cchar, 99_cchar, 47_cchar,

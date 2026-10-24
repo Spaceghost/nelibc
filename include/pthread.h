@@ -16,6 +16,8 @@ int pthread_kill(pthread_t thread, int signal);
 int pthread_atfork(void (*prepare)(void), void (*parent)(void),
                    void (*child)(void));
 int pthread_getcpuclockid(pthread_t thread, clockid_t *clock_id);
+int pthread_getaffinity_np(pthread_t thread, size_t cpusetsize, cpu_set_t *cpuset);
+int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize, const cpu_set_t *cpuset);
 typedef volatile int pthread_spinlock_t;
 typedef unsigned int pthread_key_t;
 typedef int pthread_once_t;
