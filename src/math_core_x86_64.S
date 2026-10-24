@@ -125,6 +125,36 @@ nelibc_rintf_hw:
   ret
 .size nelibc_rintf_hw, .-nelibc_rintf_hw
 
+/* 64-bit CVT*2SI forms honor MXCSR and raise FE_INEXACT / FE_INVALID. */
+.globl nelibc_lrint_hw
+.type nelibc_lrint_hw,@function
+nelibc_lrint_hw:
+  cvtsd2siq %xmm0, %rax
+  ret
+.size nelibc_lrint_hw, .-nelibc_lrint_hw
+
+.globl nelibc_lrintf_hw
+.type nelibc_lrintf_hw,@function
+nelibc_lrintf_hw:
+  cvtss2siq %xmm0, %rax
+  ret
+.size nelibc_lrintf_hw, .-nelibc_lrintf_hw
+
+/* The caller applies round-away-from-zero first; CVTT then converts exactly. */
+.globl nelibc_lround_hw
+.type nelibc_lround_hw,@function
+nelibc_lround_hw:
+  cvttsd2siq %xmm0, %rax
+  ret
+.size nelibc_lround_hw, .-nelibc_lround_hw
+
+.globl nelibc_lroundf_hw
+.type nelibc_lroundf_hw,@function
+nelibc_lroundf_hw:
+  cvttss2siq %xmm0, %rax
+  ret
+.size nelibc_lroundf_hw, .-nelibc_lroundf_hw
+
 .globl nelibc_nearbyintf_hw
 .type nelibc_nearbyintf_hw,@function
 nelibc_nearbyintf_hw:

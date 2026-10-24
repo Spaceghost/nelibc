@@ -186,6 +186,10 @@ local function nelibc_sqrt_hw(value: cdouble): cdouble <cimport> end
 local function nelibc_sqrtf_hw(value: cfloat): cfloat <cimport> end
 local function nelibc_rint_hw(value: cdouble): cdouble <cimport> end
 local function nelibc_rintf_hw(value: cfloat): cfloat <cimport> end
+local function nelibc_lrint_hw(value: cdouble): clonglong <cimport> end
+local function nelibc_lrintf_hw(value: cfloat): clonglong <cimport> end
+local function nelibc_lround_hw(value: cdouble): clonglong <cimport> end
+local function nelibc_lroundf_hw(value: cfloat): clonglong <cimport> end
 local function nelibc_nearbyint_hw(value: cdouble): cdouble <cimport> end
 local function nelibc_nearbyintf_hw(value: cfloat): cfloat <cimport> end
 local function nelibc_exp_overflow_hw(): cdouble <cimport> end
@@ -2239,6 +2243,31 @@ local function ceilf(value: cfloat): cfloat <cexport, codename 'ceilf'>
 end
 local function roundf(value: cfloat): cfloat <cexport, codename 'roundf'>
   return round_binary32(value, 3_cint)
+end
+
+local function lrint(value: cdouble): clong <cexport, codename 'lrint'>
+  return (@clong)(nelibc_lrint_hw(value))
+end
+local function lrintf(value: cfloat): clong <cexport, codename 'lrintf'>
+  return (@clong)(nelibc_lrintf_hw(value))
+end
+local function llrint(value: cdouble): clonglong <cexport, codename 'llrint'>
+  return nelibc_lrint_hw(value)
+end
+local function llrintf(value: cfloat): clonglong <cexport, codename 'llrintf'>
+  return nelibc_lrintf_hw(value)
+end
+local function lround(value: cdouble): clong <cexport, codename 'lround'>
+  return (@clong)(nelibc_lround_hw(round(value)))
+end
+local function lroundf(value: cfloat): clong <cexport, codename 'lroundf'>
+  return (@clong)(nelibc_lroundf_hw(roundf(value)))
+end
+local function llround(value: cdouble): clonglong <cexport, codename 'llround'>
+  return nelibc_lround_hw(round(value))
+end
+local function llroundf(value: cfloat): clonglong <cexport, codename 'llroundf'>
+  return nelibc_lroundf_hw(roundf(value))
 end
 
 local BesselPair: type = @record{j: cdouble, y: cdouble}

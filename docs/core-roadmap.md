@@ -9,10 +9,10 @@ archive; it does not certify every behavior required by C or POSIX.
 | Priority | Gap | Why it blocks a compelling libc | Next milestone |
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
-| P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, `atan2`, `asin`, `acos`, binary32/binary64 `fma`/`fmaf`, `erf`/`erff`, `erfc`/`erfcf`, `tgamma`/`tgammaf`, and `lgamma`/`lgammaf` plus reentrant variants, and binary32/binary64 `jn`, `yn`, `j0`, `j1`, `y0`, `y1`, `sincos`, and `sincosf`; the arithmetic backend is x86-64-specific, and 87 musl math APIs remain undeclared | Add the next high-use math functions; then long-double coverage and complete fenv semantics |
+| P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `lrint`, `lrintf`, `llrint`, `llrintf`, `lround`, `lroundf`, `llround`, `llroundf`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, `atan2`, `asin`, `acos`, binary32/binary64 `fma`/`fmaf`, `erf`/`erff`, `erfc`/`erfcf`, `tgamma`/`tgammaf`, and `lgamma`/`lgammaf` plus reentrant variants, and binary32/binary64 `jn`, `yn`, `j0`, `j1`, `y0`, `y1`, `sincos`, and `sincosf`; the arithmetic backend is x86-64-specific, and 79 musl math APIs remain undeclared | Add the next high-use math functions; then long-double coverage and complete fenv semantics |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 804 undeclared candidates and record explicit intentional omissions |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 796 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -88,15 +88,15 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The current API inventory has 714 declared names: 596 exported in hybrid
+- The current API inventory has 722 declared names: 604 exported in hybrid
   archives, 114 host-delegated across all hybrid profiles, and four standalone
   priority-ceiling exports that glibc supplies in hybrid mode but musl does
   not. There is also one implementation-only entry. This is an
   inventory signal, not a completeness percentage.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 552
+  that are also exported by the pinned release archives: Nelibc exports 560
   in at least one hybrid profile, delegates 115 to a hybrid host, and does not
-  yet declare 804. The largest undeclared groups are math (87), complex math
+  yet declare 796. The largest undeclared groups are math (79), complex math
   (66), wide characters (65), stdlib, unistd, and network database APIs. These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
@@ -110,7 +110,7 @@ musl export set.
   syscall smoke checks UTC and negative epochs, leap days, POSIX TZ rules,
   TZif zone files, DST transitions, formatting bounds, and CPU clocks. Broader
   locale-specific time names and cross-libc differential coverage remain open.
-- The current math slice in `src/math_core.nelua` exports 116 float and double
+- The current math slice in `src/math_core.nelua` exports 124 float and double
   functions through all four hybrid profiles and standalone archives. Its
   Nelua functions implement `fmin`/`fmax` NaN behavior and rounding rules;
   x86-64 hardware instructions implement correctly rounded square root and
@@ -174,7 +174,7 @@ musl export set.
   `nearbyint`/`nearbyintf` suppress only inexact while retaining prior flags.
   The differential harness checks those APIs under all four standard rounding
   modes, including half-way values, subnormals, infinities, signed zero, and
-  retained exception flags. Signaling-NaN `FE_INVALID` reporting varies among
+  retained exception flags. `lrint`/`lrintf` and `llrint`/`llrintf` use SSE conversions that honor MXCSR rounding and report inexact; `lround`/`lroundf` and their long-long forms round halfway cases away from zero without raising inexact. Their matrix checks all four modes, integer results, exception behavior, and ties. Signaling-NaN `FE_INVALID` reporting varies among
   host libcs, so cross-libc comparisons require a NaN result but permit that
   one flag to differ. The broader core harness also checks signed zero, subnormals, half-way rounding,
   infinities, quiet NaNs, and largest finite values, plus 100,000 generated

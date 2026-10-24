@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <fenv.h>
 #include <float.h>
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -20,6 +21,14 @@ extern float nelibc_roundf(float);
 extern double nelibc_round(double);
 extern float nelibc_rintf(float);
 extern double nelibc_rint(double);
+extern long nelibc_lrint(double);
+extern long nelibc_lrintf(float);
+extern long long nelibc_llrint(double);
+extern long long nelibc_llrintf(float);
+extern long nelibc_lround(double);
+extern long nelibc_lroundf(float);
+extern long long nelibc_llround(double);
+extern long long nelibc_llroundf(float);
 extern float nelibc_nearbyintf(float);
 extern double nelibc_nearbyint(double);
 extern float nelibc_expf(float);
@@ -1017,6 +1026,68 @@ static int check_rint_mode(int mode, double value, float valuef) {
     return 1;
   }
 
+  if (isfinite(value) && fabs(value) < 0x1p63 &&
+      isfinite(valuef) && fabsf(valuef) < 0x1p63f) {
+    feclearexcept(FE_ALL_EXCEPT);
+    const long lrint_expected = lrint(value);
+    const int lrint_expected_flags = fetestexcept(FE_ALL_EXCEPT);
+    feclearexcept(FE_ALL_EXCEPT);
+    const long lrint_actual = nelibc_lrint(value);
+    const int lrint_actual_flags = fetestexcept(FE_ALL_EXCEPT);
+    feclearexcept(FE_ALL_EXCEPT);
+    const long lrintf_expected = lrintf(valuef);
+    const int lrintf_expected_flags = fetestexcept(FE_ALL_EXCEPT);
+    feclearexcept(FE_ALL_EXCEPT);
+    const long lrintf_actual = nelibc_lrintf(valuef);
+    const int lrintf_actual_flags = fetestexcept(FE_ALL_EXCEPT);
+    if (lrint_expected != lrint_actual || lrintf_expected != lrintf_actual ||
+        (lrint_expected_flags & (FE_INVALID | FE_INEXACT)) !=
+            (lrint_actual_flags & (FE_INVALID | FE_INEXACT)) ||
+        (lrintf_expected_flags & (FE_INVALID | FE_INEXACT)) !=
+            (lrintf_actual_flags & (FE_INVALID | FE_INEXACT)) ||
+        llrint(value) != nelibc_llrint(value) || llrintf(valuef) != nelibc_llrintf(valuef) ||
+        lround(value) != nelibc_lround(value) || lroundf(valuef) != nelibc_lroundf(valuef) ||
+        llround(value) != nelibc_llround(value) || llroundf(valuef) != nelibc_llroundf(valuef)) {
+      fprintf(stderr, "integer rounding mismatch mode=%d x=%.17g xf=%.9g lrint=%ld/%ld flags=%x/%x lrintf=%ld/%ld flags=%x/%x llrint=%lld/%lld llrintf=%lld/%lld lround=%ld/%ld lroundf=%ld/%ld llround=%lld/%lld llroundf=%lld/%lld\n",
+              mode, value, valuef, lrint_expected, lrint_actual,
+              lrint_expected_flags, lrint_actual_flags, lrintf_expected,
+              lrintf_actual, lrintf_expected_flags, lrintf_actual_flags,
+              llrint(value), nelibc_llrint(value), llrintf(valuef),
+              nelibc_llrintf(valuef), lround(value), nelibc_lround(value),
+              lroundf(valuef), nelibc_lroundf(valuef), llround(value),
+              nelibc_llround(value), llroundf(valuef), nelibc_llroundf(valuef));
+      return 1;
+    }
+    feclearexcept(FE_ALL_EXCEPT);
+    (void)lround(value);
+    feclearexcept(FE_ALL_EXCEPT);
+    (void)nelibc_lround(value);
+    if (fetestexcept(FE_INEXACT)) {
+      fprintf(stderr, "lround raised FE_INEXACT x=%.17g\n", value);
+      return 1;
+    }
+    feclearexcept(FE_ALL_EXCEPT);
+    (void)nelibc_lroundf(valuef);
+    if (fetestexcept(FE_INEXACT)) {
+      fprintf(stderr, "lroundf raised FE_INEXACT x=%.9g\n", valuef);
+      return 1;
+    }
+    feclearexcept(FE_ALL_EXCEPT);
+    (void)nelibc_llround(value);
+    if (fetestexcept(FE_INEXACT)) {
+      fprintf(stderr, "llround raised FE_INEXACT x=%.17g\n", value);
+      return 1;
+    }
+    feclearexcept(FE_ALL_EXCEPT);
+    (void)llroundf(valuef);
+    feclearexcept(FE_ALL_EXCEPT);
+    (void)nelibc_llroundf(valuef);
+    if (fetestexcept(FE_INEXACT)) {
+      fprintf(stderr, "llroundf raised FE_INEXACT x=%.9g\n", valuef);
+      return 1;
+    }
+  }
+
   feclearexcept(FE_ALL_EXCEPT);
   feraiseexcept(FE_INEXACT | FE_DIVBYZERO);
   const double exact_nearby_expected = nearbyint(2.0);
@@ -1030,6 +1101,43 @@ static int check_rint_mode(int mode, double value, float valuef) {
     fprintf(stderr, "nearbyint did not preserve preexisting exception flags\n");
     return 1;
   }
+  return 0;
+}
+
+static int check_integer_rounding_range(void) {
+  if (lrint(-0x1p63) != LONG_MIN || llrint(-0x1p63) != LLONG_MIN ||
+      lrintf(-0x1p63f) != LONG_MIN || llrintf(-0x1p63f) != LLONG_MIN ||
+      lround(-0x1p63) != LONG_MIN || llround(-0x1p63) != LLONG_MIN ||
+      lroundf(-0x1p63f) != LONG_MIN || llroundf(-0x1p63f) != LLONG_MIN ||
+      nelibc_lrint(-0x1p63) != LONG_MIN || nelibc_llrint(-0x1p63) != LLONG_MIN ||
+      nelibc_lrintf(-0x1p63f) != LONG_MIN || nelibc_llrintf(-0x1p63f) != LLONG_MIN ||
+      nelibc_lround(-0x1p63) != LONG_MIN || nelibc_llround(-0x1p63) != LLONG_MIN ||
+      nelibc_lroundf(-0x1p63f) != LONG_MIN || nelibc_llroundf(-0x1p63f) != LLONG_MIN)
+    return 1;
+#define CHECK_INVALID_INTEGER_CONVERSION(expression) do { \
+    feclearexcept(FE_ALL_EXCEPT); \
+    volatile long long result = (long long)(expression); \
+    (void)result; \
+    if (!(fetestexcept(FE_INVALID))) return 1; \
+  } while (0)
+  CHECK_INVALID_INTEGER_CONVERSION(lrint(0x1p63));
+  CHECK_INVALID_INTEGER_CONVERSION(lrintf(0x1p63f));
+  CHECK_INVALID_INTEGER_CONVERSION(llrint(0x1p63));
+  CHECK_INVALID_INTEGER_CONVERSION(llrintf(0x1p63f));
+  CHECK_INVALID_INTEGER_CONVERSION(lround(0x1p63));
+  CHECK_INVALID_INTEGER_CONVERSION(lroundf(0x1p63f));
+  CHECK_INVALID_INTEGER_CONVERSION(llround(0x1p63));
+  CHECK_INVALID_INTEGER_CONVERSION(llroundf(0x1p63f));
+  CHECK_INVALID_INTEGER_CONVERSION(nelibc_lrint(0x1p63));
+  CHECK_INVALID_INTEGER_CONVERSION(nelibc_lrintf(0x1p63f));
+  CHECK_INVALID_INTEGER_CONVERSION(nelibc_llrint(0x1p63));
+  CHECK_INVALID_INTEGER_CONVERSION(nelibc_llrintf(0x1p63f));
+  CHECK_INVALID_INTEGER_CONVERSION(nelibc_lround(0x1p63));
+  CHECK_INVALID_INTEGER_CONVERSION(nelibc_lroundf(0x1p63f));
+  CHECK_INVALID_INTEGER_CONVERSION(nelibc_llround(0x1p63));
+  CHECK_INVALID_INTEGER_CONVERSION(nelibc_llroundf(0x1p63f));
+#undef CHECK_INVALID_INTEGER_CONVERSION
+  feclearexcept(FE_ALL_EXCEPT);
   return 0;
 }
 
@@ -1406,6 +1514,10 @@ int main(void) {
   for (size_t mode = 0; mode < sizeof rounding_modes / sizeof rounding_modes[0]; ++mode)
     if (check_rint_mode(rounding_modes[mode], signaling64.value, signaling32.value))
       return 1;
+  if (check_integer_rounding_range()) {
+    fprintf(stderr, "integer rounding range or FE_INVALID behavior mismatch\n");
+    return 1;
+  }
   if (fesetround(FE_TONEAREST) != 0) return 1;
   static const double exp_edges[] = {
       -746.0, -745.1332191019411, -100.0, -1.0, 0.0, 1.0, 20.0,

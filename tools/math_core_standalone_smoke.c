@@ -104,6 +104,9 @@ int main(void) {
   sincosf(1.0f, &pair_sinf, &pair_cosf);
   if (fabs(pair_sin - sin(1.0)) > 1e-15 || fabs(pair_cos - cos(1.0)) > 1e-15) return 164;
   if (fabsf(pair_sinf - sinf(1.0f)) > 1e-7f || fabsf(pair_cosf - cosf(1.0f)) > 1e-7f) return 165;
+  if (lrint(2.5) != 2 || lrintf(-3.5f) != -4 || llrint(3.5) != 4 ||
+      llrintf(-2.5f) != -2 || lround(2.5) != 3 || lroundf(-2.5f) != -3 ||
+      llround(3.5) != 4 || llroundf(-3.5f) != -4) return 166;
   errno = 0;
   if (!isinf(y0(0.0)) || y0(0.0) > 0.0 || errno != ERANGE) return 157;
   errno = 0;
