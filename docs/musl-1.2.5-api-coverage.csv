@@ -648,8 +648,8 @@ j0,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 j0f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 j1,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 j1f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-jn,math.h,,,not-declared
-jnf,math.h,,,not-declared
+jn,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+jnf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 jrand48,stdlib.h,,,not-declared
 kill,signal.h,nelibc_syscall.h;signal.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 killpg,signal.h,,,not-declared
@@ -1468,5 +1468,5 @@ y0,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 y0f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 y1,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 y1f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-yn,math.h,,,not-declared
-ynf,math.h,,,not-declared
+yn,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+ynf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

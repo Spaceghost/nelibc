@@ -68,6 +68,10 @@ extern float nelibc_erff(float);
 extern double nelibc_erf(double);
 extern float nelibc_erfcf(float);
 extern double nelibc_erfc(double);
+extern double nelibc_jn(int, double);
+extern float nelibc_jnf(int, float);
+extern double nelibc_yn(int, double);
+extern float nelibc_ynf(int, float);
 extern double nelibc_j0(double);
 extern float nelibc_j0f(float);
 extern double nelibc_j1(double);
@@ -1025,6 +1029,25 @@ static int check_bessel(double x, float xf) {
   return 0;
 }
 
+static int check_bessel_order(int n, double x, float xf) {
+  const double je = jn(n, x), ye = yn(n, fabs(x));
+  const float jef = jnf(n, xf), yef = ynf(n, fabsf(xf));
+  const double ja = nelibc_jn(n, x), ya = nelibc_yn(n, fabs(x));
+  const float jaf = nelibc_jnf(n, xf), yaf = nelibc_ynf(n, fabsf(xf));
+  if ((!isnan(je) && !isinf(je) && fabs(ja-je) > 3e-8*(1+fabs(je))) ||
+      (isinf(je) && ja != je) ||
+      (!isnan(ye) && !isinf(ye) && fabs(ya-ye) > 3e-8*(1+fabs(ye))) ||
+      (isinf(ye) && ya != ye) ||
+      (!isnan(jef) && !isinf(jef) && fabsf(jaf-jef) > 3e-5f*(1+fabsf(jef))) ||
+      (isinf(jef) && jaf != jef) ||
+      (!isnan(yef) && !isinf(yef) && fabsf(yaf-yef) > 3e-5f*(1+fabsf(yef))) ||
+      (isinf(yef) && yaf != yef)) {
+    fprintf(stderr, "jn/yn mismatch n=%d x=%.17g xf=%.9g J %.17g/%.17g Y %.17g/%.17g\n", n,x,xf,je,ja,ye,ya);
+    return 1;
+  }
+  return 0;
+}
+
 static int check_gamma(double x, float xf) {
   const double ge = tgamma(x), le = lgamma(x);
   const float gef = tgammaf(xf), lef = lgammaf(xf);
@@ -1079,6 +1102,161 @@ static int check_erf(double x, float xf) {
 }
 
 int main(void) {
+
+  if (check_bessel_order(-100, 0, 0.0f) || check_bessel_order(-100, -0, -0.0f)) return 1;
+  if (check_bessel_order(-100, 0.01, 0.01f) || check_bessel_order(-100, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(-100, 0.5, 0.5f) || check_bessel_order(-100, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(-100, 1, 1.0f) || check_bessel_order(-100, -1, -1.0f)) return 1;
+  if (check_bessel_order(-100, 1.25, 1.25f) || check_bessel_order(-100, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(-100, 2, 2.0f) || check_bessel_order(-100, -2, -2.0f)) return 1;
+  if (check_bessel_order(-100, 3.8317059702075125, 3.83170597f) || check_bessel_order(-100, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(-100, 8, 8.0f) || check_bessel_order(-100, -8, -8.0f)) return 1;
+  if (check_bessel_order(-100, 11.999999000000001, 11.999999f) || check_bessel_order(-100, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(-100, 12, 12.0f) || check_bessel_order(-100, -12, -12.0f)) return 1;
+  if (check_bessel_order(-100, 20, 20.0f) || check_bessel_order(-100, -20, -20.0f)) return 1;
+  if (check_bessel_order(-100, 50, 50.0f) || check_bessel_order(-100, -50, -50.0f)) return 1;
+  if (check_bessel_order(-100, 100, 100.0f) || check_bessel_order(-100, -100, -100.0f)) return 1;
+  if (check_bessel_order(-100, 1000000, 1000000.0f) || check_bessel_order(-100, -1000000, -1000000.0f)) return 1;
+  if (check_bessel_order(-20, 0, 0.0f) || check_bessel_order(-20, -0, -0.0f)) return 1;
+  if (check_bessel_order(-20, 0.01, 0.01f) || check_bessel_order(-20, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(-20, 0.5, 0.5f) || check_bessel_order(-20, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(-20, 1, 1.0f) || check_bessel_order(-20, -1, -1.0f)) return 1;
+  if (check_bessel_order(-20, 1.25, 1.25f) || check_bessel_order(-20, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(-20, 2, 2.0f) || check_bessel_order(-20, -2, -2.0f)) return 1;
+  if (check_bessel_order(-20, 3.8317059702075125, 3.83170597f) || check_bessel_order(-20, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(-20, 8, 8.0f) || check_bessel_order(-20, -8, -8.0f)) return 1;
+  if (check_bessel_order(-20, 11.999999000000001, 11.999999f) || check_bessel_order(-20, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(-20, 12, 12.0f) || check_bessel_order(-20, -12, -12.0f)) return 1;
+  if (check_bessel_order(-20, 20, 20.0f) || check_bessel_order(-20, -20, -20.0f)) return 1;
+  if (check_bessel_order(-20, 50, 50.0f) || check_bessel_order(-20, -50, -50.0f)) return 1;
+  if (check_bessel_order(-20, 100, 100.0f) || check_bessel_order(-20, -100, -100.0f)) return 1;
+  if (check_bessel_order(-20, 1000000, 1000000.0f) || check_bessel_order(-20, -1000000, -1000000.0f)) return 1;
+  if (check_bessel_order(-5, 0, 0.0f) || check_bessel_order(-5, -0, -0.0f)) return 1;
+  if (check_bessel_order(-5, 0.01, 0.01f) || check_bessel_order(-5, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(-5, 0.5, 0.5f) || check_bessel_order(-5, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(-5, 1, 1.0f) || check_bessel_order(-5, -1, -1.0f)) return 1;
+  if (check_bessel_order(-5, 1.25, 1.25f) || check_bessel_order(-5, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(-5, 2, 2.0f) || check_bessel_order(-5, -2, -2.0f)) return 1;
+  if (check_bessel_order(-5, 3.8317059702075125, 3.83170597f) || check_bessel_order(-5, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(-5, 8, 8.0f) || check_bessel_order(-5, -8, -8.0f)) return 1;
+  if (check_bessel_order(-5, 11.999999000000001, 11.999999f) || check_bessel_order(-5, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(-5, 12, 12.0f) || check_bessel_order(-5, -12, -12.0f)) return 1;
+  if (check_bessel_order(-5, 20, 20.0f) || check_bessel_order(-5, -20, -20.0f)) return 1;
+  if (check_bessel_order(-5, 50, 50.0f) || check_bessel_order(-5, -50, -50.0f)) return 1;
+  if (check_bessel_order(-5, 100, 100.0f) || check_bessel_order(-5, -100, -100.0f)) return 1;
+  if (check_bessel_order(-5, 1000000, 1000000.0f) || check_bessel_order(-5, -1000000, -1000000.0f)) return 1;
+  if (check_bessel_order(-2, 0, 0.0f) || check_bessel_order(-2, -0, -0.0f)) return 1;
+  if (check_bessel_order(-2, 0.01, 0.01f) || check_bessel_order(-2, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(-2, 0.5, 0.5f) || check_bessel_order(-2, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(-2, 1, 1.0f) || check_bessel_order(-2, -1, -1.0f)) return 1;
+  if (check_bessel_order(-2, 1.25, 1.25f) || check_bessel_order(-2, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(-2, 2, 2.0f) || check_bessel_order(-2, -2, -2.0f)) return 1;
+  if (check_bessel_order(-2, 3.8317059702075125, 3.83170597f) || check_bessel_order(-2, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(-2, 8, 8.0f) || check_bessel_order(-2, -8, -8.0f)) return 1;
+  if (check_bessel_order(-2, 11.999999000000001, 11.999999f) || check_bessel_order(-2, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(-2, 12, 12.0f) || check_bessel_order(-2, -12, -12.0f)) return 1;
+  if (check_bessel_order(-2, 20, 20.0f) || check_bessel_order(-2, -20, -20.0f)) return 1;
+  if (check_bessel_order(-2, 50, 50.0f) || check_bessel_order(-2, -50, -50.0f)) return 1;
+  if (check_bessel_order(-2, 100, 100.0f) || check_bessel_order(-2, -100, -100.0f)) return 1;
+  if (check_bessel_order(-2, 1000000, 1000000.0f) || check_bessel_order(-2, -1000000, -1000000.0f)) return 1;
+  if (check_bessel_order(-1, 0, 0.0f) || check_bessel_order(-1, -0, -0.0f)) return 1;
+  if (check_bessel_order(-1, 0.01, 0.01f) || check_bessel_order(-1, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(-1, 0.5, 0.5f) || check_bessel_order(-1, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(-1, 1, 1.0f) || check_bessel_order(-1, -1, -1.0f)) return 1;
+  if (check_bessel_order(-1, 1.25, 1.25f) || check_bessel_order(-1, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(-1, 2, 2.0f) || check_bessel_order(-1, -2, -2.0f)) return 1;
+  if (check_bessel_order(-1, 3.8317059702075125, 3.83170597f) || check_bessel_order(-1, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(-1, 8, 8.0f) || check_bessel_order(-1, -8, -8.0f)) return 1;
+  if (check_bessel_order(-1, 11.999999000000001, 11.999999f) || check_bessel_order(-1, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(-1, 12, 12.0f) || check_bessel_order(-1, -12, -12.0f)) return 1;
+  if (check_bessel_order(-1, 20, 20.0f) || check_bessel_order(-1, -20, -20.0f)) return 1;
+  if (check_bessel_order(-1, 50, 50.0f) || check_bessel_order(-1, -50, -50.0f)) return 1;
+  if (check_bessel_order(-1, 100, 100.0f) || check_bessel_order(-1, -100, -100.0f)) return 1;
+  if (check_bessel_order(-1, 1000000, 1000000.0f) || check_bessel_order(-1, -1000000, -1000000.0f)) return 1;
+  if (check_bessel_order(0, 0, 0.0f) || check_bessel_order(0, -0, -0.0f)) return 1;
+  if (check_bessel_order(0, 0.01, 0.01f) || check_bessel_order(0, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(0, 0.5, 0.5f) || check_bessel_order(0, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(0, 1, 1.0f) || check_bessel_order(0, -1, -1.0f)) return 1;
+  if (check_bessel_order(0, 1.25, 1.25f) || check_bessel_order(0, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(0, 2, 2.0f) || check_bessel_order(0, -2, -2.0f)) return 1;
+  if (check_bessel_order(0, 3.8317059702075125, 3.83170597f) || check_bessel_order(0, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(0, 8, 8.0f) || check_bessel_order(0, -8, -8.0f)) return 1;
+  if (check_bessel_order(0, 11.999999000000001, 11.999999f) || check_bessel_order(0, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(0, 12, 12.0f) || check_bessel_order(0, -12, -12.0f)) return 1;
+  if (check_bessel_order(0, 20, 20.0f) || check_bessel_order(0, -20, -20.0f)) return 1;
+  if (check_bessel_order(0, 50, 50.0f) || check_bessel_order(0, -50, -50.0f)) return 1;
+  if (check_bessel_order(0, 100, 100.0f) || check_bessel_order(0, -100, -100.0f)) return 1;
+  if (check_bessel_order(0, 1000000, 1000000.0f) || check_bessel_order(0, -1000000, -1000000.0f)) return 1;
+  if (check_bessel_order(1, 0, 0.0f) || check_bessel_order(1, -0, -0.0f)) return 1;
+  if (check_bessel_order(1, 0.01, 0.01f) || check_bessel_order(1, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(1, 0.5, 0.5f) || check_bessel_order(1, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(1, 1, 1.0f) || check_bessel_order(1, -1, -1.0f)) return 1;
+  if (check_bessel_order(1, 1.25, 1.25f) || check_bessel_order(1, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(1, 2, 2.0f) || check_bessel_order(1, -2, -2.0f)) return 1;
+  if (check_bessel_order(1, 3.8317059702075125, 3.83170597f) || check_bessel_order(1, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(1, 8, 8.0f) || check_bessel_order(1, -8, -8.0f)) return 1;
+  if (check_bessel_order(1, 11.999999000000001, 11.999999f) || check_bessel_order(1, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(1, 12, 12.0f) || check_bessel_order(1, -12, -12.0f)) return 1;
+  if (check_bessel_order(1, 20, 20.0f) || check_bessel_order(1, -20, -20.0f)) return 1;
+  if (check_bessel_order(1, 50, 50.0f) || check_bessel_order(1, -50, -50.0f)) return 1;
+  if (check_bessel_order(1, 100, 100.0f) || check_bessel_order(1, -100, -100.0f)) return 1;
+  if (check_bessel_order(1, 1000000, 1000000.0f) || check_bessel_order(1, -1000000, -1000000.0f)) return 1;
+  if (check_bessel_order(2, 0, 0.0f) || check_bessel_order(2, -0, -0.0f)) return 1;
+  if (check_bessel_order(2, 0.01, 0.01f) || check_bessel_order(2, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(2, 0.5, 0.5f) || check_bessel_order(2, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(2, 1, 1.0f) || check_bessel_order(2, -1, -1.0f)) return 1;
+  if (check_bessel_order(2, 1.25, 1.25f) || check_bessel_order(2, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(2, 2, 2.0f) || check_bessel_order(2, -2, -2.0f)) return 1;
+  if (check_bessel_order(2, 3.8317059702075125, 3.83170597f) || check_bessel_order(2, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(2, 8, 8.0f) || check_bessel_order(2, -8, -8.0f)) return 1;
+  if (check_bessel_order(2, 11.999999000000001, 11.999999f) || check_bessel_order(2, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(2, 12, 12.0f) || check_bessel_order(2, -12, -12.0f)) return 1;
+  if (check_bessel_order(2, 20, 20.0f) || check_bessel_order(2, -20, -20.0f)) return 1;
+  if (check_bessel_order(2, 50, 50.0f) || check_bessel_order(2, -50, -50.0f)) return 1;
+  if (check_bessel_order(2, 100, 100.0f) || check_bessel_order(2, -100, -100.0f)) return 1;
+  if (check_bessel_order(2, 1000000, 1000000.0f) || check_bessel_order(2, -1000000, -1000000.0f)) return 1;
+  if (check_bessel_order(5, 0, 0.0f) || check_bessel_order(5, -0, -0.0f)) return 1;
+  if (check_bessel_order(5, 0.01, 0.01f) || check_bessel_order(5, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(5, 0.5, 0.5f) || check_bessel_order(5, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(5, 1, 1.0f) || check_bessel_order(5, -1, -1.0f)) return 1;
+  if (check_bessel_order(5, 1.25, 1.25f) || check_bessel_order(5, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(5, 2, 2.0f) || check_bessel_order(5, -2, -2.0f)) return 1;
+  if (check_bessel_order(5, 3.8317059702075125, 3.83170597f) || check_bessel_order(5, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(5, 8, 8.0f) || check_bessel_order(5, -8, -8.0f)) return 1;
+  if (check_bessel_order(5, 11.999999000000001, 11.999999f) || check_bessel_order(5, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(5, 12, 12.0f) || check_bessel_order(5, -12, -12.0f)) return 1;
+  if (check_bessel_order(5, 20, 20.0f) || check_bessel_order(5, -20, -20.0f)) return 1;
+  if (check_bessel_order(5, 50, 50.0f) || check_bessel_order(5, -50, -50.0f)) return 1;
+  if (check_bessel_order(5, 100, 100.0f) || check_bessel_order(5, -100, -100.0f)) return 1;
+  if (check_bessel_order(5, 1000000, 1000000.0f) || check_bessel_order(5, -1000000, -1000000.0f)) return 1;
+  if (check_bessel_order(20, 0, 0.0f) || check_bessel_order(20, -0, -0.0f)) return 1;
+  if (check_bessel_order(20, 0.01, 0.01f) || check_bessel_order(20, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(20, 0.5, 0.5f) || check_bessel_order(20, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(20, 1, 1.0f) || check_bessel_order(20, -1, -1.0f)) return 1;
+  if (check_bessel_order(20, 1.25, 1.25f) || check_bessel_order(20, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(20, 2, 2.0f) || check_bessel_order(20, -2, -2.0f)) return 1;
+  if (check_bessel_order(20, 3.8317059702075125, 3.83170597f) || check_bessel_order(20, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(20, 8, 8.0f) || check_bessel_order(20, -8, -8.0f)) return 1;
+  if (check_bessel_order(20, 11.999999000000001, 11.999999f) || check_bessel_order(20, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(20, 12, 12.0f) || check_bessel_order(20, -12, -12.0f)) return 1;
+  if (check_bessel_order(20, 20, 20.0f) || check_bessel_order(20, -20, -20.0f)) return 1;
+  if (check_bessel_order(20, 50, 50.0f) || check_bessel_order(20, -50, -50.0f)) return 1;
+  if (check_bessel_order(20, 100, 100.0f) || check_bessel_order(20, -100, -100.0f)) return 1;
+  if (check_bessel_order(20, 1000000, 1000000.0f) || check_bessel_order(20, -1000000, -1000000.0f)) return 1;
+  if (check_bessel_order(100, 0, 0.0f) || check_bessel_order(100, -0, -0.0f)) return 1;
+  if (check_bessel_order(100, 0.01, 0.01f) || check_bessel_order(100, -0.01, -0.01f)) return 1;
+  if (check_bessel_order(100, 0.5, 0.5f) || check_bessel_order(100, -0.5, -0.5f)) return 1;
+  if (check_bessel_order(100, 1, 1.0f) || check_bessel_order(100, -1, -1.0f)) return 1;
+  if (check_bessel_order(100, 1.25, 1.25f) || check_bessel_order(100, -1.25, -1.25f)) return 1;
+  if (check_bessel_order(100, 2, 2.0f) || check_bessel_order(100, -2, -2.0f)) return 1;
+  if (check_bessel_order(100, 3.8317059702075125, 3.83170597f) || check_bessel_order(100, -3.8317059702075125, -3.83170597f)) return 1;
+  if (check_bessel_order(100, 8, 8.0f) || check_bessel_order(100, -8, -8.0f)) return 1;
+  if (check_bessel_order(100, 11.999999000000001, 11.999999f) || check_bessel_order(100, -11.999999000000001, -11.999999f)) return 1;
+  if (check_bessel_order(100, 12, 12.0f) || check_bessel_order(100, -12, -12.0f)) return 1;
+  if (check_bessel_order(100, 20, 20.0f) || check_bessel_order(100, -20, -20.0f)) return 1;
+  if (check_bessel_order(100, 50, 50.0f) || check_bessel_order(100, -50, -50.0f)) return 1;
+  if (check_bessel_order(100, 100, 100.0f) || check_bessel_order(100, -100, -100.0f)) return 1;
+  if (check_bessel_order(100, 1000000, 1000000.0f) || check_bessel_order(100, -1000000, -1000000.0f)) return 1;
   static const double bessel_edges[] = {0x1p-1074, 0x1p-54, 0.1, 0.5, 1.0, 1.25, 2.0, 3.8317059702075125, 5.520078110286311, 8.0, 11.999999, 12.0, 16.0, 20.0, 50.0, 100.0, 1e6, 1e100};
   for (size_t i=0; i<sizeof bessel_edges/sizeof bessel_edges[0]; ++i) {
     double x=bessel_edges[i]; float xf=(float)x;
@@ -1291,6 +1469,9 @@ int main(void) {
         check_pair_float(left32, right32) ||
         check_gamma((((double_bits){.bits = bits}).value / DBL_MAX) * 20.0,
                    (((float_bits){.bits = left32}).value / FLT_MAX) * 20.0f) ||
+        ((i % 100 == 0) && check_bessel_order((int)(next_bits()%41)-20,
+          ((((bits & UINT64_C(0x000FFFFFFFFFFFFF)) / (double)UINT64_C(0x0010000000000000)) * 30.0)),
+          (float)((((left32 & UINT32_C(0x007FFFFF)) / (float)UINT32_C(0x00800000)) * 30.0f)))) ||
         check_bessel(((((bits & UINT64_C(0x000FFFFFFFFFFFFF)) / (double)UINT64_C(0x0010000000000000)) * 30.0) * ((bits >> 63) ? -1.0 : 1.0)),
                      (float)((((left32 & UINT32_C(0x007FFFFF)) / (float)UINT32_C(0x00800000)) * 30.0f) * ((left32 >> 31) ? -1.0f : 1.0f))) ||
         check_erf((((double_bits){.bits = bits}).value / DBL_MAX) * 28.0,
