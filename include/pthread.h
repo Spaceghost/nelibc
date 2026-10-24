@@ -150,6 +150,8 @@ int pthread_timedjoin_np(pthread_t thread, void **retval,
 int pthread_getname_np(pthread_t thread, char *name, size_t length);
 int pthread_setname_np(pthread_t thread, const char *name);
 int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr);
+int pthread_getattr_default_np(pthread_attr_t *attr);
+int pthread_setattr_default_np(const pthread_attr_t *attr);
 int pthread_getaffinity_np(pthread_t thread, size_t cpusetsize, cpu_set_t *cpuset);
 int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize, const cpu_set_t *cpuset);
 int pthread_detach(pthread_t thread);

@@ -205,6 +205,9 @@ local PTHREAD_SCOPE_PROCESS: cint <comptime> = 1
 local SCHED_OTHER: cint <comptime> = 0
 local SCHED_FIFO: cint <comptime> = 1
 local SCHED_RR: cint <comptime> = 2
+local default_thread_attr_lock: cint
+local default_thread_attr_initialized: cint
+local default_thread_attr: PthreadAttr
 local PTHREAD_KEY_COUNT: csize <comptime> = 128
 local PTHREAD_KEY_INDEX_MASK: cuint <comptime> = 255
 local pthread_key_lock: cint = 0
@@ -952,17 +955,93 @@ local function pthread_attr_valid(attr: *PthreadAttr): boolean <inline>
   return attr ~= nilptr and attr.magic == PTHREAD_ATTR_MAGIC
 end
 
+local function pthread_default_attr_lock_acquire(): void <inline>
+  while true do
+    if nelibc_atomic_cas_int(&default_thread_attr_lock, 0, 1) == 0 then return end
+    nelibc_raw_syscall6(202_culong,
+        (@culong)((@usize)(&default_thread_attr_lock)), 128_culong, 1_culong,
+        0_culong, 0_culong, 0_culong)
+  end
+end
+
+local function pthread_default_attr_lock_release(): void <inline>
+  nelibc_atomic_store_int(&default_thread_attr_lock, 0)
+  nelibc_raw_syscall6(202_culong,
+      (@culong)((@usize)(&default_thread_attr_lock)), 129_culong, 1_culong,
+      0_culong, 0_culong, 0_culong)
+end
+
+local function pthread_default_attr_ensure_initialized(): void <inline>
+  if default_thread_attr_initialized ~= 0 then return end
+  default_thread_attr.magic = PTHREAD_ATTR_MAGIC
+  default_thread_attr.detachstate = 0
+  default_thread_attr.scope = PTHREAD_SCOPE_SYSTEM
+  default_thread_attr.stacksize = STACK_SIZE
+  default_thread_attr.guardsize = PAGE_SIZE
+  default_thread_attr.inheritsched = PTHREAD_INHERIT_SCHED
+  default_thread_attr.schedpolicy = SCHED_OTHER
+  default_thread_attr.schedparam.sched_priority = 0
+  default_thread_attr.stackaddr = nilptr
+  default_thread_attr_initialized = 1
+end
+
+local function pthread_attr_copy(destination: *PthreadAttr,
+    source: *PthreadAttr): void <inline>
+  destination.magic = source.magic
+  destination.detachstate = source.detachstate
+  destination.scope = source.scope
+  destination.stacksize = source.stacksize
+  destination.guardsize = source.guardsize
+  destination.inheritsched = source.inheritsched
+  destination.schedpolicy = source.schedpolicy
+  destination.schedparam.sched_priority = source.schedparam.sched_priority
+  destination.stackaddr = source.stackaddr
+end
+
 local function pthread_attr_init(attr: *PthreadAttr): cint <cexport, codename 'pthread_attr_init'>
   if attr == nilptr then return 22 end -- EINVAL
-  attr.magic = PTHREAD_ATTR_MAGIC
-  attr.detachstate = 0
-  attr.scope = PTHREAD_SCOPE_SYSTEM
-  attr.stacksize = STACK_SIZE
-  attr.guardsize = PAGE_SIZE
-  attr.inheritsched = PTHREAD_INHERIT_SCHED
-  attr.schedpolicy = SCHED_OTHER
-  attr.schedparam.sched_priority = 0
-  attr.stackaddr = nilptr
+  pthread_default_attr_lock_acquire()
+  pthread_default_attr_ensure_initialized()
+  pthread_attr_copy(attr, &default_thread_attr)
+  pthread_default_attr_lock_release()
+  return 0
+end
+
+local function pthread_getattr_default_np(attr: *PthreadAttr): cint
+    <cexport, codename 'pthread_getattr_default_np'>
+  if attr == nilptr then return 22 end -- EINVAL
+  pthread_default_attr_lock_acquire()
+  pthread_default_attr_ensure_initialized()
+  pthread_attr_copy(attr, &default_thread_attr)
+  pthread_default_attr_lock_release()
+  return 0
+end
+
+local function pthread_setattr_default_np(attr: *PthreadAttr <const>): cint
+    <cexport, codename 'pthread_setattr_default_np'>
+  if not pthread_attr_valid(attr) or attr.stackaddr ~= nilptr then return 22 end -- EINVAL
+  if attr.detachstate ~= 0 and attr.detachstate ~= 1 then return 22 end -- EINVAL
+  if attr.scope ~= PTHREAD_SCOPE_SYSTEM then return 22 end -- EINVAL
+  if attr.stacksize ~= 0_csize and
+      (attr.stacksize < PTHREAD_STACK_MINIMUM or
+       attr.stacksize > MAX_CSIZE - (PAGE_SIZE - 1_csize)) then return 22 end -- EINVAL
+  if attr.guardsize > MAX_CSIZE - (PAGE_SIZE - 1_csize) then return 22 end -- EINVAL
+  if attr.inheritsched ~= PTHREAD_INHERIT_SCHED and
+      attr.inheritsched ~= PTHREAD_EXPLICIT_SCHED then return 22 end -- EINVAL
+  if attr.schedpolicy ~= SCHED_OTHER and attr.schedpolicy ~= SCHED_FIFO and
+      attr.schedpolicy ~= SCHED_RR then return 22 end -- EINVAL
+  if (attr.schedpolicy == SCHED_OTHER and attr.schedparam.sched_priority ~= 0) or
+      (attr.schedpolicy ~= SCHED_OTHER and
+       (attr.schedparam.sched_priority < 1 or attr.schedparam.sched_priority > 99)) then
+    return 22 -- EINVAL
+  end
+  pthread_default_attr_lock_acquire()
+  pthread_default_attr_ensure_initialized()
+  local next_attr: PthreadAttr
+  pthread_attr_copy(&next_attr, attr)
+  if next_attr.stacksize == 0_csize then next_attr.stacksize = default_thread_attr.stacksize end
+  pthread_attr_copy(&default_thread_attr, &next_attr)
+  pthread_default_attr_lock_release()
   return 0
 end
 
@@ -2867,32 +2946,38 @@ end
 
 local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: function(pointer): pointer, arg: pointer): cint <cexport, codename 'pthread_create'>
   if thread == nilptr or start == nilptr then return 22 end -- EINVAL
+  local default_attr: PthreadAttr
+  if attr == nilptr then
+    pthread_default_attr_lock_acquire()
+    pthread_default_attr_ensure_initialized()
+    pthread_attr_copy(&default_attr, &default_thread_attr)
+    pthread_default_attr_lock_release()
+    attr = &default_attr
+  end
   local stacksize: csize = STACK_SIZE
   local guardsize: csize = PAGE_SIZE
   local stackaddr: pointer = nilptr
   local inheritsched: cint = PTHREAD_INHERIT_SCHED
   local schedpolicy: cint = SCHED_OTHER
   local schedpriority: cint = 0
-  if attr ~= nilptr then
-    if not pthread_attr_valid(attr) then return 22 end -- EINVAL
-    if attr.detachstate ~= 0 and attr.detachstate ~= 1 then return 22 end -- EINVAL
-    if attr.inheritsched ~= PTHREAD_INHERIT_SCHED and
-       attr.inheritsched ~= PTHREAD_EXPLICIT_SCHED then return 22 end -- EINVAL
-    if not pthread_sched_policy_valid(attr.schedpolicy) or
-       not pthread_sched_priority_valid(attr.schedpolicy,
-                                       attr.schedparam.sched_priority) then
-      return 22 -- EINVAL
-    end
-    stacksize = attr.stacksize
-    stackaddr = attr.stackaddr
-    if stackaddr ~= nilptr and
-       (stacksize < PTHREAD_STACK_MINIMUM or
-        stacksize > MAX_CSIZE - (@csize)((@usize)(stackaddr))) then return 22 end -- EINVAL
-    guardsize = attr.guardsize
-    inheritsched = attr.inheritsched
-    schedpolicy = attr.schedpolicy
-    schedpriority = attr.schedparam.sched_priority
+  if not pthread_attr_valid(attr) then return 22 end -- EINVAL
+  if attr.detachstate ~= 0 and attr.detachstate ~= 1 then return 22 end -- EINVAL
+  if attr.inheritsched ~= PTHREAD_INHERIT_SCHED and
+     attr.inheritsched ~= PTHREAD_EXPLICIT_SCHED then return 22 end -- EINVAL
+  if not pthread_sched_policy_valid(attr.schedpolicy) or
+     not pthread_sched_priority_valid(attr.schedpolicy,
+                                      attr.schedparam.sched_priority) then
+    return 22 -- EINVAL
   end
+  stacksize = attr.stacksize
+  stackaddr = attr.stackaddr
+  if stackaddr ~= nilptr and
+     (stacksize < PTHREAD_STACK_MINIMUM or
+      stacksize > MAX_CSIZE - (@csize)((@usize)(stackaddr))) then return 22 end -- EINVAL
+  guardsize = attr.guardsize
+  inheritsched = attr.inheritsched
+  schedpolicy = attr.schedpolicy
+  schedpriority = attr.schedparam.sched_priority
   local signal_error = nelibc_thread_cancel_signal_install()
   if signal_error ~= 0 then return signal_error end
   pthread_current_context()

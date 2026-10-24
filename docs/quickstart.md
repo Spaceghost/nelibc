@@ -122,6 +122,9 @@ memory, strings, integer conversion, and the current Nelua math slice.
   worker, and check the invalid zero-size case.
   `pthread_getattr_np` checks the main, Nelibc-managed, and caller supplied
   thread stack bounds and guard sizes.
+  Default pthread attributes can be inspected or changed with
+  `pthread_getattr_default_np` and `pthread_setattr_default_np`; the smoke test
+  verifies that new threads use the updated stack and guard sizes.
 - `make sem-clockwait-musl-smoke` compiles and runs a static musl consumer of
   `sem_clockwait`, including deadline, wakeup, and cancellation behavior.
 - `make sem-clockwait-shootout-zig` compares Nelibc's immediate, empty-timeout,

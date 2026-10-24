@@ -736,6 +736,68 @@ int main(void) {
 
   pthread_attr_t attributes;
   if (pthread_attr_init(&attributes) != 0) return 1;
+  pthread_attr_t original_default_attributes;
+  pthread_attr_t changed_default_attributes;
+  pthread_attr_t observed_default_attributes;
+  size_t default_stack_size = 0;
+  size_t default_guard_size = 0;
+  if (pthread_getattr_default_np(&original_default_attributes) != 0 ||
+      pthread_attr_getstacksize(&original_default_attributes,
+                                &default_stack_size) != 0 ||
+      pthread_attr_getguardsize(&original_default_attributes,
+                                &default_guard_size) != 0 ||
+      default_stack_size != 1048576 || default_guard_size != 4096 ||
+      pthread_getattr_default_np(0) != EINVAL ||
+      pthread_setattr_default_np(0) != EINVAL)
+    return 247;
+  if (pthread_attr_init(&changed_default_attributes) != 0 ||
+      pthread_attr_setstacksize(&changed_default_attributes, 131072) != 0 ||
+      pthread_attr_setguardsize(&changed_default_attributes, 8192) != 0 ||
+      pthread_setattr_default_np(&changed_default_attributes) != 0 ||
+      pthread_attr_destroy(&changed_default_attributes) != 0 ||
+      pthread_getattr_default_np(&observed_default_attributes) != 0 ||
+      pthread_attr_getstacksize(&observed_default_attributes,
+                                &default_stack_size) != 0 ||
+      pthread_attr_getguardsize(&observed_default_attributes,
+                                &default_guard_size) != 0 ||
+      default_stack_size != 131072 || default_guard_size != 8192)
+    return 248;
+  if (pthread_attr_init(&changed_default_attributes) != 0 ||
+      pthread_attr_getstacksize(&changed_default_attributes,
+                                &default_stack_size) != 0 ||
+      pthread_attr_getguardsize(&changed_default_attributes,
+                                &default_guard_size) != 0 ||
+      default_stack_size != 131072 || default_guard_size != 8192 ||
+      pthread_attr_destroy(&changed_default_attributes) != 0)
+    return 256;
+  observed_default_attributes.__stacksize = 0;
+  if (pthread_attr_setguardsize(&observed_default_attributes, 12288) != 0 ||
+      pthread_setattr_default_np(&observed_default_attributes) != 0 ||
+      pthread_getattr_default_np(&observed_default_attributes) != 0 ||
+      pthread_attr_getstacksize(&observed_default_attributes,
+                                &default_stack_size) != 0 ||
+      pthread_attr_getguardsize(&observed_default_attributes,
+                                &default_guard_size) != 0 ||
+      default_stack_size != 131072 || default_guard_size != 12288)
+    return 257;
+  if (pthread_attr_setstack(&observed_default_attributes, user_thread_stack,
+                            sizeof(user_thread_stack)) != 0 ||
+      pthread_setattr_default_np(&observed_default_attributes) != EINVAL)
+    return 249;
+  pthread_t default_attr_thread;
+  if (pthread_create(&default_attr_thread, 0, return_self, 0) != 0 ||
+      pthread_getattr_np(default_attr_thread, &changed_default_attributes) != 0 ||
+      pthread_attr_getstacksize(&changed_default_attributes,
+                                &default_stack_size) != 0 ||
+      pthread_attr_getguardsize(&changed_default_attributes,
+                                &default_guard_size) != 0 ||
+      default_stack_size != 131072 || default_guard_size != 12288 ||
+      pthread_join(default_attr_thread, 0) != 0 ||
+      pthread_attr_destroy(&changed_default_attributes) != 0 ||
+      pthread_setattr_default_np(&original_default_attributes) != 0 ||
+      pthread_attr_destroy(&observed_default_attributes) != 0 ||
+      pthread_attr_destroy(&original_default_attributes) != 0)
+    return 250;
   pthread_attr_t user_stack_attributes;
   if (pthread_attr_init(&user_stack_attributes) != 0) return 232;
   void *reported_stack = (void *)1;
