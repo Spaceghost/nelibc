@@ -107,6 +107,11 @@ int main(void) {
   if (lrint(2.5) != 2 || lrintf(-3.5f) != -4 || llrint(3.5) != 4 ||
       llrintf(-2.5f) != -2 || lround(2.5) != 3 || lroundf(-2.5f) != -3 ||
       llround(3.5) != 4 || llroundf(-3.5f) != -4) return 166;
+  int quotient = 0;
+  if (remquo(7.0, 2.0, &quotient) != -1.0 || quotient != 4 ||
+      remquo(-7.0, 2.0, &quotient) != 1.0 || quotient != -4 ||
+      remquof(7.0f, 2.0f, &quotient) != -1.0f || quotient != 4 ||
+      remquof(-7.0f, 2.0f, &quotient) != 1.0f || quotient != -4) return 167;
   errno = 0;
   if (!isinf(y0(0.0)) || y0(0.0) > 0.0 || errno != ERANGE) return 157;
   errno = 0;

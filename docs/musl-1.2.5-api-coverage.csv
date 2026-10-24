@@ -1045,8 +1045,8 @@ remap_file_pages,sys/mman.h,,,not-declared
 remove,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 removexattr,sys/xattr.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 remque,search.h,,,not-declared
-remquo,math.h,,,not-declared
-remquof,math.h,,,not-declared
+remquo,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+remquof,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 remquol,math.h,,,not-declared
 rename,stdio.h,nelibc_stdio_standalone.h;nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 renameat,stdio.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

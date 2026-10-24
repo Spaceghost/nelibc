@@ -132,6 +132,8 @@ float fmodf(float x, float y);
 double fmod(double x, double y);
 float remainderf(float x, float y);
 double remainder(double x, double y);
+float remquof(float x, float y, int *quotient);
+double remquo(double x, double y, int *quotient);
 float fminf(float x, float y);
 double fmin(double x, double y);
 float fmaxf(float x, float y);

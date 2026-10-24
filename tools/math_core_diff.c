@@ -113,6 +113,8 @@ extern float nelibc_fmodf(float, float);
 extern double nelibc_fmod(double, double);
 extern float nelibc_remainderf(float, float);
 extern double nelibc_remainder(double, double);
+extern float nelibc_remquof(float, float, int *);
+extern double nelibc_remquo(double, double, int *);
 extern float nelibc_fminf(float, float);
 extern double nelibc_fmin(double, double);
 extern float nelibc_fmaxf(float, float);
@@ -726,6 +728,18 @@ static int check_pair_double(uint64_t left_bits, uint64_t right_bits) {
       return 1;
     }
   }
+  if (isfinite(x) && !isnan(y) && y != 0.0) {
+    int expected_quotient = 0, actual_quotient = 0;
+    const double expected_remainder = remquo(x, y, &expected_quotient);
+    const double actual_remainder = nelibc_remquo(x, y, &actual_quotient);
+    if (!equal_double(expected_remainder, actual_remainder) ||
+        expected_quotient % 8 != actual_quotient % 8) {
+      fprintf(stderr, "remquo mismatch x=%.17g y=%.17g remainder=%.17g/%.17g quotient=%d/%d\n",
+              x, y, expected_remainder, actual_remainder,
+              expected_quotient, actual_quotient);
+      return 1;
+    }
+  }
   if (!equal_double(nextafter(x, y), nelibc_nextafter(x, y))) {
     fprintf(stderr, "nextafter mismatch x=%016llx y=%016llx\n",
             (unsigned long long)left_bits, (unsigned long long)right_bits);
@@ -787,6 +801,18 @@ static int check_pair_float(uint32_t left_bits, uint32_t right_bits) {
       float_bits e = {.value = expected[i]};
       float_bits a = {.value = actual[i]};
       fprintf(stderr, "expected=%08x actual=%08x\n", e.bits, a.bits);
+      return 1;
+    }
+  }
+  if (isfinite(x) && !isnan(y) && y != 0.0f) {
+    int expected_quotient = 0, actual_quotient = 0;
+    const float expected_remainder = remquof(x, y, &expected_quotient);
+    const float actual_remainder = nelibc_remquof(x, y, &actual_quotient);
+    if (!equal_float(expected_remainder, actual_remainder) ||
+        expected_quotient % 8 != actual_quotient % 8) {
+      fprintf(stderr, "remquof mismatch x=%.9g y=%.9g remainder=%.9g/%.9g quotient=%d/%d\n",
+              x, y, expected_remainder, actual_remainder,
+              expected_quotient, actual_quotient);
       return 1;
     }
   }
@@ -1444,6 +1470,9 @@ int main(void) {
       {UINT64_C(0xC014000000000000), UINT64_C(0x4000000000000000)}, /* -5, 2 */
       {UINT64_C(0xC014000000000000), UINT64_C(0xC000000000000000)}, /* -5, -2 */
       {UINT64_C(0x0000000000000001), UINT64_C(0x0000000000000002)},
+      {UINT64_C(0x7FEFFFFFFFFFFFFF), UINT64_C(0x0000000000000001)},
+      {UINT64_C(0xFFEFFFFFFFFFFFFF), UINT64_C(0x0000000000000001)},
+      {UINT64_C(0x7FEFFFFFFFFFFFFF), UINT64_C(0x0010000000000000)},
       {UINT64_C(0x8000000000000000), UINT64_C(0x0000000000000000)},
       {UINT64_C(0x7FF0000000000000), UINT64_C(0x4000000000000000)},
       {UINT64_C(0x4010000000000000), UINT64_C(0x7FF0000000000000)},
@@ -1466,6 +1495,9 @@ int main(void) {
       {UINT32_C(0xC0A00000), UINT32_C(0x40000000)}, /* -5, 2 */
       {UINT32_C(0xC0A00000), UINT32_C(0xC0000000)}, /* -5, -2 */
       {UINT32_C(0x00000001), UINT32_C(0x00000002)},
+      {UINT32_C(0x7F7FFFFF), UINT32_C(0x00000001)},
+      {UINT32_C(0xFF7FFFFF), UINT32_C(0x00000001)},
+      {UINT32_C(0x7F7FFFFF), UINT32_C(0x00800000)},
       {UINT32_C(0x80000000), UINT32_C(0x00000000)},
       {UINT32_C(0x7F800000), UINT32_C(0x40000000)},
       {UINT32_C(0x40800000), UINT32_C(0x7F800000)},

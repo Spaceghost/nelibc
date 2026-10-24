@@ -200,6 +200,7 @@ local function nelibc_ldexp_hw(value: cdouble, exponent: cint): cdouble <cimport
 local function nelibc_ldexpf_hw(value: cfloat, exponent: cint): cfloat <cimport> end
 local function nelibc_fmod_hw(x: cdouble, y: cdouble): cdouble <cimport> end
 local function nelibc_remainder_hw(x: cdouble, y: cdouble): cdouble <cimport> end
+local function nelibc_remquo_hw(x: cdouble, y: cdouble, quotient: *[0]cint): cdouble <cimport> end
 
 local function sqrt(value: cdouble): cdouble <cexport, codename 'sqrt'>
   if value < 0_cdouble then math_domain_error() end
@@ -625,6 +626,24 @@ local function remainderf(x: cfloat, y: cfloat): cfloat
     <cexport, codename 'remainderf'>
   check_remainder_domain((@cdouble)(x), (@cdouble)(y))
   return (@cfloat)(nelibc_remainder_hw((@cdouble)(x), (@cdouble)(y)))
+end
+
+local function remquo(x: cdouble, y: cdouble, quotient: *[0]cint): cdouble
+    <cexport, codename 'remquo'>
+  check_remainder_domain(x, y)
+  if is_nan64(x) or is_nan64(y) or is_infinite64(x) or y == 0_cdouble then
+    quotient[0] = 0_cint
+    return nelibc_remainder_hw(x, y)
+  end
+  return nelibc_remquo_hw(x, y, quotient)
+end
+
+local function remquof(x: cfloat, y: cfloat, quotient: *[0]cint): cfloat
+    <cexport, codename 'remquof'>
+  local result: cint
+  local value = remquo((@cdouble)(x), (@cdouble)(y), &result)
+  quotient[0] = result
+  return (@cfloat)(value)
 end
 
 local function fmin(x: cdouble, y: cdouble): cdouble <cexport, codename 'fmin'>
