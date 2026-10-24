@@ -5,6 +5,7 @@
 #include <semaphore.h>
 #include <stdatomic.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -922,6 +923,24 @@ int main(void) {
 
   atomic_store_explicit(&join_release, 0, memory_order_release);
   if (pthread_create(&thread, 0, gated_join_worker, exit_value) != 0) return 18;
+  char thread_name[16] = {0};
+  char small_thread_name[15] = {0};
+  if (pthread_setname_np(thread, "nelibc-worker") != 0 ||
+      pthread_getname_np(thread, thread_name, sizeof(thread_name)) != 0 ||
+      strcmp(thread_name, "nelibc-worker") != 0 ||
+      pthread_getname_np(thread, small_thread_name,
+                         sizeof(small_thread_name)) != ERANGE ||
+      pthread_setname_np(thread, "0123456789abcdef") != ERANGE)
+    return 27;
+  char original_thread_name[16] = {0};
+  if (pthread_getname_np(pthread_self(), original_thread_name,
+                         sizeof(original_thread_name)) != 0 ||
+      pthread_setname_np(pthread_self(), "nelibc-main") != 0 ||
+      pthread_getname_np(pthread_self(), thread_name,
+                         sizeof(thread_name)) != 0 ||
+      strcmp(thread_name, "nelibc-main") != 0 ||
+      pthread_setname_np(pthread_self(), original_thread_name) != 0)
+    return 28;
   if (pthread_tryjoin_np(thread, &result) != EBUSY) return 19;
   atomic_store_explicit(&join_release, 1, memory_order_release);
   int tryjoin_result = EBUSY;

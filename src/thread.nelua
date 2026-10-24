@@ -3105,6 +3105,99 @@ local function pthread_target_tid(thread: pointer, tid: *[0]cint): cint <inline>
   return 0
 end
 
+local function pthread_comm_path(tid: cint, path: *[0]cchar): void
+  local prefix: [16]cchar = {
+    47_cchar, 112_cchar, 114_cchar, 111_cchar, 99_cchar, 47_cchar,
+    115_cchar, 101_cchar, 108_cchar, 102_cchar, 47_cchar,
+    116_cchar, 97_cchar, 115_cchar, 107_cchar, 47_cchar
+  }
+  for i: csize = 0, 15 do path[i] = prefix[i] end
+  local digits: [10]cchar = {}
+  local digit_count: csize = 0
+  local value: cuint = (@cuint)(tid)
+  while value > 0_cuint do
+    digits[digit_count] = (@cchar)(48_cuint + value % 10_cuint)
+    digit_count = digit_count + 1_csize
+    value = value / 10_cuint
+  end
+  local index: csize = 16_csize
+  while digit_count > 0_csize do
+    digit_count = digit_count - 1_csize
+    path[index] = digits[digit_count]
+    index = index + 1_csize
+  end
+  path[index] = 47_cchar
+  index = index + 1_csize
+  path[index] = 99_cchar
+  path[index + 1_csize] = 111_cchar
+  path[index + 2_csize] = 109_cchar
+  path[index + 3_csize] = 109_cchar
+  path[index + 4_csize] = 0_cchar
+end
+
+local function pthread_getname_np(thread: pointer, name: *[0]cchar,
+    length: csize): cint <cexport, codename 'pthread_getname_np'>
+  if length < 16_csize then return 34 end -- ERANGE: Linux TASK_COMM_LEN
+  if name == nilptr then return 22 end -- EINVAL
+  local tid: cint
+  local thread_error = pthread_target_tid(thread, &tid)
+  if thread_error ~= 0 then return thread_error end
+  if thread == pthread_self() then
+    local result = nelibc_raw_syscall6(157_culong, 16_culong,
+        (@culong)((@usize)(name)), 0_culong, 0_culong, 0_culong, 0_culong)
+    if result < 0 and result >= -4095 then return (@cint)(-result) end
+    return 0
+  end
+  local path: [32]cchar = {}
+  pthread_comm_path(tid, &path[0])
+  local fd = openat(-100_cint, &path[0], 0_cint, 0_cuint)
+  if fd < 0 then
+    local error_code = nelibc_errno_location()[0]
+    if error_code == 2 then return 3 end -- ESRCH: target exited
+    return error_code
+  end
+  local result = nelibc_raw_syscall3(0_culong, (@culong)(fd),
+      (@culong)((@usize)(name)), (@culong)(length)) -- read
+  close(fd)
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  if result <= 0 then return 3 end -- ESRCH
+  name[(@csize)(result - 1_clong)] = 0_cchar -- strip procfs newline
+  return 0
+end
+
+local function pthread_setname_np(thread: pointer,
+    name: *[0]cchar <const>): cint <cexport, codename 'pthread_setname_np'>
+  if name == nilptr then return 22 end -- EINVAL
+  local name_length: csize = 0
+  while name_length < 16_csize and name[name_length] ~= 0_cchar do
+    name_length = name_length + 1_csize
+  end
+  if name_length > 15_csize then return 34 end -- ERANGE
+  local tid: cint
+  local thread_error = pthread_target_tid(thread, &tid)
+  if thread_error ~= 0 then return thread_error end
+  if thread == pthread_self() then
+    local result = nelibc_raw_syscall6(157_culong, 15_culong,
+        (@culong)((@usize)(name)), 0_culong, 0_culong, 0_culong, 0_culong)
+    if result < 0 and result >= -4095 then return (@cint)(-result) end
+    return 0
+  end
+  local path: [32]cchar = {}
+  pthread_comm_path(tid, &path[0])
+  local fd = openat(-100_cint, &path[0], 1_cint | 524288_cint, 0_cuint)
+  if fd < 0 then
+    local error_code = nelibc_errno_location()[0]
+    if error_code == 2 then return 3 end -- ESRCH: target exited
+    return error_code
+  end
+  local result = nelibc_raw_syscall3(1_culong, (@culong)(fd),
+      (@culong)((@usize)(name)), (@culong)(name_length)) -- write
+  close(fd)
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  if result ~= (@clong)(name_length) then return 5 end -- EIO
+  return 0
+end
+
 local function pthread_kill(thread: pointer, signal: cint): cint <cexport, codename 'pthread_kill'>
   if signal < 0 or signal > 64 or signal == 32 then return 22 end -- EINVAL
   local tid: cint

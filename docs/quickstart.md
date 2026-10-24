@@ -116,6 +116,8 @@ memory, strings, integer conversion, and the current Nelua math slice.
   Zig, GCC, and TinyCC, including process-shared barriers and read-write locks.
   Its join checks include `pthread_tryjoin_np` returning `EBUSY` for a live
   thread, and `pthread_timedjoin_np` timing out without consuming the join.
+  Thread-name checks cover self and remote names, the 15-byte name limit, and
+  the minimum 16-byte get buffer.
 - `make sem-clockwait-musl-smoke` compiles and runs a static musl consumer of
   `sem_clockwait`, including deadline, wakeup, and cancellation behavior.
 - `make sem-clockwait-shootout-zig` compares Nelibc's immediate, empty-timeout,
