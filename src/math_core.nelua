@@ -25,6 +25,33 @@ local two_over_pi: [50]cuint = {
   0x7527BA_cuint, 0xC7EBE5_cuint, 0xF17B3D_cuint, 0x0739F7_cuint, 0x8A5292_cuint,
   0xEA6BFB_cuint, 0x5FB11F_cuint, 0x8D5D08_cuint, 0x560330_cuint, 0x46FC7B_cuint,
 }
+
+-- fdlibm rational coefficients for erf/erfc (Sun Microsystems permissive notice above).
+local erf_pp: [5]cdouble = {
+  1.28379167095512558561e-01_cdouble, -3.25042107247001499370e-01_cdouble, -2.84817495755985104766e-02_cdouble, -5.77027029648944159157e-03_cdouble, -2.37630166566501626084e-05_cdouble
+}
+local erf_qq: [5]cdouble = {
+  3.97917223959155352819e-01_cdouble, 6.50222499887672944485e-02_cdouble, 5.08130628187576562776e-03_cdouble, 1.32494738004321644526e-04_cdouble, -3.96022827877536812320e-06_cdouble
+}
+local erf_pa: [7]cdouble = {
+  -2.36211856075265944077e-03_cdouble, 4.14856118683748331666e-01_cdouble, -3.72207876035701323847e-01_cdouble, 3.18346619901161753674e-01_cdouble, -1.10894694282396677476e-01_cdouble, 3.54783043256182359371e-02_cdouble, -2.16637559486879084300e-03_cdouble
+}
+local erf_qa: [6]cdouble = {
+  1.06420880400844228286e-01_cdouble, 5.40397917702171048937e-01_cdouble, 7.18286544141962662868e-02_cdouble, 1.26171219808761642112e-01_cdouble, 1.36370839120290507362e-02_cdouble, 1.19844998467991074170e-02_cdouble
+}
+local erf_ra: [8]cdouble = {
+  -9.86494403484714822705e-03_cdouble, -6.93858572707181764372e-01_cdouble, -1.05586262253232909814e+01_cdouble, -6.23753324503260060396e+01_cdouble, -1.62396669462573470355e+02_cdouble, -1.84605092906711035994e+02_cdouble, -8.12874355063065934246e+01_cdouble, -9.81432934416914548592e+00_cdouble
+}
+local erf_sa: [8]cdouble = {
+  1.96512716674392571292e+01_cdouble, 1.37657754143519042600e+02_cdouble, 4.34565877475229228821e+02_cdouble, 6.45387271733267880336e+02_cdouble, 4.29008140027567833386e+02_cdouble, 1.08635005541779435134e+02_cdouble, 6.57024977031928170135e+00_cdouble, -6.04244152148580987438e-02_cdouble
+}
+local erf_rb: [7]cdouble = {
+  -9.86494292470009928597e-03_cdouble, -7.99283237680523006574e-01_cdouble, -1.77579549177547519889e+01_cdouble, -1.60636384855821916062e+02_cdouble, -6.37566443368389627722e+02_cdouble, -1.02509513161107724954e+03_cdouble, -4.83519191608651397019e+02_cdouble
+}
+local erf_sb: [7]cdouble = {
+  3.03380607434824582924e+01_cdouble, 3.25792512996573918826e+02_cdouble, 1.53672958608443695994e+03_cdouble, 3.19985821950859553908e+03_cdouble, 2.55305040643316442583e+03_cdouble, 4.74528541206955367215e+02_cdouble, -2.24409524465858183362e+01_cdouble
+}
+
 local atan_high: [4]cdouble = {
   4.63647609000806093515e-1_cdouble,
   7.85398163397448278999e-1_cdouble,
@@ -916,6 +943,83 @@ local function expf(value: cfloat): cfloat <cexport, codename 'expf'>
     if value == value and not is_infinite32(value) then math_range_error() end
   end
   return result
+end
+
+local function erf_erfc_middle(x: cdouble): cdouble <inline>
+  local offset = x - 1_cdouble
+  local p = erf_pa[0] + offset * (erf_pa[1] + offset * (erf_pa[2] + offset *
+    (erf_pa[3] + offset * (erf_pa[4] + offset * (erf_pa[5] + offset * erf_pa[6])))))
+  local q = 1_cdouble + offset * (erf_qa[0] + offset * (erf_qa[1] + offset *
+    (erf_qa[2] + offset * (erf_qa[3] + offset * (erf_qa[4] + offset * erf_qa[5])))))
+  return 1_cdouble - 0.845062911510467529297_cdouble - p / q
+end
+
+local function erfc_positive(x: cdouble): cdouble
+  if x < 0.84375_cdouble then
+    if x < 0x1p-56_cdouble then return 1_cdouble - x end
+    local z = x * x
+    local p = erf_pp[0] + z * (erf_pp[1] + z * (erf_pp[2] + z * (erf_pp[3] + z * erf_pp[4])))
+    local q = 1_cdouble + z * (erf_qq[0] + z * (erf_qq[1] + z * (erf_qq[2] + z * (erf_qq[3] + z * erf_qq[4]))))
+    local xy = x * (p / q)
+    if x < 0.25_cdouble then return 1_cdouble - (x + xy) end
+    return 0.5_cdouble - (x - 0.5_cdouble + xy)
+  end
+  if x < 1.25_cdouble then return erf_erfc_middle(x) end
+  local inverse_square = 1_cdouble / (x * x)
+  local r: cdouble
+  local denominator: cdouble
+  if x < 2.857142857142857_cdouble then
+    r = erf_ra[0] + inverse_square * (erf_ra[1] + inverse_square * (erf_ra[2] + inverse_square * (erf_ra[3] + inverse_square * (erf_ra[4] + inverse_square * (erf_ra[5] + inverse_square * (erf_ra[6] + inverse_square * erf_ra[7]))))))
+    denominator = 1_cdouble + inverse_square * (erf_sa[0] + inverse_square * (erf_sa[1] + inverse_square * (erf_sa[2] + inverse_square * (erf_sa[3] + inverse_square * (erf_sa[4] + inverse_square * (erf_sa[5] + inverse_square * (erf_sa[6] + inverse_square * erf_sa[7])))))))
+  else
+    r = erf_rb[0] + inverse_square * (erf_rb[1] + inverse_square * (erf_rb[2] + inverse_square * (erf_rb[3] + inverse_square * (erf_rb[4] + inverse_square * (erf_rb[5] + inverse_square * erf_rb[6])))))
+    denominator = 1_cdouble + inverse_square * (erf_sb[0] + inverse_square * (erf_sb[1] + inverse_square * (erf_sb[2] + inverse_square * (erf_sb[3] + inverse_square * (erf_sb[4] + inverse_square * (erf_sb[5] + inverse_square * erf_sb[6]))))))
+  end
+  local high_bits: DoubleBits = {value = x}
+  high_bits.bits = high_bits.bits & 0xFFFFFFFF00000000_culonglong
+  local high = high_bits.value
+  return exp(-high * high - 0.5625_cdouble) * exp((high - x) * (high + x) + r / denominator) / x
+end
+
+local function erf(value: cdouble): cdouble <cexport, codename 'erf'>
+  if is_nan64(value) then return value + value end
+  if is_infinite64(value) then return copysign(1_cdouble, value) end
+  local magnitude = fabs(value)
+  local result: cdouble
+  if magnitude < 0.84375_cdouble then
+    if magnitude < 0x1p-28_cdouble then return value * 1.12837916709551257390_cdouble end
+    local z = value * value
+    local p = erf_pp[0] + z * (erf_pp[1] + z * (erf_pp[2] + z * (erf_pp[3] + z * erf_pp[4])))
+    local q = 1_cdouble + z * (erf_qq[0] + z * (erf_qq[1] + z * (erf_qq[2] + z * (erf_qq[3] + z * erf_qq[4]))))
+    return value + value * (p / q)
+  end
+  if magnitude >= 6_cdouble then result = 1_cdouble - 0x1p-1022_cdouble
+  else result = 1_cdouble - erfc_positive(magnitude) end
+  return copysign(result, value)
+end
+
+local function erfc(value: cdouble): cdouble <cexport, codename 'erfc'>
+  if is_nan64(value) then return value + value end
+  if is_infinite64(value) then
+    if value < 0_cdouble then return 2_cdouble end
+    return 0_cdouble
+  end
+  local magnitude = fabs(value)
+  if magnitude >= 28_cdouble then
+    if value < 0_cdouble then return 2_cdouble - 0x1p-1022_cdouble end
+    return 0x1p-1022_cdouble * 0x1p-1022_cdouble
+  end
+  local tail = erfc_positive(magnitude)
+  if value < 0_cdouble then return 2_cdouble - tail end
+  return tail
+end
+
+local function erff(value: cfloat): cfloat <cexport, codename 'erff'>
+  return (@cfloat)(erf((@cdouble)(value)))
+end
+
+local function erfcf(value: cfloat): cfloat <cexport, codename 'erfcf'>
+  return (@cfloat)(erfc((@cdouble)(value)))
 end
 
 -- Evaluate 2^x by separating its integral binary scale from a small

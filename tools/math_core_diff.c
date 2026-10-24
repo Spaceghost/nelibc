@@ -64,6 +64,10 @@ extern float nelibc_acosf(float);
 extern double nelibc_acos(double);
 extern float nelibc_fmaf(float, float, float);
 extern double nelibc_fma(double, double, double);
+extern float nelibc_erff(float);
+extern double nelibc_erf(double);
+extern float nelibc_erfcf(float);
+extern double nelibc_erfc(double);
 extern float nelibc_sinf(float);
 extern double nelibc_sin(double);
 extern float nelibc_cosf(float);
@@ -117,6 +121,8 @@ typedef union {
 
 static uint64_t state = UINT64_C(0xD1B54A32D192ED03);
 static uint64_t max_exp_ulps, max_log_ulps;
+static uint64_t max_erf_ulps, max_erfc_ulps;
+static uint32_t max_erff_ulps, max_erfcf_ulps;
 static uint32_t max_expf_ulps, max_logf_ulps;
 static uint64_t max_sin_ulps, max_cos_ulps;
 static uint32_t max_sinf_ulps, max_cosf_ulps;
@@ -983,7 +989,37 @@ static int check_rint_mode(int mode, double value, float valuef) {
   return 0;
 }
 
+static int check_erf(double x, float xf) {
+  const double erf_expected = erf(x), erfc_expected = erfc(x);
+  const float erff_expected = erff(xf), erfcf_expected = erfcf(xf);
+  const double erf_actual = nelibc_erf(x), erfc_actual = nelibc_erfc(x);
+  const float erff_actual = nelibc_erff(xf), erfcf_actual = nelibc_erfcf(xf);
+  uint64_t de = ulps_double(erf_expected, erf_actual), dc = ulps_double(erfc_expected, erfc_actual);
+  uint32_t fe = ulps_float(erff_expected, erff_actual), fc = ulps_float(erfcf_expected, erfcf_actual);
+  if ((!isnan(erf_expected) && de > 4) || (!isnan(erfc_expected) && dc > 4) ||
+      (!isnan(erff_expected) && fe > 4) || (!isnan(erfcf_expected) && fc > 4)) {
+    fprintf(stderr, "erf family mismatch x=%.17g xf=%.9g: %llu/%llu %u/%u ULP\n", x, xf,
+      (unsigned long long)de, (unsigned long long)dc, fe, fc);
+    return 1;
+  }
+  if (de > max_erf_ulps) max_erf_ulps = de;
+  if (dc > max_erfc_ulps) max_erfc_ulps = dc;
+  if (fe > max_erff_ulps) max_erff_ulps = fe;
+  if (fc > max_erfcf_ulps) max_erfcf_ulps = fc;
+  return 0;
+}
+
 int main(void) {
+  if (check_erf(-30.0, -30.0f) || check_erf(-6.0, -6.0f) ||
+      check_erf(-2.857142857142857, -2.8571429f) || check_erf(-1.25, -1.25f) ||
+      check_erf(-0.84375, -0.84375f) || check_erf(-0.25, -0.25f) ||
+      check_erf(-0x1p-1074, -0x1p-149f) || check_erf(-0.0, -0.0f) ||
+      check_erf(0.0, 0.0f) || check_erf(0.25, 0.25f) ||
+      check_erf(0.84375, 0.84375f) || check_erf(1.0, 1.0f) ||
+      check_erf(1.25, 1.25f) || check_erf(2.857142857142857, 2.8571429f) ||
+      check_erf(6.0, 6.0f) || check_erf(28.0, 28.0f) || check_erf(30.0, 30.0f) ||
+      check_erf(INFINITY, INFINITY) || check_erf(-INFINITY, -INFINITY) ||
+      check_erf(NAN, NAN)) return 1;
   static const uint64_t edge64[] = {
       0, UINT64_C(0x8000000000000000), 1, UINT64_C(0x8000000000000001),
       UINT64_C(0x3FDFFFFFFFFFFFFF), UINT64_C(0x3FE0000000000000),
@@ -1174,7 +1210,9 @@ int main(void) {
         check_exp_log(((double_bits){.bits = bits}).value,
                       ((float_bits){.bits = (uint32_t)(bits >> 17)}).value) ||
         check_pair_double(pair_left64, other) ||
-        check_pair_float(left32, right32)) return 1;
+        check_pair_float(left32, right32) ||
+        check_erf((((double_bits){.bits = bits}).value / DBL_MAX) * 28.0,
+                  (((float_bits){.bits = (uint32_t)(bits >> 17)}).value / FLT_MAX) * 28.0f)) return 1;
   }
   double_bits infinity = {.bits = UINT64_C(0x7FF0000000000000)};
   const long double above_double = 1.0L + 0x1p-60L;
@@ -1238,7 +1276,8 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
-  printf("96 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+  printf("100 binary32/binary64 core math functions matched; erf/erfc max ULP: %llu/%llu (float %u/%u); exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+         (unsigned long long)max_erf_ulps, (unsigned long long)max_erfc_ulps, max_erff_ulps, max_erfcf_ulps,
          (double)max_exp_ulps, (double)max_log_ulps,
          (double)max_expf_ulps, (double)max_logf_ulps,
          (unsigned long long)max_sin_ulps, (unsigned long long)max_cos_ulps,

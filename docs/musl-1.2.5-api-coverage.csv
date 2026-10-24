@@ -261,11 +261,11 @@ epoll_ctl,sys/epoll.h,sys/epoll.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,impleme
 epoll_pwait,sys/epoll.h,sys/epoll.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 epoll_wait,sys/epoll.h,sys/epoll.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 erand48,stdlib.h,,,not-declared
-erf,math.h,,,not-declared
-erfc,math.h,,,not-declared
-erfcf,math.h,,,not-declared
+erf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+erfc,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+erfcf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 erfcl,math.h,,,not-declared
-erff,math.h,,,not-declared
+erff,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 erfl,math.h,,,not-declared
 err,err.h,,,not-declared
 errx,err.h,,,not-declared

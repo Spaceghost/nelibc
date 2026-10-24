@@ -87,6 +87,10 @@ int main(void) {
   if (fma(0x1.0000000000001p0, 0x1.ffffffffffffep-1, -1.0) != -0x1p-104 ||
       fmaf(0x1.000002p0f, 0x1.fffffcp-1f, -1.0f) != -0x1p-46f)
     return 145;
+  if (!(erf(1.0) > 0.8427007929497148 && erf(1.0) < 0.8427007929497150) ||
+      !(erfc(1.0) > 0.1572992070502851 && erfc(1.0) < 0.1572992070502852)) return 146;
+  if (!(erff(1.0f) > 0.8427007f && erff(1.0f) < 0.8427009f) ||
+      !(erfcf(1.0f) > 0.1572991f && erfcf(1.0f) < 0.1572993f)) return 147;
   errno = 0;
   if (!is_nan_double(asin(2.0)) || errno != EDOM) return 143;
   errno = 0;
