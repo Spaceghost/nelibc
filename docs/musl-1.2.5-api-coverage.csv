@@ -665,10 +665,10 @@ ldexpf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ldexpl,math.h,,,not-declared
 ldiv,stdlib.h,stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 lfind,search.h,,,not-declared
-lgamma,math.h,,,not-declared
-lgamma_r,math.h,,,not-declared
-lgammaf,math.h,,,not-declared
-lgammaf_r,math.h,,,not-declared
+lgamma,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+lgamma_r,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+lgammaf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+lgammaf_r,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 lgammal,math.h,,,not-declared
 lgammal_r,math.h,,,not-declared
 lgetxattr,sys/xattr.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1311,8 +1311,8 @@ telldir,dirent.h,dirent.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tempnam,stdio.h,,,not-declared
 textdomain,libintl.h,,,not-declared
 tfind,search.h,,,not-declared
-tgamma,math.h,,,not-declared
-tgammaf,math.h,,,not-declared
+tgamma,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+tgammaf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tgammal,math.h,,,not-declared
 time,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 timegm,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

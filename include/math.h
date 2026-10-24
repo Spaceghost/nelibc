@@ -4,6 +4,7 @@
 #ifdef NELIBC_STANDALONE
 
 #include <float.h>
+extern int signgam;
 
 float fabsf(float value);
 double fabs(double value);
@@ -57,10 +58,22 @@ float erff(float value);
 double erf(double value);
 float erfcf(float value);
 double erfc(double value);
+float tgammaf(float value);
+double tgamma(double value);
+float lgammaf(float value);
+double lgamma(double value);
+float lgammaf_r(float value, int *sign);
+double lgamma_r(double value, int *sign);
 float erff(float value);
 double erf(double value);
 float erfcf(float value);
 double erfc(double value);
+float tgammaf(float value);
+double tgamma(double value);
+float lgammaf(float value);
+double lgamma(double value);
+float lgammaf_r(float value, int *sign);
+double lgamma_r(double value, int *sign);
 float logf(float value);
 double log(double value);
 float log2f(float value);

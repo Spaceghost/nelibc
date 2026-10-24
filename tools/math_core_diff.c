@@ -68,6 +68,12 @@ extern float nelibc_erff(float);
 extern double nelibc_erf(double);
 extern float nelibc_erfcf(float);
 extern double nelibc_erfc(double);
+extern double nelibc_tgamma(double);
+extern float nelibc_tgammaf(float);
+extern double nelibc_lgamma(double);
+extern float nelibc_lgammaf(float);
+extern double nelibc_lgamma_r(double, int *);
+extern float nelibc_lgammaf_r(float, int *);
 extern float nelibc_sinf(float);
 extern double nelibc_sin(double);
 extern float nelibc_cosf(float);
@@ -989,6 +995,39 @@ static int check_rint_mode(int mode, double value, float valuef) {
   return 0;
 }
 
+static int check_gamma(double x, float xf) {
+  const double ge = tgamma(x), le = lgamma(x);
+  const float gef = tgammaf(xf), lef = lgammaf(xf);
+  const double ga = nelibc_tgamma(x), la = nelibc_lgamma(x);
+  const int lgamma_sign = signgam;
+  const float gaf = nelibc_tgammaf(xf), laf = nelibc_lgammaf(xf);
+  const int lgammaf_sign = signgam;
+  int sign = 0, signf = 0;
+  const double lar = nelibc_lgamma_r(x, &sign);
+  const float lafr = nelibc_lgammaf_r(xf, &signf);
+  uint64_t ug = ulps_double(ge, ga), ul = ulps_double(le, la), ur = ulps_double(le, lar);
+  uint32_t ugf = ulps_float(gef, gaf), ulf = ulps_float(lef, laf), urf = ulps_float(lef, lafr);
+  if ((!isnan(ge) && fabs(ga - ge) > 2e-13 * (1.0 + fabs(ge))) || (!isnan(le) && (fabs(la - le) > 2e-12 * (1.0 + fabs(le)) || fabs(lar - le) > 2e-12 * (1.0 + fabs(le)))) ||
+      (!isnan(gef) && fabsf(gaf - gef) > 2e-5f * (1.0f + fabsf(gef))) || (!isnan(lef) && (fabsf(laf - lef) > 2e-5f * (1.0f + fabsf(lef)) || fabsf(lafr - lef) > 2e-5f * (1.0f + fabsf(lef))))) {
+    fprintf(stderr, "gamma mismatch x=%.17g xf=%.9g values gamma %.17g/%.17g lgamma %.17g/%.17g: tgamma=%llu/%u lgamma=%llu/%u\n", x, xf, ge, ga, le, la,
+      (unsigned long long)ug, ugf, (unsigned long long)ul, ulf);
+    return 1;
+  }
+  if (!isnan(le) && ((x < 0 && sign != (sin(M_PI * x) > 0 ? 1 : -1)) || (x > 0 && sign != 1))) {
+    fprintf(stderr, "lgamma_r sign mismatch x=%.17g sign=%d\n", x, sign);
+    return 1;
+  }
+  if (!isnan(le) && x != 0.0 && lgamma_sign != sign) {
+    fprintf(stderr, "lgamma signgam mismatch x=%.17g: %d/%d\n", x, lgamma_sign, sign);
+    return 1;
+  }
+  if (!isnan(lef) && xf != 0.0f && lgammaf_sign != signf) {
+    fprintf(stderr, "lgammaf signgam mismatch x=%.9g: %d/%d\n", xf, lgammaf_sign, signf);
+    return 1;
+  }
+  return 0;
+}
+
 static int check_erf(double x, float xf) {
   const double erf_expected = erf(x), erfc_expected = erfc(x);
   const float erff_expected = erff(xf), erfcf_expected = erfcf(xf);
@@ -1010,6 +1049,10 @@ static int check_erf(double x, float xf) {
 }
 
 int main(void) {
+  if (check_gamma(0.5, 0.5f) || check_gamma(1.0, 1.0f) || check_gamma(2.0, 2.0f) ||
+      check_gamma(5.5, 5.5f) || check_gamma(-0.5, -0.5f) || check_gamma(-1.5, -1.5f) ||
+      check_gamma(-2.5, -2.5f) || check_gamma(20.25, 20.25f) || check_gamma(-10.25, -10.25f) ||
+      check_gamma(0x1p-50, 0x1p-50f) || check_gamma(-0x1p-50, -0x1p-50f)) return 1;
   if (check_erf(-30.0, -30.0f) || check_erf(-6.0, -6.0f) ||
       check_erf(-2.857142857142857, -2.8571429f) || check_erf(-1.25, -1.25f) ||
       check_erf(-0.84375, -0.84375f) || check_erf(-0.25, -0.25f) ||
@@ -1211,6 +1254,8 @@ int main(void) {
                       ((float_bits){.bits = (uint32_t)(bits >> 17)}).value) ||
         check_pair_double(pair_left64, other) ||
         check_pair_float(left32, right32) ||
+        check_gamma((((double_bits){.bits = bits}).value / DBL_MAX) * 20.0,
+                   (((float_bits){.bits = left32}).value / FLT_MAX) * 20.0f) ||
         check_erf((((double_bits){.bits = bits}).value / DBL_MAX) * 28.0,
                   (((float_bits){.bits = (uint32_t)(bits >> 17)}).value / FLT_MAX) * 28.0f)) return 1;
   }
@@ -1276,7 +1321,7 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
-  printf("100 binary32/binary64 core math functions matched; erf/erfc max ULP: %llu/%llu (float %u/%u); exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+  printf("106 binary32/binary64 core math functions matched; erf/erfc max ULP: %llu/%llu (float %u/%u); exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
          (unsigned long long)max_erf_ulps, (unsigned long long)max_erfc_ulps, max_erff_ulps, max_erfcf_ulps,
          (double)max_exp_ulps, (double)max_log_ulps,
          (double)max_expf_ulps, (double)max_logf_ulps,

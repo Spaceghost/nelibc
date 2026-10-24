@@ -9,6 +9,7 @@ local FloatBits: type = @union{bits: cuint, value: cfloat}
 local DoubleBits: type = @union{bits: culonglong, value: cdouble}
 local FmaNumber: type = @record{mantissa: culonglong, exponent: cint, sign: cint}
 local FmaProduct: type = @record{high: culonglong, low: culonglong}
+global signgam: cint <cexport, codename 'signgam'> = 1_cint
 -- The 2/pi digits and math-kernel coefficients follow FreeBSD libmsun/musl fdlibm
 -- constants. Copyright (C) 1993 by Sun Microsystems, Inc.; developed at
 -- SunSoft. Permission to use, copy, modify, and distribute is freely granted
@@ -26,7 +27,7 @@ local two_over_pi: [50]cuint = {
   0xEA6BFB_cuint, 0x5FB11F_cuint, 0x8D5D08_cuint, 0x560330_cuint, 0x46FC7B_cuint,
 }
 
--- fdlibm rational coefficients for erf/erfc (Sun Microsystems permissive notice above).
+-- Lanczos rational coefficients adapted from musl tgamma.c (MIT; see THIRD_PARTY_NOTICES.md).
 local erf_pp: [5]cdouble = {
   1.28379167095512558561e-01_cdouble, -3.25042107247001499370e-01_cdouble, -2.84817495755985104766e-02_cdouble, -5.77027029648944159157e-03_cdouble, -2.37630166566501626084e-05_cdouble
 }
@@ -50,6 +51,15 @@ local erf_rb: [7]cdouble = {
 }
 local erf_sb: [7]cdouble = {
   3.03380607434824582924e+01_cdouble, 3.25792512996573918826e+02_cdouble, 1.53672958608443695994e+03_cdouble, 3.19985821950859553908e+03_cdouble, 2.55305040643316442583e+03_cdouble, 4.74528541206955367215e+02_cdouble, -2.24409524465858183362e+01_cdouble
+}
+
+
+-- Lanczos rational coefficients from musl tgamma.c (permissive upstream notice).
+local gamma_snum: [13]cdouble = {
+  23531376880.410759688572007674451636754734846804940_cdouble, 42919803642.649098768957899047001988850926355848959_cdouble, 35711959237.355668049440185451547166705960488635843_cdouble, 17921034426.037209699919755754458931112671403265390_cdouble, 6039542586.3520280050642916443072979210699388420708_cdouble, 1439720407.3117216736632230727949123939715485786772_cdouble, 248874557.86205415651146038641322942321632125127801_cdouble, 31426415.585400194380614231628318205362874684987640_cdouble, 2876370.6289353724412254090516208496135991145378768_cdouble, 186056.26539522349504029498971604569928220784236328_cdouble, 8071.6720023658162106380029022722506138218516325024_cdouble, 210.82427775157934587250973392071336271166969580291_cdouble, 2.5066282746310002701649081771338373386264310793408_cdouble
+}
+local gamma_sden: [13]cdouble = {
+  0_cdouble, 39916800_cdouble, 120543840_cdouble, 150917976_cdouble, 105258076_cdouble, 45995730_cdouble, 13339535_cdouble, 2637558_cdouble, 357423_cdouble, 32670_cdouble, 1925_cdouble, 66_cdouble, 1_cdouble
 }
 
 local atan_high: [4]cdouble = {
@@ -1025,6 +1035,7 @@ end
 -- Evaluate 2^x by separating its integral binary scale from a small
 -- fractional remainder. This avoids multiplying the full input by ln(2),
 -- which loses many bits for ordinary fractions.
+
 local function exp2(value: cdouble): cdouble <cexport, codename 'exp2'>
   if value ~= value then return value + value end
   if is_infinite64(value) then
@@ -1965,6 +1976,128 @@ end
 local function sinf(value: cfloat): cfloat <cexport, codename 'sinf'>
   return (@cfloat)(sin((@cdouble)(value)))
 end
+
+local function gamma_lanczos_positive(value: cdouble): cdouble
+  local numerator: cdouble = 0_cdouble
+  local denominator: cdouble = 0_cdouble
+  if value < 8_cdouble then
+    for i = 12, 0, -1 do
+      numerator = numerator * value + gamma_snum[i]
+      denominator = denominator * value + gamma_sden[i]
+    end
+  else
+    for i = 0, 12 do
+      numerator = numerator / value + gamma_snum[i]
+      denominator = denominator / value + gamma_sden[i]
+    end
+  end
+  local series = numerator / denominator
+  local g_minus_half = 5.524680040776729583740234375_cdouble
+  local y = value + g_minus_half
+  local delta = (y - value) - g_minus_half
+  local z = value - 0.5_cdouble
+  return log(series) - y + z * log(y) + delta * (g_minus_half + 0.5_cdouble) / y
+end
+
+local function gamma_is_integer(value: cdouble): boolean <inline>
+  if value >= 0x1p52_cdouble then return true end
+  return value == (@cdouble)((@culonglong)(value))
+end
+
+local function gamma_sin_pi_positive(value: cdouble): cdouble
+  if value >= 0x1p52_cdouble then return 0_cdouble end
+  local reduced = value - 2_cdouble * (@cdouble)((@culonglong)(value * 0.5_cdouble))
+  return sin(3.141592653589793238462643383279502884_cdouble * reduced)
+end
+
+local function lgamma_r(value: cdouble, sign_result: *[0]cint): cdouble
+    <cexport, codename 'lgamma_r'>
+  sign_result[0] = 1
+  if is_nan64(value) then return value * value end
+  if is_infinite64(value) then return value * value end
+  local magnitude = fabs(value)
+  if magnitude == 0_cdouble then
+    math_range_error()
+    return double_from_bits(0x7FF0000000000000_culonglong)
+  end
+  if magnitude < 0x1p-54_cdouble then
+    if value < 0_cdouble then sign_result[0] = -1 end
+    return -log(magnitude)
+  end
+  local positive = gamma_lanczos_positive(magnitude)
+  if value > 0_cdouble then return positive end
+  if gamma_is_integer(magnitude) then
+    math_range_error()
+    return double_from_bits(0x7FF0000000000000_culonglong)
+  end
+  local sine = gamma_sin_pi_positive(magnitude)
+  if sine == 0_cdouble then
+    math_range_error()
+    return double_from_bits(0x7FF0000000000000_culonglong)
+  end
+  if sine > 0_cdouble then sign_result[0] = -1 end
+  return log(3.141592653589793238462643383279502884_cdouble / (magnitude * fabs(sine))) - positive
+end
+
+local function lgamma(value: cdouble): cdouble <cexport, codename 'lgamma'>
+  local sign: cint = 1
+  local result = lgamma_r(value, &sign)
+  signgam = sign
+  return result
+end
+
+local function lgammaf(value: cfloat): cfloat <cexport, codename 'lgammaf'>
+  local sign: cint = 1
+  local result = (@cfloat)(lgamma_r((@cdouble)(value), &sign))
+  signgam = sign
+  return result
+end
+
+local function lgammaf_r(value: cfloat, sign_result: *[0]cint): cfloat
+    <cexport, codename 'lgammaf_r'>
+  local sign: cint = 1
+  local result = lgamma_r((@cdouble)(value), &sign)
+  sign_result[0] = sign
+  return (@cfloat)(result)
+end
+
+local function tgamma(value: cdouble): cdouble <cexport, codename 'tgamma'>
+  if is_nan64(value) then return value + value end
+  if is_infinite64(value) then
+    if value > 0_cdouble then return value end
+    math_domain_error()
+    return double_from_bits(0x7FF8000000000000_culonglong)
+  end
+  if value == 0_cdouble then
+    math_range_error()
+    if is_negative_zero64(value) then return double_from_bits(0xFFF0000000000000_culonglong) end
+    return double_from_bits(0x7FF0000000000000_culonglong)
+  end
+  local sign: cint = 1
+  local logarithm = lgamma_r(value, &sign)
+  if is_infinite64(logarithm) then
+    if value < 0_cdouble and gamma_is_integer(fabs(value)) then
+      math_domain_error()
+      return double_from_bits(0x7FF8000000000000_culonglong)
+    end
+    if value > 0_cdouble then return exp(logarithm) end
+    math_range_error()
+    if sign < 0_cint then return double_from_bits(0x8000000000000000_culonglong) end
+    return 0_cdouble
+  end
+  local result = exp(logarithm)
+  if sign < 0_cint then result = -result end
+  if is_infinite64(result) or result == 0_cdouble then math_range_error() end
+  return result
+end
+
+local function tgammaf(value: cfloat): cfloat <cexport, codename 'tgammaf'>
+  local result = (@cfloat)(tgamma((@cdouble)(value)))
+  if is_infinite32(result) or (result == 0_cfloat and value ~= 0_cfloat) then math_range_error() end
+  return result
+end
+
+
 
 local function cosf(value: cfloat): cfloat <cexport, codename 'cosf'>
   return (@cfloat)(cos((@cdouble)(value)))

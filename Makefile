@@ -37,6 +37,9 @@ MATH_CORE_RENAMES := --redefine-sym fabs=nelibc_fabs --redefine-sym fabsf=nelibc
 	--redefine-sym fma=nelibc_fma --redefine-sym fmaf=nelibc_fmaf \
 	--redefine-sym erf=nelibc_erf --redefine-sym erff=nelibc_erff \
 	--redefine-sym erfc=nelibc_erfc --redefine-sym erfcf=nelibc_erfcf \
+	--redefine-sym tgamma=nelibc_tgamma --redefine-sym tgammaf=nelibc_tgammaf \
+	--redefine-sym lgamma=nelibc_lgamma --redefine-sym lgammaf=nelibc_lgammaf \
+	--redefine-sym lgamma_r=nelibc_lgamma_r --redefine-sym lgammaf_r=nelibc_lgammaf_r \
 	--redefine-sym log=nelibc_log --redefine-sym logf=nelibc_logf \
 	--redefine-sym log2=nelibc_log2 --redefine-sym log2f=nelibc_log2f \
 	--redefine-sym log1p=nelibc_log1p --redefine-sym log1pf=nelibc_log1pf \
@@ -101,7 +104,7 @@ $(OUT)/libnelibc-standalone-tcc.a: $(OUT)/math-core-tcc.o $(OUT)/math-core-x86_6
 math-core-diff-zig: $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o tools/math_core_diff.c
 	cp $(OUT)/math-core-zig.o $(OUT)/math-core-zig-renamed.o
 	$(OBJCOPY) $(MATH_CORE_RENAMES) $(OUT)/math-core-zig-renamed.o
-	# Keep the reference fma/fmaf bound to glibc libm, not Zig's compiler-rt fallback.
+	# Keep the reference math functions bound to glibc libm, not Zig compiler-rt fallbacks.
 	gcc -Iinclude -fno-builtin tools/math_core_diff.c $(OUT)/math-core-zig-renamed.o $(OUT)/math-core-x86_64.o -lm -o $(OUT)/math-core-diff-zig
 	$(OUT)/math-core-diff-zig
 
@@ -628,23 +631,23 @@ qsort-r-smoke-matrix: qsort-r-smoke-zig qsort-r-smoke-gcc qsort-r-smoke-zig-musl
 dogfood-zig: $(OUT)/libnelibc-zig.a examples/incremental.c
 	$(ZIG) cc $(ZIGFLAGS) -Wl,-u,memcpy -Iinclude -fno-builtin examples/incremental.c $(OUT)/libnelibc-zig.a -o $(OUT)/dogfood-zig
 	$(OUT)/dogfood-zig
-	@for symbol in memcpy strlen strchr strtol sqrt cbrt cbrtf fmod remainder fmin fmax fdim fdimf fma fmaf erf erff erfc erfcf tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf rint rintf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-zig | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
+	@for symbol in memcpy strlen strchr strtol sqrt cbrt cbrtf fmod remainder fmin fmax fdim fdimf fma fmaf erf erff erfc erfcf tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf rint rintf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-zig | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
 
 dogfood-gcc: $(OUT)/libnelibc-gcc.a examples/incremental.c
 	gcc -Wl,-u,memcpy -Iinclude -fno-builtin examples/incremental.c $(OUT)/libnelibc-gcc.a -o $(OUT)/dogfood-gcc
 	$(OUT)/dogfood-gcc
-	@for symbol in memcpy strlen strchr strtol sqrt cbrt cbrtf fmod remainder fmin fmax fdim fdimf fma fmaf erf erff erfc erfcf tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf rint rintf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-gcc | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
+	@for symbol in memcpy strlen strchr strtol sqrt cbrt cbrtf fmod remainder fmin fmax fdim fdimf fma fmaf erf erff erfc erfcf tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf rint rintf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-gcc | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
 
 dogfood-zig-musl: $(OUT)/libnelibc-zig-musl.a examples/incremental.c
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -Wl,-u,memcpy -Iinclude -fno-builtin $(MUSL_STDIO_WRAP_FLAGS) examples/incremental.c $(OUT)/libnelibc-zig-musl.a -o $(OUT)/dogfood-zig-musl
 	$(OUT)/dogfood-zig-musl
-	@for symbol in memcpy strlen strchr strtol sqrt cbrt cbrtf fmod remainder fmin fmax fdim fdimf fma fmaf erf erff erfc erfcf tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf rint rintf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-zig-musl | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
+	@for symbol in memcpy strlen strchr strtol sqrt cbrt cbrtf fmod remainder fmin fmax fdim fdimf fma fmaf erf erff erfc erfcf tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf rint rintf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-zig-musl | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
 
 dogfood-tcc: $(OUT)/libnelibc-tcc.a examples/incremental.c
 	$(TCC) -Iinclude -fno-builtin -c examples/incremental.c -o $(OUT)/dogfood-tcc.o
 	$(ZIG) cc $(ZIGFLAGS) -fsanitize=undefined -Wl,-u,memcpy -Iinclude -fno-builtin $(OUT)/dogfood-tcc.o $(OUT)/libnelibc-tcc.a $(TCC_LIBTCC1) -o $(OUT)/dogfood-tcc
 	$(OUT)/dogfood-tcc
-	@for symbol in memcpy strlen strchr strtol sqrt cbrt cbrtf fmod remainder fmin fmax fdim fdimf fma fmaf erf erff erfc erfcf tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf rint rintf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-tcc | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
+	@for symbol in memcpy strlen strchr strtol sqrt cbrt cbrtf fmod remainder fmin fmax fdim fdimf fma fmaf erf erff erfc erfcf tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf rint rintf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-tcc | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
 
 dogfood-matrix: dogfood-zig dogfood-gcc dogfood-zig-musl dogfood-tcc
 

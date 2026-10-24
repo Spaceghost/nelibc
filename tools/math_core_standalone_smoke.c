@@ -91,6 +91,11 @@ int main(void) {
       !(erfc(1.0) > 0.1572992070502851 && erfc(1.0) < 0.1572992070502852)) return 146;
   if (!(erff(1.0f) > 0.8427007f && erff(1.0f) < 0.8427009f) ||
       !(erfcf(1.0f) > 0.1572991f && erfcf(1.0f) < 0.1572993f)) return 147;
+  if (fabs(tgamma(5.0) - 24.0) > 0x1p-42 || fabs(tgamma(-0.5) + 3.544907701811032) > 0x1p-42) return 148;
+  int gamma_sign = 0;
+  if (fabs(lgamma_r(-0.5, &gamma_sign) - 1.2655121234846454) > 0x1p-45 || gamma_sign != -1) return 149;
+  if (fabs(lgamma(-0.5) - 1.2655121234846454) > 0x1p-45 || signgam != -1) return 151;
+  if (fabsf(tgammaf(5.0f) - 24.0f) > 0x1p-20f || fabsf(lgammaf(5.0f) - 3.1780539f) > 0x1p-20f) return 150;
   errno = 0;
   if (!is_nan_double(asin(2.0)) || errno != EDOM) return 143;
   errno = 0;
