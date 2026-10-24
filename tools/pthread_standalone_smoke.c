@@ -736,6 +736,12 @@ int main(void) {
 
   pthread_attr_t attributes;
   if (pthread_attr_init(&attributes) != 0) return 1;
+  if (pthread_getconcurrency() != 0 ||
+      pthread_setconcurrency(-1) != EINVAL ||
+      pthread_getconcurrency() != 0 ||
+      pthread_setconcurrency(3) != 0 || pthread_getconcurrency() != 3 ||
+      pthread_setconcurrency(0) != 0 || pthread_getconcurrency() != 0)
+    return 258;
   pthread_attr_t original_default_attributes;
   pthread_attr_t changed_default_attributes;
   pthread_attr_t observed_default_attributes;

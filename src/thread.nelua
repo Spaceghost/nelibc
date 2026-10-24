@@ -208,6 +208,7 @@ local SCHED_RR: cint <comptime> = 2
 local default_thread_attr_lock: cint
 local default_thread_attr_initialized: cint
 local default_thread_attr: PthreadAttr
+local pthread_concurrency_level: cint
 local PTHREAD_KEY_COUNT: csize <comptime> = 128
 local PTHREAD_KEY_INDEX_MASK: cuint <comptime> = 255
 local pthread_key_lock: cint = 0
@@ -1042,6 +1043,18 @@ local function pthread_setattr_default_np(attr: *PthreadAttr <const>): cint
   if next_attr.stacksize == 0_csize then next_attr.stacksize = default_thread_attr.stacksize end
   pthread_attr_copy(&default_thread_attr, &next_attr)
   pthread_default_attr_lock_release()
+  return 0
+end
+
+local function pthread_getconcurrency(): cint
+    <cexport, codename 'pthread_getconcurrency'>
+  return nelibc_atomic_load_int(&pthread_concurrency_level)
+end
+
+local function pthread_setconcurrency(level: cint): cint
+    <cexport, codename 'pthread_setconcurrency'>
+  if level < 0 then return 22 end -- EINVAL
+  nelibc_atomic_store_int(&pthread_concurrency_level, level)
   return 0
 end
 

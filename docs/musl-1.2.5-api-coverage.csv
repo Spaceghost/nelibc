@@ -770,7 +770,7 @@ pthread_exit,pthread.h,pthread.h,,host-delegated
 pthread_getaffinity_np,pthread.h,pthread.h,,host-delegated
 pthread_getattr_default_np,pthread.h,pthread.h,,host-delegated
 pthread_getattr_np,pthread.h,pthread.h,,host-delegated
-pthread_getconcurrency,pthread.h,,,not-declared
+pthread_getconcurrency,pthread.h,pthread.h,,host-delegated
 pthread_getcpuclockid,pthread.h,pthread.h,,host-delegated
 pthread_getname_np,pthread.h,pthread.h,,host-delegated
 pthread_getschedparam,pthread.h,pthread.h,,host-delegated
@@ -816,7 +816,7 @@ pthread_setaffinity_np,pthread.h,pthread.h,,host-delegated
 pthread_setattr_default_np,pthread.h,pthread.h,,host-delegated
 pthread_setcancelstate,pthread.h,pthread.h,,host-delegated
 pthread_setcanceltype,pthread.h,pthread.h,,host-delegated
-pthread_setconcurrency,pthread.h,,,not-declared
+pthread_setconcurrency,pthread.h,pthread.h,,host-delegated
 pthread_setname_np,pthread.h,pthread.h,,host-delegated
 pthread_setschedparam,pthread.h,pthread.h,,host-delegated
 pthread_setschedprio,pthread.h,pthread.h,,host-delegated
