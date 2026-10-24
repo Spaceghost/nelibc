@@ -1190,8 +1190,8 @@ sigtimedwait,signal.h,,,not-declared
 sigwait,signal.h,,,not-declared
 sigwaitinfo,signal.h,,,not-declared
 sin,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-sincos,math.h,,,not-declared
-sincosf,math.h,,,not-declared
+sincos,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+sincosf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sincosl,math.h,,,not-declared
 sinf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sinh,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

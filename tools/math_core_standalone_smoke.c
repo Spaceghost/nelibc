@@ -98,6 +98,12 @@ int main(void) {
   if (jn(3, -1.0) != -jn(3, 1.0)) return 163;
   if (fabs(j0(1.0) - 0.7651976865579666) > 2e-15 || fabs(j1(1.0) - 0.4400505857449335) > 2e-15) return 153;
   if (fabs(y0(1.0) - 0.08825696421567696) > 2e-15 || fabs(y1(1.0) + 0.7812128213002887) > 2e-15) return 154;
+  double pair_sin, pair_cos;
+  float pair_sinf, pair_cosf;
+  sincos(1.0, &pair_sin, &pair_cos);
+  sincosf(1.0f, &pair_sinf, &pair_cosf);
+  if (fabs(pair_sin - sin(1.0)) > 1e-15 || fabs(pair_cos - cos(1.0)) > 1e-15) return 164;
+  if (fabsf(pair_sinf - sinf(1.0f)) > 1e-7f || fabsf(pair_cosf - cosf(1.0f)) > 1e-7f) return 165;
   errno = 0;
   if (!isinf(y0(0.0)) || y0(0.0) > 0.0 || errno != ERANGE) return 157;
   errno = 0;

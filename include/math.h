@@ -110,6 +110,8 @@ float cbrtf(float value);
 double cbrt(double value);
 float sinf(float value);
 double sin(double value);
+void sincosf(float value, float *sine, float *cosine);
+void sincos(double value, double *sine, double *cosine);
 float cosf(float value);
 double cos(double value);
 float tanf(float value);
@@ -178,6 +180,8 @@ double nexttoward(double from, long double to);
    system header feature-test configuration. */
 float exp10f(float value);
 double exp10(double value);
+void sincosf(float value, float *sine, float *cosine);
+void sincos(double value, double *sine, double *cosine);
 
 #endif
 

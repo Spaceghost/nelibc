@@ -88,6 +88,10 @@ extern double nelibc_lgamma_r(double, int *);
 extern float nelibc_lgammaf_r(float, int *);
 extern float nelibc_sinf(float);
 extern double nelibc_sin(double);
+extern void nelibc_sincos(double, double *, double *);
+extern void nelibc_sincosf(float, float *, float *);
+extern void sincos(double, double *, double *);
+extern void sincosf(float, float *, float *);
 extern float nelibc_cosf(float);
 extern double nelibc_cos(double);
 extern float nelibc_tanf(float);
@@ -483,6 +487,17 @@ static int check_sin_cos(double value, float valuef) {
   const double actual_sin = nelibc_sin(value);
   const double expected_cos = cos(value);
   const double actual_cos = nelibc_cos(value);
+  double pair_sin, pair_cos, expected_pair_sin, expected_pair_cos;
+  sincos(value, &expected_pair_sin, &expected_pair_cos);
+  nelibc_sincos(value, &pair_sin, &pair_cos);
+  if (isnan(expected_pair_sin) != isnan(pair_sin) ||
+      (!isnan(expected_pair_sin) && ulps_double(expected_pair_sin, pair_sin) > 4) ||
+      isnan(expected_pair_cos) != isnan(pair_cos) ||
+      (!isnan(expected_pair_cos) && ulps_double(expected_pair_cos, pair_cos) > 4)) {
+    fprintf(stderr, "sincos mismatch x=%.17g expected=(%.17g,%.17g) actual=(%.17g,%.17g)\n",
+            value, expected_pair_sin, expected_pair_cos, pair_sin, pair_cos);
+    return 1;
+  }
   if (isnan(expected_sin) != isnan(actual_sin) ||
       (!isnan(expected_sin) && ulps_double(expected_sin, actual_sin) > 4)) {
     fprintf(stderr, "sin mismatch x=%.17g expected=%.17g actual=%.17g ulps=%llu\n",
@@ -506,6 +521,17 @@ static int check_sin_cos(double value, float valuef) {
   const float actual_sinf = nelibc_sinf(valuef);
   const float expected_cosf = cosf(valuef);
   const float actual_cosf = nelibc_cosf(valuef);
+  float pair_sinf, pair_cosf, expected_pair_sinf, expected_pair_cosf;
+  sincosf(valuef, &expected_pair_sinf, &expected_pair_cosf);
+  nelibc_sincosf(valuef, &pair_sinf, &pair_cosf);
+  if (isnan(expected_pair_sinf) != isnan(pair_sinf) ||
+      (!isnan(expected_pair_sinf) && ulps_float(expected_pair_sinf, pair_sinf) > 4) ||
+      isnan(expected_pair_cosf) != isnan(pair_cosf) ||
+      (!isnan(expected_pair_cosf) && ulps_float(expected_pair_cosf, pair_cosf) > 4)) {
+    fprintf(stderr, "sincosf mismatch x=%.9g expected=(%.9g,%.9g) actual=(%.9g,%.9g)\n",
+            valuef, expected_pair_sinf, expected_pair_cosf, pair_sinf, pair_cosf);
+    return 1;
+  }
   if (isnan(expected_sinf) != isnan(actual_sinf) ||
       (!isnan(expected_sinf) && ulps_float(expected_sinf, actual_sinf) > 4)) {
     fprintf(stderr, "sinf mismatch x=%.9g expected=%.9g actual=%.9g ulps=%u\n",
@@ -1539,7 +1565,7 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
-  printf("114 binary32/binary64 core math functions matched; erf/erfc max ULP: %llu/%llu (float %u/%u); exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+  printf("116 binary32/binary64 core math functions matched; erf/erfc max ULP: %llu/%llu (float %u/%u); exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
          (unsigned long long)max_erf_ulps, (unsigned long long)max_erfc_ulps, max_erff_ulps, max_erfcf_ulps,
          (double)max_exp_ulps, (double)max_log_ulps,
          (double)max_expf_ulps, (double)max_logf_ulps,

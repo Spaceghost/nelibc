@@ -1973,6 +1973,54 @@ local function cos(value: cdouble): cdouble <cexport, codename 'cos'>
   return sine
 end
 
+local function sincos(value: cdouble, sine_out: *[0]cdouble, cosine_out: *[0]cdouble)
+    <cexport, codename 'sincos'>
+  if value ~= value then
+    local nan_value = value + value
+    sine_out[0] = nan_value
+    cosine_out[0] = nan_value
+    return
+  end
+  if is_infinite64(value) then
+    math_domain_error()
+    local nan_value = value - value
+    sine_out[0] = nan_value
+    cosine_out[0] = nan_value
+    return
+  end
+  if fabs(value) < 0x1p-27_cdouble then
+    sine_out[0] = value
+    cosine_out[0] = 1_cdouble
+    return
+  end
+  local quadrant: cint = 0_cint
+  local x: cdouble = value
+  local y: cdouble = 0_cdouble
+  if fabs(value) > 0x1.921FB54442D18P-1_cdouble then
+    reduce_pio2(value, &quadrant, &x, &y)
+  end
+  local sine = sin_kernel(x, y)
+  local cosine = cos_kernel(x, y)
+  if quadrant == 0_cint then
+    sine_out[0], cosine_out[0] = sine, cosine
+  elseif quadrant == 1_cint then
+    sine_out[0], cosine_out[0] = cosine, -sine
+  elseif quadrant == 2_cint then
+    sine_out[0], cosine_out[0] = -sine, -cosine
+  else
+    sine_out[0], cosine_out[0] = -cosine, sine
+  end
+end
+
+local function sincosf(value: cfloat, sine_out: *[0]cfloat, cosine_out: *[0]cfloat)
+    <cexport, codename 'sincosf'>
+  local sine_value: cdouble
+  local cosine_value: cdouble
+  sincos((@cdouble)(value), &sine_value, &cosine_value)
+  sine_out[0] = (@cfloat)(sine_value)
+  cosine_out[0] = (@cfloat)(cosine_value)
+end
+
 local function sinf(value: cfloat): cfloat <cexport, codename 'sinf'>
   return (@cfloat)(sin((@cdouble)(value)))
 end
