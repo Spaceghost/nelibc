@@ -1034,6 +1034,35 @@ local function atan2f(y: cfloat, x: cfloat): cfloat
   return (@cfloat)(atan2((@cdouble)(y), (@cdouble)(x)))
 end
 
+local function asin(value: cdouble): cdouble <cexport, codename 'asin'>
+  if is_nan64(value) then return value + value end
+  if value < -1_cdouble or value > 1_cdouble then
+    math_domain_error()
+    return double_from_bits(0x7FF8000000000000_culonglong)
+  end
+  -- This product keeps useful relative precision near both endpoints.
+  local complement = sqrt((1_cdouble - value) * (1_cdouble + value))
+  return atan2(value, complement)
+end
+
+local function acos(value: cdouble): cdouble <cexport, codename 'acos'>
+  if is_nan64(value) then return value + value end
+  if value < -1_cdouble or value > 1_cdouble then
+    math_domain_error()
+    return double_from_bits(0x7FF8000000000000_culonglong)
+  end
+  local complement = sqrt((1_cdouble - value) * (1_cdouble + value))
+  return atan2(complement, value)
+end
+
+local function asinf(value: cfloat): cfloat <cexport, codename 'asinf'>
+  return (@cfloat)(asin((@cdouble)(value)))
+end
+
+local function acosf(value: cfloat): cfloat <cexport, codename 'acosf'>
+  return (@cfloat)(acos((@cdouble)(value)))
+end
+
 local function log(value: cdouble): cdouble <cexport, codename 'log'>
   if value ~= value then return value + value end
   if is_infinite64(value) then

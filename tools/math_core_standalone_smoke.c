@@ -80,6 +80,14 @@ int main(void) {
   if (!(atanf(1.0f) > 0.7853981f && atanf(1.0f) < 0.7853983f)) return 115;
   if (!(atan2(1.0, -1.0) > 2.3561944901923 && atan2(1.0, -1.0) < 2.3561944901924)) return 116;
   if (!(atan2f(1.0f, -1.0f) > 2.3561943f && atan2f(1.0f, -1.0f) < 2.3561947f)) return 117;
+  if (!(asin(0.5) > 0.52359877559829 && asin(0.5) < 0.52359877559830) ||
+      !(acos(0.5) > 1.04719755119659 && acos(0.5) < 1.04719755119660) ||
+      !(asinf(-0.5f) < -0.5235987f && asinf(-0.5f) > -0.5235989f) ||
+      !(acosf(-0.5f) > 2.0943950f && acosf(-0.5f) < 2.0943953f)) return 142;
+  errno = 0;
+  if (!is_nan_double(asin(2.0)) || errno != EDOM) return 143;
+  errno = 0;
+  if (!is_nan_float(acosf(-2.0f)) || errno != EDOM) return 144;
   if (pow(2.0, 10.0) != 1024.0 || powf(2.0f, 10.0f) != 1024.0f) return 121;
   if (!(pow(2.0, 0.5) > 1.41421356237309 && pow(2.0, 0.5) < 1.41421356237310) ||
       !(powf(2.0f, 0.5f) > 1.4142134f && powf(2.0f, 0.5f) < 1.4142137f)) return 122;

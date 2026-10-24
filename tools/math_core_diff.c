@@ -58,6 +58,10 @@ extern float nelibc_atanf(float);
 extern double nelibc_atan(double);
 extern float nelibc_atan2f(float, float);
 extern double nelibc_atan2(double, double);
+extern float nelibc_asinf(float);
+extern double nelibc_asin(double);
+extern float nelibc_acosf(float);
+extern double nelibc_acos(double);
 extern float nelibc_sinf(float);
 extern double nelibc_sin(double);
 extern float nelibc_cosf(float);
@@ -181,6 +185,30 @@ static int check_atan(double value, float valuef) {
       (!isnan(expectedf) && ulps_float(expectedf, actualf) > 4)) {
     fprintf(stderr, "atanf mismatch x=%.9g expected=%.9g actual=%.9g\n",
             valuef, expectedf, actualf);
+    return 1;
+  }
+  return 0;
+}
+
+static int check_inverse_trig(double value, float valuef) {
+  const double expected_asin = asin(value), actual_asin = nelibc_asin(value);
+  const double expected_acos = acos(value), actual_acos = nelibc_acos(value);
+  if (isnan(expected_asin) != isnan(actual_asin) ||
+      (!isnan(expected_asin) && ulps_double(expected_asin, actual_asin) > 4) ||
+      isnan(expected_acos) != isnan(actual_acos) ||
+      (!isnan(expected_acos) && ulps_double(expected_acos, actual_acos) > 4)) {
+    fprintf(stderr, "inverse trig mismatch x=%.17g asin=%.17g/%.17g acos=%.17g/%.17g\n",
+            value, expected_asin, actual_asin, expected_acos, actual_acos);
+    return 1;
+  }
+  const float expected_asinf = asinf(valuef), actual_asinf = nelibc_asinf(valuef);
+  const float expected_acosf = acosf(valuef), actual_acosf = nelibc_acosf(valuef);
+  if (isnan(expected_asinf) != isnan(actual_asinf) ||
+      (!isnan(expected_asinf) && ulps_float(expected_asinf, actual_asinf) > 4) ||
+      isnan(expected_acosf) != isnan(actual_acosf) ||
+      (!isnan(expected_acosf) && ulps_float(expected_acosf, actual_acosf) > 4)) {
+    fprintf(stderr, "inverse trig float mismatch x=%.9g asinf=%.9g/%.9g acosf=%.9g/%.9g\n",
+            valuef, expected_asinf, actual_asinf, expected_acosf, actual_acosf);
     return 1;
   }
   return 0;
@@ -1045,6 +1073,18 @@ int main(void) {
       700.0, 709.0, 709.782712893384, 710.0,
       0x1.62e42fefa39efp-1, -0x1.62e42fefa39efp-1,
   };
+  static const double inverse_trig_edges[] = {
+      -INFINITY, -1.0000000000000002, -1.0, -0x1.fffffffffffffp-1,
+      -0.75, -0.5, -0x1p-52, -0.0, 0.0, 0x1p-52, 0.5, 0.75,
+      0x1.fffffffffffffp-1, 1.0, 1.0000000000000002, INFINITY, NAN,
+  };
+  for (size_t i = 0; i < sizeof inverse_trig_edges / sizeof inverse_trig_edges[0]; ++i)
+    if (check_inverse_trig(inverse_trig_edges[i], (float)inverse_trig_edges[i])) return 1;
+  for (size_t i = 0; i < 100000; ++i) {
+    const double value = 2.0 * (double)(next_bits() >> 11) * 0x1p-53 - 1.0;
+    const float valuef = 2.0f * (float)(next_bits() >> 40) * 0x1p-24f - 1.0f;
+    if (check_inverse_trig(value, valuef)) return 1;
+  }
   for (size_t i = 0; i < sizeof exp_edges / sizeof exp_edges[0]; ++i)
     if (check_exp_log(exp_edges[i], (float)exp_edges[i])) return 1;
   const double log10_edges[] = {
@@ -1092,6 +1132,8 @@ int main(void) {
         (right32 & UINT32_C(0x007FFFFF)) != 0)
       right32 |= UINT32_C(0x00400000);
     if (check_double(bits) || check_float((uint32_t)(bits >> 17)) ||
+        check_inverse_trig(((double_bits){.bits = bits}).value,
+                           ((float_bits){.bits = (uint32_t)(bits >> 17)}).value) ||
         check_exp_log(((double_bits){.bits = bits}).value,
                       ((float_bits){.bits = (uint32_t)(bits >> 17)}).value) ||
         check_pair_double(pair_left64, other) ||
@@ -1130,9 +1172,13 @@ int main(void) {
       check_errno_value("acosh-domain", acosh, nelibc_acosh, 0.5, EDOM) ||
       check_errno_value("atanh-pole", atanh, nelibc_atanh, 1.0, ERANGE) ||
       check_errno_value("atanh-domain", atanh, nelibc_atanh, 2.0, EDOM) ||
+      check_errno_value("asin-domain", asin, nelibc_asin, 2.0, EDOM) ||
+      check_errno_value("acos-domain", acos, nelibc_acos, -2.0, EDOM) ||
       check_float_errno_value("acoshf-domain", acoshf, nelibc_acoshf, 0.5f, EDOM) ||
       check_float_errno_value("atanhf-pole", atanhf, nelibc_atanhf, 1.0f, ERANGE) ||
       check_float_errno_value("atanhf-domain", atanhf, nelibc_atanhf, 2.0f, EDOM) ||
+      check_float_errno_value("asinf-domain", asinf, nelibc_asinf, 2.0f, EDOM) ||
+      check_float_errno_value("acosf-domain", acosf, nelibc_acosf, -2.0f, EDOM) ||
       check_unary_flags("sin-infinity", sin, nelibc_sin, infinity.value) ||
       check_unary_flags("cos-infinity", cos, nelibc_cos, infinity.value) ||
       check_unary_flags("tan-infinity", tan, nelibc_tan, infinity.value) ||
@@ -1155,7 +1201,7 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
-  printf("90 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
+  printf("94 binary32/binary64 core math functions matched; exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
          (double)max_exp_ulps, (double)max_log_ulps,
          (double)max_expf_ulps, (double)max_logf_ulps,
          (unsigned long long)max_sin_ulps, (unsigned long long)max_cos_ulps,

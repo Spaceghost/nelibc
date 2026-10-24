@@ -32,6 +32,8 @@ MATH_CORE_RENAMES := --redefine-sym fabs=nelibc_fabs --redefine-sym fabsf=nelibc
 	--redefine-sym atanh=nelibc_atanh --redefine-sym atanhf=nelibc_atanhf \
 	--redefine-sym atan=nelibc_atan --redefine-sym atanf=nelibc_atanf \
 	--redefine-sym atan2=nelibc_atan2 --redefine-sym atan2f=nelibc_atan2f \
+	--redefine-sym asin=nelibc_asin --redefine-sym asinf=nelibc_asinf \
+	--redefine-sym acos=nelibc_acos --redefine-sym acosf=nelibc_acosf \
 	--redefine-sym log=nelibc_log --redefine-sym logf=nelibc_logf \
 	--redefine-sym log2=nelibc_log2 --redefine-sym log2f=nelibc_log2f \
 	--redefine-sym log1p=nelibc_log1p --redefine-sym log1pf=nelibc_log1pf \

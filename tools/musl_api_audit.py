@@ -25,10 +25,29 @@ def header_apis(directory: Path) -> dict[str, list[str]]:
     for filename in sorted(glob.glob(str(directory / "**/*.h"), recursive=True)):
         path = Path(filename)
         text = path.read_text(errors="replace")
-        # The project declaration scanner is intentionally small; remove the
-        # C++ linkage braces used by musl before passing each header to it.
-        text = re.sub(r'extern\s+"C"\s*\{', "", text)
-        text = re.sub(r"^\s*}\s*$", "", text, flags=re.M)
+        # The project scanner strips function bodies by brace depth. Remove
+        # only musl's conditional C++ linkage wrappers; deleting every
+        # standalone closing brace also deletes static inline function ends.
+        text = re.sub(
+            r"#ifdef __cplusplus\s*\n\s*extern\s+\"C\"\s*\{\s*\n\s*#endif",
+            "", text,
+        )
+        text = re.sub(
+            r"#ifdef __cplusplus\s*\n\s*}\s*\n\s*#endif", "", text,
+        )
+        # Function-like macros can otherwise consume later prototypes because
+        # declaration_names intentionally takes the first `name(` in a chunk.
+        clean_lines: list[str] = []
+        continuing_directive = False
+        for line in text.splitlines(keepends=True):
+            if continuing_directive or line.lstrip().startswith("#"):
+                continuing_directive = line.rstrip("\r\n").endswith("\\")
+                continue
+            clean_lines.append(line)
+        text = "".join(clean_lines)
+        # musl's math header instantiates comparison helpers with this macro;
+        # those invocations are not declarations and have no trailing `;`.
+        text = re.sub(r"(?m)^\s*__ISREL_DEF\([^\n]*\)\s*$", "", text)
         for name in declaration_names(text):
             if is_public_api_name(name):
                 found.setdefault(name, []).append(path.relative_to(directory).as_posix())
