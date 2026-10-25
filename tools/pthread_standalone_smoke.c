@@ -53,6 +53,7 @@ static volatile int cancel_state_release;
 static volatile int cancel_async_ready;
 static _Atomic int cancel_guard_ready;
 static _Atomic int cancel_guard_release;
+static _Atomic int cancel_futex_wait_ready;
 static volatile int cancel_type_ready;
 static volatile int cancel_type_release;
 static _Atomic int cancel_cleanup_calls;
@@ -97,6 +98,21 @@ static void *cancel_deferred_lock_worker(void *argument) {
   nelibc_pthread_cancel_defer_end();
   pthread_cleanup_pop(0);
   return 0;
+}
+
+static void *cancel_futex_mutex_worker(void *argument) {
+  pthread_mutex_t *mutex = argument;
+  pthread_cleanup_push(cancel_cleanup, 0);
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0)
+    return (void *)1;
+  cancel_futex_wait_ready = 1;
+  int result = pthread_mutex_lock(mutex);
+  if (result == 0) {
+    pthread_mutex_unlock(mutex);
+    return (void *)2;
+  }
+  pthread_cleanup_pop(0);
+  return (void *)3;
 }
 
 static void pthread_kill_handler(int signal) {
@@ -1399,6 +1415,30 @@ int main(void) {
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
       cancel_cleanup_calls != 1)
     return 204;
+
+  cancel_futex_wait_ready = 0;
+  cancel_cleanup_calls = 0;
+  if (pthread_mutex_lock(&cancel_mutex) != 0) return 205;
+  if (pthread_create(&thread, 0, cancel_futex_mutex_worker, &cancel_mutex) != 0)
+    return 206;
+  for (unsigned int i = 0; i < 10000000U && !cancel_futex_wait_ready; ++i) {
+  }
+  if (!cancel_futex_wait_ready) return 207;
+  for (unsigned int i = 0; i < 10000000U &&
+       __atomic_load_n(&cancel_mutex.__state, __ATOMIC_ACQUIRE) != 2; ++i) {
+  }
+  if (__atomic_load_n(&cancel_mutex.__state, __ATOMIC_ACQUIRE) != 2) return 211;
+  struct timespec futex_wait_delay = {0, 20000000};
+  if (nanosleep(&futex_wait_delay, 0) != 0 || pthread_cancel(thread) != 0)
+    return 208;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 209;
+  if (pthread_mutex_unlock(&cancel_mutex) != 0 ||
+      pthread_mutex_trylock(&cancel_mutex) != 0 ||
+      pthread_mutex_unlock(&cancel_mutex) != 0)
+    return 210;
 
   cancel_type_ready = 0;
   cancel_type_release = 0;

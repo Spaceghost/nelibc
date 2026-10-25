@@ -322,9 +322,9 @@ musl export set.
   a pending request. The standalone pthread smoke holds this deferral region
   across an async-cancel request while repeatedly exercising small allocation,
   direct mappings, `mremap`-backed `realloc`, and pthread-attribute operations,
-  then verifies cleanup runs after release on Zig, GCC, and TinyCC builds.
-  Blocking calls made while internal locks are held still need focused
-  cancellation testing.
+  then verifies cleanup runs after release. It also cancels an async thread
+  after confirming it is queued on a mutex futex, then checks that the owner can
+  unlock and reuse the mutex. Both checks run on Zig, GCC, and TinyCC builds.
 - Standalone pthread attributes support configurable stack sizes, page-
   protected guard regions, and scheduler inheritance/policy/priority. Explicit
   scheduling is applied before a startup gate releases the worker; permission
