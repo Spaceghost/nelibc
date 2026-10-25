@@ -117,6 +117,7 @@ extern float nelibc_tanf(float);
 extern double nelibc_tan(double);
 extern float nelibc_hypotf(float, float);
 extern double nelibc_hypot(double, double);
+extern long double nelibc_hypotl(long double, long double);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
 extern long double nelibc_sqrtl(long double);
@@ -1336,6 +1337,56 @@ static int check_erf(double x, float xf) {
 }
 
 int main(void) {
+
+  const long double hypot_values[] = {
+      0.0L, -0.0L, nextafterl(0.0L, 1.0L), LDBL_MIN, 0.5L, 1.0L, 3.0L,
+      0x1p+1000L, LDBL_MAX / 4.0L, LDBL_MAX};
+  for (size_t i = 0; i < sizeof(hypot_values) / sizeof(hypot_values[0]); ++i) {
+    for (size_t j = 0; j < sizeof(hypot_values) / sizeof(hypot_values[0]); ++j) {
+      long double expected_hypot = hypotl(hypot_values[i], hypot_values[j]);
+      long double actual_hypot = nelibc_hypotl(hypot_values[i], hypot_values[j]);
+      if (actual_hypot != expected_hypot) {
+        long double error = fabsl(actual_hypot - expected_hypot);
+        long double tolerance = LDBL_EPSILON * expected_hypot * 2.0L;
+        if (expected_hypot < LDBL_MIN || error > tolerance) {
+          fprintf(stderr, "hypotl mismatch values=%zu/%zu\n", i, j);
+          return 1;
+        }
+      }
+    }
+  }
+  union {
+    long double value;
+    struct { uint64_t significand; uint16_t sign_exponent; } parts;
+  } quiet_nan;
+  quiet_nan.parts.significand = UINT64_C(0xc000000000000000);
+  quiet_nan.parts.sign_exponent = UINT16_C(0x7fff);
+  long double infinity_nan_hypot = nelibc_hypotl(INFINITY, quiet_nan.value);
+  int hypot_is_infinite = isinf(infinity_nan_hypot);
+  if (!hypot_is_infinite) {
+    fprintf(stderr, "hypotl infinity/NaN precedence failed\n");
+    return 1;
+  }
+  if (!isnan(nelibc_hypotl(quiet_nan.value, 1.0L))) {
+    fprintf(stderr, "hypotl NaN propagation failed\n");
+    return 1;
+  }
+  union {
+    long double value;
+    struct { uint64_t significand; uint16_t sign_exponent; } parts;
+  } signaling_nan;
+  signaling_nan.parts.significand = UINT64_C(0x8000000000000001);
+  signaling_nan.parts.sign_exponent = UINT16_C(0x7fff);
+  long double signaling_hypot = nelibc_hypotl(signaling_nan.value, 1.0L);
+  if (!isnan(signaling_hypot)) {
+    fprintf(stderr, "hypotl signaling NaN propagation failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isinf(nelibc_hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) {
+    fprintf(stderr, "hypotl overflow handling failed\n");
+    return 1;
+  }
 
   /* Preserve x87 precision beyond binary64 and the complete sign behavior. */
   long double extended = 1.0L + 0x1p-60L;

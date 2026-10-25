@@ -7,6 +7,8 @@
 -- separate work.
 local FloatBits: type = @union{bits: cuint, value: cfloat}
 local DoubleBits: type = @union{bits: culonglong, value: cdouble}
+local LongDoubleParts: type = @record{significand: culonglong, sign_exponent: cushort}
+local LongDoubleBits: type = @union{parts: LongDoubleParts, value: clongdouble}
 local FmaNumber: type = @record{mantissa: culonglong, exponent: cint, sign: cint}
 local FmaProduct: type = @record{high: culonglong, low: culonglong}
 global signgam: cint <cexport, codename 'signgam'> = 1_cint
@@ -194,9 +196,15 @@ local function check_remainder_domain(x: cdouble, y: cdouble): void <inline>
 end
 
 local function is_infinite80(value: clongdouble): boolean <inline>
-  if value ~= value then return false end
-  local difference = value - value
-  return difference ~= difference
+  local representation: LongDoubleBits = {value = value}
+  return (representation.parts.sign_exponent & 0x7fff_cushort) == 0x7fff_cushort and
+    representation.parts.significand == 0x8000000000000000_culonglong
+end
+
+local function is_nan80(value: clongdouble): boolean <inline>
+  local representation: LongDoubleBits = {value = value}
+  return (representation.parts.sign_exponent & 0x7fff_cushort) == 0x7fff_cushort and
+    representation.parts.significand ~= 0x8000000000000000_culonglong
 end
 
 local function check_remainder_domain80(x: clongdouble, y: clongdouble): void <inline>
@@ -2013,6 +2021,33 @@ local function hypotf(x: cfloat, y: cfloat): cfloat <cexport, codename 'hypotf'>
   local ratio = ay / ax
   local result = ax * sqrtf(1_cfloat + ratio * ratio)
   if is_infinite32(result) then math_range_error() end
+  return result
+end
+
+-- The 80-bit format has 64 significand bits. An exponent gap of 33 makes
+-- the smaller operand's squared contribution less than half an ulp of ax.
+local function hypotl(x: clongdouble, y: clongdouble): clongdouble
+    <cexport, codename 'hypotl'>
+  if is_infinite80(x) or is_infinite80(y) then
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    return infinity.value
+  end
+  if is_nan80(x) or is_nan80(y) then return x + y end
+  local ax = fabsl(x)
+  local ay = fabsl(y)
+  if ax < ay then
+    local temporary = ax
+    ax = ay
+    ay = temporary
+  end
+  if ax == 0_clongdouble then return 0_clongdouble end
+  if ay == 0_clongdouble then return ax end
+  if ilogbl(ax) - ilogbl(ay) >= 33_cint then return ax end
+  local ratio = ay / ax
+  local result = ax * sqrtl(1_clongdouble + ratio * ratio)
+  if is_infinite80(result) then math_range_error() end
   return result
 end
 

@@ -557,7 +557,7 @@ htonl,arpa/inet.h;netinet/in.h,,,not-declared
 htons,arpa/inet.h;netinet/in.h,,,not-declared
 hypot,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 hypotf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-hypotl,math.h,,,not-declared
+hypotl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 iconv,iconv.h,,,not-declared
 iconv_close,iconv.h,,,not-declared
 iconv_open,iconv.h,,,not-declared

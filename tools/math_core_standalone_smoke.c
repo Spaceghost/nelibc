@@ -29,6 +29,10 @@ static int same_float(float a, float b) {
 }
 
 int main(void) {
+  if (hypotl(3.0L, 4.0L) != 5.0L || hypotl(0.0L, -0.0L) != 0.0L) return 171;
+  errno = 0;
+  if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;
+
   if (sqrtl(4.0L) != 2.0L || fabsl(-3.0L) != 3.0L ||
       copysignl(3.0L, -1.0L) != -3.0L) return 107;
   if (fmodl(5.5L, 2.0L) != 1.5L || remainderl(5.5L, 2.0L) != -0.5L) return 108;

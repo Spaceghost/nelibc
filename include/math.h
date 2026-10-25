@@ -136,6 +136,7 @@ float tanf(float value);
 double tan(double value);
 float hypotf(float x, float y);
 double hypot(double x, double y);
+long double hypotl(long double x, long double y);
 float sqrtf(float value);
 double sqrt(double value);
 long double sqrtl(long double value);
