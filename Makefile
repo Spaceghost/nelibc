@@ -154,6 +154,11 @@ $(OUT)/math-core-tcc.o: src/math_core.nelua | $(OUT)
 $(OUT)/math-core-x86_64.o: src/math_core_x86_64.S | $(OUT)
 	$(ZIG) cc $(ZIGFLAGS) -c $< -o $@
 
+# SysV x86-64 complex-value ABI shim. TinyCC cannot parse C complex types, so
+# this tiny calling-convention adapter is compiled by Zig cc for every profile.
+$(OUT)/complex-abi-x86_64.o: src/complex_abi.c | $(OUT)
+	$(ZIG) cc $(ZIGFLAGS) -Iinclude -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c $< -o $@
+
 $(OUT)/fenv-standalone-zig.o: src/fenv_standalone.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $@ $<
 
@@ -163,13 +168,13 @@ $(OUT)/fenv-standalone-gcc.o: src/fenv_standalone.nelua | $(OUT)
 $(OUT)/fenv-standalone-tcc.o: src/fenv_standalone.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $@ $<
 
-$(OUT)/libnelibc-zig.a: $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o
-$(OUT)/libnelibc-gcc.a: $(OUT)/math-core-gcc.o $(OUT)/math-core-x86_64.o
-$(OUT)/libnelibc-zig-musl.a: $(OUT)/math-core-zig-musl.o $(OUT)/math-core-x86_64.o
-$(OUT)/libnelibc-tcc.a: $(OUT)/math-core-tcc.o $(OUT)/math-core-x86_64.o
-$(OUT)/libnelibc-standalone-zig.a: $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o
-$(OUT)/libnelibc-standalone-gcc.a: $(OUT)/math-core-gcc.o $(OUT)/math-core-x86_64.o
-$(OUT)/libnelibc-standalone-tcc.a: $(OUT)/math-core-tcc.o $(OUT)/math-core-x86_64.o
+$(OUT)/libnelibc-zig.a: $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o
+$(OUT)/libnelibc-gcc.a: $(OUT)/math-core-gcc.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o
+$(OUT)/libnelibc-zig-musl.a: $(OUT)/math-core-zig-musl.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o
+$(OUT)/libnelibc-tcc.a: $(OUT)/math-core-tcc.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o
+$(OUT)/libnelibc-standalone-zig.a: $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o
+$(OUT)/libnelibc-standalone-gcc.a: $(OUT)/math-core-gcc.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o
+$(OUT)/libnelibc-standalone-tcc.a: $(OUT)/math-core-tcc.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o
 
 math-core-diff-zig: $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o tools/math_core_diff.c
 	cp $(OUT)/math-core-zig.o $(OUT)/math-core-zig-renamed.o
@@ -219,6 +224,42 @@ math-core-standalone-matrix: math-core-standalone-zig math-core-standalone-gcc m
 
 
 .PHONY: math-core-diff-zig math-core-diff-gcc math-core-diff-zig-musl math-core-diff-tcc math-core-diff-matrix math-core-standalone-zig math-core-standalone-gcc math-core-standalone-tcc math-core-standalone-matrix
+
+complex-math-smoke-zig: $(OUT)/libnelibc-zig.a tools/complex_math_smoke.c include/complex.h
+	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin tools/complex_math_smoke.c $(OUT)/libnelibc-zig.a -lm -o $(OUT)/complex-math-smoke-zig
+	$(OUT)/complex-math-smoke-zig
+
+complex-math-smoke-gcc: $(OUT)/libnelibc-gcc.a tools/complex_math_smoke.c include/complex.h
+	gcc -Iinclude -fno-builtin tools/complex_math_smoke.c $(OUT)/libnelibc-gcc.a -lm -o $(OUT)/complex-math-smoke-gcc
+	$(OUT)/complex-math-smoke-gcc
+
+complex-math-smoke-zig-musl: $(OUT)/libnelibc-zig-musl.a tools/complex_math_smoke.c include/complex.h
+	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -Iinclude -fno-builtin tools/complex_math_smoke.c $(OUT)/libnelibc-zig-musl.a -lm -o $(OUT)/complex-math-smoke-zig-musl
+	$(OUT)/complex-math-smoke-zig-musl
+
+# TinyCC lacks C _Complex syntax; test its Nelua core through the Zig-built ABI shim.
+complex-math-smoke-tcc: $(OUT)/libnelibc-tcc.a tools/complex_math_smoke.c include/complex.h
+	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin tools/complex_math_smoke.c $(OUT)/libnelibc-tcc.a $(TCC_LIBTCC1) -lm -o $(OUT)/complex-math-smoke-tcc
+	$(OUT)/complex-math-smoke-tcc
+
+complex-math-smoke-standalone-zig: $(OUT)/libnelibc-standalone-zig.a tools/complex_math_smoke.c include/complex.h
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/complex_math_smoke.c -o $(OUT)/complex-math-smoke-standalone-zig
+	@test -z "$$($(NM) -u $(OUT)/complex-math-smoke-standalone-zig)"
+	$(OUT)/complex-math-smoke-standalone-zig
+
+complex-math-smoke-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a tools/complex_math_smoke.c include/complex.h
+	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-gcc.a -Wl,--no-whole-archive -Iinclude tools/complex_math_smoke.c -o $(OUT)/complex-math-smoke-standalone-gcc
+	@test -z "$$($(NM) -u $(OUT)/complex-math-smoke-standalone-gcc)"
+	$(OUT)/complex-math-smoke-standalone-gcc
+
+complex-math-smoke-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/complex_math_smoke.c include/complex.h
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-tcc.a -Wl,--no-whole-archive -Iinclude tools/complex_math_smoke.c -o $(OUT)/complex-math-smoke-standalone-tcc
+	@test -z "$$($(NM) -u $(OUT)/complex-math-smoke-standalone-tcc)"
+	$(OUT)/complex-math-smoke-standalone-tcc
+
+complex-math-smoke-matrix: complex-math-smoke-zig complex-math-smoke-gcc complex-math-smoke-zig-musl complex-math-smoke-tcc complex-math-smoke-standalone-zig complex-math-smoke-standalone-gcc complex-math-smoke-standalone-tcc
+
+.PHONY: complex-math-smoke-zig complex-math-smoke-gcc complex-math-smoke-zig-musl complex-math-smoke-tcc complex-math-smoke-standalone-zig complex-math-smoke-standalone-gcc complex-math-smoke-standalone-tcc complex-math-smoke-matrix
 
 unistd-header-smoke: $(OUT)
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -c tools/unistd_header_smoke.c -o $(OUT)/unistd-header-zig.o
@@ -430,6 +471,7 @@ $(OUT)/libnelibc-zig.a: Makefile zig $(OUT)/stdio-format-zig.o src/environment_a
 	$(AR) rcs $@ $(OUT)/stdio-format-zig.o $(OUT)/stdio-varargs-hybrid-zig.o $(OUT)/stdio-lock-hybrid-zig.o $(OUT)/stdio-format-host-adapter-zig.o $(OUT)/stdio-asprintf-hybrid-zig.o $(OUT)/string-locale-zig.o $(OUT)/string-locale-lock-zig.o $(OUT)/string-zig.o $(OUT)/strerror-r-hybrid-zig.o $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-zig.o $(OUT)/stdlib-zig.o $(OUT)/stdlib-float-zig.o $(OUT)/errno-host-zig.o $(OUT)/environment-adapter-zig.o $(OUT)/stdio-host-adapter-zig.o $(OUT)/alloc-hybrid-adapter-zig.o $(OUT)/alloc-hybrid-exports-zig.o $(OUT)/calloc-hybrid-zig.o $(OUT)/aligned-alloc-hybrid-zig.o $(OUT)/posix-memalign-hybrid-zig.o $(OUT)/atexit-hybrid-zig.o $(OUT)/rewind-hybrid-zig.o $(OUT)/fdopen-hybrid-zig.o $(OUT)/tmpfile-hybrid-zig.o $(OUT)/stdio-seek-hybrid-zig.o $(OUT)/stdio-file-lock-hybrid-zig.o $(OUT)/stdio-fpos-hybrid-zig.o $(OUT)/stdio-setvbuf-hybrid-zig.o $(OUT)/stdio-buffer-extras-hybrid-zig.o $(OUT)/open-memstream-hybrid-zig.o $(OUT)/fmemopen-hybrid-zig.o $(OUT)/fopen-hybrid-zig.o $(OUT)/fcntl-adapter-zig.o $(OUT)/credential-adapter-zig.o $(OUT)/sem-clockwait-glibc-zig.o $(OUT)/stdio-hybrid-zig.o $(OUT)/fclose-hybrid-zig.o $(OUT)/alloc-zig.o $(OUT)/unistd-zig.o $(OUT)/sys-linux-x86_64-zig.o $(OUT)/sys-linux-x86_64-zig-asm.o
 	$(AR) rcs $@ $(OUT)/math-core-zig.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
+	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
 $(OUT)/stdio-format-gcc.o: Makefile src/stdio.nelua src/stdio_varargs.c src/stdio_lock_standalone.c src/stdio_format_host_adapter.c
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/stdio-format-gcc-raw.o src/stdio.nelua
@@ -476,6 +518,7 @@ $(OUT)/libnelibc-gcc.a: Makefile gcc $(OUT)/stdio-format-gcc.o src/environment_a
 	$(AR) rcs $@ $(OUT)/stdio-format-gcc.o $(OUT)/stdio-varargs-hybrid-gcc.o $(OUT)/stdio-lock-hybrid-gcc.o $(OUT)/stdio-format-host-adapter-gcc.o $(OUT)/stdio-asprintf-hybrid-gcc.o $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-gcc.o $(OUT)/strerror-r-hybrid-gcc.o $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-gcc.o $(OUT)/stdlib-gcc.o $(OUT)/stdlib-float-gcc.o $(OUT)/errno-host-gcc.o $(OUT)/environment-adapter-gcc.o $(OUT)/stdio-host-adapter-gcc.o $(OUT)/alloc-hybrid-adapter-gcc.o $(OUT)/alloc-hybrid-exports-gcc.o $(OUT)/calloc-hybrid-gcc.o $(OUT)/aligned-alloc-hybrid-gcc.o $(OUT)/posix-memalign-hybrid-gcc.o $(OUT)/atexit-hybrid-gcc.o $(OUT)/rewind-hybrid-gcc.o $(OUT)/fdopen-hybrid-gcc.o $(OUT)/tmpfile-hybrid-gcc.o $(OUT)/stdio-seek-hybrid-gcc.o $(OUT)/stdio-file-lock-hybrid-gcc.o $(OUT)/stdio-fpos-hybrid-gcc.o $(OUT)/stdio-setvbuf-hybrid-gcc.o $(OUT)/stdio-buffer-extras-hybrid-gcc.o $(OUT)/open-memstream-hybrid-gcc.o $(OUT)/fmemopen-hybrid-gcc.o $(OUT)/fopen-hybrid-gcc.o $(OUT)/fcntl-adapter-gcc.o $(OUT)/credential-adapter-gcc.o $(OUT)/sem-clockwait-glibc-gcc.o $(OUT)/stdio-hybrid-gcc.o $(OUT)/fclose-hybrid-gcc.o $(OUT)/alloc-gcc.o $(OUT)/unistd-gcc.o $(OUT)/sys-linux-x86_64-gcc.o $(OUT)/sys-linux-x86_64-gcc-asm.o
 	$(AR) rcs $@ $(OUT)/math-core-gcc.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
+	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
 $(OUT)/stdio-format-zig-musl.o: Makefile src/stdio.nelua src/stdio_varargs.c src/stdio_lock_standalone.c src/stdio_format_host_adapter.c
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-format-zig-musl-raw.o src/stdio.nelua
@@ -520,6 +563,7 @@ $(OUT)/libnelibc-zig-musl.a: Makefile zig-musl $(OUT)/malloc-hybrid-zig-musl.o $
 	$(AR) rcs $@ $(OUT)/malloc-hybrid-zig-musl.o $(OUT)/stdio-format-zig-musl.o $(OUT)/stdio-varargs-hybrid-zig-musl.o $(OUT)/stdio-lock-hybrid-zig-musl.o $(OUT)/stdio-format-host-adapter-zig-musl.o $(OUT)/stdio-asprintf-hybrid-zig-musl.o $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o $(OUT)/string-zig-musl.o $(OUT)/strerror-r-hybrid-zig-musl.o $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-zig-musl.o $(OUT)/stdlib-zig-musl.o $(OUT)/stdlib-float-zig-musl.o $(OUT)/errno-host-zig-musl.o $(OUT)/environment-adapter-zig-musl.o $(OUT)/stdio-host-adapter-zig-musl.o $(OUT)/alloc-hybrid-adapter-zig-musl.o $(OUT)/calloc-hybrid-zig-musl.o $(OUT)/aligned-alloc-hybrid-zig-musl.o $(OUT)/posix-memalign-hybrid-zig-musl.o $(OUT)/rewind-hybrid-zig-musl.o $(OUT)/fdopen-hybrid-zig-musl.o $(OUT)/tmpfile-hybrid-zig-musl.o $(OUT)/stdio-setbuf-musl-hybrid-zig-musl.o $(OUT)/stdio-buffer-extras-hybrid-zig-musl.o $(OUT)/open-memstream-hybrid-zig-musl.o $(OUT)/fmemopen-hybrid-zig-musl.o $(OUT)/fopen-hybrid-zig-musl.o $(OUT)/fcntl-adapter-zig-musl.o $(OUT)/credential-adapter-zig-musl.o $(OUT)/sem-clockwait-musl-zig-musl.o $(OUT)/stdio-hybrid-zig-musl.o $(OUT)/atexit-musl-hybrid-zig-musl.o $(OUT)/alloc-zig-musl.o $(OUT)/unistd-zig-musl.o $(OUT)/sys-linux-x86_64-zig-musl.o $(OUT)/sys-linux-x86_64-zig-musl-asm.o
 	$(AR) rcs $@ $(OUT)/math-core-zig-musl.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
+	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
 $(OUT)/stdio-format-tcc.o: Makefile src/stdio.nelua src/stdio_varargs.c src/stdio_lock_tcc.c src/stdio_format_host_adapter.c
 	$(NELUA) --print-code -r src/stdio.nelua > $(OUT)/stdio-format-tcc-generated.c
@@ -568,6 +612,7 @@ $(OUT)/libnelibc-tcc.a: Makefile tcc $(OUT)/stdio-format-tcc.o src/environment_a
 	$(AR) rcs $@ $(OUT)/stdio-format-tcc.o $(OUT)/stdio-varargs-hybrid-tcc.o $(OUT)/stdio-lock-hybrid-tcc.o $(OUT)/stdio-format-host-adapter-tcc.o $(OUT)/stdio-asprintf-hybrid-tcc.o $(OUT)/string-locale-tcc.o $(OUT)/string-locale-lock-tcc.o $(OUT)/string-tcc.o $(OUT)/strerror-r-hybrid-tcc.o $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/ctype-tcc.o $(OUT)/stdlib-tcc.o $(OUT)/stdlib-float-tcc.o $(OUT)/errno-host-tcc.o $(OUT)/environment-adapter-tcc.o $(OUT)/stdio-host-adapter-tcc.o $(OUT)/alloc-hybrid-adapter-tcc.o $(OUT)/alloc-hybrid-exports-tcc.o $(OUT)/calloc-hybrid-tcc.o $(OUT)/aligned-alloc-hybrid-tcc.o $(OUT)/posix-memalign-hybrid-tcc.o $(OUT)/atexit-hybrid-tcc.o $(OUT)/rewind-hybrid-tcc.o $(OUT)/fdopen-hybrid-tcc.o $(OUT)/tmpfile-hybrid-tcc.o $(OUT)/stdio-seek-hybrid-tcc.o $(OUT)/stdio-file-lock-hybrid-tcc.o $(OUT)/stdio-fpos-hybrid-tcc.o $(OUT)/stdio-setvbuf-hybrid-tcc.o $(OUT)/stdio-buffer-extras-hybrid-tcc.o $(OUT)/open-memstream-hybrid-tcc.o $(OUT)/fmemopen-hybrid-tcc.o $(OUT)/fopen-hybrid-tcc.o $(OUT)/fcntl-adapter-tcc.o $(OUT)/credential-adapter-tcc.o $(OUT)/sem-clockwait-glibc-tcc.o $(OUT)/stdio-hybrid-tcc.o $(OUT)/fclose-hybrid-tcc.o $(OUT)/alloc-tcc.o $(OUT)/unistd-tcc.o $(OUT)/sys-linux-x86_64-tcc.o $(OUT)/sys-linux-x86_64-tcc-asm.o
 	$(AR) rcs $@ $(OUT)/math-core-tcc.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
+	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
 lib-zig: $(OUT)/libnelibc-zig.a
 lib-gcc: $(OUT)/libnelibc-gcc.a
@@ -2347,7 +2392,7 @@ smoke-syscall-tls-gcc: syscall-tls-gcc
 	NELIBC_GETENV_PROBE=visible $(OUT)/syscall-smoke-tls-gcc
 	$(OUT)/errno-tls-smoke-gcc
 
-smoke-matrix: unistd-header-smoke smoke-zig smoke-gcc smoke-zig-musl smoke-tcc float-diff-matrix int-diff-matrix collation-diff-matrix smoke-syscall-zig smoke-syscall-gcc smoke-syscall-zig-musl smoke-syscall-tcc smoke-syscall-tls-gcc smoke-freestanding-zig smoke-freestanding-gcc smoke-standalone-zig smoke-standalone-gcc smoke-standalone-tcc exit-smoke-standalone-matrix abort-smoke-matrix lib-smoke-matrix smoke-lib-standalone-matrix lib-consumer-matrix lib-stdio-smoke-matrix atexit-hybrid-smoke-matrix stdio-format-diff-matrix unistd-cancel-matrix lib-consumer-standalone-matrix math-core-diff-matrix math-core-standalone-matrix
+smoke-matrix: unistd-header-smoke smoke-zig smoke-gcc smoke-zig-musl smoke-tcc float-diff-matrix int-diff-matrix collation-diff-matrix smoke-syscall-zig smoke-syscall-gcc smoke-syscall-zig-musl smoke-syscall-tcc smoke-syscall-tls-gcc smoke-freestanding-zig smoke-freestanding-gcc smoke-standalone-zig smoke-standalone-gcc smoke-standalone-tcc exit-smoke-standalone-matrix abort-smoke-matrix lib-smoke-matrix smoke-lib-standalone-matrix lib-consumer-matrix lib-stdio-smoke-matrix atexit-hybrid-smoke-matrix stdio-format-diff-matrix unistd-cancel-matrix lib-consumer-standalone-matrix math-core-diff-matrix math-core-standalone-matrix complex-math-smoke-matrix
 
 errno-tls-zig-musl: $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin --cflags=-ftls-model=initial-exec -o $(OUT)/errno-tls-zig-musl.o src/errno/standalone.nelua
@@ -2524,7 +2569,7 @@ abort-smoke-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a tools/abort_smoke.
 
 abort-smoke-matrix: abort-smoke-zig abort-smoke-gcc abort-smoke-zig-musl abort-smoke-tcc abort-smoke-standalone-zig abort-smoke-standalone-gcc
 
-$(OUT)/libnelibc-standalone-zig.a: standalone-zig src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c src/stdio_startup_stub.c src/environment_adapter.c src/semaphore_adapter.c src/fenv_standalone.nelua include/fenv.h $(OUT)/fenv-standalone-zig.o
+$(OUT)/libnelibc-standalone-zig.a: standalone-zig src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c src/stdio_startup_stub.c src/environment_adapter.c src/semaphore_adapter.c src/fenv_standalone.nelua include/fenv.h $(OUT)/fenv-standalone-zig.o $(OUT)/complex-abi-x86_64.o
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/fcntl_adapter.c -o $(OUT)/fcntl-adapter-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/credential_adapter.c -o $(OUT)/credential-adapter-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/stdio_lock_standalone.c -o $(OUT)/stdio-lock-standalone-zig.o
@@ -2535,8 +2580,9 @@ $(OUT)/libnelibc-standalone-zig.a: standalone-zig src/fcntl_adapter.c src/creden
 	$(AR) rcs $@ $(OUT)/string-locale-standalone-zig.o $(OUT)/string-standalone-zig.o $(OUT)/memory-standalone-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-zig.o $(OUT)/stdlib-standalone-zig.o $(OUT)/locale-standalone-zig.o $(OUT)/stdlib-exit-standalone-zig.o $(OUT)/stdlib-float-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o $(OUT)/start-linux-x86_64-standalone-zig.o $(OUT)/errno-standalone-zig.o $(OUT)/thread-standalone-zig.o $(OUT)/alloc-standalone-zig.o $(OUT)/alloc-exports-standalone-zig.o $(OUT)/unistd-standalone-zig.o $(OUT)/stdio-standalone-zig.o $(OUT)/stdio-varargs-standalone-zig.o $(OUT)/fcntl-adapter-standalone-zig.o $(OUT)/credential-adapter-standalone-zig.o $(OUT)/stdio-lock-standalone-zig.o $(OUT)/stdio-startup-stub-standalone-zig.o $(OUT)/environment-adapter-standalone-zig.o $(OUT)/semaphore-adapter-standalone-zig.o
 	$(AR) rcs $@ $(OUT)/math-core-zig.o $(OUT)/fenv-standalone-zig.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
+	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
-$(OUT)/libnelibc-standalone-gcc.a: standalone-gcc src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c src/stdio_startup_stub.c src/environment_adapter.c src/semaphore_adapter.c src/fenv_standalone.nelua include/fenv.h $(OUT)/fenv-standalone-gcc.o
+$(OUT)/libnelibc-standalone-gcc.a: standalone-gcc src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c src/stdio_startup_stub.c src/environment_adapter.c src/semaphore_adapter.c src/fenv_standalone.nelua include/fenv.h $(OUT)/fenv-standalone-gcc.o $(OUT)/complex-abi-x86_64.o
 	gcc -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -fno-tree-loop-distribute-patterns -c src/fcntl_adapter.c -o $(OUT)/fcntl-adapter-standalone-gcc.o
 	gcc -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -fno-tree-loop-distribute-patterns -c src/credential_adapter.c -o $(OUT)/credential-adapter-standalone-gcc.o
 	gcc -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -fno-tree-loop-distribute-patterns -c src/stdio_lock_standalone.c -o $(OUT)/stdio-lock-standalone-gcc.o
@@ -2547,17 +2593,19 @@ $(OUT)/libnelibc-standalone-gcc.a: standalone-gcc src/fcntl_adapter.c src/creden
 	$(AR) rcs $@ $(OUT)/string-locale-standalone-gcc.o $(OUT)/string-standalone-gcc.o $(OUT)/memory-standalone-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-gcc.o $(OUT)/stdlib-standalone-gcc.o $(OUT)/locale-standalone-gcc.o $(OUT)/stdlib-exit-standalone-gcc.o $(OUT)/stdlib-float-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o $(OUT)/start-linux-x86_64-standalone-gcc.o $(OUT)/errno-standalone-gcc.o $(OUT)/thread-standalone-gcc.o $(OUT)/alloc-standalone-gcc.o $(OUT)/alloc-exports-standalone-gcc.o $(OUT)/unistd-standalone-gcc.o $(OUT)/stdio-standalone-gcc.o $(OUT)/stdio-varargs-standalone-gcc.o $(OUT)/fcntl-adapter-standalone-gcc.o $(OUT)/credential-adapter-standalone-gcc.o $(OUT)/stdio-lock-standalone-gcc.o $(OUT)/stdio-startup-stub-standalone-gcc.o $(OUT)/environment-adapter-standalone-gcc.o $(OUT)/semaphore-adapter-standalone-gcc.o
 	$(AR) rcs $@ $(OUT)/math-core-gcc.o $(OUT)/fenv-standalone-gcc.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
+	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
 $(OUT)/tcc-runtime-standalone: $(TCC_LIBTCC1)
 	mkdir -p $@
 	cd $@ && $(AR) x $(abspath $(TCC_LIBTCC1)) libtcc1.o va_list.o
 
-$(OUT)/libnelibc-standalone-tcc.a: standalone-tcc $(OUT)/tcc-runtime-standalone src/semaphore_adapter.c src/fenv_standalone.nelua include/fenv.h $(OUT)/fenv-standalone-tcc.o
+$(OUT)/libnelibc-standalone-tcc.a: standalone-tcc $(OUT)/tcc-runtime-standalone src/semaphore_adapter.c src/fenv_standalone.nelua include/fenv.h $(OUT)/fenv-standalone-tcc.o $(OUT)/complex-abi-x86_64.o
 	rm -f $@
 	$(TCC) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -Iinclude -c src/semaphore_adapter.c -o $(OUT)/semaphore-adapter-standalone-tcc.o
 	$(AR) rcs $@ $(OUT)/string-locale-standalone-tcc.o $(OUT)/string-standalone-tcc.o $(OUT)/memory-standalone-tcc.o $(OUT)/memory-tcc-standalone-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/ctype-standalone-tcc.o $(OUT)/stdlib-standalone-tcc.o $(OUT)/locale-standalone-tcc.o $(OUT)/stdlib-exit-standalone-tcc.o $(OUT)/stdlib-float-standalone-tcc.o $(OUT)/sys-linux-x86_64-standalone-tcc.o $(OUT)/sys-linux-x86_64-standalone-tcc-asm.o $(OUT)/start-linux-x86_64-standalone-tcc.o $(OUT)/errno-standalone-tcc.o $(OUT)/thread-standalone-tcc.o $(OUT)/alloc-standalone-tcc.o $(OUT)/alloc-exports-standalone-tcc.o $(OUT)/unistd-standalone-tcc.o $(OUT)/stdio-standalone-tcc.o $(OUT)/stdio-varargs-standalone-tcc.o $(OUT)/fcntl-adapter-standalone-tcc.o $(OUT)/credential-adapter-standalone-tcc.o $(OUT)/stdio-lock-standalone-tcc.o $(OUT)/stdio-startup-stub-standalone-tcc.o $(OUT)/environment-adapter-standalone-tcc.o $(OUT)/semaphore-adapter-standalone-tcc.o $(OUT)/tcc-runtime-standalone/libtcc1.o $(OUT)/tcc-runtime-standalone/va_list.o
 	$(AR) rcs $@ $(OUT)/math-core-tcc.o $(OUT)/fenv-standalone-tcc.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
+	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
 lib-standalone-zig: $(OUT)/libnelibc-standalone-zig.a
 lib-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a

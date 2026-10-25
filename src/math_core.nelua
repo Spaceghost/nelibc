@@ -3133,6 +3133,23 @@ local function hypotl(x: clongdouble, y: clongdouble): clongdouble
   return result
 end
 
+-- C complex values have compiler-specific argument and return conventions.
+-- Keep the arithmetic in Nelua and expose scalar helpers for the ABI adapters.
+local function nelibc_cabs_parts(x: cdouble, y: cdouble): cdouble
+    <cexport, codename 'nelibc_cabs_parts'>
+  return hypot(x, y)
+end
+
+local function nelibc_cabsf_parts(x: cfloat, y: cfloat): cfloat
+    <cexport, codename 'nelibc_cabsf_parts'>
+  return hypotf(x, y)
+end
+
+local function nelibc_cabsl_parts(x: clongdouble, y: clongdouble): clongdouble
+    <cexport, codename 'nelibc_cabsl_parts'>
+  return hypotl(x, y)
+end
+
 -- Advance one encoding in the 80-bit extended-precision value ordering.
 local function nextafterl(x: clongdouble, y: clongdouble): clongdouble
     <cexport, codename 'nextafterl'>

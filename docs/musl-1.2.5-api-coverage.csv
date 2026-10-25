@@ -95,9 +95,9 @@ btowc,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 bzero,strings.h,strings.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 c16rtomb,uchar.h,,,not-declared
 c32rtomb,uchar.h,,,not-declared
-cabs,complex.h,,,not-declared
-cabsf,complex.h,,,not-declared
-cabsl,complex.h,,,not-declared
+cabs,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+cabsf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+cabsl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cacos,complex.h,,,not-declared
 cacosf,complex.h,,,not-declared
 cacosh,complex.h,,,not-declared
