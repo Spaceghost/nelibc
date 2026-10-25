@@ -299,20 +299,37 @@ static void *fork_sibling_worker(void *unused) {
 }
 typedef struct {
   pthread_t sibling;
+  pthread_key_t key;
+  volatile int *cleanup_marker;
 } fork_from_worker_request;
+static void fork_worker_cleanup(void *argument) {
+  *(volatile int *)argument = 1;
+}
 static void *fork_from_worker(void *argument) {
   fork_from_worker_request *request = argument;
   pthread_t self = pthread_self();
-  pid_t child = fork();
+  if (pthread_setspecific(request->key, (void *)(uintptr_t)0xabc) != 0)
+    return (void *)2;
+  int child_process = 0;
+  int valid = 0;
+  pid_t child = -1;
+  pthread_cleanup_push(fork_worker_cleanup, (void *)request->cleanup_marker);
+  child = fork();
   if (child == 0) {
+    child_process = 1;
     int join_error = pthread_join(request->sibling, NULL);
     int cancel_error = pthread_cancel(request->sibling);
-    _exit(pthread_equal(pthread_self(), self) && join_error == ESRCH &&
-          cancel_error == ESRCH ? 0 : 299);
+    valid = pthread_equal(pthread_self(), self) &&
+        pthread_getspecific(request->key) == (void *)(uintptr_t)0xabc &&
+        join_error == ESRCH && cancel_error == ESRCH;
   }
+  pthread_cleanup_pop(child_process && valid);
+  if (child_process)
+    _exit(valid && *request->cleanup_marker == 1 ? 0 : 299);
   int status = -1;
   if (child < 0 || waitpid(child, &status, 0) != child ||
-      !WIFEXITED(status) || WEXITSTATUS(status) != 0)
+      !WIFEXITED(status) || WEXITSTATUS(status) != 0 ||
+      *request->cleanup_marker != 1)
     return (void *)1;
   return NULL;
 }
@@ -2129,7 +2146,17 @@ int main(void) {
     struct timespec pause = {.tv_sec = 0, .tv_nsec = 100000};
     nanosleep(&pause, NULL);
   }
-  fork_from_worker_request fork_request = {.sibling = worker_sibling};
+  volatile int *fork_cleanup_marker = mmap(0, sizeof(*fork_cleanup_marker),
+      PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (fork_cleanup_marker == MAP_FAILED) return 304;
+  *fork_cleanup_marker = 0;
+  pthread_key_t fork_worker_key;
+  if (pthread_key_create(&fork_worker_key, NULL) != 0) return 305;
+  fork_from_worker_request fork_request = {
+    .sibling = worker_sibling,
+    .key = fork_worker_key,
+    .cleanup_marker = fork_cleanup_marker
+  };
   pthread_t forking_worker;
   if (pthread_create(&forking_worker, NULL, fork_from_worker, &fork_request) != 0)
     return 301;
@@ -2137,6 +2164,9 @@ int main(void) {
   if (pthread_join(forking_worker, &fork_worker_result) != 0 ||
       fork_worker_result != NULL)
     return 302;
+  if (pthread_key_delete(fork_worker_key) != 0 ||
+      munmap((void *)fork_cleanup_marker, sizeof(*fork_cleanup_marker)) != 0)
+    return 306;
   atomic_store_explicit(&fork_sibling_release, 1, memory_order_release);
   if (pthread_join(worker_sibling, NULL) != 0) return 303;
 

@@ -100,6 +100,10 @@ Forking from a Nelibc-created worker is also covered: the calling worker's
 `pthread_self()` identity survives in the child, while another worker's
 inherited handle is invalidated. The test passed under Zig, GCC, and TinyCC;
 the Zig smoke also passed ten consecutive reruns.
+The same worker-fork case sets a pthread-specific value before `fork()` and
+checks it in the child, then executes a cleanup handler pushed before the
+fork. A shared marker confirms the copied cleanup stack remains usable in the
+child, while the parent continues without running that handler.
 
 ### Practical completeness estimate
 
