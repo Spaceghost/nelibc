@@ -106,13 +106,15 @@ int main(void) {
     if (child == 0) {
       fenv_t sse_trap_environment;
       if (fesetenv(FE_DFL_ENV) != 0 || fegetenv(&sse_trap_environment) != 0) _exit(204);
-      /* Mask x87 exceptions but unmask SSE exceptions to test both units. */
+      /* Mask x87 exceptions and unmask only the selected SSE exception. */
       sse_trap_environment.__state[0] = 0x7f;
       sse_trap_environment.__state[1] = 0x03;
-      sse_trap_environment.__state[24] = 0;
-      sse_trap_environment.__state[25] = 0;
-      sse_trap_environment.__state[26] = 0;
-      sse_trap_environment.__state[27] = 0;
+      uint32_t mxcsr = UINT32_C(0x1f80) &
+          ~((uint32_t)trapped_exceptions[i] << 7);
+      sse_trap_environment.__state[24] = (unsigned char)mxcsr;
+      sse_trap_environment.__state[25] = (unsigned char)(mxcsr >> 8);
+      sse_trap_environment.__state[26] = (unsigned char)(mxcsr >> 16);
+      sse_trap_environment.__state[27] = (unsigned char)(mxcsr >> 24);
       if (fesetenv(&sse_trap_environment) != 0) _exit(205);
       (void)feraiseexcept(trapped_exceptions[i]);
       _exit(206);
@@ -120,6 +122,31 @@ int main(void) {
     int child_status = 0;
     if (child < 0 || waitpid(child, &child_status, 0) != child ||
         !WIFSIGNALED(child_status) || WTERMSIG(child_status) != SIGFPE) return 207;
+  }
+  for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
+    pid_t child = fork();
+    if (child == 0) {
+      fenv_t x87_trap_environment;
+      if (fesetenv(FE_DFL_ENV) != 0 || fegetenv(&x87_trap_environment) != 0) _exit(208);
+      /* Mask SSE exceptions and unmask only the selected x87 exception. */
+      uint16_t control_word =
+          (uint16_t)x87_trap_environment.__state[0] |
+          (uint16_t)((uint16_t)x87_trap_environment.__state[1] << 8);
+      control_word = (uint16_t)((control_word | UINT16_C(0x003f)) &
+                                (uint16_t)~trapped_exceptions[i]);
+      x87_trap_environment.__state[0] = (unsigned char)control_word;
+      x87_trap_environment.__state[1] = (unsigned char)(control_word >> 8);
+      x87_trap_environment.__state[24] = 0x80;
+      x87_trap_environment.__state[25] = 0x1f;
+      x87_trap_environment.__state[26] = 0;
+      x87_trap_environment.__state[27] = 0;
+      if (fesetenv(&x87_trap_environment) != 0) _exit(209);
+      (void)feraiseexcept(trapped_exceptions[i]);
+      _exit(217);
+    }
+    int child_status = 0;
+    if (child < 0 || waitpid(child, &child_status, 0) != child ||
+        !WIFSIGNALED(child_status) || WTERMSIG(child_status) != SIGFPE) return 218;
   }
 
   const long double fma_x = 1.0L + 0x1p-63L;
