@@ -2830,10 +2830,13 @@ spawn-smoke-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/spawn_smoke.
 	@test -z "$$($(NM) -u $(OUT)/spawn-smoke-standalone-tcc)"
 	$(OUT)/spawn-smoke-standalone-tcc
 
-spawn-smoke-standalone-matrix: spawn-smoke-standalone-zig spawn-smoke-standalone-gcc spawn-smoke-standalone-tcc
+spawn-smoke-resetids-userns: spawn-smoke-standalone-zig tools/spawn_resetids_userns.sh
+	sh tools/spawn_resetids_userns.sh $(OUT)/spawn-smoke-standalone-zig
+
+spawn-smoke-standalone-matrix: spawn-smoke-standalone-zig spawn-smoke-standalone-gcc spawn-smoke-standalone-tcc spawn-smoke-resetids-userns
 
 
-.PHONY: lib-standalone-zig lib-standalone-gcc lib-standalone-tcc smoke-lib-standalone-zig smoke-lib-standalone-gcc smoke-lib-standalone-matrix lib-consumer-standalone-zig lib-consumer-standalone-gcc lib-consumer-link-standalone-tcc lib-consumer-standalone-matrix rand-r-diff-standalone-zig rand-r-diff-standalone-gcc rand-r-diff-standalone-matrix exit-smoke-standalone-zig exit-smoke-standalone-gcc exit-smoke-standalone-matrix abort-smoke-zig abort-smoke-gcc abort-smoke-zig-musl abort-smoke-tcc abort-smoke-standalone-zig abort-smoke-standalone-gcc abort-smoke-matrix locale-format-diff-zig locale-format-diff-gcc locale-format-diff-tcc locale-format-diff-matrix spawn-smoke-standalone-zig spawn-smoke-standalone-gcc spawn-smoke-standalone-tcc spawn-smoke-standalone-matrix
+.PHONY: lib-standalone-zig lib-standalone-gcc lib-standalone-tcc smoke-lib-standalone-zig smoke-lib-standalone-gcc smoke-lib-standalone-matrix lib-consumer-standalone-zig lib-consumer-standalone-gcc lib-consumer-link-standalone-tcc lib-consumer-standalone-matrix rand-r-diff-standalone-zig rand-r-diff-standalone-gcc rand-r-diff-standalone-matrix exit-smoke-standalone-zig exit-smoke-standalone-gcc exit-smoke-standalone-matrix abort-smoke-zig abort-smoke-gcc abort-smoke-zig-musl abort-smoke-tcc abort-smoke-standalone-zig abort-smoke-standalone-gcc abort-smoke-matrix locale-format-diff-zig locale-format-diff-gcc locale-format-diff-tcc locale-format-diff-matrix spawn-smoke-standalone-zig spawn-smoke-standalone-gcc spawn-smoke-standalone-tcc spawn-smoke-standalone-matrix spawn-smoke-resetids-userns
 
 clean:
 	rm -rf $(OUT)

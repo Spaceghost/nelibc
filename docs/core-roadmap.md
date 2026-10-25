@@ -11,7 +11,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep the seven-profile `make smoke-matrix` and four-profile `make dogfood-matrix` green as the source changes |
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
-| P1 | Process creation APIs | Standalone `posix_spawn`/`posix_spawnp` handles direct execution, PATH lookup, synchronous setup/exec-error reporting, ordered close/dup2/open/chdir/fchdir file actions, and standard spawn attributes | Test reset-ID/scheduler behavior under varied credentials; audit multithreaded spawn semantics; hybrid profiles continue to use host spawn implementations |
+| P1 | Process creation APIs | Standalone `posix_spawn`/`posix_spawnp` handles direct execution, PATH lookup, synchronous setup/exec-error reporting, ordered close/dup2/open/chdir/fchdir file actions, and standard spawn attributes | Exercise successful real-time scheduling where the host permits it; audit multithreaded spawn semantics; hybrid profiles continue to use host spawn implementations |
 | P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, a limited German UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread locale handles carry ctype, numeric, monetary, collation, and time state | Expand Unicode collation weights and global `LC_COLLATE`; add more locale datasets |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the remaining undeclared candidates by program impact and record intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
@@ -25,6 +25,12 @@ native attributes ABI. In the static musl profile, Nelibc exports both
 `__execvpe` call to Nelibc's PATH-search implementation, preserving the shell
 fallback for executable text files without a shebang. This avoids pulling
 musl's public `execvp` archive member and colliding with Nelibc's replacement.
+Standalone `POSIX_SPAWN_RESETIDS` is tested with distinct real and effective
+UIDs inside a rootless user namespace. A separate SCHED_FIFO spawn check
+verifies child policy/priority when allowed and verifies synchronous `EPERM`
+reporting when the host denies real-time scheduling; the namespace variant is
+included in `make spawn-smoke-standalone-matrix` and skips when user namespace
+mapping is unavailable.
 
 ### Practical completeness estimate
 

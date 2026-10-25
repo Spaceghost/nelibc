@@ -46,6 +46,46 @@ int main(int argc, char **argv) {
         return 13;
       return 0;
     }
+    if (strcmp(argv[1], "--sched-fifo") == 0) {
+      struct sched_param current_parameter;
+      return sched_getscheduler(0) == SCHED_FIFO &&
+          sched_getparam(0, &current_parameter) == 0 &&
+          current_parameter.sched_priority == 1 ? 0 : 15;
+    }
+  }
+  if (argc == 3 && strcmp(argv[1], "--identity") == 0) {
+    if (getuid() != 0) return 40;
+    if (strcmp(argv[2], "real") == 0) return geteuid() == 1 ? 0 : 41;
+    if (strcmp(argv[2], "reset") == 0) return geteuid() == 0 ? 0 : 42;
+    return 43;
+  }
+  if (argc == 2 && strcmp(argv[1], "--run-resetids") == 0) {
+    char *identity_arguments[] = {(char *)"spawn-smoke", (char *)"--identity",
+                                  (char *)"real", 0};
+    char *environment[] = {0};
+    pid_t identity_child = -1;
+    int identity_status = 0;
+    if (getuid() != 0 || geteuid() != 0 || seteuid(1) != 0 ||
+        geteuid() != 1 ||
+        posix_spawn(&identity_child, "/proc/self/exe", 0, 0, identity_arguments,
+                    environment) != 0 ||
+        waitpid(identity_child, &identity_status, 0) != identity_child ||
+        !WIFEXITED(identity_status) || WEXITSTATUS(identity_status) != 0)
+      return 44;
+    posix_spawnattr_t reset_attributes;
+    if (posix_spawnattr_init(&reset_attributes) != 0 ||
+        posix_spawnattr_setflags(&reset_attributes, POSIX_SPAWN_RESETIDS) != 0)
+      return 45;
+    identity_arguments[2] = (char *)"reset";
+    int spawn_error = posix_spawn(&identity_child, "/proc/self/exe", 0, &reset_attributes,
+                                  identity_arguments, environment);
+    int destroy_error = posix_spawnattr_destroy(&reset_attributes);
+    if (spawn_error != 0) return 50 + spawn_error % 100;
+    if (destroy_error != 0) return 47;
+    if (waitpid(identity_child, &identity_status, 0) != identity_child) return 48;
+    if (!WIFEXITED(identity_status)) return 49;
+    if (WEXITSTATUS(identity_status) != 0) return 60 + WEXITSTATUS(identity_status);
+    return 0;
   }
   char *arguments[] = {(char *)"true", 0};
   char *environment[] = {0};
@@ -205,5 +245,24 @@ int main(int argc, char **argv) {
       waitpid(child, &status, 0) != child || !WIFEXITED(status) ||
       WEXITSTATUS(status) != 0 || posix_spawnattr_destroy(&attributes) != 0)
     return 21;
+
+  if (posix_spawnattr_init(&attributes) != 0 ||
+      posix_spawnattr_setschedpolicy(&attributes, SCHED_FIFO) != 0)
+    return 31;
+  spawn_parameter.sched_priority = 1;
+  if (posix_spawnattr_setschedparam(&attributes, &spawn_parameter) != 0 ||
+      posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETSCHEDULER) != 0)
+    return 32;
+  char *fifo_arguments[] = {(char *)"spawn-smoke", (char *)"--sched-fifo", 0};
+  errno = 42;
+  result = posix_spawn(&child, "/proc/self/exe", 0, &attributes,
+                       fifo_arguments, environment);
+  int fifo_errno = errno;
+  if (posix_spawnattr_destroy(&attributes) != 0 ||
+      (result == 0 && (fifo_errno != 42 || child <= 0 ||
+       waitpid(child, &status, 0) != child || !WIFEXITED(status) ||
+       WEXITSTATUS(status) != 0)) ||
+      (result != 0 && (result != EPERM || fifo_errno != 42)))
+    return 33;
   return 0;
 }
