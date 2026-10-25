@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate standalone wcwidth tables from Python's Unicode 16.0 database."""
+"""Generate standalone wide-character tables from Python's Unicode 16.0 database."""
 
 from __future__ import annotations
 
@@ -125,6 +125,25 @@ def render() -> str:
     )
     lower_pairs = simple_case_pairs("lower")
     upper_pairs = simple_case_pairs("upper")
+    alpha_ranges = property_ranges(
+        lambda cp: unicodedata.category(chr(cp)).startswith("L")
+        or unicodedata.category(chr(cp)) == "Nl"
+    )
+    lower_ranges = property_ranges(lambda cp: chr(cp).islower())
+    upper_ranges = property_ranges(
+        lambda cp: chr(cp).isupper() or unicodedata.category(chr(cp)) == "Lt"
+    )
+    # Unicode White_Space; Python's isspace() also includes four information
+    # separators that are not members of the UCD White_Space property.
+    space_ranges = [
+        (0x0009, 0x000d), (0x0020, 0x0020), (0x0085, 0x0085),
+        (0x00a0, 0x00a0), (0x1680, 0x1680), (0x2000, 0x200a),
+        (0x2028, 0x2029), (0x202f, 0x202f), (0x205f, 0x205f),
+        (0x3000, 0x3000),
+    ]
+    control_ranges = property_ranges(
+        lambda cp: unicodedata.category(chr(cp)) in ("Cc", "Zl", "Zp")
+    )
 
     body = [
         f"-- Generated from Unicode Character Database {VERSION}; see THIRD_PARTY_NOTICES.md.",
@@ -133,6 +152,11 @@ def render() -> str:
         nelua_array("wcwidth_nonprint_ranges", nonprint_ranges),
         nelua_pairs("wcase_lower_pairs", lower_pairs),
         nelua_pairs("wcase_upper_pairs", upper_pairs),
+        nelua_array("wctype_alpha_ranges", alpha_ranges),
+        nelua_array("wctype_lower_ranges", lower_ranges),
+        nelua_array("wctype_upper_ranges", upper_ranges),
+        nelua_array("wctype_space_ranges", space_ranges),
+        nelua_array("wctype_control_ranges", control_ranges),
         """local function wcwidth_in_ranges(value: cuint, ranges: *[0]cuint,
     count: csize): boolean <inline>
   local low: csize = 0
@@ -191,6 +215,82 @@ local function towupper(value: cwchar_t): cwchar_t <cexport, codename 'towupper'
     return value
   end
   return wcase_map(value, &wcase_upper_pairs[0], #wcase_upper_pairs // 2)
+end
+
+local function wctype_isin(value: cwchar_t, ranges: *[0]cuint,
+    count: csize): boolean <inline>
+  if value < 0 or value > 0x10ffff or (value >= 0xd800 and value <= 0xdfff) then
+    return false
+  end
+  return wcwidth_in_ranges((@cuint)(value), ranges, count)
+end
+
+local function iswalpha(value: cwchar_t): cint <cexport, codename 'iswalpha'>
+  if nelibc_multibyte_mode() == 0 then
+    return ((value >= 65 and value <= 90) or (value >= 97 and value <= 122)) and 1 or 0
+  end
+  return wctype_isin(value, &wctype_alpha_ranges[0], #wctype_alpha_ranges // 2) and 1 or 0
+end
+
+local function iswlower(value: cwchar_t): cint <cexport, codename 'iswlower'>
+  if nelibc_multibyte_mode() == 0 then return (value >= 97 and value <= 122) and 1 or 0 end
+  return wctype_isin(value, &wctype_lower_ranges[0], #wctype_lower_ranges // 2) and 1 or 0
+end
+
+local function iswupper(value: cwchar_t): cint <cexport, codename 'iswupper'>
+  if nelibc_multibyte_mode() == 0 then return (value >= 65 and value <= 90) and 1 or 0 end
+  return wctype_isin(value, &wctype_upper_ranges[0], #wctype_upper_ranges // 2) and 1 or 0
+end
+
+local function iswdigit(value: cwchar_t): cint <cexport, codename 'iswdigit'>
+  return (value >= 48 and value <= 57) and 1 or 0
+end
+
+local function iswxdigit(value: cwchar_t): cint <cexport, codename 'iswxdigit'>
+  return ((value >= 48 and value <= 57) or (value >= 65 and value <= 70) or
+      (value >= 97 and value <= 102)) and 1 or 0
+end
+
+local function iswspace(value: cwchar_t): cint <cexport, codename 'iswspace'>
+  if nelibc_multibyte_mode() == 0 then
+    return ((value >= 9 and value <= 13) or value == 32) and 1 or 0
+  end
+  return wctype_isin(value, &wctype_space_ranges[0], #wctype_space_ranges // 2) and 1 or 0
+end
+
+local function iswblank(value: cwchar_t): cint <cexport, codename 'iswblank'>
+  return (value == 9 or value == 32) and 1 or 0
+end
+
+local function iswcntrl(value: cwchar_t): cint <cexport, codename 'iswcntrl'>
+  if nelibc_multibyte_mode() == 0 then
+    return ((value >= 0 and value <= 0x1f) or value == 0x7f) and 1 or 0
+  end
+  return wctype_isin(value, &wctype_control_ranges[0], #wctype_control_ranges // 2) and 1 or 0
+end
+
+local function iswprint(value: cwchar_t): cint <cexport, codename 'iswprint'>
+  if nelibc_multibyte_mode() == 0 then
+    return (value >= 0x20 and value <= 0x7e) and 1 or 0
+  end
+  if value < 0 or value > 0x10ffff or (value >= 0xd800 and value <= 0xdfff) then return 0 end
+  return not wcwidth_in_ranges((@cuint)(value), &wcwidth_nonprint_ranges[0],
+      #wcwidth_nonprint_ranges // 2) and 1 or 0
+end
+
+local function iswgraph(value: cwchar_t): cint <cexport, codename 'iswgraph'>
+  if iswprint(value) == 0 or iswspace(value) ~= 0 then return 0 end
+  return 1
+end
+
+local function iswalnum(value: cwchar_t): cint <cexport, codename 'iswalnum'>
+  if iswalpha(value) ~= 0 or iswdigit(value) ~= 0 then return 1 end
+  return 0
+end
+
+local function iswpunct(value: cwchar_t): cint <cexport, codename 'iswpunct'>
+  if iswgraph(value) ~= 0 and iswalnum(value) == 0 then return 1 end
+  return 0
 end""",
         """local function wcwidth(value: cwchar_t): cint <cexport, codename 'wcwidth'>
   if value == 0 then return 0 end
@@ -246,7 +346,7 @@ def main() -> int:
         expected = lines[1][len(digest_prefix):]
         if actual != expected:
             raise SystemExit("generated Unicode width data checksum failed")
-        print(f"Unicode {VERSION} width tables are current")
+        print(f"Unicode {VERSION} wide-character tables are current")
     else:
         rendered = before + START + "\n" + render() + END + after
         SOURCE.write_text(rendered)

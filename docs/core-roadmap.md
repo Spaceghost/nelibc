@@ -11,7 +11,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double `sqrtl`, `nanl`, `fabsl`, `copysignl`, `fmal`, `tgammal`, `lgammal`, `lgammal_r`, `erfl`, `erfcl`, `exp10l`, `pow10l`, `fmodl`, `remainderl`, `remquol`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `nexttowardl`, `atanl`, `atan2l`, `asinl`, `acosl`, `asinhl`, `acoshl`, `atanhl`, `powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`, `sincosl`, `tanl`, `tanhl`, `sinhl`, and `coshl`, plus `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; internal classification and sign-bit functions now cover binary32/64/80; all standard fenv entry points are implemented for standalone x86-64, while hybrid fenv delegates to the host | Expand long-double math coverage, fenv edge coverage, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
-| P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width data, but lacks wide classification, locale-specific casing, collation, and broad numeric/time conventions; hybrid mode often uses host locale data | Add wide classification APIs and define locale data sources for ctype, collation, numeric, monetary, and time behavior |
+| P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification data, but lacks locale-specific casing, `wctype` descriptors, collation, and broad numeric/time conventions; hybrid mode often uses host locale data | Add locale-specific casing and descriptor APIs; define locale data sources for ctype, collation, numeric, monetary, and time behavior |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 631 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
@@ -104,8 +104,8 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 890 declared names. Each of the four
-  hybrid archives exports 757; 115 APIs are marked as host-delegated and 18
+- The regenerated API inventory has 904 declared names. Each of the four
+  hybrid archives exports 757; 129 APIs are marked as host-delegated and 18
   have declared-but-unexported hybrid gaps. The manifest also contains one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage; the manifest currently has two implementation-only rows. See
@@ -131,7 +131,10 @@ musl export set.
   `C.UTF-8`, and ASCII mappings for `C`. ASCII comparison and bounded-prefix
   behavior pass the differential matrix and all seven consumer profiles;
   Unicode mapping smoke checks cover Greek, Cyrillic, Deseret, and polytonic
-  Greek. Locale-specific casing and wide classification remain gaps.
+  Greek. The twelve standard `isw*` classifiers use generated Unicode letter,
+  number, case, whitespace, and general-category data in `C.UTF-8`, with
+  ASCII classifications in `C`; `wctype` descriptors and `_l` forms remain
+  gaps.
 - `wcswidth` is implemented in Nelua and uses the selected host's `wcwidth` in
   hybrid mode. The standalone locale backend uses generated Unicode 16.0
   general-category, East Asian Width, and Default_Ignorable_Code_Point data

@@ -13,6 +13,7 @@
 #include <time.h>
 #include <locale.h>
 #include <wchar.h>
+#include <wctype.h>
 #include <semaphore.h>
 #include "nelibc_alloc.h"
 #ifndef NELIBC_STANDALONE
@@ -872,6 +873,17 @@ int main(int argc, char **argv) {
       towlower(0x1f80) != 0x1f80 || towupper(0x1f80) != 0x1f88 ||
       towlower(WEOF) != WEOF || towupper(WEOF) != WEOF)
     return 78;
+  if (!iswalpha(0x391) || !iswalpha(0x2160) || !iswlower(0x3b1) ||
+      !iswlower(0x345) || !iswupper(0x391) || !iswupper(0x1c5) ||
+      !iswdigit(L'7') || iswdigit(0x660) || iswalpha(0x660) ||
+      !iswxdigit(L'F') || !iswspace(0xa0) || iswblank(0xa0) ||
+      !iswblank(L' ') || !iswblank(L'\t') ||
+      !iswspace(0x2028) || iswspace(0x1c) || !iswcntrl(0x2028) ||
+      !iswprint(0x200d) || iswprint(0x2028) || iswprint(0x378) ||
+      iswgraph(0xa0) || iswgraph(L' ') ||
+      !iswalnum(0x391) || !iswpunct(0x2014) || iswpunct(0xa0) || iswalpha(WEOF) ||
+      iswprint(0x110000))
+    return 79;
   const wchar_t width_text[] = {L'A', 0x301, 0x4e00, 0};
   if (wcwidth(L'A') != 1 || wcwidth(0x301) != 0 || wcwidth(0x4e00) != 2 ||
       wcswidth(width_text, 3) != 3 || wcswidth(width_text, 2) != 1 ||
@@ -968,7 +980,8 @@ int main(int argc, char **argv) {
       wcwidth(0x4e00) != -1 || wcwidth(L'A') != 1 ||
       wcswidth(width_text, 3) != -1 || towlower(L'A') != L'a' ||
       towupper(L'a') != L'A' || towlower(0x391) != 0x391 ||
-      towupper(0x3b1) != 0x3b1)
+      towupper(0x3b1) != 0x3b1 || iswalpha(L'A') == 0 ||
+      iswalpha(0x391) != 0 || iswspace(L' ') == 0 || iswspace(0xa0) != 0)
     return 35;
 #endif
   if (system(NULL) == 0) return 10;
