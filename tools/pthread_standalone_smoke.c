@@ -140,6 +140,14 @@ static void *cancel_async_worker(void *argument) {
   (void)argument;
   int old_type = -1;
   pthread_cleanup_push(cancel_cleanup, 0);
+  sigset_t full_signal_mask;
+  sigset_t observed_signal_mask;
+  if (sigfillset(&full_signal_mask) != 0 ||
+      pthread_sigmask(SIG_SETMASK, &full_signal_mask, 0) != 0 ||
+      pthread_sigmask(SIG_SETMASK, 0, &observed_signal_mask) != 0 ||
+      sigismember(&observed_signal_mask, SIGUSR1) != 1 ||
+      (observed_signal_mask.__bits[0] & (1UL << 31)) != 0)
+    return (void *)13;
   if (pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &old_type) != 0 ||
       old_type != PTHREAD_CANCEL_DEFERRED)
     return (void *)10;
