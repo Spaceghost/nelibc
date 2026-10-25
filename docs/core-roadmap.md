@@ -8,7 +8,7 @@ archive; it does not certify every behavior required by C or POSIX.
 
 | Priority | Gap | Why it blocks a compelling libc | Next milestone |
 |---|---|---|---|
-| P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
+| P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep the seven-profile `make smoke-matrix` and four-profile `make dogfood-matrix` green as the source changes |
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double `sqrtl`, `nanl`, `fabsl`, `copysignl`, `fmal`, `tgammal`, `lgammal`, `lgammal_r`, `erfl`, `erfcl`, `exp10l`, `pow10l`, `fmodl`, `remainderl`, `remquol`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `nexttowardl`, `atanl`, `atan2l`, `asinl`, `acosl`, `asinhl`, `acoshl`, `atanhl`, `powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`, `sincosl`, `tanl`, `tanhl`, `sinhl`, and `coshl`, plus `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; internal classification and sign-bit functions now cover binary32/64/80; all standard fenv entry points are implemented for standalone x86-64, while hybrid fenv delegates to the host | Expand long-double math coverage, fenv edge coverage, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification data; locale handles currently model only C and C.UTF-8 `LC_CTYPE`, while collation and broad numeric/time conventions remain limited | Add locale category state and thread-local locale selection; expand ctype, collation, numeric, monetary, and time data |
@@ -173,6 +173,14 @@ musl export set.
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
   command.
+- `make smoke-matrix` passed on 2026-10-25 across Zig/glibc, GCC/glibc,
+  Zig/musl, TinyCC/glibc, and standalone Zig, GCC, and TinyCC. This runs the
+  ABI, libc-differential, syscall, thread, and math smoke suites; the binary
+  math comparison checks 116 functions against 100,000 generated inputs.
+- `make dogfood-matrix` passed on 2026-10-25 for all four hybrid profiles.
+  Each incremental C consumer ran and the gate confirmed that the executable
+  contains selected Nelibc symbols. The larger Spinel dogfood results below
+  remain separate evidence.
 - Real-application dogfood passed on 2026-10-24: the Spinel C compiler was
   rebuilt with Zig cc and the glibc hybrid archive, then compiled and ran a
   Ruby client linked against that archive. The same client also ran as a static
