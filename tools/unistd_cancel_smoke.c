@@ -22,6 +22,8 @@ static int listen_fd;
 static int accept_started;
 static int recv_fd;
 static int recv_started;
+static int recvfrom_started;
+static int recvmsg_started;
 static int poll_fd;
 static int poll_started;
 static int ppoll_started;
@@ -82,6 +84,24 @@ static void *blocked_receiver(void *unused) {
   char byte;
   mark_started(&recv_started);
   return (void *)(long)recv(recv_fd, &byte, 1, 0);
+}
+
+static void *blocked_recvfrom_worker(void *unused) {
+  (void)unused;
+  char byte;
+  mark_started(&recvfrom_started);
+  return (void *)(long)recvfrom(recv_fd, &byte, 1, 0, NULL, NULL);
+}
+
+static void *blocked_recvmsg_worker(void *unused) {
+  (void)unused;
+  char byte;
+  struct iovec vector = {&byte, 1};
+  struct msghdr message = {0};
+  message.msg_iov = &vector;
+  message.msg_iovlen = 1;
+  mark_started(&recvmsg_started);
+  return (void *)(long)recvmsg(recv_fd, &message, 0);
 }
 
 static void *blocked_poller(void *unused) {
@@ -274,6 +294,34 @@ int main(void) {
   if (pthread_cancel(pselector) != 0) return 56;
   result = NULL;
   if (pthread_join(pselector, &result) != 0 || result != PTHREAD_CANCELED) return 57;
+  alarm(0);
+  close(sockets[0]);
+  close(sockets[1]);
+
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) return 58;
+  recv_fd = sockets[0];
+  pthread_t recvfrom_thread;
+  if (pthread_create(&recvfrom_thread, NULL, blocked_recvfrom_worker, NULL) != 0) return 59;
+  wait_started(&recvfrom_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(recvfrom_thread) != 0) return 60;
+  result = NULL;
+  if (pthread_join(recvfrom_thread, &result) != 0 || result != PTHREAD_CANCELED) return 61;
+  alarm(0);
+  close(sockets[0]);
+  close(sockets[1]);
+
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) return 62;
+  recv_fd = sockets[0];
+  pthread_t recvmsg_thread;
+  if (pthread_create(&recvmsg_thread, NULL, blocked_recvmsg_worker, NULL) != 0) return 63;
+  wait_started(&recvmsg_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(recvmsg_thread) != 0) return 64;
+  result = NULL;
+  if (pthread_join(recvmsg_thread, &result) != 0 || result != PTHREAD_CANCELED) return 65;
   alarm(0);
   close(sockets[0]);
   close(sockets[1]);
