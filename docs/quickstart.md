@@ -106,7 +106,9 @@ int main(void) {
 The standalone smoke covers direct execution, PATH search, close/dup2/open and
 chdir/fchdir actions, action ordering, process-group and signal attributes,
 scheduler and reset-ID attributes, and synchronous setup/exec errors with
-Zig, GCC, and TinyCC builds.
+Zig, GCC, and TinyCC builds. It also launches direct and PATH-searching spawns
+concurrently from four Nelibc worker threads; the spawn smoke passed five
+repeat runs per compiler profile.
 `make spawn-smoke-resetids-userns` additionally checks a real/effective UID
 mismatch in a rootless user namespace; it skips when subordinate ID mapping or
 user namespaces are unavailable. The standalone spawn matrix includes this

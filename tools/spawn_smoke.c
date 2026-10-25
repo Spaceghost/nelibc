@@ -2,10 +2,51 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <spawn.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <string.h>
+
+typedef struct {
+  int error;
+} spawn_worker_state;
+
+static void *spawn_worker(void *opaque) {
+  spawn_worker_state *state = opaque;
+  posix_spawn_file_actions_t actions;
+  if (posix_spawn_file_actions_init(&actions) != 0 ||
+      posix_spawn_file_actions_addopen(&actions, 9, "/dev/null", O_RDONLY, 0) != 0) {
+    state->error = 1;
+    return 0;
+  }
+  char *self_arguments[] = {(char *)"spawn-smoke", (char *)"--fd9-open", 0};
+  char *true_arguments[] = {(char *)"true", 0};
+  char *environment[] = {(char *)"PATH=/bin:/usr/bin", 0};
+  for (int iteration = 0; iteration < 4; ++iteration) {
+    pid_t child = -1;
+    int error;
+    if ((iteration & 1) == 0)
+      error = posix_spawn(&child, "/proc/self/exe", &actions, 0,
+                          self_arguments, environment);
+    else
+      error = posix_spawnp(&child, "true", &actions, 0,
+                           true_arguments, environment);
+    if (error != 0 || child <= 0) {
+      state->error = 2;
+      break;
+    }
+    int status = 0;
+    if (waitpid(child, &status, 0) != child || !WIFEXITED(status) ||
+        WEXITSTATUS(status) != 0) {
+      state->error = 3;
+      break;
+    }
+  }
+  if (posix_spawn_file_actions_destroy(&actions) != 0 && state->error == 0)
+    state->error = 4;
+  return 0;
+}
 
 static int run_action_case(posix_spawn_file_actions_t *actions, const char *mode) {
   char *arguments[] = {(char *)"spawn-smoke", (char *)mode, 0};
@@ -264,5 +305,20 @@ int main(int argc, char **argv) {
        WEXITSTATUS(status) != 0)) ||
       (result != 0 && (result != EPERM || fifo_errno != 42)))
     return 33;
+
+  spawn_worker_state worker_states[4] = {{0}, {0}, {0}, {0}};
+  pthread_t workers[4];
+  int created_workers = 0;
+  for (; created_workers < 4; ++created_workers) {
+    if (pthread_create(&workers[created_workers], 0, spawn_worker,
+                       &worker_states[created_workers]) != 0)
+      break;
+  }
+  if (created_workers != 4) return 34;
+  for (int worker_index = 0; worker_index < 4; ++worker_index) {
+    if (pthread_join(workers[worker_index], 0) != 0 ||
+        worker_states[worker_index].error != 0)
+      return 35;
+  }
   return 0;
 }

@@ -11,7 +11,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep the seven-profile `make smoke-matrix` and four-profile `make dogfood-matrix` green as the source changes |
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
-| P1 | Process creation APIs | Standalone `posix_spawn`/`posix_spawnp` handles direct execution, PATH lookup, synchronous setup/exec-error reporting, ordered close/dup2/open/chdir/fchdir file actions, and standard spawn attributes | Exercise successful real-time scheduling where the host permits it; audit multithreaded spawn semantics; hybrid profiles continue to use host spawn implementations |
+| P1 | Process creation APIs | Standalone `posix_spawn`/`posix_spawnp` handles direct execution, PATH lookup, synchronous setup/exec-error reporting, ordered close/dup2/open/chdir/fchdir file actions, and standard spawn attributes | Expand concurrent spawn tests to cancellation and signal interactions; exercise successful real-time scheduling where the host permits it; hybrid profiles continue to use host spawn implementations |
 | P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, a limited German UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread locale handles carry ctype, numeric, monetary, collation, and time state | Expand Unicode collation weights and global `LC_COLLATE`; add more locale datasets |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the remaining undeclared candidates by program impact and record intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
@@ -31,6 +31,11 @@ verifies child policy/priority when allowed and verifies synchronous `EPERM`
 reporting when the host denies real-time scheduling; the namespace variant is
 included in `make spawn-smoke-standalone-matrix` and skips when user namespace
 mapping is unavailable.
+The standalone spawn smoke also launches children concurrently from four
+Nelibc worker threads. Each worker creates its own open-file action list and
+mixes direct `posix_spawn` with PATH-searching `posix_spawnp`. Five repeat runs
+passed for each Zig, GCC, and TinyCC standalone profile; this is stress
+coverage, not a complete audit of signal, cancellation, or fork interactions.
 
 ### Practical completeness estimate
 
