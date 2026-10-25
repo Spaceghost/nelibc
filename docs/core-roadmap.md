@@ -40,6 +40,12 @@ native attributes ABI. In the static musl profile, Nelibc exports both
 `__execvpe` call to Nelibc's PATH-search implementation, preserving the shell
 fallback for executable text files without a shebang. This avoids pulling
 musl's public `execvp` archive member and colliding with Nelibc's replacement.
+Standalone `system()` now registers its child-kill/reap, signal-restore, and
+system-lock cleanup on Nelibc's pthread cleanup stack while waiting for the
+shell. The standalone consumer cancels a thread blocked in `system("exec sleep 5")`,
+verifies the child was reaped, and calls `system()` again to check the lock was
+released. Zig, GCC, and TinyCC standalone consumers pass; the hybrid consumer
+matrix also passes, retaining host pthread cleanup handlers.
 Standalone `POSIX_SPAWN_RESETIDS` is tested with distinct real and effective
 UIDs inside a rootless user namespace. A separate SCHED_FIFO spawn check
 verifies child policy/priority when allowed and verifies synchronous `EPERM`

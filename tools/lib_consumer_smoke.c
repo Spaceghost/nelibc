@@ -1146,12 +1146,13 @@ static void *concurrent_system_worker(void *unused) {
   return (void *)(uintptr_t)(status == -1 || !WIFEXITED(status) || WEXITSTATUS(status) != 0);
 }
 
+#endif
+
 static void *cancelled_system_worker(void *unused) {
   (void)unused;
   (void)system("exec sleep 5");
   return NULL;
 }
-#endif
 
 static int tempfile_probe(void) {
   char invalid[] = "/tmp/nelibc-invalid-XXXXXXx";
@@ -2055,6 +2056,19 @@ int main(int argc, char **argv) {
       sigismember(&mask_after, SIGCHLD) != sigismember(&mask_before, SIGCHLD)) return 23;
   shell_status = system("kill -INT $PPID; exit 0");
   if (shell_status == -1 || !WIFEXITED(shell_status) || WEXITSTATUS(shell_status) != 0) return 24;
+#else
+  pthread_t cancelled_thread;
+  void *system_thread_result;
+  if (pthread_create(&cancelled_thread, NULL, cancelled_system_worker, NULL) != 0) return 21;
+  struct timespec cancellation_delay = {.tv_sec = 0, .tv_nsec = 50000000};
+  nanosleep(&cancellation_delay, NULL);
+  if (pthread_cancel(cancelled_thread) != 0 ||
+      pthread_join(cancelled_thread, &system_thread_result) != 0 ||
+      system_thread_result != PTHREAD_CANCELED) return 22;
+  errno = 0;
+  if (waitpid(-1, NULL, WNOHANG) != -1 || errno != ECHILD) return 25;
+  shell_status = system("exit 0");
+  if (shell_status == -1 || !WIFEXITED(shell_status) || WEXITSTATUS(shell_status) != 0) return 26;
 #endif
   shell_status = system("exit 23");
   if (shell_status == -1 || !WIFEXITED(shell_status) || WEXITSTATUS(shell_status) != 23) return 11;
