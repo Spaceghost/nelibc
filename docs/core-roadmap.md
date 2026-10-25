@@ -60,6 +60,11 @@ Nelibc worker threads. Each worker creates its own open-file action list and
 mixes direct `posix_spawn` with PATH-searching `posix_spawnp`. Five repeat runs
 passed for each Zig, GCC, and TinyCC standalone profile; this is stress
 coverage, not a complete audit of signal, cancellation, or fork interactions.
+Standalone `posix_spawnp` now retains accessible PATH candidates until child
+`execve`: if an earlier candidate fails with a search-continuable error such
+as `ENOENT` from a missing script interpreter, the child tries later entries.
+The smoke places an executable with a missing shebang interpreter first and a
+working script second; the Zig, GCC, and TinyCC standalone matrix passes.
 The signal check queues a signal in the parent, verifies the child receives
 only its requested mask/default action, and checks that the parent's pending
 signal, mask, and handler remain unchanged. A deferred cancellation queued

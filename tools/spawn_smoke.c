@@ -11,6 +11,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 typedef struct {
   int error;
@@ -223,6 +224,71 @@ static int run_action_case(posix_spawn_file_actions_t *actions, const char *mode
   int status = 0;
   if (waitpid(child, &status, 0) != child || !WIFEXITED(status)) return ECHILD;
   return WEXITSTATUS(status) == 0 ? 0 : EIO;
+}
+
+static int create_executable(const char *path, const char *contents) {
+  int descriptor = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0700);
+  if (descriptor < 0) return -1;
+  size_t length = strlen(contents);
+  int failed = write(descriptor, contents, length) != (ssize_t)length;
+  if (close(descriptor) != 0) failed = 1;
+  return failed ? -1 : 0;
+}
+
+static int run_path_fallback_case(void) {
+  char first_directory[128], second_directory[128];
+  char first_executable[192], second_executable[192], path_value[260];
+  if (snprintf(first_directory, sizeof(first_directory),
+               "/tmp/nelibc-spawn-path-a-%d", getpid()) < 0 ||
+      snprintf(second_directory, sizeof(second_directory),
+               "/tmp/nelibc-spawn-path-b-%d", getpid()) < 0 ||
+      snprintf(first_executable, sizeof(first_executable), "%s/nelibc-path-command",
+               first_directory) < 0 ||
+      snprintf(second_executable, sizeof(second_executable), "%s/nelibc-path-command",
+               second_directory) < 0 ||
+      snprintf(path_value, sizeof(path_value), "%s:%s",
+               first_directory, second_directory) < 0)
+    return 1;
+  if (mkdir(first_directory, 0700) != 0 || mkdir(second_directory, 0700) != 0)
+    return 2;
+  int result = 3;
+  if (create_executable(first_executable,
+          "#!/nelibc-spawn-missing-interpreter\nexit 99\n") != 0 ||
+      create_executable(second_executable, "#!/bin/sh\nexit 0\n") != 0)
+    goto cleanup;
+
+  const char *old_path_value = getenv("PATH");
+  char *old_path = old_path_value ? strdup(old_path_value) : NULL;
+  if (old_path_value && old_path == NULL) goto cleanup;
+  if (setenv("PATH", path_value, 1) != 0) {
+    free(old_path);
+    goto cleanup;
+  }
+  char *arguments[] = {(char *)"nelibc-path-command", 0};
+  char *environment[] = {0};
+  pid_t child = -1;
+  int spawn_error = posix_spawnp(&child, "nelibc-path-command", 0, 0,
+                                  arguments, environment);
+  int restore_error = old_path ? setenv("PATH", old_path, 1) : unsetenv("PATH");
+  free(old_path);
+  if (restore_error != 0) goto cleanup;
+  if (spawn_error != 0 || child <= 0) {
+    result = 4;
+    goto cleanup;
+  }
+  int status = 0;
+  if (waitpid(child, &status, 0) != child || !WIFEXITED(status) ||
+      WEXITSTATUS(status) != 0) {
+    result = 5;
+    goto cleanup;
+  }
+  result = 0;
+cleanup:
+  unlink(first_executable);
+  unlink(second_executable);
+  rmdir(first_directory);
+  rmdir(second_directory);
+  return result;
 }
 
 int main(int argc, char **argv) {
@@ -534,5 +600,6 @@ int main(int argc, char **argv) {
       failed_cancel_state.spawn_error != ENOENT)
     return 40;
   if (run_spawn_eintr_case() != 0) return 39;
+  if (run_path_fallback_case() != 0) return 41;
   return 0;
 }
