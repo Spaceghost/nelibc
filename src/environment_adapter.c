@@ -7,6 +7,12 @@
 #include <sys/wait.h>
 #include <wchar.h>
 #include <string.h>
+
+int getdate_err;
+
+int *nelibc_getdate_err_location(void) {
+  return &getdate_err;
+}
 #include <locale.h>
 #include <time.h>
 

@@ -262,9 +262,10 @@ musl export set.
   hybrid mode, where it follows the selected libc's locale data.
 - Time APIs are already implemented across `src/unistd.nelua` and
   `src/stdlib.nelua`: clocks and sleeps, UTC/local conversion, `mktime`,
-  `timegm`, `strftime`, `strptime`, and the `asctime`/`ctime` family. The
-  syscall smoke checks UTC and negative epochs, leap days, POSIX TZ rules,
-  TZif zone files, DST transitions, formatting bounds, and CPU clocks. Broader
+  `timegm`, `strftime`/`strptime` and their `_l` forms, `getdate`, and the
+  `asctime`/`ctime` family. The syscall and consumer smoke checks UTC and
+  negative epochs, leap days, POSIX TZ rules, TZif zone files, DST transitions,
+  formatting bounds, process/thread CPU clocks, and `DATEMSK` parsing. Broader
   locale-specific time names and cross-libc differential coverage remain open.
 - The current math slice in `src/math_core.nelua` exports 138 float and double
   functions plus x86-64 extended-precision `sqrtl`, `nanl`, `fabsl`, `copysignl`,

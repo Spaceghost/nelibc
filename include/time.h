@@ -108,6 +108,8 @@ struct tm *localtime_r(const time_t *restrict timer, struct tm *restrict result)
 struct tm *localtime(const time_t *timer);
 time_t mktime(struct tm *time_value);
 time_t timegm(struct tm *time_value);
+extern int getdate_err;
+struct tm *getdate(const char *input);
 char *strptime(const char *restrict input, const char *restrict format,
                struct tm *restrict time_value);
 char *strptime_l(const char *restrict input, const char *restrict format,

@@ -125,6 +125,12 @@ without changing `errno`. Smoke checks validate the current process CPU clock,
 invalid arguments, and `clock_settime`'s invalid-clock error without changing
 the system clock.
 
+XSI `getdate` reads format lines from the regular file named by `DATEMSK`,
+parses them with Nelibc `strptime`, validates normalized calendar fields with
+`mktime`, and reports the POSIX error classes through `getdate_err`. The
+consumer covers successful parsing, invalid dates, unmatched input, and
+missing/unset template paths in hybrid and standalone profiles.
+
 POSIX `pselect` uses Linux `pselect6` with its kernel signal-mask descriptor.
 It applies the same reserved-signal filtering and timeout copy as `ppoll`.
 The consumer matrix checks readiness, signal-mask use, and unchanged timeout

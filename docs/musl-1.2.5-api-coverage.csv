@@ -447,7 +447,7 @@ getc_unlocked,stdio.h,,,not-declared
 getchar,stdio.h,nelibc_stdio.h;nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getchar_unlocked,stdio.h,nelibc_stdio_standalone.h;stdio.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getcwd,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-getdate,time.h,,,not-declared
+getdate,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getdelim,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getdents,dirent.h,,,not-declared
 getdomainname,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

@@ -376,6 +376,51 @@ static int allocator_probe(void) {
   return 0;
 }
 
+static int getdate_probe(void) {
+  unsetenv("DATEMSK");
+  if (getdate("2024-02-29") != NULL || getdate_err != 1) return 1;
+  char template_path[] = "/tmp/nelibc-getdate-XXXXXX";
+  int template_fd = mkstemp(template_path);
+  if (template_fd < 0) return 2;
+  static const char templates[] = "%Y-%m-%d %H:%M:%S\n%Y-%m-%d\n%Y-%j\n";
+  if (write(template_fd, templates, sizeof templates - 1) !=
+          (ssize_t)(sizeof templates - 1) || close(template_fd) != 0 ||
+      setenv("DATEMSK", template_path, 1) != 0) {
+    unlink(template_path);
+    return 3;
+  }
+  struct tm *parsed = getdate("2024-02-29 13:05:09");
+  if (parsed == NULL || getdate_err != 0 || parsed->tm_year != 124 ||
+      parsed->tm_mon != 1 || parsed->tm_mday != 29 || parsed->tm_hour != 13 ||
+      parsed->tm_min != 5 || parsed->tm_sec != 9) {
+    unsetenv("DATEMSK");
+    unlink(template_path);
+    return 4;
+  }
+  parsed = getdate("2024-060");
+  if (parsed == NULL || getdate_err != 0 || parsed->tm_year != 124 ||
+      parsed->tm_mon != 1 || parsed->tm_mday != 29) {
+    unsetenv("DATEMSK");
+    unlink(template_path);
+    return 8;
+  }
+  if (getdate("2024-02-31") != NULL || getdate_err != 8 ||
+      getdate("not a date") != NULL || getdate_err != 7) {
+    unsetenv("DATEMSK");
+    unlink(template_path);
+    return 5;
+  }
+  if (setenv("DATEMSK", "/nelibc/this/file/does/not/exist", 1) != 0 ||
+      getdate("2024-02-29") != NULL || getdate_err != 2) {
+    unsetenv("DATEMSK");
+    unlink(template_path);
+    return 6;
+  }
+  unsetenv("DATEMSK");
+  unlink(template_path);
+  return getdate_err == 2 ? 0 : 7;
+}
+
 static int semaphore_clock_probe(void) {
   sem_t semaphore;
   if (sem_init(&semaphore, 0, 1) != 0) return 1;
@@ -835,6 +880,8 @@ int main(int argc, char **argv) {
   if (semaphore_result != 0) return 85 + semaphore_result;
   int tempfile_result = tempfile_probe();
   if (tempfile_result != 0) return 570 + tempfile_result;
+  int getdate_result = getdate_probe();
+  if (getdate_result != 0) return 580 + getdate_result;
   char cwd_buffer[4096];
   if (getcwd(cwd_buffer, sizeof cwd_buffer) == NULL) return 20;
   char *allocated_cwd = get_current_dir_name();

@@ -15,6 +15,13 @@ local function realloc(ptr: pointer, size: csize): pointer <cimport> end
 local function memcpy(dest: pointer, src: pointer <const>, size: csize): pointer <cimport> end
 local function memset(dest: pointer, value: cint, size: csize): pointer <cimport> end
 local function getenv(name: *[0]cchar <const>): *[0]cchar <cimport> end
+local function fopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>): pointer <cimport> end
+local function fclose(stream: pointer): cint <cimport> end
+local function fileno(stream: pointer): cint <cimport> end
+local function getline(line: **cchar, capacity: *csize, stream: pointer): clong <cimport> end
+local function feof(stream: pointer): cint <cimport> end
+local function ferror(stream: pointer): cint <cimport> end
+local function nelibc_getdate_err_location(): *[0]cint <cimport> end
 local function nelibc_environment_vector(): **cchar <cimport> end
 local function snprintf(buffer: *[0]cchar, max_size: csize,
     format: *[0]cchar <const>, ...): cint <cimport> end
@@ -660,6 +667,14 @@ local Tm: type = @record{
   tm_sec: cint, tm_min: cint, tm_hour: cint, tm_mday: cint, tm_mon: cint,
   tm_year: cint, tm_wday: cint, tm_yday: cint, tm_isdst: cint,
   tm_gmtoff: clong, tm_zone: pointer
+}
+local FileStat: type = @record{
+  st_dev: uint64, st_ino: uint64, st_nlink: uint64,
+  st_mode: cuint, st_uid: cuint, st_gid: cuint, st_pad0: cint,
+  st_rdev: uint64, st_size: clong, st_blksize: clong, st_blocks: clong,
+  st_atime: clong, st_atime_nsec: clong, st_mtime: clong,
+  st_mtime_nsec: clong, st_ctime: clong, st_ctime_nsec: clong,
+  st_reserved: [3]clong
 }
 
 local function floor_division(value: clonglong, divisor: clonglong): clonglong <inline>
@@ -2511,6 +2526,149 @@ local function strptime(input: *[0]cchar <const>, format: *[0]cchar <const>,
     time_value.tm_wday = converted.tm_wday
   end
   return (@*[0]cchar)(&input[input_position])
+end
+
+local getdate_result: Tm = {
+  tm_sec = 0_cint, tm_min = 0_cint, tm_hour = 0_cint, tm_mday = 1_cint,
+  tm_mon = 0_cint, tm_year = 70_cint, tm_wday = 0_cint, tm_yday = 0_cint,
+  tm_isdst = 0_cint, tm_gmtoff = 0_clong, tm_zone = nilptr
+}
+
+local function getdate_fail(stream: pointer, line: *[0]cchar, error: cint): *Tm <inline>
+  if line ~= nilptr then free((@pointer)(line)) end
+  if stream ~= nilptr then fclose(stream) end
+  nelibc_getdate_err_location()[0] = error
+  return nilptr
+end
+
+-- XSI getdate reads strptime formats from the file named by DATEMSK.
+local function getdate(input: *[0]cchar <const>): *Tm <cexport, codename 'getdate'>
+  local error_location = nelibc_getdate_err_location()
+  if input == nilptr then error_location[0] = 8_cint; return nilptr end
+  local template_path = getenv("DATEMSK")
+  if template_path == nilptr or template_path[0] == 0_cchar then
+    error_location[0] = 1_cint
+    return nilptr
+  end
+  local stream = fopen(template_path, "r")
+  if stream == nilptr then error_location[0] = 2_cint; return nilptr end
+  local file_status: FileStat = {
+    st_dev = 0_u64, st_ino = 0_u64, st_nlink = 0_u64,
+    st_mode = 0_cuint, st_uid = 0_cuint, st_gid = 0_cuint, st_pad0 = 0_cint,
+    st_rdev = 0_u64, st_size = 0_clong, st_blksize = 0_clong, st_blocks = 0_clong,
+    st_atime = 0_clong, st_atime_nsec = 0_clong, st_mtime = 0_clong,
+    st_mtime_nsec = 0_clong, st_ctime = 0_clong, st_ctime_nsec = 0_clong,
+    st_reserved = {0_clong, 0_clong, 0_clong}
+  }
+  local stat_result = nelibc_raw_syscall3(5_culong,
+      (@culong)(fileno(stream)), (@culong)((@usize)(&file_status)), 0_culong)
+  if stat_result < 0 then
+    return getdate_fail(stream, nilptr, 3_cint)
+  end
+  if (file_status.st_mode & 0xf000_cuint) ~= 0x8000_cuint then
+    return getdate_fail(stream, nilptr, 4_cint)
+  end
+  local current_seconds: clong = time(nilptr)
+  local base: Tm = {
+    tm_sec = 0_cint, tm_min = 0_cint, tm_hour = 0_cint, tm_mday = 1_cint,
+    tm_mon = 0_cint, tm_year = 70_cint, tm_wday = 0_cint, tm_yday = 0_cint,
+    tm_isdst = -1_cint, tm_gmtoff = 0_clong, tm_zone = nilptr
+  }
+  if localtime_r(&current_seconds, &base) == nilptr then
+    return getdate_fail(stream, nilptr, 8_cint)
+  end
+  base.tm_isdst = -1_cint
+  local line: *[0]cchar = nilptr
+  local capacity: csize = 0
+  local matched_invalid: boolean = false
+  while true do
+    nelibc_errno_location()[0] = 0_cint
+    local line_length: clong = getline(&line, &capacity, stream)
+    if line_length < 0_clong then
+      if feof(stream) ~= 0_cint then break end
+      local error = 5_cint
+      if nelibc_errno_location()[0] == 12_cint then error = 6_cint end
+      return getdate_fail(stream, line, error)
+    end
+    local template_length: csize = (@csize)(line_length)
+    if template_length > 0 and line[template_length - 1] == 10_cchar then
+      template_length = template_length - 1
+      line[template_length] = 0_cchar
+    end
+    if template_length > 0 and line[template_length - 1] == 13_cchar then
+      template_length = template_length - 1
+      line[template_length] = 0_cchar
+    end
+    local candidate: Tm = base
+    local parsed_end = strptime(input, line, &candidate)
+    if parsed_end ~= nilptr and parsed_end[0] == 0_cchar then
+      local has_ordinal_day: boolean = false
+      local candidate_invalid: boolean = false
+      local format_index: csize = 0
+      while line[format_index] ~= 0_cchar do
+        if line[format_index] == 37_cchar then
+          format_index = format_index + 1
+          if line[format_index] == 69_cchar or line[format_index] == 79_cchar then
+            format_index = format_index + 1
+          end
+          if line[format_index] == 106_cchar then has_ordinal_day = true end
+          if line[format_index] ~= 0_cchar then format_index = format_index + 1 end
+        else
+          format_index = format_index + 1
+        end
+      end
+      if has_ordinal_day then
+        local calendar_year: clonglong = (@clonglong)(candidate.tm_year) + 1900_clonglong
+        local ordinal_seconds: clonglong =
+            (tz_days_from_civil(calendar_year, 1_clonglong, 1_clonglong) +
+             (@clonglong)(candidate.tm_yday)) * 86400_clonglong
+        local ordinal_date: Tm = {
+          tm_sec = 0_cint, tm_min = 0_cint, tm_hour = 0_cint, tm_mday = 1_cint,
+          tm_mon = 0_cint, tm_year = 70_cint, tm_wday = 0_cint, tm_yday = 0_cint,
+          tm_isdst = 0_cint, tm_gmtoff = 0_clong, tm_zone = nilptr
+        }
+        if gmtime_r((@*[0]clong)(&ordinal_seconds), &ordinal_date) == nilptr or
+            ordinal_date.tm_year ~= candidate.tm_year then
+          matched_invalid = true
+          candidate_invalid = true
+        else
+          candidate.tm_mon = ordinal_date.tm_mon
+          candidate.tm_mday = ordinal_date.tm_mday
+        end
+      end
+      local expected_year = candidate.tm_year
+      local expected_month = candidate.tm_mon
+      local expected_day = candidate.tm_mday
+      local expected_hour = candidate.tm_hour
+      local expected_minute = candidate.tm_min
+      local expected_second = candidate.tm_sec
+      nelibc_errno_location()[0] = 0_cint
+      local timestamp = mktime(&candidate)
+      if candidate_invalid or candidate.tm_year ~= expected_year or candidate.tm_mon ~= expected_month or
+          candidate.tm_mday ~= expected_day or candidate.tm_hour ~= expected_hour or
+          candidate.tm_min ~= expected_minute or candidate.tm_sec ~= expected_second or
+          (timestamp == -1_clong and nelibc_errno_location()[0] == 75_cint) then
+        matched_invalid = true
+      else
+        getdate_result = candidate
+        free((@pointer)(line))
+        fclose(stream)
+        error_location[0] = 0_cint
+        return &getdate_result
+      end
+    end
+  end
+  local read_error = ferror(stream) ~= 0_cint
+  free((@pointer)(line))
+  fclose(stream)
+  if read_error then
+    error_location[0] = 5_cint
+  elseif matched_invalid then
+    error_location[0] = 8_cint
+  else
+    error_location[0] = 7_cint
+  end
+  return nilptr
 end
 
 -- POSIX locale-explicit wrappers use the thread-local locale mechanism so
@@ -4525,16 +4683,6 @@ local Statfs: type = @record{
   f_files: culong, f_ffree: culong,
   f_fsid: [2]cint, f_namelen: clong, f_frsize: clong,
   f_flags: clong, f_spare: [4]clong
-}
-
--- Linux x86_64 struct stat layout, used to determine _PC_ASYNC_IO file types.
-local FileStat: type = @record{
-  st_dev: uint64, st_ino: uint64, st_nlink: uint64,
-  st_mode: cuint, st_uid: cuint, st_gid: cuint, st_pad0: cint,
-  st_rdev: uint64, st_size: clong, st_blksize: clong, st_blocks: clong,
-  st_atime: clong, st_atime_nsec: clong, st_mtime: clong,
-  st_mtime_nsec: clong, st_ctime: clong, st_ctime_nsec: clong,
-  st_reserved: [3]clong
 }
 
 local function nelibc_pathconf_value(name: cint, target: pointer, fd: cint,
