@@ -1513,6 +1513,25 @@ static int rwlock_priority_cancel_smoke(void) {
       result = 14;
     if (pthread_rwlock_unlock(&rwlock) != 0) result = 15;
     reader_held = 0;
+    if (result == 0 && pthread_rwlock_wrlock(&rwlock) != 0) result = 16;
+    if (result == 0) {
+      reader_held = 1;
+      struct rwlock_timeout_request reader_timeout = {
+        .rwlock = &rwlock,
+        .deadline = {0, 0},
+        .write_lock = 0,
+      };
+      if (pthread_create(&thread, &attributes, rwlock_timeout_worker,
+                         &reader_timeout) != 0 ||
+          pthread_join(thread, 0) != 0 || reader_timeout.result != ETIMEDOUT ||
+          __atomic_load_n(&rwlock.__waiting_readers, __ATOMIC_ACQUIRE) != 0 ||
+          __atomic_load_n(&rwlock.__waiting_reader_priority_counts[0],
+                          __ATOMIC_ACQUIRE) != 0 ||
+          __atomic_load_n(&rwlock.__rt_waiting_readers, __ATOMIC_ACQUIRE) != 0)
+        result = 17;
+      if (pthread_rwlock_unlock(&rwlock) != 0) result = 18;
+      reader_held = 0;
+    }
   }
 
 cleanup:
