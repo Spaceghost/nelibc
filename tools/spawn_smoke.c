@@ -12,6 +12,12 @@ typedef struct {
   int error;
 } spawn_worker_state;
 
+typedef struct {
+  volatile int returned_from_spawn;
+  int spawn_error;
+  pid_t child;
+} spawn_cancel_state;
+
 static void *spawn_worker(void *opaque) {
   spawn_worker_state *state = opaque;
   posix_spawn_file_actions_t actions;
@@ -48,6 +54,21 @@ static void *spawn_worker(void *opaque) {
   return 0;
 }
 
+static void *spawn_with_pending_cancel(void *opaque) {
+  spawn_cancel_state *state = opaque;
+  char *arguments[] = {(char *)"true", 0};
+  char *environment[] = {0};
+  if (pthread_cancel(pthread_self()) != 0) {
+    state->spawn_error = EINVAL;
+    return 0;
+  }
+  state->spawn_error = posix_spawn(&state->child, "/bin/true", 0, 0,
+                                   arguments, environment);
+  state->returned_from_spawn = 1;
+  pthread_testcancel();
+  return 0;
+}
+
 static int run_action_case(posix_spawn_file_actions_t *actions, const char *mode) {
   char *arguments[] = {(char *)"spawn-smoke", (char *)mode, 0};
   char *environment[] = {0};
@@ -78,10 +99,14 @@ int main(int argc, char **argv) {
     }
     if (strcmp(argv[1], "--attr-state") == 0) {
       sigset_t current_mask;
+      sigset_t pending_signals;
       struct sigaction current_action;
       if (getpgid(0) != getpid() ||
           sigprocmask(SIG_SETMASK, 0, &current_mask) != 0 ||
           sigismember(&current_mask, SIGUSR1) != 1 ||
+          sigismember(&current_mask, SIGUSR2) != 0 ||
+          sigpending(&pending_signals) != 0 ||
+          sigismember(&pending_signals, SIGUSR2) != 0 ||
           sigaction(SIGUSR1, 0, &current_action) != 0 ||
           current_action.sa_handler != SIG_DFL)
         return 13;
@@ -275,14 +300,34 @@ int main(int argc, char **argv) {
     return 22;
   struct sigaction ignored_action = {0};
   struct sigaction previous_action;
+  sigset_t queued_signal_set, previous_signal_mask, pending_signals;
+  if (sigemptyset(&queued_signal_set) != 0 ||
+      sigaddset(&queued_signal_set, SIGUSR2) != 0 ||
+      sigprocmask(SIG_BLOCK, &queued_signal_set, &previous_signal_mask) != 0 ||
+      raise(SIGUSR2) != 0 || sigpending(&pending_signals) != 0 ||
+      sigismember(&pending_signals, SIGUSR2) != 1)
+    return 36;
   ignored_action.sa_handler = SIG_IGN;
   if (sigaction(SIGUSR1, &ignored_action, &previous_action) != 0) return 20;
   char *attribute_arguments[] = {(char *)"spawn-smoke", (char *)"--attr-state", 0};
   errno = 42;
   result = posix_spawn(&child, "/proc/self/exe", 0, &attributes,
                        attribute_arguments, environment);
+  int parent_errno = errno;
+  sigset_t pending_after_spawn;
+  int parent_pending_result = sigpending(&pending_after_spawn);
+  int parent_pending_usr2 = sigismember(&pending_after_spawn, SIGUSR2);
+  struct sigaction parent_usr1_action;
+  int parent_action_result = sigaction(SIGUSR1, 0, &parent_usr1_action);
   int restore_result = sigaction(SIGUSR1, &previous_action, 0);
-  if (result != 0 || errno != 42 || child <= 0 || restore_result != 0 ||
+  int consumed_signal = 0;
+  int consume_signal_result = sigwait(&queued_signal_set, &consumed_signal);
+  int restore_mask_result = sigprocmask(SIG_SETMASK, &previous_signal_mask, 0);
+  if (result != 0 || parent_errno != 42 || child <= 0 || restore_result != 0 ||
+      parent_pending_result != 0 || parent_pending_usr2 != 1 ||
+      parent_action_result != 0 || parent_usr1_action.sa_handler != SIG_IGN ||
+      consume_signal_result != 0 || consumed_signal != SIGUSR2 ||
+      restore_mask_result != 0 ||
       waitpid(child, &status, 0) != child || !WIFEXITED(status) ||
       WEXITSTATUS(status) != 0 || posix_spawnattr_destroy(&attributes) != 0)
     return 21;
@@ -320,5 +365,18 @@ int main(int argc, char **argv) {
         worker_states[worker_index].error != 0)
       return 35;
   }
+
+  spawn_cancel_state cancel_state = {0, 0, -1};
+  pthread_t cancel_worker;
+  void *cancel_result = 0;
+  if (pthread_create(&cancel_worker, 0, spawn_with_pending_cancel,
+                     &cancel_state) != 0 ||
+      pthread_join(cancel_worker, &cancel_result) != 0 ||
+      cancel_result != PTHREAD_CANCELED || !cancel_state.returned_from_spawn ||
+      cancel_state.spawn_error != 0 || cancel_state.child <= 0)
+    return 37;
+  if (waitpid(cancel_state.child, &status, 0) != cancel_state.child ||
+      !WIFEXITED(status) || WEXITSTATUS(status) != 0)
+    return 38;
   return 0;
 }

@@ -108,7 +108,9 @@ chdir/fchdir actions, action ordering, process-group and signal attributes,
 scheduler and reset-ID attributes, and synchronous setup/exec errors with
 Zig, GCC, and TinyCC builds. It also launches direct and PATH-searching spawns
 concurrently from four Nelibc worker threads; the spawn smoke passed five
-repeat runs per compiler profile.
+repeat runs per compiler profile. Signal checks verify parent/child signal-state
+isolation. A pending deferred cancellation remains pending through spawn and
+is acted on at a following `pthread_testcancel` call.
 `make spawn-smoke-resetids-userns` additionally checks a real/effective UID
 mismatch in a rootless user namespace; it skips when subordinate ID mapping or
 user namespaces are unavailable. The standalone spawn matrix includes this
