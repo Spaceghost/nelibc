@@ -1844,6 +1844,20 @@ int main(void) {
       robustness != PTHREAD_MUTEX_ROBUST)
     return 237;
   pthread_mutex_t robust_mutex;
+  if (pthread_mutex_init(&robust_mutex, &mutex_attributes) != 0 ||
+      pthread_mutex_lock(&robust_mutex) != 0)
+    return 300;
+  clock_mutex_request robust_clock_request = {
+      &robust_mutex, CLOCK_MONOTONIC, {0, 0}};
+  if (pthread_create(&thread, 0, clock_mutex_worker,
+                     &robust_clock_request) != 0)
+    return 301;
+  void *robust_clock_result = 0;
+  if (pthread_join(thread, &robust_clock_result) != 0 ||
+      robust_clock_result != (void *)(intptr_t)ETIMEDOUT ||
+      pthread_mutex_unlock(&robust_mutex) != 0 ||
+      pthread_mutex_destroy(&robust_mutex) != 0)
+    return 302;
   pthread_mutexattr_t pi_attributes;
   int protocol = -1;
   int prioceiling = -1;

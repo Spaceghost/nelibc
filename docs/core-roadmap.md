@@ -67,7 +67,10 @@ preserve the existing realtime semantics of `pthread_rwlock_timed*lock`.
 `pthread_mutex_clocklock` also selects realtime or monotonic deadlines inside
 the mutex futex path for normal, robust, and priority-inheritance mutexes;
 realtime PI timed locks retain the existing `FUTEX_LOCK_PI` path, while
-monotonic PI waits use `FUTEX_LOCK_PI2`.
+monotonic PI waits use `FUTEX_LOCK_PI2`. The standalone smoke test checks
+expired monotonic waits for normal, robust, and PI mutexes, plus invalid clock
+and timespec inputs; the Zig smoke passed 20 consecutive runs and GCC passed
+one run on 2026-10-25.
 Standalone rwlocks use reader preference: new readers may acquire while writers
 are queued. Nelibc reports `_SC_PRIORITY_SCHEDULING` and
 `_SC_THREAD_PRIORITY_SCHEDULING` as unsupported because it does not implement
