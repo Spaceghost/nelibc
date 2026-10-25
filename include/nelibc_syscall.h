@@ -442,6 +442,7 @@ long listmount(struct nelibc_mnt_id_req *request, uint64_t *mount_ids,
 void *mmap(void *address, size_t length, int protection, int flags, int fd, off_t offset);
 void *mremap(void *old_address, size_t old_size, size_t new_size, int flags, ...);
 int mprotect(void *address, size_t length, int protection);
+int msync(void *address, size_t length, int flags);
 int munmap(void *address, size_t length);
 int madvise(void *address, size_t length, int advice);
 mode_t umask(mode_t mask);

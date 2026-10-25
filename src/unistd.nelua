@@ -2761,6 +2761,13 @@ local function mprotect(address: pointer, length: csize, protection: cint): cint
   )))
 end
 
+-- POSIX msync is a cancellation point while flushing a mapped range.
+local function msync(address: pointer, length: csize, flags: cint): cint <cexport, codename 'msync'>
+  return (@cint)(syscall_result(nelibc_cancellable_syscall3(
+    26_culong, (@culong)((@usize)(address)), (@culong)(length), (@culong)(flags)
+  )))
+end
+
 local function mmap64(address: pointer, length: csize, protection: cint, flags: cint, fd: cint, offset: clong): pointer <cexport, codename 'mmap64'>
   return mmap(address, length, protection, flags, fd, offset)
 end

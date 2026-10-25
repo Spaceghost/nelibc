@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/mman.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
 #include <sys/un.h>
@@ -299,6 +300,13 @@ static void *self_cancel_readlink_worker(void *unused) {
   char target[4096];
   if (pthread_cancel(pthread_self()) != 0) return (void *)1;
   (void)readlink("/proc/self/exe", target, sizeof(target));
+  return NULL;
+}
+
+static void *self_cancel_msync_worker(void *unused) {
+  (void)unused;
+  if (pthread_cancel(pthread_self()) != 0) return (void *)1;
+  (void)msync(NULL, 0, MS_SYNC);
   return NULL;
 }
 
@@ -719,6 +727,11 @@ int main(void) {
   if (pthread_create(&readlink_thread, NULL, self_cancel_readlink_worker, NULL) != 0) return 140;
   result = NULL;
   if (pthread_join(readlink_thread, &result) != 0 || result != PTHREAD_CANCELED) return 141;
+
+  pthread_t msync_thread;
+  if (pthread_create(&msync_thread, NULL, self_cancel_msync_worker, NULL) != 0) return 142;
+  result = NULL;
+  if (pthread_join(msync_thread, &result) != 0 || result != PTHREAD_CANCELED) return 143;
 
   pid_t exited_child = fork();
   if (exited_child < 0) return 114;

@@ -784,7 +784,7 @@ msgctl,sys/msg.h,,,not-declared
 msgget,sys/msg.h,,,not-declared
 msgrcv,sys/msg.h,,,not-declared
 msgsnd,sys/msg.h,,,not-declared
-msync,sys/mman.h,,,not-declared
+msync,sys/mman.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 munlock,sys/mman.h,,,not-declared
 munlockall,sys/mman.h,,,not-declared
 munmap,sys/mman.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
