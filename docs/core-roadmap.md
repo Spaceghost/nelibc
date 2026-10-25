@@ -67,6 +67,12 @@ before `posix_spawn` remains pending until the caller's explicit
 `pthread_testcancel`; POSIX.1-2024 excludes `posix_spawn` from its cancellation
 point list and prohibits adding cancellation points to other specified
 functions ([cancellation-point rules](https://pubs.opengroup.org/onlinepubs/9799919799/functions/V2_chap02.html)).
+This also holds on child setup/exec failure: spawn cleanup now reaps with a
+raw `wait4` loop that retries `EINTR`, rather than entering Nelibc's
+cancellation-aware `waitpid`. The smoke queues cancellation before a spawn
+whose file action fails with `ENOENT`, verifies spawn returns that error, and
+then confirms cancellation is delivered only at the worker's explicit
+`pthread_testcancel`. The standalone Zig, GCC, and TinyCC matrix passes.
 The smoke now blocks the child on a FIFO open, waits until its parent worker is
 reading the spawn error pipe, and sends that thread `SIGUSR2` with restart
 disabled. Releasing the FIFO lets the child exec; the test checks that spawn

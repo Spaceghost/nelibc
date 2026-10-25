@@ -303,6 +303,16 @@ local function nelibc_spawn_child_fail(error_fd: cint, error_number: cint): void
   while true do end
 end
 
+-- Spawn is not a cancellation point, including its child-error cleanup path.
+local function nelibc_spawn_reap_child(child: cint): void
+  while true do
+    local result = nelibc_raw_syscall6(61_culong, (@culong)(child), 0_culong,
+        0_culong, 0_culong, 0_culong, 0_culong) -- wait4(pid, NULL, 0, NULL)
+    if result == -4_clong then continue end -- EINTR
+    return
+  end
+end
+
 local function nelibc_spawn_max_action_fd(actions: *SpawnFileActions): cint
   local maximum: cint = 2_cint
   if actions == nilptr then return maximum end
@@ -580,14 +590,14 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
   nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
   if read_error ~= 0_cint or (received ~= 0_csize and received ~= 4_csize) then
     nelibc_raw_syscall3(62_culong, (@culong)(child), 9_culong, 0_culong) -- kill SIGKILL
-    nelibc_waitpid(child, nilptr, 0_cint)
+    nelibc_spawn_reap_child(child)
     if owned_executable then free((@pointer)(executable)) end
     nelibc_errno_location()[0] = saved_errno
     if read_error ~= 0_cint then return read_error end
     return 5_cint -- EIO
   end
   if received == 4_csize then
-    nelibc_waitpid(child, nilptr, 0_cint)
+    nelibc_spawn_reap_child(child)
     if owned_executable then free((@pointer)(executable)) end
     nelibc_errno_location()[0] = saved_errno
     return child_error

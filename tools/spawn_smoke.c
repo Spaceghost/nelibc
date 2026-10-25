@@ -90,6 +90,30 @@ static void *spawn_with_pending_cancel(void *opaque) {
   return 0;
 }
 
+static void *spawn_failure_with_pending_cancel(void *opaque) {
+  spawn_cancel_state *state = opaque;
+  posix_spawn_file_actions_t actions;
+  char *arguments[] = {(char *)"true", 0};
+  char *environment[] = {0};
+  if (posix_spawn_file_actions_init(&actions) != 0 ||
+      posix_spawn_file_actions_addopen(&actions, 9,
+          "/nelibc-spawn-missing", O_RDONLY, 0) != 0) {
+    state->spawn_error = EINVAL;
+    return 0;
+  }
+  if (pthread_cancel(pthread_self()) != 0) {
+    state->spawn_error = EINVAL;
+    posix_spawn_file_actions_destroy(&actions);
+    return 0;
+  }
+  state->spawn_error = posix_spawn(&state->child, "/bin/true", &actions, 0,
+                                   arguments, environment);
+  state->returned_from_spawn = 1;
+  posix_spawn_file_actions_destroy(&actions);
+  pthread_testcancel();
+  return 0;
+}
+
 static void *spawn_waiting_for_fifo(void *opaque) {
   spawn_signal_state *state = opaque;
   char *arguments[] = {(char *)"spawn-smoke", (char *)"--fd9-open", 0};
@@ -498,6 +522,17 @@ int main(int argc, char **argv) {
   if (waitpid(cancel_state.child, &status, 0) != cancel_state.child ||
       !WIFEXITED(status) || WEXITSTATUS(status) != 0)
     return 38;
+  spawn_cancel_state failed_cancel_state = {0, 0, -1};
+  pthread_t failed_cancel_worker;
+  cancel_result = 0;
+  if (pthread_create(&failed_cancel_worker, 0,
+                     spawn_failure_with_pending_cancel,
+                     &failed_cancel_state) != 0 ||
+      pthread_join(failed_cancel_worker, &cancel_result) != 0 ||
+      cancel_result != PTHREAD_CANCELED ||
+      !failed_cancel_state.returned_from_spawn ||
+      failed_cancel_state.spawn_error != ENOENT)
+    return 40;
   if (run_spawn_eintr_case() != 0) return 39;
   return 0;
 }
