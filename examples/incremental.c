@@ -91,6 +91,9 @@ int main(void) {
   const float power_float = powf(2.0f, 10.0f);
   const double long_scaled = scalbln(0.75, 4L);
   const float long_scaled_float = scalblnf(-0.75f, 4L);
+  const long double long_double_scaled = ldexpl(1.5L, 4);
+  const long double long_double_binary = scalbnl(-0.75L, -2);
+  const long double long_double_long = scalblnl(0.5L, 4L);
   if (!(inverse_hyperbolic_sine > 0.881373587019542 && inverse_hyperbolic_sine < 0.881373587019544)) return 10;
   if (!(inverse_hyperbolic_sine_float > 0.8813735f && inverse_hyperbolic_sine_float < 0.8813737f)) return 11;
   if (!(inverse_hyperbolic_cosine > 1.316957896924816 && inverse_hyperbolic_cosine < 1.316957896924818)) return 12;
@@ -140,7 +143,9 @@ int main(void) {
       !(exponential_minus_one > 0.6487212707001279 && exponential_minus_one < 0.6487212707001283) ||
       !(logarithm_base_ten > 1.999999999999999 && logarithm_base_ten < 2.000000000000001) ||
       exponential_base_ten != 100.0 ||
-      long_scaled != 12.0 || long_scaled_float != -12.0f) {
+      long_scaled != 12.0 || long_scaled_float != -12.0f ||
+      long_double_scaled != 24.0L || long_double_binary != -0.1875L ||
+      long_double_long != 8.0L) {
     nelibc_free(copy);
     return 4;
   }
