@@ -332,14 +332,14 @@ musl export set.
   decomposition; other noninteger exponents split the base into a small
   mantissa logarithm and compensated binary exponents before scaling; the
   mantissa-log product retains its FMA residual through the `exp2l` call. This
-  path covers magnitudes through 512 in round-to-nearest and 256 in directed
+  path covers magnitudes through 576 in round-to-nearest and 256 in directed
   rounding modes; larger exponents still use `exp(y * log(x))` and need more
   accuracy work. Deterministic random comparisons cover arbitrary fractions
-  through 512 and directed-rounding fractions through 256; wide-base cases are
+  through 576 and directed-rounding fractions through 256; wide-base cases are
   also checked in all four rounding modes. Musl's
   `powl` reference differs by hundreds of ULP in
-  some directed-rounding cases, so its wide-range comparison allows up to 1024
-  ULP there; ordinary and nearest-mode comparisons keep the tighter tolerance.
+  some wide-fraction cases, so its wide-range comparison allows up to 1024 ULP
+  there; glibc comparisons keep the tighter tolerance.
   It sets `EDOM` for negative square root and
   invalid remainder domains. Standalone x86-64 implements `feclearexcept`,
   `fegetexceptflag`, `feraiseexcept`, `fesetexceptflag`, `fetestexcept`,
