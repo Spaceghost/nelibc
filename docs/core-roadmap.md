@@ -302,8 +302,11 @@ musl export set.
   PI waiter is blocked. Forked processes
   refresh their robust-list registration; process-shared robust recovery is
   exercised by a child that exits while holding the mutex. Spin locks, barriers,
-  and read-write locks support process sharing. Reusable
-  barriers use futex generations. Read-write locks support recursive readers,
+  and read-write locks support process sharing. Reusable barriers use futex
+  generations; async cancellation is deferred until the current generation
+  completes, preventing a canceled arrival from stranding peers. Smoke coverage
+  cancels a queued async waiter, completes the generation, then checks join and
+  barrier destruction. Read-write locks support recursive readers,
   process sharing, try-locks, and absolute realtime timed locks; the reader-
   preference policy can starve writers under a continuous reader stream. It
   also interrupts blocking calls routed through the cancellable syscall
@@ -330,7 +333,8 @@ musl export set.
   a priority-inheritance futex while the owner still holds the mutex, then
   verifies unlock and reacquisition. The robust PI variant also verifies the
   surviving owner does not receive `EOWNERDEAD` after canceling its waiter.
-  These checks run on Zig, GCC, and TinyCC.
+  Async-canceled rwlock writers leave `waiting_writers` clear and the lock
+  usable. These checks run on Zig, GCC, and TinyCC.
 - Standalone pthread attributes support configurable stack sizes, page-
   protected guard regions, and scheduler inheritance/policy/priority. Explicit
   scheduling is applied before a startup gate releases the worker; permission

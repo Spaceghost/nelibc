@@ -2426,10 +2426,14 @@ end
 local function pthread_barrier_wait(barrier: *PthreadBarrier): cint
     <cexport, codename 'pthread_barrier_wait'>
   if not pthread_barrier_valid(barrier) then return 22 end -- EINVAL
+  -- Keep async cancellation from abandoning an arrival and stranding the
+  -- barrier generation. A pending request is delivered after this round ends.
+  pthread_cancel_defer_begin()
   local generation = nelibc_atomic_load_int(&barrier.generation)
   local position = nelibc_atomic_fetch_add_int(&barrier.arrived, 1)
   if position < 0 or position >= barrier.count then
     nelibc_atomic_fetch_add_int(&barrier.arrived, -1)
+    pthread_cancel_defer_end()
     return 22 -- EINVAL: corrupt or concurrently reused barrier state
   end
   if position == barrier.count - 1 then
@@ -2440,6 +2444,7 @@ local function pthread_barrier_wait(barrier: *PthreadBarrier): cint
     nelibc_raw_syscall6(202_culong,
       (@culong)((@usize)(&barrier.generation)), operation,
       2147483647_culong, 0_culong, 0_culong, 0_culong)
+    pthread_cancel_defer_end()
     return -1 -- PTHREAD_BARRIER_SERIAL_THREAD
   end
   local operation: culong = 128_culong -- FUTEX_WAIT | FUTEX_PRIVATE_FLAG
@@ -2449,6 +2454,7 @@ local function pthread_barrier_wait(barrier: *PthreadBarrier): cint
       (@culong)((@usize)(&barrier.generation)), operation,
       (@culong)(generation), 0_culong, 0_culong, 0_culong)
   end
+  pthread_cancel_defer_end()
   return 0
 end
 

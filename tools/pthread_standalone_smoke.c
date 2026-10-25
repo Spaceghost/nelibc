@@ -38,6 +38,8 @@ static _Atomic int once_release;
 static _Atomic int once_runs;
 static pthread_barrier_t round_barrier;
 static _Atomic int barrier_serial_returns;
+static pthread_barrier_t async_cancel_barrier;
+static _Atomic int barrier_async_wait_ready;
 static _Atomic int cpu_clock_worker_release;
 static _Atomic unsigned long cpu_clock_worker_ticks;
 static pthread_rwlock_t static_rwlock = PTHREAD_RWLOCK_INITIALIZER;
@@ -423,6 +425,15 @@ static void *barrier_worker(void *argument) {
       return (void *)(uintptr_t)1;
   }
   return 0;
+}
+
+static void *barrier_async_cancel_worker(void *argument) {
+  pthread_barrier_t *barrier = argument;
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0)
+    return (void *)1;
+  atomic_store_explicit(&barrier_async_wait_ready, 1, memory_order_release);
+  int result = pthread_barrier_wait(barrier);
+  return (void *)(intptr_t)result;
 }
 
 struct rwlock_timeout_request {
@@ -2190,6 +2201,28 @@ int main(void) {
       munmap(process_barrier, sizeof(*process_barrier)) != 0 ||
       pthread_barrierattr_destroy(&barrier_attributes) != 0)
     return 203;
+  atomic_store_explicit(&barrier_async_wait_ready, 0, memory_order_relaxed);
+  if (pthread_barrier_init(&async_cancel_barrier, 0, 2) != 0 ||
+      pthread_create(&thread, &attributes, barrier_async_cancel_worker,
+                     &async_cancel_barrier) != 0)
+    return 290;
+  for (unsigned int i = 0; i < 10000000U &&
+       (!atomic_load_explicit(&barrier_async_wait_ready, memory_order_acquire) ||
+        __atomic_load_n(&async_cancel_barrier.__arrived, __ATOMIC_ACQUIRE) == 0); ++i) {
+  }
+  if (!atomic_load_explicit(&barrier_async_wait_ready, memory_order_acquire) ||
+      __atomic_load_n(&async_cancel_barrier.__arrived, __ATOMIC_ACQUIRE) != 1)
+    return 291;
+  struct timespec async_barrier_delay = {0, 20000000};
+  if (nanosleep(&async_barrier_delay, 0) != 0 ||
+      pthread_cancel(thread) != 0)
+    return 292;
+  int async_barrier_result = pthread_barrier_wait(&async_cancel_barrier);
+  if ((async_barrier_result != 0 &&
+       async_barrier_result != PTHREAD_BARRIER_SERIAL_THREAD) ||
+      pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      pthread_barrier_destroy(&async_cancel_barrier) != 0)
+    return 293;
   struct timespec invalid_rwlock_deadline = {0, 1000000000L};
   struct timespec expired_rwlock_deadline = {0, 0};
   if (pthread_rwlock_timedrdlock(&static_rwlock, &invalid_rwlock_deadline) != 0 ||
