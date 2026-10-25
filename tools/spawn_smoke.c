@@ -3,8 +3,12 @@
 #include <fcntl.h>
 #include <spawn.h>
 #include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <time.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -17,6 +21,23 @@ typedef struct {
   int spawn_error;
   pid_t child;
 } spawn_cancel_state;
+
+typedef struct {
+  posix_spawn_file_actions_t *actions;
+  volatile int entered_spawn;
+  volatile int returned_from_spawn;
+  pid_t thread_id;
+  pid_t child;
+  int spawn_error;
+  int saved_errno;
+} spawn_signal_state;
+
+static volatile sig_atomic_t spawn_signal_count;
+
+static void spawn_signal_handler(int signal_number) {
+  (void)signal_number;
+  ++spawn_signal_count;
+}
 
 static void *spawn_worker(void *opaque) {
   spawn_worker_state *state = opaque;
@@ -67,6 +88,105 @@ static void *spawn_with_pending_cancel(void *opaque) {
   state->returned_from_spawn = 1;
   pthread_testcancel();
   return 0;
+}
+
+static void *spawn_waiting_for_fifo(void *opaque) {
+  spawn_signal_state *state = opaque;
+  char *arguments[] = {(char *)"spawn-smoke", (char *)"--fd9-open", 0};
+  char *environment[] = {0};
+  state->thread_id = gettid();
+  state->entered_spawn = 1;
+  errno = 42;
+  state->spawn_error = posix_spawn(&state->child, "/proc/self/exe",
+      state->actions, 0, arguments, environment);
+  state->saved_errno = errno;
+  state->returned_from_spawn = 1;
+  return 0;
+}
+
+static int thread_waiting_in_read(pid_t thread_id) {
+  char path[96];
+  if (snprintf(path, sizeof(path), "/proc/self/task/%d/syscall", thread_id) < 0)
+    return -1;
+  int descriptor = open(path, O_RDONLY);
+  if (descriptor < 0) return -1;
+  char contents[64];
+  ssize_t length = read(descriptor, contents, sizeof(contents));
+  close(descriptor);
+  return length >= 2 && contents[0] == '0' &&
+      (contents[1] == ' ' || contents[1] == '\t');
+}
+
+static int run_spawn_eintr_case(void) {
+  char fifo_path[96];
+  if (snprintf(fifo_path, sizeof(fifo_path), "/tmp/nelibc-spawn-eintr-%d",
+               getpid()) < 0 || mkfifo(fifo_path, 0600) != 0)
+    return 1;
+
+  posix_spawn_file_actions_t actions;
+  if (posix_spawn_file_actions_init(&actions) != 0 ||
+      posix_spawn_file_actions_addopen(&actions, 9, fifo_path, O_RDONLY, 0) != 0) {
+    unlink(fifo_path);
+    return 2;
+  }
+
+  struct sigaction action = {0};
+  struct sigaction old_action;
+  action.sa_handler = spawn_signal_handler;
+  sigemptyset(&action.sa_mask);
+  int result = 3;
+  pthread_t worker;
+  int worker_started = 0;
+  if (sigaction(SIGUSR2, &action, &old_action) != 0) goto cleanup;
+  spawn_signal_count = 0;
+
+  spawn_signal_state state = {&actions, 0, 0, -1, 0, 0};
+  if (pthread_create(&worker, 0, spawn_waiting_for_fifo, &state) != 0)
+    goto restore_action;
+  worker_started = 1;
+
+  int blocked_in_read = 0;
+  struct timespec pause = {0, 1000000};
+  for (int attempt = 0; attempt < 2000 && !state.returned_from_spawn; ++attempt) {
+    if (state.thread_id > 0 && thread_waiting_in_read(state.thread_id) == 1) {
+      blocked_in_read = 1;
+      break;
+    }
+    nanosleep(&pause, 0);
+  }
+  if (!blocked_in_read || pthread_kill(worker, SIGUSR2) != 0)
+    goto release_worker;
+
+  for (int attempt = 0; attempt < 2000 && spawn_signal_count == 0; ++attempt)
+    nanosleep(&pause, 0);
+  if (spawn_signal_count == 0) goto release_worker;
+  result = 0;
+
+release_worker:
+  {
+    int release_fd = open(fifo_path, O_RDWR | O_NONBLOCK);
+    if (release_fd < 0) result = 4;
+    else close(release_fd);
+  }
+  if (worker_started) {
+    if (pthread_join(worker, 0) != 0) result = 5;
+    else if (!state.returned_from_spawn || state.spawn_error != 0 ||
+             state.saved_errno != 42 || state.child <= 0)
+      result = 6;
+    else {
+      int child_status = 0;
+      if (waitpid(state.child, &child_status, 0) != state.child ||
+          !WIFEXITED(child_status) || WEXITSTATUS(child_status) != 0)
+        result = 7;
+    }
+  }
+
+restore_action:
+  if (sigaction(SIGUSR2, &old_action, 0) != 0) result = 8;
+cleanup:
+  if (posix_spawn_file_actions_destroy(&actions) != 0) result = 9;
+  if (unlink(fifo_path) != 0) result = 10;
+  return result;
 }
 
 static int run_action_case(posix_spawn_file_actions_t *actions, const char *mode) {
@@ -378,5 +498,6 @@ int main(int argc, char **argv) {
   if (waitpid(cancel_state.child, &status, 0) != cancel_state.child ||
       !WIFEXITED(status) || WEXITSTATUS(status) != 0)
     return 38;
+  if (run_spawn_eintr_case() != 0) return 39;
   return 0;
 }
