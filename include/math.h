@@ -158,6 +158,7 @@ long double coshl(long double value);
 long double asinhl(long double value);
 long double acoshl(long double value);
 long double atanhl(long double value);
+long double powl(long double value, long double exponent);
 void sincosl(long double value, long double *sine, long double *cosine);
 float sqrtf(float value);
 double sqrt(double value);

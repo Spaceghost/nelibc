@@ -870,7 +870,7 @@ pow10,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 pow10f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 pow10l,math.h,,,not-declared
 powf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-powl,math.h,,,not-declared
+powl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ppoll,poll.h,,,not-declared
 prctl,sys/prctl.h,,,not-declared
 pread,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

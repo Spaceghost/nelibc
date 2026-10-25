@@ -139,6 +139,7 @@ extern long double nelibc_coshl(long double);
 extern long double nelibc_asinhl(long double);
 extern long double nelibc_acoshl(long double);
 extern long double nelibc_atanhl(long double);
+extern long double nelibc_powl(long double, long double);
 extern void nelibc_sincosl(long double, long double *, long double *);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
@@ -1506,6 +1507,81 @@ int main(void) {
       !isnan(nelibc_acoshl(quiet_nan.value)) ||
       !isnan(nelibc_atanhl(quiet_nan.value))) {
     fprintf(stderr, "long-double arctangent NaN propagation failed\n");
+    return 1;
+  }
+  const long double powl_bases[] = {
+      -INFINITY, -LDBL_MAX, -3.0L, -2.0L, -1.0L, -0.0L, 0.0L,
+      nextafterl(0.0L, 1.0L), LDBL_MIN, 0.5L, 1.0L, 2.0L, 3.0L,
+      LDBL_MAX, INFINITY};
+  const long double powl_exponents[] = {
+      -INFINITY, -65.0L, -5.0L, -3.0L, -2.0L, -1.0L, -0.5L,
+      -0.0L, 0.0L, 0.5L, 1.0L, 2.0L, 3.0L, 5.0L, 64.0L,
+      65.0L, INFINITY};
+  for (size_t i = 0; i < sizeof(powl_bases) / sizeof(powl_bases[0]); ++i) {
+    for (size_t j = 0; j < sizeof(powl_exponents) / sizeof(powl_exponents[0]); ++j) {
+      long double actual = nelibc_powl(powl_bases[i], powl_exponents[j]);
+      long double expected = powl(powl_bases[i], powl_exponents[j]);
+      if (!long_double_math_close(actual, expected) ||
+          (expected == 0.0L && signbit(actual) != signbit(expected))) {
+        fprintf(stderr, "powl edge mismatch base=%zu exponent=%zu actual=%.21Le expected=%.21Le\n",
+                i, j, actual, expected);
+        return 1;
+      }
+    }
+  }
+  for (size_t i = 0; i < 2048; ++i) {
+    long double base = 0.125L + (long double)((i * 37) % 4097) / 512.0L;
+    long double exponent = (long double)((long long)((i * 53) % 129) - 64) / 4.0L;
+    if (!long_double_math_close(nelibc_powl(base, exponent), powl(base, exponent))) {
+      fprintf(stderr, "powl positive generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+    long double negative_base = -0.5L - (long double)((i * 29) % 1025) / 256.0L;
+    long double integer_exponent = (long double)((long long)((i * 71) % 65) - 32);
+    if (!long_double_math_close(nelibc_powl(negative_base, integer_exponent),
+                           powl(negative_base, integer_exponent))) {
+      fprintf(stderr, "powl negative generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  if (!isnan(nelibc_powl(-2.0L, 0.5L)) ||
+      !isnan(nelibc_powl(quiet_nan.value, 2.0L)) ||
+      nelibc_powl(quiet_nan.value, 0.0L) != 1.0L ||
+      nelibc_powl(1.0L, quiet_nan.value) != 1.0L) {
+    fprintf(stderr, "powl NaN/domain special cases failed\n");
+    return 1;
+  }
+  if (nelibc_powl(-1.0L, 0x1p63L + 1.0L) != -1.0L ||
+      nelibc_powl(-1.0L, 0x1p64L) != 1.0L) {
+    fprintf(stderr, "powl binary80 integer parity failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isnan(nelibc_powl(-2.0L, 0.5L)) || errno != EDOM) {
+    fprintf(stderr, "powl negative-base domain handling failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isinf(nelibc_powl(0.0L, -2.0L)) || signbit(nelibc_powl(0.0L, -2.0L)) ||
+      errno != ERANGE) {
+    fprintf(stderr, "powl zero pole handling failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isinf(nelibc_powl(LDBL_MAX, 2.0L)) || errno != ERANGE) {
+    fprintf(stderr, "powl overflow handling failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (nelibc_powl(LDBL_MIN, 2.0L) != 0.0L || errno != ERANGE) {
+    fprintf(stderr, "powl underflow handling failed\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  if (nelibc_powl(LDBL_MAX, -2.0L) != 0.0L || errno != ERANGE ||
+      (fetestexcept(FE_UNDERFLOW) == 0) || (fetestexcept(FE_OVERFLOW) != 0)) {
+    fprintf(stderr, "powl negative-exponent underflow flags failed\n");
     return 1;
   }
   for (size_t i = 0; i < sizeof(atan_values) / sizeof(atan_values[0]); ++i) {

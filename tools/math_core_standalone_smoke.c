@@ -51,6 +51,7 @@ int main(void) {
       !(asinhl(1.0L) > 0.881L && asinhl(1.0L) < 0.882L) ||
       !(acoshl(2.0L) > 1.316L && acoshl(2.0L) < 1.318L) ||
       !(atanhl(0.5L) > 0.549L && atanhl(0.5L) < 0.550L) ||
+      powl(-2.0L, 5.0L) != -32.0L || powl(2.0L, -3.0L) != 0.125L ||
       !(expm1l(0x1p-60L) > 0.0L && expm1l(0x1p-60L) < 0x1p-59L)) return 178;
   errno = 0;
   if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;

@@ -83,6 +83,7 @@ int main(void) {
   const long double inverse_hyperbolic_sine_long = asinhl(1.0L);
   const long double inverse_hyperbolic_cosine_long = acoshl(2.0L);
   const long double inverse_hyperbolic_tangent_long = atanhl(0.5L);
+  const long double power_long = powl(-2.0L, 5.0L);
   const double sine = sin(1.0);
   const double cosine = cos(1.0);
   const float sine_float = sinf(1.0f);
@@ -189,6 +190,7 @@ int main(void) {
       !(inverse_hyperbolic_sine_long > 0.881373587019542L && inverse_hyperbolic_sine_long < 0.881373587019544L) ||
       !(inverse_hyperbolic_cosine_long > 1.316957896924816L && inverse_hyperbolic_cosine_long < 1.316957896924818L) ||
       !(inverse_hyperbolic_tangent_long > 0.549306144334054L && inverse_hyperbolic_tangent_long < 0.549306144334056L) ||
+      power_long != -32.0L ||
       long_double_long != 8.0L || long_double_truncated != -1.0L ||
       long_double_floor != -1.0L || long_double_ceiling != -0.0L ||
       long_double_rounded != 2.0L || long_double_nearby != -2.0L ||
