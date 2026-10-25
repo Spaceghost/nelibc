@@ -1071,6 +1071,58 @@ local function scalblnf(value: cfloat, exponent: clong): cfloat <cexport, codena
   return ldexpf(value, bounded)
 end
 
+local function scalb(value: cdouble, exponent: cdouble): cdouble <cexport, codename 'scalb'>
+  if is_nan64(value) or is_nan64(exponent) then return value + exponent end
+  if is_infinite64(exponent) then
+    if (value == 0_cdouble and exponent > 0_cdouble) or
+        (is_infinite64(value) and exponent < 0_cdouble) then
+      math_domain_error()
+      return sqrt(-1_cdouble)
+    end
+    if exponent > 0_cdouble then return value * exponent end
+    return value / (-exponent)
+  end
+  if not is_integer64(exponent) then
+    math_domain_error()
+    return sqrt(-1_cdouble)
+  end
+  if exponent > 65000_cdouble then return scalbn(value, 65000_cint) end
+  if exponent < -65000_cdouble then return scalbn(value, -65000_cint) end
+  return scalbn(value, (@cint)(exponent))
+end
+
+local function scalbf(value: cfloat, exponent: cfloat): cfloat <cexport, codename 'scalbf'>
+  if is_nan32(value) or is_nan32(exponent) then return value + exponent end
+  if is_infinite32(exponent) then
+    if (value == 0_cfloat and exponent > 0_cfloat) or
+        (is_infinite32(value) and exponent < 0_cfloat) then
+      math_domain_error()
+      return sqrtf(-1_cfloat)
+    end
+    if exponent > 0_cfloat then return value * exponent end
+    return value / (-exponent)
+  end
+  if not is_integer64((@cdouble)(exponent)) then
+    math_domain_error()
+    return sqrtf(-1_cfloat)
+  end
+  if exponent > 65000_cfloat then return scalbnf(value, 65000_cint) end
+  if exponent < -65000_cfloat then return scalbnf(value, -65000_cint) end
+  return scalbnf(value, (@cint)(exponent))
+end
+
+local function significand(value: cdouble): cdouble <cexport, codename 'significand'>
+  if is_nan64(value) then return value + value end
+  if is_infinite64(value) or value == 0_cdouble then return value end
+  return scalbn(value, -ilogb(value))
+end
+
+local function significandf(value: cfloat): cfloat <cexport, codename 'significandf'>
+  if is_nan32(value) then return value + value end
+  if is_infinite32(value) or value == 0_cfloat then return value end
+  return scalbnf(value, -ilogbf(value))
+end
+
 local function fma_normalize(value: cdouble): FmaNumber <inline>
   local representation: DoubleBits = {value = value}
   local exponent = (@cint)(representation.bits >> 52)

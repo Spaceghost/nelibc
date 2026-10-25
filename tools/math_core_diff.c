@@ -204,6 +204,10 @@ extern float nelibc_ldexpf(float, int);
 extern double nelibc_ldexp(double, int);
 extern float nelibc_scalbnf(float, int);
 extern double nelibc_scalbn(double, int);
+extern double nelibc_scalb(double, double);
+extern float nelibc_scalbf(float, float);
+extern double nelibc_significand(double);
+extern float nelibc_significandf(float);
 extern int nelibc_ilogb(double);
 extern int nelibc_ilogbf(float);
 extern double nelibc_logb(double);
@@ -756,7 +760,8 @@ static int check_double(uint64_t input_bits) {
   }
   const int scale = (int)((input_bits >> 32) % 4097) - 2048;
   if (!equal_double(ldexp(value, scale), nelibc_ldexp(value, scale)) ||
-      !equal_double(scalbn(value, scale), nelibc_scalbn(value, scale))) {
+      !equal_double(scalbn(value, scale), nelibc_scalbn(value, scale)) ||
+      !equal_double(scalb(value, (double)scale), nelibc_scalb(value, (double)scale))) {
     fprintf(stderr, "ldexp/scalbn mismatch input=%016llx exponent=%d\n",
             (unsigned long long)input_bits, scale);
     return 1;
@@ -769,6 +774,11 @@ static int check_double(uint64_t input_bits) {
   }
   if (ilogb(value) != nelibc_ilogb(value) || !equal_double(logb(value), nelibc_logb(value))) {
     fprintf(stderr, "ilogb/logb mismatch input=%016llx\n", (unsigned long long)input_bits);
+    return 1;
+  }
+  if (isfinite(value) && value != 0.0 &&
+      !equal_double(significand(value), nelibc_significand(value))) {
+    fprintf(stderr, "significand mismatch input=%016llx\n", (unsigned long long)input_bits);
     return 1;
   }
   return 0;
@@ -808,7 +818,8 @@ static int check_float(uint32_t input_bits) {
   }
   const int scale = (int)(input_bits % 1025) - 512;
   if (!equal_float(ldexpf(value, scale), nelibc_ldexpf(value, scale)) ||
-      !equal_float(scalbnf(value, scale), nelibc_scalbnf(value, scale))) {
+      !equal_float(scalbnf(value, scale), nelibc_scalbnf(value, scale)) ||
+      !equal_float(scalbf(value, (float)scale), nelibc_scalbf(value, (float)scale))) {
     fprintf(stderr, "ldexpf/scalbnf mismatch input=%08x exponent=%d\n", input_bits, scale);
     return 1;
   }
@@ -821,12 +832,48 @@ static int check_float(uint32_t input_bits) {
     fprintf(stderr, "ilogbf/logbf mismatch input=%08x\n", input_bits);
     return 1;
   }
+  if (isfinite(value) && value != 0.0f &&
+      !equal_float(significandf(value), nelibc_significandf(value))) {
+    fprintf(stderr, "significandf mismatch input=%08x\n", input_bits);
+    return 1;
+  }
   return 0;
 }
 
 static int check_math_extensions(void) {
   const double values[] = {0.0, -0.0, 0x1p-1074, DBL_MIN, DBL_MAX, INFINITY, -INFINITY, NAN};
   const float valuesf[] = {0.0f, -0.0f, 0x1p-149f, FLT_MIN, FLT_MAX, INFINITY, -INFINITY, NAN};
+  errno = 0;
+  if (!isnan(nelibc_scalb(1.0, 0.5)) || errno != EDOM) {
+    fprintf(stderr, "scalb fractional exponent did not report a domain error\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isnan(nelibc_scalbf(1.0f, 0.5f)) || errno != EDOM) {
+    fprintf(stderr, "scalbf fractional exponent did not report a domain error\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isinf(nelibc_scalb(DBL_MAX, 1.0)) || errno != ERANGE) {
+    fprintf(stderr, "scalb overflow did not report a range error\n");
+    return 1;
+  }
+  errno = 0;
+  if (nelibc_scalb(0x1p-1074, -1.0) != 0.0 || errno != ERANGE) {
+    fprintf(stderr, "scalb underflow did not report a range error\n");
+    return 1;
+  }
+  const double scales[] = {-INFINITY, -2048.0, -1.5, -1.0, 0.0, 1.0, 1024.0, INFINITY, NAN};
+  for (size_t i = 0; i < sizeof values / sizeof values[0]; ++i) {
+    for (size_t j = 0; j < sizeof scales / sizeof scales[0]; ++j) {
+      if (!equal_double(scalb(values[i], scales[j]), nelibc_scalb(values[i], scales[j])) ||
+          !equal_float(scalbf(valuesf[i], (float)scales[j]),
+                       nelibc_scalbf(valuesf[i], (float)scales[j]))) {
+        fprintf(stderr, "scalb special-value mismatch x-index=%zu n-index=%zu\n", i, j);
+        return 1;
+      }
+    }
+  }
   for (size_t i = 0; i < sizeof values / sizeof values[0]; ++i) {
     if (!!finite(values[i]) != !!nelibc_finite(values[i]) ||
         !!finitef(valuesf[i]) != !!nelibc_finitef(valuesf[i])) {

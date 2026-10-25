@@ -1067,8 +1067,8 @@ round,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 roundf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 roundl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sbrk,unistd.h,,,not-declared
-scalb,math.h,,,not-declared
-scalbf,math.h,,,not-declared
+scalb,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+scalbf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 scalbln,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 scalblnf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 scalblnl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1176,8 +1176,8 @@ sigisemptyset,signal.h,,,not-declared
 sigismember,signal.h,nelibc_syscall.h;signal.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 siglongjmp,setjmp.h,,,not-declared
 signalfd,sys/signalfd.h,,,not-declared
-significand,math.h,,,not-declared
-significandf,math.h,,,not-declared
+significand,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+significandf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sigorset,signal.h,,,not-declared
 sigpause,signal.h,,,not-declared
 sigpending,signal.h,nelibc_syscall.h;signal.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

@@ -35,6 +35,8 @@ int main(void) {
   if (fmal(fma_x, fma_y, -1.0L) != -0x1p-126L ||
       fmal(LDBL_MAX, 2.0L, -LDBL_MAX) != LDBL_MAX) return 183;
   if (exp10l(1.0L) != 10.0L || pow10l(0.0L) != 1.0L) return 184;
+  if (scalb(1.5, 2.0) != 6.0 || scalbf(-1.5f, 2.0f) != -6.0f ||
+      significand(12.0) != 1.5 || significandf(-0.125f) != -1.0f) return 188;
   volatile long double erf_infinity = 1.0L / 0.0L;
   if (!(erfl(1.0L) > 0.8427007929497148L && erfl(1.0L) < 0.8427007929497150L) ||
       !(erfcl(1.0L) > 0.1572992070502850L && erfcl(1.0L) < 0.1572992070502852L) ||

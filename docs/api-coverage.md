@@ -61,19 +61,22 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,471 APIs: 637 exported by Nelibc in at least
+The current snapshot contains 1,471 APIs: 641 exported by Nelibc in at least
 one tested hybrid profile, 115 intentionally delegated to the host in hybrid
-profiles, and 719 not declared by Nelibc. The audit removes preprocessor
+profiles, and 715 not declared by Nelibc. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 719 entries remain visible as unimplemented
+intentional omission; the 715 entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
-The largest undeclared groups are math (4), complex math (66), wide
-characters (65), unistd (42), stdlib (41), and name service/network database
+No math APIs in this pinned musl baseline remain undeclared. The largest
+remaining groups are complex math (66), wide characters (65), unistd (42), stdlib (41), and name service/network database
 APIs (32). The pthread rows without Nelibc declarations are two private musl
 cleanup helper symbols. This is a breadth comparison, not a behavioral
 conformance score.
 
+`scalb` and `scalbf` scale by integral exponents and report invalid fractional
+exponents; `significand` and `significandf` normalize finite nonzero inputs so
+the absolute result lies in [1, 2), preserving the input sign.
 `lgammal` shifts positive inputs to a Stirling expansion with exact rational
 correction coefficients; negative inputs use the reflection formula, with a
 small-argument path that avoids subnormal sine loss. `tgammal` exponentiates the

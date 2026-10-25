@@ -94,6 +94,10 @@ int main(void) {
   const long double log_gamma_long = lgammal(5.0L);
   int log_gamma_sign_long = 0;
   const long double negative_log_gamma_long = lgammal_r(-0.5L, &log_gamma_sign_long);
+  const double legacy_scaled = scalb(1.5, 2.0);
+  const float legacy_scaled_float = scalbf(-1.5f, 2.0f);
+  const double normalized_significand = significand(12.0);
+  const float normalized_significand_float = significandf(-0.125f);
   const long double minimum_long = fminl(-0.0L, 0.0L);
   const long double maximum_long = fmaxl(-0.0L, 0.0L);
   const long double positive_difference_long = fdiml(5.0L, 3.0L);
@@ -213,6 +217,8 @@ int main(void) {
       !(gamma_long > 1.77L && gamma_long < 1.78L) ||
       !(log_gamma_long > 3.17L && log_gamma_long < 3.18L) ||
       !(negative_log_gamma_long > 1.26L && negative_log_gamma_long < 1.27L) || log_gamma_sign_long != -1 ||
+      legacy_scaled != 6.0 || legacy_scaled_float != -6.0f ||
+      normalized_significand != 1.5 || normalized_significand_float != -1.0f ||
       __fpclassify(0.0) != FP_ZERO || __fpclassify(1.0) != FP_NORMAL ||
       __fpclassifyf(0x1p-149f) != FP_SUBNORMAL ||
       __fpclassifyl(0x1p-16445L) != FP_SUBNORMAL ||
