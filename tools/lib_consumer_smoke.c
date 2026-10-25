@@ -1007,6 +1007,125 @@ static int allocator_thread_isolation(void) {
   return 0;
 }
 
+typedef struct {
+  pthread_mutex_t mutex;
+  pthread_cond_t condition;
+  int started;
+  int stop;
+  int failed;
+  unsigned long completed;
+} ForkStressState;
+
+static void fork_stress_fail(ForkStressState *state, int error) {
+  pthread_mutex_lock(&state->mutex);
+  if (state->failed == 0) state->failed = error;
+  pthread_cond_broadcast(&state->condition);
+  pthread_mutex_unlock(&state->mutex);
+}
+
+static void *fork_allocator_stdio_worker(void *argument) {
+  ForkStressState *state = argument;
+  pthread_mutex_lock(&state->mutex);
+  state->started = 1;
+  pthread_cond_signal(&state->condition);
+  pthread_mutex_unlock(&state->mutex);
+
+  for (size_t iteration = 0;; ++iteration) {
+    pthread_mutex_lock(&state->mutex);
+    int stop = state->stop;
+    pthread_mutex_unlock(&state->mutex);
+    if (stop) break;
+
+    size_t size = 32 + iteration % 4096;
+    unsigned char *memory = malloc(size);
+    if (memory == NULL) {
+      fork_stress_fail(state, 1);
+      break;
+    }
+    memory[0] = (unsigned char)iteration;
+    unsigned char *grown = realloc(memory, size + 17);
+    if (grown == NULL || grown[0] != (unsigned char)iteration) {
+      free(grown != NULL ? grown : memory);
+      fork_stress_fail(state, 2);
+      break;
+    }
+    free(grown);
+
+    FILE *stream = tmpfile();
+    if (stream == NULL) {
+      fork_stress_fail(state, 3);
+      break;
+    }
+    const char record[] = "fork with active stdio";
+    char readback[sizeof record];
+    int io_ok = fwrite(record, 1, sizeof record, stream) == sizeof record &&
+        fflush(stream) == 0 && fseek(stream, 0, SEEK_SET) == 0 &&
+        fread(readback, 1, sizeof readback, stream) == sizeof readback &&
+        memcmp(record, readback, sizeof record) == 0;
+    if (fclose(stream) != 0) io_ok = 0;
+    if (!io_ok) {
+      fork_stress_fail(state, 4);
+      break;
+    }
+    pthread_mutex_lock(&state->mutex);
+    ++state->completed;
+    pthread_cond_signal(&state->condition);
+    pthread_mutex_unlock(&state->mutex);
+  }
+  return NULL;
+}
+
+static int fork_allocator_stdio_stress(const char *self_path) {
+  ForkStressState state = {PTHREAD_MUTEX_INITIALIZER,
+                           PTHREAD_COND_INITIALIZER, 0, 0, 0, 0};
+  pthread_t worker;
+  if (pthread_create(&worker, NULL, fork_allocator_stdio_worker, &state) != 0)
+    return 1;
+  pthread_mutex_lock(&state.mutex);
+  while (!state.started) pthread_cond_wait(&state.condition, &state.mutex);
+  pthread_mutex_unlock(&state.mutex);
+
+  char *child_arguments[] = {(char *)self_path,
+                             (char *)"--fork-exec-stdio-probe", NULL};
+  int result = 0;
+  for (int iteration = 0; iteration < 32; ++iteration) {
+    pthread_mutex_lock(&state.mutex);
+    while (state.completed <= (unsigned long)iteration && state.failed == 0)
+      pthread_cond_wait(&state.condition, &state.mutex);
+    if (state.failed != 0) result = 5;
+    pthread_mutex_unlock(&state.mutex);
+    if (result != 0) break;
+
+    pid_t child = fork();
+    if (child == 0) {
+      execve(self_path, child_arguments, environ);
+      _Exit(90);
+    }
+    if (child < 0) {
+      result = 2;
+      break;
+    }
+    int status = 0;
+    pid_t waited;
+    do {
+      waited = waitpid(child, &status, 0);
+    } while (waited < 0 && errno == EINTR);
+    if (waited != child || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+      result = 3;
+      break;
+    }
+  }
+
+  pthread_mutex_lock(&state.mutex);
+  state.stop = 1;
+  pthread_cond_signal(&state.condition);
+  pthread_mutex_unlock(&state.mutex);
+  if (pthread_join(worker, NULL) != 0 || state.failed != 0) result = 4;
+  pthread_cond_destroy(&state.condition);
+  pthread_mutex_destroy(&state.mutex);
+  return result;
+}
+
 static void *concurrent_system_worker(void *unused) {
   (void)unused;
   int status = system("sleep 0.02; kill -INT $PPID; exit 0");
@@ -1324,6 +1443,22 @@ int main(int argc, char **argv) {
   if (argc == 2 && strcmp(argv[1], "--verify-fexecve") == 0)
     return getenv("NELIBC_FEXEC_PROBE") != NULL &&
            strcmp(getenv("NELIBC_FEXEC_PROBE"), "yes") == 0 ? 0 : 11;
+  if (argc == 2 && strcmp(argv[1], "--fork-exec-stdio-probe") == 0) {
+    unsigned char *memory = malloc(257);
+    if (memory == NULL) return 12;
+    memset(memory, 0x5a, 257);
+    FILE *stream = tmpfile();
+    if (stream == NULL) { free(memory); return 13; }
+    const char record[] = "post-fork exec stdio probe";
+    char readback[sizeof record];
+    int ok = fwrite(record, 1, sizeof record, stream) == sizeof record &&
+        fflush(stream) == 0 && fseek(stream, 0, SEEK_SET) == 0 &&
+        fread(readback, 1, sizeof readback, stream) == sizeof readback &&
+        memcmp(record, readback, sizeof record) == 0;
+    if (fclose(stream) != 0) ok = 0;
+    free(memory);
+    return ok ? 0 : 14;
+  }
 
   const char input[] = "Nelua libc";
   if (strcasestr(input, "LIBC") != &input[6] ||
@@ -1602,6 +1737,7 @@ int main(int argc, char **argv) {
 #ifndef NELIBC_STANDALONE
   if (mbrlen_thread_isolation()) return 82;
   if (allocator_thread_isolation()) return 84;
+  if (fork_allocator_stdio_stress(argv[0]) != 0) return 87;
 #endif
 #ifdef NELIBC_STANDALONE
   int locale_smoke_result = standalone_locale_smoke();

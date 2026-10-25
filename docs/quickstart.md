@@ -341,7 +341,9 @@ integer conversion, and the current Nelua math slice.
   differential-test matrix.
 - `make lib-consumer-matrix` runs a larger C program against the four hybrid
   archives, including `sem_clockwait`; this covers more APIs than the small
-  quickstart example.
+  quickstart example. It also forks and execs 32 children while a worker
+  exercises allocation and host-backed temporary-file I/O, then checks that
+  each child can allocate and use stdio after exec.
 - `make qsort-r-smoke-matrix` dogfoods GNU `qsort_r` under Zig/glibc,
   GCC/glibc, Zig/musl, and TinyCC/glibc.
 - `make pthread-standalone-matrix` exercises the standalone pthread subset with

@@ -24,7 +24,11 @@ builds; the hybrid unistd objects localize those symbols so glibc and musl can
 run their own internal fork handlers for allocator, stdio, and thread state.
 `make lib-consumer-matrix` passed across Zig/glibc, GCC/glibc, Zig/musl, and
 TinyCC/glibc, including the consumer's prepare/parent/child handler-order
-checks. The API manifest marks both functions as host-delegated in hybrid mode.
+checks. It also repeats 32 fork/exec cycles while a worker performs public
+allocation and host-backed `tmpfile` I/O; every re-execed child checks fresh
+allocation and stdio. Three repeat runs per profile passed. The child uses
+`execve` before touching libc state inherited from the multithreaded parent.
+The API manifest marks both functions as host-delegated in hybrid mode.
 
 The four hybrid syscall smoke profiles pass with Zig/glibc, GCC/glibc,
 Zig/musl, and TinyCC/glibc. Hybrid spawn uses the host implementation and its
