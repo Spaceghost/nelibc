@@ -120,9 +120,10 @@ musl export set.
   command.
 - Real-application dogfood passed on 2026-10-24: the Spinel C compiler was
   rebuilt with Zig cc and the glibc hybrid archive, then compiled and ran a
-  Ruby client linked against that archive. The client sorted and printed an
-  array; `nm` confirmed Nelibc's `memcpy`, `strlen`, and `strtol` were in the
-  executable. Reproduction steps are in `docs/quickstart.md`.
+  Ruby client linked against that archive. The same client also ran as a static
+  x86-64 musl executable linked against the Zig/musl hybrid archive. Both
+  executables contain Nelibc's `memcpy`, `strlen`, and `strtol`. Reproduction
+  steps are in `docs/quickstart.md`.
 - Differential tests cover meaningful memory, string, integer, floating
   conversion, wide-string, tokenizer, collation, and syscall behavior across
   glibc, musl, GCC, Zig cc, and TinyCC profiles.

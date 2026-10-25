@@ -779,6 +779,10 @@ dogfood-tcc: $(OUT)/libnelibc-tcc.a examples/incremental.c
 
 dogfood-matrix: dogfood-zig dogfood-gcc dogfood-zig-musl dogfood-tcc
 
+.PHONY: dogfood-spinel-musl
+dogfood-spinel-musl: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-zig-musl.a
+	ZIG='$(ZIG)' MUSL_STDIO_WRAP_FLAGS='$(MUSL_STDIO_WRAP_FLAGS)' \
+		tools/dogfood_spinel_musl.sh '$(SPINEL_DIR)'
 
 .PHONY: dogfood-zig dogfood-gcc dogfood-zig-musl dogfood-tcc dogfood-matrix
 

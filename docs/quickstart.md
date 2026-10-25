@@ -80,6 +80,18 @@ Expected program output is `3,1,4,1,5` followed by `1,1,3,4,5`. The executable
 retains Nelibc's `memcpy`, `strlen`, and `strtol`; glibc supplies the rest.
 This is hybrid dogfooding, not a standalone-libc test.
 
+Run the same generated client as a static musl executable with:
+
+```sh
+make dogfood-spinel-musl SPINEL_DIR=/path/to/spinel-checkout
+```
+
+This rebuilds Spinel's compiler with the glibc hybrid archive, builds a musl
+version of its C runtime in a temporary directory, and links the generated
+client against Nelibc's Zig/musl archive. The temporary runtime supplies
+musl-compatible replacements for Spinel's optional backtrace hooks. It refreshes
+Spinel's normal build outputs but does not change its tracked source files.
+
 The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `finite`, `finitef`, `nan`, `nanf`, `lrint`, `lrintf`, `llrint`, `llrintf`, `lround`, `lroundf`, `llround`, `llroundf`, `nearbyint`, `exp`,
 `log`, `log1p`, `log2`, `log10`, `exp2`, `exp10`, `pow10`, `pow10f`, `expm1`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `hypot`, `sqrt`, `fmod`,
