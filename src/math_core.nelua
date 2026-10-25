@@ -1006,14 +1006,6 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   return result
 end
 
-local function exp10l(value: clongdouble): clongdouble <cexport, codename 'exp10l'>
-  return powl(10_clongdouble, value)
-end
-
-local function pow10l(value: clongdouble): clongdouble <cexport, codename 'pow10l'>
-  return exp10l(value)
-end
-
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>
   local result = nelibc_ldexp_hw(value, exponent)
   local input_bits: DoubleBits = {value = value}
@@ -1540,6 +1532,35 @@ local function fmal(x: clongdouble, y: clongdouble, z: clongdouble): clongdouble
              sign_exponent = ((@cushort)(exponent_field)) | ((@cushort)(sign))}
   }
   return result.value
+end
+
+local function exp10l(value: clongdouble): clongdouble <cexport, codename 'exp10l'>
+  -- Near the binary80 underflow boundary, powl's log/exp path loses too much
+  -- accuracy in the exponent. Use a split log2(10) and exp2l's exact binary
+  -- scaling so representable subnormal results survive the final rounding.
+  if value < -4000_clongdouble and value > -5000_clongdouble then
+    local log2_10_high_bits: LongDoubleBits = {
+      parts = {significand = 0xd49a784bcd1b8afe_culonglong,
+               sign_exponent = 0x4000_cushort}
+    }
+    local log2_10_low_bits: LongDoubleBits = {
+      parts = {significand = 0x9257edfe9b5fb69a_culonglong,
+               sign_exponent = 0x3fbf_cushort}
+    }
+    local log2_10_high = log2_10_high_bits.value
+    local log2_10_low = log2_10_low_bits.value
+    local product_high = value * log2_10_high
+    local product_error = fmal(value, log2_10_high, -product_high)
+    local low_correction = fmal(value, log2_10_low, product_error)
+    local scale = truncl(product_high)
+    local fraction = (product_high - scale) + low_correction
+    return ldexpl(exp2l(fraction), (@cint)(scale))
+  end
+  return powl(10_clongdouble, value)
+end
+
+local function pow10l(value: clongdouble): clongdouble <cexport, codename 'pow10l'>
+  return exp10l(value)
 end
 
 local function fmaf(x: cfloat, y: cfloat, z: cfloat): cfloat

@@ -9,7 +9,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | Priority | Gap | Why it blocks a compelling libc | Next milestone |
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep the seven-profile `make smoke-matrix` and four-profile `make dogfood-matrix` green as the source changes |
-| P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double `sqrtl`, `nanl`, `fabsl`, `copysignl`, `fmal`, `tgammal`, `lgammal`, `lgammal_r`, `erfl`, `erfcl`, `exp10l`, `pow10l`, `fmodl`, `remainderl`, `remquol`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `nexttowardl`, `atanl`, `atan2l`, `asinl`, `acosl`, `asinhl`, `acoshl`, `atanhl`, `powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`, `sincosl`, `tanl`, `tanhl`, `sinhl`, and `coshl`, plus `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; internal classification and sign-bit functions now cover binary32/64/80; all standard fenv entry points are implemented for standalone x86-64, while hybrid fenv delegates to the host | Expand long-double math coverage, fenv edge coverage, and math quality/performance |
+| P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification data; locale handles currently model only C and C.UTF-8 `LC_CTYPE`, while collation and broad numeric/time conventions remain limited | Add locale category state and thread-local locale selection; expand ctype, collation, numeric, monetary, and time data |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 555 undeclared candidates and record explicit intentional omissions |
@@ -327,8 +327,9 @@ musl export set.
   infinities, quiet NaNs, and largest finite values, plus 100,000 generated
   scalar inputs and input pairs per profile against host libm. Signaling-NaN
   operations are exercised, with min/max result comparison relaxed where host
-  runtimes differ. Remaining long-double entry points and less-common fenv trap
-  environment edge cases remain outside this slice. `sinh`/`cosh`/`tanh` and their float forms use small-input series,
+  runtimes differ. The declared long-double math entry points are implemented;
+  their broader edge and accuracy coverage plus less-common fenv trap
+  environment cases remain open. `sinh`/`cosh`/`tanh` and their float forms use small-input series,
   range-safe exponential formulas, signed-zero and infinity handling, and
   overflow `ERANGE`; differential checks cover the near-overflow transition.
   `atan` uses fdlibm range reduction and its polynomial kernel; `atan2` handles

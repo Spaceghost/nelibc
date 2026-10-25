@@ -176,10 +176,12 @@ single final rounding step. Its accumulator uses 1,026 64-bit limbs to cover
 the full binary80 product/addend exponent range, so this correctness-focused
 software path is not optimized for speed. The x86-64 implementation also
 updates x87 and SSE exception flags.
-`exp10l` and its GNU-compatible `pow10l` alias reuse the existing `powl`
-implementation for special values, range handling, and exponentiation. They
-inherit its accuracy limits for extreme subnormal results; that range needs a
-dedicated long-double base-10 implementation.
+`exp10l` and its GNU-compatible `pow10l` alias reuse `powl` for ordinary and
+special values. Near the binary80 underflow boundary they split `log2(10)` and
+scale the fractional exponent separately, preserving representable subnormal
+results; differential checks cover values from `10^-4930` through the
+underflow boundary across the hybrid profiles. This is a targeted range fix,
+not a claim of correct rounding for every long-double input.
 The `__fpclassify*` and `__signbit*` compatibility symbols classify the
 binary32, binary64, and binary80 layouts directly from their representations.
 

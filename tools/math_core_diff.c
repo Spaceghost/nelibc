@@ -1856,14 +1856,22 @@ int main(void) {
   }
   const long double exp10l_values[] = {
       -INFINITY, -5000.0L, -100.0L, -1.0L, -0.0L,
-      0.0L, 1.0L, 10.0L, 100.0L, 5000.0L, INFINITY, NAN};
+      0.0L, 1.0L, 10.0L, 100.0L, -4930.0L, -4940.0L,
+      -4945.0L, -4950.0L, -4951.0L, -4952.0L,
+      5000.0L, INFINITY, NAN};
   for (size_t i = 0; i < sizeof exp10l_values / sizeof exp10l_values[0]; ++i) {
     const long double value = exp10l_values[i];
     const long double expected = exp10l(value);
     const long double actual = nelibc_exp10l(value);
     const long double alias = nelibc_pow10l(value);
-    if (!long_double_math_close(actual, expected) ||
-        !long_double_math_close(alias, expected) ||
+    const int near_subnormal = value <= -4940.0L && value >= -4952.0L;
+    const int actual_close = near_subnormal
+        ? fabsl(actual - expected) <= 0x1p-16445L
+        : long_double_math_close(actual, expected);
+    const int alias_close = near_subnormal
+        ? fabsl(alias - expected) <= 0x1p-16445L
+        : long_double_math_close(alias, expected);
+    if (!actual_close || !alias_close ||
         (expected == 0.0L && (signbit(actual) != signbit(expected) ||
                               signbit(alias) != signbit(expected)))) {
       fprintf(stderr, "exp10l/pow10l mismatch input=%zu actual=%.21Le alias=%.21Le expected=%.21Le\n",
