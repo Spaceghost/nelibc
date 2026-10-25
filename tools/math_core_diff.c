@@ -2142,13 +2142,13 @@ int main(void) {
       const long double base = ldexpl(mantissa, binary_exponent);
       long double exponent = 0.25L +
           (long double)(next_bits() >> 1) * 0x1p-63L *
-              131071.75L;
+              262143.75L;
       if (next_bits() & 1) exponent = -exponent;
       const long double expected = powl(base, exponent);
       const long double actual = nelibc_powl(base, exponent);
 #ifdef NELIBC_MUSL_PROFILE
       const int large_fraction_matches = actual == expected ||
-          fabsl(actual - expected) <= 4096.0L * LDBL_EPSILON * fabsl(expected);
+          fabsl(actual - expected) <= 32768.0L * LDBL_EPSILON * fabsl(expected);
 #else
       const int large_fraction_matches = long_double_math_close(actual, expected);
 #endif

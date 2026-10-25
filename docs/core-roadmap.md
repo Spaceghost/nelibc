@@ -345,7 +345,7 @@ musl export set.
   and wide-base cases are also checked in
   all four rounding modes. Musl's `powl` reference can diverge further as the
   fractional exponent grows, so the extended-range musl comparison allows up
-  to 4096 ULP; glibc comparisons keep the tighter tolerance.
+  to 32768 ULP; glibc comparisons keep the tighter tolerance.
   It sets `EDOM` for negative square root and
   invalid remainder domains. Standalone x86-64 implements `feclearexcept`,
   `fegetexceptflag`, `feraiseexcept`, `fesetexceptflag`, `fetestexcept`,
