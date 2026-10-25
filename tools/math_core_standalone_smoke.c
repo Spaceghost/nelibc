@@ -45,6 +45,7 @@ int main(void) {
       !(sinl(1.0L) > 0.841L && sinl(1.0L) < 0.842L) ||
       !(cosl(1.0L) > 0.540L && cosl(1.0L) < 0.541L) ||
       !(tanl(1.0L) > 1.557L && tanl(1.0L) < 1.558L) ||
+      !(tanhl(1.0L) > 0.761L && tanhl(1.0L) < 0.762L) ||
       !(expm1l(0x1p-60L) > 0.0L && expm1l(0x1p-60L) < 0x1p-59L)) return 178;
   errno = 0;
   if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;

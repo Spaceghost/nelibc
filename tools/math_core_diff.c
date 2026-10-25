@@ -133,6 +133,7 @@ extern long double nelibc_expm1l(long double);
 extern long double nelibc_sinl(long double);
 extern long double nelibc_cosl(long double);
 extern long double nelibc_tanl(long double);
+extern long double nelibc_tanhl(long double);
 extern void nelibc_sincosl(long double, long double *, long double *);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
@@ -1479,7 +1480,8 @@ int main(void) {
       !isnan(nelibc_exp2l(quiet_nan.value)) ||
       !isnan(nelibc_expm1l(quiet_nan.value)) ||
       !isnan(nelibc_sinl(quiet_nan.value)) ||
-      !isnan(nelibc_cosl(quiet_nan.value))) {
+      !isnan(nelibc_cosl(quiet_nan.value)) ||
+      !isnan(nelibc_tanhl(quiet_nan.value))) {
     fprintf(stderr, "long-double arctangent NaN propagation failed\n");
     return 1;
   }
@@ -1665,6 +1667,33 @@ int main(void) {
   errno = 0;
   if (!isnan(nelibc_tanl(INFINITY)) || errno != EDOM) {
     fprintf(stderr, "long-double tan infinite-domain behavior failed\n");
+    return 1;
+  }
+  const long double tanh_values[] = {
+      -INFINITY, -LDBL_MAX, -40.0L, -24.0L, -10.0L, -1.0L, -0.1L,
+      -LDBL_MIN, -0.0L, 0.0L, LDBL_MIN, 0.1L, 1.0L, 10.0L, 24.0L,
+      40.0L, LDBL_MAX, INFINITY};
+  for (size_t i = 0; i < sizeof(tanh_values) / sizeof(tanh_values[0]); ++i) {
+    if (!long_double_close(nelibc_tanhl(tanh_values[i]), tanhl(tanh_values[i]))) {
+      fprintf(stderr, "long-double tanh edge mismatch i=%zu input=%.6Le actual=%.21Le expected=%.21Le\n",
+              i, tanh_values[i], nelibc_tanhl(tanh_values[i]), tanhl(tanh_values[i]));
+      return 1;
+    }
+  }
+  if (nelibc_tanhl(-0.0L) != 0.0L || !signbit(nelibc_tanhl(-0.0L))) {
+    fprintf(stderr, "long-double tanh signed-zero behavior failed\n");
+    return 1;
+  }
+  for (size_t i = 0; i < 1024; ++i) {
+    long double value = -40.0L + (long double)i * (80.0L / 1023.0L);
+    if (!long_double_close(nelibc_tanhl(value), tanhl(value))) {
+      fprintf(stderr, "long-double tanh generated-input mismatch i=%zu input=%.6Le\n", i, value);
+      return 1;
+    }
+  }
+  errno = 0;
+  if (nelibc_tanhl(LDBL_MAX) != 1.0L || errno != 0) {
+    fprintf(stderr, "long-double tanh saturation raised errno\n");
     return 1;
   }
   for (size_t i = 0; i < 512; ++i) {

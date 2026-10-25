@@ -1291,7 +1291,7 @@ tan,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tanf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tanh,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tanhf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-tanhl,math.h,,,not-declared
+tanhl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tanl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tcdrain,termios.h,,,not-declared
 tcflow,termios.h,,,not-declared

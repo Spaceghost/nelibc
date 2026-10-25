@@ -1690,6 +1690,26 @@ local function tanhf(value: cfloat): cfloat <cexport, codename 'tanhf'>
   return (@cfloat)(tanh((@cdouble)(value)))
 end
 
+local function tanhl(value: clongdouble): clongdouble <cexport, codename 'tanhl'>
+  if is_nan80(value) then return value + value end
+  if is_infinite80(value) then
+    if value < 0_clongdouble then return -1_clongdouble end
+    return 1_clongdouble
+  end
+  if value == 0_clongdouble then return value end
+  local magnitude = fabsl(value)
+  -- Beyond this point tanh rounds to one in binary80. Avoid overflowing the
+  -- doubled argument and preserve the sign of the saturated result.
+  if magnitude > 24_clongdouble then
+    if value < 0_clongdouble then return -1_clongdouble end
+    return 1_clongdouble
+  end
+  local exponential_minus_one = expm1l(-2_clongdouble * magnitude)
+  local result = -exponential_minus_one / (2_clongdouble + exponential_minus_one)
+  if value < 0_clongdouble then return -result end
+  return result
+end
+
 local function atan(value: cdouble): cdouble <cexport, codename 'atan'>
   if value ~= value then return value + value end
   if is_infinite64(value) then
