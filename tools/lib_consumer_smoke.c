@@ -1633,6 +1633,18 @@ int main(int argc, char **argv) {
       towupper_l(0x3b1, ctype_utf8) != 0x391 ||
       iswalpha_l(0x391, ctype_current) == 0)
     return 80;
+  wchar_t wide_key[8];
+  wchar_t short_wide_key[2] = {0x777, 0x777};
+  if (wcscoll(L"alpha", L"beta") >= 0 ||
+      wcscoll_l(L"ä", L"z", ctype_utf8) <= 0 ||
+      wcsxfrm(wide_key, L"ä", 8) != 1 || wide_key[0] != L'ä' || wide_key[1] != 0 ||
+      wcsxfrm_l(wide_key, L"ä", 8, ctype_c) != 1 ||
+      wide_key[0] != L'ä' || wide_key[1] != 0 ||
+      wcsxfrm_l(short_wide_key, L"ab", 1, ctype_utf8) != 2 ||
+      short_wide_key[0] != L'a' || short_wide_key[1] != 0x777 ||
+      wcsxfrm_l(short_wide_key, L"ab", 0, ctype_utf8) != 2 ||
+      short_wide_key[0] != L'a' || short_wide_key[1] != 0x777)
+    return 81;
   locale_t numeric_c = newlocale(LC_NUMERIC_MASK, "C", ctype_utf8);
   locale_t numeric_de = newlocale(LC_NUMERIC_MASK, "de_DE.UTF-8", numeric_c);
   locale_t monetary_c = newlocale(LC_MONETARY_MASK, "C", numeric_c);

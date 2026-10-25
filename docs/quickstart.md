@@ -51,7 +51,9 @@ counterparts. GNU builds also export the narrow byte classification and case
 conversion `_l` functions (`isalnum_l` through `toupper_l`). In the current
 locale data, byte results are shared by `C` and `C.UTF-8`; locale-sensitive
 wide-character operations use the selected locale's Unicode data in standalone
-mode.
+mode. Standalone archives also provide `wcscoll`, `wcscoll_l`, `wcsxfrm`, and
+`wcsxfrm_l` with code-point ordering in their `C` and `C.UTF-8` collation
+modes; hybrid links use the host libc implementations.
 
 To link your own program against the default glibc hybrid archive:
 

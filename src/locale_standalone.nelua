@@ -87,6 +87,57 @@ local function nelibc_locale_collate_mode(locale: pointer): cint <inline>
   return -1
 end
 
+-- Standalone currently supports C-style wide collation for C and C.UTF-8.
+-- Unicode scalar values compare in code-point order, which UTF-8 preserves.
+local function nelibc_wide_collate(left: *[0]cwchar_t <const>,
+    right: *[0]cwchar_t <const>): cint <inline>
+  local index: csize = 0
+  while left[index] ~= 0 and left[index] == right[index] do index = index + 1 end
+  if left[index] < right[index] then return -1 end
+  if left[index] > right[index] then return 1 end
+  return 0
+end
+
+local function wcscoll(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>): cint
+    <cexport, codename 'wcscoll'>
+  return nelibc_wide_collate(left, right)
+end
+
+local function wcscoll_l(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>,
+    locale: pointer): cint <cexport, codename 'wcscoll_l'>
+  if nelibc_locale_collate_mode(locale) < 0 then return 0 end
+  return nelibc_wide_collate(left, right)
+end
+
+local function nelibc_wide_transform(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>,
+    size: csize): csize <inline>
+  local length: csize = 0
+  while src[length] ~= 0 do length = length + 1 end
+  if size ~= 0 then
+    local copied: csize = 0
+    while copied < size and src[copied] ~= 0 do
+      dest[copied] = src[copied]
+      copied = copied + 1
+    end
+    if copied < size then dest[copied] = 0 end
+  end
+  return length
+end
+
+local function wcsxfrm(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, size: csize): csize
+    <cexport, codename 'wcsxfrm'>
+  return nelibc_wide_transform(dest, src, size)
+end
+
+local function wcsxfrm_l(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>,
+    size: csize, locale: pointer): csize <cexport, codename 'wcsxfrm_l'>
+  if nelibc_locale_collate_mode(locale) < 0 then
+    if size ~= 0 then dest[0] = 0 end
+    return 0
+  end
+  return nelibc_wide_transform(dest, src, size)
+end
+
 local function nelibc_locale_time_mode(locale: pointer): cint <inline>
   if locale == nilptr then return nelibc_time_locale_is_german() end
   if locale == (@pointer)(~0_usize) then

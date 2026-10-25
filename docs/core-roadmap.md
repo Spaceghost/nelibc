@@ -183,9 +183,9 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 1,035 declared names. All four hybrid
+- The regenerated API inventory has 1,039 declared names. All four hybrid
   archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 863;
-  all three standalone archives export 1,036 including one implementation-only
+  all three standalone archives export 1,040 including one implementation-only
   entry. There are 162 host-delegated APIs and 10 declared-but-unexported
   Zig/musl archive gaps.
   `pthread_mutex_clocklock` is provided by the glibc host in hybrid mode and
@@ -259,8 +259,10 @@ musl export set.
   handles now carry per-thread `LC_CTYPE`, `LC_NUMERIC`, `LC_MONETARY`,
   C-style `LC_COLLATE`, and `LC_TIME` state for `C`, `C.UTF-8`, and
   `de_DE.UTF-8` numeric, monetary, and time conventions. Standalone collation
-  supports byte ordering for `C` and `C.UTF-8`; German collation data is not
-  implemented. German time data covers localized weekday/month names and
+  supports byte and wide code-point ordering for `C` and `C.UTF-8`; standalone
+  `wcscoll`, `wcscoll_l`, `wcsxfrm`, and `wcsxfrm_l` use identity transform
+  keys in those locales. Hybrid profiles continue to use their host's wide
+  collation. German collation data is not implemented. German time data covers localized weekday/month names and
   `%c`/`%x` formats. Global `setlocale` selects C or German `LC_TIME`,
   reports/accepts its supported `LC_ALL` composites, and `duplocale` snapshots
   the global time category. `strtod`, floating formatting, grouping, `strcoll`,
