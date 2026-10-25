@@ -56,6 +56,30 @@ library symbols being evaluated. `nelibc_malloc` and related prefixed calls
 are declared in `include/nelibc_alloc.h` and avoid changing the host allocator
 for unrelated host-owned objects.
 
+### Try an existing application
+
+For a larger check, the Spinel C compiler can itself link against Nelibc, then
+compile a generated Ruby client against the same hybrid archive. This requires
+a local Spinel checkout with its Prism dependency available:
+
+```sh
+NELIBC_DIR=/path/to/nelibc
+SPINEL_DIR=/path/to/spinel
+make -C "$NELIBC_DIR" lib-zig
+NO_CCACHE=1 make -B -C "$SPINEL_DIR" bin/spinel CC='zig cc' \
+  LDFLAGS="-Wl,-u,memcpy $NELIBC_DIR/build/libnelibc-zig.a -lcrypt"
+"$SPINEL_DIR/bin/spinel" --cc='zig cc -Wl,-u,memcpy' \
+  --link "$NELIBC_DIR/build/libnelibc-zig.a" \
+  -e 'values = [3, 1, 4, 1, 5]; puts values.join(","); puts values.sort.join(",")' \
+  -o /tmp/nelibc-spinel-client
+/tmp/nelibc-spinel-client
+nm --defined-only /tmp/nelibc-spinel-client | grep -E ' (memcpy|strlen|strtol)$'
+```
+
+Expected program output is `3,1,4,1,5` followed by `1,1,3,4,5`. The executable
+retains Nelibc's `memcpy`, `strlen`, and `strtol`; glibc supplies the rest.
+This is hybrid dogfooding, not a standalone-libc test.
+
 The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `finite`, `finitef`, `nan`, `nanf`, `lrint`, `lrintf`, `llrint`, `llrintf`, `lround`, `lroundf`, `llround`, `llroundf`, `nearbyint`, `exp`,
 `log`, `log1p`, `log2`, `log10`, `exp2`, `exp10`, `pow10`, `pow10f`, `expm1`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `hypot`, `sqrt`, `fmod`,

@@ -105,10 +105,10 @@ against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
 - The regenerated API inventory has 925 declared names. Each of the four
-  hybrid archives exports 757; 150 APIs are marked as host-delegated and 18
+  hybrid archives exports 757; 161 APIs are marked as host-delegated and 7
   have declared-but-unexported hybrid gaps. The manifest also contains one
   implementation-only entry. This is an inventory signal, not a completeness
-  percentage; the manifest currently has two implementation-only rows. See
+  percentage. See
   `build/api-coverage.csv` after `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
   that are also exported by the pinned release archives: Nelibc exports 713
@@ -118,6 +118,11 @@ musl export set.
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
   command.
+- Real-application dogfood passed on 2026-10-24: the Spinel C compiler was
+  rebuilt with Zig cc and the glibc hybrid archive, then compiled and ran a
+  Ruby client linked against that archive. The client sorted and printed an
+  array; `nm` confirmed Nelibc's `memcpy`, `strlen`, and `strtol` were in the
+  executable. Reproduction steps are in `docs/quickstart.md`.
 - Differential tests cover meaningful memory, string, integer, floating
   conversion, wide-string, tokenizer, collation, and syscall behavior across
   glibc, musl, GCC, Zig cc, and TinyCC profiles.
