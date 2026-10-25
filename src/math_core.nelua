@@ -1596,7 +1596,7 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   local result: clongdouble
   local exponent_magnitude = exponent
   if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
-  local fractional_exponent_limit = 256_clongdouble
+  local fractional_exponent_limit = 512_clongdouble
   if nelibc_x87_rounding_mode() == 0_cint then
     fractional_exponent_limit = 4096_clongdouble
   end
@@ -1654,7 +1654,8 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
       local integral_exponent = truncl(scaled_exponent)
       local fractional_exponent = scaled_exponent - integral_exponent + scaled_error
       local mantissa_log2: PowlDD
-      if exponent_magnitude <= 576_clongdouble then
+      if exponent_magnitude <= 576_clongdouble and
+          (nelibc_x87_rounding_mode() == 0_cint or exponent_magnitude <= 256_clongdouble) then
         local logarithm: clongdouble
         if mantissa <= sqrtl(2_clongdouble) then
           logarithm = nelibc_log2p1l_small_hw(mantissa - 1_clongdouble)

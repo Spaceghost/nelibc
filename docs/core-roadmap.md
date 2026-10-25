@@ -331,14 +331,15 @@ musl export set.
   accuracy for large binary exponents. Half-integer powers use a square-root
   decomposition; other noninteger exponents split the base into a small
   mantissa logarithm and compensated binary exponents before scaling; the
-  mantissa-log product retains its FMA residual through the `exp2l` call. Above
-  magnitude 576, nearest-mode calls use a double-double atanh-series logarithm
-  to retain the low component through the exponent product. This
-  path covers magnitudes through 4096 in round-to-nearest and 256 in directed
+  mantissa-log product retains its FMA residual through the `exp2l` call.
+  Nearest-mode calls above magnitude 576 and directed-mode calls above 256 use
+  a double-double atanh-series logarithm to retain the low component through
+  the exponent product. This
+  path covers magnitudes through 4096 in round-to-nearest and 512 in directed
   rounding modes; larger exponents still use `exp(y * log(x))` and need more
   accuracy work. Deterministic random comparisons cover arbitrary fractions
   through 4096 on bases with binary exponents from -4 to 4, and
-  directed-rounding fractions through 256; wide-base cases are also checked in
+  directed-rounding fractions through 512; wide-base cases are also checked in
   all four rounding modes. Musl's
   `powl` reference differs by hundreds of ULP in
   some wide-fraction cases, so its wide-range comparison allows up to 1024 ULP
