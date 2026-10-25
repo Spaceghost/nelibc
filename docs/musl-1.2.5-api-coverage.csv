@@ -451,7 +451,7 @@ getdate,time.h,,,not-declared
 getdelim,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getdents,dirent.h,,,not-declared
 getdomainname,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-getdtablesize,unistd.h,,,not-declared
+getdtablesize,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getegid,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getentropy,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getenv,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

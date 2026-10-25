@@ -318,6 +318,7 @@ int getdomainname(char *name, size_t length);
 
 /* POSIX process query implemented with the Linux x86_64 getpid syscall. */
 int getpid(void);
+int getdtablesize(void);
 pid_t fork(void);
 int execve(const char *pathname, char *const argv[], char *const envp[]);
 int fexecve(int fd, char *const argv[], char *const envp[]);

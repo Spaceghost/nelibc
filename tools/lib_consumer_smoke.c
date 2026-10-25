@@ -669,6 +669,9 @@ int main(int argc, char **argv) {
   char *allocated_cwd = get_current_dir_name();
   if (allocated_cwd == NULL || strcmp(allocated_cwd, cwd_buffer) != 0) return 21;
   free(allocated_cwd);
+  struct rlimit descriptor_limit;
+  if (getrlimit(RLIMIT_NOFILE, &descriptor_limit) != 0 ||
+      getdtablesize() != (int)descriptor_limit.rlim_cur) return 30;
   const unsigned char swab_source[] = {1, 2, 3, 4, 5};
   unsigned char swab_destination[] = {9, 9, 9, 9, 9};
   swab(swab_source, swab_destination, 5);

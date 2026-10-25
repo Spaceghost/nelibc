@@ -61,17 +61,17 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,471 APIs: 725 exported by Nelibc in at least
+The current snapshot contains 1,471 APIs: 726 exported by Nelibc in at least
 one tested hybrid profile, 162 intentionally delegated to the host in hybrid
-profiles, and 584 not declared by Nelibc. No declared API is missing from all
+profiles, and 583 not declared by Nelibc. No declared API is missing from all
 four hybrid archives. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 584 entries remain visible as unimplemented
+intentional omission; the 583 entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
 No real-valued `math.h` APIs in this pinned musl baseline remain undeclared.
-The largest remaining groups are wide characters (42), unistd (31), stdlib
-(33), and network database APIs (32). The pthread rows without Nelibc declarations are two private musl
+The largest remaining groups are wide characters (42), stdlib (33), unistd
+(30), and network database APIs (32). The pthread rows without Nelibc declarations are two private musl
 cleanup helper symbols. This is a breadth comparison, not a behavioral
 conformance score.
 
@@ -96,6 +96,10 @@ the shell fallback across all seven profiles.
 POSIX `fexecve` is implemented in Nelua through Linux `execveat` with
 `AT_EMPTY_PATH`. The consumer matrix executes itself through an `O_CLOEXEC`
 descriptor and checks that the supplied environment reaches the new image.
+
+GNU `getdtablesize` returns the current soft `RLIMIT_NOFILE` limit through
+Nelibc's `getrlimit`, with the Linux `OPEN_MAX` fallback if the query fails.
+The consumer matrix compares it with the active resource limit.
 
 The temporary-file family (`mkstemp`, `mkstemps`, `mkostemp`, `mkostemps`, and
 `mkdtemp`) is implemented in Nelua for hybrid and standalone profiles. It uses

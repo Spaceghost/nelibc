@@ -2535,6 +2535,12 @@ local function getrlimit(resource: cint, limits: pointer): cint <cexport, codena
 end
 
 local Rlimit: type = @record{rlim_cur: culong, rlim_max: culong}
+local function getdtablesize(): cint <cexport, codename 'getdtablesize'>
+  local limit: Rlimit = {rlim_cur = 0_culong, rlim_max = 0_culong}
+  if getrlimit(7_cint, (@pointer)(&limit)) ~= 0_cint then return 256_cint end -- OPEN_MAX fallback
+  return (@cint)(limit.rlim_cur)
+end
+
 local Sysinfo: type = @record{
   uptime: clong,
   loads: [3]culong,
