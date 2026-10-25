@@ -1703,10 +1703,59 @@ int main(void) {
       monotonic_end.tv_sec < monotonic_deadline.tv_sec ||
       (monotonic_end.tv_sec == monotonic_deadline.tv_sec &&
        monotonic_end.tv_nsec < monotonic_deadline.tv_nsec) ||
-      pthread_mutex_unlock(&monotonic_mutex) != 0 ||
-      pthread_cond_destroy(&monotonic_condition) != 0 ||
-      pthread_mutex_destroy(&monotonic_mutex) != 0)
+      pthread_mutex_unlock(&monotonic_mutex) != 0)
     return 274;
+  if (pthread_cond_destroy(&monotonic_condition) != 0 ||
+      pthread_mutex_destroy(&monotonic_mutex) != 0)
+    return 275;
+
+  pthread_cond_t clockwait_condition;
+  pthread_mutex_t clockwait_mutex;
+  struct timespec clockwait_start;
+  struct timespec clockwait_deadline;
+  struct timespec clockwait_end;
+  if (pthread_cond_init(&clockwait_condition, NULL) != 0 ||
+      pthread_mutex_init(&clockwait_mutex, NULL) != 0 ||
+      pthread_mutex_lock(&clockwait_mutex) != 0 ||
+      clock_gettime(CLOCK_MONOTONIC, &clockwait_start) != 0)
+    return 276;
+  clockwait_deadline = clockwait_start;
+  clockwait_deadline.tv_nsec += 25000000L;
+  if (clockwait_deadline.tv_nsec >= 1000000000L) {
+    ++clockwait_deadline.tv_sec;
+    clockwait_deadline.tv_nsec -= 1000000000L;
+  }
+  if (pthread_cond_clockwait(&clockwait_condition, &clockwait_mutex,
+                             CLOCK_MONOTONIC, &clockwait_deadline) != ETIMEDOUT ||
+      clock_gettime(CLOCK_MONOTONIC, &clockwait_end) != 0 ||
+      clockwait_end.tv_sec < clockwait_deadline.tv_sec ||
+      (clockwait_end.tv_sec == clockwait_deadline.tv_sec &&
+       clockwait_end.tv_nsec < clockwait_deadline.tv_nsec) ||
+      pthread_cond_clockwait(&clockwait_condition, &clockwait_mutex,
+                             CLOCK_MONOTONIC_RAW, &clockwait_deadline) != EINVAL ||
+      pthread_cond_clockwait(&clockwait_condition, &clockwait_mutex,
+                             CLOCK_REALTIME, NULL) != EINVAL)
+    return 277;
+  struct timespec realtime_start;
+  struct timespec realtime_deadline;
+  struct timespec realtime_end;
+  if (clock_gettime(CLOCK_REALTIME, &realtime_start) != 0) return 278;
+  realtime_deadline = realtime_start;
+  realtime_deadline.tv_nsec += 25000000L;
+  if (realtime_deadline.tv_nsec >= 1000000000L) {
+    ++realtime_deadline.tv_sec;
+    realtime_deadline.tv_nsec -= 1000000000L;
+  }
+  if (pthread_cond_clockwait(&clockwait_condition, &clockwait_mutex,
+                             CLOCK_REALTIME, &realtime_deadline) != ETIMEDOUT ||
+      clock_gettime(CLOCK_REALTIME, &realtime_end) != 0 ||
+      realtime_end.tv_sec < realtime_deadline.tv_sec ||
+      (realtime_end.tv_sec == realtime_deadline.tv_sec &&
+       realtime_end.tv_nsec < realtime_deadline.tv_nsec) ||
+      pthread_mutex_unlock(&clockwait_mutex) != 0 ||
+      pthread_cond_destroy(&clockwait_condition) != 0 ||
+      pthread_mutex_destroy(&clockwait_mutex) != 0)
+    return 279;
 
   pthread_condattr_t condition_attributes;
   if (pthread_condattr_init(&condition_attributes) != 0 ||

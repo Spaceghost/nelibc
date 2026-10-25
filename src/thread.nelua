@@ -2200,10 +2200,12 @@ local function pthread_cond_destroy(cond: *PthreadCond): cint <cexport, codename
   return 0
 end
 
-local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMutex, abstime: *Timespec): cint
+local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMutex,
+    abstime: *Timespec, clock_id: cint): cint
   if not pthread_cond_valid(cond) or not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
   pthread_testcancel()
   if cond.pshared ~= mutex.pshared then return 22 end -- EINVAL
+  if clock_id ~= CLOCK_REALTIME and clock_id ~= CLOCK_MONOTONIC then return 22 end -- EINVAL
   if abstime ~= nilptr and (abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000) then
     return 22 -- EINVAL
   end
@@ -2222,7 +2224,7 @@ local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMut
   local timeout_pointer: culong = 0_culong
   local futex_mask: culong = 0_culong
   if abstime ~= nilptr then
-    if cond.clockid == CLOCK_MONOTONIC then
+    if clock_id == CLOCK_MONOTONIC then
       wait_operation = 9_culong -- FUTEX_WAIT_BITSET uses CLOCK_MONOTONIC
     else
       wait_operation = 265_culong -- FUTEX_WAIT_BITSET | FUTEX_CLOCK_REALTIME
@@ -2261,12 +2263,20 @@ local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMut
 end
 
 local function pthread_cond_wait(cond: *PthreadCond, mutex: *PthreadMutex): cint <cexport, codename 'pthread_cond_wait'>
-  return pthread_cond_wait_internal(cond, mutex, nilptr)
+  if cond == nilptr then return 22 end -- EINVAL
+  return pthread_cond_wait_internal(cond, mutex, nilptr, cond.clockid)
 end
 
 local function pthread_cond_timedwait(cond: *PthreadCond, mutex: *PthreadMutex, abstime: *Timespec): cint <cexport, codename 'pthread_cond_timedwait'>
   if abstime == nilptr then return 22 end -- EINVAL
-  return pthread_cond_wait_internal(cond, mutex, abstime)
+  if cond == nilptr then return 22 end -- EINVAL
+  return pthread_cond_wait_internal(cond, mutex, abstime, cond.clockid)
+end
+
+local function pthread_cond_clockwait(cond: *PthreadCond, mutex: *PthreadMutex,
+    clock_id: cint, abstime: *Timespec): cint <cexport, codename 'pthread_cond_clockwait'>
+  if abstime == nilptr then return 22 end -- EINVAL
+  return pthread_cond_wait_internal(cond, mutex, abstime, clock_id)
 end
 
 local function pthread_cond_signal(cond: *PthreadCond): cint <cexport, codename 'pthread_cond_signal'>

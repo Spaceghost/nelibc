@@ -137,6 +137,8 @@ memory, strings, integer conversion, and the current Nelua math slice.
   Zig, GCC, and TinyCC, including process-shared barriers and read-write locks.
   Its join checks include `pthread_tryjoin_np` returning `EBUSY` for a live
   thread, and `pthread_timedjoin_np` timing out without consuming the join.
+  Condition-variable tests cover `pthread_cond_clockwait` with monotonic and
+  realtime clocks, invalid clocks, and null deadlines.
   Thread-name checks cover self and remote names, the 15-byte name limit, and
   the minimum 16-byte get buffer.
   Thread-affinity checks read and reapply masks for the calling thread and a

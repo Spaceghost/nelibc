@@ -38,8 +38,8 @@ matter more for completeness than for the initial common-program target.
 
 ### Standalone pthread gap audit
 
-The generated API inventory currently records 109 pthread declarations, and
-all 109 export from the Zig, GCC, and TinyCC standalone archives. This verifies
+The generated API inventory currently records 110 pthread declarations, and
+all 110 export from the Zig, GCC, and TinyCC standalone archives. This verifies
 symbol presence, not full behavior. The pinned musl 1.2.5 public-symbol baseline
 has 2 pthread entries without project declarations, both internal cleanup
 helpers. The GNU concurrency-hint calls are now implemented as standalone
@@ -53,7 +53,10 @@ standalone implementation follows glibc's observable behavior, including
 | Complete | `pthread_getconcurrency`, `pthread_setconcurrency` | Statefully stores the requested concurrency hint; it does not alter scheduling | GNU extension; hybrid mode delegates |
 
 This is a baseline-derived priority list, not a complete POSIX inventory. The
-standalone priority-ceiling attributes and mutex get/set operations are
+POSIX.1-2024 `pthread_cond_clockwait` API is implemented in standalone mode;
+it selects realtime or monotonic time per timed wait and shares the existing
+condition-variable futex path. It is not in the pinned musl 1.2.5 baseline.
+The standalone priority-ceiling attributes and mutex get/set operations are
 implemented. `PTHREAD_PRIO_PROTECT` raises and restores scheduler priority for
 held protected mutexes; on Linux, a `SCHED_OTHER` thread cannot acquire a
 positive ceiling and receives `EINVAL`. Calls to `pthread_setschedparam` and
@@ -88,7 +91,7 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The current API inventory has 783 declared names: 665 exported in hybrid
+- The current API inventory has 784 declared names: 665 exported in hybrid
   archives, 114 host-delegated across all hybrid profiles, and four standalone
   priority-ceiling exports that glibc supplies in hybrid mode but musl does
   not. There is also one implementation-only entry. This is an

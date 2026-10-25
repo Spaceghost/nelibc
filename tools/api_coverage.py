@@ -73,6 +73,7 @@ HOST_DELEGATED = {
     )
 }
 for name in (
+    "pthread_cond_clockwait",
     "pthread_mutexattr_getprioceiling", "pthread_mutexattr_setprioceiling",
     "pthread_mutex_getprioceiling", "pthread_mutex_setprioceiling",
 ):
