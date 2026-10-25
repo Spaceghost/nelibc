@@ -12,7 +12,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double `sqrtl`, `nanl`, `fabsl`, `copysignl`, `fmal`, `tgammal`, `lgammal`, `lgammal_r`, `erfl`, `erfcl`, `exp10l`, `pow10l`, `fmodl`, `remainderl`, `remquol`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `nexttowardl`, `atanl`, `atan2l`, `asinl`, `acosl`, `asinhl`, `acoshl`, `atanhl`, `powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`, `sincosl`, `tanl`, `tanhl`, `sinhl`, and `coshl`, plus `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; internal classification and sign-bit functions now cover binary32/64/80; all standard fenv entry points are implemented for standalone x86-64, while hybrid fenv delegates to the host | Expand long-double math coverage, fenv edge coverage, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 641 undeclared candidates and record explicit intentional omissions |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 638 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -104,16 +104,15 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 880 declared names. Each of the four
-  hybrid archives exports 748; 114 APIs are marked as host-delegated and 18
+- The regenerated API inventory has 883 declared names. Each of the four
+  hybrid archives exports 751; 114 APIs are marked as host-delegated and 18
   have declared-but-unexported hybrid gaps. The manifest also contains one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage; see `build/api-coverage.csv` after `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 704
+  that are also exported by the pinned release archives: Nelibc exports 707
   in at least one hybrid profile, delegates 126 to a hybrid host, and does not
-  yet declare 641. The largest undeclared groups are complex math
-  (3), wide characters (65), stdlib, unistd, and network database APIs. These
+  yet declare 638. The largest undeclared groups are wide characters (65), stdlib, unistd, and network database APIs. These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
   command.
@@ -140,7 +139,7 @@ musl export set.
   complex-math coverage now includes `cabs*`, `creal*`, `cimag*`, `conj*`,
   `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, `ccos*`, `csinh*`,
   `ccosh*`, `ctan*`, `ctanh*`, `catan*`, `catanh*`, `casin*`, `cacos*`,
-  `casinh*`, and `cacosh*`: a small C ABI shim extracts components and
+  `casinh*`, `cacosh*`, and `cpow*`: a small C ABI shim extracts components and
   packages complex returns, while Nelua computes
   magnitudes, conjugates and projects values, evaluates arguments with
   `atan2*`, computes principal square roots with scaled intermediates, composes
@@ -150,9 +149,10 @@ musl export set.
   Complex tangent functions use scaled exponentials for large inputs. Inverse
   tangent uses scaled quadratic expressions, while inverse sine and cosine use
   scaled distances to their branch points. The inverse hyperbolic families reuse
-  those kernels through principal-branch identities.
-  The remaining C complex arithmetic and transcendental families are still a
-  substantial gap.
+  those kernels through principal-branch identities. Complex power composes
+  Nelibc's complex logarithm and exponential kernels.
+  All complex-math names in the pinned musl baseline now have declarations and
+  exports; GNU extensions and broader behavioral conformance still need audit.
   Nelua functions implement `fmin`/`fmax` NaN behavior and rounding rules;
   x86-64 hardware instructions implement correctly rounded square root and
   binary remainder. `remquo`, `remquof`, and `remquol` reuse x87 `FPREM1` and return the signed low quotient bits with the remainder. `drem` is the GNU alias for `remainder`; `pow10` aliases `exp10`; `nan` constructors return quiet NaNs and `finite` uses bit-level classification. Nelua `asin` and `acos` use the stable endpoint product

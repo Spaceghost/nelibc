@@ -183,9 +183,9 @@ cosh,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 coshf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 coshl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cosl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-cpow,complex.h,,,not-declared
-cpowf,complex.h,,,not-declared
-cpowl,complex.h,,,not-declared
+cpow,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+cpowf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+cpowl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cproj,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cprojf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cprojl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

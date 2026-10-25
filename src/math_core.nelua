@@ -338,6 +338,11 @@ local function is_nan80(value: clongdouble): boolean <inline>
     representation.parts.significand ~= 0x8000000000000000_culonglong
 end
 
+local function is_finite80(value: clongdouble): boolean <inline>
+  local representation: LongDoubleBits = {value = value}
+  return (representation.parts.sign_exponent & 0x7fff_cushort) ~= 0x7fff_cushort
+end
+
 local function is_signaling_nan80(value: clongdouble): boolean <inline>
   local representation: LongDoubleBits = {value = value}
   local significand = representation.parts.significand
@@ -5332,4 +5337,105 @@ local function nelibc_cacoshparts_l(x: clongdouble, y: clongdouble,
   nelibc_cacosparts_l(x, y, &acos_real, &acos_imaginary)
   real_out[0] = -acos_imaginary
   imaginary_out[0] = acos_real
+end
+
+local function nelibc_cpowparts_f(x: cfloat, y: cfloat, exponent_real: cfloat,
+    exponent_imaginary: cfloat, real_out: *[0]cfloat,
+    imaginary_out: *[0]cfloat): void <cexport, codename 'nelibc_cpowparts_f'>
+  if exponent_real == 0_cfloat and exponent_imaginary == 0_cfloat then
+    real_out[0], imaginary_out[0] = 1_cfloat, 0_cfloat
+    return
+  end
+  if x == 1_cfloat and y == 0_cfloat and is_finite32(exponent_real) and is_finite32(exponent_imaginary) then
+    real_out[0], imaginary_out[0] = 1_cfloat, 0_cfloat
+    return
+  end
+  if x == 0_cfloat and y == 0_cfloat then
+    if exponent_real > 0_cfloat then
+      real_out[0], imaginary_out[0] = 0_cfloat, -0_cfloat
+    elseif exponent_real < 0_cfloat then
+      local infinity = float_from_bits(0x7F800000_cuint)
+      real_out[0], imaginary_out[0] = infinity, infinity - infinity
+    else
+      local infinity = float_from_bits(0x7F800000_cuint)
+      local nan_value = infinity - infinity
+      real_out[0], imaginary_out[0] = nan_value, nan_value
+    end
+    return
+  end
+  local log_real: cfloat
+  local log_imaginary: cfloat
+  nelibc_clogf_parts(x, y, &log_real, &log_imaginary)
+  local exp_real = exponent_real * log_real - exponent_imaginary * log_imaginary
+  local exp_imaginary = exponent_imaginary * log_real + exponent_real * log_imaginary
+  nelibc_cexpf_parts(exp_real, exp_imaginary, real_out, imaginary_out)
+end
+
+local function nelibc_cpowparts(x: cdouble, y: cdouble, exponent_real: cdouble,
+    exponent_imaginary: cdouble, real_out: *[0]cdouble,
+    imaginary_out: *[0]cdouble): void <cexport, codename 'nelibc_cpowparts'>
+  if exponent_real == 0_cdouble and exponent_imaginary == 0_cdouble then
+    real_out[0], imaginary_out[0] = 1_cdouble, 0_cdouble
+    return
+  end
+  if x == 1_cdouble and y == 0_cdouble and is_finite64(exponent_real) and is_finite64(exponent_imaginary) then
+    real_out[0], imaginary_out[0] = 1_cdouble, 0_cdouble
+    return
+  end
+  if x == 0_cdouble and y == 0_cdouble then
+    if exponent_real > 0_cdouble then
+      real_out[0], imaginary_out[0] = 0_cdouble, -0_cdouble
+    elseif exponent_real < 0_cdouble then
+      local infinity = double_from_bits(0x7ff0000000000000_culonglong)
+      real_out[0], imaginary_out[0] = infinity, infinity - infinity
+    else
+      local infinity = double_from_bits(0x7ff0000000000000_culonglong)
+      local nan_value = infinity - infinity
+      real_out[0], imaginary_out[0] = nan_value, nan_value
+    end
+    return
+  end
+  local log_real: cdouble
+  local log_imaginary: cdouble
+  nelibc_clog_parts(x, y, &log_real, &log_imaginary)
+  local exp_real = exponent_real * log_real - exponent_imaginary * log_imaginary
+  local exp_imaginary = exponent_imaginary * log_real + exponent_real * log_imaginary
+  nelibc_cexp_parts(exp_real, exp_imaginary, real_out, imaginary_out)
+end
+
+local function nelibc_cpowparts_l(x: clongdouble, y: clongdouble,
+    exponent_real: clongdouble, exponent_imaginary: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_cpowparts_l'>
+  if exponent_real == 0_clongdouble and exponent_imaginary == 0_clongdouble then
+    real_out[0], imaginary_out[0] = 1_clongdouble, 0_clongdouble
+    return
+  end
+  if x == 1_clongdouble and y == 0_clongdouble and is_finite80(exponent_real) and is_finite80(exponent_imaginary) then
+    real_out[0], imaginary_out[0] = 1_clongdouble, 0_clongdouble
+    return
+  end
+  if x == 0_clongdouble and y == 0_clongdouble then
+    if exponent_real > 0_clongdouble then
+      real_out[0], imaginary_out[0] = 0_clongdouble, -0_clongdouble
+    elseif exponent_real < 0_clongdouble then
+      local infinity: LongDoubleBits = {
+        parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+      }
+      real_out[0], imaginary_out[0] = infinity.value, infinity.value - infinity.value
+    else
+      local infinity: LongDoubleBits = {
+        parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+      }
+      local nan_value = infinity.value - infinity.value
+      real_out[0], imaginary_out[0] = nan_value, nan_value
+    end
+    return
+  end
+  local log_real: clongdouble
+  local log_imaginary: clongdouble
+  nelibc_clogl_parts(x, y, &log_real, &log_imaginary)
+  local exp_real = exponent_real * log_real - exponent_imaginary * log_imaginary
+  local exp_imaginary = exponent_imaginary * log_real + exponent_real * log_imaginary
+  nelibc_cexpl_parts(exp_real, exp_imaginary, real_out, imaginary_out)
 end

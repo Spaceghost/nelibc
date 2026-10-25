@@ -61,6 +61,9 @@ extern void nelibc_casinhparts_l(long double real, long double imaginary, long d
 extern void nelibc_cacoshparts_f(float real, float imaginary, float *out_real, float *out_imaginary);
 extern void nelibc_cacoshparts(double real, double imaginary, double *out_real, double *out_imaginary);
 extern void nelibc_cacoshparts_l(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
+extern void nelibc_cpowparts_f(float real, float imaginary, float exponent_real, float exponent_imaginary, float *out_real, float *out_imaginary);
+extern void nelibc_cpowparts(double real, double imaginary, double exponent_real, double exponent_imaginary, double *out_real, double *out_imaginary);
+extern void nelibc_cpowparts_l(long double real, long double imaginary, long double exponent_real, long double exponent_imaginary, long double *out_real, long double *out_imaginary);
 
 float cabsf(float _Complex value) {
   return nelibc_cabsf_parts(__real__ value, __imag__ value);
@@ -410,5 +413,23 @@ double _Complex cacosh(double _Complex value) {
 long double _Complex cacoshl(long double _Complex value) {
   long double real, imaginary;
   nelibc_cacoshparts_l(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+float _Complex cpowf(float _Complex base, float _Complex exponent) {
+  float real, imaginary;
+  nelibc_cpowparts_f(__real__ base, __imag__ base, __real__ exponent, __imag__ exponent, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+double _Complex cpow(double _Complex base, double _Complex exponent) {
+  double real, imaginary;
+  nelibc_cpowparts(__real__ base, __imag__ base, __real__ exponent, __imag__ exponent, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+long double _Complex cpowl(long double _Complex base, long double _Complex exponent) {
+  long double real, imaginary;
+  nelibc_cpowparts_l(__real__ base, __imag__ base, __real__ exponent, __imag__ exponent, &real, &imaginary);
   return __builtin_complex(real, imaginary);
 }

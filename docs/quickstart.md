@@ -108,21 +108,18 @@ environment edge cases and most of the C math API remain incomplete.
 
 `cabs*`, `creal*`, `cimag*`, `conj*`, `cproj*`, `carg*`, `csqrt*`, `cexp*`,
 `clog*`, `csin*`, `ccos*`, `csinh*`, `ccosh*`, `ctan*`, `ctanh*`, `catan*`,
-`catanh*`, `casin*`, `cacos*`, `casinh*`, and `cacosh*` are the first C
+`catanh*`, `casin*`, `cacos*`, `casinh*`, `cacosh*`, and `cpow*` are the first C
 complex-math replacements. The complex argument and
 return ABI is handled in
-`src/complex_abi.c`; Nelua computes magnitudes with `hypot*`, conjugates the
+`src/complex_abi.c`. Nelua computes magnitudes with `hypot*`, conjugates the
 imaginary components, applies the projection rule for infinities, and computes
-complex arguments with `atan2*`, principal square roots with scaled
-intermediates, and complex exponentials by composing Nelibc's real `exp*` and
-trigonometric kernels, complex logarithms with scaled log-magnitude, and
-complex circular and hyperbolic sine and cosine from the corresponding real
-functions, and complex inverse sine and cosine from scaled distances to their
-branch points at +1 and -1; inverse hyperbolic functions reuse those kernels
-through principal-branch identities. Complex tangent functions use exponential
-scaling for large components to retain their finite limits. The inverse tangent scales its
-components before forming quadratic expressions; `catanh*` reuses that scaled
-implementation through the identity `atanh(z) = -i atan(i z)`. Run
+arguments with `atan2*`. Scaled formulas handle square roots, logarithms,
+inverse sine and cosine, and large complex tangent inputs. Complex exponentials
+and circular and hyperbolic trigonometric functions compose the real Nelibc
+kernels. The inverse hyperbolic functions reuse the inverse sine and cosine
+kernels through principal-branch identities; complex power composes the complex
+logarithm and exponential kernels. `catan*` uses scaled quadratic expressions,
+and `catanh*` reuses it through `atanh(z) = -i atan(i z)`. Run
 `make complex-math-smoke-matrix` to exercise all three precisions in Zig/glibc,
 GCC/glibc, Zig/musl, TinyCC-built Nelua archives, and standalone archives. The
 TinyCC profile uses Zig cc for the caller and ABI adapter because TinyCC does

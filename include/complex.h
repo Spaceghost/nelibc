@@ -70,6 +70,9 @@ long double complex casinhl(long double complex value);
 float complex cacoshf(float complex value);
 double complex cacosh(double complex value);
 long double complex cacoshl(long double complex value);
+float complex cpowf(float complex base, float complex exponent);
+double complex cpow(double complex base, double complex exponent);
+long double complex cpowl(long double complex base, long double complex exponent);
 
 #else
 

@@ -66,6 +66,9 @@ int main(void) {
   float _Complex (*volatile call_cacoshf)(float _Complex) = cacoshf;
   double _Complex (*volatile call_cacosh)(double _Complex) = cacosh;
   long double _Complex (*volatile call_cacoshl)(long double _Complex) = cacoshl;
+  float _Complex (*volatile call_cpowf)(float _Complex, float _Complex) = cpowf;
+  double _Complex (*volatile call_cpow)(double _Complex, double _Complex) = cpow;
+  long double _Complex (*volatile call_cpowl)(long double _Complex, long double _Complex) = cpowl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -470,5 +473,36 @@ int main(void) {
       !isinf(call_crealf(acosh_inf_nanf)) || !isnan(call_cimagf(acosh_inf_nanf)) ||
       !isinf(call_creal(acosh_inf_nan)) || !isnan(call_cimag(acosh_inf_nan)) ||
       !isinf(call_creall(cacoshl_inf_nan)) || !isnan(call_cimagl(cacoshl_inf_nan))) return 21;
+  float _Complex powf_square = call_cpowf(__builtin_complex(0.5f, 0.25f), __builtin_complex(2.0f, 0.0f));
+  double _Complex pow_square = call_cpow(__builtin_complex(0.5, 0.25), __builtin_complex(2.0, 0.0));
+  long double _Complex powl_square = call_cpowl(__builtin_complex(0.5L, 0.25L), __builtin_complex(2.0L, 0.0L));
+  float _Complex powf_zero = call_cpowf(__builtin_complex(NAN, NAN), __builtin_complex(0.0f, 0.0f));
+  double _Complex pow_zero = call_cpow(__builtin_complex(NAN, NAN), __builtin_complex(0.0, 0.0));
+  long double _Complex powl_zero = call_cpowl(__builtin_complex(NAN, NAN), __builtin_complex(0.0L, 0.0L));
+  float _Complex powf_one = call_cpowf(__builtin_complex(1.0f, 0.0f), __builtin_complex(3.0f, -2.0f));
+  double _Complex pow_one = call_cpow(__builtin_complex(1.0, 0.0), __builtin_complex(3.0, -2.0));
+  long double _Complex powl_one = call_cpowl(__builtin_complex(1.0L, 0.0L), __builtin_complex(3.0L, -2.0L));
+  double _Complex pow_zero_base = call_cpow(__builtin_complex(0.0, 0.0), __builtin_complex(2.0, 0.0));
+  double _Complex pow_zero_negative = call_cpow(__builtin_complex(0.0, 0.0), __builtin_complex(-2.0, 0.0));
+  float _Complex powf_large = call_cpowf(__builtin_complex(FLT_MAX, FLT_MAX), __builtin_complex(0.5f, 0.0f));
+  double _Complex pow_large = call_cpow(__builtin_complex(DBL_MAX, DBL_MAX), __builtin_complex(0.5, 0.0));
+  long double _Complex powl_large = call_cpowl(__builtin_complex(LDBL_MAX, LDBL_MAX), __builtin_complex(0.5L, 0.0L));
+  if (fabsf(call_crealf(powf_square) - 0.1875f) > 2e-6f ||
+      fabsf(call_cimagf(powf_square) - 0.25f) > 2e-6f ||
+      fabs(call_creal(pow_square) - 0.1875) > 2e-15 ||
+      fabs(call_cimag(pow_square) - 0.25) > 2e-15 ||
+      fabsl(call_creall(powl_square) - 0.1875L) > 2e-18L ||
+      fabsl(call_cimagl(powl_square) - 0.25L) > 2e-18L ||
+      call_crealf(powf_zero) != 1.0f || call_cimagf(powf_zero) != 0.0f ||
+      call_creal(pow_zero) != 1.0 || call_cimag(pow_zero) != 0.0 ||
+      call_creall(powl_zero) != 1.0L || call_cimagl(powl_zero) != 0.0L ||
+      call_crealf(powf_one) != 1.0f || call_cimagf(powf_one) != 0.0f ||
+      call_creal(pow_one) != 1.0 || call_cimag(pow_one) != 0.0 ||
+      call_creall(powl_one) != 1.0L || call_cimagl(powl_one) != 0.0L ||
+      call_creal(pow_zero_base) != 0.0 || !isinf(call_creal(pow_zero_negative)) ||
+      !isnan(call_cimag(pow_zero_negative)) ||
+      !isfinite(call_crealf(powf_large)) || !isfinite(call_cimagf(powf_large)) ||
+      !isfinite(call_creal(pow_large)) || !isfinite(call_cimag(pow_large)) ||
+      !isfinite(call_creall(powl_large)) || !isfinite(call_cimagl(powl_large))) return 22;
   return 0;
 }
