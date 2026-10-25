@@ -4717,3 +4717,45 @@ local function nelibc_ccosparts_l(x: clongdouble, y: clongdouble,
   real_out[0] = cosine_x * cosh_y
   imaginary_out[0] = -(sine_x * sinh_y)
 end
+
+local function nelibc_csinhparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_csinhparts_f'>
+  real_out[0] = sinhf(x) * cosf(y)
+  imaginary_out[0] = coshf(x) * sinf(y)
+end
+
+local function nelibc_csinhparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_csinhparts'>
+  real_out[0] = sinh(x) * cos(y)
+  imaginary_out[0] = cosh(x) * sin(y)
+end
+
+local function nelibc_csinhparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_csinhparts_l'>
+  real_out[0] = sinhl(x) * cosl(y)
+  imaginary_out[0] = coshl(x) * sinl(y)
+end
+
+local function nelibc_ccoshparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_ccoshparts_f'>
+  real_out[0] = coshf(x) * cosf(y)
+  imaginary_out[0] = sinhf(x) * sinf(y)
+end
+
+local function nelibc_ccoshparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_ccoshparts'>
+  real_out[0] = cosh(x) * cos(y)
+  imaginary_out[0] = sinh(x) * sin(y)
+end
+
+local function nelibc_ccoshparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_ccoshparts_l'>
+  real_out[0] = coshl(x) * cosl(y)
+  imaginary_out[0] = sinhl(x) * sinl(y)
+end

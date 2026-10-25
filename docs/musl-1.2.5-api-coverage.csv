@@ -128,9 +128,9 @@ cbrtf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cbrtl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ccos,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ccosf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-ccosh,complex.h,,,not-declared
-ccoshf,complex.h,,,not-declared
-ccoshl,complex.h,,,not-declared
+ccosh,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+ccoshf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+ccoshl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ccosl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ceil,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ceilf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -197,9 +197,9 @@ crypt,crypt.h;unistd.h,,,not-declared
 crypt_r,crypt.h,,,not-declared
 csin,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 csinf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-csinh,complex.h,,,not-declared
-csinhf,complex.h,,,not-declared
-csinhl,complex.h,,,not-declared
+csinh,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+csinhf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+csinhl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 csinl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 csqrt,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 csqrtf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

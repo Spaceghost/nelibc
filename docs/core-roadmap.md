@@ -112,8 +112,8 @@ musl export set.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
   that are also exported by the pinned release archives: Nelibc exports 662
   in at least one hybrid profile, delegates 126 to a hybrid host, and does not
-  yet declare 671. The largest undeclared groups are complex math
-  (33), wide characters (65), stdlib, unistd, and network database APIs. These
+  yet declare 665. The largest undeclared groups are complex math
+  (27), wide characters (65), stdlib, unistd, and network database APIs. These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
   command.
@@ -138,14 +138,15 @@ musl export set.
   binary32/64/80 internal classification and sign-bit functions, through all
   four hybrid profiles and standalone archives. Its
   complex-math coverage now includes `cabs*`, `creal*`, `cimag*`, `conj*`,
-  `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, and `ccos*`: a small C ABI shim extracts
+  `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, `ccos*`, `csinh*`,
+  and `ccosh*`: a small C ABI shim extracts
   components and
   packages complex returns, while Nelua computes
   magnitudes, conjugates and projects values, evaluates arguments with
   `atan2*`, computes principal square roots with scaled intermediates, composes
   complex exponentials from the Nelua real `exp*`, `sin*`, and `cos*`, uses a
-  scaled logarithmic modulus for complex logarithms, and composes complex sine
-  and cosine from the real trigonometric and hyperbolic functions.
+  scaled logarithmic modulus for complex logarithms, and composes complex
+  circular and hyperbolic sine and cosine from the corresponding real functions.
   The remaining C complex arithmetic and transcendental families are still a
   substantial gap.
   Nelua functions implement `fmin`/`fmax` NaN behavior and rounding rules;

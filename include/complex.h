@@ -40,6 +40,12 @@ long double complex csinl(long double complex value);
 float complex ccosf(float complex value);
 double complex ccos(double complex value);
 long double complex ccosl(long double complex value);
+float complex csinhf(float complex value);
+double complex csinh(double complex value);
+long double complex csinhl(long double complex value);
+float complex ccoshf(float complex value);
+double complex ccosh(double complex value);
+long double complex ccoshl(long double complex value);
 
 #else
 

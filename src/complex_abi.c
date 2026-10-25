@@ -31,6 +31,12 @@ extern void nelibc_csinparts_l(long double real, long double imaginary, long dou
 extern void nelibc_ccosparts_f(float real, float imaginary, float *out_real, float *out_imaginary);
 extern void nelibc_ccosparts(double real, double imaginary, double *out_real, double *out_imaginary);
 extern void nelibc_ccosparts_l(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
+extern void nelibc_csinhparts_f(float real, float imaginary, float *out_real, float *out_imaginary);
+extern void nelibc_csinhparts(double real, double imaginary, double *out_real, double *out_imaginary);
+extern void nelibc_csinhparts_l(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
+extern void nelibc_ccoshparts_f(float real, float imaginary, float *out_real, float *out_imaginary);
+extern void nelibc_ccoshparts(double real, double imaginary, double *out_real, double *out_imaginary);
+extern void nelibc_ccoshparts_l(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
 
 float cabsf(float _Complex value) {
   return nelibc_cabsf_parts(__real__ value, __imag__ value);
@@ -200,5 +206,41 @@ double _Complex ccos(double _Complex value) {
 long double _Complex ccosl(long double _Complex value) {
   long double real, imaginary;
   nelibc_ccosparts_l(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+float _Complex csinhf(float _Complex value) {
+  float real, imaginary;
+  nelibc_csinhparts_f(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+double _Complex csinh(double _Complex value) {
+  double real, imaginary;
+  nelibc_csinhparts(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+long double _Complex csinhl(long double _Complex value) {
+  long double real, imaginary;
+  nelibc_csinhparts_l(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+float _Complex ccoshf(float _Complex value) {
+  float real, imaginary;
+  nelibc_ccoshparts_f(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+double _Complex ccosh(double _Complex value) {
+  double real, imaginary;
+  nelibc_ccoshparts(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+long double _Complex ccoshl(long double _Complex value) {
+  long double real, imaginary;
+  nelibc_ccoshparts_l(__real__ value, __imag__ value, &real, &imaginary);
   return __builtin_complex(real, imaginary);
 }
