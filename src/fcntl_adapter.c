@@ -6,6 +6,8 @@
 
 extern int nelibc_raw_fcntl(int fd, int command, unsigned long argument);
 extern int nelibc_fcntl_argument_kind(int command);
+extern int nelibc_cancellation_enter(void);
+extern void nelibc_cancellation_leave(int previous_type);
 
 static unsigned long fcntl_argument(va_list *arguments, int command) {
   switch (nelibc_fcntl_argument_kind(command)) {
@@ -27,6 +29,12 @@ int fcntl(int fd, int command, ...) {
   va_start(arguments, command);
   unsigned long argument = fcntl_argument(&arguments, command);
   va_end(arguments);
+  if (command == F_SETLKW) {
+    int previous_type = nelibc_cancellation_enter();
+    int result = nelibc_raw_fcntl(fd, command, argument);
+    nelibc_cancellation_leave(previous_type);
+    return result;
+  }
   return nelibc_raw_fcntl(fd, command, argument);
 }
 

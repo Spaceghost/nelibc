@@ -35,6 +35,8 @@ static int send_started;
 static int sendmsg_started;
 static int nanosleep_started;
 static int clock_nanosleep_started;
+static int lock_wait_fd;
+static int lock_wait_started;
 static int epoll_fd;
 static int epoll_wait_started;
 static int epoll_pwait_started;
@@ -186,6 +188,15 @@ static void *blocked_epoll_pwait2_worker(void *unused) {
   struct epoll_event event;
   mark_started(&epoll_pwait2_started);
   return (void *)(long)epoll_pwait2(epoll_fd, &event, 1, NULL, NULL);
+}
+
+static void *blocked_record_locker(void *unused) {
+  (void)unused;
+  struct flock lock = {0};
+  lock.l_type = F_WRLCK;
+  lock.l_whence = SEEK_SET;
+  mark_started(&lock_wait_started);
+  return (void *)(long)fcntl(lock_wait_fd, F_SETLKW, &lock);
 }
 
 static int fill_socket_send_buffer(int fd) {
@@ -543,6 +554,46 @@ int main(void) {
   if (pthread_join(epoll_pwait2er, &result) != 0 || result != PTHREAD_CANCELED) return 102;
   alarm(0);
   close(epoll_fd);
+
+  if (snprintf(fifo_path, sizeof fifo_path, "/tmp/nelibc-cancel-lock-%ld", (long)getpid()) >=
+      (int)sizeof fifo_path)
+    return 103;
+  int lock_fd = open(fifo_path, O_CREAT | O_EXCL | O_RDWR, 0600);
+  if (lock_fd < 0) return 104;
+  close(lock_fd);
+  int ready_pipe[2];
+  if (pipe(ready_pipe) != 0) return 105;
+  pid_t lock_child = fork();
+  if (lock_child < 0) return 106;
+  if (lock_child == 0) {
+    close(ready_pipe[0]);
+    int child_fd = open(fifo_path, O_RDWR, 0);
+    struct flock child_lock = {0};
+    child_lock.l_type = F_WRLCK;
+    child_lock.l_whence = SEEK_SET;
+    char ready = child_fd >= 0 && fcntl(child_fd, F_SETLK, &child_lock) == 0 ? 'r' : 'e';
+    (void)write(ready_pipe[1], &ready, 1);
+    if (ready == 'e') _exit(1);
+    for (;;) pause();
+  }
+  close(ready_pipe[1]);
+  char ready;
+  if (read(ready_pipe[0], &ready, 1) != 1 || ready != 'r') return 107;
+  close(ready_pipe[0]);
+  lock_wait_fd = open(fifo_path, O_RDWR, 0);
+  if (lock_wait_fd < 0) return 108;
+  pthread_t lock_waiter;
+  if (pthread_create(&lock_waiter, NULL, blocked_record_locker, NULL) != 0) return 109;
+  wait_started(&lock_wait_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(lock_waiter) != 0) return 110;
+  result = NULL;
+  if (pthread_join(lock_waiter, &result) != 0 || result != PTHREAD_CANCELED) return 111;
+  alarm(0);
+  close(lock_wait_fd);
+  if (kill(lock_child, SIGKILL) != 0 || waitpid(lock_child, NULL, 0) != lock_child) return 112;
+  if (unlink(fifo_path) != 0) return 113;
 
   wait_child = fork();
   if (wait_child < 0) return 28;

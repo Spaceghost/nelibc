@@ -59,6 +59,9 @@ run in the hybrid glibc, musl, and TinyCC-compiled profiles and the standalone
 Zig, GCC, and TinyCC profiles; `make smoke-matrix` includes the standalone
 group. `getitimer` and `setitimer` use raw syscalls because POSIX does not list
 them as cancellation points; this avoids introducing cancellation there.
+`fcntl(F_SETLKW)` enters the cancellation path, and the smoke verifies that a
+blocked record-lock request can be canceled while another process holds the
+lock.
 The checks verify that deferred cancellation wakes each blocked thread and
 that `pthread_join` reports `PTHREAD_CANCELED`. This remains targeted behavior
 coverage, not a complete cancellation-point audit.
