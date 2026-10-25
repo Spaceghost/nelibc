@@ -1916,6 +1916,60 @@ int main(int argc, char **argv) {
   if (read(pipefd[0], stdio_buffer, sizeof stdio_buffer) != (long)sizeof stdio_buffer ||
       memcmp(stdio_buffer, "puts\n!UV", sizeof stdio_buffer) != 0) return 166;
   if (setlocale(LC_CTYPE, "C.UTF-8") == NULL) return 267;
+  char scan_bytes[] = "alpha \303\251Zrest";
+  FILE *scan_stream = fmemopen(scan_bytes, sizeof scan_bytes - 1, "r");
+  char narrow_word[8] = {0};
+  wchar_t wide_pair[4] = {0};
+  int scan_count = -1;
+  if (scan_stream == NULL || fwide(scan_stream, 1) <= 0 ||
+      fwscanf(scan_stream, L"%5s %2lc%n", narrow_word, wide_pair,
+              &scan_count) != 2 || strcmp(narrow_word, "alpha") != 0 ||
+      wide_pair[0] != 0xE9 || wide_pair[1] != L'Z' || wide_pair[2] != 0 ||
+      scan_count != 8 || fclose(scan_stream) != 0)
+    return 294;
+  char scanset_bytes[] = "xyz123!";
+  scan_stream = fmemopen(scanset_bytes, sizeof scanset_bytes - 1, "r");
+  memset(narrow_word, 0, sizeof narrow_word);
+  scan_count = -1;
+  if (scan_stream == NULL || fwide(scan_stream, 1) <= 0 ||
+      fwscanf(scan_stream, L"%3[a-z]%n", narrow_word, &scan_count) != 1 ||
+      strcmp(narrow_word, "xyz") != 0 || scan_count != 3 ||
+      fgetwc(scan_stream) != L'1' || fclose(scan_stream) != 0)
+    return 295;
+  char integer_scan_bytes[] = "42 -17 0x2a 077";
+  scan_stream = fmemopen(integer_scan_bytes, sizeof integer_scan_bytes - 1, "r");
+  int signed_decimal = 0, signed_auto = 0, signed_octal = 0;
+  unsigned int unsigned_hex = 0;
+  if (scan_stream == NULL || fwide(scan_stream, 1) <= 0 ||
+      fwscanf(scan_stream, L"%d %i %x %i", &signed_decimal, &signed_auto,
+              &unsigned_hex, &signed_octal) != 4 || signed_decimal != 42 ||
+      signed_auto != -17 || unsigned_hex != 42 || signed_octal != 63 ||
+      fclose(scan_stream) != 0)
+    return 296;
+  char float_scan_bytes[] = "12.5 -2.25 3e2";
+  scan_stream = fmemopen(float_scan_bytes, sizeof float_scan_bytes - 1, "r");
+  float scanned_float = 0;
+  double scanned_double = 0;
+  long double scanned_long_double = 0;
+  if (scan_stream == NULL || fwide(scan_stream, 1) <= 0 ||
+      fwscanf(scan_stream, L"%f %lf %Le", &scanned_float, &scanned_double,
+              &scanned_long_double) != 3 || scanned_float != 12.5f ||
+      scanned_double != -2.25 || scanned_long_double != 300.0L ||
+      fclose(scan_stream) != 0)
+    return 297;
+  char hex_float_scan_bytes[] = "0x1.8p3";
+  scan_stream = fmemopen(hex_float_scan_bytes, sizeof hex_float_scan_bytes - 1, "r");
+  scanned_double = 0;
+  if (scan_stream == NULL || fwide(scan_stream, 1) <= 0 ||
+      fwscanf(scan_stream, L"%la", &scanned_double) != 1 ||
+      scanned_double != 12.0 || fclose(scan_stream) != 0)
+    return 299;
+  int wide_string_integer = 0;
+  wchar_t wide_string_word[16] = {0};
+  if (swscanf(L"27 sample", L"%d %15ls", &wide_string_integer,
+              wide_string_word) != 2 || wide_string_integer != 27 ||
+      wcscmp(wide_string_word, L"sample") != 0)
+    return 298;
   char wide_stdio_bytes[32] = {0};
   FILE *wide_stream = fmemopen(wide_stdio_bytes, sizeof wide_stdio_bytes, "w+");
   if (wide_stream == NULL || fwide(wide_stream, 0) != 0) return 268;

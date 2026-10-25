@@ -44,6 +44,8 @@ HOST_DELEGATED = {
         "putwc", "putwc_unlocked", "putwchar", "putwchar_unlocked", "ungetwc",
         "swprintf", "vswprintf",
         "fwprintf", "vfwprintf", "wprintf", "vwprintf",
+        "fwscanf", "vfwscanf", "wscanf", "vwscanf",
+        "swscanf", "vswscanf",
         "open_wmemstream",
         "pthread_setcancelstate", "pthread_setcanceltype", "pthread_mutexattr_init",
         "pthread_getschedparam", "pthread_setschedparam", "pthread_setschedprio",
