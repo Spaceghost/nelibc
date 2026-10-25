@@ -47,6 +47,7 @@ local PthreadContext: type = @record{
   object: pointer,
   lifecycle: cint,
   cancel_pending: cint,
+  cancel_defer_depth: cint,
   cancel_state: cint,
   cancel_type: cint,
   sched_policy: cint,
@@ -326,6 +327,7 @@ local function pthread_current_context(): *PthreadContext <inline>
     context = &initial_thread_context
     initial_thread_context.cancel_state = PTHREAD_CANCEL_ENABLE
     initial_thread_context.cancel_type = PTHREAD_CANCEL_DEFERRED
+    initial_thread_context.cancel_defer_depth = 0
     nelibc_thread_set_pthread_context((@pointer)(context))
     initial_thread_identity = nelibc_thread_current_identity()
     nelibc_thread_cancel_signal_install()
@@ -347,7 +349,31 @@ local function pthread_current_context(): *PthreadContext <inline>
   return context
 end
 
+-- Async cancellation must not run cleanup handlers while this thread owns a
+-- libc lock that those handlers or TLS destructors may need. If the reserved
+-- signal arrives in the protected region, keep it pending and retrigger it
+-- only after the lock has been released.
+local function pthread_cancel_defer_begin(): void <inline>
+  local context = pthread_current_context()
+  if context ~= nilptr then context.cancel_defer_depth = context.cancel_defer_depth + 1 end
+end
+
+local function pthread_cancel_defer_end(): void <inline>
+  local context = pthread_current_context()
+  if context == nilptr or context.cancel_defer_depth <= 0 then return end
+  context.cancel_defer_depth = context.cancel_defer_depth - 1
+  if context.cancel_defer_depth == 0 and
+     context.cancel_state == PTHREAD_CANCEL_ENABLE and
+     context.cancel_type == PTHREAD_CANCEL_ASYNCHRONOUS and
+     nelibc_atomic_load_int(&context.cancel_pending) ~= 0 then
+    local pid = nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong)
+    local tid = nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong)
+    nelibc_raw_syscall3(234_culong, (@culong)(pid), (@culong)(tid), 32_culong)
+  end
+end
+
 local function pthread_key_lock_acquire(): void <inline>
+  pthread_cancel_defer_begin()
   while true do
     if nelibc_atomic_cas_int(&pthread_key_lock, 0, 1) == 0 then return end
     nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&pthread_key_lock)),
@@ -359,6 +385,7 @@ local function pthread_key_lock_release(): void <inline>
   nelibc_atomic_store_int(&pthread_key_lock, 0)
   nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&pthread_key_lock)),
                       129_culong, 1_culong, 0_culong, 0_culong, 0_culong)
+  pthread_cancel_defer_end()
 end
 
 local function pthread_key_parts(key: cuint, index: *[0]csize): boolean <inline>
@@ -858,6 +885,7 @@ local function nelibc_pthread_cancel_signal(): void <cexport, codename 'nelibc_p
   local context = pthread_current_context()
   if context == nilptr or context.cancel_state == PTHREAD_CANCEL_DISABLE or
      context.cancel_type ~= PTHREAD_CANCEL_ASYNCHRONOUS or
+     context.cancel_defer_depth ~= 0 or
      nelibc_atomic_load_int(&context.cancel_pending) == 0 then return end
   nelibc_atomic_store_int(&context.cancel_pending, 0)
   pthread_context_exit(context, PTHREAD_CANCELED)
@@ -3049,6 +3077,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.handle = &state.handle
   state.context.object = object
   state.context.cancel_pending = 0
+  state.context.cancel_defer_depth = 0
   state.context.cancel_state = PTHREAD_CANCEL_ENABLE
   state.context.cancel_type = PTHREAD_CANCEL_DEFERRED
   state.context.sched_policy = schedpolicy
