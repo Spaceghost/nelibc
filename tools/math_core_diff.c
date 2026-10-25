@@ -2142,7 +2142,7 @@ int main(void) {
       const long double base = ldexpl(mantissa, binary_exponent);
       long double exponent = 0.25L +
           (long double)(next_bits() >> 1) * 0x1p-63L *
-              8191.75L;
+              16383.75L;
       if (next_bits() & 1) exponent = -exponent;
       const long double expected = powl(base, exponent);
       const long double actual = nelibc_powl(base, exponent);
