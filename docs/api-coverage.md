@@ -62,11 +62,12 @@ python3 tools/musl_api_audit.py \
 ```
 
 The current snapshot contains 1,471 APIs: 713 exported by Nelibc in at least
-one tested hybrid profile, 127 intentionally delegated to the host in hybrid
-profiles, and 631 not declared by Nelibc. The audit removes preprocessor
+one tested hybrid profile, 162 intentionally delegated to the host in hybrid
+profiles, and 596 not declared by Nelibc. No declared API is missing from all
+four hybrid archives. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 631 entries remain visible as unimplemented
+intentional omission; the 596 entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
 No real-valued `math.h` APIs in this pinned musl baseline remain undeclared.
 The largest remaining groups are wide characters (58), unistd (42), stdlib (41), and name service/network database
@@ -82,8 +83,10 @@ Nelua tables and case maps;
 matching Unicode database version. Case conversion uses simple one-codepoint
 mappings. Classification follows Unicode letter/number categories, casing,
 whitespace, and printability properties, with ASCII-only classes in `C`;
-locale-specific tailoring,
-`wctype` descriptors, and `_l` variants remain gaps.
+`wctype`/`iswctype`, their `_l` forms, all wide classifier `_l` forms, and
+`towlower_l`/`towupper_l` use explicit locale handles. Standalone `newlocale`
+currently constructs static `C` and `C.UTF-8` `LC_CTYPE` handles; locale data
+for other categories and thread-local `uselocale` remain gaps.
 
 `scalb` and `scalbf` scale by integral exponents and report invalid fractional
 exponents; `significand` and `significandf` normalize finite nonzero inputs so

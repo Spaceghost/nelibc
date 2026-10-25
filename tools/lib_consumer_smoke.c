@@ -867,6 +867,37 @@ int main(int argc, char **argv) {
   if (locale_smoke_result != 0) return 84 + locale_smoke_result;
   if (setlocale(LC_CTYPE, "C.UTF-8") == NULL) return 34;
   if (btowc(0xc3) != WEOF || wctob(0xe9) != -1) return 76;
+  locale_t ctype_c = newlocale(LC_CTYPE_MASK, "C", (locale_t)0);
+  locale_t ctype_utf8 = newlocale(LC_CTYPE_MASK, "C.UTF-8", ctype_c);
+  locale_t all_utf8 = newlocale(LC_ALL_MASK, "C.UTF-8", (locale_t)0);
+  locale_t ctype_current = duplocale(LC_GLOBAL_LOCALE);
+  wctype_t alpha_class = wctype("alpha");
+  wctype_t space_class = wctype_l("space", ctype_c);
+  if (ctype_c == (locale_t)0 || ctype_utf8 == (locale_t)0 ||
+      all_utf8 == (locale_t)0 || ctype_current == (locale_t)0 ||
+      alpha_class == 0 || space_class == 0 || wctype_l("alpha", all_utf8) == 0 ||
+      wctype("not-a-class") != 0 || iswctype(0x391, alpha_class) == 0 ||
+      iswctype_l(0x391, alpha_class, ctype_c) != 0 ||
+      iswctype_l(0x391, alpha_class, ctype_utf8) == 0 ||
+      iswctype_l(0xa0, space_class, ctype_c) != 0 ||
+      iswctype_l(0xa0, space_class, ctype_utf8) == 0 ||
+      iswalnum_l(0x391, ctype_utf8) == 0 || iswalpha_l(0x391, ctype_utf8) == 0 ||
+      iswblank_l(L'\t', ctype_c) == 0 || iswcntrl_l(L'\n', ctype_utf8) == 0 ||
+      iswdigit_l(L'4', ctype_c) == 0 || iswgraph_l(L'!', ctype_c) == 0 ||
+      iswlower_l(0x3b1, ctype_utf8) == 0 || iswprint_l(0x3b1, ctype_utf8) == 0 ||
+      iswpunct_l(0x2014, ctype_utf8) == 0 || iswspace_l(0xa0, ctype_utf8) == 0 ||
+      iswupper_l(0x391, ctype_utf8) == 0 || iswxdigit_l(L'F', ctype_c) == 0 ||
+      towlower_l(0x391, ctype_c) != 0x391 ||
+      towlower_l(0x391, ctype_utf8) != 0x3b1 ||
+      towupper_l(0x3b1, ctype_utf8) != 0x391 ||
+      iswalpha_l(0x391, ctype_current) == 0)
+    return 80;
+  locale_t bad_locale = newlocale(LC_CTYPE_MASK, "missing_LOCALE", ctype_c);
+  if (bad_locale != (locale_t)0 || errno != EINVAL) return 81;
+  freelocale(ctype_current);
+  freelocale(all_utf8);
+  freelocale(ctype_utf8);
+  freelocale(ctype_c);
   if (towlower(0x391) != 0x3b1 || towupper(0x3b1) != 0x391 ||
       towlower(0x410) != 0x430 || towupper(0x430) != 0x410 ||
       towlower(0x10400) != 0x10428 || towupper(0x10428) != 0x10400 ||

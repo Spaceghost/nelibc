@@ -2,10 +2,85 @@
 ## pragmas.noentrypoint = true
 
 local function nelibc_multibyte_mode(): cint <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+
+-- Locale handles are opaque addresses of static records. This first locale
+-- object slice carries LC_CTYPE state, which the wide-character `_l` APIs use.
+local locale_c_token: cuint = 0
+local locale_utf8_token: cuint = 1
+
+local function nelibc_locale_token(mode: cint): pointer <inline>
+  if mode == 1 then return (@pointer)(&locale_utf8_token) end
+  return (@pointer)(&locale_c_token)
+end
+
+local function nelibc_locale_ctype_mode(locale: pointer): cint <inline>
+  if locale == (@pointer)(&locale_c_token) then return 0 end
+  if locale == (@pointer)(&locale_utf8_token) then return 1 end
+  if locale == nilptr or locale == (@pointer)(~0_usize) then
+    return nelibc_multibyte_mode()
+  end
+  return -1
+end
+
+local function nelibc_locale_name_is(name: *[0]cchar <const>, literal: *[0]cchar <const>): boolean <inline>
+  local index: csize = 0
+  while name[index] ~= 0 and name[index] == literal[index] do index = index + 1 end
+  return name[index] == 0 and literal[index] == 0
+end
+
+local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): pointer
+    <cexport, codename 'newlocale'>
+  if mask <= 0 or (mask & ~63) ~= 0 or name == nilptr then
+    nelibc_errno_location()[0] = 22
+    return nilptr
+  end
+  local mode: cint = 0
+  if base ~= nilptr then
+    mode = nelibc_locale_ctype_mode(base)
+    if mode < 0 then
+      nelibc_errno_location()[0] = 22
+      return nilptr
+    end
+  end
+  if (mask & 1) ~= 0 then
+    if nelibc_locale_name_is(name, "C") or nelibc_locale_name_is(name, "POSIX") then
+      mode = 0
+    elseif nelibc_locale_name_is(name, "C.UTF-8") or
+        nelibc_locale_name_is(name, "C.utf8") or
+        nelibc_locale_name_is(name, "C.UTF8") then
+      mode = 1
+    else
+      nelibc_errno_location()[0] = 22
+      return nilptr
+    end
+  elseif not (nelibc_locale_name_is(name, "C") or
+      nelibc_locale_name_is(name, "POSIX") or
+      nelibc_locale_name_is(name, "C.UTF-8") or
+      nelibc_locale_name_is(name, "C.utf8") or
+      nelibc_locale_name_is(name, "C.UTF8")) then
+    nelibc_errno_location()[0] = 22
+    return nilptr
+  end
+  return nelibc_locale_token(mode)
+end
+
+local function duplocale(locale: pointer): pointer <cexport, codename 'duplocale'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then
+    nelibc_errno_location()[0] = 22
+    return nilptr
+  end
+  return nelibc_locale_token(mode)
+end
+
+local function freelocale(locale: pointer): void <cexport, codename 'freelocale'>
+  -- Handles point to static C and C.UTF-8 locale records.
+end
 
 -- BEGIN GENERATED UNICODE WIDTH TABLES
 -- Generated from Unicode Character Database 16.0.0; see THIRD_PARTY_NOTICES.md.
--- Data SHA-256: afd9202e98f361dc857f727fcad7e95672ca05942f17cd1c6bd5268a87947b70
+-- Data SHA-256: 0278b8407039973cee7bc2f4660f40563b812ac4f904ad5e7c2c999f8735e035
 local wcwidth_zero_ranges: [726]cuint = {
   0x300, 0x36f, 0x483, 0x489, 0x591, 0x5bd, 0x5bf, 0x5bf,
   0x5c1, 0x5c2, 0x5c4, 0x5c5, 0x5c7, 0x5c7, 0x610, 0x61a,
@@ -1625,26 +1700,48 @@ local function wcase_map(value: cwchar_t, pairs: *[0]cuint,
   return value
 end
 
-local function towlower(value: cwchar_t): cwchar_t <cexport, codename 'towlower'>
+local function towlower_for_mode(value: cwchar_t, mode: cint): cwchar_t <inline>
   if value < 0 or value > 0x10ffff or (value >= 0xd800 and value <= 0xdfff) then
     return value
   end
-  if nelibc_multibyte_mode() == 0 then
+  if mode == 0 then
     if value >= 65 and value <= 90 then return value + 32 end
     return value
   end
   return wcase_map(value, &wcase_lower_pairs[0], #wcase_lower_pairs // 2)
 end
 
-local function towupper(value: cwchar_t): cwchar_t <cexport, codename 'towupper'>
+local function towlower(value: cwchar_t): cwchar_t <cexport, codename 'towlower'>
+  return towlower_for_mode(value, nelibc_multibyte_mode())
+end
+
+local function towlower_l(value: cwchar_t, locale: pointer): cwchar_t
+    <cexport, codename 'towlower_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return value end
+  return towlower_for_mode(value, mode)
+end
+
+local function towupper_for_mode(value: cwchar_t, mode: cint): cwchar_t <inline>
   if value < 0 or value > 0x10ffff or (value >= 0xd800 and value <= 0xdfff) then
     return value
   end
-  if nelibc_multibyte_mode() == 0 then
+  if mode == 0 then
     if value >= 97 and value <= 122 then return value - 32 end
     return value
   end
   return wcase_map(value, &wcase_upper_pairs[0], #wcase_upper_pairs // 2)
+end
+
+local function towupper(value: cwchar_t): cwchar_t <cexport, codename 'towupper'>
+  return towupper_for_mode(value, nelibc_multibyte_mode())
+end
+
+local function towupper_l(value: cwchar_t, locale: pointer): cwchar_t
+    <cexport, codename 'towupper_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return value end
+  return towupper_for_mode(value, mode)
 end
 
 local function wctype_isin(value: cwchar_t, ranges: *[0]cuint,
@@ -1655,72 +1752,219 @@ local function wctype_isin(value: cwchar_t, ranges: *[0]cuint,
   return wcwidth_in_ranges((@cuint)(value), ranges, count)
 end
 
-local function iswalpha(value: cwchar_t): cint <cexport, codename 'iswalpha'>
-  if nelibc_multibyte_mode() == 0 then
+local function iswalpha_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  if mode == 0 then
     return ((value >= 65 and value <= 90) or (value >= 97 and value <= 122)) and 1 or 0
   end
   return wctype_isin(value, &wctype_alpha_ranges[0], #wctype_alpha_ranges // 2) and 1 or 0
 end
 
-local function iswlower(value: cwchar_t): cint <cexport, codename 'iswlower'>
-  if nelibc_multibyte_mode() == 0 then return (value >= 97 and value <= 122) and 1 or 0 end
+local function iswalpha(value: cwchar_t): cint <cexport, codename 'iswalpha'>
+  return iswalpha_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswalpha_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswalpha_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return 0 end
+  return iswalpha_for_mode(value, mode)
+end
+
+local function iswlower_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  if mode == 0 then return (value >= 97 and value <= 122) and 1 or 0 end
   return wctype_isin(value, &wctype_lower_ranges[0], #wctype_lower_ranges // 2) and 1 or 0
 end
 
-local function iswupper(value: cwchar_t): cint <cexport, codename 'iswupper'>
-  if nelibc_multibyte_mode() == 0 then return (value >= 65 and value <= 90) and 1 or 0 end
+local function iswlower(value: cwchar_t): cint <cexport, codename 'iswlower'>
+  return iswlower_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswlower_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswlower_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return 0 end
+  return iswlower_for_mode(value, mode)
+end
+
+local function iswupper_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  if mode == 0 then return (value >= 65 and value <= 90) and 1 or 0 end
   return wctype_isin(value, &wctype_upper_ranges[0], #wctype_upper_ranges // 2) and 1 or 0
 end
 
-local function iswdigit(value: cwchar_t): cint <cexport, codename 'iswdigit'>
-  return (value >= 48 and value <= 57) and 1 or 0
+local function iswupper(value: cwchar_t): cint <cexport, codename 'iswupper'>
+  return iswupper_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswupper_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswupper_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return 0 end
+  return iswupper_for_mode(value, mode)
 end
 
-local function iswxdigit(value: cwchar_t): cint <cexport, codename 'iswxdigit'>
+local function iswdigit_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  return (value >= 48 and value <= 57) and 1 or 0
+end
+local function iswdigit(value: cwchar_t): cint <cexport, codename 'iswdigit'>
+  return iswdigit_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswdigit_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswdigit_l'>
+  if nelibc_locale_ctype_mode(locale) < 0 then return 0 end
+  return iswdigit_for_mode(value, 1)
+end
+
+local function iswxdigit_for_mode(value: cwchar_t, mode: cint): cint <inline>
   return ((value >= 48 and value <= 57) or (value >= 65 and value <= 70) or
       (value >= 97 and value <= 102)) and 1 or 0
 end
+local function iswxdigit(value: cwchar_t): cint <cexport, codename 'iswxdigit'>
+  return iswxdigit_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswxdigit_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswxdigit_l'>
+  if nelibc_locale_ctype_mode(locale) < 0 then return 0 end
+  return iswxdigit_for_mode(value, 1)
+end
 
-local function iswspace(value: cwchar_t): cint <cexport, codename 'iswspace'>
-  if nelibc_multibyte_mode() == 0 then
+local function iswspace_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  if mode == 0 then
     return ((value >= 9 and value <= 13) or value == 32) and 1 or 0
   end
   return wctype_isin(value, &wctype_space_ranges[0], #wctype_space_ranges // 2) and 1 or 0
 end
-
-local function iswblank(value: cwchar_t): cint <cexport, codename 'iswblank'>
-  return (value == 9 or value == 32) and 1 or 0
+local function iswspace(value: cwchar_t): cint <cexport, codename 'iswspace'>
+  return iswspace_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswspace_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswspace_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return 0 end
+  return iswspace_for_mode(value, mode)
 end
 
-local function iswcntrl(value: cwchar_t): cint <cexport, codename 'iswcntrl'>
-  if nelibc_multibyte_mode() == 0 then
+local function iswblank_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  return (value == 9 or value == 32) and 1 or 0
+end
+local function iswblank(value: cwchar_t): cint <cexport, codename 'iswblank'>
+  return iswblank_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswblank_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswblank_l'>
+  if nelibc_locale_ctype_mode(locale) < 0 then return 0 end
+  return iswblank_for_mode(value, 1)
+end
+
+local function iswcntrl_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  if mode == 0 then
     return ((value >= 0 and value <= 0x1f) or value == 0x7f) and 1 or 0
   end
   return wctype_isin(value, &wctype_control_ranges[0], #wctype_control_ranges // 2) and 1 or 0
 end
+local function iswcntrl(value: cwchar_t): cint <cexport, codename 'iswcntrl'>
+  return iswcntrl_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswcntrl_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswcntrl_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return 0 end
+  return iswcntrl_for_mode(value, mode)
+end
 
-local function iswprint(value: cwchar_t): cint <cexport, codename 'iswprint'>
-  if nelibc_multibyte_mode() == 0 then
+local function iswprint_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  if mode == 0 then
     return (value >= 0x20 and value <= 0x7e) and 1 or 0
   end
   if value < 0 or value > 0x10ffff or (value >= 0xd800 and value <= 0xdfff) then return 0 end
   return not wcwidth_in_ranges((@cuint)(value), &wcwidth_nonprint_ranges[0],
       #wcwidth_nonprint_ranges // 2) and 1 or 0
 end
+local function iswprint(value: cwchar_t): cint <cexport, codename 'iswprint'>
+  return iswprint_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswprint_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswprint_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return 0 end
+  return iswprint_for_mode(value, mode)
+end
 
-local function iswgraph(value: cwchar_t): cint <cexport, codename 'iswgraph'>
-  if iswprint(value) == 0 or iswspace(value) ~= 0 then return 0 end
+local function iswgraph_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  if iswprint_for_mode(value, mode) == 0 or iswspace_for_mode(value, mode) ~= 0 then return 0 end
   return 1
 end
+local function iswgraph(value: cwchar_t): cint <cexport, codename 'iswgraph'>
+  return iswgraph_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswgraph_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswgraph_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return 0 end
+  return iswgraph_for_mode(value, mode)
+end
 
+local function iswalnum_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  if iswalpha_for_mode(value, mode) ~= 0 or iswdigit_for_mode(value, mode) ~= 0 then return 1 end
+  return 0
+end
 local function iswalnum(value: cwchar_t): cint <cexport, codename 'iswalnum'>
-  if iswalpha(value) ~= 0 or iswdigit(value) ~= 0 then return 1 end
+  return iswalnum_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswalnum_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswalnum_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return 0 end
+  return iswalnum_for_mode(value, mode)
+end
+
+local function iswpunct_for_mode(value: cwchar_t, mode: cint): cint <inline>
+  if iswgraph_for_mode(value, mode) ~= 0 and iswalnum_for_mode(value, mode) == 0 then return 1 end
+  return 0
+end
+local function iswpunct(value: cwchar_t): cint <cexport, codename 'iswpunct'>
+  return iswpunct_for_mode(value, nelibc_multibyte_mode())
+end
+local function iswpunct_l(value: cwchar_t, locale: pointer): cint <cexport, codename 'iswpunct_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return 0 end
+  return iswpunct_for_mode(value, mode)
+end
+
+local function wctype_descriptor(name: *[0]cchar <const>): culong <inline>
+  if name == nilptr then return 0 end
+  if nelibc_locale_name_is(name, "alnum") then return 1 end
+  if nelibc_locale_name_is(name, "alpha") then return 2 end
+  if nelibc_locale_name_is(name, "blank") then return 3 end
+  if nelibc_locale_name_is(name, "cntrl") then return 4 end
+  if nelibc_locale_name_is(name, "digit") then return 5 end
+  if nelibc_locale_name_is(name, "graph") then return 6 end
+  if nelibc_locale_name_is(name, "lower") then return 7 end
+  if nelibc_locale_name_is(name, "print") then return 8 end
+  if nelibc_locale_name_is(name, "punct") then return 9 end
+  if nelibc_locale_name_is(name, "space") then return 10 end
+  if nelibc_locale_name_is(name, "upper") then return 11 end
+  if nelibc_locale_name_is(name, "xdigit") then return 12 end
   return 0
 end
 
-local function iswpunct(value: cwchar_t): cint <cexport, codename 'iswpunct'>
-  if iswgraph(value) ~= 0 and iswalnum(value) == 0 then return 1 end
+local function wctype(name: *[0]cchar <const>): culong <cexport, codename 'wctype'>
+  return wctype_descriptor(name)
+end
+local function wctype_l(name: *[0]cchar <const>, locale: pointer): culong
+    <cexport, codename 'wctype_l'>
+  if nelibc_locale_ctype_mode(locale) < 0 then return 0 end
+  return wctype_descriptor(name)
+end
+
+local function iswctype_for_mode(value: cwchar_t, desc: culong, mode: cint): cint <inline>
+  if desc == 1 then return iswalnum_for_mode(value, mode) end
+  if desc == 2 then return iswalpha_for_mode(value, mode) end
+  if desc == 3 then return iswblank_for_mode(value, mode) end
+  if desc == 4 then return iswcntrl_for_mode(value, mode) end
+  if desc == 5 then return iswdigit_for_mode(value, mode) end
+  if desc == 6 then return iswgraph_for_mode(value, mode) end
+  if desc == 7 then return iswlower_for_mode(value, mode) end
+  if desc == 8 then return iswprint_for_mode(value, mode) end
+  if desc == 9 then return iswpunct_for_mode(value, mode) end
+  if desc == 10 then return iswspace_for_mode(value, mode) end
+  if desc == 11 then return iswupper_for_mode(value, mode) end
+  if desc == 12 then return iswxdigit_for_mode(value, mode) end
   return 0
+end
+local function iswctype(value: cwchar_t, desc: culong): cint <cexport, codename 'iswctype'>
+  return iswctype_for_mode(value, desc, nelibc_multibyte_mode())
+end
+local function iswctype_l(value: cwchar_t, desc: culong, locale: pointer): cint
+    <cexport, codename 'iswctype_l'>
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then return 0 end
+  return iswctype_for_mode(value, desc, mode)
 end
 local function wcwidth(value: cwchar_t): cint <cexport, codename 'wcwidth'>
   if value == 0 then return 0 end
