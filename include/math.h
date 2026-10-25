@@ -138,6 +138,7 @@ float hypotf(float x, float y);
 double hypot(double x, double y);
 float sqrtf(float value);
 double sqrt(double value);
+long double sqrtl(long double value);
 float fmodf(float x, float y);
 double fmod(double x, double y);
 float remainderf(float x, float y);

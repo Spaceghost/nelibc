@@ -13,6 +13,14 @@ nelibc_sqrtf_hw:
   ret
 .size nelibc_sqrtf_hw, .-nelibc_sqrtf_hw
 
+.globl nelibc_sqrtl_hw
+.type nelibc_sqrtl_hw,@function
+nelibc_sqrtl_hw:
+  fldt 8(%rsp)
+  fsqrt
+  ret
+.size nelibc_sqrtl_hw, .-nelibc_sqrtl_hw
+
 /* SysV x86-64 passes long double arguments in 16-byte stack slots. */
 .globl nelibc_fabsl_hw
 .type nelibc_fabsl_hw,@function

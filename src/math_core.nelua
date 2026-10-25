@@ -195,6 +195,7 @@ end
 
 local function nelibc_sqrt_hw(value: cdouble): cdouble <cimport> end
 local function nelibc_sqrtf_hw(value: cfloat): cfloat <cimport> end
+local function nelibc_sqrtl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_fabsl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_copysignl_hw(magnitude: clongdouble, sign: clongdouble): clongdouble <cimport> end
 local function nelibc_rint_hw(value: cdouble): cdouble <cimport> end
@@ -222,6 +223,11 @@ end
 
 local function sqrtf(value: cfloat): cfloat <cexport, codename 'sqrtf'>
   return nelibc_sqrtf_hw(value)
+end
+
+local function sqrtl(value: clongdouble): clongdouble <cexport, codename 'sqrtl'>
+  if value < 0_clongdouble then math_domain_error() end
+  return nelibc_sqrtl_hw(value)
 end
 
 local function rint(value: cdouble): cdouble <cexport, codename 'rint'>

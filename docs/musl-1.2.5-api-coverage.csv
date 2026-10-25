@@ -1207,7 +1207,7 @@ splice,fcntl.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implement
 sprintf,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sqrt,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sqrtf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-sqrtl,math.h,,,not-declared
+sqrtl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 srand,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 srand48,stdlib.h,,,not-declared
 srandom,stdlib.h,,,not-declared

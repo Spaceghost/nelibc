@@ -119,6 +119,7 @@ extern float nelibc_hypotf(float, float);
 extern double nelibc_hypot(double, double);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
+extern long double nelibc_sqrtl(long double);
 extern float nelibc_fmodf(float, float);
 extern double nelibc_fmod(double, double);
 extern float nelibc_remainderf(float, float);
@@ -1321,8 +1322,9 @@ int main(void) {
   long double extended = 1.0L + 0x1p-70L;
   if (nelibc_fabsl(-extended) != extended ||
       nelibc_copysignl(extended, -1.0L) != -extended ||
-      !signbit(nelibc_copysignl(0.0L, -1.0L))) {
-    fprintf(stderr, "long-double fabs/copysign failed\n");
+      !signbit(nelibc_copysignl(0.0L, -1.0L)) ||
+      nelibc_sqrtl(extended) != sqrtl(extended)) {
+    fprintf(stderr, "long-double fabs/copysign/sqrt failed\n");
     return 1;
   }
 
