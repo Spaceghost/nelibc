@@ -93,6 +93,48 @@ nelibc_modfl_hw:
   ret
 .size nelibc_modfl_hw, .-nelibc_modfl_hw
 
+.globl nelibc_ilogbl_hw
+.type nelibc_ilogbl_hw,@function
+nelibc_ilogbl_hw:
+  movq 8(%rsp), %rax
+  movzwl 16(%rsp), %edx
+  andl $0x7fff, %edx
+  testq %rax, %rax
+  jne 1f
+  testl %edx, %edx
+  je 3f
+1:
+  cmpl $0x7fff, %edx
+  jne 2f
+  movabsq $0x8000000000000000, %rcx
+  cmpq %rcx, %rax
+  je 4f
+  jmp 3f
+2:
+  fldt 8(%rsp)
+  fxtract
+  fxch %st(1)
+  fistpl -4(%rsp)
+  movl -4(%rsp), %eax
+  fstp %st(0)
+  ret
+3:
+  movl $0x80000000, %eax
+  ret
+4:
+  movl $0x7fffffff, %eax
+  ret
+.size nelibc_ilogbl_hw, .-nelibc_ilogbl_hw
+
+.globl nelibc_logbl_hw
+.type nelibc_logbl_hw,@function
+nelibc_logbl_hw:
+  fldt 8(%rsp)
+  fxtract
+  fstp %st(0)
+  ret
+.size nelibc_logbl_hw, .-nelibc_logbl_hw
+
 .globl nelibc_fmodl_hw
 .type nelibc_fmodl_hw,@function
 nelibc_fmodl_hw:

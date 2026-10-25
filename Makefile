@@ -14,6 +14,7 @@ MATH_CORE_RENAMES := --redefine-sym fabs=nelibc_fabs --redefine-sym fabsf=nelibc
 	--redefine-sym sqrtl=nelibc_sqrtl \
 	--redefine-sym fmodl=nelibc_fmodl --redefine-sym remainderl=nelibc_remainderl \
 	--redefine-sym frexpl=nelibc_frexpl --redefine-sym modfl=nelibc_modfl \
+	--redefine-sym ilogbl=nelibc_ilogbl --redefine-sym logbl=nelibc_logbl \
 	--redefine-sym fabsl=nelibc_fabsl --redefine-sym copysignl=nelibc_copysignl \
 	--redefine-sym copysign=nelibc_copysign --redefine-sym copysignf=nelibc_copysignf \
 	--redefine-sym trunc=nelibc_trunc --redefine-sym truncf=nelibc_truncf \

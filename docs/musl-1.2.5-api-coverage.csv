@@ -567,7 +567,7 @@ if_nameindex,net/if.h,,,not-declared
 if_nametoindex,net/if.h,,,not-declared
 ilogb,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ilogbf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-ilogbl,math.h,,,not-declared
+ilogbl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 imaxabs,inttypes.h,,,not-declared
 imaxdiv,inttypes.h,,,not-declared
 index,strings.h,strings.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -702,7 +702,7 @@ log2f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 log2l,math.h,,,not-declared
 logb,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 logbf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-logbl,math.h,,,not-declared
+logbl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 logf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 login_tty,utmp.h,,,not-declared
 logl,math.h,,,not-declared

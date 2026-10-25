@@ -124,6 +124,8 @@ extern long double nelibc_fmodl(long double, long double);
 extern long double nelibc_remainderl(long double, long double);
 extern long double nelibc_frexpl(long double, int *);
 extern long double nelibc_modfl(long double, long double *);
+extern int nelibc_ilogbl(long double);
+extern long double nelibc_logbl(long double);
 extern float nelibc_fmodf(float, float);
 extern double nelibc_fmod(double, double);
 extern float nelibc_remainderf(float, float);
@@ -1368,6 +1370,16 @@ int main(void) {
         (isnan(value) && (!isnan(actual_fraction) || !isnan(actual_integral)))) {
       fprintf(stderr, "modfl mismatch at vector %zu: expected %.21Lg + %.21Lg actual %.21Lg + %.21Lg\n",
               i, expected_integral, expected_fraction, actual_integral, actual_fraction);
+      return 1;
+    }
+    int expected_ilogb = ilogbl(value);
+    int actual_ilogb = nelibc_ilogbl(value);
+    long double expected_logb = logbl(value);
+    long double actual_logb = nelibc_logbl(value);
+    if (actual_ilogb != expected_ilogb ||
+        (isnan(value) ? !isnan(actual_logb) : actual_logb != expected_logb)) {
+      fprintf(stderr, "ilogbl/logbl mismatch at vector %zu: %d/%Lg expected %d/%Lg\n",
+              i, actual_ilogb, actual_logb, expected_ilogb, expected_logb);
       return 1;
     }
   }

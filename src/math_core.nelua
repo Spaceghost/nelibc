@@ -210,6 +210,8 @@ local function nelibc_sqrtf_hw(value: cfloat): cfloat <cimport> end
 local function nelibc_sqrtl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_frexpl_hw(value: clongdouble, exponent: *[0]cint): clongdouble <cimport> end
 local function nelibc_modfl_hw(value: clongdouble, integral: *[0]clongdouble): clongdouble <cimport> end
+local function nelibc_ilogbl_hw(value: clongdouble): cint <cimport> end
+local function nelibc_logbl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_fmodl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
 local function nelibc_remainderl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
 local function nelibc_fabsl_hw(value: clongdouble): clongdouble <cimport> end
@@ -302,6 +304,10 @@ local function ilogbf(value: cfloat): cint <cexport, codename 'ilogbf'>
   return -126_cint - shifts
 end
 
+local function ilogbl(value: clongdouble): cint <cexport, codename 'ilogbl'>
+  return nelibc_ilogbl_hw(value)
+end
+
 local function logb(value: cdouble): cdouble <cexport, codename 'logb'>
   if value ~= value then return value + value end
   if is_infinite64(value) then return double_from_bits(0x7FF0000000000000_culonglong) end
@@ -314,6 +320,10 @@ local function logbf(value: cfloat): cfloat <cexport, codename 'logbf'>
   if is_infinite32(value) then return float_from_bits(0x7F800000_cuint) end
   if value == 0_cfloat then return float_from_bits(0xFF800000_cuint) end
   return (@cfloat)(ilogbf(value))
+end
+
+local function logbl(value: clongdouble): clongdouble <cexport, codename 'logbl'>
+  return nelibc_logbl_hw(value)
 end
 
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>

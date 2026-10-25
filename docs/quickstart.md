@@ -57,9 +57,10 @@ The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 `remainder`, `drem`, `dremf`, `remquo`, `remquof`, `fmin`, `fmax`, `fdim`, `fma`, `fmaf`, `erf`, `erff`, `erfc`, `erfcf`, `tgamma`, `tgammaf`, `lgamma`, `lgammaf`, `lgamma_r`, `lgammaf_r`, `jn`, `jnf`, `yn`, `ynf`, `j0`, `j0f`, `j1`, `j1f`, `sincos`, `sincosf`, `y0`, `y0f`, `y1`, `y1f`, `cbrt`, `frexp`, `modf`, `ldexp`, `scalbn`,
 `scalbln`, `pow`, `atan`, `atan2`, `asinh`, `acosh`, `atanh`, `ilogb`,
 `logb`, `nextafter`, and `nexttoward`.
-On x86-64, `fabsl`, `copysignl`, `sqrtl`, `fmodl`, `remainderl`, `frexpl`, and
-`modfl` operate directly on the extended precision `long double`
-representation; the rest of the long-double math API is still incomplete.
+On x86-64, `fabsl`, `copysignl`, `sqrtl`, `fmodl`, `remainderl`, `frexpl`,
+`modfl`, `ilogbl`, and `logbl` operate directly on the extended precision
+`long double` representation; the rest of the long-double math API is still
+incomplete.
 `rint` observes the active rounding direction and may raise `FE_INEXACT`;
 `nearbyint` preserves the direction and suppresses that exception. In
 standalone builds, `include/math.h` also provides basic floating-point
