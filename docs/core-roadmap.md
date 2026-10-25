@@ -639,10 +639,15 @@ including APIs absent from the pinned musl export set.
   preference policy can starve writers under a continuous reader stream. It
   also interrupts blocking calls routed through the cancellable syscall
   wrappers, including read/write, socket I/O (`connect`, `accept`, `recv`,
-  `send`), poll/select, waits, sleeps, `pause`, openat, and fsync. The smoke
-  checks `/proc` for blocking workers' active syscalls before cancellation
-  when procfs allows it. The small-file `fsync` case retains a timed wait
-  because it usually completes immediately.
+  `send`), poll/select, waits, sleeps, `pause`, openat, `close`, and fsync. The
+  close case fills a loopback TCP send queue, blocks close with `SO_LINGER`,
+  requests cancellation while the thread is in the close syscall, then checks
+  cancellation after close returns and verifies that the descriptor is closed.
+  The smoke checks `/proc` for blocking workers' active syscalls before
+  cancellation when procfs allows it. The small-file `fsync` case retains a
+  timed wait because it usually completes immediately. `tcdrain` currently
+  checks pending cancellation on entry and `EBADF`; the available PTY driver
+  drains immediately, so blocked-`tcdrain` cancellation is not covered yet.
   Condition-wait cancellation reacquires the mutex, then unwinds cleanup
   handlers before thread-specific data destructors. Semaphore wait retries
   check for deferred cancellation after waiter registration races; without

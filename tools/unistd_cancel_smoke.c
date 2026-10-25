@@ -35,6 +35,8 @@ static struct sockaddr_un connect_address;
 static socklen_t connect_address_length;
 static int connect_fd;
 static int connect_started;
+static int close_fd;
+static int close_started;
 static int recv_fd;
 static int recv_started;
 static int recvfrom_started;
@@ -230,6 +232,15 @@ static void *blocked_connector(void *unused) {
   mark_started(&connect_started);
   return (void *)(long)connect(connect_fd,
       (struct sockaddr *)&connect_address, connect_address_length);
+}
+
+static void *blocked_closer(void *unused) {
+  (void)unused;
+  mark_started(&close_started);
+  int result = close(close_fd);
+  if (result != 0) return (void *)(intptr_t)result;
+  pthread_testcancel();
+  return 0;
 }
 
 static void *blocked_receiver(void *unused) {
@@ -614,6 +625,66 @@ int main(void) {
   close(queued_clients[0]);
   close(queued_clients[1]);
   close(listen_fd);
+
+  int tcp_listener = socket(AF_INET, SOCK_STREAM, 0);
+  if (tcp_listener < 0) return 203;
+  struct {
+    unsigned short family;
+    unsigned short port;
+    unsigned int address;
+    unsigned char padding[8];
+  } tcp_address = {0};
+  tcp_address.family = AF_INET;
+  tcp_address.address = 0x0100007fU; /* 127.0.0.1 in network byte order */
+  if (bind(tcp_listener, (struct sockaddr *)&tcp_address,
+           sizeof tcp_address) != 0 || listen(tcp_listener, 1) != 0)
+    return 204;
+  socklen_t tcp_address_length = sizeof tcp_address;
+  if (getsockname(tcp_listener, (struct sockaddr *)&tcp_address,
+                  &tcp_address_length) != 0)
+    return 205;
+  close_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (close_fd < 0) return 206;
+  int small_buffer = 4096;
+  if (setsockopt(close_fd, SOL_SOCKET, SO_SNDBUF, &small_buffer,
+                 sizeof small_buffer) != 0 ||
+      connect(close_fd, (struct sockaddr *)&tcp_address,
+               tcp_address_length) != 0)
+    return 207;
+  int tcp_peer = accept(tcp_listener, NULL, NULL);
+  if (tcp_peer < 0 || setsockopt(tcp_peer, SOL_SOCKET, SO_RCVBUF,
+                                  &small_buffer, sizeof small_buffer) != 0)
+    return 208;
+  int close_flags = fcntl(close_fd, F_GETFL);
+  if (close_flags < 0 || fcntl(close_fd, F_SETFL, close_flags | O_NONBLOCK) != 0)
+    return 209;
+  char close_fill[4096] = {0};
+  for (;;) {
+    ssize_t sent = send(close_fd, close_fill, sizeof close_fill,
+                        MSG_DONTWAIT | MSG_NOSIGNAL);
+    if (sent > 0) continue;
+    if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+    return 210;
+  }
+  struct linger close_linger = {1, 30};
+  if (fcntl(close_fd, F_SETFL, close_flags) != 0 ||
+      setsockopt(close_fd, SOL_SOCKET, SO_LINGER, &close_linger,
+                 sizeof close_linger) != 0)
+    return 211;
+  pthread_t closer;
+  if (pthread_create(&closer, NULL, blocked_closer, NULL) != 0) return 212;
+  wait_started(&close_started);
+  if (wait_for_blocked_syscall(&close_started, 3, &delay) != 0) return 213;
+  alarm(5);
+  if (pthread_cancel(closer) != 0) return 214;
+  close(tcp_peer);
+  result = NULL;
+  if (pthread_join(closer, &result) != 0 || result != PTHREAD_CANCELED)
+    return 215;
+  alarm(0);
+  errno = 0;
+  if (fcntl(close_fd, F_GETFD) != -1 || errno != EBADF) return 216;
+  close(tcp_listener);
 
   int sockets[2];
   if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) return 20;
