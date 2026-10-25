@@ -637,6 +637,19 @@ static void *timed_mutex_worker(void *argument) {
   return (void *)(intptr_t)result;
 }
 
+typedef struct {
+  pthread_mutex_t *mutex;
+  clockid_t clock_id;
+  struct timespec deadline;
+} clock_mutex_request;
+
+static void *clock_mutex_worker(void *argument) {
+  clock_mutex_request *request = argument;
+  int result = pthread_mutex_clocklock(request->mutex, request->clock_id,
+                                        &request->deadline);
+  return (void *)(intptr_t)result;
+}
+
 static _Alignas(16) unsigned char user_thread_stack[65536];
 static uintptr_t user_thread_stack_low;
 static uintptr_t user_thread_stack_high;
@@ -660,12 +673,14 @@ static void *pi_mutex_worker(void *argument) {
 
 typedef struct {
   pthread_mutex_t *mutex;
+  clockid_t clock_id;
   struct timespec deadline;
 } pi_timed_mutex_request;
 
 static void *pi_timed_mutex_worker(void *argument) {
   pi_timed_mutex_request *request = argument;
-  int result = pthread_mutex_timedlock(request->mutex, &request->deadline);
+  int result = pthread_mutex_clocklock(request->mutex, request->clock_id,
+                                        &request->deadline);
   return (void *)(intptr_t)result;
 }
 
@@ -1262,6 +1277,11 @@ int main(void) {
   struct timespec invalid_mutex_deadline = {0, 1000000000L};
   if (pthread_mutex_timedlock(&timed_mutex, &invalid_mutex_deadline) != EINVAL)
     return 202;
+  if (pthread_mutex_clocklock(&timed_mutex, (clockid_t)-1,
+                              &invalid_mutex_deadline) != EINVAL ||
+      pthread_mutex_clocklock(&timed_mutex, CLOCK_MONOTONIC,
+                              &invalid_mutex_deadline) != EINVAL)
+    return 214;
   struct timespec expired_mutex_deadline = {0, 0};
   if (pthread_mutex_timedlock(&timed_mutex, &expired_mutex_deadline) != 0 ||
       pthread_mutex_unlock(&timed_mutex) != 0 ||
@@ -1275,6 +1295,21 @@ int main(void) {
       pthread_mutex_unlock(&timed_mutex) != 0 ||
       pthread_mutex_destroy(&timed_mutex) != 0)
     return 205;
+
+  pthread_mutex_t clocklock_mutex;
+  if (pthread_mutex_init(&clocklock_mutex, 0) != 0 ||
+      pthread_mutex_lock(&clocklock_mutex) != 0)
+    return 215;
+  clock_mutex_request monotonic_request = {
+      &clocklock_mutex, CLOCK_MONOTONIC, {0, 0}};
+  if (pthread_create(&thread, 0, clock_mutex_worker, &monotonic_request) != 0)
+    return 216;
+  void *monotonic_mutex_result = 0;
+  if (pthread_join(thread, &monotonic_mutex_result) != 0 ||
+      monotonic_mutex_result != (void *)(intptr_t)ETIMEDOUT ||
+      pthread_mutex_unlock(&clocklock_mutex) != 0 ||
+      pthread_mutex_destroy(&clocklock_mutex) != 0)
+    return 217;
 
   if (pthread_create(&thread, &attributes, return_detached, 0) != 0) return 5;
   if (pthread_join(thread, 0) != EINVAL) return 6;
@@ -1916,11 +1951,13 @@ int main(void) {
   invalid_pi_deadline.tv_nsec = 1000000000L;
   if (pthread_mutex_timedlock(&pi_mutex, &invalid_pi_deadline) != EINVAL)
     return 266;
-  pi_timed_mutex_request timed_request = {.mutex = &pi_mutex, .deadline = {0, 0}};
+  pi_timed_mutex_request timed_request = {
+      .mutex = &pi_mutex, .clock_id = CLOCK_MONOTONIC, .deadline = {0, 0}};
   if (pthread_create(&pi_waiter, 0, pi_timed_mutex_worker, &timed_request) != 0)
     return 256;
   if (pthread_join(pi_waiter, &result) != 0 || result != (void *)(intptr_t)ETIMEDOUT)
     return 257;
+  timed_request.clock_id = CLOCK_REALTIME;
   if (clock_gettime(CLOCK_REALTIME, &timed_request.deadline) != 0)
     return 267;
   timed_request.deadline.tv_nsec += 100000000L;

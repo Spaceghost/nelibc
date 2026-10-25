@@ -38,9 +38,10 @@ matter more for completeness than for the initial common-program target.
 
 ### Standalone pthread gap audit
 
-The generated API inventory currently records 112 pthread declarations, and
-all 112 export from the Zig, GCC, and TinyCC standalone archives. This verifies
-symbol presence, not full behavior. The pinned musl 1.2.5 public-symbol baseline
+The generated API inventory currently records 113 pthread declarations, and
+all 113 export from the Zig and GCC standalone archives. TinyCC has not been
+rebuilt for the latest pthread API additions. This verifies symbol presence,
+not full behavior. The pinned musl 1.2.5 public-symbol baseline
 has 2 pthread entries without project declarations, both internal cleanup
 helpers. The GNU concurrency-hint calls are now implemented as standalone
 stateful hints; musl 1.2.5 instead accepts only zero and reports `EAGAIN` for
@@ -63,6 +64,10 @@ the requested clock if realtime changes while a wait is active.
 POSIX.1-2024 `pthread_rwlock_clockrdlock` and `pthread_rwlock_clockwrlock` are
 also implemented in standalone mode. They choose the futex clock per call and
 preserve the existing realtime semantics of `pthread_rwlock_timed*lock`.
+`pthread_mutex_clocklock` also selects realtime or monotonic deadlines inside
+the mutex futex path for normal, robust, and priority-inheritance mutexes;
+realtime PI timed locks retain the existing `FUTEX_LOCK_PI` path, while
+monotonic PI waits use `FUTEX_LOCK_PI2`.
 Standalone rwlocks use reader preference: new readers may acquire while writers
 are queued. Nelibc reports `_SC_PRIORITY_SCHEDULING` and
 `_SC_THREAD_PRIORITY_SCHEDULING` as unsupported because it does not implement

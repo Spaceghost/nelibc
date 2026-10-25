@@ -1668,7 +1668,7 @@ local function pthread_mutex_protect_finish(mutex: *PthreadMutex,
 end
 
 local function pthread_mutex_lock_robust(mutex: *PthreadMutex, tid: cint,
-    abstime: *Timespec): cint
+    abstime: *Timespec, clock_id: cint): cint
   local context = pthread_current_context()
   if not pthread_robust_register(context) then return 95 end -- ENOTSUP
   if nelibc_atomic_load_int(&mutex.robust_state) == 2 then return 131 end -- ENOTRECOVERABLE
@@ -1676,7 +1676,8 @@ local function pthread_mutex_lock_robust(mutex: *PthreadMutex, tid: cint,
   -- process-private robust mutex, so robust waiters use the shared futex key.
   local wait_operation: culong = 0_culong -- FUTEX_WAIT
   if abstime ~= nilptr then
-    wait_operation = 393_culong -- WAIT_BITSET | CLOCK_REALTIME | MATCH_ANY
+    if clock_id == CLOCK_MONOTONIC then wait_operation = 9_culong
+    else wait_operation = 393_culong end -- WAIT_BITSET | clock | MATCH_ANY
   end
   while true do
     local state = nelibc_atomic_load_int(&mutex.state)
@@ -1734,7 +1735,7 @@ local function pthread_mutex_lock_robust(mutex: *PthreadMutex, tid: cint,
 end
 
 local function pthread_mutex_lock_pi(mutex: *PthreadMutex, tid: cint,
-    abstime: *Timespec): cint
+    abstime: *Timespec, clock_id: cint): cint
   local context: *PthreadContext = nilptr
   if mutex.robust == PTHREAD_MUTEX_ROBUST then
     context = pthread_current_context()
@@ -1775,6 +1776,9 @@ local function pthread_mutex_lock_pi(mutex: *PthreadMutex, tid: cint,
                                 (@pointer)(&mutex.robust_next))
   end
   local operation: culong = FUTEX_LOCK_PI
+  if abstime ~= nilptr and clock_id == CLOCK_MONOTONIC then
+    operation = 13_culong -- FUTEX_LOCK_PI2 uses CLOCK_MONOTONIC by default
+  end
   if mutex.pshared == 0 then operation = operation | 128_culong end
   while true do
     local timeout: culong = 0_culong
@@ -1925,11 +1929,11 @@ local function pthread_mutex_lock(mutex: *PthreadMutex): cint <cexport, codename
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
   local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
   if mutex.protocol == PTHREAD_PRIO_INHERIT then
-    return pthread_mutex_lock_pi(mutex, tid, nilptr)
+    return pthread_mutex_lock_pi(mutex, tid, nilptr, CLOCK_REALTIME)
   end
   if mutex.robust == PTHREAD_MUTEX_ROBUST then
     return pthread_mutex_protect_finish(mutex,
-        pthread_mutex_lock_robust(mutex, tid, nilptr))
+        pthread_mutex_lock_robust(mutex, tid, nilptr, CLOCK_REALTIME))
   end
   local owner_result = pthread_mutex_owner_check(mutex, tid)
   if owner_result == 1 then return 0 end
@@ -1940,19 +1944,20 @@ local function pthread_mutex_lock(mutex: *PthreadMutex): cint <cexport, codename
   return pthread_mutex_protect_finish(mutex, 0)
 end
 
-local function pthread_mutex_timedlock(mutex: *PthreadMutex,
-    abstime: *Timespec): cint <cexport, codename 'pthread_mutex_timedlock'>
+local function pthread_mutex_clocklock(mutex: *PthreadMutex, clock_id: cint,
+    abstime: *Timespec): cint <cexport, codename 'pthread_mutex_clocklock'>
   if not pthread_mutex_valid(mutex) or abstime == nilptr or
+     (clock_id ~= CLOCK_REALTIME and clock_id ~= CLOCK_MONOTONIC) or
      abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000 then
     return 22 -- EINVAL
   end
   local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
   if mutex.protocol == PTHREAD_PRIO_INHERIT then
-    return pthread_mutex_lock_pi(mutex, tid, abstime)
+    return pthread_mutex_lock_pi(mutex, tid, abstime, clock_id)
   end
   if mutex.robust == PTHREAD_MUTEX_ROBUST then
     return pthread_mutex_protect_finish(mutex,
-        pthread_mutex_lock_robust(mutex, tid, abstime))
+        pthread_mutex_lock_robust(mutex, tid, abstime, clock_id))
   end
   local owner_result = pthread_mutex_owner_check(mutex, tid)
   if owner_result == 1 then return 0 end
@@ -1963,6 +1968,7 @@ local function pthread_mutex_timedlock(mutex: *PthreadMutex,
     return pthread_mutex_protect_finish(mutex, 0)
   end
   local operation: culong = 393_culong -- WAIT_BITSET | CLOCK_REALTIME | MATCH_ANY
+  if clock_id == CLOCK_MONOTONIC then operation = 9_culong end
   if mutex.pshared == 0 then operation = operation | 128_culong end
   while true do
     local previous = nelibc_atomic_exchange_int(&mutex.state, 2)
@@ -1988,6 +1994,11 @@ local function pthread_mutex_timedlock(mutex: *PthreadMutex,
       return wait_error
     end
   end
+end
+
+local function pthread_mutex_timedlock(mutex: *PthreadMutex,
+    abstime: *Timespec): cint <cexport, codename 'pthread_mutex_timedlock'>
+  return pthread_mutex_clocklock(mutex, CLOCK_REALTIME, abstime)
 end
 
 local function pthread_mutex_trylock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_trylock'>
@@ -2094,7 +2105,7 @@ end
 local function pthread_mutex_lock_for_ceiling(mutex: *PthreadMutex): cint
   local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
   if mutex.robust == PTHREAD_MUTEX_ROBUST then
-    return pthread_mutex_lock_robust(mutex, tid, nilptr)
+    return pthread_mutex_lock_robust(mutex, tid, nilptr, CLOCK_REALTIME)
   end
   local owner_result = pthread_mutex_owner_check(mutex, tid)
   if owner_result == 1 then return 0 end
