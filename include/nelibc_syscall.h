@@ -510,6 +510,7 @@ char *getcwd(char *buf, size_t size);
 #if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
 char *get_current_dir_name(void);
 #endif
+void swab(const void *restrict from, void *restrict to, ssize_t count);
 int chdir(const char *pathname);
 int fchdir(int fd);
 uid_t getuid(void);

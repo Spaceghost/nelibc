@@ -644,6 +644,14 @@ int main(int argc, char **argv) {
   char *allocated_cwd = get_current_dir_name();
   if (allocated_cwd == NULL || strcmp(allocated_cwd, cwd_buffer) != 0) return 21;
   free(allocated_cwd);
+  const unsigned char swab_source[] = {1, 2, 3, 4, 5};
+  unsigned char swab_destination[] = {9, 9, 9, 9, 9};
+  swab(swab_source, swab_destination, 5);
+  if (swab_destination[0] != 2 || swab_destination[1] != 1 ||
+      swab_destination[2] != 4 || swab_destination[3] != 3 ||
+      swab_destination[4] != 9) return 22;
+  swab(swab_source, swab_destination, -1);
+  if (swab_destination[4] != 9) return 23;
 #ifndef NELIBC_STANDALONE
   if (archive_unistd_adapter_probe() != 0) return 84;
   if (pthread_protocol_probe() != 0) return 86;

@@ -1272,7 +1272,7 @@ strtoumax,inttypes.h,,,not-declared
 strverscmp,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strxfrm,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strxfrm_l,string.h,,,not-declared
-swab,unistd.h,,,not-declared
+swab,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 swapoff,sys/swap.h,,,not-declared
 swapon,sys/swap.h,,,not-declared
 swprintf,wchar.h,,,not-declared

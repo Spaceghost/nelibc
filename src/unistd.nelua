@@ -3312,6 +3312,19 @@ local function sync(): void <cexport, codename 'sync'>
   nelibc_raw_syscall3(162_culong, 0_culong, 0_culong, 0_culong)
 end
 
+-- POSIX swab exchanges adjacent byte pairs; an odd final byte is ignored.
+local function swab(from: pointer <const>, to: pointer, count: clong): void <cexport, codename 'swab'>
+  if count < 2_clong then return end
+  local source = (@*[0]cchar)(from)
+  local destination = (@*[0]cchar)(to)
+  local index: csize = 0
+  while index + 1_csize < (@csize)(count) do
+    destination[index] = source[index + 1_csize]
+    destination[index + 1_csize] = source[index]
+    index = index + 2_csize
+  end
+end
+
 local function syncfs(fd: cint): cint <cexport, codename 'syncfs'>
   return (@cint)(syscall_result(nelibc_raw_syscall3(
     306_culong, (@culong)(fd), 0_culong, 0_culong
