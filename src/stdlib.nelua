@@ -1257,6 +1257,24 @@ end
 local owned_environment: *[0]*[0]cchar = nilptr
 local owned_environment_flags: *[0]cchar = nilptr
 
+local function clearenv(): cint <cexport, codename 'clearenv'>
+  local previous_owned = owned_environment
+  local previous_flags = owned_environment_flags
+  nelibc_environment_set_vector(nilptr)
+  owned_environment = nilptr
+  owned_environment_flags = nilptr
+  if previous_owned ~= nilptr then
+    local index: csize = 0
+    while previous_owned[index] ~= nilptr do
+      if previous_flags[index] ~= 0 then free((@pointer)(previous_owned[index])) end
+      index = index + 1_csize
+    end
+    free((@pointer)(previous_owned))
+    free((@pointer)(previous_flags))
+  end
+  return 0_cint
+end
+
 local function environment_entry_matches(entry: *[0]cchar <const>, name: *[0]cchar <const>,
     name_length: csize): boolean <inline>
   local index: csize = 0

@@ -1188,6 +1188,9 @@ int main(int argc, char **argv) {
       getenv("NELIBC_DUPLICATE") != NULL || environ[0] == NULL ||
       strcmp(environ[0], "NELIBC_KEEP=present") != 0 || environ[1] != NULL)
     return 11;
+  if (clearenv() != 0 || environ != NULL || getenv("NELIBC_KEEP") != NULL)
+    return 18;
+  if (setenv("NELIBC_KEEP", "present", 1) != 0) return 19;
   char *child_argv[] = {argv[0], "--verify-unsetenv", NULL};
   execve(argv[0], child_argv, environ);
   return 12;

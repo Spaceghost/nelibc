@@ -151,7 +151,7 @@ chroot,unistd.h,,,not-declared
 cimag,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cimagf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cimagl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-clearenv,stdlib.h,,,not-declared
+clearenv,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clearerr,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 clearerr_unlocked,stdio.h,,,not-declared
 clock,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
