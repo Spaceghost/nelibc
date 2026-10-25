@@ -640,7 +640,9 @@ including APIs absent from the pinned musl export set.
   also interrupts blocking calls routed through the cancellable syscall
   wrappers, including read/write, socket I/O,
   poll/select, waits, sleeps, openat, and fsync. The blocked-read smoke checks
-  `/proc` for the worker's active syscall when procfs allows it.
+  `/proc` for the worker's active syscall before cancellation when procfs allows
+  it; the same check covers the other blocking syscall cases. The small-file
+  `fsync` case retains a timed wait because it usually completes immediately.
   Condition-wait cancellation reacquires the mutex, then unwinds cleanup
   handlers before thread-specific data destructors. Semaphore wait retries
   check for deferred cancellation after waiter registration races; without

@@ -23,7 +23,6 @@
 
 static int read_fd;
 static int read_started;
-static pid_t read_tid;
 static int write_fd;
 static int write_started;
 static int readv_fd;
@@ -77,11 +76,25 @@ static int sync_fd;
 static int sync_started;
 static pthread_mutex_t start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t start_condition = PTHREAD_COND_INITIALIZER;
+static struct {
+  int *flag;
+  pid_t tid;
+} started_threads[64];
 
 extern pid_t gettid(void);
 
 static void mark_started(int *started) {
+  pid_t tid = gettid();
   pthread_mutex_lock(&start_mutex);
+  size_t slot = 0;
+  while (slot < sizeof(started_threads) / sizeof(started_threads[0]) &&
+         started_threads[slot].flag != NULL &&
+         started_threads[slot].flag != started)
+    ++slot;
+  if (slot < sizeof(started_threads) / sizeof(started_threads[0])) {
+    started_threads[slot].flag = started;
+    started_threads[slot].tid = tid;
+  }
   *started = 1;
   pthread_cond_signal(&start_condition);
   pthread_mutex_unlock(&start_mutex);
@@ -96,13 +109,13 @@ static void wait_started(int *started) {
 static void *blocked_reader(void *unused) {
   (void)unused;
   char byte;
-  read_tid = gettid();
   mark_started(&read_started);
   (void)read(read_fd, &byte, 1);
   return (void *)1;
 }
 
-static int wait_until_syscall(pid_t tid, long expected_syscall) {
+static int wait_until_syscall_either(pid_t tid, long expected_syscall,
+                                    long alternate_syscall) {
   char path[64];
   char contents[128];
   if (tid <= 0 || snprintf(path, sizeof(path), "/proc/self/task/%ld/syscall",
@@ -120,12 +133,55 @@ static int wait_until_syscall(pid_t tid, long expected_syscall) {
         contents[amount] = '\0';
         char *end = NULL;
         long actual_syscall = strtol(contents, &end, 10);
-        if (end != contents && actual_syscall == expected_syscall) return 0;
+        if (end != contents && (actual_syscall == expected_syscall ||
+                                actual_syscall == alternate_syscall))
+          return 0;
       }
     }
     if (nanosleep(&pause, NULL) != 0 && errno != EINTR) return errno;
   }
   return ETIMEDOUT;
+}
+
+static int wait_until_syscall(pid_t tid, long expected_syscall) {
+  return wait_until_syscall_either(tid, expected_syscall, -1);
+}
+
+static int wait_until_started_syscall(int *started, long expected_syscall) {
+  pthread_mutex_lock(&start_mutex);
+  size_t slot = 0;
+  while (slot < sizeof(started_threads) / sizeof(started_threads[0]) &&
+         started_threads[slot].flag != started)
+    ++slot;
+  pid_t tid = slot < sizeof(started_threads) / sizeof(started_threads[0])
+      ? started_threads[slot].tid : 0;
+  pthread_mutex_unlock(&start_mutex);
+  return wait_until_syscall(tid, expected_syscall);
+}
+
+static int wait_for_blocked_syscall(int *started, long expected_syscall,
+                                    const struct timespec *fallback_delay) {
+  int result = wait_until_started_syscall(started, expected_syscall);
+  if (result == ENOTSUP)
+    return nanosleep(fallback_delay, NULL) == 0 ? 0 : errno;
+  return result;
+}
+
+static int wait_for_blocked_syscall_either(int *started, long expected_syscall,
+                                           long alternate_syscall,
+                                           const struct timespec *fallback_delay) {
+  pthread_mutex_lock(&start_mutex);
+  size_t slot = 0;
+  while (slot < sizeof(started_threads) / sizeof(started_threads[0]) &&
+         started_threads[slot].flag != started)
+    ++slot;
+  pid_t tid = slot < sizeof(started_threads) / sizeof(started_threads[0])
+      ? started_threads[slot].tid : 0;
+  pthread_mutex_unlock(&start_mutex);
+  int result = wait_until_syscall_either(tid, expected_syscall, alternate_syscall);
+  if (result == ENOTSUP)
+    return nanosleep(fallback_delay, NULL) == 0 ? 0 : errno;
+  return result;
 }
 
 static void *blocked_writer(void *unused) {
@@ -413,12 +469,7 @@ int main(void) {
   if (pthread_create(&reader, NULL, blocked_reader, NULL) != 0) return 2;
   wait_started(&read_started);
   struct timespec delay = {0, 20000000};
-  int syscall_probe = wait_until_syscall(read_tid, 0);
-  if (syscall_probe == ENOTSUP) {
-    if (nanosleep(&delay, NULL) != 0) return 108;
-  } else if (syscall_probe != 0) {
-    return 108;
-  }
+  if (wait_for_blocked_syscall(&read_started, 0, &delay) != 0) return 108;
   alarm(5);
   if (pthread_cancel(reader) != 0) return 3;
   void *result = NULL;
@@ -432,7 +483,7 @@ int main(void) {
   pthread_t readv_thread;
   if (pthread_create(&readv_thread, NULL, blocked_readv_worker, NULL) != 0) return 67;
   wait_started(&readv_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&readv_started, 19, &delay) != 0) return 68;
   alarm(5);
   if (pthread_cancel(readv_thread) != 0) return 68;
   result = NULL;
@@ -457,7 +508,7 @@ int main(void) {
   pthread_t writer;
   if (pthread_create(&writer, NULL, blocked_writer, NULL) != 0) return 9;
   wait_started(&write_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&write_started, 1, &delay) != 0) return 10;
   alarm(5);
   if (pthread_cancel(writer) != 0) return 10;
   result = NULL;
@@ -481,7 +532,7 @@ int main(void) {
   pthread_t writev_thread;
   if (pthread_create(&writev_thread, NULL, blocked_writev_worker, NULL) != 0) return 74;
   wait_started(&writev_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&writev_started, 20, &delay) != 0) return 75;
   alarm(5);
   if (pthread_cancel(writev_thread) != 0) return 75;
   result = NULL;
@@ -502,7 +553,7 @@ int main(void) {
   pthread_t acceptor;
   if (pthread_create(&acceptor, NULL, blocked_acceptor, NULL) != 0) return 14;
   wait_started(&accept_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&accept_started, 43, &delay) != 0) return 15;
   alarm(5);
   if (pthread_cancel(acceptor) != 0) return 15;
   result = NULL;
@@ -511,7 +562,7 @@ int main(void) {
   accept_started = 0;
   if (pthread_create(&acceptor, NULL, blocked_accept4, NULL) != 0) return 17;
   wait_started(&accept_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&accept_started, 288, &delay) != 0) return 18;
   alarm(5);
   if (pthread_cancel(acceptor) != 0) return 18;
   result = NULL;
@@ -525,7 +576,7 @@ int main(void) {
   pthread_t receiver;
   if (pthread_create(&receiver, NULL, blocked_receiver, NULL) != 0) return 21;
   wait_started(&recv_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&recv_started, 45, &delay) != 0) return 22;
   alarm(5);
   if (pthread_cancel(receiver) != 0) return 22;
   result = NULL;
@@ -539,7 +590,7 @@ int main(void) {
   pthread_t poller;
   if (pthread_create(&poller, NULL, blocked_poller, NULL) != 0) return 25;
   wait_started(&poll_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&poll_started, 7, &delay) != 0) return 26;
   alarm(5);
   if (pthread_cancel(poller) != 0) return 26;
   result = NULL;
@@ -553,7 +604,7 @@ int main(void) {
   pthread_t ppoller;
   if (pthread_create(&ppoller, NULL, blocked_ppoller, NULL) != 0) return 47;
   wait_started(&ppoll_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&ppoll_started, 271, &delay) != 0) return 48;
   alarm(5);
   if (pthread_cancel(ppoller) != 0) return 48;
   result = NULL;
@@ -567,7 +618,8 @@ int main(void) {
   pthread_t selector;
   if (pthread_create(&selector, NULL, blocked_selector, NULL) != 0) return 51;
   wait_started(&select_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall_either(&select_started, 23, 270, &delay) != 0)
+    return 52;
   alarm(5);
   if (pthread_cancel(selector) != 0) return 52;
   result = NULL;
@@ -581,7 +633,7 @@ int main(void) {
   pthread_t pselector;
   if (pthread_create(&pselector, NULL, blocked_pselector, NULL) != 0) return 55;
   wait_started(&pselect_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&pselect_started, 270, &delay) != 0) return 56;
   alarm(5);
   if (pthread_cancel(pselector) != 0) return 56;
   result = NULL;
@@ -595,7 +647,7 @@ int main(void) {
   pthread_t recvfrom_thread;
   if (pthread_create(&recvfrom_thread, NULL, blocked_recvfrom_worker, NULL) != 0) return 59;
   wait_started(&recvfrom_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&recvfrom_started, 45, &delay) != 0) return 60;
   alarm(5);
   if (pthread_cancel(recvfrom_thread) != 0) return 60;
   result = NULL;
@@ -609,7 +661,7 @@ int main(void) {
   pthread_t recvmsg_thread;
   if (pthread_create(&recvmsg_thread, NULL, blocked_recvmsg_worker, NULL) != 0) return 63;
   wait_started(&recvmsg_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&recvmsg_started, 47, &delay) != 0) return 64;
   alarm(5);
   if (pthread_cancel(recvmsg_thread) != 0) return 64;
   result = NULL;
@@ -624,7 +676,7 @@ int main(void) {
   pthread_t sender;
   if (pthread_create(&sender, NULL, blocked_sender, NULL) != 0) return 79;
   wait_started(&send_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&send_started, 44, &delay) != 0) return 80;
   alarm(5);
   if (pthread_cancel(sender) != 0) return 80;
   result = NULL;
@@ -639,7 +691,7 @@ int main(void) {
   pthread_t sendmsg_thread;
   if (pthread_create(&sendmsg_thread, NULL, blocked_sendmsg_worker, NULL) != 0) return 84;
   wait_started(&sendmsg_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&sendmsg_started, 46, &delay) != 0) return 85;
   alarm(5);
   if (pthread_cancel(sendmsg_thread) != 0) return 85;
   result = NULL;
@@ -651,7 +703,8 @@ int main(void) {
   pthread_t sleeper;
   if (pthread_create(&sleeper, NULL, blocked_nanosleep_worker, NULL) != 0) return 87;
   wait_started(&nanosleep_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall_either(&nanosleep_started, 35, 230, &delay) != 0)
+    return 88;
   alarm(5);
   if (pthread_cancel(sleeper) != 0) return 88;
   result = NULL;
@@ -661,7 +714,7 @@ int main(void) {
   pthread_t clock_sleeper;
   if (pthread_create(&clock_sleeper, NULL, blocked_clock_nanosleep_worker, NULL) != 0) return 90;
   wait_started(&clock_nanosleep_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&clock_nanosleep_started, 230, &delay) != 0) return 91;
   alarm(5);
   if (pthread_cancel(clock_sleeper) != 0) return 91;
   result = NULL;
@@ -673,7 +726,7 @@ int main(void) {
   pthread_t epoller;
   if (pthread_create(&epoller, NULL, blocked_epoll_wait_worker, NULL) != 0) return 94;
   wait_started(&epoll_wait_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&epoll_wait_started, 232, &delay) != 0) return 95;
   alarm(5);
   if (pthread_cancel(epoller) != 0) return 95;
   result = NULL;
@@ -683,7 +736,7 @@ int main(void) {
   pthread_t epoll_pwaiter;
   if (pthread_create(&epoll_pwaiter, NULL, blocked_epoll_pwait_worker, NULL) != 0) return 97;
   wait_started(&epoll_pwait_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&epoll_pwait_started, 281, &delay) != 0) return 98;
   alarm(5);
   if (pthread_cancel(epoll_pwaiter) != 0) return 98;
   result = NULL;
@@ -693,7 +746,7 @@ int main(void) {
   pthread_t epoll_pwait2er;
   if (pthread_create(&epoll_pwait2er, NULL, blocked_epoll_pwait2_worker, NULL) != 0) return 100;
   wait_started(&epoll_pwait2_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&epoll_pwait2_started, 441, &delay) != 0) return 101;
   alarm(5);
   if (pthread_cancel(epoll_pwait2er) != 0) return 101;
   result = NULL;
@@ -731,7 +784,7 @@ int main(void) {
   pthread_t lock_waiter;
   if (pthread_create(&lock_waiter, NULL, blocked_record_locker, NULL) != 0) return 109;
   wait_started(&lock_wait_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&lock_wait_started, 72, &delay) != 0) return 110;
   alarm(5);
   if (pthread_cancel(lock_waiter) != 0) return 110;
   result = NULL;
@@ -771,7 +824,7 @@ int main(void) {
   sigwait_started_flag = 0;
   if (pthread_create(&sigwait_thread, NULL, blocked_sigwait_worker, NULL) != 0) return 125;
   wait_started(&sigwait_started_flag);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&sigwait_started_flag, 128, &delay) != 0) return 126;
   alarm(5);
   if (pthread_cancel(sigwait_thread) != 0) return 126;
   result = NULL;
@@ -781,7 +834,7 @@ int main(void) {
   pthread_t sigwaitinfo_thread;
   if (pthread_create(&sigwaitinfo_thread, NULL, blocked_sigwaitinfo_worker, NULL) != 0) return 128;
   wait_started(&sigwaitinfo_started_flag);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&sigwaitinfo_started_flag, 128, &delay) != 0) return 129;
   alarm(5);
   if (pthread_cancel(sigwaitinfo_thread) != 0) return 129;
   result = NULL;
@@ -791,7 +844,7 @@ int main(void) {
   pthread_t sigtimedwait_thread;
   if (pthread_create(&sigtimedwait_thread, NULL, blocked_sigtimedwait_worker, NULL) != 0) return 131;
   wait_started(&sigtimedwait_started_flag);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&sigtimedwait_started_flag, 128, &delay) != 0) return 132;
   alarm(5);
   if (pthread_cancel(sigtimedwait_thread) != 0) return 132;
   result = NULL;
@@ -801,7 +854,7 @@ int main(void) {
   pthread_t sigsuspend_thread;
   if (pthread_create(&sigsuspend_thread, NULL, blocked_sigsuspend_worker, NULL) != 0) return 134;
   wait_started(&sigsuspend_started_flag);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&sigsuspend_started_flag, 130, &delay) != 0) return 135;
   alarm(5);
   if (pthread_cancel(sigsuspend_thread) != 0) return 135;
   result = NULL;
@@ -906,7 +959,7 @@ int main(void) {
   pthread_t mq_thread;
   if (pthread_create(&mq_thread, NULL, blocked_mq_receive_worker, NULL) != 0) return 154;
   wait_started(&mq_receive_started_flag);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&mq_receive_started_flag, 243, &delay) != 0) return 155;
   alarm(5);
   if (pthread_cancel(mq_thread) != 0) return 155;
   result = NULL;
@@ -915,7 +968,7 @@ int main(void) {
 
   if (pthread_create(&mq_thread, NULL, blocked_mq_timedreceive_worker, NULL) != 0) return 157;
   wait_started(&mq_timedreceive_started_flag);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&mq_timedreceive_started_flag, 243, &delay) != 0) return 158;
   alarm(5);
   if (pthread_cancel(mq_thread) != 0) return 158;
   result = NULL;
@@ -925,7 +978,7 @@ int main(void) {
   if (mq_send(mq_descriptor, "full", 4, 0) != 0) return 160;
   if (pthread_create(&mq_thread, NULL, blocked_mq_send_worker, NULL) != 0) return 161;
   wait_started(&mq_send_started_flag);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&mq_send_started_flag, 242, &delay) != 0) return 162;
   alarm(5);
   if (pthread_cancel(mq_thread) != 0) return 162;
   result = NULL;
@@ -934,7 +987,7 @@ int main(void) {
 
   if (pthread_create(&mq_thread, NULL, blocked_mq_timedsend_worker, NULL) != 0) return 164;
   wait_started(&mq_timedsend_started_flag);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&mq_timedsend_started_flag, 242, &delay) != 0) return 165;
   alarm(5);
   if (pthread_cancel(mq_thread) != 0) return 165;
   result = NULL;
@@ -961,7 +1014,7 @@ int main(void) {
   pthread_t waitid_thread;
   if (pthread_create(&waitid_thread, NULL, blocked_waitid_worker, NULL) != 0) return 117;
   wait_started(&waitid_started_flag);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&waitid_started_flag, 247, &delay) != 0) return 118;
   alarm(5);
   if (pthread_cancel(waitid_thread) != 0) return 118;
   result = NULL;
@@ -978,7 +1031,7 @@ int main(void) {
   pthread_t waiter;
   if (pthread_create(&waiter, NULL, blocked_waiter, NULL) != 0) return 29;
   wait_started(&wait_started_flag);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&wait_started_flag, 61, &delay) != 0) return 30;
   alarm(5);
   if (pthread_cancel(waiter) != 0) return 30;
   result = NULL;
@@ -995,7 +1048,7 @@ int main(void) {
   pthread_t opener;
   if (pthread_create(&opener, NULL, blocked_opener, NULL) != 0) return 35;
   wait_started(&open_started);
-  nanosleep(&delay, NULL);
+  if (wait_for_blocked_syscall(&open_started, 257, &delay) != 0) return 36;
   alarm(5);
   if (pthread_cancel(opener) != 0) return 36;
   result = NULL;
