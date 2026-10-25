@@ -61,18 +61,24 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,471 APIs: 623 exported by Nelibc in at least
+The current snapshot contains 1,471 APIs: 624 exported by Nelibc in at least
 one tested hybrid profile, 115 intentionally delegated to the host in hybrid
-profiles, and 733 not declared by Nelibc. The audit removes preprocessor
+profiles, and 732 not declared by Nelibc. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 733 entries remain visible as unimplemented
+intentional omission; the 732 entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
-The largest undeclared groups are math (18), complex math (66), wide
+The largest undeclared groups are math (17), complex math (66), wide
 characters (65), unistd (42), stdlib (41), and name service/network database
 APIs (32). The pthread rows without Nelibc declarations are two private musl
 cleanup helper symbols. This is a breadth comparison, not a behavioral
 conformance score.
+
+`fmal` is implemented with an exact binary80 significand accumulator and a
+single final rounding step. Its accumulator uses 1,026 64-bit limbs to cover
+the full binary80 product/addend exponent range, so this correctness-focused
+software path is not optimized for speed. The x86-64 implementation also
+updates x87 and SSE exception flags.
 
 The report uses the same bounded declaration scanner as the project API
 inventory and requires the headers and archives from the same musl release.

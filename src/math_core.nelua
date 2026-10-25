@@ -399,6 +399,7 @@ local function nelibc_tanl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_pio2l_hi_hw(): clongdouble <cimport> end
 local function nelibc_pio2l_lo_hw(): clongdouble <cimport> end
 local function nelibc_x87_rounding_mode(): cint <cimport> end
+local function nelibc_math_raise_except(exceptions: cint): void <cimport> end
 local function nelibc_neg_one_up_hw(): clongdouble <cimport> end
 local function nelibc_frexpl_hw(value: clongdouble, exponent: *[0]cint): clongdouble <cimport> end
 local function nelibc_modfl_hw(value: clongdouble, integral: *[0]clongdouble): clongdouble <cimport> end
@@ -1001,12 +1002,112 @@ local function fma_multiply(x: culonglong, y: culonglong): FmaProduct <inline>
   local y_low = y & 0xFFFFFFFF_culonglong
   local y_high = y >> 32
   local term1 = x_low * y_low
-  local term2 = x_low * y_high + x_high * y_low
+  local term2_low = x_low * y_high
+  local term2_high = x_high * y_low
   local term3 = x_high * y_high
-  local low = term1 + (term2 << 32)
-  local high = term3 + (term2 >> 32)
-  if low < term1 then high = high + 1_culonglong end
+  local middle = (term1 >> 32) + (term2_low & 0xFFFFFFFF_culonglong) +
+      (term2_high & 0xFFFFFFFF_culonglong)
+  local low = (middle << 32) | (term1 & 0xFFFFFFFF_culonglong)
+  local high = term3 + (term2_low >> 32) + (term2_high >> 32) + (middle >> 32)
   return {high = high, low = low}
+end
+
+local function fmal_normalize(value: clongdouble): FmaNumber <inline>
+  local representation: LongDoubleBits = {value = value}
+  local exponent = representation.parts.sign_exponent & 0x7fff_cushort
+  local sign: cint = 0_cint
+  if (representation.parts.sign_exponent & 0x8000_cushort) ~= 0_cushort then
+    sign = 0x8000_cint
+  end
+  if exponent == 0x7fff_cushort then
+    return {mantissa = representation.parts.significand, exponent = 16321_cint, sign = sign}
+  end
+  if exponent == 0_cushort then
+    return {mantissa = representation.parts.significand, exponent = -16445_cint, sign = sign}
+  end
+  return {mantissa = representation.parts.significand,
+          exponent = (@cint)(exponent) - 16446_cint, sign = sign}
+end
+
+local function fmal_store_product(limbs: *[0]culonglong, product: FmaProduct,
+    offset: cint): void <inline>
+  local index = offset >> 6
+  local bit = offset & 63_cint
+  limbs[index] = product.low << bit
+  if bit == 0_cint then
+    limbs[index + 1] = product.high
+  else
+    limbs[index + 1] = (product.low >> (64_cint - bit)) | (product.high << bit)
+    limbs[index + 2] = product.high >> (64_cint - bit)
+  end
+end
+
+local function fmal_add_shifted(limbs: *[0]culonglong, mantissa: culonglong,
+    offset: cint): void <inline>
+  local index = offset >> 6
+  local bit = offset & 63_cint
+  local low = mantissa << bit
+  local high: culonglong = 0_culonglong
+  if bit ~= 0_cint then high = mantissa >> (64_cint - bit) end
+  local old = limbs[index]
+  limbs[index] = old + low
+  local carry = limbs[index] < old
+  old = limbs[index + 1]
+  local sum = old + high
+  local carry_high = sum < old
+  local carry_value: culonglong = 0_culonglong
+  if carry then carry_value = 1_culonglong end
+  local sum_with_carry = sum + carry_value
+  carry_high = carry_high or sum_with_carry < sum
+  limbs[index + 1] = sum_with_carry
+  index = index + 2_cint
+  while carry_high and index < 1026_cint do
+    old = limbs[index]
+    limbs[index] = old + 1_culonglong
+    carry_high = limbs[index] == 0_culonglong
+    index = index + 1_cint
+  end
+end
+
+local function fmal_subtract_shifted(limbs: *[0]culonglong, mantissa: culonglong,
+    offset: cint): boolean <inline>
+  local index = offset >> 6
+  local bit = offset & 63_cint
+  local low = mantissa << bit
+  local high: culonglong = 0_culonglong
+  if bit ~= 0_cint then high = mantissa >> (64_cint - bit) end
+  local old = limbs[index]
+  limbs[index] = old - low
+  local borrow = old < low
+  old = limbs[index + 1]
+  local difference = old - high
+  local borrow_high = old < high
+  local borrow_value: culonglong = 0_culonglong
+  if borrow then borrow_value = 1_culonglong end
+  local difference_with_borrow = difference - borrow_value
+  borrow_high = borrow_high or difference < borrow_value
+  limbs[index + 1] = difference_with_borrow
+  index = index + 2_cint
+  while borrow_high and index < 1026_cint do
+    old = limbs[index]
+    limbs[index] = old - 1_culonglong
+    borrow_high = old == 0_culonglong
+    index = index + 1_cint
+  end
+  return borrow_high
+end
+
+local function fmal_negate(limbs: *[0]culonglong): void <inline>
+  local carry = true
+  local index: cint = 0_cint
+  while index < 1026_cint do
+    limbs[index] = ~limbs[index]
+    if carry then
+      limbs[index] = limbs[index] + 1_culonglong
+      carry = limbs[index] == 0_culonglong
+    end
+    index = index + 1_cint
+  end
 end
 
 local function fma_clz64(value: culonglong): cint <inline>
@@ -1144,6 +1245,147 @@ local function fma(x: cdouble, y: cdouble, z: cdouble): cdouble
     end
   end
   return scalbn(result, exponent)
+end
+
+local function fmal(x: clongdouble, y: clongdouble, z: clongdouble): clongdouble
+    <cexport, codename 'fmal'>
+  local nx = fmal_normalize(x)
+  local ny = fmal_normalize(y)
+  local nz = fmal_normalize(z)
+  if nx.exponent == 16321_cint or ny.exponent == 16321_cint then
+    return x * y + z
+  end
+  if nz.exponent == 16321_cint then
+    if is_nan80(z) then
+      if is_signaling_nan80(z) then return z + z end
+      return z
+    end
+    return z
+  end
+  if nx.mantissa == 0_culonglong or ny.mantissa == 0_culonglong then
+    return x * y + z
+  end
+
+  -- The product and addend span at most 65,658 binary positions for binary80.
+  -- Keeping the exact integer sum avoids both product rounding and cancellation
+  -- loss when the operands' exponents are far apart.
+  local limbs: [1026]culonglong = {}
+  local product = fma_multiply(nx.mantissa, ny.mantissa)
+  local product_sign = nx.sign ~ ny.sign
+  local product_offset = nx.exponent + ny.exponent + 32890_cint
+  fmal_store_product(&limbs[0], product, product_offset)
+  local addend_offset = nz.exponent + 32890_cint
+  local sign = product_sign
+  local same_sign = product_sign == nz.sign
+  if same_sign then
+    fmal_add_shifted(&limbs[0], nz.mantissa, addend_offset)
+  else
+    if fmal_subtract_shifted(&limbs[0], nz.mantissa, addend_offset) then
+      fmal_negate(&limbs[0])
+      sign = nz.sign
+    end
+  end
+
+  local top: cint = -1_cint
+  local index: cint = 1025_cint
+  while index >= 0_cint do
+    if limbs[index] ~= 0_culonglong then
+      top = index * 64_cint + 63_cint - fma_clz64(limbs[index])
+      break
+    end
+    index = index - 1_cint
+  end
+  if top < 0_cint then
+    local zero_sign: cushort = 0_cushort
+    if nelibc_x87_rounding_mode() == 0x0400_cint then zero_sign = 0x8000_cushort end
+    local zero: LongDoubleBits = {
+      parts = {significand = 0_culonglong, sign_exponent = zero_sign}
+    }
+    return zero.value
+  end
+
+  local shift = top - 63_cint
+  if shift < 16445_cint then shift = 16445_cint end
+  local word = shift >> 6
+  local bit = shift & 63_cint
+  local significand = limbs[word] >> bit
+  if bit ~= 0_cint then
+    significand = significand | (limbs[word + 1] << (64_cint - bit))
+  end
+  local guard_index = shift - 1_cint
+  local guard_word = guard_index >> 6
+  local guard_bit = guard_index & 63_cint
+  local guard = ((limbs[guard_word] >> guard_bit) & 1_culonglong) ~= 0_culonglong
+  local sticky = false
+  index = 0_cint
+  while index < guard_word do
+    if limbs[index] ~= 0_culonglong then
+      sticky = true
+      break
+    end
+    index = index + 1_cint
+  end
+  if guard_bit > 0_cint and
+     (limbs[guard_word] & ((1_culonglong << guard_bit) - 1_culonglong)) ~= 0_culonglong then
+    sticky = true
+  end
+  local discarded = guard or sticky
+  local rounding_mode = nelibc_x87_rounding_mode()
+  local increment = false
+  if rounding_mode == 0_cint then
+    increment = guard and (sticky or (significand & 1_culonglong) ~= 0_culonglong)
+  elseif rounding_mode == 0x0400_cint then
+    increment = sign ~= 0_cint and discarded
+  elseif rounding_mode == 0x0800_cint then
+    increment = sign == 0_cint and discarded
+  end
+  local significand_overflow = false
+  if increment then
+    significand = significand + 1_culonglong
+    significand_overflow = significand == 0_culonglong
+  end
+
+  local exponent_field: cint = 0_cint
+  if significand_overflow then
+    significand = 0x8000000000000000_culonglong
+    if shift == 16445_cint then
+      exponent_field = 1_cint
+    else
+      exponent_field = shift - 16443_cint
+    end
+  elseif (significand & 0x8000000000000000_culonglong) ~= 0_culonglong then
+    exponent_field = shift - 16444_cint
+  end
+
+  local overflow = shift > 49210_cint or exponent_field >= 0x7fff_cint or
+      (shift == 49210_cint and significand == 0xffffffffffffffff_culonglong and discarded)
+  local exception_flags: cint = 0_cint
+  if overflow then
+    local to_infinity = rounding_mode == 0_cint or
+        (rounding_mode == 0x0800_cint and sign == 0_cint) or
+        (rounding_mode == 0x0400_cint and sign ~= 0_cint)
+    if to_infinity then
+      significand = 0x8000000000000000_culonglong
+      exponent_field = 0x7fff_cint
+    else
+      significand = 0xffffffffffffffff_culonglong
+      exponent_field = 0x7ffe_cint
+    end
+    exception_flags = 0x28_cint -- FE_OVERFLOW | FE_INEXACT
+    math_range_error()
+  else
+    if discarded then exception_flags = 0x20_cint end -- FE_INEXACT
+    if discarded and top < 16508_cint then
+      exception_flags = exception_flags | 0x10_cint -- FE_UNDERFLOW
+      math_range_error()
+    end
+  end
+  if exception_flags ~= 0_cint then nelibc_math_raise_except(exception_flags) end
+  local result: LongDoubleBits = {
+    parts = {significand = significand,
+             sign_exponent = ((@cushort)(exponent_field)) | ((@cushort)(sign))}
+  }
+  return result.value
 end
 
 local function fmaf(x: cfloat, y: cfloat, z: cfloat): cfloat

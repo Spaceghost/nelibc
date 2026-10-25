@@ -30,6 +30,10 @@ static int same_float(float a, float b) {
 }
 
 int main(void) {
+  const long double fma_x = 1.0L + 0x1p-63L;
+  const long double fma_y = 1.0L - 0x1p-63L;
+  if (fmal(fma_x, fma_y, -1.0L) != -0x1p-126L ||
+      fmal(LDBL_MAX, 2.0L, -LDBL_MAX) != LDBL_MAX) return 183;
   if (!signbit(fminl(-0.0L, 0.0L)) || signbit(fmaxl(-0.0L, 0.0L)) ||
       fdiml(5.0L, 3.0L) != 2.0L || fdiml(3.0L, 5.0L) != 0.0L) return 179;
   if (cbrtl(-0.125L) != -0.5L || cbrtl(LDBL_MIN) <= 0.0L) return 180;

@@ -369,7 +369,7 @@ floorf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 floorl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fma,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmaf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-fmal,math.h,,,not-declared
+fmal,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmax,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmaxf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmaxl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

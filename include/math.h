@@ -72,6 +72,7 @@ float acosf(float value);
 double acos(double value);
 float fmaf(float x, float y, float z);
 double fma(double x, double y, double z);
+long double fmal(long double x, long double y, long double z);
 float erff(float value);
 double erf(double value);
 float erfcf(float value);

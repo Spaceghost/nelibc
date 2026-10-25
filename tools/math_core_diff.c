@@ -83,6 +83,7 @@ extern float nelibc_acosf(float);
 extern double nelibc_acos(double);
 extern float nelibc_fmaf(float, float, float);
 extern double nelibc_fma(double, double, double);
+extern long double nelibc_fmal(long double, long double, long double);
 extern float nelibc_erff(float);
 extern double nelibc_erf(double);
 extern float nelibc_erfcf(float);
@@ -330,6 +331,36 @@ static int check_fma(double x, double y, double z,
       (!isnan(expectedf) && !equal_float(expectedf, actualf))) {
     fprintf(stderr, "fmaf mismatch x=%a y=%a z=%a expected=%a actual=%a\n",
             xf, yf, zf, expectedf, actualf);
+    return 1;
+  }
+  return 0;
+}
+
+static int check_fmal(long double x, long double y, long double z) {
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  const long double expected = fmal(x, y, z);
+  const int expected_flags = fetestexcept(FE_ALL_EXCEPT);
+  const int expected_errno = errno;
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  const long double actual = nelibc_fmal(x, y, z);
+  const int actual_flags = fetestexcept(FE_ALL_EXCEPT);
+  const int actual_errno = errno;
+  /* musl's fmal can report FE_INEXACT for exact cancellation cases, so it is
+     not a reliable fenv oracle. Keep value comparisons in every profile. */
+#ifdef NELIBC_MUSL_PROFILE
+  const int flags_match = 1;
+#else
+  const int flags_match = expected_flags == actual_flags;
+#endif
+  if (isnan(expected) != isnan(actual) ||
+      (!isnan(expected) && (expected != actual ||
+       (expected == 0.0L && signbit(expected) != signbit(actual)))) ||
+      !flags_match) {
+    fprintf(stderr, "fmal mismatch x=%.21La y=%.21La z=%.21La expected=%.21La/%x/%d actual=%.21La/%x/%d mode=%d\n",
+            x, y, z, expected, expected_flags, expected_errno,
+            actual, actual_flags, actual_errno, fegetround());
     return 1;
   }
   return 0;
@@ -2654,6 +2685,36 @@ int main(void) {
     if (check_fma(fma_edges[i][0], fma_edges[i][1], fma_edges[i][2],
                   (float)fma_edges[i][0], (float)fma_edges[i][1],
                   (float)fma_edges[i][2])) return 1;
+  const long double fmal_edges[][3] = {
+      {1.0L + 0x1p-63L, 1.0L - 0x1p-63L, -1.0L},
+      {LDBL_MAX, 2.0L, -LDBL_MAX}, {LDBL_MAX, 2.0L, 0.0L},
+      {0x1p-16445L, 0.5L, 0.0L}, {-0x1p-16445L, 0.5L, 0.0L},
+      {LDBL_MIN, 0.5L, 0.0L}, {1.0L, 1.0L, -1.0L},
+      {INFINITY, 1.0L, -INFINITY}, {0.0L, INFINITY, 1.0L},
+  };
+  const int fmal_rounding_modes[] = {
+      FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+  for (size_t mode = 0; mode < sizeof fmal_rounding_modes / sizeof fmal_rounding_modes[0]; ++mode) {
+    if (fesetround(fmal_rounding_modes[mode]) != 0) return 1;
+    for (size_t i = 0; i < sizeof fmal_edges / sizeof fmal_edges[0]; ++i)
+      if (check_fmal(fmal_edges[i][0], fmal_edges[i][1], fmal_edges[i][2])) return 1;
+    for (size_t i = 0; i < 32; ++i) {
+      const long double random_x = 1.0L + (long double)(next_bits() & UINT64_C(0x7FFFFFFFFFFFFFFF)) * 0x1p-63L;
+      const long double random_y = 1.0L + (long double)(next_bits() & UINT64_C(0x7FFFFFFFFFFFFFFF)) * 0x1p-63L;
+      const long double random_z = 1.0L + (long double)(next_bits() & UINT64_C(0x7FFFFFFFFFFFFFFF)) * 0x1p-63L;
+      const int exponent_x = (int)(next_bits() % 30001) - 15000;
+      const int exponent_y = (int)(next_bits() % 30001) - 15000;
+      const int exponent_z = (int)(next_bits() % 30001) - 15000;
+      long double x_value = ldexpl(random_x, exponent_x);
+      long double y_value = ldexpl(random_y, exponent_y);
+      long double z_value = ldexpl(random_z, exponent_z);
+      if (next_bits() & 1) x_value = -x_value;
+      if (next_bits() & 1) y_value = -y_value;
+      if (next_bits() & 1) z_value = -z_value;
+      if (check_fmal(x_value, y_value, z_value)) return 1;
+    }
+  }
+  if (fesetround(FE_TONEAREST) != 0) return 1;
   for (size_t i = 0; i < sizeof exp_edges / sizeof exp_edges[0]; ++i)
     if (check_exp_log(exp_edges[i], (float)exp_edges[i])) return 1;
   const double log10_edges[] = {
