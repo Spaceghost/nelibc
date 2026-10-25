@@ -144,7 +144,7 @@ $(OUT)/math-core-zig.o: src/math_core.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $@ $<
 
 $(OUT)/math-core-zig-musl.o: src/math_core.nelua | $(OUT)
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $@ $<
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $@ $<
 
 $(OUT)/math-core-gcc.o: src/math_core.nelua | $(OUT)
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $@ $<
@@ -286,13 +286,13 @@ smoke-zig: zig
 	$(OUT)/abi-smoke-zig
 
 zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o $(OUT)/math-core-zig-musl.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/string-zig-musl.o $(SOURCE)
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/memory-zig-musl.o src/memory.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/ctype-zig-musl.o src/ctype.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/string-zig-musl.o $(SOURCE)
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/memory-zig-musl.o src/memory.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/ctype-zig-musl.o src/ctype.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin -DNELIBC_QSORT_HOLE_SIFT' -o $(OUT)/stdlib-zig-musl.o src/stdlib.nelua
 	$(OBJCOPY) --localize-symbol=nelibc_test_qsort_depth_fallbacks $(OUT)/stdlib-zig-musl.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdlib-float-zig-musl.o src/stdlib_float.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/errno-host-zig-musl.o src/errno/host.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/stdlib-float-zig-musl.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/errno-host-zig-musl.o src/errno/host.nelua
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -Iinclude -fno-builtin tools/abi_smoke.c $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o $(OUT)/string-zig-musl.o $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-zig-musl.o $(OUT)/stdlib-zig-musl.o $(OUT)/stdlib-float-zig-musl.o $(OUT)/errno-host-zig-musl.o src/environment_adapter.c -o $(OUT)/abi-smoke-zig-musl
 
 smoke-zig-musl: zig-musl
@@ -310,7 +310,7 @@ $(OUT)/string-locale-zig.o: src/string_locale.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $@ $<
 
 $(OUT)/string-locale-zig-musl.o: src/string_locale.nelua | $(OUT)
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $@ $<
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $@ $<
 
 $(OUT)/string-locale-gcc.o: src/string_locale.nelua | $(OUT)
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $@ $<
@@ -413,7 +413,7 @@ float-divide-precheck-gcc: gcc $(OUT)/stdlib_float_divide_test.nelua
 	$(OUT)/float-divide-precheck-gcc
 
 float-divide-precheck-zig-musl: zig-musl $(OUT)/stdlib_float_divide_test.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdlib-float-divide-test-zig-musl.o $(OUT)/stdlib_float_divide_test.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/stdlib-float-divide-test-zig-musl.o $(OUT)/stdlib_float_divide_test.nelua
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -Iinclude -fno-builtin tools/float_divide_precheck_test.c $(OUT)/stdlib-float-divide-test-zig-musl.o $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o $(OUT)/errno-host-zig-musl.o -o $(OUT)/float-divide-precheck-zig-musl
 	$(OUT)/float-divide-precheck-zig-musl
 
@@ -526,38 +526,38 @@ $(OUT)/libnelibc-gcc.a: Makefile gcc $(OUT)/stdio-format-gcc.o src/environment_a
 	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
 $(OUT)/stdio-format-zig-musl.o: Makefile src/stdio.nelua src/stdio_varargs.c src/stdio_lock_standalone.c src/stdio_format_host_adapter.c
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-format-zig-musl-raw.o src/stdio.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/stdio-format-zig-musl-raw.o src/stdio.nelua
 	$(NM) -g --defined-only $(OUT)/stdio-format-zig-musl-raw.o | awk '$$3 != "snprintf" && $$3 != "vsnprintf" && $$3 != "sprintf" && $$3 != "vsprintf" && $$3 != "dprintf" && $$3 != "vdprintf" && $$3 != "nelibc_vfprintf_host" { print $$3 }' > $(OUT)/stdio-format-zig-musl-localize.txt
 	$(OBJCOPY) --localize-symbols=$(OUT)/stdio-format-zig-musl-localize.txt $(OUT)/stdio-format-zig-musl-raw.o $@
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -c src/stdio_varargs.c -o $(OUT)/stdio-varargs-hybrid-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -c src/stdio_lock_standalone.c -o $(OUT)/stdio-lock-hybrid-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -c src/stdio_format_host_adapter.c -o $(OUT)/stdio-format-host-adapter-zig-musl.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-asprintf-hybrid-zig-musl.o src/stdio_asprintf_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/stdio-asprintf-hybrid-zig-musl.o src/stdio_asprintf_hybrid.nelua
 
 $(OUT)/strerror-r-hybrid-zig-musl.o: src/strerror_r_hybrid_posix.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $@ $<
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $@ $<
 
 $(OUT)/malloc-hybrid-zig-musl.o: src/malloc_hybrid_export.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $@ $<
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $@ $<
 
 $(OUT)/libnelibc-zig-musl.a: Makefile zig-musl $(OUT)/malloc-hybrid-zig-musl.o $(OUT)/stdio-format-zig-musl.o src/environment_adapter.c src/stdio_host_adapter.c src/alloc_hybrid_adapter.c src/calloc_hybrid.nelua src/fcntl_adapter.c src/credential_adapter.c src/sem_clockwait_musl.c src/stdio_hybrid_musl.nelua src/atexit_musl_hybrid.nelua src/alloc.nelua src/unistd.nelua src/sys/linux_x86_64.nelua src/sys/linux_x86_64.S src/stdio_asprintf_hybrid.nelua src/aligned_alloc_hybrid.nelua src/posix_memalign_hybrid.nelua src/rewind_hybrid.nelua src/fdopen_hybrid.nelua src/stdio_setbuf_musl_hybrid.nelua src/stdio_buffer_extras_hybrid.nelua src/open_memstream_hybrid.nelua src/fmemopen_hybrid.nelua src/strerror_r_hybrid_posix.nelua $(OUT)/strerror-r-hybrid-zig-musl.o $(OUT)/mqueue-adapter-zig-musl.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/alloc-zig-musl.o src/alloc.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/calloc-hybrid-zig-musl.o src/calloc_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/aligned-alloc-hybrid-zig-musl.o src/aligned_alloc_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/posix-memalign-hybrid-zig-musl.o src/posix_memalign_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/rewind-hybrid-zig-musl.o src/rewind_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/fdopen-hybrid-zig-musl.o src/fdopen_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/tmpfile-hybrid-zig-musl.o src/tmpfile_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-setbuf-musl-hybrid-zig-musl.o src/stdio_setbuf_musl_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-buffer-extras-hybrid-zig-musl.o src/stdio_buffer_extras_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-zig-musl.o src/open_memstream_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-zig-musl.o src/fmemopen_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/fopen-hybrid-zig-musl.o src/fopen_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/unistd-zig-musl.o src/unistd.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/alloc-zig-musl.o src/alloc.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/calloc-hybrid-zig-musl.o src/calloc_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/aligned-alloc-hybrid-zig-musl.o src/aligned_alloc_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/posix-memalign-hybrid-zig-musl.o src/posix_memalign_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/rewind-hybrid-zig-musl.o src/rewind_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/fdopen-hybrid-zig-musl.o src/fdopen_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/tmpfile-hybrid-zig-musl.o src/tmpfile_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/stdio-setbuf-musl-hybrid-zig-musl.o src/stdio_setbuf_musl_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/stdio-buffer-extras-hybrid-zig-musl.o src/stdio_buffer_extras_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/open-memstream-hybrid-zig-musl.o src/open_memstream_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/fmemopen-hybrid-zig-musl.o src/fmemopen_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/fopen-hybrid-zig-musl.o src/fopen_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/unistd-zig-musl.o src/unistd.nelua
 	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-zig-musl.o $(OUT)/unistd-zig-musl.o.host && mv $(OUT)/unistd-zig-musl.o.host $(OUT)/unistd-zig-musl.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-zig-musl.o src/stdio_hybrid_musl.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/atexit-musl-hybrid-zig-musl.o src/atexit_musl_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-zig-musl.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/stdio-hybrid-zig-musl.o src/stdio_hybrid_musl.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/atexit-musl-hybrid-zig-musl.o src/atexit_musl_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/sys-linux-x86_64-zig-musl.o src/sys/linux_x86_64.nelua
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-zig-musl-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_WITH_UNISTD -DNELIBC_USE_MUSL_SYSCALL_CP -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -c src/stdio_host_adapter.c -o $(OUT)/stdio-host-adapter-zig-musl.o
@@ -968,7 +968,7 @@ strverscmp-diff-matrix: strverscmp-diff-zig strverscmp-diff-gcc strverscmp-diff-
 .PHONY: strverscmp-diff-zig strverscmp-diff-gcc strverscmp-diff-zig-musl strverscmp-diff-tcc strverscmp-diff-matrix
 
 strtok-shootout-zig: $(OUT)/libnelibc-zig.a
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strtok-zig.o src/string.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-strtok-zig.o src/string.nelua
 	$(ZIG) cc $(ZIGFLAGS) -O2 -pthread -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strtok_bench.c -o $(OUT)/strtok-zig-host
 	$(ZIG) cc $(ZIGFLAGS) -O2 -pthread -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' -DBENCH_NELIBC_STRTOK_R tools/strtok_bench.c $(OUT)/string-strtok-zig.o $(OUT)/libnelibc-zig.a -o $(OUT)/strtok-zig-nelibc
 	$(OUT)/strtok-zig-host > $(OUT)/strtok-shootout-zig-host.csv
@@ -977,7 +977,7 @@ strtok-shootout-zig: $(OUT)/libnelibc-zig.a
 	cat $(OUT)/strtok-shootout-zig.csv
 
 strtok-shootout-gcc: $(OUT)/libnelibc-gcc.a
-	$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strtok-gcc.o src/string.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/string-strtok-gcc.o src/string.nelua
 	gcc -O2 -pthread -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strtok_bench.c -o $(OUT)/strtok-gcc-host
 	gcc -O2 -pthread -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' -DBENCH_NELIBC_STRTOK_R tools/strtok_bench.c $(OUT)/string-strtok-gcc.o $(OUT)/libnelibc-gcc.a -o $(OUT)/strtok-gcc-nelibc
 	$(OUT)/strtok-gcc-host > $(OUT)/strtok-shootout-gcc-host.csv
@@ -986,7 +986,7 @@ strtok-shootout-gcc: $(OUT)/libnelibc-gcc.a
 	cat $(OUT)/strtok-shootout-gcc.csv
 
 strtok-shootout-zig-musl: $(OUT)/libnelibc-zig-musl.a
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strtok-zig-musl.o src/string.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/string-strtok-zig-musl.o src/string.nelua
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -pthread -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strtok_bench.c -o $(OUT)/strtok-zig-musl-host
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -pthread -Iinclude -fno-builtin $(MUSL_STDIO_WRAP_FLAGS) -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"nelibc"' -DBENCH_NELIBC_STRTOK_R tools/strtok_bench.c $(OUT)/string-strtok-zig-musl.o $(OUT)/libnelibc-zig-musl.a -o $(OUT)/strtok-zig-musl-nelibc
 	$(OUT)/strtok-zig-musl-host > $(OUT)/strtok-shootout-zig-musl-host.csv
@@ -995,7 +995,7 @@ strtok-shootout-zig-musl: $(OUT)/libnelibc-zig-musl.a
 	cat $(OUT)/strtok-shootout-zig-musl.csv
 
 strtok-shootout-tcc: $(OUT)/libnelibc-tcc.a
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strtok-tcc.o src/string.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-strtok-tcc.o src/string.nelua
 	$(TCC) -O2 -pthread -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strtok_bench.c -o $(OUT)/strtok-tcc-host
 	$(TCC) -O2 -pthread -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' -DBENCH_NELIBC_STRTOK_R tools/strtok_bench.c $(OUT)/string-strtok-tcc.o $(OUT)/libnelibc-tcc.a -o $(OUT)/strtok-tcc-nelibc
 	$(OUT)/strtok-tcc-host > $(OUT)/strtok-shootout-tcc-host.csv
@@ -1341,25 +1341,25 @@ collation-diff-tcc: tcc
 collation-diff-matrix: collation-diff-zig collation-diff-gcc collation-diff-zig-musl collation-diff-tcc
 
 collation-shootout-zig: zig
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-collation-zig.o src/string.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-collation-zig.o src/string.nelua
 	$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' tools/collation_bench.c $(OUT)/string-locale-zig.o $(OUT)/string-locale-lock-zig.o $(OUT)/string-collation-zig.o $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/collation-shootout-zig
 	$(OUT)/collation-shootout-zig $(COLLATION_LOCALE) > $(OUT)/collation-shootout-zig.csv
 	cat $(OUT)/collation-shootout-zig.csv
 
 collation-shootout-gcc: gcc
-	$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-collation-gcc.o src/string.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/string-collation-gcc.o src/string.nelua
 	gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' tools/collation_bench.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-collation-gcc.o $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/collation-shootout-gcc
 	$(OUT)/collation-shootout-gcc $(COLLATION_LOCALE) > $(OUT)/collation-shootout-gcc.csv
 	cat $(OUT)/collation-shootout-gcc.csv
 
 collation-shootout-zig-musl: zig-musl
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-collation-zig-musl.o src/string.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/string-collation-zig-musl.o src/string.nelua
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' tools/collation_bench.c $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o $(OUT)/string-collation-zig-musl.o $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/collation-shootout-zig-musl
 	$(OUT)/collation-shootout-zig-musl $(COLLATION_LOCALE) > $(OUT)/collation-shootout-zig-musl.csv
 	cat $(OUT)/collation-shootout-zig-musl.csv
 
 collation-shootout-tcc: tcc
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-collation-tcc.o src/string.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-collation-tcc.o src/string.nelua
 	$(TCC) -pthread -O2 -Iinclude -fno-builtin -DNELIBC_ALLOCATOR_FASTPATH_SAFE -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' tools/collation_bench.c $(OUT)/string-locale-tcc.o $(OUT)/string-locale-lock-tcc.o $(OUT)/string-collation-tcc.o $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o -o $(OUT)/collation-shootout-tcc
 	$(OUT)/collation-shootout-tcc $(COLLATION_LOCALE) > $(OUT)/collation-shootout-tcc.csv
 	cat $(OUT)/collation-shootout-tcc.csv
@@ -1369,19 +1369,19 @@ collation-shootout-matrix: collation-shootout-zig collation-shootout-gcc collati
 	@cat $(OUT)/collation-shootout-matrix.csv
 
 float-shootout-zig: zig
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-float-bench-zig.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-zig.o src/stdlib_float.nelua
 	$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -fno-sanitize=undefined -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' tools/float_bench.c $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-bench-zig.o $(OUT)/errno-host-zig.o -o $(OUT)/float-shootout-zig
 	$(OUT)/float-shootout-zig > $(OUT)/float-shootout-zig.csv
 	cat $(OUT)/float-shootout-zig.csv
 
 float-shootout-gcc: gcc
-	$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-float-bench-gcc.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-gcc.o src/stdlib_float.nelua
 	gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' tools/float_bench.c $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-bench-gcc.o $(OUT)/errno-host-gcc.o -o $(OUT)/float-shootout-gcc
 	$(OUT)/float-shootout-gcc > $(OUT)/float-shootout-gcc.csv
 	cat $(OUT)/float-shootout-gcc.csv
 
 float-shootout-zig-musl: zig-musl
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-float-bench-zig-musl.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-zig-musl.o src/stdlib_float.nelua
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DBENCH_HOST_ONLY -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' tools/float_bench.c -o $(OUT)/float-shootout-zig-musl-host
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -fno-sanitize=undefined -DBENCH_NELIBC_ONLY -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' tools/float_bench.c $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-bench-zig-musl.o $(OUT)/errno-host-zig-musl.o -o $(OUT)/float-shootout-zig-musl-nelibc
 	$(OUT)/float-shootout-zig-musl-host > $(OUT)/float-shootout-zig-musl-host.csv
@@ -1390,7 +1390,7 @@ float-shootout-zig-musl: zig-musl
 	cat $(OUT)/float-shootout-zig-musl.csv
 
 float-shootout-tcc: tcc
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-float-bench-tcc.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-tcc.o src/stdlib_float.nelua
 	$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' tools/float_bench.c $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/stdlib-float-bench-tcc.o $(OUT)/errno-host-tcc.o -o $(OUT)/float-shootout-tcc
 	$(OUT)/float-shootout-tcc > $(OUT)/float-shootout-tcc.csv
 	cat $(OUT)/float-shootout-tcc.csv
@@ -1402,19 +1402,19 @@ float-shootout-matrix: float-shootout-zig float-shootout-gcc float-shootout-zig-
 	@cat $(OUT)/float-shootout-matrix.csv
 
 float-long-shootout-zig: zig
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-float-bench-zig.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-zig.o src/stdlib_float.nelua
 	$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -fno-sanitize=undefined -DBENCH_LONG_DECIMALS -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' tools/float_bench.c $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-bench-zig.o $(OUT)/errno-host-zig.o -o $(OUT)/float-long-shootout-zig
 	$(OUT)/float-long-shootout-zig > $(OUT)/float-long-shootout-zig.csv
 	cat $(OUT)/float-long-shootout-zig.csv
 
 float-long-shootout-gcc: gcc
-	$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-float-bench-gcc.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-gcc.o src/stdlib_float.nelua
 	gcc -O2 -Iinclude -fno-builtin -DBENCH_LONG_DECIMALS -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' tools/float_bench.c $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-bench-gcc.o $(OUT)/errno-host-gcc.o -o $(OUT)/float-long-shootout-gcc
 	$(OUT)/float-long-shootout-gcc > $(OUT)/float-long-shootout-gcc.csv
 	cat $(OUT)/float-long-shootout-gcc.csv
 
 float-long-shootout-zig-musl: zig-musl
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-float-bench-zig-musl.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-zig-musl.o src/stdlib_float.nelua
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DBENCH_LONG_DECIMALS -DBENCH_HOST_ONLY -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' tools/float_bench.c -o $(OUT)/float-long-shootout-zig-musl-host
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -fno-sanitize=undefined -DBENCH_LONG_DECIMALS -DBENCH_NELIBC_ONLY -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' tools/float_bench.c $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-bench-zig-musl.o $(OUT)/errno-host-zig-musl.o -o $(OUT)/float-long-shootout-zig-musl-nelibc
 	$(OUT)/float-long-shootout-zig-musl-host > $(OUT)/float-long-shootout-zig-musl-host.csv
@@ -1423,7 +1423,7 @@ float-long-shootout-zig-musl: zig-musl
 	cat $(OUT)/float-long-shootout-zig-musl.csv
 
 float-long-shootout-tcc: tcc
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-float-bench-tcc.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-tcc.o src/stdlib_float.nelua
 	$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_LONG_DECIMALS -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' tools/float_bench.c $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/stdlib-float-bench-tcc.o $(OUT)/errno-host-tcc.o -o $(OUT)/float-long-shootout-tcc
 	$(OUT)/float-long-shootout-tcc > $(OUT)/float-long-shootout-tcc.csv
 	cat $(OUT)/float-long-shootout-tcc.csv
@@ -1434,7 +1434,7 @@ float-long-shootout-matrix: float-long-shootout-zig float-long-shootout-gcc floa
 
 float-shootout-tcc-opt: tcc
 	@for opt in 0 1 2 3; do \
-		$(NELUA) -B -r --cc '$(TCC)' --cflags=-O$$opt --cflags=-fno-builtin -o $(OUT)/stdlib-float-opt-O$$opt.o src/stdlib_float.nelua || exit; \
+		$(NELUA) -B -r --cc '$(TCC)' --cflags='-O$$opt -fno-builtin' -o $(OUT)/stdlib-float-opt-O$$opt.o src/stdlib_float.nelua || exit; \
 		$(TCC) -O$$opt -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC -O'$$opt'"' -DBENCH_LIBC='"glibc"' tools/float_bench.c $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/stdlib-float-opt-O$$opt.o $(OUT)/errno-host-tcc.o -o $(OUT)/float-shootout-opt-O$$opt || exit; \
 		$(OUT)/float-shootout-opt-O$$opt > $(OUT)/float-shootout-opt-O$$opt.csv || exit; \
 	done
@@ -1445,7 +1445,7 @@ float-shootout-tcc-opt: tcc
 .PHONY: float-shootout-tcc-opt
 
 int-shootout-zig: zig
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-int-bench-zig.o src/stdlib.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-int-bench-zig.o src/stdlib.nelua
 	$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/int_bench.c -o $(OUT)/int-shootout-host-zig
 	$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/int_bench.c $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-int-bench-zig.o $(OUT)/errno-host-zig.o src/environment_adapter.c -o $(OUT)/int-shootout-nelibc-zig
 	$(OUT)/int-shootout-host-zig > $(OUT)/int-shootout-host-zig.csv
@@ -1454,7 +1454,7 @@ int-shootout-zig: zig
 	cat $(OUT)/int-shootout-zig.csv
 
 int-shootout-gcc: gcc
-	$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-int-bench-gcc.o src/stdlib.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-int-bench-gcc.o src/stdlib.nelua
 	gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/int_bench.c -o $(OUT)/int-shootout-host-gcc
 	gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/int_bench.c $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-int-bench-gcc.o $(OUT)/errno-host-gcc.o src/environment_adapter.c -o $(OUT)/int-shootout-nelibc-gcc
 	$(OUT)/int-shootout-host-gcc > $(OUT)/int-shootout-host-gcc.csv
@@ -1463,7 +1463,7 @@ int-shootout-gcc: gcc
 	cat $(OUT)/int-shootout-gcc.csv
 
 int-shootout-zig-musl: zig-musl
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-int-bench-zig-musl.o src/stdlib.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/stdlib-int-bench-zig-musl.o src/stdlib.nelua
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/int_bench.c -o $(OUT)/int-shootout-host-zig-musl
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/int_bench.c $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-int-bench-zig-musl.o $(OUT)/errno-host-zig-musl.o src/environment_adapter.c -o $(OUT)/int-shootout-nelibc-zig-musl
 	$(OUT)/int-shootout-host-zig-musl > $(OUT)/int-shootout-host-zig-musl.csv
@@ -1472,7 +1472,7 @@ int-shootout-zig-musl: zig-musl
 	cat $(OUT)/int-shootout-zig-musl.csv
 
 int-shootout-tcc: tcc
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/stdlib-int-bench-tcc.o src/stdlib.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-int-bench-tcc.o src/stdlib.nelua
 	$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/int_bench.c -o $(OUT)/int-shootout-host-tcc
 	$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/int_bench.c $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/stdlib-int-bench-tcc.o $(OUT)/errno-host-tcc.o src/environment_adapter.c -o $(OUT)/int-shootout-nelibc-tcc
 	$(OUT)/int-shootout-host-tcc > $(OUT)/int-shootout-host-tcc.csv
@@ -1546,30 +1546,30 @@ rand-r-diff-matrix: rand-r-diff-zig rand-r-diff-gcc rand-r-diff-zig-musl rand-r-
 .PHONY: int-shootout-tcc
 
 alloc-shootout-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/libnelibc-zig.a
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-bench-zig.o src/memory.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/alloc-bench-zig.o src/alloc.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-bench-zig.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/errno-host-bench-zig.o src/errno/host.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/memory-bench-zig.o src/memory.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/alloc-bench-zig.o src/alloc.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/sys-linux-x86_64-bench-zig.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/errno-host-bench-zig.o src/errno/host.nelua
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-bench-zig-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DNELIBC_ALLOCATOR_FASTPATH_SAFE -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DNELIBC_BENCH_GLIBC tools/alloc_bench.c $(OUT)/alloc-bench-zig.o $(OUT)/memory-bench-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/sys-linux-x86_64-bench-zig.o $(OUT)/sys-linux-x86_64-bench-zig-asm.o $(OUT)/errno-host-bench-zig.o $(OUT)/libnelibc-zig.a -o $(OUT)/alloc-shootout-zig
 	$(OUT)/alloc-shootout-zig > $(OUT)/alloc-shootout-zig.csv
 	cat $(OUT)/alloc-shootout-zig.csv
 
 alloc-shootout-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/libnelibc-gcc.a
-	$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-bench-gcc.o src/memory.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/alloc-bench-gcc.o src/alloc.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-bench-gcc.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/errno-host-bench-gcc.o src/errno/host.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/memory-bench-gcc.o src/memory.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/alloc-bench-gcc.o src/alloc.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/sys-linux-x86_64-bench-gcc.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/errno-host-bench-gcc.o src/errno/host.nelua
 	gcc -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-bench-gcc-asm.o
 	gcc -O2 -Iinclude -fno-builtin -DNELIBC_ALLOCATOR_FASTPATH_SAFE -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DNELIBC_BENCH_GLIBC tools/alloc_bench.c $(OUT)/alloc-bench-gcc.o $(OUT)/memory-bench-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/sys-linux-x86_64-bench-gcc.o $(OUT)/sys-linux-x86_64-bench-gcc-asm.o $(OUT)/errno-host-bench-gcc.o $(OUT)/libnelibc-gcc.a -o $(OUT)/alloc-shootout-gcc
 	$(OUT)/alloc-shootout-gcc > $(OUT)/alloc-shootout-gcc.csv
 	cat $(OUT)/alloc-shootout-gcc.csv
 
 alloc-shootout-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-bench-zig-musl.o src/memory.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/alloc-bench-zig-musl.o src/alloc.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-bench-zig-musl.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/errno-host-bench-zig-musl.o src/errno/host.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/memory-bench-zig-musl.o src/memory.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/alloc-bench-zig-musl.o src/alloc.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/sys-linux-x86_64-bench-zig-musl.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/errno-host-bench-zig-musl.o src/errno/host.nelua
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-bench-zig-musl-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_STATIC_MUSL -c src/alloc_hybrid_adapter.c -o $(OUT)/alloc-hybrid-adapter-zig-musl-bench.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-zig-musl-bench.o
@@ -1578,12 +1578,12 @@ alloc-shootout-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o
 	cat $(OUT)/alloc-shootout-zig-musl.csv
 
 alloc-shootout-tcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/libnelibc-tcc.a
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-bench-tcc.o src/memory.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/memory-bench-tcc.o src/memory.nelua
 	$(TCC) -c -fno-builtin src/memory_tcc_x86_64.c -o $(OUT)/memory-tcc-helper-bench.o
 	$(ZIG) cc $(ZIGFLAGS) -c -DNELIBC_TCC_PUBLIC_MEMCPY src/memory_x86_64.S -o $(OUT)/memory-tcc-simd-bench.o
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/alloc-bench-tcc.o src/alloc.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-bench-tcc.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/errno-host-bench-tcc.o src/errno/host.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/alloc-bench-tcc.o src/alloc.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/sys-linux-x86_64-bench-tcc.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/errno-host-bench-tcc.o src/errno/host.nelua
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-bench-tcc-asm.o
 	$(TCC) -O2 -Iinclude -fno-builtin -DNELIBC_ALLOCATOR_FASTPATH_SAFE -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DNELIBC_BENCH_GLIBC tools/alloc_bench.c $(OUT)/alloc-bench-tcc.o $(OUT)/memory-bench-tcc.o $(OUT)/memory-tcc-helper-bench.o $(OUT)/memory-tcc-simd-bench.o $(OUT)/sys-linux-x86_64-bench-tcc.o $(OUT)/sys-linux-x86_64-bench-tcc-asm.o $(OUT)/errno-host-bench-tcc.o $(OUT)/libnelibc-tcc.a -o $(OUT)/alloc-shootout-tcc
 	$(OUT)/alloc-shootout-tcc > $(OUT)/alloc-shootout-tcc.csv
@@ -1945,7 +1945,7 @@ smoke-stdio-tcc: tcc
 	$(OUT)/stdio-smoke-tcc
 
 bench-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-bench-zig.o src/memory.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/memory-bench-zig.o src/memory.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/mem_bench.c -o $(OUT)/mem-bench-zig-libc
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/mem_bench.c $(OUT)/memory-bench-zig.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/mem-bench-zig-nelibc
 
@@ -1956,7 +1956,7 @@ shootout-zig: bench-zig
 	@cat $(OUT)/mem-shootout-zig.csv
 
 bench-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	@$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-bench-gcc.o src/memory.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/memory-bench-gcc.o src/memory.nelua
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/mem_bench.c -o $(OUT)/mem-bench-gcc-libc
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/mem_bench.c $(OUT)/memory-bench-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/mem-bench-gcc-nelibc
 
@@ -1967,7 +1967,7 @@ shootout-gcc: bench-gcc
 	@cat $(OUT)/mem-shootout-gcc.csv
 
 bench-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-bench-zig-musl.o src/memory.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/memory-bench-zig-musl.o src/memory.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -O2 -static -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"libc"' tools/mem_bench.c -o $(OUT)/mem-bench-zig-musl-libc
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -O2 -static -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/mem_bench.c $(OUT)/memory-bench-zig-musl.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/mem-bench-zig-musl-nelibc
 
@@ -1978,7 +1978,7 @@ shootout-zig-musl: bench-zig-musl
 	@cat $(OUT)/mem-shootout-zig-musl.csv
 
 bench-musl-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	@$(NELUA) -B -r --cc musl-gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-bench-musl-gcc.o src/memory.nelua
+	@$(NELUA) -B -r --cc musl-gcc --cflags='-O2 -fno-builtin' -o $(OUT)/memory-bench-musl-gcc.o src/memory.nelua
 	@musl-gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC via musl-gcc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"libc"' tools/mem_bench.c -o $(OUT)/mem-bench-musl-gcc-libc
 	@musl-gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC via musl-gcc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/mem_bench.c $(OUT)/memory-bench-musl-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/mem-bench-musl-gcc-nelibc
 
@@ -1987,7 +1987,7 @@ shootout-musl-gcc: bench-musl-gcc
 	@$(OUT)/mem-bench-musl-gcc-nelibc | tail -n +2
 
 bench-tcc: $(OUT)
-	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-bench-tcc.o src/memory.nelua
+	@$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/memory-bench-tcc.o src/memory.nelua
 	@$(TCC) -O2 -c -fno-builtin src/memory_tcc_x86_64.c -o $(OUT)/memory-bench-tcc-helper.o
 	@$(ZIG) cc $(ZIGFLAGS) -c -DNELIBC_TCC_PUBLIC_MEMCPY src/memory_x86_64.S -o $(OUT)/memory-bench-tcc-simd.o
 	@$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/mem_bench.c -o $(OUT)/mem-bench-tcc-libc
@@ -2008,7 +2008,7 @@ shootout-tcc-memcpy-variants: bench-tcc
 	@cat $(OUT)/mem-shootout-tcc-memcpy-libc.csv $(OUT)/mem-shootout-tcc-memcpy-sse64.csv $(OUT)/mem-shootout-tcc-memcpy-repmovsb.csv | awk -F, 'NR == 1 || $$4 == "memcpy"'
 
 memcmp-shootout-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/memory-x86_64-sse2-baseline.o
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-memcmp-zig.o src/memory.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/memory-memcmp-zig.o src/memory.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/memcmp_bench.c -o $(OUT)/memcmp-bench-zig-libc
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc-sse2"' tools/memcmp_bench.c $(OUT)/memory-memcmp-zig.o $(OUT)/memory-x86_64-sse2-baseline.o -o $(OUT)/memcmp-bench-zig-sse2
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/memcmp_bench.c $(OUT)/memory-memcmp-zig.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/memcmp-bench-zig-nelibc
@@ -2019,7 +2019,7 @@ memcmp-shootout-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/memory-x86_64-sse
 	@cat $(OUT)/memcmp-shootout-zig.csv
 
 memcmp-shootout-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/memory-x86_64-sse2-baseline.o
-	@$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-memcmp-gcc.o src/memory.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/memory-memcmp-gcc.o src/memory.nelua
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/memcmp_bench.c -o $(OUT)/memcmp-bench-gcc-libc
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc-sse2"' tools/memcmp_bench.c $(OUT)/memory-memcmp-gcc.o $(OUT)/memory-x86_64-sse2-baseline.o -o $(OUT)/memcmp-bench-gcc-sse2
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/memcmp_bench.c $(OUT)/memory-memcmp-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/memcmp-bench-gcc-nelibc
@@ -2030,7 +2030,7 @@ memcmp-shootout-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/memory-x86_64-sse
 	@cat $(OUT)/memcmp-shootout-gcc.csv
 
 memcmp-shootout-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/memory-x86_64-sse2-baseline.o
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-memcmp-zig-musl.o src/memory.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/memory-memcmp-zig-musl.o src/memory.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"libc"' tools/memcmp_bench.c -o $(OUT)/memcmp-bench-zig-musl-libc
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"nelibc-sse2"' tools/memcmp_bench.c $(OUT)/memory-memcmp-zig-musl.o $(OUT)/memory-x86_64-sse2-baseline.o -o $(OUT)/memcmp-bench-zig-musl-sse2
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/memcmp_bench.c $(OUT)/memory-memcmp-zig-musl.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/memcmp-bench-zig-musl-nelibc
@@ -2041,7 +2041,7 @@ memcmp-shootout-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/memory-x86_6
 	@cat $(OUT)/memcmp-shootout-zig-musl.csv
 
 memcmp-shootout-tcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/memory-x86_64-sse2-baseline.o
-	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-memcmp-tcc.o src/memory.nelua
+	@$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/memory-memcmp-tcc.o src/memory.nelua
 	@$(TCC) -O2 -c -fno-builtin src/memory_tcc_x86_64.c -o $(OUT)/memory-memcmp-tcc-helper.o
 	@$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/memcmp_bench.c -o $(OUT)/memcmp-bench-tcc-libc
 	@$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc-sse2"' tools/memcmp_bench.c $(OUT)/memory-memcmp-tcc.o $(OUT)/memory-memcmp-tcc-helper.o $(OUT)/memory-x86_64-sse2-baseline.o -o $(OUT)/memcmp-bench-tcc-sse2
@@ -2057,8 +2057,8 @@ memcmp-shootout-matrix: memcmp-shootout-zig memcmp-shootout-gcc memcmp-shootout-
 	@cat $(OUT)/memcmp-shootout-matrix.csv
 
 strstr-shootout-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strstr-zig.o src/string.nelua
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-strstr-zig.o src/memory.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-strstr-zig.o src/string.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/memory-strstr-zig.o src/memory.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/strstr_bench.c -o $(OUT)/strstr-bench-zig-libc
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/strstr_bench.c $(OUT)/string-locale-zig.o $(OUT)/string-locale-lock-zig.o $(OUT)/string-strstr-zig.o $(OUT)/memory-strstr-zig.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strstr-bench-zig-nelibc
 	@$(OUT)/strstr-bench-zig-libc > $(OUT)/strstr-shootout-zig-libc.csv
@@ -2067,8 +2067,8 @@ strstr-shootout-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
 	@cat $(OUT)/strstr-shootout-zig.csv
 
 strstr-shootout-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	@$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strstr-gcc.o src/string.nelua
-	@$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-strstr-gcc.o src/memory.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/string-strstr-gcc.o src/string.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/memory-strstr-gcc.o src/memory.nelua
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/strstr_bench.c -o $(OUT)/strstr-bench-gcc-libc
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/strstr_bench.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-strstr-gcc.o $(OUT)/memory-strstr-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strstr-bench-gcc-nelibc
 	@$(OUT)/strstr-bench-gcc-libc > $(OUT)/strstr-shootout-gcc-libc.csv
@@ -2077,8 +2077,8 @@ strstr-shootout-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
 	@cat $(OUT)/strstr-shootout-gcc.csv
 
 strstr-shootout-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strstr-zig-musl.o src/string.nelua
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-strstr-zig-musl.o src/memory.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/string-strstr-zig-musl.o src/string.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/memory-strstr-zig-musl.o src/memory.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"libc"' tools/strstr_bench.c -o $(OUT)/strstr-bench-zig-musl-libc
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/strstr_bench.c $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o $(OUT)/string-strstr-zig-musl.o $(OUT)/memory-strstr-zig-musl.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strstr-bench-zig-musl-nelibc
 	@$(OUT)/strstr-bench-zig-musl-libc > $(OUT)/strstr-shootout-zig-musl-libc.csv
@@ -2087,8 +2087,8 @@ strstr-shootout-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o
 	@cat $(OUT)/strstr-shootout-zig-musl.csv
 
 strstr-shootout-tcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strstr-tcc.o src/string.nelua
-	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-strstr-tcc.o src/memory.nelua
+	@$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-strstr-tcc.o src/string.nelua
+	@$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/memory-strstr-tcc.o src/memory.nelua
 	@$(TCC) -O2 -c -fno-builtin src/memory_tcc_x86_64.c -o $(OUT)/memory-strstr-tcc-helper.o
 	@$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/strstr_bench.c -o $(OUT)/strstr-bench-tcc-libc
 	@$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/strstr_bench.c $(OUT)/string-locale-tcc.o $(OUT)/string-locale-lock-tcc.o $(OUT)/string-strstr-tcc.o $(OUT)/memory-strstr-tcc.o $(OUT)/memory-strstr-tcc-helper.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strstr-bench-tcc-nelibc
@@ -2102,7 +2102,7 @@ strstr-shootout-matrix: strstr-shootout-zig strstr-shootout-gcc strstr-shootout-
 	@cat $(OUT)/strstr-shootout-matrix.csv
 
 strcasecmp-shootout-zig: zig
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strcasecmp-zig.o src/string.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-strcasecmp-zig.o src/string.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strcasecmp_bench.c -o $(OUT)/strcasecmp-bench-zig-libc
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' -DBENCH_NELIBC tools/strcasecmp_bench.c $(OUT)/string-locale-zig.o $(OUT)/string-locale-lock-zig.o $(OUT)/string-strcasecmp-zig.o $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strcasecmp-bench-zig-nelibc
 	@$(OUT)/strcasecmp-bench-zig-libc --exhaustive > $(OUT)/strcasecmp-exhaustive-zig-libc.csv
@@ -2117,7 +2117,7 @@ strcasecmp-shootout-zig: zig
 	@cat $(OUT)/strcasecmp-shootout-zig.csv
 
 strcasecmp-shootout-gcc: gcc
-	@$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strcasecmp-gcc.o src/string.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/string-strcasecmp-gcc.o src/string.nelua
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strcasecmp_bench.c -o $(OUT)/strcasecmp-bench-gcc-libc
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' -DBENCH_NELIBC tools/strcasecmp_bench.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-strcasecmp-gcc.o $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strcasecmp-bench-gcc-nelibc
 	@$(OUT)/strcasecmp-bench-gcc-libc --exhaustive > $(OUT)/strcasecmp-exhaustive-gcc-libc.csv
@@ -2132,7 +2132,7 @@ strcasecmp-shootout-gcc: gcc
 	@cat $(OUT)/strcasecmp-shootout-gcc.csv
 
 strcasecmp-shootout-zig-musl: zig-musl
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strcasecmp-zig-musl.o src/string.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/string-strcasecmp-zig-musl.o src/string.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strcasecmp_bench.c -o $(OUT)/strcasecmp-bench-zig-musl-libc
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"nelibc"' -DBENCH_NELIBC tools/strcasecmp_bench.c $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o $(OUT)/string-strcasecmp-zig-musl.o $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strcasecmp-bench-zig-musl-nelibc
 	@$(OUT)/strcasecmp-bench-zig-musl-libc --exhaustive > $(OUT)/strcasecmp-exhaustive-zig-musl-libc.csv
@@ -2147,7 +2147,7 @@ strcasecmp-shootout-zig-musl: zig-musl
 	@cat $(OUT)/strcasecmp-shootout-zig-musl.csv
 
 strcasecmp-shootout-tcc: tcc
-	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strcasecmp-tcc.o src/string.nelua
+	@$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-strcasecmp-tcc.o src/string.nelua
 	@$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strcasecmp_bench.c -o $(OUT)/strcasecmp-bench-tcc-libc
 	@$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' -DBENCH_NELIBC tools/strcasecmp_bench.c $(OUT)/string-locale-tcc.o $(OUT)/string-locale-lock-tcc.o $(OUT)/string-strcasecmp-tcc.o $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o -o $(OUT)/strcasecmp-bench-tcc-nelibc
 	@$(OUT)/strcasecmp-bench-tcc-libc --exhaustive > $(OUT)/strcasecmp-exhaustive-tcc-libc.csv
@@ -2189,7 +2189,7 @@ strcasecmp-perf-matrix: strcasecmp-shootout-matrix
 	@cat $(OUT)/strcasecmp-perf-matrix.csv
 
 strverscmp-shootout-zig: zig
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strverscmp-zig.o src/string.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-strverscmp-zig.o src/string.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strverscmp_bench.c -o $(OUT)/strverscmp-zig-libc
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/strverscmp_bench.c $(OUT)/string-locale-zig.o $(OUT)/string-locale-lock-zig.o $(OUT)/string-strverscmp-zig.o $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strverscmp-zig-nelibc
 	@$(OUT)/strverscmp-zig-libc > $(OUT)/strverscmp-shootout-zig-libc.csv
@@ -2198,7 +2198,7 @@ strverscmp-shootout-zig: zig
 	@cat $(OUT)/strverscmp-shootout-zig.csv
 
 strverscmp-shootout-gcc: gcc
-	@$(NELUA) -B -r --cc gcc --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strverscmp-gcc.o src/string.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/string-strverscmp-gcc.o src/string.nelua
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strverscmp_bench.c -o $(OUT)/strverscmp-gcc-libc
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/strverscmp_bench.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-strverscmp-gcc.o $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strverscmp-gcc-nelibc
 	@$(OUT)/strverscmp-gcc-libc > $(OUT)/strverscmp-shootout-gcc-libc.csv
@@ -2207,7 +2207,7 @@ strverscmp-shootout-gcc: gcc
 	@cat $(OUT)/strverscmp-shootout-gcc.csv
 
 strverscmp-shootout-zig-musl: zig-musl
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strverscmp-zig-musl.o src/string.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/string-strverscmp-zig-musl.o src/string.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strverscmp_bench.c -o $(OUT)/strverscmp-zig-musl-libc
 	@$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -O2 -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -Wl,--wrap=free -Wl,--wrap=realloc -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/strverscmp_bench.c $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o $(OUT)/string-strverscmp-zig-musl.o $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strverscmp-zig-musl-nelibc
 	@$(OUT)/strverscmp-zig-musl-libc > $(OUT)/strverscmp-shootout-zig-musl-libc.csv
@@ -2216,7 +2216,7 @@ strverscmp-shootout-zig-musl: zig-musl
 	@cat $(OUT)/strverscmp-shootout-zig-musl.csv
 
 strverscmp-shootout-tcc: tcc
-	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/string-strverscmp-tcc.o src/string.nelua
+	@$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-strverscmp-tcc.o src/string.nelua
 	@$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strverscmp_bench.c -o $(OUT)/strverscmp-tcc-libc
 	@$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/strverscmp_bench.c $(OUT)/string-locale-tcc.o $(OUT)/string-locale-lock-tcc.o $(OUT)/string-strverscmp-tcc.o $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o -o $(OUT)/strverscmp-tcc-nelibc
 	@$(OUT)/strverscmp-tcc-libc > $(OUT)/strverscmp-shootout-tcc-libc.csv
@@ -2341,7 +2341,7 @@ memscan-shootout-matrix: bench-zig bench-gcc bench-zig-musl bench-tcc
 	@cat $(OUT)/memscan-shootout-matrix.csv
 
 memscan-threshold-shootout: $(OUT) $(OUT)/memory-x86_64-sse2-baseline.o
-	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-O2 --cflags=-fno-builtin -o $(OUT)/memory-memscan-threshold-zig.o src/memory.nelua
+	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/memory-memscan-threshold-zig.o src/memory.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/memscan_bench.c -o $(OUT)/memscan-threshold-libc
 	@$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc-sse2"' tools/memscan_bench.c $(OUT)/memory-memscan-threshold-zig.o $(OUT)/memory-x86_64-sse2-baseline.o -o $(OUT)/memscan-threshold-sse2
 	@for threshold in 2048 4096 8192; do \
@@ -2398,20 +2398,20 @@ smoke-syscall-gcc: syscall-gcc
 	NELIBC_GETENV_PROBE=visible $(OUT)/syscall-smoke-gcc
 
 syscall-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/memory-syscall-zig-musl.o src/memory.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/string-syscall-zig-musl.o src/string.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdlib-syscall-zig-musl.o src/stdlib.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-zig-musl.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/errno-host-zig-musl.o src/errno/host.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/alloc-zig-musl.o src/alloc.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/unistd-zig-musl.o src/unistd.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/memory-syscall-zig-musl.o src/memory.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/string-syscall-zig-musl.o src/string.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/stdlib-syscall-zig-musl.o src/stdlib.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/sys-linux-x86_64-zig-musl.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/errno-host-zig-musl.o src/errno/host.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/alloc-zig-musl.o src/alloc.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/unistd-zig-musl.o src/unistd.nelua
 	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-zig-musl.o $(OUT)/unistd-zig-musl.o.host && mv $(OUT)/unistd-zig-musl.o.host $(OUT)/unistd-zig-musl.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -D NELIBC_TESTING=true -o $(OUT)/unistd-smoke-zig-musl.o src/unistd.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -D NELIBC_TESTING=true -o $(OUT)/unistd-smoke-zig-musl.o src/unistd.nelua
 	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-smoke-zig-musl.o $(OUT)/unistd-smoke-zig-musl.o.host && mv $(OUT)/unistd-smoke-zig-musl.o.host $(OUT)/unistd-smoke-zig-musl.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-zig-musl.o src/stdio_hybrid_musl.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-zig-musl.o src/open_memstream_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-zig-musl.o src/fmemopen_hybrid.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/atexit-musl-hybrid-zig-musl.o src/atexit_musl_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/stdio-hybrid-zig-musl.o src/stdio_hybrid_musl.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/open-memstream-hybrid-zig-musl.o src/open_memstream_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/fmemopen-hybrid-zig-musl.o src/fmemopen_hybrid.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/atexit-musl-hybrid-zig-musl.o src/atexit_musl_hybrid.nelua
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-zig-musl-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -pthread -target x86_64-linux-musl -static -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL $(MUSL_STDIO_WRAP_FLAGS) -DNELIBC_TESTING tools/syscall_smoke.c $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o src/fcntl_adapter.c src/credential_adapter.c src/stdio_host_adapter.c src/alloc_hybrid_adapter.c tools/syscall_interpose_smoke.c $(OUT)/string-syscall-zig-musl.o $(OUT)/stdlib-syscall-zig-musl.o $(OUT)/memory-syscall-zig-musl.o $(OUT)/memory-x86_64-simd.o $(OUT)/unistd-smoke-zig-musl.o $(OUT)/stdio-hybrid-zig-musl.o $(OUT)/open-memstream-hybrid-zig-musl.o $(OUT)/fmemopen-hybrid-zig-musl.o $(OUT)/atexit-musl-hybrid-zig-musl.o $(OUT)/alloc-zig-musl.o $(OUT)/errno-host-zig-musl.o $(OUT)/sys-linux-x86_64-zig-musl.o $(OUT)/sys-linux-x86_64-zig-musl-asm.o src/environment_adapter.c -o $(OUT)/syscall-smoke-zig-musl
 
@@ -2445,7 +2445,7 @@ syscall-tls-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-gcc.o $
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/string-syscall-tls-gcc.o src/string.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/stdlib-syscall-tls-gcc.o src/stdlib.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-tls-gcc.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ftls-model=initial-exec -o $(OUT)/errno-tls-gcc.o src/errno/standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ftls-model=initial-exec' -o $(OUT)/errno-tls-gcc.o src/errno/standalone.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/alloc-tls-gcc.o src/alloc.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/unistd-tls-gcc.o src/unistd.nelua
 	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-tls-gcc.o $(OUT)/unistd-tls-gcc.o.host && mv $(OUT)/unistd-tls-gcc.o.host $(OUT)/unistd-tls-gcc.o
@@ -2463,12 +2463,12 @@ smoke-syscall-tls-gcc: syscall-tls-gcc
 smoke-matrix: unistd-header-smoke smoke-zig smoke-gcc smoke-zig-musl smoke-tcc float-diff-matrix int-diff-matrix collation-diff-matrix smoke-syscall-zig smoke-syscall-gcc smoke-syscall-zig-musl smoke-syscall-tcc smoke-syscall-tls-gcc smoke-freestanding-zig smoke-freestanding-gcc smoke-standalone-zig smoke-standalone-gcc smoke-standalone-tcc spawn-smoke-standalone-matrix exit-smoke-standalone-matrix abort-smoke-matrix lib-smoke-matrix smoke-lib-standalone-matrix lib-consumer-matrix lib-stdio-smoke-matrix atexit-hybrid-smoke-matrix stdio-format-diff-matrix unistd-cancel-matrix unistd-cancel-standalone-matrix lib-consumer-standalone-matrix math-core-diff-matrix math-core-standalone-matrix complex-math-smoke-matrix
 
 errno-tls-zig-musl: $(OUT)
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin --cflags=-ftls-model=initial-exec -o $(OUT)/errno-tls-zig-musl.o src/errno/standalone.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin -ftls-model=initial-exec' -o $(OUT)/errno-tls-zig-musl.o src/errno/standalone.nelua
 
 freestanding-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-DNELIBC_STANDALONE -o $(OUT)/string-freestanding-zig.o src/string.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/string-locale-freestanding-zig.o src/string_locale_freestanding.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/memory-freestanding-zig.o src/memory.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -DNELIBC_STANDALONE' -o $(OUT)/string-freestanding-zig.o src/string.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/string-locale-freestanding-zig.o src/string_locale_freestanding.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/memory-freestanding-zig.o src/memory.nelua
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_FREESTANDING -ffreestanding -fno-builtin -fno-stack-protector -c src/string_locale_lock.c -o $(OUT)/string-tls-freestanding-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/start_linux_x86_64.S -o $(OUT)/start-linux-x86_64-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Iinclude tools/freestanding_smoke.c src/stdio_startup_stub.c $(OUT)/string-locale-freestanding-zig.o $(OUT)/string-tls-freestanding-zig.o $(OUT)/string-freestanding-zig.o $(OUT)/memory-freestanding-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/start-linux-x86_64-zig.o -o $(OUT)/freestanding-zig
@@ -2478,9 +2478,9 @@ smoke-freestanding-zig: freestanding-zig
 	$(OUT)/freestanding-zig
 
 freestanding-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns --cflags=-DNELIBC_STANDALONE -o $(OUT)/string-freestanding-gcc.o src/string.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/string-locale-freestanding-gcc.o src/string_locale_freestanding.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/memory-freestanding-gcc.o src/memory.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -DNELIBC_STANDALONE' -o $(OUT)/string-freestanding-gcc.o src/string.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/string-locale-freestanding-gcc.o src/string_locale_freestanding.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/memory-freestanding-gcc.o src/memory.nelua
 	gcc -DNELIBC_FREESTANDING -ffreestanding -fno-builtin -fno-stack-protector -fno-tree-loop-distribute-patterns -c src/string_locale_lock.c -o $(OUT)/string-tls-freestanding-gcc.o
 	gcc -c src/sys/start_linux_x86_64.S -o $(OUT)/start-linux-x86_64-gcc.o
 	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Iinclude tools/freestanding_smoke.c src/stdio_startup_stub.c $(OUT)/string-locale-freestanding-gcc.o $(OUT)/string-tls-freestanding-gcc.o $(OUT)/string-freestanding-gcc.o $(OUT)/memory-freestanding-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/start-linux-x86_64-gcc.o -o $(OUT)/freestanding-gcc
@@ -2490,25 +2490,25 @@ smoke-freestanding-gcc: freestanding-gcc
 	$(OUT)/freestanding-gcc
 
 standalone-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-DNELIBC_STANDALONE -o $(OUT)/string-standalone-zig.o src/string.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/string-locale-standalone-zig.o src/string_locale_standalone.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/memory-standalone-zig.o src/memory.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/ctype-standalone-zig.o src/ctype.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-ftls-model=local-exec -o $(OUT)/stdlib-standalone-zig.o src/stdlib.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/locale-standalone-zig.o src/locale_standalone.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/stdlib-exit-standalone-zig.o src/stdlib_exit_standalone.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/stdlib-float-standalone-zig.o src/stdlib_float.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/sys-linux-x86_64-standalone-zig.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-ftls-model=local-exec -o $(OUT)/errno-standalone-zig.o src/errno/standalone.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-ftls-model=local-exec -o $(OUT)/tls-fixture-standalone-zig.o tools/tls_fixture.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -DNELIBC_STANDALONE' -o $(OUT)/string-standalone-zig.o src/string.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/string-locale-standalone-zig.o src/string_locale_standalone.nelua
+	$(NELUA) -C -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/memory-standalone-zig.o src/memory.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/ctype-standalone-zig.o src/ctype.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/stdlib-standalone-zig.o src/stdlib.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/locale-standalone-zig.o src/locale_standalone.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/stdlib-exit-standalone-zig.o src/stdlib_exit_standalone.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/stdlib-float-standalone-zig.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/sys-linux-x86_64-standalone-zig.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/errno-standalone-zig.o src/errno/standalone.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/tls-fixture-standalone-zig.o tools/tls_fixture.nelua
 	$(ZIG) cc $(ZIGFLAGS) -c -std=c11 -ffreestanding -fno-stack-protector -fno-builtin -fno-sanitize=all -ftls-model=local-exec tools/tls_alignment_fixture.c -o $(OUT)/tls-alignment-fixture-standalone-zig.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/thread-standalone-zig.o src/thread.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/alloc-standalone-zig.o src/alloc.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/alloc-exports-standalone-zig.o src/alloc/standalone_exports.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/spawn-standalone-zig.o src/spawn_standalone.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/unistd-standalone-zig.o src/unistd.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-zig.o src/unistd.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/stdio-standalone-zig.o src/stdio.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/thread-standalone-zig.o src/thread.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/alloc-standalone-zig.o src/alloc.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/alloc-exports-standalone-zig.o src/alloc/standalone_exports.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/spawn-standalone-zig.o src/spawn_standalone.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/unistd-standalone-zig.o src/unistd.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-zig.o src/unistd.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/stdio-standalone-zig.o src/stdio.nelua
 	$(ZIG) cc $(ZIGFLAGS) -c -std=c11 -ffreestanding -fno-builtin -fno-sanitize=all src/stdio_varargs.c -o $(OUT)/stdio-varargs-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/start_linux_x86_64_standalone.S -o $(OUT)/start-linux-x86_64-standalone-zig.o
@@ -2519,25 +2519,25 @@ smoke-standalone-zig: standalone-zig
 	NELIBC_GETENV_PROBE=visible $(OUT)/standalone-zig
 
 standalone-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns --cflags=-DNELIBC_STANDALONE -o $(OUT)/string-standalone-gcc.o src/string.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/string-locale-standalone-gcc.o src/string_locale_standalone.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/memory-standalone-gcc.o src/memory.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/ctype-standalone-gcc.o src/ctype.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns --cflags=-ftls-model=local-exec -o $(OUT)/stdlib-standalone-gcc.o src/stdlib.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/locale-standalone-gcc.o src/locale_standalone.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/stdlib-exit-standalone-gcc.o src/stdlib_exit_standalone.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/stdlib-float-standalone-gcc.o src/stdlib_float.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/sys-linux-x86_64-standalone-gcc.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-ftls-model=local-exec -o $(OUT)/errno-standalone-gcc.o src/errno/standalone.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-ftls-model=local-exec -o $(OUT)/tls-fixture-standalone-gcc.o tools/tls_fixture.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -DNELIBC_STANDALONE' -o $(OUT)/string-standalone-gcc.o src/string.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/string-locale-standalone-gcc.o src/string_locale_standalone.nelua
+	$(NELUA) -C -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/memory-standalone-gcc.o src/memory.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/ctype-standalone-gcc.o src/ctype.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -ftls-model=local-exec' -o $(OUT)/stdlib-standalone-gcc.o src/stdlib.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/locale-standalone-gcc.o src/locale_standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/stdlib-exit-standalone-gcc.o src/stdlib_exit_standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/stdlib-float-standalone-gcc.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/sys-linux-x86_64-standalone-gcc.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/errno-standalone-gcc.o src/errno/standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/tls-fixture-standalone-gcc.o tools/tls_fixture.nelua
 	gcc -c -std=c11 -ffreestanding -fno-stack-protector -fno-builtin -fno-sanitize=all -ftls-model=local-exec tools/tls_alignment_fixture.c -o $(OUT)/tls-alignment-fixture-standalone-gcc.o
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/thread-standalone-gcc.o src/thread.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/alloc-standalone-gcc.o src/alloc.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/alloc-exports-standalone-gcc.o src/alloc/standalone_exports.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/spawn-standalone-gcc.o src/spawn_standalone.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/unistd-standalone-gcc.o src/unistd.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-gcc.o src/unistd.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/stdio-standalone-gcc.o src/stdio.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/thread-standalone-gcc.o src/thread.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/alloc-standalone-gcc.o src/alloc.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/alloc-exports-standalone-gcc.o src/alloc/standalone_exports.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/spawn-standalone-gcc.o src/spawn_standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/unistd-standalone-gcc.o src/unistd.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-gcc.o src/unistd.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/stdio-standalone-gcc.o src/stdio.nelua
 	gcc -c -std=c11 -ffreestanding -fno-builtin -fno-sanitize=all src/stdio_varargs.c -o $(OUT)/stdio-varargs-standalone-gcc.o
 	gcc -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o
 	gcc -c src/sys/start_linux_x86_64_standalone.S -o $(OUT)/start-linux-x86_64-standalone-gcc.o
@@ -2551,27 +2551,27 @@ smoke-standalone-tcc: standalone-tcc
 	NELIBC_GETENV_PROBE=visible $(OUT)/standalone-tcc
 
 standalone-tcc: $(OUT) $(OUT)/memory-tcc-simd.o
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-DNELIBC_STANDALONE -o $(OUT)/string-standalone-tcc.o src/string.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/string-locale-standalone-tcc.o src/string_locale_standalone.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/memory-standalone-tcc.o src/memory.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -DNELIBC_STANDALONE' -o $(OUT)/string-standalone-tcc.o src/string.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/string-locale-standalone-tcc.o src/string_locale_standalone.nelua
+	$(NELUA) -C -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/memory-standalone-tcc.o src/memory.nelua
 	$(TCC) -c -ffreestanding -fno-builtin src/memory_tcc_x86_64.c -o $(OUT)/memory-tcc-standalone-helper.o
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/ctype-standalone-tcc.o src/ctype.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-ftls-model=local-exec -o $(OUT)/stdlib-standalone-tcc.o src/stdlib.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/locale-standalone-tcc.o src/locale_standalone.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/stdlib-exit-standalone-tcc.o src/stdlib_exit_standalone.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/stdlib-float-standalone-tcc.o src/stdlib_float.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/sys-linux-x86_64-standalone-tcc.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/ctype-standalone-tcc.o src/ctype.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/stdlib-standalone-tcc.o src/stdlib.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/locale-standalone-tcc.o src/locale_standalone.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/stdlib-exit-standalone-tcc.o src/stdlib_exit_standalone.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/stdlib-float-standalone-tcc.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/sys-linux-x86_64-standalone-tcc.o src/sys/linux_x86_64.nelua
 	# TinyCC emits ordinary RIP-relative references for Nelua TLS globals; use Zig cc for these TLS-bearing objects.
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-ftls-model=local-exec -o $(OUT)/errno-standalone-tcc.o src/errno/standalone.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-ftls-model=local-exec -o $(OUT)/tls-fixture-standalone-tcc.o tools/tls_fixture.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/errno-standalone-tcc.o src/errno/standalone.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/tls-fixture-standalone-tcc.o tools/tls_fixture.nelua
 	# TinyCC does not parse C TLS declarations; use Zig cc for the TLS alignment fixture.
 	$(ZIG) cc $(ZIGFLAGS) -c -std=c11 -ffreestanding -fno-stack-protector -fno-builtin -fno-sanitize=all -ftls-model=local-exec tools/tls_alignment_fixture.c -o $(OUT)/tls-alignment-fixture-standalone-tcc.o
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/thread-standalone-tcc.o src/thread.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/alloc-standalone-tcc.o src/alloc.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/alloc-exports-standalone-tcc.o src/alloc/standalone_exports.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/spawn-standalone-tcc.o src/spawn_standalone.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/unistd-standalone-tcc.o src/unistd.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/stdio-standalone-tcc.o src/stdio.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/thread-standalone-tcc.o src/thread.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/alloc-standalone-tcc.o src/alloc.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/alloc-exports-standalone-tcc.o src/alloc/standalone_exports.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/spawn-standalone-tcc.o src/spawn_standalone.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/unistd-standalone-tcc.o src/unistd.nelua
+	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/stdio-standalone-tcc.o src/stdio.nelua
 	$(TCC) -c -std=c11 -ffreestanding -fno-builtin -fno-sanitize=all src/stdio_varargs.c -o $(OUT)/stdio-varargs-standalone-tcc.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-standalone-tcc-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/start_linux_x86_64_standalone.S -o $(OUT)/start-linux-x86_64-standalone-tcc.o
@@ -2713,7 +2713,7 @@ lib-consumer-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a
 lib-consumer-link-standalone-tcc: lib-consumer-standalone-tcc
 
 $(OUT)/pthread-tls-fixture.o: tools/tls_fixture.nelua | $(OUT)
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-ftls-model=local-exec -o $@ $<
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $@ $<
 
 $(OUT)/pthread-tls-alignment-fixture.o: tools/tls_alignment_fixture.c | $(OUT)
 	$(ZIG) cc $(ZIGFLAGS) -c -std=c11 -ffreestanding -fno-stack-protector -fno-builtin -fno-sanitize=all -ftls-model=local-exec $< -o $@

@@ -733,3 +733,12 @@ Nelibc implements it, intentionally delegates it, or has not implemented it;
 then attach behavior tests, ABI checks, and the compiler/libc profiles that
 passed. A family is ready to replace only when its tests run without relying
 on the host implementation for the behavior under test.
+
+The wide-character memory and comparison entry points that overlap compiler
+builtins use thin C ABI adapters with standard `const wchar_t *` prototypes;
+their implementations remain in Nelua. Repeated Nelua `--cflags` options in
+the Makefile are combined because the compiler accepts one flag string. The
+musl target is passed as `-target x86_64-linux-musl` so it reaches Zig cc
+correctly. The corrected build was exercised by `make smoke-matrix` across
+Zig/glibc, GCC/glibc, Zig/musl, TinyCC/glibc, and the standalone Zig, GCC, and
+TinyCC profiles.

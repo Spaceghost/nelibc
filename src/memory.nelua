@@ -521,7 +521,7 @@ local function explicit_bzero(dest: pointer, n: csize): void
 end
 
 local function wmemcpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize): *[0]cwchar_t
-    <cexport, codename 'wmemcpy'>
+    <cexport, codename 'nelibc_wmemcpy_impl'>
   local index: csize = 0
   while index < n do
     dest[index] = src[index]
@@ -531,7 +531,7 @@ local function wmemcpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize):
 end
 
 local function wmemmove(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize): *[0]cwchar_t
-    <cexport, codename 'wmemmove'>
+    <cexport, codename 'nelibc_wmemmove_impl'>
   if (@usize)(dest) > (@usize)(src) then
     local index: csize = n
     while index > 0 do
@@ -559,7 +559,7 @@ local function wmemset(dest: *[0]cwchar_t, value: cwchar_t, n: csize): *[0]cwcha
 end
 
 local function wmemcmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>, n: csize): cint
-    <cexport, codename 'wmemcmp'>
+    <cexport, codename 'nelibc_wmemcmp_impl'>
   local index: csize = 0
   while index < n do
     if left[index] < right[index] then return -1 end
@@ -570,7 +570,7 @@ local function wmemcmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>, 
 end
 
 local function wmemchr(text: *[0]cwchar_t <const>, value: cwchar_t, n: csize): *cwchar_t
-    <cexport, codename 'wmemchr'>
+    <cexport, codename 'nelibc_wmemchr_impl'>
   local index: csize = 0
   while index < n do
     if text[index] == value then return &text[index] end
@@ -579,7 +579,7 @@ local function wmemchr(text: *[0]cwchar_t <const>, value: cwchar_t, n: csize): *
   return nilptr
 end
 
-local function wcslen(text: *[0]cwchar_t <const>): csize <cexport, codename 'wcslen'>
+local function wcslen(text: *[0]cwchar_t <const>): csize <cexport, codename 'nelibc_wcslen_impl'>
   local length: csize = 0
   while text[length] ~= 0 do
     length = length + 1
@@ -609,7 +609,7 @@ local function wcsdup(text: *[0]cwchar_t <const>): *cwchar_t <cexport, codename 
 end
 
 local function wcscmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>): cint
-    <cexport, codename 'wcscmp'>
+    <cexport, codename 'nelibc_wcscmp_impl'>
   local index: csize = 0
   while left[index] == right[index] and left[index] ~= 0 do
     index = index + 1
@@ -620,7 +620,7 @@ local function wcscmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>): 
 end
 
 local function wcsncmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>, n: csize): cint
-    <cexport, codename 'wcsncmp'>
+    <cexport, codename 'nelibc_wcsncmp_impl'>
   local index: csize = 0
   while index < n and left[index] == right[index] and left[index] ~= 0 do index = index + 1 end
   if index == n then return 0 end
@@ -667,7 +667,7 @@ local function wcswidth(text: *[0]cwchar_t <const>, n: csize): cint
   return columns
 end
 
-local function wcschr(text: *[0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'wcschr'>
+local function wcschr(text: *[0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'nelibc_wcschr_impl'>
   local index: csize = 0
   while true do
     if text[index] == value then return &text[index] end
@@ -1275,3 +1275,15 @@ local function memmem(haystack: pointer <const>, haystack_len: csize, needle: po
   end
   return nilptr
 end
+
+-- Nelua's cwchar_t pointer const annotation qualifies the pointer alias rather
+-- than the pointed-to wchar_t. Keep the implementations in Nelua and expose
+-- exact C library prototypes through these thin ABI adapters.
+## cemitdefn [[wchar_t *wmemcpy(wchar_t *d, const wchar_t *s, size_t n) { return nelibc_wmemcpy_impl(d, (wchar_t *)s, n); }]]
+## cemitdefn [[wchar_t *wmemmove(wchar_t *d, const wchar_t *s, size_t n) { return nelibc_wmemmove_impl(d, (wchar_t *)s, n); }]]
+## cemitdefn [[int wmemcmp(const wchar_t *a, const wchar_t *b, size_t n) { return nelibc_wmemcmp_impl((wchar_t *)a, (wchar_t *)b, n); }]]
+## cemitdefn [[wchar_t *wmemchr(const wchar_t *s, wchar_t c, size_t n) { return nelibc_wmemchr_impl((wchar_t *)s, c, n); }]]
+## cemitdefn [[size_t wcslen(const wchar_t *s) { return nelibc_wcslen_impl((wchar_t *)s); }]]
+## cemitdefn [[int wcscmp(const wchar_t *a, const wchar_t *b) { return nelibc_wcscmp_impl((wchar_t *)a, (wchar_t *)b); }]]
+## cemitdefn [[int wcsncmp(const wchar_t *a, const wchar_t *b, size_t n) { return nelibc_wcsncmp_impl((wchar_t *)a, (wchar_t *)b, n); }]]
+## cemitdefn [[wchar_t *wcschr(const wchar_t *s, wchar_t c) { return nelibc_wcschr_impl((wchar_t *)s, c); }]]
