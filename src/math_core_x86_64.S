@@ -60,6 +60,16 @@ nelibc_log10l_hw:
   ret
 .size nelibc_log10l_hw, .-nelibc_log10l_hw
 
+/* Accurate y*log2(1+x) for |x| < 1; used with y=ln(2) for log1pl. */
+.globl nelibc_log1pl_small_hw
+.type nelibc_log1pl_small_hw,@function
+nelibc_log1pl_small_hw:
+  fldln2
+  fldt 8(%rsp)
+  fyl2xp1
+  ret
+.size nelibc_log1pl_small_hw, .-nelibc_log1pl_small_hw
+
 /* FXTRACT returns the significand in ST(0) and the exponent in ST(1). */
 .globl nelibc_frexpl_hw
 .type nelibc_frexpl_hw,@function

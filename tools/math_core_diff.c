@@ -126,6 +126,7 @@ extern long double nelibc_acosl(long double);
 extern long double nelibc_logl(long double);
 extern long double nelibc_log2l(long double);
 extern long double nelibc_log10l(long double);
+extern long double nelibc_log1pl(long double);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
 extern long double nelibc_sqrtl(long double);
@@ -1434,7 +1435,8 @@ int main(void) {
       !isnan(nelibc_acosl(quiet_nan.value)) ||
       !isnan(nelibc_logl(quiet_nan.value)) ||
       !isnan(nelibc_log2l(quiet_nan.value)) ||
-      !isnan(nelibc_log10l(quiet_nan.value))) {
+      !isnan(nelibc_log10l(quiet_nan.value)) ||
+      !isnan(nelibc_log1pl(quiet_nan.value))) {
     fprintf(stderr, "long-double arctangent NaN propagation failed\n");
     return 1;
   }
@@ -1506,6 +1508,40 @@ int main(void) {
   errno = 0;
   if (!isnan(nelibc_log10l(-1.0L)) || errno != EDOM) {
     fprintf(stderr, "log10l negative domain behavior failed\n");
+    return 1;
+  }
+  const long double log1p_values[] = {
+      -INFINITY, -1.5L, -1.0L, nextafterl(-1.0L, 0.0L), -0.75L, -0.5L,
+      nextafterl(-0.5L, 0.0L), -0x1p-60L, -nextafterl(0.0L, 1.0L),
+      -0.0L, 0.0L, nextafterl(0.0L, 1.0L), 0x1p-60L, 0.5L,
+      nextafterl(0.5L, 0.0L), 0.75L, LDBL_MAX, INFINITY};
+  for (size_t i = 0; i < sizeof(log1p_values) / sizeof(log1p_values[0]); ++i) {
+    if (!long_double_close(nelibc_log1pl(log1p_values[i]), log1pl(log1p_values[i]))) {
+      fprintf(stderr, "log1pl edge mismatch value=%zu\n", i);
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 512; ++i) {
+    int exponent = -16000 + (int)i * 31;
+    long double small = ldexpl(1.25L, exponent);
+    if (!long_double_close(nelibc_log1pl(small), log1pl(small)) ||
+        !long_double_close(nelibc_log1pl(-small), log1pl(-small))) {
+      fprintf(stderr, "log1pl generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  if (!isinf(nelibc_log1pl(-1.0L)) || signbit(nelibc_log1pl(-1.0L)) == 0 ||
+      errno != ERANGE || fetestexcept(FE_DIVBYZERO) == 0) {
+    fprintf(stderr, "log1pl pole behavior failed\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  if (!isnan(nelibc_log1pl(-1.5L)) || errno != EDOM ||
+      fetestexcept(FE_INVALID) == 0) {
+    fprintf(stderr, "log1pl domain behavior failed\n");
     return 1;
   }
   const long double nextafter_minimum = nextafterl(0.0L, 1.0L);

@@ -220,6 +220,7 @@ local function nelibc_atan2l_hw(y: clongdouble, x: clongdouble): clongdouble <ci
 local function nelibc_logl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_log2l_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_log10l_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_log1pl_small_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_frexpl_hw(value: clongdouble, exponent: *[0]cint): clongdouble <cimport> end
 local function nelibc_modfl_hw(value: clongdouble, integral: *[0]clongdouble): clongdouble <cimport> end
 local function nelibc_ilogbl_hw(value: clongdouble): cint <cimport> end
@@ -457,6 +458,14 @@ local function log10l(value: clongdouble): clongdouble <cexport, codename 'log10
     math_domain_error()
   end
   return nelibc_log10l_hw(value)
+end
+
+local function log1pl(value: clongdouble): clongdouble <cexport, codename 'log1pl'>
+  if is_nan80(value) then return value + value end
+  if value > -0.5_clongdouble and value < 0.5_clongdouble then
+    return nelibc_log1pl_small_hw(value)
+  end
+  return logl(1_clongdouble + value)
 end
 
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>

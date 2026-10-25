@@ -145,6 +145,7 @@ long double acosl(long double value);
 long double logl(long double value);
 long double log2l(long double value);
 long double log10l(long double value);
+long double log1pl(long double value);
 float sqrtf(float value);
 double sqrt(double value);
 long double sqrtl(long double value);
