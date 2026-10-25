@@ -110,7 +110,10 @@ the child retargets process-private non-PI locks held by the calling thread to
 its new TID and rebuilds its kernel robust list; process-shared mutexes are
 excluded so the child does not rewrite the parent's shared owner state. These
 cases pass in the Zig, GCC, and TinyCC standalone pthread smoke. Robust PI
-mutexes held across fork still need a dedicated ownership audit.
+mutexes held across fork remain unsupported: a focused child-unlock probe
+returns `EPERM`, because the kernel PI futex owner cannot be transferred by
+the current userspace fork hook. The smoke does not claim this behavior as
+passing coverage.
 
 ### Practical completeness estimate
 
