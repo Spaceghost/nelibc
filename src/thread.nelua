@@ -3485,6 +3485,36 @@ local function nelibc_thread_fork_child(): void <cexport, codename 'nelibc_threa
   local context = nelibc_thread_current_pthread_context()
   local current_object: *PthreadObject = nilptr
   if context ~= nilptr then current_object = (@*PthreadObject)(context.object) end
+  if context ~= nilptr and context.robust_slot ~= nilptr then
+    local current_tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+    local current_pid = (@cint)(nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong))
+    local dummy_mutex: PthreadMutex = {}
+    local robust_next_offset = (@usize)((@pointer)(&dummy_mutex.robust_next)) -
+                               (@usize)((@pointer)(&dummy_mutex))
+    local head = &context.robust_slot.head
+    local node = head.list_next
+    local previous_mutex: *PthreadMutex = nilptr
+    head.list_next = (@pointer)(head)
+    while node ~= (@pointer)(head) do
+      local mutex = (@*PthreadMutex)((@usize)(node) - robust_next_offset)
+      local next_node = mutex.robust_next
+      if mutex.pshared == 0 and mutex.protocol ~= PTHREAD_PRIO_INHERIT then
+        local state = nelibc_atomic_load_int(&mutex.state)
+        local child_state = (state & ~FUTEX_TID_MASK) | current_tid
+        nelibc_atomic_store_int(&mutex.state, child_state)
+        mutex.owner = current_tid
+        if previous_mutex == nilptr then head.list_next = node
+        else previous_mutex.robust_next = node end
+        previous_mutex = mutex
+      end
+      node = next_node
+    end
+    if previous_mutex ~= nilptr then previous_mutex.robust_next = (@pointer)(head) end
+    head.list_op_pending = nilptr
+    context.robust_pid = current_pid
+    context.robust_registered = 0
+    context.robust_slot.tid = current_tid
+  end
   nelibc_atomic_store_int(&pthread_objects_lock, 0)
   if context ~= nilptr then nelibc_atomic_store_int(&context.protect_lock, 0) end
   nelibc_atomic_store_int(&named_semaphore_handles_lock, 0)

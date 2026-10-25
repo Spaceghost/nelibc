@@ -104,6 +104,13 @@ The same worker-fork case sets a pthread-specific value before `fork()` and
 checks it in the child, then executes a cleanup handler pushed before the
 fork. A shared marker confirms the copied cleanup stack remains usable in the
 child, while the parent continues without running that handler.
+It also verifies that a disabled cancellation state is inherited by the child
+and that the parent restores its own state after the fork. For robust mutexes,
+the child retargets process-private non-PI locks held by the calling thread to
+its new TID and rebuilds its kernel robust list; process-shared mutexes are
+excluded so the child does not rewrite the parent's shared owner state. These
+cases pass in the Zig, GCC, and TinyCC standalone pthread smoke. Robust PI
+mutexes held across fork still need a dedicated ownership audit.
 
 ### Practical completeness estimate
 

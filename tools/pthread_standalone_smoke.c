@@ -310,6 +310,9 @@ static void *fork_from_worker(void *argument) {
   pthread_t self = pthread_self();
   if (pthread_setspecific(request->key, (void *)(uintptr_t)0xabc) != 0)
     return (void *)2;
+  int previous_cancel_state = -1;
+  if (pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &previous_cancel_state) != 0)
+    return (void *)3;
   int child_process = 0;
   int valid = 0;
   pid_t child = -1;
@@ -319,13 +322,20 @@ static void *fork_from_worker(void *argument) {
     child_process = 1;
     int join_error = pthread_join(request->sibling, NULL);
     int cancel_error = pthread_cancel(request->sibling);
+    int inherited_cancel_state = -1;
+    int cancel_state_error = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,
+                                                     &inherited_cancel_state);
+    if (cancel_state_error == 0)
+      cancel_state_error = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
     valid = pthread_equal(pthread_self(), self) &&
         pthread_getspecific(request->key) == (void *)(uintptr_t)0xabc &&
-        join_error == ESRCH && cancel_error == ESRCH;
+        join_error == ESRCH && cancel_error == ESRCH &&
+        inherited_cancel_state == PTHREAD_CANCEL_DISABLE && cancel_state_error == 0;
   }
   pthread_cleanup_pop(child_process && valid);
   if (child_process)
     _exit(valid && *request->cleanup_marker == 1 ? 0 : 299);
+  if (pthread_setcancelstate(previous_cancel_state, NULL) != 0) return (void *)4;
   int status = -1;
   if (child < 0 || waitpid(child, &status, 0) != child ||
       !WIFEXITED(status) || WEXITSTATUS(status) != 0 ||
@@ -2169,6 +2179,46 @@ int main(void) {
     return 306;
   atomic_store_explicit(&fork_sibling_release, 1, memory_order_release);
   if (pthread_join(worker_sibling, NULL) != 0) return 303;
+
+  pthread_mutexattr_t fork_robust_attributes;
+  pthread_mutex_t fork_robust_mutex;
+  if (pthread_mutexattr_init(&fork_robust_attributes) != 0 ||
+      pthread_mutexattr_setrobust(&fork_robust_attributes, PTHREAD_MUTEX_ROBUST) != 0 ||
+      pthread_mutex_init(&fork_robust_mutex, &fork_robust_attributes) != 0 ||
+      pthread_mutexattr_destroy(&fork_robust_attributes) != 0 ||
+      pthread_mutex_lock(&fork_robust_mutex) != 0)
+    return 307;
+  pid_t robust_owner_child = fork();
+  if (robust_owner_child == 0)
+    _exit(pthread_mutex_unlock(&fork_robust_mutex) == 0 ? 0 : 308);
+  int robust_owner_status = -1;
+  if (robust_owner_child < 0 ||
+      waitpid(robust_owner_child, &robust_owner_status, 0) != robust_owner_child ||
+      !WIFEXITED(robust_owner_status) || WEXITSTATUS(robust_owner_status) != 0 ||
+      pthread_mutex_unlock(&fork_robust_mutex) != 0 ||
+      pthread_mutex_destroy(&fork_robust_mutex) != 0)
+    return 309;
+
+  pthread_mutex_t *fork_shared_robust = mmap(0, sizeof(*fork_shared_robust),
+      PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+  if (fork_shared_robust == MAP_FAILED) return 310;
+  if (pthread_mutexattr_init(&fork_robust_attributes) != 0 ||
+      pthread_mutexattr_setpshared(&fork_robust_attributes, PTHREAD_PROCESS_SHARED) != 0 ||
+      pthread_mutexattr_setrobust(&fork_robust_attributes, PTHREAD_MUTEX_ROBUST) != 0 ||
+      pthread_mutex_init(fork_shared_robust, &fork_robust_attributes) != 0 ||
+      pthread_mutexattr_destroy(&fork_robust_attributes) != 0 ||
+      pthread_mutex_lock(fork_shared_robust) != 0)
+    return 311;
+  pid_t shared_robust_child = fork();
+  if (shared_robust_child == 0) _exit(0);
+  int shared_robust_status = -1;
+  if (shared_robust_child < 0 ||
+      waitpid(shared_robust_child, &shared_robust_status, 0) != shared_robust_child ||
+      !WIFEXITED(shared_robust_status) || WEXITSTATUS(shared_robust_status) != 0 ||
+      pthread_mutex_unlock(fork_shared_robust) != 0 ||
+      pthread_mutex_destroy(fork_shared_robust) != 0 ||
+      munmap(fork_shared_robust, sizeof(*fork_shared_robust)) != 0)
+    return 312;
 
   volatile int *initial_cancel_marker = mmap(0, sizeof(*initial_cancel_marker),
       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
