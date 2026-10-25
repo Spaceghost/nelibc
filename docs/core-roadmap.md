@@ -26,7 +26,10 @@ run their own internal fork handlers for allocator, stdio, and thread state.
 TinyCC/glibc, including the consumer's prepare/parent/child handler-order
 checks. It also repeats 32 fork/exec cycles while a worker performs public
 allocation and host-backed `tmpfile` I/O; every re-execed child checks fresh
-allocation and stdio. Three repeat runs per profile passed. The child uses
+allocation and stdio. It also runs four `system("exit 0")` calls while the
+worker remains active. Three repeat runs per profile passed for fork/exec;
+the expanded fork/exec/system consumer matrix passed across all four profiles.
+The child uses
 `execve` before touching libc state inherited from the multithreaded parent.
 The API manifest marks both functions as host-delegated in hybrid mode.
 

@@ -1116,6 +1116,20 @@ static int fork_allocator_stdio_stress(const char *self_path) {
     }
   }
 
+  for (int iteration = 0; result == 0 && iteration < 4; ++iteration) {
+    pthread_mutex_lock(&state.mutex);
+    unsigned long next_cycle = state.completed + 1;
+    while (state.completed < next_cycle && state.failed == 0)
+      pthread_cond_wait(&state.condition, &state.mutex);
+    if (state.failed != 0) result = 5;
+    pthread_mutex_unlock(&state.mutex);
+    if (result != 0) break;
+    int shell_status = system("exit 0");
+    if (shell_status == -1 || !WIFEXITED(shell_status) ||
+        WEXITSTATUS(shell_status) != 0)
+      result = 6;
+  }
+
   pthread_mutex_lock(&state.mutex);
   state.stop = 1;
   pthread_cond_signal(&state.condition);

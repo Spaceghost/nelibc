@@ -343,7 +343,8 @@ integer conversion, and the current Nelua math slice.
   archives, including `sem_clockwait`; this covers more APIs than the small
   quickstart example. It also forks and execs 32 children while a worker
   exercises allocation and host-backed temporary-file I/O, then checks that
-  each child can allocate and use stdio after exec.
+  each child can allocate and use stdio after exec. Four `system("exit 0")`
+  calls also run while the worker is active.
 - `make qsort-r-smoke-matrix` dogfoods GNU `qsort_r` under Zig/glibc,
   GCC/glibc, Zig/musl, and TinyCC/glibc.
 - `make pthread-standalone-matrix` exercises the standalone pthread subset with
