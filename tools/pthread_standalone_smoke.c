@@ -2666,9 +2666,12 @@ int main(void) {
       pthread_create(&thread, &attributes, exit_blocked_value_worker,
                      (void *)(uintptr_t)0x88) != 0)
     return 316;
-  for (unsigned int i = 0; i < 10000000U &&
-       !atomic_load_explicit(&exit_blocked_destructor_started,
-                             memory_order_acquire); ++i) {
+  for (unsigned int i = 0; i < 1000000U &&
+       (!atomic_load_explicit(&exit_blocked_destructor_started,
+                              memory_order_acquire) ||
+        __atomic_load_n(&exit_blocked_semaphore.__waiters, __ATOMIC_ACQUIRE) == 0);
+       ++i) {
+    sched_yield();
   }
   if (!atomic_load_explicit(&exit_blocked_destructor_started,
                             memory_order_acquire) ||
