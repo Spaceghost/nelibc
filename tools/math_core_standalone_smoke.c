@@ -91,6 +91,25 @@ int main(void) {
   const int trapped_exceptions[] = {
       FE_INVALID, FE_DIVBYZERO, FE_OVERFLOW, FE_UNDERFLOW, FE_INEXACT};
   for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
+    pid_t child = fork();
+    if (child == 0) {
+      fexcept_t flag = 0;
+      if (fesetenv(FE_DFL_ENV) != 0 ||
+          feraiseexcept(trapped_exceptions[i]) != 0 ||
+          fegetexceptflag(&flag, trapped_exceptions[i]) != 0 ||
+          flag != trapped_exceptions[i]) _exit(250);
+      if (feclearexcept(trapped_exceptions[i]) != 0 ||
+          fetestexcept(FE_ALL_EXCEPT) != 0 ||
+          fesetenv(FE_NOMASK_ENV) != 0) _exit(251);
+      if (fesetexceptflag(&flag, trapped_exceptions[i]) != 0 ||
+          fetestexcept(FE_ALL_EXCEPT) != trapped_exceptions[i]) _exit(252);
+      _exit(0);
+    }
+    int child_status = 0;
+    if (child < 0 || waitpid(child, &child_status, 0) != child ||
+        !WIFEXITED(child_status) || WEXITSTATUS(child_status) != 0) return 253;
+  }
+  for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
     const int seed = trapped_exceptions[i] == FE_INVALID ? FE_DIVBYZERO : FE_INVALID;
     const int expected_flags = seed | trapped_exceptions[i];
     if (feclearexcept(FE_ALL_EXCEPT) != 0 ||

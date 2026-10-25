@@ -335,7 +335,8 @@ musl export set.
   paths, with only the selected exception unmasked in each unit. They verify
   `feupdateenv` merges newly raised flags into the restored environment,
   `feholdexcept` masks traps while clearing flags, and an invalid rounding mode
-  leaves the active mode intact. Subprocess checks verify
+  leaves the active mode intact. `fesetexceptflag` restores each flag while
+  traps are enabled without raising the trap. Subprocess checks verify
   `feupdateenv` re-raises each of the five accrued exceptions when restoring
   an all-traps-enabled environment. `fesetenv` requires a valid
   environment saved by `fegetenv`/`feholdexcept` or a defined environment
