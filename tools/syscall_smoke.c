@@ -2264,8 +2264,10 @@ int main(int argc, char **argv) {
   legacy_timestamps[0].tv_usec = 1000000;
   errno = 0;
   if (futimesat(timestamp_directory, timestamp_name, legacy_timestamps) != -1 || errno != EINVAL ||
-      futimesat(timestamp_directory, timestamp_name, NULL) != 0 || close(timestamp_directory) != 0)
+      futimesat(timestamp_directory, timestamp_name, NULL) != 0 || close(timestamp_directory) != 0 ||
+      stat(timestamp_path, &timestamp_status) != 0)
     return 410;
+  struct stat target_status_before_lutimes = timestamp_status;
   char timestamp_link_path[96];
   if (snprintf(timestamp_link_path, sizeof timestamp_link_path, "%s.link", timestamp_path) < 0 ||
       symlink(timestamp_path, timestamp_link_path) != 0)
@@ -2279,7 +2281,10 @@ int main(int argc, char **argv) {
       stat(timestamp_path, &timestamp_status) != 0 || !S_ISLNK(link_status.st_mode) ||
       link_status.st_atim.tv_sec != 1000000008 || link_status.st_atim.tv_nsec != 333333000 ||
       link_status.st_mtim.tv_sec != 1000000009 || link_status.st_mtim.tv_nsec != 444444000 ||
-      timestamp_status.st_atim.tv_sec != 1000000000 || timestamp_status.st_atim.tv_nsec != 234567000)
+      timestamp_status.st_atim.tv_sec != target_status_before_lutimes.st_atim.tv_sec ||
+      timestamp_status.st_atim.tv_nsec != target_status_before_lutimes.st_atim.tv_nsec ||
+      timestamp_status.st_mtim.tv_sec != target_status_before_lutimes.st_mtim.tv_sec ||
+      timestamp_status.st_mtim.tv_nsec != target_status_before_lutimes.st_mtim.tv_nsec)
     return 412;
   link_times[0].tv_usec = -1;
   errno = 0;

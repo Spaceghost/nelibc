@@ -234,7 +234,7 @@ complex-math-smoke-gcc: $(OUT)/libnelibc-gcc.a tools/complex_math_smoke.c includ
 	$(OUT)/complex-math-smoke-gcc
 
 complex-math-smoke-zig-musl: $(OUT)/libnelibc-zig-musl.a tools/complex_math_smoke.c include/complex.h
-	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -Iinclude -fno-builtin tools/complex_math_smoke.c $(OUT)/libnelibc-zig-musl.a -lm -o $(OUT)/complex-math-smoke-zig-musl
+	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -Iinclude -fno-builtin $(MUSL_STDIO_WRAP_FLAGS) tools/complex_math_smoke.c $(OUT)/libnelibc-zig-musl.a -lm -o $(OUT)/complex-math-smoke-zig-musl
 	$(OUT)/complex-math-smoke-zig-musl
 
 # TinyCC lacks C _Complex syntax; test its Nelua core through the Zig-built ABI shim.
@@ -551,7 +551,6 @@ $(OUT)/libnelibc-zig-musl.a: Makefile zig-musl $(OUT)/malloc-hybrid-zig-musl.o $
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-zig-musl.o src/fmemopen_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/fopen-hybrid-zig-musl.o src/fopen_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/unistd-zig-musl.o src/unistd.nelua
-	$(OBJCOPY) --localize-symbol=execvp $(OUT)/unistd-zig-musl.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-zig-musl.o src/stdio_hybrid_musl.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/atexit-musl-hybrid-zig-musl.o src/atexit_musl_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-zig-musl.o src/sys/linux_x86_64.nelua
@@ -2398,7 +2397,6 @@ syscall-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-zig-mu
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/alloc-zig-musl.o src/alloc.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/unistd-zig-musl.o src/unistd.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -D NELIBC_TESTING=true -o $(OUT)/unistd-smoke-zig-musl.o src/unistd.nelua
-	$(OBJCOPY) --localize-symbol=execvp $(OUT)/unistd-smoke-zig-musl.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-zig-musl.o src/stdio_hybrid_musl.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-zig-musl.o src/open_memstream_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-zig-musl.o src/fmemopen_hybrid.nelua

@@ -875,6 +875,14 @@ local function execvpe(file: *[0]cchar <const>, argv: *[0]*[0]cchar,
   return exec_search_path(file, argv, envp)
 end
 
+-- musl's static posix_spawnp calls this internal entry point. Providing it
+-- here lets hybrid musl builds keep Nelibc's execvp shell fallback without
+-- pulling musl's execvp object, which also defines the public execvp symbol.
+local function __execvpe(file: *[0]cchar <const>, argv: *[0]*[0]cchar,
+    envp: *[0]*[0]cchar): cint <cexport, codename '__execvpe'>
+  return exec_search_path(file, argv, envp)
+end
+
 -- Linux execveat resolves pathname relative to dirfd, with AT_EMPTY_PATH support.
 local function execveat(dirfd: cint, pathname: *[0]cchar <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar, flags: cint): cint <cexport, codename 'execveat'>
   return (@cint)(syscall_result(nelibc_raw_syscall6(
