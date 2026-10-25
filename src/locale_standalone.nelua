@@ -8,6 +8,7 @@ local function nelibc_standalone_numeric_is_de(): cint <cimport> end
 local function nelibc_standalone_global_ctype_mode(): cint <cimport> end
 local function nelibc_standalone_global_numeric_is_de(): cint <cimport> end
 local function nelibc_standalone_global_monetary_is_de(): cint <cimport> end
+local function nelibc_standalone_global_time_is_de(): cint <cimport> end
 local function nelibc_standalone_monetary_is_de(): cint <cimport> end
 local function nelibc_time_locale_is_german(): cint <cimport> end
 
@@ -88,7 +89,9 @@ end
 
 local function nelibc_locale_time_mode(locale: pointer): cint <inline>
   if locale == nilptr then return nelibc_time_locale_is_german() end
-  if locale == (@pointer)(~0_usize) then return 0 end
+  if locale == (@pointer)(~0_usize) then
+    return nelibc_standalone_global_time_is_de()
+  end
   for index: cint = 0, 15 do
     if locale == (@pointer)(&locale_tokens[index]) then
       return locale_tokens[index].time_mode

@@ -242,7 +242,9 @@ musl export set.
   `de_DE.UTF-8` numeric, monetary, and time conventions. Standalone collation
   supports byte ordering for `C` and `C.UTF-8`; German collation data is not
   implemented. German time data covers localized weekday/month names and
-  `%c`/`%x` formats. `strtod`, floating formatting, grouping, `strcoll`,
+  `%c`/`%x` formats. Global `setlocale` selects C or German `LC_TIME`,
+  reports/accepts its supported `LC_ALL` composites, and `duplocale` snapshots
+  the global time category. `strtod`, floating formatting, grouping, `strcoll`,
   `strxfrm`, `strftime`, `strptime`, and `localeconv` use the selected
   thread's state. The `localeconv` result itself is stored per thread. Other
   time locales and formats remain incomplete. The standalone consumer matrix

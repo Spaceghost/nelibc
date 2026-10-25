@@ -163,7 +163,10 @@ constructs static handles for supported combinations of `C`/`C.UTF-8`
 `LC_CTYPE`, `C`/`de_DE.UTF-8` `LC_NUMERIC` and `LC_MONETARY`, plus
 `C`/`C.UTF-8` `LC_COLLATE` and `C`/`de_DE.UTF-8` `LC_TIME`. Standalone
 `uselocale` switches the calling thread's ctype, numeric, monetary, C-style
-collation, and time state. Floating parsing/formatting, grouping, `strcoll`,
+collation, and time state. Process-global `setlocale` also supports `C` and
+`de_DE.UTF-8` for `LC_TIME`; `LC_ALL` reports and accepts the matching
+category composites. `duplocale(LC_GLOBAL_LOCALE)` snapshots the selected
+time category. Floating parsing/formatting, grouping, `strcoll`,
 `strxfrm`, `strftime`, `strptime`, and `localeconv` observe the selection.
 German time data currently covers localized weekday/month names and `%c`/`%x`
 formats. `localeconv` results are kept in per-thread storage. Non-C collation

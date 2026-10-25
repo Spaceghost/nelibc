@@ -170,6 +170,9 @@ static int standalone_locale_smoke(void) {
   static const char expected_de_monetary_all[] =
       "LC_CTYPE=C;LC_NUMERIC=de_DE.UTF-8;LC_TIME=C;LC_COLLATE=C;"
       "LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C";
+  static const char expected_de_time_all[] =
+      "LC_CTYPE=C;LC_NUMERIC=de_DE.UTF-8;LC_TIME=de_DE.UTF-8;LC_COLLATE=C;"
+      "LC_MONETARY=C;LC_MESSAGES=C";
   const char *current = setlocale(LC_ALL, NULL);
   struct lconv *numeric = localeconv();
   if (numeric == NULL || numeric->decimal_point == NULL ||
@@ -202,6 +205,30 @@ static int standalone_locale_smoke(void) {
       numeric->n_sign_posn != 1) return 30;
   if (setlocale(LC_MONETARY, "C") == NULL ||
       strcmp(setlocale(LC_ALL, NULL), expected_de_all) != 0) return 31;
+  if (setlocale(LC_TIME, "de_DE.UTF-8") == NULL ||
+      strcmp(setlocale(LC_TIME, NULL), "de_DE.UTF-8") != 0 ||
+      setlocale(LC_ALL, expected_de_time_all) == NULL ||
+      strcmp(setlocale(LC_ALL, NULL), expected_de_time_all) != 0)
+    return 34;
+  struct tm global_time_sample = {
+      .tm_sec = 9, .tm_min = 5, .tm_hour = 13, .tm_mday = 1,
+      .tm_mon = 2, .tm_year = 124, .tm_wday = 5, .tm_yday = 60,
+      .tm_isdst = 0, .tm_gmtoff = 0, .tm_zone = "UTC"};
+  char global_time_text[64];
+  locale_t global_time_snapshot = duplocale(LC_GLOBAL_LOCALE);
+  if (global_time_snapshot == (locale_t)0 ||
+      strftime(global_time_text, sizeof global_time_text, "%A|%B|%x",
+          &global_time_sample) == 0 ||
+      strcmp(global_time_text, "Freitag|März|01.03.2024") != 0 ||
+      setlocale(LC_TIME, "C") == NULL ||
+      strcmp(setlocale(LC_ALL, NULL), expected_de_all) != 0 ||
+      uselocale(global_time_snapshot) != LC_GLOBAL_LOCALE ||
+      strftime(global_time_text, sizeof global_time_text, "%A|%B|%x",
+          &global_time_sample) == 0 ||
+      strcmp(global_time_text, "Freitag|März|01.03.2024") != 0 ||
+      uselocale(LC_GLOBAL_LOCALE) != global_time_snapshot)
+    return 35;
+  freelocale(global_time_snapshot);
   char *end = NULL;
   if (strtod("12,5", &end) != 12.5 || end == NULL || *end != '\0') return 12;
   char formatted[16];
