@@ -83,11 +83,14 @@ then confirms cancellation is delivered only at the worker's explicit
 `pthread_testcancel`. The standalone Zig, GCC, and TinyCC matrix passes.
 The smoke now blocks the child on a FIFO open, waits until its parent worker is
 reading the spawn error pipe, and sends that thread `SIGUSR2` with restart
-disabled. Releasing the FIFO lets the child exec; the test checks that spawn
-still succeeds and preserves the caller's `errno`. The standalone Zig, GCC,
-and TinyCC matrix passed, followed by five repeat runs per compiler and the
-optional user-namespace RESETIDS check. This covers one deterministic `EINTR`
-path; it does not replace a broader process/signal/fork interaction audit.
+disabled. It runs both a successful spawn and a spawn whose following file
+action fails with `ENOENT`. Releasing the FIFO forces the parent to handle
+`EINTR` while reading the error pipe; the success case returns a child PID and
+the failure case reports `ENOENT` after reaping the child. Both preserve the
+caller's `errno`. The standalone Zig, GCC, and TinyCC matrix passed, followed
+by five repeat runs per compiler and the optional user-namespace RESETIDS
+check. This covers deterministic success and failure `EINTR` paths; it does not
+replace a broader process/signal/fork interaction audit.
 The standalone pthread smoke also registers no-op atfork handlers from a worker
 while the initial thread performs 32 forks. Zig, GCC, and TinyCC smoke binaries
 pass this concurrent registry/snapshot stress.

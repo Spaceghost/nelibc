@@ -31,6 +31,7 @@ typedef struct {
   pid_t child;
   int spawn_error;
   int saved_errno;
+  int expected_spawn_error;
 } spawn_signal_state;
 
 static volatile sig_atomic_t spawn_signal_count;
@@ -142,7 +143,7 @@ static int thread_waiting_in_read(pid_t thread_id) {
       (contents[1] == ' ' || contents[1] == '\t');
 }
 
-static int run_spawn_eintr_case(void) {
+static int run_spawn_eintr_case(int fail_after_fifo) {
   char fifo_path[96];
   if (snprintf(fifo_path, sizeof(fifo_path), "/tmp/nelibc-spawn-eintr-%d",
                getpid()) < 0 || mkfifo(fifo_path, 0600) != 0)
@@ -151,6 +152,13 @@ static int run_spawn_eintr_case(void) {
   posix_spawn_file_actions_t actions;
   if (posix_spawn_file_actions_init(&actions) != 0 ||
       posix_spawn_file_actions_addopen(&actions, 9, fifo_path, O_RDONLY, 0) != 0) {
+    unlink(fifo_path);
+    return 2;
+  }
+  if (fail_after_fifo &&
+      posix_spawn_file_actions_addopen(&actions, 10,
+          "/nelibc-spawn-missing", O_RDONLY, 0) != 0) {
+    posix_spawn_file_actions_destroy(&actions);
     unlink(fifo_path);
     return 2;
   }
@@ -165,7 +173,12 @@ static int run_spawn_eintr_case(void) {
   if (sigaction(SIGUSR2, &action, &old_action) != 0) goto cleanup;
   spawn_signal_count = 0;
 
-  spawn_signal_state state = {&actions, 0, 0, -1, 0, 0};
+  spawn_signal_state state = {
+    .actions = &actions,
+    .thread_id = -1,
+    .child = -1,
+    .expected_spawn_error = fail_after_fifo ? ENOENT : 0
+  };
   if (pthread_create(&worker, 0, spawn_waiting_for_fifo, &state) != 0)
     goto restore_action;
   worker_started = 1;
@@ -195,10 +208,12 @@ release_worker:
   }
   if (worker_started) {
     if (pthread_join(worker, 0) != 0) result = 5;
-    else if (!state.returned_from_spawn || state.spawn_error != 0 ||
-             state.saved_errno != 42 || state.child <= 0)
+    else if (!state.returned_from_spawn || state.saved_errno != 42 ||
+             state.spawn_error != state.expected_spawn_error ||
+             (state.expected_spawn_error == 0 && state.child <= 0) ||
+             (state.expected_spawn_error != 0 && state.child != -1))
       result = 6;
-    else {
+    else if (state.expected_spawn_error == 0) {
       int child_status = 0;
       if (waitpid(state.child, &child_status, 0) != state.child ||
           !WIFEXITED(child_status) || WEXITSTATUS(child_status) != 0)
@@ -622,7 +637,7 @@ int main(int argc, char **argv) {
       !failed_cancel_state.returned_from_spawn ||
       failed_cancel_state.spawn_error != ENOENT)
     return 40;
-  if (run_spawn_eintr_case() != 0) return 39;
+  if (run_spawn_eintr_case(0) != 0 || run_spawn_eintr_case(1) != 0) return 39;
   if (run_path_fallback_case() != 0) return 41;
   return 0;
 }
