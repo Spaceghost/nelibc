@@ -433,9 +433,8 @@ local function nelibc_spawn_candidates_destroy(candidates: *SpawnCandidate): voi
 end
 
 local function nelibc_spawn_resolve_path(file: *[0]cchar <const>,
-    candidates_out: *[0]*SpawnCandidate, access_denied_out: *[0]boolean): cint
+    candidates_out: *[0]*SpawnCandidate): cint
   candidates_out[0] = nilptr
-  access_denied_out[0] = false
   local file_length: csize = 0
   local has_slash: boolean = false
   while file[file_length] ~= 0 do
@@ -447,7 +446,7 @@ local function nelibc_spawn_resolve_path(file: *[0]cchar <const>,
   local search_path: *[0]cchar = getenv('PATH')
   if search_path == nilptr then search_path = '/bin:/usr/bin' end
   local search_start: csize = 0
-  local saw_access_denied: boolean = false
+  local path_too_long: boolean = false
   local first_candidate: *SpawnCandidate = nilptr
   local last_candidate: *SpawnCandidate = nilptr
   while true do
@@ -483,34 +482,29 @@ local function nelibc_spawn_resolve_path(file: *[0]cchar <const>,
         index = index + 1_csize
       end
       candidate[candidate_length] = 0_cchar
-      local access_result = syscall_result(nelibc_raw_syscall3(269_culong,
-          0xffffffffffffff9c_culong, (@culong)((@usize)(candidate)), 1_culong))
-      if access_result == 0_clong then
-        local entry = (@*SpawnCandidate)(malloc(16_csize))
-        if entry == nilptr then
-          free((@pointer)(candidate))
-          nelibc_spawn_candidates_destroy(first_candidate)
-          nelibc_errno_location()[0] = 12_cint -- ENOMEM
-          return 12_cint
-        end
-        entry.next = nilptr
-        entry.pathname = candidate
-        if last_candidate == nilptr then first_candidate = entry
-        else last_candidate.next = entry end
-        last_candidate = entry
-      else
-        if nelibc_errno_location()[0] == 13_cint then saw_access_denied = true end
+      local entry = (@*SpawnCandidate)(malloc(16_csize))
+      if entry == nilptr then
         free((@pointer)(candidate))
+        nelibc_spawn_candidates_destroy(first_candidate)
+        nelibc_errno_location()[0] = 12_cint -- ENOMEM
+        return 12_cint
       end
+      entry.next = nilptr
+      entry.pathname = candidate
+      if last_candidate == nilptr then first_candidate = entry
+      else last_candidate.next = entry end
+      last_candidate = entry
+    else
+      path_too_long = true
     end
     if search_path[search_end] == 0 then break end
     search_start = search_end + 1_csize
   end
   if first_candidate == nilptr then
-    if saw_access_denied then return 13_cint else return 2_cint end
+    if path_too_long then return 36_cint end -- ENAMETOOLONG
+    return 2_cint -- ENOENT
   end
   candidates_out[0] = first_candidate
-  access_denied_out[0] = saw_access_denied
   return 0_cint
 end
 
@@ -534,10 +528,8 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
 
   local saved_errno = nelibc_errno_location()[0]
   local executable_candidates: *SpawnCandidate = nilptr
-  local path_saw_access_denied = false
   if search_path then
-    local resolve_error = nelibc_spawn_resolve_path(pathname,
-        &executable_candidates, &path_saw_access_denied)
+    local resolve_error = nelibc_spawn_resolve_path(pathname, &executable_candidates)
     if resolve_error ~= 0_cint then
       nelibc_errno_location()[0] = saved_errno
       return resolve_error
@@ -605,7 +597,7 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
       child_error = nelibc_errno_location()[0]
     else
       local candidate = executable_candidates
-      local saw_access_denied = path_saw_access_denied
+      local saw_access_denied = false
       child_error = 2_cint -- ENOENT
       while candidate ~= nilptr do
         execve(candidate.pathname, argv, envp)
