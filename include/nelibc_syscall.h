@@ -382,6 +382,10 @@ int dup3(int oldfd, int newfd, int flags); /* Linux-specific. */
 ssize_t readv(int fd, const struct iovec *iov, int iovcnt);
 ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
 int poll(struct pollfd *fds, nfds_t nfds, int timeout);
+#if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
+int ppoll(struct pollfd *fds, nfds_t nfds, const struct timespec *timeout,
+          const sigset_t *sigmask);
+#endif
 int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
            struct timeval *timeout);
 int nanosleep(const struct timespec *requested, struct timespec *remaining);

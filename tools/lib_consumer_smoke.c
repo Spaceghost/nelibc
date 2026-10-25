@@ -690,6 +690,17 @@ int main(int argc, char **argv) {
   if (ualarm(60000000U, 0) != 0) return 37;
   unsigned int previous_alarm = ualarm(0, 0);
   if (previous_alarm < 50000000U || previous_alarm > 60000000U) return 38;
+  int poll_pipe[2];
+  if (pipe(poll_pipe) != 0 || write(poll_pipe[1], "p", 1) != 1) return 39;
+  struct pollfd poll_entry = {poll_pipe[0], POLLIN, 0};
+  struct timespec poll_timeout = {5, 123456789};
+  sigset_t poll_mask;
+  if (sigemptyset(&poll_mask) != 0 ||
+      ppoll(&poll_entry, 1, &poll_timeout, &poll_mask) != 1 ||
+      (poll_entry.revents & POLLIN) == 0 || poll_timeout.tv_sec != 5 ||
+      poll_timeout.tv_nsec != 123456789) return 40;
+  close(poll_pipe[0]);
+  close(poll_pipe[1]);
   const unsigned char swab_source[] = {1, 2, 3, 4, 5};
   unsigned char swab_destination[] = {9, 9, 9, 9, 9};
   swab(swab_source, swab_destination, 5);

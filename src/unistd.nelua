@@ -409,9 +409,35 @@ local function writev(fd: cint, iov: pointer <const>, iovcnt: cint): clong <cexp
   return syscall_result(raw_result)
 end
 
+local Timespec: type = @record{tv_sec: clong, tv_nsec: clong}
+local Sigset: type = @record{bits: [16]culong}
+
 local function poll(fds: pointer, nfds: culong, timeout: cint): cint <cexport, codename 'poll'>
   local raw_result = nelibc_cancellable_syscall3(
     7_culong, (@culong)((@usize)(fds)), nfds, (@culong)(timeout)
+  )
+  return (@cint)(syscall_result(raw_result))
+end
+
+local function ppoll(fds: pointer, nfds: culong, timeout: pointer <const>, sigmask: pointer <const>): cint <cexport, codename 'ppoll'>
+  local timeout_copy: Timespec
+  local timeout_pointer: pointer = nilptr
+  if timeout ~= nilptr then
+    local requested_timeout = (@*Timespec)(timeout)
+    timeout_copy.tv_sec = requested_timeout.tv_sec
+    timeout_copy.tv_nsec = requested_timeout.tv_nsec
+    timeout_pointer = (@pointer)(&timeout_copy)
+  end
+  local kernel_sigmask: culong
+  local sigmask_pointer: pointer = nilptr
+  if sigmask ~= nilptr then
+    kernel_sigmask = ((@*Sigset)(sigmask)).bits[0] & ~(1_culong << 31)
+    sigmask_pointer = (@pointer)(&kernel_sigmask)
+  end
+  local raw_result = nelibc_cancellable_syscall6(
+    271_culong, (@culong)((@usize)(fds)), nfds,
+    (@culong)((@usize)(timeout_pointer)), (@culong)((@usize)(sigmask_pointer)),
+    8_culong, 0_culong
   )
   return (@cint)(syscall_result(raw_result))
 end
@@ -443,7 +469,6 @@ local function clock_nanosleep(clock_id: cint, flags: cint, requested: pointer <
   return 0
 end
 
-local Timespec: type = @record{tv_sec: clong, tv_nsec: clong}
 local function usleep(microseconds: cuint): cint <cexport, codename 'usleep'>
   if microseconds >= 1000000_cuint then
     nelibc_errno_location()[0] = 22_cint -- EINVAL
@@ -5004,7 +5029,6 @@ local function nelibc_rt_sigaction(signal: cint, act: pointer, oldact: pointer):
   )))
 end
 
-local Sigset: type = @record{ bits: [16]culong }
 local Sigaction: type = @record{
   handler: pointer,
   mask: Sigset,
