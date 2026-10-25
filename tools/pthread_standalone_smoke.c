@@ -314,6 +314,17 @@ static void *fork_from_worker(void *argument) {
   if (pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &previous_cancel_state) != 0)
     return (void *)3;
   errno = EDOM;
+  sigset_t fork_signal_set;
+  sigset_t fork_old_signal_set;
+  if (sigemptyset(&fork_signal_set) != 0 ||
+      sigaddset(&fork_signal_set, SIGUSR1) != 0 ||
+      pthread_sigmask(SIG_BLOCK, &fork_signal_set, &fork_old_signal_set) != 0 ||
+      pthread_kill(self, SIGUSR1) != 0)
+    return (void *)5;
+  sigset_t parent_pending_before_fork;
+  if (sigpending(&parent_pending_before_fork) != 0 ||
+      sigismember(&parent_pending_before_fork, SIGUSR1) != 1)
+    return (void *)6;
   int child_process = 0;
   int valid = 0;
   pid_t child = -1;
@@ -328,15 +339,30 @@ static void *fork_from_worker(void *argument) {
                                                      &inherited_cancel_state);
     if (cancel_state_error == 0)
       cancel_state_error = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+    sigset_t child_signal_mask;
+    sigset_t child_pending_signals;
+    int signal_mask_error = pthread_sigmask(SIG_SETMASK, NULL, &child_signal_mask);
+    int pending_error = sigpending(&child_pending_signals);
     valid = pthread_equal(pthread_self(), self) &&
         pthread_getspecific(request->key) == (void *)(uintptr_t)0xabc &&
         errno == EDOM &&
+        signal_mask_error == 0 &&
+        sigismember(&child_signal_mask, SIGUSR1) == 1 &&
+        pending_error == 0 &&
+        sigismember(&child_pending_signals, SIGUSR1) == 0 &&
         join_error == ESRCH && cancel_error == ESRCH &&
         inherited_cancel_state == PTHREAD_CANCEL_DISABLE && cancel_state_error == 0;
   }
   pthread_cleanup_pop(child_process && valid);
   if (child_process)
     _exit(valid && *request->cleanup_marker == 1 ? 0 : 299);
+  int received_signal = 0;
+  if (sigpending(&parent_pending_before_fork) != 0 ||
+      sigismember(&parent_pending_before_fork, SIGUSR1) != 1 ||
+      sigwait(&fork_signal_set, &received_signal) != 0 ||
+      received_signal != SIGUSR1 ||
+      pthread_sigmask(SIG_SETMASK, &fork_old_signal_set, NULL) != 0)
+    return (void *)7;
   if (pthread_setcancelstate(previous_cancel_state, NULL) != 0) return (void *)4;
   int status = -1;
   if (errno != EDOM || child < 0 || waitpid(child, &status, 0) != child ||

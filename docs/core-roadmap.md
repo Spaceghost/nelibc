@@ -107,7 +107,9 @@ child, while the parent continues without running that handler.
 It also verifies that a disabled cancellation state is inherited by the child,
 that the worker's thread-local `errno` value is copied to the child and left
 unchanged in the parent, and that the parent restores its own cancellation
-state after the fork. For robust mutexes,
+state after the fork. A blocked, thread-directed `SIGUSR1` is absent from the
+child's pending set while the blocked mask survives; the parent retains and
+consumes its pending signal. For robust mutexes,
 the child retargets process-private robust locks held by the calling thread to
 its new TID and rebuilds its kernel robust list. For PI locks, the hook resets
 the child-private futex word and reacquires it with `FUTEX_LOCK_PI`, establishing
