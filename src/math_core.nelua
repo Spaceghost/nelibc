@@ -2135,6 +2135,70 @@ local function pow10f(value: cfloat): cfloat <cexport, codename 'pow10f'>
   return exp10f(value)
 end
 
+local function __fpclassify(value: cdouble): cint <cexport, codename '__fpclassify'>
+  local representation: DoubleBits = {value = value}
+  local bits = representation.bits
+  local exponent = bits & 0x7ff0000000000000_culonglong
+  local fraction = bits & 0x000fffffffffffff_culonglong
+  if exponent == 0x7ff0000000000000_culonglong then
+    if fraction == 0_culonglong then return 1_cint end -- FP_INFINITE
+    return 0_cint -- FP_NAN
+  end
+  if (bits & 0x7fffffffffffffff_culonglong) == 0_culonglong then return 2_cint end -- FP_ZERO
+  if exponent == 0_culonglong then return 3_cint end -- FP_SUBNORMAL
+  return 4_cint -- FP_NORMAL
+end
+
+local function __fpclassifyf(value: cfloat): cint <cexport, codename '__fpclassifyf'>
+  local representation: FloatBits = {value = value}
+  local bits = representation.bits
+  local exponent = bits & 0x7f800000_cuint
+  local fraction = bits & 0x007fffff_cuint
+  if exponent == 0x7f800000_cuint then
+    if fraction == 0_cuint then return 1_cint end
+    return 0_cint
+  end
+  if (bits & 0x7fffffff_cuint) == 0_cuint then return 2_cint end
+  if exponent == 0_cuint then return 3_cint end
+  return 4_cint
+end
+
+local function __fpclassifyl(value: clongdouble): cint <cexport, codename '__fpclassifyl'>
+  local representation: LongDoubleBits = {value = value}
+  local parts = representation.parts
+  local exponent = parts.sign_exponent & 0x7fff_cushort
+  local integer_bit = parts.significand & 0x8000000000000000_culonglong
+  if exponent == 0x7fff_cushort then
+    if parts.significand == 0x8000000000000000_culonglong then return 1_cint end
+    return 0_cint
+  end
+  if exponent == 0_cushort then
+    if parts.significand == 0_culonglong then return 2_cint end
+    if integer_bit == 0_culonglong then return 3_cint end
+    return 4_cint -- x87 pseudo-denormal encodings denote normal values.
+  end
+  if integer_bit == 0_culonglong then return 0_cint end -- unsupported x87 encoding
+  return 4_cint
+end
+
+local function __signbit(value: cdouble): cint <cexport, codename '__signbit'>
+  local representation: DoubleBits = {value = value}
+  local bits = representation.bits
+  return (@cint)(bits >> 63)
+end
+
+local function __signbitf(value: cfloat): cint <cexport, codename '__signbitf'>
+  local representation: FloatBits = {value = value}
+  local bits = representation.bits
+  return (@cint)(bits >> 31)
+end
+
+local function __signbitl(value: clongdouble): cint <cexport, codename '__signbitl'>
+  local representation: LongDoubleBits = {value = value}
+  local parts = representation.parts
+  return (@cint)(parts.sign_exponent >> 15)
+end
+
 local function finite(value: cdouble): cint <cexport, codename 'finite'>
   if is_finite64(value) then return 1_cint end
   return 0_cint

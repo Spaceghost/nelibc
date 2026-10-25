@@ -202,6 +202,11 @@ int main(void) {
       fused_long != -0x1p-126L ||
       !(decimal_power_long > 0.009L && decimal_power_long < 0.011L) ||
       decimal_alias_long != 100.0L ||
+      __fpclassify(0.0) != FP_ZERO || __fpclassify(1.0) != FP_NORMAL ||
+      __fpclassifyf(0x1p-149f) != FP_SUBNORMAL ||
+      __fpclassifyl(0x1p-16445L) != FP_SUBNORMAL ||
+      __signbit(-0.0) == 0 || __signbitf(-0.0f) == 0 ||
+      __signbitl(-0.0L) == 0 ||
       !signbit(minimum_long) || signbit(maximum_long) || positive_difference_long != 2.0L ||
       cube_root_long != -0.5L ||
       long_double_long != 8.0L || long_double_truncated != -1.0L ||

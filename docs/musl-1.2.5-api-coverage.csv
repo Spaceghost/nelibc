@@ -6,9 +6,9 @@ __ctype_get_mb_cur_max,stdlib.h,,,not-declared
 __fbufsize,stdio_ext.h,,,not-declared
 __flbf,stdio_ext.h,,,not-declared
 __flt_rounds,float.h,,,not-declared
-__fpclassify,math.h,,,not-declared
-__fpclassifyf,math.h,,,not-declared
-__fpclassifyl,math.h,,,not-declared
+__fpclassify,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+__fpclassifyf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+__fpclassifyl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 __fpending,stdio_ext.h,,,not-declared
 __fpurge,stdio_ext.h,,,not-declared
 __freadable,stdio_ext.h,,,not-declared
@@ -24,9 +24,9 @@ __libc_current_sigrtmax,signal.h,,,not-declared
 __libc_current_sigrtmin,signal.h,,,not-declared
 __res_state,resolv.h,,,not-declared
 __sched_cpucount,sched.h,,,not-declared
-__signbit,math.h,,,not-declared
-__signbitf,math.h,,,not-declared
-__signbitl,math.h,,,not-declared
+__signbit,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+__signbitf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+__signbitl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 _exit,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 _flushlbf,stdio_ext.h,,,not-declared
 _longjmp,setjmp.h,,,not-declared

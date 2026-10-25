@@ -144,6 +144,12 @@ extern long double nelibc_atanhl(long double);
 extern long double nelibc_powl(long double, long double);
 extern long double nelibc_exp10l(long double);
 extern long double nelibc_pow10l(long double);
+extern int nelibc___fpclassify(double);
+extern int nelibc___fpclassifyf(float);
+extern int nelibc___fpclassifyl(long double);
+extern int nelibc___signbit(double);
+extern int nelibc___signbitf(float);
+extern int nelibc___signbitl(long double);
 extern long double nelibc_nanl(const char *);
 extern long double nelibc_fminl(long double, long double);
 extern long double nelibc_fmaxl(long double, long double);
@@ -334,6 +340,36 @@ static int check_fma(double x, double y, double z,
     fprintf(stderr, "fmaf mismatch x=%a y=%a z=%a expected=%a actual=%a\n",
             xf, yf, zf, expectedf, actualf);
     return 1;
+  }
+  return 0;
+}
+
+static int check_classification(void) {
+  static const double values[] = {
+      0.0, -0.0, 0x1p-1074, -0x1p-1074, DBL_MIN, -DBL_MIN,
+      1.0, -1.0, INFINITY, -INFINITY, NAN};
+  static const float valuesf[] = {
+      0.0f, -0.0f, 0x1p-149f, -0x1p-149f, FLT_MIN, -FLT_MIN,
+      1.0f, -1.0f, INFINITY, -INFINITY, NAN};
+  static const long double valuesl[] = {
+      0.0L, -0.0L, 0x1p-16445L, -0x1p-16445L, LDBL_MIN, -LDBL_MIN,
+      1.0L, -1.0L, INFINITY, -INFINITY, NAN};
+  for (size_t i = 0; i < sizeof values / sizeof values[0]; ++i) {
+    if (nelibc___fpclassify(values[i]) != __fpclassify(values[i]) ||
+        (!!nelibc___signbit(values[i])) != (!!__signbit(values[i])) ||
+        nelibc___fpclassifyf(valuesf[i]) != __fpclassifyf(valuesf[i]) ||
+        (!!nelibc___signbitf(valuesf[i])) != (!!__signbitf(valuesf[i])) ||
+        nelibc___fpclassifyl(valuesl[i]) != __fpclassifyl(valuesl[i]) ||
+        (!!nelibc___signbitl(valuesl[i])) != (!!__signbitl(valuesl[i])) ) {
+      fprintf(stderr, "classification/signbit mismatch at %zu: d=%d/%d,%d/%d f=%d/%d,%d/%d l=%d/%d,%d/%d\n",
+              i, nelibc___fpclassify(values[i]), __fpclassify(values[i]),
+              nelibc___signbit(values[i]), __signbit(values[i]),
+              nelibc___fpclassifyf(valuesf[i]), __fpclassifyf(valuesf[i]),
+              nelibc___signbitf(valuesf[i]), __signbitf(valuesf[i]),
+              nelibc___fpclassifyl(valuesl[i]), __fpclassifyl(valuesl[i]),
+              nelibc___signbitl(valuesl[i]), __signbitl(valuesl[i]));
+      return 1;
+    }
   }
   return 0;
 }
@@ -1451,7 +1487,7 @@ static int long_double_tan_close(long double actual, long double expected) {
 }
 
 int main(void) {
-
+  if (check_classification()) return 1;
   const long double hypot_values[] = {
       0.0L, -0.0L, nextafterl(0.0L, 1.0L), LDBL_MIN, 0.5L, 1.0L, 3.0L,
       0x1p+1000L, LDBL_MAX / 4.0L, LDBL_MAX};
