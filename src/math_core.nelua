@@ -2903,7 +2903,11 @@ local function atanh(value: cdouble): cdouble <cexport, codename 'atanh'>
       (1_cdouble / 13_cdouble + square * (1_cdouble / 15_cdouble + square *
       (1_cdouble / 17_cdouble + square / 19_cdouble))))))))
   end
-  return 0.5_cdouble * log((1_cdouble + value) / (1_cdouble - value))
+  -- log1p retains the correction lost when 1+x rounds near either endpoint.
+  local result = 0.5_cdouble * log1p_core((2_cdouble * magnitude) /
+    (1_cdouble - magnitude))
+  if value < 0_cdouble then return -result end
+  return result
 end
 
 local function asinhf(value: cfloat): cfloat <cexport, codename 'asinhf'>

@@ -141,8 +141,11 @@ musl export set.
   x86-64 hardware instructions implement correctly rounded square root and
   binary remainder. `remquo`, `remquof`, and `remquol` reuse x87 `FPREM1` and return the signed low quotient bits with the remainder. `drem` is the GNU alias for `remainder`; `pow10` aliases `exp10`; `nan` constructors return quiet NaNs and `finite` uses bit-level classification. Nelua `asin` and `acos` use the stable endpoint product
   `(1-x)*(1+x)` and `atan2`; the shootout checks domain behavior and compares
-  100,000 values in `[-1, 1]` within four ULPs on each profile. Bit-level
-  Nelua implementations also provide `frexp` and
+  100,000 values in `[-1, 1]` within four ULPs on each profile. The Nelua
+  `atanh` evaluates the endpoint region through `log1p` and preserves odd
+  symmetry; the four-profile differential matrix checks 32 adjacent binary32
+  and binary64 inputs approaching both poles. These checks found no result
+  beyond eight ULPs. Bit-level Nelua implementations also provide `frexp` and
   `modf`, including subnormal decomposition and signed-zero behavior. x86-64
   `FSCALE` primitives implement `ldexp`/`scalbn`; overflow and zero results
   from underflow set `ERANGE`. It sets `EDOM` for negative square root and

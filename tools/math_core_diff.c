@@ -3031,6 +3031,23 @@ int main(void) {
       check_binary_float_errno_value("powf-overflow", powf, nelibc_powf, 2.0f, 128.0f, ERANGE) ||
       check_binary_float_errno_value("powf-underflow", powf, nelibc_powf, 2.0f, -150.0f, ERANGE))
     return 1;
+  double atanh_edge = 1.0;
+  float atanhf_edge = 1.0f;
+  for (unsigned int i = 0; i < 32; ++i) {
+    atanh_edge = nextafter(atanh_edge, 0.0);
+    atanhf_edge = nextafterf(atanhf_edge, 0.0f);
+    for (int sign = -1; sign <= 1; sign += 2) {
+      double x = sign < 0 ? -atanh_edge : atanh_edge;
+      float xf = sign < 0 ? -atanhf_edge : atanhf_edge;
+      double expected = atanh(x), actual = nelibc_atanh(x);
+      float expectedf = atanhf(xf), actualf = nelibc_atanhf(xf);
+      if (ulps_double(expected, actual) > 8 || ulps_float(expectedf, actualf) > 8) {
+        fprintf(stderr, "atanh endpoint mismatch step=%u sign=%d double %.17g/%.17g float %.9g/%.9g\n",
+                i + 1, sign, expected, actual, expectedf, actualf);
+        return 1;
+      }
+    }
+  }
   printf("116 binary32/binary64 core math functions matched; erf/erfc max ULP: %llu/%llu (float %u/%u); exp/log max ULP: %.0f/%.0f (float %.0f/%.0f); sin/cos/tan max ULP: %llu/%llu/%llu (float %u/%u/%u); pow max ULP: %llu (float %u); cbrt max ULP: %llu (float %u); hypot <=4 ULP; edge and 100,000 generated inputs\n",
          (unsigned long long)max_erf_ulps, (unsigned long long)max_erfc_ulps, max_erff_ulps, max_erfcf_ulps,
          (double)max_exp_ulps, (double)max_log_ulps,
