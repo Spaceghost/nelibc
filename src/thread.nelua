@@ -2630,25 +2630,31 @@ local function pthread_rwlock_wrlock_internal(rwlock: *PthreadRwlock,
     nelibc_atomic_store_int(&rwlock.writer, tid)
     return 0
   end
-  nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, 1)
   while true do
+    -- An async-canceled writer must not strand waiting_writers. Keep the
+    -- counter protected only until this futex attempt has completed.
+    pthread_cancel_defer_begin()
+    nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, 1)
     local sequence = nelibc_atomic_load_int(&rwlock.sequence)
     if nelibc_atomic_cas_int(&rwlock.state, 0, -1) == 0 then
       nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, -1)
       nelibc_atomic_store_int(&rwlock.writer, tid)
+      pthread_cancel_defer_end()
       return 0
     end
     local wait_error = pthread_rwlock_wait(rwlock, sequence, abstime, clock_id)
+    nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, -1)
     if wait_error ~= 0 then
       if wait_error == 110 and nelibc_atomic_cas_int(&rwlock.state, 0, -1) == 0 then
-        nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, -1)
         nelibc_atomic_store_int(&rwlock.writer, tid)
+        pthread_cancel_defer_end()
         return 0
       end
-      nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, -1)
       pthread_rwlock_wake(rwlock)
+      pthread_cancel_defer_end()
       return wait_error
     end
+    pthread_cancel_defer_end()
   end
 end
 

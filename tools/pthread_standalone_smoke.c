@@ -27,6 +27,7 @@ static pthread_cond_t static_condition = PTHREAD_COND_INITIALIZER;
 static _Atomic int condition_waiting;
 static _Atomic int pi_cancel_acquired;
 static _Atomic int pi_async_cancel_waiting;
+static _Atomic int rwlock_async_wait_ready;
 static int condition_ready;
 static int condition_woken;
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
@@ -465,6 +466,16 @@ static void *rwlock_stress_worker(void *argument) {
     if (pthread_rwlock_unlock(&static_rwlock) != 0) return (void *)(uintptr_t)1;
   }
   return 0;
+}
+
+static void *rwlock_async_cancel_worker(void *argument) {
+  pthread_rwlock_t *rwlock = argument;
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0)
+    return (void *)1;
+  atomic_store_explicit(&rwlock_async_wait_ready, 1, memory_order_release);
+  int result = pthread_rwlock_wrlock(rwlock);
+  if (result == 0) pthread_rwlock_unlock(rwlock);
+  return (void *)(intptr_t)result;
 }
 
 static void value_destructor(void *value) {
@@ -2204,6 +2215,29 @@ int main(void) {
       pthread_rwlock_unlock(&static_rwlock) != 0 ||
       pthread_join(thread, &result) != 0 || result != 0)
     return 206;
+  atomic_store_explicit(&rwlock_async_wait_ready, 0, memory_order_relaxed);
+  if (pthread_rwlock_rdlock(&static_rwlock) != 0 ||
+      pthread_create(&thread, &attributes, rwlock_async_cancel_worker,
+                     &static_rwlock) != 0)
+    return 286;
+  for (unsigned int i = 0; i < 10000000U &&
+       (!atomic_load_explicit(&rwlock_async_wait_ready, memory_order_acquire) ||
+        __atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0); ++i) {
+  }
+  if (!atomic_load_explicit(&rwlock_async_wait_ready, memory_order_acquire) ||
+      __atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0)
+    return 287;
+  struct timespec async_rwlock_delay = {0, 20000000};
+  if (nanosleep(&async_rwlock_delay, 0) != 0 || pthread_cancel(thread) != 0)
+    return 288;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      __atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) != 0 ||
+      pthread_rwlock_destroy(&static_rwlock) != EBUSY ||
+      pthread_rwlock_unlock(&static_rwlock) != 0 ||
+      pthread_rwlock_wrlock(&static_rwlock) != 0 ||
+      pthread_rwlock_unlock(&static_rwlock) != 0)
+    return 289;
   if (pthread_rwlock_rdlock(&static_rwlock) != 0) return 219;
   struct rwlock_timeout_request timeout_request = {
     .rwlock = &static_rwlock,
