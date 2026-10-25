@@ -1887,6 +1887,22 @@ int main(void) {
       return 1;
     }
   }
+  for (size_t i = 0; i < 512; ++i) {
+    const long double mantissa = 1.0L +
+        (long double)(next_bits() >> 1) * 0x1p-63L;
+    const int binary_exponent = (int)(next_bits() % 241) - 120;
+    const long double base = ldexpl(mantissa, binary_exponent);
+    long double exponent = 0.25L +
+        (long double)(next_bits() >> 1) * 0x1p-63L * 127.75L;
+    if (next_bits() & 1) exponent = -exponent;
+    const long double expected = powl(base, exponent);
+    const long double actual = nelibc_powl(base, exponent);
+    if (!long_double_math_close(actual, expected)) {
+      fprintf(stderr, "powl large-fraction mismatch i=%zu base=%La exponent=%La actual=%La expected=%La\n",
+              i, base, exponent, actual, expected);
+      return 1;
+    }
+  }
   const int wide_powl_rounding_modes[] = {
       FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
   for (size_t mode = 0;

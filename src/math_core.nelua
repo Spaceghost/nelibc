@@ -1574,7 +1574,7 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
     else
       result = absolute * root
     end
-  elseif exponent_magnitude <= 16_clongdouble and not is_integer80(exponent) then
+  elseif exponent_magnitude <= 128_clongdouble and not is_integer80(exponent) then
     -- Split the base into a binary exponent and a [1, 2) mantissa. Keeping
     -- the mantissa logarithm small avoids magnifying logl's absolute error
     -- when the original base is near the ends of the binary80 range.
