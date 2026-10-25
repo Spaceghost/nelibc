@@ -639,11 +639,13 @@ including APIs absent from the pinned musl export set.
   preference policy can starve writers under a continuous reader stream. It
   also interrupts blocking calls routed through the cancellable syscall
   wrappers, including read/write, socket I/O,
-  poll/select, waits, sleeps, openat, and fsync. Condition-wait cancellation
-  reacquires the mutex, then unwinds cleanup handlers before thread-specific
-  data destructors. Semaphore wait retries check for deferred cancellation
-  after waiter registration races; without that check, a cancellation wake
-  could repeatedly change the sequence and spin instead of exiting. The
+  poll/select, waits, sleeps, openat, and fsync. The blocked-read smoke checks
+  `/proc` for the worker's active syscall when procfs allows it.
+  Condition-wait cancellation reacquires the mutex, then unwinds cleanup
+  handlers before thread-specific data destructors. Semaphore wait retries
+  check for deferred cancellation after waiter registration races; without
+  that check, a cancellation wake could repeatedly change the sequence and
+  spin instead of exiting. The
   semaphore smoke cancels a registered waiter, including immediately after
   waiter registration, and verifies the waiter count returns to zero and the
   semaphore remains destroyable. It also checks cancellation cleanup with a

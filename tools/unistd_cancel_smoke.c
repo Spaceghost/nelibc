@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <semaphore.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -22,6 +23,7 @@
 
 static int read_fd;
 static int read_started;
+static pid_t read_tid;
 static int write_fd;
 static int write_started;
 static int readv_fd;
@@ -76,6 +78,8 @@ static int sync_started;
 static pthread_mutex_t start_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t start_condition = PTHREAD_COND_INITIALIZER;
 
+extern pid_t gettid(void);
+
 static void mark_started(int *started) {
   pthread_mutex_lock(&start_mutex);
   *started = 1;
@@ -92,9 +96,36 @@ static void wait_started(int *started) {
 static void *blocked_reader(void *unused) {
   (void)unused;
   char byte;
+  read_tid = gettid();
   mark_started(&read_started);
   (void)read(read_fd, &byte, 1);
   return (void *)1;
+}
+
+static int wait_until_syscall(pid_t tid, long expected_syscall) {
+  char path[64];
+  char contents[128];
+  if (tid <= 0 || snprintf(path, sizeof(path), "/proc/self/task/%ld/syscall",
+                           (long)tid) >= (int)sizeof(path))
+    return EINVAL;
+  const struct timespec pause = {0, 1000000};
+  for (unsigned int attempt = 0; attempt < 5000U; ++attempt) {
+    int fd = open(path, O_RDONLY | O_CLOEXEC);
+    if (fd < 0) {
+      if (errno == EACCES || errno == EPERM || errno == ENOENT) return ENOTSUP;
+    } else {
+      ssize_t amount = read(fd, contents, sizeof(contents) - 1);
+      close(fd);
+      if (amount > 0) {
+        contents[amount] = '\0';
+        char *end = NULL;
+        long actual_syscall = strtol(contents, &end, 10);
+        if (end != contents && actual_syscall == expected_syscall) return 0;
+      }
+    }
+    if (nanosleep(&pause, NULL) != 0 && errno != EINTR) return errno;
+  }
+  return ETIMEDOUT;
 }
 
 static void *blocked_writer(void *unused) {
@@ -382,7 +413,12 @@ int main(void) {
   if (pthread_create(&reader, NULL, blocked_reader, NULL) != 0) return 2;
   wait_started(&read_started);
   struct timespec delay = {0, 20000000};
-  nanosleep(&delay, NULL);
+  int syscall_probe = wait_until_syscall(read_tid, 0);
+  if (syscall_probe == ENOTSUP) {
+    if (nanosleep(&delay, NULL) != 0) return 108;
+  } else if (syscall_probe != 0) {
+    return 108;
+  }
   alarm(5);
   if (pthread_cancel(reader) != 0) return 3;
   void *result = NULL;
