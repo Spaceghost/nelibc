@@ -869,7 +869,11 @@ int main(int argc, char **argv) {
   const wchar_t width_text[] = {L'A', 0x301, 0x4e00, 0};
   if (wcwidth(L'A') != 1 || wcwidth(0x301) != 0 || wcwidth(0x4e00) != 2 ||
       wcswidth(width_text, 3) != 3 || wcswidth(width_text, 2) != 1 ||
-      wcwidth(L'\t') != -1)
+      wcwidth(L'\t') != -1 || wcwidth(0x0378) != -1 ||
+      wcwidth(0xe000) != 1 || wcwidth(0x00ad) != 1 ||
+      wcwidth(0x0600) != 1 || wcwidth(0x115f) != 2 ||
+      wcwidth(0x1160) != 0 || wcwidth(0x3164) != 0 ||
+      wcwidth(0xffa0) != 0 || wcwidth(0x2028) != -1)
     return 77;
   const char utf8_text[] = "\xc3\xa9";
   wchar_t unicode_character = 0;

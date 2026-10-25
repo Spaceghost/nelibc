@@ -132,10 +132,12 @@ musl export set.
   differential matrix and all seven consumer profiles. Unicode case tables
   remain a locale/data gap.
 - `wcswidth` is implemented in Nelua and uses the selected host's `wcwidth` in
-  hybrid mode. The standalone locale backend provides C and C.UTF-8 behavior
-  for ASCII, common combining marks, CJK, and emoji; a complete generated
-  Unicode width table remains required. `wcwidth` is therefore recorded as
-  hybrid host-delegated, not as a Nelibc hybrid export.
+  hybrid mode. The standalone locale backend uses generated Unicode 16.0
+  general-category, East Asian Width, and Default_Ignorable_Code_Point data
+  for `C` and `C.UTF-8`; ambiguous characters have width one. Check the
+  generated table with `make check-wcwidth-data`; regeneration requires Python
+  with Unicode database version 16.0.0. `wcwidth` remains host-delegated in
+  hybrid mode, where it follows the selected libc's locale data.
 - Time APIs are already implemented across `src/unistd.nelua` and
   `src/stdlib.nelua`: clocks and sleeps, UTC/local conversion, `mktime`,
   `timegm`, `strftime`, `strptime`, and the `asctime`/`ctime` family. The

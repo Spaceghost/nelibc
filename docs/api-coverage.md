@@ -74,6 +74,11 @@ APIs (32). The pthread rows without Nelibc declarations are two private musl
 cleanup helper symbols. This is a breadth comparison, not a behavioral
 conformance score.
 
+Standalone `wcwidth` uses Unicode 16.0.0 data for the supported `C` and
+`C.UTF-8` locales. Run `make check-wcwidth-data` to verify the generated
+Nelua tables; `python3 tools/gen_wcwidth_data.py` regenerates them when Python
+provides the matching Unicode database version.
+
 `scalb` and `scalbf` scale by integral exponents and report invalid fractional
 exponents; `significand` and `significandf` normalize finite nonzero inputs so
 the absolute result lies in [1, 2), preserving the input sign.

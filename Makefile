@@ -633,6 +633,10 @@ api-coverage: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-gcc.a \
 		--profile gcc_standalone=$(OUT)/libnelibc-standalone-gcc.a \
 		--profile tcc_standalone=$(OUT)/libnelibc-standalone-tcc.a
 
+.PHONY: check-wcwidth-data
+check-wcwidth-data:
+	python3 tools/gen_wcwidth_data.py --check
+
 
 .PHONY: lib-private-test-symbols
 lib-private-test-symbols: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-gcc.a $(OUT)/libnelibc-zig-musl.a
