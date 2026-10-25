@@ -55,7 +55,11 @@ standalone implementation follows glibc's observable behavior, including
 This is a baseline-derived priority list, not a complete POSIX inventory. The
 POSIX.1-2024 `pthread_cond_clockwait` API is implemented in standalone mode;
 it selects realtime or monotonic time per timed wait and shares the existing
-condition-variable futex path. It is not in the pinned musl 1.2.5 baseline.
+condition-variable futex path. It is not in the pinned musl 1.2.5 baseline,
+so hybrid musl continues to expose the host API set. A correct compatibility
+implementation needs to select the clock inside musl's condition-wait path;
+translating deadlines before calling `pthread_cond_timedwait` would not preserve
+the requested clock if realtime changes while a wait is active.
 The standalone priority-ceiling attributes and mutex get/set operations are
 implemented. `PTHREAD_PRIO_PROTECT` raises and restores scheduler priority for
 held protected mutexes; on Linux, a `SCHED_OTHER` thread cannot acquire a
