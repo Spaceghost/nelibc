@@ -13,6 +13,32 @@ nelibc_sqrtf_hw:
   ret
 .size nelibc_sqrtf_hw, .-nelibc_sqrtf_hw
 
+/* SysV x86-64 passes long double arguments in 16-byte stack slots. */
+.globl nelibc_fabsl_hw
+.type nelibc_fabsl_hw,@function
+nelibc_fabsl_hw:
+  fldt 8(%rsp)
+  fabs
+  ret
+.size nelibc_fabsl_hw, .-nelibc_fabsl_hw
+
+.globl nelibc_copysignl_hw
+.type nelibc_copysignl_hw,@function
+nelibc_copysignl_hw:
+  subq $16, %rsp
+  movq 24(%rsp), %rax
+  movzwl 32(%rsp), %edx
+  andl $0x7fff, %edx
+  movzwl 48(%rsp), %ecx
+  andl $0x8000, %ecx
+  orl %ecx, %edx
+  movq %rax, (%rsp)
+  movw %dx, 8(%rsp)
+  fldt (%rsp)
+  addq $16, %rsp
+  ret
+.size nelibc_copysignl_hw, .-nelibc_copysignl_hw
+
 /* CVT*2SI obeys MXCSR rounding control. The int64 intermediate is exact for
    every input below 2^52 (or 2^23 for float); larger finite values are already
    integral at their source precision. */

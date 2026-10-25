@@ -176,7 +176,7 @@ connect,sys/socket.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,imp
 copy_file_range,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 copysign,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 copysignf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-copysignl,math.h,,,not-declared
+copysignl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cos,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cosf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cosh,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -303,7 +303,7 @@ expm1f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 expm1l,math.h,,,not-declared
 fabs,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fabsf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-fabsl,math.h,,,not-declared
+fabsl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 faccessat,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fallocate,fcntl.h,fcntl.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fanotify_init,sys/fanotify.h,,,not-declared

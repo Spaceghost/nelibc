@@ -11,6 +11,7 @@ PATHCONF_PATHS ?= . /proc /dev/shm /boot
 SOURCE := src/string.nelua
 COLLATION_LOCALE ?= C
 MATH_CORE_RENAMES := --redefine-sym fabs=nelibc_fabs --redefine-sym fabsf=nelibc_fabsf \
+	--redefine-sym fabsl=nelibc_fabsl --redefine-sym copysignl=nelibc_copysignl \
 	--redefine-sym copysign=nelibc_copysign --redefine-sym copysignf=nelibc_copysignf \
 	--redefine-sym trunc=nelibc_trunc --redefine-sym truncf=nelibc_truncf \
 	--redefine-sym floor=nelibc_floor --redefine-sym floorf=nelibc_floorf \

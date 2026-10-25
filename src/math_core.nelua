@@ -195,6 +195,8 @@ end
 
 local function nelibc_sqrt_hw(value: cdouble): cdouble <cimport> end
 local function nelibc_sqrtf_hw(value: cfloat): cfloat <cimport> end
+local function nelibc_fabsl_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_copysignl_hw(magnitude: clongdouble, sign: clongdouble): clongdouble <cimport> end
 local function nelibc_rint_hw(value: cdouble): cdouble <cimport> end
 local function nelibc_rintf_hw(value: cfloat): cfloat <cimport> end
 local function nelibc_lrint_hw(value: cdouble): clonglong <cimport> end
@@ -810,6 +812,10 @@ local function fabs(value: cdouble): cdouble <cexport, codename 'fabs'>
   return representation.value
 end
 
+local function fabsl(value: clongdouble): clongdouble <cexport, codename 'fabsl'>
+  return nelibc_fabsl_hw(value)
+end
+
 local function copysignf(magnitude: cfloat, sign: cfloat): cfloat
     <cexport, codename 'copysignf'>
   local magnitude_bits: FloatBits = {value = magnitude}
@@ -826,6 +832,11 @@ local function copysign(magnitude: cdouble, sign: cdouble): cdouble
   magnitude_bits.bits = (magnitude_bits.bits & 0x7FFFFFFFFFFFFFFF_culonglong) |
     (sign_bits.bits & 0x8000000000000000_culonglong)
   return magnitude_bits.value
+end
+
+local function copysignl(magnitude: clongdouble, sign: clongdouble): clongdouble
+    <cexport, codename 'copysignl'>
+  return nelibc_copysignl_hw(magnitude, sign)
 end
 
 local function round_binary64(value: cdouble, mode: cint): cdouble <inline>

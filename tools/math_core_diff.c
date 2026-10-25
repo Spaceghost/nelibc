@@ -11,6 +11,8 @@ extern float nelibc_fabsf(float);
 extern double nelibc_fabs(double);
 extern float nelibc_copysignf(float, float);
 extern double nelibc_copysign(double, double);
+extern long double nelibc_fabsl(long double);
+extern long double nelibc_copysignl(long double, long double);
 extern float nelibc_truncf(float);
 extern double nelibc_trunc(double);
 extern float nelibc_floorf(float);
@@ -1314,6 +1316,15 @@ static int check_erf(double x, float xf) {
 }
 
 int main(void) {
+
+  /* Preserve precision beyond binary64 and the complete x87 sign behavior. */
+  long double extended = 1.0L + 0x1p-70L;
+  if (nelibc_fabsl(-extended) != extended ||
+      nelibc_copysignl(extended, -1.0L) != -extended ||
+      !signbit(nelibc_copysignl(0.0L, -1.0L))) {
+    fprintf(stderr, "long-double fabs/copysign failed\n");
+    return 1;
+  }
 
   if (check_bessel_order(-100, 0, 0.0f) || check_bessel_order(-100, -0, -0.0f)) return 1;
   if (check_bessel_order(-100, 0.01, 0.01f) || check_bessel_order(-100, -0.01, -0.01f)) return 1;

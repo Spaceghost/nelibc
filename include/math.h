@@ -8,8 +8,10 @@ extern int signgam;
 
 float fabsf(float value);
 double fabs(double value);
+long double fabsl(long double value);
 float copysignf(float magnitude, float sign);
 double copysign(double magnitude, double sign);
+long double copysignl(long double magnitude, long double sign);
 float truncf(float value);
 double trunc(double value);
 float floorf(float value);
