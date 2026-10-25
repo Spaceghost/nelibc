@@ -70,6 +70,35 @@ library symbols being evaluated. `nelibc_malloc` and related prefixed calls
 are declared in `include/nelibc_alloc.h` and avoid changing the host allocator
 for unrelated host-owned objects.
 
+### Start a child with `posix_spawnp`
+
+The current Nelibc implementation supports direct execution and PATH search
+when file actions and spawn attributes are null. It reports an exec failure
+from the child before returning, and leaves `errno` unchanged as POSIX
+requires:
+
+```c
+#include <spawn.h>
+#include <sys/wait.h>
+
+extern char **environ;
+
+int main(void) {
+  char *arguments[] = {"true", 0};
+  pid_t child;
+  int error = posix_spawnp(&child, "true", 0, 0, arguments, environ);
+  if (error != 0) return error;
+  int status;
+  if (waitpid(child, &status, 0) != child) return 1;
+  return !WIFEXITED(status) || WEXITSTATUS(status) != 0;
+}
+```
+
+Non-null file-action or attribute objects currently return `ENOTSUP`; the
+standard initialization, setter, getter, and action-building APIs are not
+implemented yet. The standalone spawn smoke uses this null-object subset with
+Zig, GCC, and TinyCC builds.
+
 ### Use POSIX message queues
 
 The archive includes `mqueue.h` functions for opening, sending, receiving,

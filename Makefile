@@ -2446,7 +2446,7 @@ smoke-syscall-tls-gcc: syscall-tls-gcc
 	NELIBC_GETENV_PROBE=visible $(OUT)/syscall-smoke-tls-gcc
 	$(OUT)/errno-tls-smoke-gcc
 
-smoke-matrix: unistd-header-smoke smoke-zig smoke-gcc smoke-zig-musl smoke-tcc float-diff-matrix int-diff-matrix collation-diff-matrix smoke-syscall-zig smoke-syscall-gcc smoke-syscall-zig-musl smoke-syscall-tcc smoke-syscall-tls-gcc smoke-freestanding-zig smoke-freestanding-gcc smoke-standalone-zig smoke-standalone-gcc smoke-standalone-tcc exit-smoke-standalone-matrix abort-smoke-matrix lib-smoke-matrix smoke-lib-standalone-matrix lib-consumer-matrix lib-stdio-smoke-matrix atexit-hybrid-smoke-matrix stdio-format-diff-matrix unistd-cancel-matrix unistd-cancel-standalone-matrix lib-consumer-standalone-matrix math-core-diff-matrix math-core-standalone-matrix complex-math-smoke-matrix
+smoke-matrix: unistd-header-smoke smoke-zig smoke-gcc smoke-zig-musl smoke-tcc float-diff-matrix int-diff-matrix collation-diff-matrix smoke-syscall-zig smoke-syscall-gcc smoke-syscall-zig-musl smoke-syscall-tcc smoke-syscall-tls-gcc smoke-freestanding-zig smoke-freestanding-gcc smoke-standalone-zig smoke-standalone-gcc smoke-standalone-tcc spawn-smoke-standalone-matrix exit-smoke-standalone-matrix abort-smoke-matrix lib-smoke-matrix smoke-lib-standalone-matrix lib-consumer-matrix lib-stdio-smoke-matrix atexit-hybrid-smoke-matrix stdio-format-diff-matrix unistd-cancel-matrix unistd-cancel-standalone-matrix lib-consumer-standalone-matrix math-core-diff-matrix math-core-standalone-matrix complex-math-smoke-matrix
 
 errno-tls-zig-musl: $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin --cflags=-ftls-model=initial-exec -o $(OUT)/errno-tls-zig-musl.o src/errno/standalone.nelua
@@ -2812,8 +2812,25 @@ locale-format-hybrid-diff-tcc: $(OUT)/libnelibc-tcc.a
 
 locale-format-hybrid-diff-matrix: locale-format-hybrid-diff-zig locale-format-hybrid-diff-gcc locale-format-hybrid-diff-zig-musl locale-format-hybrid-diff-tcc
 
+spawn-smoke-standalone-zig: $(OUT)/libnelibc-standalone-zig.a tools/spawn_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/spawn_smoke.c -o $(OUT)/spawn-smoke-standalone-zig
+	@test -z "$$($(NM) -u $(OUT)/spawn-smoke-standalone-zig)"
+	$(OUT)/spawn-smoke-standalone-zig
 
-.PHONY: lib-standalone-zig lib-standalone-gcc lib-standalone-tcc smoke-lib-standalone-zig smoke-lib-standalone-gcc smoke-lib-standalone-matrix lib-consumer-standalone-zig lib-consumer-standalone-gcc lib-consumer-link-standalone-tcc lib-consumer-standalone-matrix rand-r-diff-standalone-zig rand-r-diff-standalone-gcc rand-r-diff-standalone-matrix exit-smoke-standalone-zig exit-smoke-standalone-gcc exit-smoke-standalone-matrix abort-smoke-zig abort-smoke-gcc abort-smoke-zig-musl abort-smoke-tcc abort-smoke-standalone-zig abort-smoke-standalone-gcc abort-smoke-matrix locale-format-diff-zig locale-format-diff-gcc locale-format-diff-tcc locale-format-diff-matrix
+spawn-smoke-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a tools/spawn_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-gcc.a -Wl,--no-whole-archive -Iinclude tools/spawn_smoke.c -o $(OUT)/spawn-smoke-standalone-gcc
+	@test -z "$$($(NM) -u $(OUT)/spawn-smoke-standalone-gcc)"
+	$(OUT)/spawn-smoke-standalone-gcc
+
+spawn-smoke-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/spawn_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-tcc.a -Wl,--no-whole-archive -Iinclude tools/spawn_smoke.c -o $(OUT)/spawn-smoke-standalone-tcc
+	@test -z "$$($(NM) -u $(OUT)/spawn-smoke-standalone-tcc)"
+	$(OUT)/spawn-smoke-standalone-tcc
+
+spawn-smoke-standalone-matrix: spawn-smoke-standalone-zig spawn-smoke-standalone-gcc spawn-smoke-standalone-tcc
+
+
+.PHONY: lib-standalone-zig lib-standalone-gcc lib-standalone-tcc smoke-lib-standalone-zig smoke-lib-standalone-gcc smoke-lib-standalone-matrix lib-consumer-standalone-zig lib-consumer-standalone-gcc lib-consumer-link-standalone-tcc lib-consumer-standalone-matrix rand-r-diff-standalone-zig rand-r-diff-standalone-gcc rand-r-diff-standalone-matrix exit-smoke-standalone-zig exit-smoke-standalone-gcc exit-smoke-standalone-matrix abort-smoke-zig abort-smoke-gcc abort-smoke-zig-musl abort-smoke-tcc abort-smoke-standalone-zig abort-smoke-standalone-gcc abort-smoke-matrix locale-format-diff-zig locale-format-diff-gcc locale-format-diff-tcc locale-format-diff-matrix spawn-smoke-standalone-zig spawn-smoke-standalone-gcc spawn-smoke-standalone-tcc spawn-smoke-standalone-matrix
 
 clean:
 	rm -rf $(OUT)

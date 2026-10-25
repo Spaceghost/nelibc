@@ -14,6 +14,8 @@
 #include <utime.h>
 #include <sys/mman.h>
 #include <sys/random.h>
+#include <spawn.h>
+#include <sys/wait.h>
 #include <sys/utsname.h>
 #include <sys/un.h>
 #include <stdint.h>
@@ -996,6 +998,23 @@ int main(int argc, char **argv) {
   int executable_close_result = close(executable_fd);
   if (execveat_wait_result != child_pid || !WIFEXITED(wait_status) ||
       WEXITSTATUS(wait_status) != 42 || executable_close_result != 0) return 394;
+  char *spawn_argv[] = {(char *)"true", NULL};
+  pid_t spawned_pid = -1;
+  errno = 42;
+  int spawn_result = posix_spawn(&spawned_pid, "/bin/true", NULL, NULL,
+                                 spawn_argv, empty_environment);
+  if (spawn_result != 0 || errno != 42 || spawned_pid <= 0 ||
+      waitpid(spawned_pid, &wait_status, 0) != spawned_pid ||
+      !WIFEXITED(wait_status) || WEXITSTATUS(wait_status) != 0) return 402;
+  errno = 42;
+  if (posix_spawn(&spawned_pid, "/nelibc-no-such-executable", NULL, NULL,
+                  missing_argv, empty_environment) != ENOENT || errno != 42) return 403;
+  errno = 42;
+  spawn_result = posix_spawnp(&spawned_pid, "true", NULL, NULL,
+                              spawn_argv, empty_environment);
+  if (spawn_result != 0 || errno != 42 || spawned_pid <= 0 ||
+      waitpid(spawned_pid, &wait_status, 0) != spawned_pid ||
+      !WIFEXITED(wait_status) || WEXITSTATUS(wait_status) != 0) return 404;
   struct rusage process_usage;
   if (getrusage(RUSAGE_SELF, &process_usage) != 0 || process_usage.ru_maxrss < 0) return 367;
   errno = 0;
