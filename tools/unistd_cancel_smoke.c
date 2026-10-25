@@ -40,6 +40,7 @@ static int send_started;
 static int sendmsg_started;
 static int nanosleep_started;
 static int clock_nanosleep_started;
+static int pause_started;
 static int lock_wait_fd;
 static int lock_wait_started;
 static int epoll_fd;
@@ -275,6 +276,12 @@ static void *blocked_clock_nanosleep_worker(void *unused) {
   struct timespec request = {3600, 0};
   mark_started(&clock_nanosleep_started);
   return (void *)(long)clock_nanosleep(CLOCK_MONOTONIC, 0, &request, NULL);
+}
+
+static void *blocked_pauser(void *unused) {
+  (void)unused;
+  mark_started(&pause_started);
+  return (void *)(long)pause();
 }
 
 static void *blocked_epoll_wait_worker(void *unused) {
@@ -719,6 +726,16 @@ int main(void) {
   if (pthread_cancel(clock_sleeper) != 0) return 91;
   result = NULL;
   if (pthread_join(clock_sleeper, &result) != 0 || result != PTHREAD_CANCELED) return 92;
+  alarm(0);
+
+  pthread_t pauser;
+  if (pthread_create(&pauser, NULL, blocked_pauser, NULL) != 0) return 191;
+  wait_started(&pause_started);
+  if (wait_for_blocked_syscall(&pause_started, 34, &delay) != 0) return 192;
+  alarm(5);
+  if (pthread_cancel(pauser) != 0) return 193;
+  result = NULL;
+  if (pthread_join(pauser, &result) != 0 || result != PTHREAD_CANCELED) return 194;
   alarm(0);
 
   epoll_fd = epoll_create1(EPOLL_CLOEXEC);
