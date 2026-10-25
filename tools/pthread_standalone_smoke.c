@@ -51,8 +51,8 @@ static volatile int cancel_sleep_started;
 static volatile int cancel_state_ready;
 static volatile int cancel_state_release;
 static volatile int cancel_async_ready;
-static volatile int cancel_guard_ready;
-static volatile int cancel_guard_release;
+static _Atomic int cancel_guard_ready;
+static _Atomic int cancel_guard_release;
 static volatile int cancel_type_ready;
 static volatile int cancel_type_release;
 static _Atomic int cancel_cleanup_calls;
@@ -86,6 +86,11 @@ static void *cancel_deferred_lock_worker(void *argument) {
   while (!cancel_guard_release) {
     void *allocation = malloc(48);
     if (allocation != 0) free(allocation);
+    void *mapping = malloc(32768);
+    if (mapping != 0) {
+      mapping = realloc(mapping, 65536);
+      free(mapping);
+    }
     pthread_attr_t attributes;
     if (pthread_attr_init(&attributes) == 0) pthread_attr_destroy(&attributes);
   }
