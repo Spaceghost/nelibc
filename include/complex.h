@@ -46,6 +46,12 @@ long double complex csinhl(long double complex value);
 float complex ccoshf(float complex value);
 double complex ccosh(double complex value);
 long double complex ccoshl(long double complex value);
+float complex ctanf(float complex value);
+double complex ctan(double complex value);
+long double complex ctanl(long double complex value);
+float complex ctanhf(float complex value);
+double complex ctanh(double complex value);
+long double complex ctanhl(long double complex value);
 
 #else
 

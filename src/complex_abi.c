@@ -37,6 +37,12 @@ extern void nelibc_csinhparts_l(long double real, long double imaginary, long do
 extern void nelibc_ccoshparts_f(float real, float imaginary, float *out_real, float *out_imaginary);
 extern void nelibc_ccoshparts(double real, double imaginary, double *out_real, double *out_imaginary);
 extern void nelibc_ccoshparts_l(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
+extern void nelibc_ctanparts_f(float real, float imaginary, float *out_real, float *out_imaginary);
+extern void nelibc_ctanparts(double real, double imaginary, double *out_real, double *out_imaginary);
+extern void nelibc_ctanparts_l(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
+extern void nelibc_ctanhparts_f(float real, float imaginary, float *out_real, float *out_imaginary);
+extern void nelibc_ctanhparts(double real, double imaginary, double *out_real, double *out_imaginary);
+extern void nelibc_ctanhparts_l(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
 
 float cabsf(float _Complex value) {
   return nelibc_cabsf_parts(__real__ value, __imag__ value);
@@ -242,5 +248,41 @@ double _Complex ccosh(double _Complex value) {
 long double _Complex ccoshl(long double _Complex value) {
   long double real, imaginary;
   nelibc_ccoshparts_l(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+float _Complex ctanf(float _Complex value) {
+  float real, imaginary;
+  nelibc_ctanparts_f(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+double _Complex ctan(double _Complex value) {
+  double real, imaginary;
+  nelibc_ctanparts(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+long double _Complex ctanl(long double _Complex value) {
+  long double real, imaginary;
+  nelibc_ctanparts_l(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+float _Complex ctanhf(float _Complex value) {
+  float real, imaginary;
+  nelibc_ctanhparts_f(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+double _Complex ctanh(double _Complex value) {
+  double real, imaginary;
+  nelibc_ctanhparts(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+long double _Complex ctanhl(long double _Complex value) {
+  long double real, imaginary;
+  nelibc_ctanhparts_l(__real__ value, __imag__ value, &real, &imaginary);
   return __builtin_complex(real, imaginary);
 }

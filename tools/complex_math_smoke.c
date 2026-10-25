@@ -42,6 +42,12 @@ int main(void) {
   float _Complex (*volatile call_ccoshf)(float _Complex) = ccoshf;
   double _Complex (*volatile call_ccosh)(double _Complex) = ccosh;
   long double _Complex (*volatile call_ccoshl)(long double _Complex) = ccoshl;
+  float _Complex (*volatile call_ctanf)(float _Complex) = ctanf;
+  double _Complex (*volatile call_ctan)(double _Complex) = ctan;
+  long double _Complex (*volatile call_ctanl)(long double _Complex) = ctanl;
+  float _Complex (*volatile call_ctanhf)(float _Complex) = ctanhf;
+  double _Complex (*volatile call_ctanh)(double _Complex) = ctanh;
+  long double _Complex (*volatile call_ctanhl)(long double _Complex) = ctanhl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -241,5 +247,45 @@ int main(void) {
       fabsl(call_creall(coshl_value) - coshl(0.5L) * cosl(1.0L)) > 2e-18L ||
       fabsl(call_cimagl(coshl_value) - sinhl(0.5L) * sinl(1.0L)) > 2e-18L ||
       !isinf(call_creal(sinh_infinity)) || !isinf(call_cimag(sinh_infinity))) return 11;
+  float _Complex tanf_value = call_ctanf(__builtin_complex(1.0f, 0.5f));
+  double _Complex tan_value = call_ctan(__builtin_complex(1.0, 0.5));
+  long double _Complex tanl_value = call_ctanl(__builtin_complex(1.0L, 0.5L));
+  float _Complex tanhf_value = call_ctanhf(__builtin_complex(0.5f, 1.0f));
+  double _Complex tanh_value = call_ctanh(__builtin_complex(0.5, 1.0));
+  long double _Complex tanhl_value = call_ctanhl(__builtin_complex(0.5L, 1.0L));
+  double _Complex tan_large_imaginary = call_ctan(__builtin_complex(1.0, 100.0));
+  double _Complex tanh_large_real = call_ctanh(__builtin_complex(100.0, 1.0));
+  double _Complex tan_infinity = call_ctan(__builtin_complex(1.0, (double)INFINITY));
+  double _Complex tanh_infinity = call_ctanh(__builtin_complex((double)INFINITY, 1.0));
+  if (fabsf(call_crealf(tanf_value) - sinf(2.0f) /
+        (cosf(2.0f) + coshf(1.0f))) > 2e-6f ||
+      fabsf(call_cimagf(tanf_value) - sinhf(1.0f) /
+        (cosf(2.0f) + coshf(1.0f))) > 2e-6f ||
+      fabs(call_creal(tan_value) - sin(2.0) /
+        (cos(2.0) + cosh(1.0))) > 2e-15 ||
+      fabs(call_cimag(tan_value) - sinh(1.0) /
+        (cos(2.0) + cosh(1.0))) > 2e-15 ||
+      fabsl(call_creall(tanl_value) - sinl(2.0L) /
+        (cosl(2.0L) + coshl(1.0L))) > 2e-18L ||
+      fabsl(call_cimagl(tanl_value) - sinhl(1.0L) /
+        (cosl(2.0L) + coshl(1.0L))) > 2e-18L ||
+      fabsf(call_crealf(tanhf_value) - sinhf(1.0f) /
+        (coshf(1.0f) + cosf(2.0f))) > 2e-6f ||
+      fabsf(call_cimagf(tanhf_value) - sinf(2.0f) /
+        (coshf(1.0f) + cosf(2.0f))) > 2e-6f ||
+      fabs(call_creal(tanh_value) - sinh(1.0) /
+        (cosh(1.0) + cos(2.0))) > 2e-15 ||
+      fabs(call_cimag(tanh_value) - sin(2.0) /
+        (cosh(1.0) + cos(2.0))) > 2e-15 ||
+      fabsl(call_creall(tanhl_value) - sinhl(1.0L) /
+        (coshl(1.0L) + cosl(2.0L))) > 2e-18L ||
+      fabsl(call_cimagl(tanhl_value) - sinl(2.0L) /
+        (coshl(1.0L) + cosl(2.0L))) > 2e-18L ||
+      !isfinite(call_creal(tan_large_imaginary)) ||
+      fabs(call_cimag(tan_large_imaginary) - 1.0) > 1e-12 ||
+      fabs(call_creal(tanh_large_real) - 1.0) > 1e-12 ||
+      !isfinite(call_cimag(tanh_large_real)) ||
+      call_creal(tan_infinity) != 0.0 || call_cimag(tan_infinity) != 1.0 ||
+      call_creal(tanh_infinity) != 1.0 || call_cimag(tanh_infinity) != 0.0) return 12;
   return 0;
 }

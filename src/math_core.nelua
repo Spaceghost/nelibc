@@ -4759,3 +4759,129 @@ local function nelibc_ccoshparts_l(x: clongdouble, y: clongdouble,
   real_out[0] = coshl(x) * cosl(y)
   imaginary_out[0] = sinhl(x) * sinl(y)
 end
+
+local function nelibc_ctanparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_ctanparts_f'>
+  local sine_x = sinf(x)
+  local cosine_x = cosf(x)
+  local sine_2x = 2_cfloat * sine_x * cosine_x
+  local cosine_2x = cosine_x * cosine_x - sine_x * sine_x
+  local absolute_y = fabsf(y)
+  if absolute_y > 10_cfloat then
+    local exponential = expf(-2_cfloat * absolute_y)
+    local exponential_squared = exponential * exponential
+    local denominator = 1_cfloat + 2_cfloat * cosine_2x * exponential + exponential_squared
+    real_out[0] = 2_cfloat * sine_2x * exponential / denominator
+    imaginary_out[0] = copysignf((1_cfloat - exponential_squared) / denominator, y)
+  else
+    local denominator = cosine_2x + coshf(2_cfloat * y)
+    real_out[0] = sine_2x / denominator
+    imaginary_out[0] = sinhf(2_cfloat * y) / denominator
+  end
+end
+
+local function nelibc_ctanparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_ctanparts'>
+  local sine_x = sin(x)
+  local cosine_x = cos(x)
+  local sine_2x = 2_cdouble * sine_x * cosine_x
+  local cosine_2x = cosine_x * cosine_x - sine_x * sine_x
+  local absolute_y = fabs(y)
+  if absolute_y > 10_cdouble then
+    local exponential = exp(-2_cdouble * absolute_y)
+    local exponential_squared = exponential * exponential
+    local denominator = 1_cdouble + 2_cdouble * cosine_2x * exponential + exponential_squared
+    real_out[0] = 2_cdouble * sine_2x * exponential / denominator
+    imaginary_out[0] = copysign((1_cdouble - exponential_squared) / denominator, y)
+  else
+    local denominator = cosine_2x + cosh(2_cdouble * y)
+    real_out[0] = sine_2x / denominator
+    imaginary_out[0] = sinh(2_cdouble * y) / denominator
+  end
+end
+
+local function nelibc_ctanparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_ctanparts_l'>
+  local sine_x = sinl(x)
+  local cosine_x = cosl(x)
+  local sine_2x = 2_clongdouble * sine_x * cosine_x
+  local cosine_2x = cosine_x * cosine_x - sine_x * sine_x
+  local absolute_y = fabsl(y)
+  if absolute_y > 10_clongdouble then
+    local exponential = expl(-2_clongdouble * absolute_y)
+    local exponential_squared = exponential * exponential
+    local denominator = 1_clongdouble + 2_clongdouble * cosine_2x * exponential + exponential_squared
+    real_out[0] = 2_clongdouble * sine_2x * exponential / denominator
+    imaginary_out[0] = copysignl((1_clongdouble - exponential_squared) / denominator, y)
+  else
+    local denominator = cosine_2x + coshl(2_clongdouble * y)
+    real_out[0] = sine_2x / denominator
+    imaginary_out[0] = sinhl(2_clongdouble * y) / denominator
+  end
+end
+
+local function nelibc_ctanhparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_ctanhparts_f'>
+  local sine_y = sinf(y)
+  local cosine_y = cosf(y)
+  local sine_2y = 2_cfloat * sine_y * cosine_y
+  local cosine_2y = cosine_y * cosine_y - sine_y * sine_y
+  local absolute_x = fabsf(x)
+  if absolute_x > 10_cfloat then
+    local exponential = expf(-2_cfloat * absolute_x)
+    local exponential_squared = exponential * exponential
+    local denominator = 1_cfloat + 2_cfloat * cosine_2y * exponential + exponential_squared
+    real_out[0] = copysignf((1_cfloat - exponential_squared) / denominator, x)
+    imaginary_out[0] = 2_cfloat * sine_2y * exponential / denominator
+  else
+    local denominator = coshf(2_cfloat * x) + cosine_2y
+    real_out[0] = sinhf(2_cfloat * x) / denominator
+    imaginary_out[0] = sine_2y / denominator
+  end
+end
+
+local function nelibc_ctanhparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_ctanhparts'>
+  local sine_y = sin(y)
+  local cosine_y = cos(y)
+  local sine_2y = 2_cdouble * sine_y * cosine_y
+  local cosine_2y = cosine_y * cosine_y - sine_y * sine_y
+  local absolute_x = fabs(x)
+  if absolute_x > 10_cdouble then
+    local exponential = exp(-2_cdouble * absolute_x)
+    local exponential_squared = exponential * exponential
+    local denominator = 1_cdouble + 2_cdouble * cosine_2y * exponential + exponential_squared
+    real_out[0] = copysign((1_cdouble - exponential_squared) / denominator, x)
+    imaginary_out[0] = 2_cdouble * sine_2y * exponential / denominator
+  else
+    local denominator = cosh(2_cdouble * x) + cosine_2y
+    real_out[0] = sinh(2_cdouble * x) / denominator
+    imaginary_out[0] = sine_2y / denominator
+  end
+end
+
+local function nelibc_ctanhparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_ctanhparts_l'>
+  local sine_y = sinl(y)
+  local cosine_y = cosl(y)
+  local sine_2y = 2_clongdouble * sine_y * cosine_y
+  local cosine_2y = cosine_y * cosine_y - sine_y * sine_y
+  local absolute_x = fabsl(x)
+  if absolute_x > 10_clongdouble then
+    local exponential = expl(-2_clongdouble * absolute_x)
+    local exponential_squared = exponential * exponential
+    local denominator = 1_clongdouble + 2_clongdouble * cosine_2y * exponential + exponential_squared
+    real_out[0] = copysignl((1_clongdouble - exponential_squared) / denominator, x)
+    imaginary_out[0] = 2_clongdouble * sine_2y * exponential / denominator
+  else
+    local denominator = coshl(2_clongdouble * x) + cosine_2y
+    real_out[0] = sinhl(2_clongdouble * x) / denominator
+    imaginary_out[0] = sine_2y / denominator
+  end
+end
