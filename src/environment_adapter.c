@@ -631,6 +631,10 @@ int nelibc_standalone_global_numeric_is_de(void) {
   return nelibc_standalone_numeric_de;
 }
 
+int nelibc_standalone_global_monetary_is_de(void) {
+  return nelibc_standalone_monetary_de;
+}
+
 int nelibc_standalone_numeric_is_de(void) {
   int *thread_locale = (int *)nelibc_thread_state(16, 2 * sizeof(int));
   if (thread_locale != NULL && thread_locale[1] != 0)
@@ -639,6 +643,9 @@ int nelibc_standalone_numeric_is_de(void) {
 }
 
 int nelibc_standalone_monetary_is_de(void) {
+  int *thread_locale = (int *)nelibc_thread_state(16, 3 * sizeof(int));
+  if (thread_locale != NULL && thread_locale[2] != 0)
+    return thread_locale[2] == 2;
   return nelibc_standalone_monetary_de;
 }
 
