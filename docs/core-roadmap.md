@@ -9,10 +9,10 @@ archive; it does not certify every behavior required by C or POSIX.
 | Priority | Gap | Why it blocks a compelling libc | Next milestone |
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
-| P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `remquo`, `remquof`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `lrint`, `lrintf`, `llrint`, `llrintf`, `lround`, `lroundf`, `llround`, `llroundf`, `nearbyint`, `exp`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, `atan2`, `asin`, `acos`, binary32/binary64 `fma`/`fmaf`, `erf`/`erff`, `erfc`/`erfcf`, `tgamma`/`tgammaf`, and `lgamma`/`lgammaf` plus reentrant variants, and binary32/binary64 `jn`, `yn`, `j0`, `j1`, `y0`, `y1`, `sincos`, and `sincosf`; the arithmetic backend is x86-64-specific, and 77 musl math APIs remain undeclared | Add the next high-use math functions; then long-double coverage and complete fenv semantics |
+| P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `remquo`, `remquof`, `drem`, `dremf`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `lrint`, `lrintf`, `llrint`, `llrintf`, `lround`, `lroundf`, `llround`, `llroundf`, `nearbyint`, `finite`, `finitef`, `nan`, `nanf`, `exp`, `exp10`, `pow10`, `pow10f`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, `atan2`, `asin`, `acos`, binary32/binary64 `fma`/`fmaf`, `erf`/`erff`, `erfc`/`erfcf`, `tgamma`/`tgammaf`, and `lgamma`/`lgammaf` plus reentrant variants, and binary32/binary64 `jn`, `yn`, `j0`, `j1`, `y0`, `y1`, `sincos`, and `sincosf`; the arithmetic backend is x86-64-specific, and 71 musl math APIs remain undeclared | Add the next high-use math functions; then long-double coverage and complete fenv semantics |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 794 undeclared candidates and record explicit intentional omissions |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 786 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -88,15 +88,15 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The current API inventory has 724 declared names: 606 exported in hybrid
+- The current API inventory has 732 declared names: 614 exported in hybrid
   archives, 114 host-delegated across all hybrid profiles, and four standalone
   priority-ceiling exports that glibc supplies in hybrid mode but musl does
   not. There is also one implementation-only entry. This is an
   inventory signal, not a completeness percentage.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 562
+  that are also exported by the pinned release archives: Nelibc exports 570
   in at least one hybrid profile, delegates 115 to a hybrid host, and does not
-  yet declare 794. The largest undeclared groups are math (77), complex math
+  yet declare 786. The largest undeclared groups are math (71), complex math
   (66), wide characters (65), stdlib, unistd, and network database APIs. These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
@@ -110,11 +110,11 @@ musl export set.
   syscall smoke checks UTC and negative epochs, leap days, POSIX TZ rules,
   TZif zone files, DST transitions, formatting bounds, and CPU clocks. Broader
   locale-specific time names and cross-libc differential coverage remain open.
-- The current math slice in `src/math_core.nelua` exports 126 float and double
+- The current math slice in `src/math_core.nelua` exports 134 float and double
   functions through all four hybrid profiles and standalone archives. Its
   Nelua functions implement `fmin`/`fmax` NaN behavior and rounding rules;
   x86-64 hardware instructions implement correctly rounded square root and
-  binary remainder. `remquo`/`remquof` reuse x87 `FPREM1` and return the signed low quotient bits with the remainder. Nelua `asin` and `acos` use the stable endpoint product
+  binary remainder. `remquo`/`remquof` reuse x87 `FPREM1` and return the signed low quotient bits with the remainder. `drem` is the GNU alias for `remainder`; `pow10` aliases `exp10`; `nan` constructors return quiet NaNs and `finite` uses bit-level classification. Nelua `asin` and `acos` use the stable endpoint product
   `(1-x)*(1+x)` and `atan2`; the shootout checks domain behavior and compares
   100,000 values in `[-1, 1]` within four ULPs on each profile. Bit-level
   Nelua implementations also provide `frexp` and

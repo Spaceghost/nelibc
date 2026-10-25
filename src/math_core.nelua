@@ -136,6 +136,17 @@ local function is_infinite32(value: cfloat): boolean <inline>
   return (representation.bits & 0x7FFFFFFF_cuint) == 0x7F800000_cuint
 end
 
+local function is_finite64(value: cdouble): boolean <inline>
+  local representation: DoubleBits = {value = value}
+  return (representation.bits & 0x7FF0000000000000_culonglong) ~=
+    0x7FF0000000000000_culonglong
+end
+
+local function is_finite32(value: cfloat): boolean <inline>
+  local representation: FloatBits = {value = value}
+  return (representation.bits & 0x7F800000_cuint) ~= 0x7F800000_cuint
+end
+
 local function is_negative_zero64(value: cdouble): boolean <inline>
   local representation: DoubleBits = {value = value}
   return representation.bits == 0x8000000000000000_culonglong
@@ -626,6 +637,13 @@ local function remainderf(x: cfloat, y: cfloat): cfloat
     <cexport, codename 'remainderf'>
   check_remainder_domain((@cdouble)(x), (@cdouble)(y))
   return (@cfloat)(nelibc_remainder_hw((@cdouble)(x), (@cdouble)(y)))
+end
+
+local function drem(x: cdouble, y: cdouble): cdouble <cexport, codename 'drem'>
+  return remainder(x, y)
+end
+local function dremf(x: cfloat, y: cfloat): cfloat <cexport, codename 'dremf'>
+  return remainderf(x, y)
 end
 
 local function remquo(x: cdouble, y: cdouble, quotient: *[0]cint): cdouble
@@ -1153,6 +1171,29 @@ local function exp10f(value: cfloat): cfloat <cexport, codename 'exp10f'>
     if value == value and not is_infinite32(value) then math_range_error() end
   end
   return result
+end
+
+local function pow10(value: cdouble): cdouble <cexport, codename 'pow10'>
+  return exp10(value)
+end
+local function pow10f(value: cfloat): cfloat <cexport, codename 'pow10f'>
+  return exp10f(value)
+end
+
+local function finite(value: cdouble): cint <cexport, codename 'finite'>
+  if is_finite64(value) then return 1_cint end
+  return 0_cint
+end
+local function finitef(value: cfloat): cint <cexport, codename 'finitef'>
+  if is_finite32(value) then return 1_cint end
+  return 0_cint
+end
+
+local function nan(tag: *[0]cchar <const>): cdouble <cexport, codename 'nan'>
+  return double_from_bits(0x7FF8000000000000_culonglong)
+end
+local function nanf(tag: *[0]cchar <const>): cfloat <cexport, codename 'nanf'>
+  return float_from_bits(0x7FC00000_cuint)
 end
 
 -- Compute exp(value - ln(2)) without losing the low subtraction bits near the

@@ -112,6 +112,15 @@ int main(void) {
       remquo(-7.0, 2.0, &quotient) != 1.0 || quotient != -4 ||
       remquof(7.0f, 2.0f, &quotient) != -1.0f || quotient != 4 ||
       remquof(-7.0f, 2.0f, &quotient) != 1.0f || quotient != -4) return 167;
+  double_bits extension_infinity = {.bits = UINT64_C(0x7FF0000000000000)};
+  double_bits extension_nan = {.bits = UINT64_C(0x7FF8000000000000)};
+  float_bits extension_infinityf = {.bits = UINT32_C(0x7F800000)};
+  float_bits extension_nanf = {.bits = UINT32_C(0x7FC00000)};
+  if (!finite(1.0) || finite(extension_infinity.value) || finite(extension_nan.value) ||
+      !finitef(1.0f) || finitef(extension_infinityf.value) || finitef(extension_nanf.value) ||
+      !isnan(nan("nelibc")) || !isnan(nanf("nelibc"))) return 168;
+  if (pow10(2.0) != 100.0 || pow10f(-2.0f) != 0.01f ||
+      drem(7.0, 2.0) != -1.0 || dremf(7.0f, 2.0f) != -1.0f) return 169;
   errno = 0;
   if (!isinf(y0(0.0)) || y0(0.0) > 0.0 || errno != ERANGE) return 157;
   errno = 0;

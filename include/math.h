@@ -36,6 +36,14 @@ float exp2f(float value);
 double exp2(double value);
 float exp10f(float value);
 double exp10(double value);
+float pow10f(float value);
+double pow10(double value);
+float nanf(const char *tag);
+double nan(const char *tag);
+int finitef(float value);
+int finite(double value);
+float dremf(float x, float y);
+double drem(double x, double y);
 float expm1f(float value);
 double expm1(double value);
 float powf(float value, float exponent);
@@ -190,6 +198,12 @@ double nexttoward(double from, long double to);
    system header feature-test configuration. */
 float exp10f(float value);
 double exp10(double value);
+float pow10f(float value);
+double pow10(double value);
+int finitef(float value);
+int finite(double value);
+float dremf(float x, float y);
+double drem(double x, double y);
 void sincosf(float value, float *sine, float *cosine);
 void sincos(double value, double *sine, double *cosine);
 

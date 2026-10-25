@@ -235,8 +235,8 @@ dn_skipname,resolv.h,,,not-declared
 dngettext,libintl.h,,,not-declared
 dprintf,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 drand48,stdlib.h,,,not-declared
-drem,math.h,,,not-declared
-dremf,math.h,,,not-declared
+drem,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+dremf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 dup,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 dup2,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 dup3,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -359,8 +359,8 @@ fgetws_unlocked,wchar.h,,,not-declared
 fgetxattr,sys/xattr.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fileno,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 fileno_unlocked,stdio.h,,,not-declared
-finite,math.h,,,not-declared
-finitef,math.h,,,not-declared
+finite,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+finitef,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 flistxattr,sys/xattr.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 flock,sys/file.h,,,not-declared
 flockfile,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
@@ -789,8 +789,8 @@ munlock,sys/mman.h,,,not-declared
 munlockall,sys/mman.h,,,not-declared
 munmap,sys/mman.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 name_to_handle_at,fcntl.h,,,not-declared
-nan,math.h,,,not-declared
-nanf,math.h,,,not-declared
+nan,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+nanf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nanl,math.h,,,not-declared
 nanosleep,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nearbyint,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -866,8 +866,8 @@ posix_spawnattr_setsigdefault,spawn.h,,,not-declared
 posix_spawnattr_setsigmask,spawn.h,,,not-declared
 posix_spawnp,spawn.h,,,not-declared
 pow,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-pow10,math.h,,,not-declared
-pow10f,math.h,,,not-declared
+pow10,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+pow10f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 pow10l,math.h,,,not-declared
 powf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 powl,math.h,,,not-declared

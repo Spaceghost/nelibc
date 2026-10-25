@@ -37,6 +37,14 @@ extern float nelibc_exp2f(float);
 extern double nelibc_exp2(double);
 extern float nelibc_exp10f(float);
 extern double nelibc_exp10(double);
+extern float nelibc_pow10f(float);
+extern double nelibc_pow10(double);
+extern float nelibc_dremf(float, float);
+extern double nelibc_drem(double, double);
+extern int nelibc_finitef(float);
+extern int nelibc_finite(double);
+extern float nelibc_nanf(const char *);
+extern double nelibc_nan(const char *);
 extern float nelibc_expm1f(float);
 extern double nelibc_expm1(double);
 extern float nelibc_cbrtf(float);
@@ -685,6 +693,50 @@ static int check_float(uint32_t input_bits) {
   if (ilogbf(value) != nelibc_ilogbf(value) || !equal_float(logbf(value), nelibc_logbf(value))) {
     fprintf(stderr, "ilogbf/logbf mismatch input=%08x\n", input_bits);
     return 1;
+  }
+  return 0;
+}
+
+static int check_math_extensions(void) {
+  const double values[] = {0.0, -0.0, 0x1p-1074, DBL_MIN, DBL_MAX, INFINITY, -INFINITY, NAN};
+  const float valuesf[] = {0.0f, -0.0f, 0x1p-149f, FLT_MIN, FLT_MAX, INFINITY, -INFINITY, NAN};
+  for (size_t i = 0; i < sizeof values / sizeof values[0]; ++i) {
+    if (!!finite(values[i]) != !!nelibc_finite(values[i]) ||
+        !!finitef(valuesf[i]) != !!nelibc_finitef(valuesf[i])) {
+      fprintf(stderr, "finite classification mismatch index=%zu\n", i);
+      return 1;
+    }
+    const double expected = exp10(values[i]);
+    const double actual = nelibc_pow10(values[i]);
+    if (isnan(expected) != isnan(actual) ||
+        (!isnan(expected) && ulps_double(expected, actual) > 1)) {
+      fprintf(stderr, "pow10 mismatch x=%.17g expected=%.17g actual=%.17g\n",
+              values[i], expected, actual);
+      return 1;
+    }
+    const float expectedf = exp10f(valuesf[i]);
+    const float actualf = nelibc_pow10f(valuesf[i]);
+    if (isnan(expectedf) != isnan(actualf) ||
+        (!isnan(expectedf) && ulps_float(expectedf, actualf) > 1)) {
+      fprintf(stderr, "pow10f mismatch x=%.9g expected=%.9g actual=%.9g\n",
+              valuesf[i], expectedf, actualf);
+      return 1;
+    }
+  }
+  if (!isnan(nan("nelibc")) || !isnan(nelibc_nan("nelibc")) ||
+      !isnan(nanf("nelibc")) || !isnan(nelibc_nanf("nelibc"))) {
+    fprintf(stderr, "nan constructors did not return NaN\n");
+    return 1;
+  }
+  static const double x[] = {5.0, -5.0, 7.0, -7.0, 1e100, -1e-100};
+  static const double y[] = {2.0, 2.0, 2.0, -2.0, 0.125, 3.0};
+  for (size_t i = 0; i < sizeof x / sizeof x[0]; ++i) {
+    if (!equal_double(drem(x[i], y[i]), nelibc_drem(x[i], y[i])) ||
+        !equal_float(dremf((float)x[i], (float)y[i]),
+                     nelibc_dremf((float)x[i], (float)y[i]))) {
+      fprintf(stderr, "drem alias mismatch index=%zu\n", i);
+      return 1;
+    }
   }
   return 0;
 }
@@ -1524,6 +1576,7 @@ int main(void) {
     if (check_pair_double(pair_edges[i][0], pair_edges[i][1])) return 1;
   for (size_t i = 0; i < sizeof pair_edges32 / sizeof pair_edges32[0]; ++i)
     if (check_pair_float(pair_edges32[i][0], pair_edges32[i][1])) return 1;
+  if (check_math_extensions()) return 1;
   const double round_values[] = {
       0.0, -0.0, 0.1, -0.1, 0.5, -0.5, 1.5, -1.5,
       4503599627370495.5, -4503599627370495.5,
