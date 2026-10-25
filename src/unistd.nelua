@@ -411,6 +411,7 @@ end
 
 local Timespec: type = @record{tv_sec: clong, tv_nsec: clong}
 local Sigset: type = @record{bits: [16]culong}
+local PselectSigmask: type = @record{mask: pointer, size: csize}
 
 local function poll(fds: pointer, nfds: culong, timeout: cint): cint <cexport, codename 'poll'>
   local raw_result = nelibc_cancellable_syscall3(
@@ -447,6 +448,35 @@ local function select(nfds: cint, readfds: pointer, writefds: pointer, exceptfds
     23_culong, (@culong)(nfds), (@culong)((@usize)(readfds)),
     (@culong)((@usize)(writefds)), (@culong)((@usize)(exceptfds)),
     (@culong)((@usize)(timeout)), 0_culong
+  )
+  return (@cint)(syscall_result(raw_result))
+end
+
+local function pselect(nfds: cint, readfds: pointer, writefds: pointer, exceptfds: pointer, timeout: pointer <const>, sigmask: pointer <const>): cint <cexport, codename 'pselect'>
+  local timeout_copy: Timespec
+  local timeout_pointer: pointer = nilptr
+  if timeout ~= nilptr then
+    local requested_timeout = (@*Timespec)(timeout)
+    timeout_copy.tv_sec = requested_timeout.tv_sec
+    timeout_copy.tv_nsec = requested_timeout.tv_nsec
+    timeout_pointer = (@pointer)(&timeout_copy)
+  end
+  local kernel_sigmask: culong
+  local kernel_mask_pointer: pointer = nilptr
+  local syscall_mask: PselectSigmask
+  local syscall_mask_pointer: pointer = nilptr
+  if sigmask ~= nilptr then
+    kernel_sigmask = ((@*Sigset)(sigmask)).bits[0] & ~(1_culong << 31)
+    kernel_mask_pointer = (@pointer)(&kernel_sigmask)
+    syscall_mask.mask = kernel_mask_pointer
+    syscall_mask.size = 8_csize
+    syscall_mask_pointer = (@pointer)(&syscall_mask)
+  end
+  local raw_result = nelibc_cancellable_syscall6(
+    270_culong, (@culong)(nfds), (@culong)((@usize)(readfds)),
+    (@culong)((@usize)(writefds)), (@culong)((@usize)(exceptfds)),
+    (@culong)((@usize)(timeout_pointer)),
+    (@culong)((@usize)(syscall_mask_pointer))
   )
   return (@cint)(syscall_result(raw_result))
 end

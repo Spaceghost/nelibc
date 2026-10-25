@@ -39,4 +39,9 @@ typedef struct {
 /* Add Nelibc's Linux syscall declarations to the standard select API. */
 #include "nelibc_syscall.h"
 
+#ifdef NELIBC_STANDALONE
+int pselect(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
+            const struct timespec *timeout, const sigset_t *sigmask);
+#endif
+
 #endif

@@ -880,7 +880,7 @@ printf,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,
 prlimit,sys/resource.h,,,not-declared
 process_vm_readv,sys/uio.h,,,not-declared
 process_vm_writev,sys/uio.h,,,not-declared
-pselect,sys/select.h,,,not-declared
+pselect,sys/select.h,sys/select.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 psiginfo,signal.h,,,not-declared
 psignal,signal.h,,,not-declared
 pthread_atfork,pthread.h,pthread.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

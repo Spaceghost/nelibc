@@ -699,6 +699,15 @@ int main(int argc, char **argv) {
       ppoll(&poll_entry, 1, &poll_timeout, &poll_mask) != 1 ||
       (poll_entry.revents & POLLIN) == 0 || poll_timeout.tv_sec != 5 ||
       poll_timeout.tv_nsec != 123456789) return 40;
+  fd_set pselect_readfds;
+  FD_ZERO(&pselect_readfds);
+  FD_SET(poll_pipe[0], &pselect_readfds);
+  struct timespec pselect_timeout = {5, 123456789};
+  if (pselect(poll_pipe[0] + 1, &pselect_readfds, NULL, NULL,
+              &pselect_timeout, &poll_mask) != 1 ||
+      !FD_ISSET(poll_pipe[0], &pselect_readfds) ||
+      pselect_timeout.tv_sec != 5 || pselect_timeout.tv_nsec != 123456789)
+    return 41;
   close(poll_pipe[0]);
   close(poll_pipe[1]);
   const unsigned char swab_source[] = {1, 2, 3, 4, 5};
