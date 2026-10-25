@@ -4078,7 +4078,7 @@ local function symlink(target: pointer <const>, linkpath: pointer <const>): cint
 end
 
 local function readlinkat(dirfd: cint, pathname: pointer <const>, buf: pointer, bufsiz: csize): clong <cexport, codename 'readlinkat'>
-  return syscall_result(nelibc_raw_syscall6(
+  return syscall_result(nelibc_cancellable_syscall6(
     267_culong,
     (@culong)(dirfd),
     (@culong)((@usize)(pathname)),

@@ -69,6 +69,9 @@ cancellation of a blocked `P_PID` wait. `sigwait`, `sigwaitinfo`,
 `sigtimedwait`, and `sigsuspend` now use cancellation-aware kernel signal waits;
 the smoke consumes a queued `SIGUSR1` through `sigwait` and cancels each blocked
 wait form across all seven profiles.
+`readlink` and `readlinkat` are also cancellation points; a self-canceling
+worker verifies that a pending deferred request is acted on at `readlink`
+across all seven profiles, without depending on filesystem latency.
 The checks verify that deferred cancellation wakes each blocked thread and
 that `pthread_join` reports `PTHREAD_CANCELED`. This remains targeted behavior
 coverage, not a complete cancellation-point audit.

@@ -294,6 +294,14 @@ static void *blocked_sigsuspend_worker(void *unused) {
   return (void *)(long)sigsuspend(&mask);
 }
 
+static void *self_cancel_readlink_worker(void *unused) {
+  (void)unused;
+  char target[4096];
+  if (pthread_cancel(pthread_self()) != 0) return (void *)1;
+  (void)readlink("/proc/self/exe", target, sizeof(target));
+  return NULL;
+}
+
 static void *blocked_opener(void *unused) {
   (void)unused;
   mark_started(&open_started);
@@ -706,6 +714,11 @@ int main(void) {
   if (pthread_join(sigsuspend_thread, &result) != 0 || result != PTHREAD_CANCELED) return 136;
   alarm(0);
   if (pthread_sigmask(SIG_SETMASK, &previous_signal_mask, NULL) != 0) return 137;
+
+  pthread_t readlink_thread;
+  if (pthread_create(&readlink_thread, NULL, self_cancel_readlink_worker, NULL) != 0) return 140;
+  result = NULL;
+  if (pthread_join(readlink_thread, &result) != 0 || result != PTHREAD_CANCELED) return 141;
 
   pid_t exited_child = fork();
   if (exited_child < 0) return 114;
