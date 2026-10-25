@@ -39,9 +39,10 @@ matter more for completeness than for the initial common-program target.
 ### Standalone pthread gap audit
 
 The generated API inventory currently records 113 pthread declarations, and
-all 113 export from the Zig and GCC standalone archives. TinyCC has not been
-rebuilt for the latest pthread API additions. This verifies symbol presence,
-not full behavior. The pinned musl 1.2.5 public-symbol baseline
+all 113 export from the Zig, GCC, and TinyCC standalone archives. The pthread
+smoke passed with all three compilers; the Zig run passed 20 consecutive times.
+This verifies symbol presence and the tested behavior, not full POSIX
+conformance. The pinned musl 1.2.5 public-symbol baseline
 has 2 pthread entries without project declarations, both internal cleanup
 helpers. The GNU concurrency-hint calls are now implemented as standalone
 stateful hints; musl 1.2.5 instead accepts only zero and reports `EAGAIN` for
@@ -112,10 +113,12 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 954 declared names. The tested Zig/glibc,
-  GCC/glibc, and Zig/musl hybrid archives export 786; 161 APIs are marked as
-  host-delegated and 7 have declared-but-unexported hybrid gaps. The manifest
-  also contains one
+- The regenerated API inventory has 955 declared names. The Zig/glibc,
+  GCC/glibc, Zig/musl, and TinyCC/glibc hybrid archives each export 786; 161
+  APIs are marked as host-delegated and 8 have declared-but-unexported
+  Zig/musl archive gaps.
+  `pthread_mutex_clocklock` is provided by the glibc host in hybrid mode and
+  exported by all three standalone archives. The manifest also contains one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage. See
   `build/api-coverage.csv` after `make api-coverage`.
