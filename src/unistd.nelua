@@ -3413,6 +3413,116 @@ local function mkdir(pathname: pointer <const>, mode: cuint): cint <cexport, cod
   return mkdirat(-100_cint, pathname, mode)
 end
 
+local function temp_template_length(template: *[0]cchar, suffix_length: cint): csize <inline>
+  if template == nilptr or suffix_length < 0 then
+    nelibc_errno_location()[0] = 22_cint -- EINVAL
+    return 0_csize
+  end
+  local length: csize = 0
+  while template[length] ~= 0 do length = length + 1_csize end
+  if length < 6_csize or (@csize)(suffix_length) > length - 6_csize then
+    nelibc_errno_location()[0] = 22_cint -- EINVAL
+    return 0_csize
+  end
+  local start = length - (@csize)(suffix_length) - 6_csize
+  local index: csize = 0
+  while index < 6_csize do
+    if template[start + index] ~= 88 then
+      nelibc_errno_location()[0] = 22_cint -- EINVAL
+      return 0_csize
+    end
+    index = index + 1_csize
+  end
+  return length
+end
+
+local function temp_template_restore(template: *[0]cchar, start: csize): void <inline>
+  local index: csize = 0
+  while index < 6_csize do
+    template[start + index] = 88_cchar
+    index = index + 1_csize
+  end
+end
+
+-- Use kernel randomness and a power-of-two alphabet to avoid modulo bias.
+local function temp_template_randomize(template: *[0]cchar, start: csize): boolean <inline>
+  local alphabet: *[0]cchar <const> = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+  local produced: csize = 0
+  while produced < 6_csize do
+    local bytes: [16]cuchar
+    local count = getrandom((@pointer)(&bytes[0]), 16_csize, 0_cuint)
+    if count < 0_clong then
+      if nelibc_errno_location()[0] == 4_cint then continue end -- EINTR
+      return false
+    end
+    if count == 0_clong then
+      nelibc_errno_location()[0] = 5_cint -- EIO
+      return false
+    end
+    local index: csize = 0
+    while index < (@csize)(count) and produced < 6_csize do
+      template[start + produced] = alphabet[bytes[index] & 0x3f_cuchar]
+      produced = produced + 1_csize
+      index = index + 1_csize
+    end
+  end
+  return true
+end
+
+local function mkostemps_impl(template: *[0]cchar, suffix_length: cint, flags: cint): cint <inline>
+  local length = temp_template_length(template, suffix_length)
+  if length == 0_csize then return -1_cint end
+  local start = length - (@csize)(suffix_length) - 6_csize
+  local create_flags = (flags & ~3_cint) | 0x2_cint | 0x40_cint | 0x80_cint
+  local attempt: cint = 0
+  while attempt < 100_cint do
+    if not temp_template_randomize(template, start) then
+      temp_template_restore(template, start)
+      return -1_cint
+    end
+    local descriptor = open((@pointer)(template), create_flags, 0x180_cuint)
+    if descriptor >= 0_cint then return descriptor end
+    if nelibc_errno_location()[0] ~= 17_cint then break end -- EEXIST
+    attempt = attempt + 1_cint
+  end
+  temp_template_restore(template, start)
+  return -1_cint
+end
+
+local function mkstemp(template: *[0]cchar): cint <cexport, codename 'mkstemp'>
+  return mkostemps_impl(template, 0_cint, 0_cint)
+end
+
+local function mkstemps(template: *[0]cchar, suffix_length: cint): cint <cexport, codename 'mkstemps'>
+  return mkostemps_impl(template, suffix_length, 0_cint)
+end
+
+local function mkostemp(template: *[0]cchar, flags: cint): cint <cexport, codename 'mkostemp'>
+  return mkostemps_impl(template, 0_cint, flags)
+end
+
+local function mkostemps(template: *[0]cchar, suffix_length: cint, flags: cint): cint <cexport, codename 'mkostemps'>
+  return mkostemps_impl(template, suffix_length, flags)
+end
+
+local function mkdtemp(template: *[0]cchar): *[0]cchar <cexport, codename 'mkdtemp'>
+  local length = temp_template_length(template, 0_cint)
+  if length == 0_csize then return nilptr end
+  local start = length - 6_csize
+  local attempt: cint = 0
+  while attempt < 100_cint do
+    if not temp_template_randomize(template, start) then
+      temp_template_restore(template, start)
+      return nilptr
+    end
+    if mkdir((@pointer)(template), 0x1c0_cuint) == 0_cint then return template end
+    if nelibc_errno_location()[0] ~= 17_cint then break end -- EEXIST
+    attempt = attempt + 1_cint
+  end
+  temp_template_restore(template, start)
+  return nilptr
+end
+
 -- POSIX mknodat creates a node relative to a directory descriptor.
 local function mknodat(dirfd: cint, pathname: pointer <const>, mode: cuint, device: culong): cint <cexport, codename 'mknodat'>
   return (@cint)(syscall_result(nelibc_raw_syscall6(

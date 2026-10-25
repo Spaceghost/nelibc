@@ -1,5 +1,6 @@
 #define _GNU_SOURCE
 #include <stdlib.h>
+#include <fcntl.h>
 #include <string.h>
 #include <strings.h>
 #include <limits.h>
@@ -15,9 +16,9 @@
 #include <wchar.h>
 #include <wctype.h>
 #include <semaphore.h>
+#include <sys/stat.h>
 #include "nelibc_alloc.h"
 #ifndef NELIBC_STANDALONE
-#include <fcntl.h>
 #include <sys/mman.h>
 #include <pthread.h>
 #endif
@@ -543,6 +544,90 @@ static void *cancelled_system_worker(void *unused) {
 }
 #endif
 
+static int tempfile_probe(void) {
+  char invalid[] = "/tmp/nelibc-invalid-XXXXXXx";
+  char plain[] = "/tmp/nelibc-mkstemp-XXXXXX";
+  char suffix[] = "/tmp/nelibc-mkstemps-XXXXXX.txt";
+  char append[] = "/tmp/nelibc-mkostemp-XXXXXX";
+  char append_suffix[] = "/tmp/nelibc-mkostemps-XXXXXX.log";
+  char directory[] = "/tmp/nelibc-mkdtemp-XXXXXX";
+  struct stat state;
+  int descriptor = -1;
+  int created_plain = 0;
+  int created_suffix = 0;
+  int created_append = 0;
+  int created_append_suffix = 0;
+  int created_directory = 0;
+  int result = 0;
+  char byte = 'N';
+
+  errno = 0;
+  if (mkstemp(invalid) != -1 || errno != EINVAL ||
+      strcmp(invalid, "/tmp/nelibc-invalid-XXXXXXx") != 0) {
+    result = 1;
+    goto done;
+  }
+  descriptor = mkstemp(plain);
+  if (descriptor < 0) { result = 2; goto done; }
+  created_plain = 1;
+  if (fstat(descriptor, &state) != 0 || (state.st_mode & 0077) != 0 ||
+      write(descriptor, &byte, 1) != 1 || lseek(descriptor, 0, SEEK_SET) != 0 ||
+      read(descriptor, &byte, 1) != 1 || byte != 'N') {
+    result = 3;
+    goto done;
+  }
+  if (close(descriptor) != 0) { descriptor = -1; result = 4; goto done; }
+  descriptor = -1;
+
+  descriptor = mkstemps(suffix, 4);
+  if (descriptor < 0) { result = 5; goto done; }
+  created_suffix = 1;
+  if (strcmp(suffix + strlen(suffix) - 4, ".txt") != 0 ||
+      fstat(descriptor, &state) != 0 || (state.st_mode & 0077) != 0) {
+    result = 6;
+    goto done;
+  }
+  if (close(descriptor) != 0) { descriptor = -1; result = 7; goto done; }
+  descriptor = -1;
+
+  descriptor = mkostemp(append, O_APPEND | O_CLOEXEC);
+  if (descriptor < 0) { result = 8; goto done; }
+  created_append = 1;
+  if ((fcntl(descriptor, F_GETFL) & O_APPEND) == 0 ||
+      (fcntl(descriptor, F_GETFD) & FD_CLOEXEC) == 0) {
+    result = 9;
+    goto done;
+  }
+  if (close(descriptor) != 0) { descriptor = -1; result = 10; goto done; }
+  descriptor = -1;
+
+  /* The GNU form accepts the same extra open flags with a preserved suffix. */
+  descriptor = mkostemps(append_suffix, 4, O_CLOEXEC);
+  if (descriptor < 0) { result = 11; goto done; }
+  created_append_suffix = 1;
+  if (strcmp(append_suffix + strlen(append_suffix) - 4, ".log") != 0 ||
+      (fcntl(descriptor, F_GETFD) & FD_CLOEXEC) == 0) {
+    result = 12;
+    goto done;
+  }
+  if (close(descriptor) != 0) { descriptor = -1; result = 13; goto done; }
+  descriptor = -1;
+
+  if (mkdtemp(directory) == NULL) { result = 14; goto done; }
+  created_directory = 1;
+  if (stat(directory, &state) != 0 || !S_ISDIR(state.st_mode) ||
+      (state.st_mode & 0077) != 0) result = 15;
+
+done:
+  if (descriptor >= 0) close(descriptor);
+  if (created_plain) unlink(plain);
+  if (created_suffix) unlink(suffix);
+  if (created_append) unlink(append);
+  if (created_append_suffix) unlink(append_suffix);
+  if (created_directory) rmdir(directory);
+  return result;
+}
+
 int main(int argc, char **argv) {
   char format_count_buffer[32];
   int format_count = -1;
@@ -552,6 +637,8 @@ int main(int argc, char **argv) {
   if (allocator_probe() != 0) return 83;
   int semaphore_result = semaphore_clock_probe();
   if (semaphore_result != 0) return 85 + semaphore_result;
+  int tempfile_result = tempfile_probe();
+  if (tempfile_result != 0) return 570 + tempfile_result;
 #ifndef NELIBC_STANDALONE
   if (archive_unistd_adapter_probe() != 0) return 84;
   if (pthread_protocol_probe() != 0) return 86;

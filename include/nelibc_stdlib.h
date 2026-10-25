@@ -54,6 +54,11 @@ long long llabs(long long value);
 int rand(void);
 int rand_r(unsigned int *seed);
 void srand(unsigned int seed);
+int mkstemp(char *template);
+int mkstemps(char *template, int suffix_length);
+int mkostemp(char *template, int flags);
+int mkostemps(char *template, int suffix_length, int flags);
+char *mkdtemp(char *template);
 void qsort(void *base, size_t count, size_t width,
            int (*compare)(const void *, const void *));
 void *bsearch(const void *key, const void *base, size_t count,
