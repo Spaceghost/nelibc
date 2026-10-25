@@ -61,10 +61,12 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,471 APIs: 754 exported by Nelibc in at least
-one tested hybrid profile, 162 intentionally delegated to the host in hybrid
-profiles, and 555 not declared by Nelibc. No declared API is missing from the
-tested hybrid profiles. The audit removes preprocessor
+The current snapshot contains 1,471 APIs: 761 exported by Nelibc in at least
+one tested hybrid profile, 163 intentionally delegated to the host in hybrid
+profiles, and 547 not declared by Nelibc. Every declared API in this pinned
+baseline is either exported by at least one hybrid archive or intentionally
+delegated to its host. The separate seven-profile inventory tracks per-profile
+gaps. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
 intentional omission; the 555 entries remain visible as unimplemented
@@ -157,8 +159,9 @@ mappings. Classification follows Unicode letter/number categories, casing,
 whitespace, and printability properties, with ASCII-only classes in `C`;
 `wctype`/`iswctype`, their `_l` forms, all wide classifier `_l` forms, and
 `towlower_l`/`towupper_l` use explicit locale handles. Standalone `newlocale`
-currently constructs static `C` and `C.UTF-8` `LC_CTYPE` handles; locale data
-for other categories and thread-local `uselocale` remain gaps.
+currently constructs static `C` and `C.UTF-8` `LC_CTYPE` handles. Standalone
+`uselocale` switches the calling thread's `LC_CTYPE` between those handles and
+`LC_GLOBAL_LOCALE`; locale data for other categories is still incomplete.
 
 `scalb` and `scalbf` scale by integral exponents and report invalid fractional
 exponents; `significand` and `significandf` normalize finite nonzero inputs so

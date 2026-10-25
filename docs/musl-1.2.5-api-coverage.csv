@@ -1364,7 +1364,7 @@ unsetenv,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,impleme
 unshare,sched.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 updwtmp,utmp.h,,,not-declared
 updwtmpx,utmpx.h,,,not-declared
-uselocale,locale.h,,,not-declared
+uselocale,locale.h,locale.h,,host-delegated
 usleep,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 utime,utime.h,,,not-declared
 utimensat,sys/stat.h,sys/stat.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

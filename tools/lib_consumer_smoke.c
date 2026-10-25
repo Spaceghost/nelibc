@@ -22,7 +22,9 @@
 #include <semaphore.h>
 #include <sys/stat.h>
 #include "nelibc_alloc.h"
-#ifndef NELIBC_STANDALONE
+#ifdef NELIBC_STANDALONE
+#include <pthread.h>
+#else
 #include <sys/mman.h>
 #include <pthread.h>
 #endif
@@ -41,6 +43,21 @@ extern int nelibc_test_standard_strerror_r(int, char *, size_t)
 static void system_signal_probe(int signal_number) {
   (void)signal_number;
 }
+
+#ifdef NELIBC_STANDALONE
+static void *standalone_uselocale_worker(void *argument) {
+  locale_t c_locale = (locale_t)argument;
+  if (uselocale((locale_t)0) != LC_GLOBAL_LOCALE ||
+      uselocale(c_locale) != LC_GLOBAL_LOCALE || iswalpha(0xe9) != 0 ||
+      uselocale((locale_t)0) != c_locale) return (void *)1;
+  errno = 0;
+  if (uselocale((locale_t)(uintptr_t)1) != (locale_t)0 || errno != EINVAL ||
+      uselocale((locale_t)0) != c_locale ||
+      uselocale(LC_GLOBAL_LOCALE) != c_locale || !iswalpha(0xe9))
+    return (void *)2;
+  return 0;
+}
+#endif
 
 #ifdef NELIBC_STANDALONE
 static int standalone_locale_smoke(void) {
@@ -1125,6 +1142,11 @@ int main(int argc, char **argv) {
       towupper_l(0x3b1, ctype_utf8) != 0x391 ||
       iswalpha_l(0x391, ctype_current) == 0)
     return 80;
+  pthread_t locale_worker;
+  void *locale_worker_result = 0;
+  if (pthread_create(&locale_worker, 0, standalone_uselocale_worker, ctype_c) != 0 ||
+      pthread_join(locale_worker, &locale_worker_result) != 0 ||
+      locale_worker_result != 0 || !iswalpha(0xe9)) return 85;
   locale_t bad_locale = newlocale(LC_CTYPE_MASK, "missing_LOCALE", ctype_c);
   if (bad_locale != (locale_t)0 || errno != EINVAL) return 81;
   freelocale(ctype_current);

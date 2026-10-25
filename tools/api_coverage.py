@@ -48,7 +48,7 @@ HOST_DELEGATED = {
         "iswdigit_l", "iswgraph_l", "iswlower_l", "iswprint_l",
         "iswpunct_l", "iswspace_l", "iswupper_l", "iswxdigit_l",
         "wctype_l", "iswctype_l", "towlower_l", "towupper_l",
-        "newlocale", "duplocale", "freelocale",
+        "newlocale", "duplocale", "freelocale", "uselocale",
         "feclearexcept", "fegetenv", "fegetexceptflag", "fegetround",
         "feholdexcept", "feraiseexcept", "fesetenv", "fesetexceptflag",
         "fesetround", "fetestexcept", "feupdateenv",

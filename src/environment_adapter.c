@@ -100,7 +100,7 @@ static __thread int nelibc_state_cleanup_registered;
 static __thread int nelibc_state_cleanup_initializing;
 static __thread union {
   long double alignment;
-  unsigned char bytes[16][256];
+  unsigned char bytes[17][256];
 } nelibc_states;
 extern void nelibc_allocator_thread_cleanup(void *) __attribute__((weak));
 static void nelibc_destroy_state(void *state) {
@@ -772,8 +772,12 @@ int nelibc_grouping_separator_byte(int index) {
       ? (unsigned char)data->thousands_sep[index] : 0;
 }
 
+void *nelibc_thread_state(unsigned int slot, size_t size);
+
 int nelibc_multibyte_mode(void) {
 #ifdef NELIBC_STANDALONE
+  int *thread_locale = (int *)nelibc_thread_state(16, sizeof(int));
+  if (thread_locale != NULL && *thread_locale != 0) return *thread_locale - 1;
   return nelibc_standalone_ctype_utf8 ? 1 : 0;
 #else
   const char *codeset = nl_langinfo(CODESET);
@@ -790,7 +794,7 @@ int nelibc_multibyte_mode(void) {
 }
 
 void *nelibc_thread_state(unsigned int slot, size_t size) {
-  if (slot >= 16 || size > 256) return NULL;
+  if (slot >= 17 || size > 256) return NULL;
 #if defined(__TINYC__) && !defined(NELIBC_STANDALONE)
   if (slot >= 7 && !nelibc_state_cleanup_registered) {
     /* pthread key setup can allocate. If that reenters public malloc,
@@ -812,10 +816,10 @@ void *nelibc_thread_state(unsigned int slot, size_t size) {
   #define NELIBC_TLS_MODEL __attribute__((tls_model("local-exec")))
 #else
   #define NELIBC_TLS_MODEL
-#endif
+  #endif
   static _Thread_local union {
     max_align_t alignment;
-    unsigned char bytes[16][256];
+    unsigned char bytes[17][256];
   } states NELIBC_TLS_MODEL;
 #ifndef NELIBC_STANDALONE
   if (slot >= 7 && !nelibc_state_cleanup_registered) {

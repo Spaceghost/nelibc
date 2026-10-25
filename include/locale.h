@@ -54,6 +54,7 @@ struct lconv *localeconv(void);
 locale_t newlocale(int category_mask, const char *locale, locale_t base);
 locale_t duplocale(locale_t locale);
 void freelocale(locale_t locale);
+locale_t uselocale(locale_t locale);
 
 #else
 

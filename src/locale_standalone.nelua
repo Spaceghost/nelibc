@@ -3,6 +3,7 @@
 
 local function nelibc_multibyte_mode(): cint <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_thread_state(slot: cuint, size: csize): pointer <cimport> end
 
 -- Locale handles are opaque addresses of static records. This first locale
 -- object slice carries LC_CTYPE state, which the wide-character `_l` APIs use.
@@ -76,6 +77,29 @@ end
 
 local function freelocale(locale: pointer): void <cexport, codename 'freelocale'>
   -- Handles point to static C and C.UTF-8 locale records.
+end
+
+local function uselocale(locale: pointer): pointer <cexport, codename 'uselocale'>
+  local active = (@*[0]cint)(nelibc_thread_state(16, 4_csize))
+  if active == nilptr then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return nilptr
+  end
+  local previous: pointer = (@pointer)(~0_usize)
+  if active[0] == 1 then previous = (@pointer)(&locale_c_token)
+  elseif active[0] == 2 then previous = (@pointer)(&locale_utf8_token) end
+  if locale == nilptr then return previous end
+  if locale == (@pointer)(~0_usize) then
+    active[0] = 0
+    return previous
+  end
+  local mode = nelibc_locale_ctype_mode(locale)
+  if mode < 0 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  active[0] = mode + 1
+  return previous
 end
 
 -- BEGIN GENERATED UNICODE WIDTH TABLES
