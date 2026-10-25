@@ -12,6 +12,19 @@
 #include <time.h>
 #include <unistd.h>
 
+extern int nelibc_tls_fixture_check(void);
+extern int nelibc_tls_fixture_recheck(void);
+extern int nelibc_tls_alignment_check(void);
+extern int nelibc_tls_alignment_recheck(void);
+
+static void *tls_isolation_worker(void *argument) {
+  (void)argument;
+  if (!nelibc_tls_fixture_check() || !nelibc_tls_fixture_recheck() ||
+      !nelibc_tls_alignment_check() || !nelibc_tls_alignment_recheck())
+    return (void *)1;
+  return 0;
+}
+
 static volatile int detached_release;
 static volatile int pthread_kill_signal;
 static int atfork_order[16];
@@ -1759,6 +1772,14 @@ typedef struct {
 } shared_spin_state;
 
 int main(void) {
+  void *tls_result = 0;
+  pthread_t tls_worker;
+  if (!nelibc_tls_fixture_check() || !nelibc_tls_alignment_check() ||
+      pthread_create(&tls_worker, 0, tls_isolation_worker, 0) != 0 ||
+      pthread_join(tls_worker, &tls_result) != 0 || tls_result != 0 ||
+      !nelibc_tls_fixture_recheck() || !nelibc_tls_alignment_recheck())
+    return 318;
+
   if (scheduling_syscall_smoke() != 0) return 287;
   errno = 0;
   if (sysconf(_SC_PRIORITY_SCHEDULING) != 200809 || errno != 0 ||

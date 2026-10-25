@@ -2698,18 +2698,24 @@ lib-consumer-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a
 
 lib-consumer-link-standalone-tcc: lib-consumer-standalone-tcc
 
-pthread-standalone-zig: $(OUT)/libnelibc-standalone-zig.a tools/pthread_standalone_smoke.c
-	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/pthread_standalone_smoke.c -o $(OUT)/pthread-smoke-standalone-zig
+$(OUT)/pthread-tls-fixture.o: tools/tls_fixture.nelua | $(OUT)
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-ftls-model=local-exec -o $@ $<
+
+$(OUT)/pthread-tls-alignment-fixture.o: tools/tls_alignment_fixture.c | $(OUT)
+	$(ZIG) cc $(ZIGFLAGS) -c -std=c11 -ffreestanding -fno-stack-protector -fno-builtin -fno-sanitize=all -ftls-model=local-exec $< -o $@
+
+pthread-standalone-zig: $(OUT)/libnelibc-standalone-zig.a $(OUT)/pthread-tls-fixture.o $(OUT)/pthread-tls-alignment-fixture.o tools/pthread_standalone_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/pthread_standalone_smoke.c $(OUT)/pthread-tls-fixture.o $(OUT)/pthread-tls-alignment-fixture.o -o $(OUT)/pthread-smoke-standalone-zig
 	@test -z "$$(nm -u $(OUT)/pthread-smoke-standalone-zig)"
 	$(OUT)/pthread-smoke-standalone-zig
 
-pthread-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a tools/pthread_standalone_smoke.c
-	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-gcc.a -Wl,--no-whole-archive -Iinclude tools/pthread_standalone_smoke.c -o $(OUT)/pthread-smoke-standalone-gcc
+pthread-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a $(OUT)/pthread-tls-fixture.o $(OUT)/pthread-tls-alignment-fixture.o tools/pthread_standalone_smoke.c
+	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-gcc.a -Wl,--no-whole-archive -Iinclude tools/pthread_standalone_smoke.c $(OUT)/pthread-tls-fixture.o $(OUT)/pthread-tls-alignment-fixture.o -o $(OUT)/pthread-smoke-standalone-gcc
 	@test -z "$$(nm -u $(OUT)/pthread-smoke-standalone-gcc)"
 	$(OUT)/pthread-smoke-standalone-gcc
 
-pthread-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/pthread_standalone_smoke.c
-	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-tcc.a -Wl,--no-whole-archive -Iinclude tools/pthread_standalone_smoke.c -o $(OUT)/pthread-smoke-standalone-tcc
+pthread-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a $(OUT)/pthread-tls-fixture.o $(OUT)/pthread-tls-alignment-fixture.o tools/pthread_standalone_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-tcc.a -Wl,--no-whole-archive -Iinclude tools/pthread_standalone_smoke.c $(OUT)/pthread-tls-fixture.o $(OUT)/pthread-tls-alignment-fixture.o -o $(OUT)/pthread-smoke-standalone-tcc
 	@test -z "$$(nm -u $(OUT)/pthread-smoke-standalone-tcc)"
 	$(OUT)/pthread-smoke-standalone-tcc
 

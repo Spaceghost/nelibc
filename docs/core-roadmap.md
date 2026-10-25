@@ -75,8 +75,12 @@ matter more for completeness than for the initial common-program target.
 The generated API inventory currently records 115 pthread declarations, and
 all 115 export from the Zig, GCC, and TinyCC standalone archives. The pthread
 smoke passed with all three compilers; the Zig run passed 20 consecutive times.
-This verifies symbol presence and the tested behavior, not full POSIX
-conformance. The pinned musl 1.2.5 public-symbol baseline
+The 2026-10-25 pthread matrix now also exercises static TLS initialization and
+thread isolation: Nelua initialized and zero-filled TLS, plus 64-byte-aligned C
+TLS, are read and mutated independently by the initial thread and a new thread.
+All three pthread smoke binaries passed five additional repeat runs. This
+verifies symbol presence and the tested behavior, not full POSIX conformance.
+The pinned musl 1.2.5 public-symbol baseline
 has 2 pthread entries without project declarations, both internal cleanup
 helpers. The GNU concurrency-hint calls are now implemented as standalone
 stateful hints; musl 1.2.5 instead accepts only zero and reports `EAGAIN` for
