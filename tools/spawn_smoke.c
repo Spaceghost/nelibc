@@ -282,6 +282,29 @@ static int run_path_fallback_case(void) {
     result = 5;
     goto cleanup;
   }
+  if (chmod(first_executable, 0600) != 0 ||
+      create_executable(second_executable,
+          "#!/nelibc-spawn-missing-interpreter\nexit 99\n") != 0) {
+    result = 6;
+    goto cleanup;
+  }
+  old_path_value = getenv("PATH");
+  old_path = old_path_value ? strdup(old_path_value) : NULL;
+  if ((old_path_value && old_path == NULL) || setenv("PATH", path_value, 1) != 0) {
+    free(old_path);
+    result = 7;
+    goto cleanup;
+  }
+  errno = 42;
+  spawn_error = posix_spawnp(&child, "nelibc-path-command", 0, 0,
+                             arguments, environment);
+  int saved_errno = errno;
+  restore_error = old_path ? setenv("PATH", old_path, 1) : unsetenv("PATH");
+  free(old_path);
+  if (restore_error != 0 || spawn_error != EACCES || saved_errno != 42) {
+    result = 8;
+    goto cleanup;
+  }
   result = 0;
 cleanup:
   unlink(first_executable);

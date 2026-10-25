@@ -65,6 +65,9 @@ Standalone `posix_spawnp` now retains accessible PATH candidates until child
 as `ENOENT` from a missing script interpreter, the child tries later entries.
 The smoke places an executable with a missing shebang interpreter first and a
 working script second; the Zig, GCC, and TinyCC standalone matrix passes.
+The same case checks error precedence: an earlier non-executable candidate
+keeps the final `posix_spawnp` result at `EACCES` when a later executable
+candidate fails with `ENOENT`.
 The signal check queues a signal in the parent, verifies the child receives
 only its requested mask/default action, and checks that the parent's pending
 signal, mask, and handler remain unchanged. A deferred cancellation queued
