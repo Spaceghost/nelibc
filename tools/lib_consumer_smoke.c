@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <time.h>
 #include <ctype.h>
 #include <sys/time.h>
@@ -37,6 +38,15 @@ extern long nelibc_test_legacy_strtol(const char *, char **, int)
     __asm__("strtol");
 extern long nelibc_test_legacy_wcstol(const wchar_t *, wchar_t **, int)
     __asm__("wcstol");
+
+static int call_vswprintf(wchar_t *output, size_t capacity,
+                          const wchar_t *format, ...) {
+  va_list arguments;
+  va_start(arguments, format);
+  int result = vswprintf(output, capacity, format, arguments);
+  va_end(arguments);
+  return result;
+}
 
 #if defined(NELIBC_STATIC_MUSL)
 extern int nelibc_test_standard_strerror_r(int, char *, size_t)
@@ -1597,6 +1607,13 @@ int main(int argc, char **argv) {
   errno = 0;
   if (wcstol(wide_hex, &wide_end, 0) != -42 || wide_end != &wide_hex[6] || errno != 0)
     return 61;
+  wchar_t wide_formatted[32] = {0};
+  int wide_output_count = -1;
+  if (swprintf(wide_formatted, 32, L"%ls:%d:%c%n", L"wide", 17, L'Q',
+               &wide_output_count) != 9) return 93;
+  if (wcscmp(wide_formatted, L"wide:17:Q") != 0 || wide_output_count != 9) return 94;
+  if (call_vswprintf(wide_formatted, 32, L"x%03d", 7) != 4 ||
+      wcscmp(wide_formatted, L"x007") != 0) return 95;
   const wchar_t wide_binary[] = L"0b101!";
   if (nelibc_test_legacy_wcstol(wide_binary, &wide_end, 0) != 0 ||
       wide_end != &wide_binary[1]) return 74;

@@ -8,6 +8,7 @@
 #ifdef NELIBC_STANDALONE
 
 #include <stddef.h>
+#include <stdarg.h>
 
 typedef unsigned int wint_t;
 typedef union {
@@ -37,6 +38,8 @@ wchar_t *fgetws(wchar_t *restrict, int, struct nelibc_FILE *restrict);
 wchar_t *fgetws_unlocked(wchar_t *restrict, int, struct nelibc_FILE *restrict);
 int fputws(const wchar_t *restrict, struct nelibc_FILE *restrict);
 int fputws_unlocked(const wchar_t *restrict, struct nelibc_FILE *restrict);
+int swprintf(wchar_t *restrict, size_t, const wchar_t *restrict, ...);
+int vswprintf(wchar_t *restrict, size_t, const wchar_t *restrict, va_list);
 
 wchar_t *wmemcpy(wchar_t *restrict, const wchar_t *restrict, size_t);
 wchar_t *wmemmove(wchar_t *, const wchar_t *, size_t);

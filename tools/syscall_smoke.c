@@ -74,6 +74,7 @@ extern int __nelibc_set_localtime_path(const char *path);
 #include <stdio.h>
 #include <wchar.h>
 #include <locale.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <math.h>
 #ifndef NELIBC_STANDALONE
@@ -127,6 +128,17 @@ static int compare_smoke_ints(const void *left, const void *right) {
 static int select_non_dot_entries(const struct dirent *entry) {
   return entry->d_name[0] != '.';
 }
+
+#ifdef NELIBC_STANDALONE
+static int call_vswprintf(wchar_t *output, size_t capacity,
+                          const wchar_t *format, ...) {
+  va_list arguments;
+  va_start(arguments, format);
+  int result = vswprintf(output, capacity, format, arguments);
+  va_end(arguments);
+  return result;
+}
+#endif
 
 #ifdef NELIBC_STANDALONE
 _Static_assert(sizeof(FILE) == 4464, "standalone FILE ABI size");
@@ -1921,6 +1933,24 @@ int main(int argc, char **argv) {
   if (wide_line[0] != L'B' || wide_line[1] != L'\n' || wide_line[2] != 0) return 285;
   if (fgetwc(wide_stream) != L'Z' || fgetwc(wide_stream) != WEOF ||
       fclose(wide_stream) != 0) return 286;
+  wchar_t formatted_wide[32] = {0};
+  int wide_count_before = -1;
+  if (swprintf(formatted_wide, 32, L"\u00e9:%ls:%d:%c%n!", L"\u00fc", 42,
+               0xE9, &wide_count_before) != 9 ||
+      wcscmp(formatted_wide, L"\u00e9:\u00fc:42:\u00e9!") != 0 ||
+      wide_count_before != 8)
+    return 288;
+  if (call_vswprintf(formatted_wide, 32, L"x%04d", 7) != 5 ||
+      wcscmp(formatted_wide, L"x0007") != 0)
+    return 289;
+  errno = 0;
+  if (swprintf(formatted_wide, 32, L"%Lf", 1.0L) >= 0 || errno != EINVAL)
+    return 291;
+  wchar_t truncated_wide[3] = {L'X', L'X', L'X'};
+  errno = 0;
+  if (swprintf(truncated_wide, 3, L"abcd") >= 0 || errno != E2BIG ||
+      truncated_wide[2] != 0)
+    return 290;
   if (setlocale(LC_CTYPE, "C") == NULL) return 270;
 #else
   char stdio_buffer[sizeof "beforeputs\n!UVfputs?"] = {0};

@@ -58,6 +58,12 @@ local function memset(dest: pointer, value: cint, n: csize): pointer <cimport> e
 local function mbrtowc(wide: *cint, input: *[0]cchar <const>, count: csize,
     state: pointer): csize <cimport> end
 local function wcrtomb(output: *[0]cchar, wide: cint, state: pointer): csize <cimport> end
+local function wcsrtombs(output: *[0]cchar, input: *[0]*[0]cint,
+    count: csize, state: pointer): csize <cimport> end
+local function wcsnrtombs(output: *[0]cchar, input: *[0]*[0]cint,
+    input_count: csize, output_count: csize, state: pointer): csize <cimport> end
+local function mbsrtowcs(output: *[0]cint, input: *[0]*[0]cchar,
+    count: csize, state: pointer): csize <cimport> end
 
 -- Standalone FILE ABI. Keep this record in sync with
 -- include/nelibc_stdio_standalone.h.
@@ -111,6 +117,7 @@ local LAST_WRITE: cuint <comptime> = 64
 local LAST_READ: cuint <comptime> = 128
 local MEMORY_OWNED: cuint <comptime> = 256
 local MEMORY_APPEND: cuint <comptime> = 512
+local WIDE_FORMAT: cuint <comptime> = 1024
 local function lseek(fd: cint, offset: clong, whence: cint): clong <cimport> end
 local function stream_lock(stream: *FILE): void <inline>
   if stream.fd == -2 or stream.fd == -3 or stream.fd == -6 then return end
@@ -1381,6 +1388,148 @@ local function grouping_separator_count(digit_count: csize): csize <inline>
   return separators
 end
 
+local function format_wide_string(input: *[0]cint <const>, precision_set: boolean,
+    precision: cint, bytes_out: **cchar, byte_length_out: *csize,
+    wide_length_out: *csize): boolean <inline>
+  local bytes_pointer: *[0]*cchar = (@*[0]*cchar)(bytes_out)
+  local byte_length_pointer: *[0]csize = (@*[0]csize)(byte_length_out)
+  local wide_length_pointer: *[0]csize = (@*[0]csize)(wide_length_out)
+  local wide_length: csize = 0
+  while input[wide_length] ~= 0 and
+      (not precision_set or wide_length < (@csize)(precision)) do
+    wide_length = wide_length + 1
+  end
+  local state: [16]culong = {}
+  local source: *[0]cint = (@*[0]cint)(input)
+  local byte_length: csize = wcsnrtombs(nilptr, &source, wide_length, 0, (@pointer)(&state[0]))
+  if byte_length == ~0_csize then
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return false
+  end
+  if byte_length == MAX_CSIZE then
+    nelibc_errno_location()[0] = 75 -- EOVERFLOW
+    return false
+  end
+  local bytes: *[0]cchar = (@*[0]cchar)(nelibc_malloc(byte_length + 1))
+  if bytes == nilptr then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return false
+  end
+  source = (@*[0]cint)(input)
+  state[0] = 0
+  local converted: csize = wcsnrtombs(bytes, &source, wide_length,
+      byte_length + 1, (@pointer)(&state[0]))
+  if converted == ~0_csize then
+    nelibc_free((@pointer)(bytes))
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return false
+  end
+  bytes[converted] = 0
+  bytes_pointer[0] = bytes
+  byte_length_pointer[0] = converted
+  wide_length_pointer[0] = wide_length
+  return true
+end
+
+local function format_wide_format(format: *[0]cint <const>,
+    format_bytes_out: **cchar): boolean <inline>
+  local format_bytes_pointer: *[0]*cchar = (@*[0]*cchar)(format_bytes_out)
+  local source: *[0]cint = (@*[0]cint)(format)
+  local byte_length: csize = wcsrtombs(nilptr, &source, 0, nilptr)
+  if byte_length == ~0_csize then
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return false
+  end
+  if byte_length > (MAX_CSIZE - 1) // 2 then
+    nelibc_errno_location()[0] = 75 -- EOVERFLOW
+    return false
+  end
+  local raw_format: *[0]cchar = (@*[0]cchar)(nelibc_malloc(byte_length + 1))
+  if raw_format == nilptr then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return false
+  end
+  source = (@*[0]cint)(format)
+  if wcsrtombs(raw_format, &source, byte_length + 1, nilptr) == ~0_csize then
+    nelibc_free((@pointer)(raw_format))
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return false
+  end
+  local converted_format: *[0]cchar = (@*[0]cchar)(
+      nelibc_malloc(byte_length * 2 + 1))
+  if converted_format == nilptr then
+    nelibc_free((@pointer)(raw_format))
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return false
+  end
+  local input_index: csize = 0
+  local output_index: csize = 0
+  while input_index < byte_length do
+    if raw_format[input_index] ~= 37 then
+      converted_format[output_index] = raw_format[input_index]
+      input_index = input_index + 1
+      output_index = output_index + 1
+      continue
+    end
+    local spec_start: csize = input_index
+    input_index = input_index + 1
+    if input_index < byte_length and raw_format[input_index] == 37 then
+      converted_format[output_index] = 37
+      converted_format[output_index + 1] = 37
+      input_index = input_index + 1
+      output_index = output_index + 2
+      continue
+    end
+    local cursor: csize = input_index
+    local narrow_modifier: boolean = false
+    local long_modifier: boolean = false
+    local long_double_modifier: boolean = false
+    while cursor < byte_length do
+      local character: byte = (@byte)(raw_format[cursor])
+      if character == 104 then narrow_modifier = true end
+      if character == 108 then long_modifier = true end
+      if character == 76 then long_double_modifier = true end
+      if character == 100 or character == 105 or character == 111 or
+          character == 117 or character == 120 or character == 88 or
+          character == 102 or character == 70 or character == 101 or
+          character == 69 or character == 103 or character == 71 or
+          character == 97 or character == 65 or character == 99 or
+          character == 115 or character == 112 or character == 110 then break end
+      cursor = cursor + 1
+    end
+    if cursor >= byte_length then
+      while spec_start < byte_length do
+        converted_format[output_index] = raw_format[spec_start]
+        output_index = output_index + 1
+        spec_start = spec_start + 1
+      end
+      input_index = byte_length
+      break
+    end
+    if long_double_modifier then
+      nelibc_free((@pointer)(converted_format))
+      nelibc_free((@pointer)(raw_format))
+      nelibc_errno_location()[0] = 22 -- EINVAL: long-double formatting is not implemented yet
+      return false
+    end
+    while spec_start < cursor do
+      converted_format[output_index] = raw_format[spec_start]
+      output_index = output_index + 1
+      spec_start = spec_start + 1
+    end
+    local conversion: byte = (@byte)(raw_format[cursor])
+    if long_modifier and conversion == 115 then conversion = 83 end
+    if not narrow_modifier and conversion == 99 then conversion = 67 end
+    converted_format[output_index] = (@cchar)(conversion)
+    output_index = output_index + 1
+    input_index = cursor + 1
+  end
+  converted_format[output_index] = 0
+  nelibc_free((@pointer)(raw_format))
+  format_bytes_pointer[0] = converted_format
+  return true
+end
+
 local function vfprintf(stream: *FILE, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vfprintf'>
   local format: *[0]cchar = (@*[0]cchar)(format)
   if stream == nilptr or format == nilptr then
@@ -1479,7 +1628,19 @@ local function vfprintf(stream: *FILE, format: cstring <const>, arguments: cvali
     index = index + 1
     local field_start: csize = written
     if conversion == 110 then -- n
-      nelibc_store_format_count(nelibc_va_arg_pointer(arguments), length_mod, written)
+      local count: csize = written
+      if (stream.flags & WIDE_FORMAT) ~= 0 then
+        local bytes: *[0]cchar = (@*[0]cchar)(stream.user_buffer)
+        if stream.write_length < stream.buffer_size then bytes[stream.write_length] = 0 end
+        local prefix: *[0]cchar = bytes
+        local state: [16]culong = {}
+        count = mbsrtowcs(nilptr, &prefix, 0, (@pointer)(&state[0]))
+        if count == ~0_csize then
+          stream_unlock(stream)
+          return -1
+        end
+      end
+      nelibc_store_format_count(nelibc_va_arg_pointer(arguments), length_mod, count)
     elseif conversion == 115 then -- s
       local string_pointer: pointer = nelibc_va_arg_pointer(arguments)
       if string_pointer == nilptr then string_pointer = (@pointer)('(null)'_cstring) end
@@ -1494,12 +1655,59 @@ local function vfprintf(stream: *FILE, format: cstring <const>, arguments: cvali
       if not left_align then written = written + emit_padding(stream, 32, pad) end
       written = written + emit_bytes(stream, string_pointer, string_length)
       if left_align then written = written + emit_padding(stream, 32, pad) end
+    elseif conversion == 83 then -- internal wide-string conversion for vswprintf
+      local wide_pointer: *[0]cint = (@*[0]cint)(nelibc_va_arg_pointer(arguments))
+      local converted_bytes: *[0]cchar = nilptr
+      local byte_length: csize = 0
+      local wide_length: csize = 0
+      local owned_bytes: boolean = wide_pointer ~= nilptr
+      if wide_pointer == nilptr then
+        converted_bytes = (@*[0]cchar)('(null)'_cstring)
+        byte_length = 6
+        wide_length = 6
+      elseif not format_wide_string(wide_pointer, precision_set, precision,
+          &converted_bytes, &byte_length, &wide_length) then
+        stream.flags = stream.flags | STREAM_ERROR
+        stream_unlock(stream)
+        return -1
+      end
+      local pad: csize = 0
+      if width > (@cint)(wide_length) then pad = (@csize)(width - (@cint)(wide_length)) end
+      if not left_align then written = written + emit_padding(stream, 32, pad) end
+      if emit_bytes(stream, (@pointer)(converted_bytes), byte_length) ~= byte_length then
+        if owned_bytes then nelibc_free((@pointer)(converted_bytes)) end
+        stream_unlock(stream)
+        return -1
+      end
+      written = written + byte_length
+      if left_align then written = written + emit_padding(stream, 32, pad) end
+      if owned_bytes then nelibc_free((@pointer)(converted_bytes)) end
     elseif conversion == 99 then -- c
       local character: byte = (@byte)(nelibc_va_arg_int(arguments))
       local pad: csize = 0
       if width > 1 then pad = (@csize)(width - 1) end
       if not left_align then written = written + emit_padding(stream, 32, pad) end
       written = written + emit_padding(stream, character, 1)
+      if left_align then written = written + emit_padding(stream, 32, pad) end
+    elseif conversion == 67 then -- internal wide-character conversion for vswprintf
+      local wide: cint = nelibc_va_arg_int(arguments)
+      local encoded: [64]cchar = {}
+      local state: [16]culong = {}
+      local encoded_length: csize = wcrtomb((@*[0]cchar)(&encoded[0]), wide,
+          (@pointer)(&state[0]))
+      if encoded_length == ~0_csize then
+        stream.flags = stream.flags | STREAM_ERROR
+        stream_unlock(stream)
+        return -1
+      end
+      local pad: csize = 0
+      if width > 1 then pad = (@csize)(width - 1) end
+      if not left_align then written = written + emit_padding(stream, 32, pad) end
+      if emit_bytes(stream, (@pointer)(&encoded[0]), encoded_length) ~= encoded_length then
+        stream_unlock(stream)
+        return -1
+      end
+      written = written + encoded_length
       if left_align then written = written + emit_padding(stream, 32, pad) end
     elseif conversion == 97 or conversion == 65 then -- a/A
       local bits: culonglong = nelibc_double_bits(nelibc_va_arg_double(arguments))
@@ -2305,6 +2513,92 @@ local function vsnprintf(buffer: *[0]cchar, size: csize, format: cstring <const>
     if terminator >= size then terminator = size - 1 end
     buffer[terminator] = 0
   end
+  return result
+end
+
+local function vswprintf(buffer: *[0]cint, size: csize, format: *[0]cint <const>,
+    arguments: cvalist): cint <cexport, codename 'vswprintf'>
+  if format == nilptr or (size ~= 0 and buffer == nilptr) then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local format_bytes: *[0]cchar = nilptr
+  if not format_wide_format(format, &format_bytes) then return -1 end
+  local count_arguments: cvalist
+  nelibc_va_copy(count_arguments, arguments)
+  local byte_count: cint = vsnprintf(nilptr, 0, (@cstring)(format_bytes), count_arguments)
+  C.va_end(count_arguments)
+  if byte_count < 0 then
+    nelibc_free((@pointer)(format_bytes))
+    return -1
+  end
+  local allocation_size: csize = (@csize)(byte_count) + 1
+  local output_bytes: *[0]cchar = (@*[0]cchar)(nelibc_malloc(allocation_size))
+  if output_bytes == nilptr then
+    nelibc_free((@pointer)(format_bytes))
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return -1
+  end
+  local output_stream: FILE = {
+    fd = -2, flags = WRITABLE | WIDE_FORMAT,
+    buffer_size = allocation_size, user_buffer = (@*byte)(output_bytes)
+  }
+  local write_arguments: cvalist
+  nelibc_va_copy(write_arguments, arguments)
+  local byte_result: cint = vfprintf(&output_stream, (@cstring)(format_bytes), write_arguments)
+  C.va_end(write_arguments)
+  nelibc_free((@pointer)(format_bytes))
+  if byte_result < 0 then
+    nelibc_free((@pointer)(output_bytes))
+    return -1
+  end
+  output_bytes[output_stream.write_length] = 0
+  local source: *[0]cchar = output_bytes
+  local state: [16]culong = {}
+  local wide_count: csize = mbsrtowcs(nilptr, &source, 0, (@pointer)(&state[0]))
+  if wide_count == ~0_csize then
+    nelibc_free((@pointer)(output_bytes))
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return -1
+  end
+  if wide_count > 0x7FFFFFFF_csize then
+    nelibc_free((@pointer)(output_bytes))
+    nelibc_errno_location()[0] = 75 -- EOVERFLOW
+    return -1
+  end
+  if wide_count >= size then
+    if size ~= 0 then
+      source = output_bytes
+      state[0] = 0
+      local partial: csize = mbsrtowcs(buffer, &source, size, (@pointer)(&state[0]))
+      if partial == ~0_csize then
+        nelibc_free((@pointer)(output_bytes))
+        nelibc_errno_location()[0] = 84 -- EILSEQ
+        return -1
+      end
+      buffer[size - 1] = 0
+    end
+    nelibc_free((@pointer)(output_bytes))
+    nelibc_errno_location()[0] = 7 -- E2BIG
+    return -1
+  end
+  source = output_bytes
+  state[0] = 0
+  local converted: csize = mbsrtowcs(buffer, &source, size, (@pointer)(&state[0]))
+  nelibc_free((@pointer)(output_bytes))
+  if converted == ~0_csize then
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return -1
+  end
+  return (@cint)(converted)
+end
+
+local function swprintf(buffer: *[0]cint, size: csize, format: *[0]cint <const>,
+    ...: cvarargs): cint <cexport, codename 'swprintf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vswprintf(buffer, size, format, arguments)
+  C.va_end(arguments)
   return result
 end
 

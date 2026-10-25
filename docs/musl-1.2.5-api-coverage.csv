@@ -1275,7 +1275,7 @@ strxfrm_l,string.h,,,not-declared
 swab,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 swapoff,sys/swap.h,,,not-declared
 swapon,sys/swap.h,,,not-declared
-swprintf,wchar.h,,,not-declared
+swprintf,wchar.h,wchar.h,,host-delegated
 swscanf,wchar.h,,,not-declared
 symlink,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 symlinkat,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1389,7 +1389,7 @@ vscanf,stdio.h,,,not-declared
 vsnprintf,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 vsprintf,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 vsscanf,stdio.h,,,not-declared
-vswprintf,wchar.h,,,not-declared
+vswprintf,wchar.h,wchar.h,,host-delegated
 vswscanf,wchar.h,,,not-declared
 vsyslog,syslog.h,,,not-declared
 vwarn,err.h,,,not-declared
