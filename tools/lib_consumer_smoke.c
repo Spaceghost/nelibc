@@ -1811,6 +1811,12 @@ int main(int argc, char **argv) {
       towlower_l(0x391, ctype_c) != 0x391 ||
       towlower_l(0x391, ctype_utf8) != 0x3b1 ||
       towupper_l(0x3b1, ctype_utf8) != 0x391 ||
+      wcscasecmp_l(L"AbC", L"aBc", ctype_c) != 0 ||
+      wcscasecmp_l(L"Ä", L"ä", ctype_utf8) != 0 ||
+      wcscasecmp_l(L"Ä", L"ä", ctype_c) == 0 ||
+      wcsncasecmp_l(L"Äx", L"äy", 1, ctype_utf8) != 0 ||
+      wcsncasecmp_l(L"Äx", L"äy", 2, ctype_utf8) == 0 ||
+      wcsncasecmp_l(L"Ab", L"aB", 0, ctype_utf8) != 0 ||
       iswalpha_l(0x391, ctype_current) == 0)
     return 80;
   wchar_t wide_key[8];

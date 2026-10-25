@@ -62,18 +62,18 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,471 APIs: 799 exported by Nelibc in at least
+The current snapshot contains 1,471 APIs: 801 exported by Nelibc in at least
 one tested hybrid profile, 212 intentionally delegated to the host in hybrid
-profiles, and 460 not declared by Nelibc. Every declared API in this pinned
+profiles, and 458 not declared by Nelibc. Every declared API in this pinned
 baseline is either exported by at least one hybrid archive or intentionally
 delegated to its host. The separate seven-profile inventory tracks per-profile
 gaps. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 460 undeclared entries remain visible as unimplemented
+intentional omission; the 458 undeclared entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
 No real-valued `math.h` APIs in this pinned musl baseline remain undeclared.
-The largest remaining groups are wide characters (15), network database APIs
+The largest remaining groups are wide characters (13), network database APIs
 (32), stdlib (30), unistd (29), and stdio (28). The pthread rows without
 Nelibc declarations are two private musl cleanup helper symbols. Hybrid `fork`
 and `pthread_atfork` are intentionally host-delegated so host fork handlers
@@ -93,6 +93,11 @@ They support integer and double conversions, `%s`/`%c` wide arguments,
 wide-character `%n` counts, and report `E2BIG` on truncation. `%L` long-double
 conversions are rejected with `EINVAL` until the formatter supports them.
 Hybrid archives delegate both functions to the selected host libc.
+
+`wcscasecmp_l` and `wcsncasecmp_l` apply the supplied locale's wide lowercase
+mapping while comparing, including bounded comparisons. The consumer matrix
+checks ASCII folding, UTF-8 Greek and German case pairs, the C locale's
+non-ASCII behavior, and zero/short bounds across hybrid and standalone builds.
 
 Nelua implements `wcstof`, `wcstod`, and `wcstold` in all four hybrid
 profiles and the standalone profiles. They convert through the active

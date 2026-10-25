@@ -13,6 +13,7 @@ local function nelibc_tcc_memmove_512(dest: pointer, src: pointer <const>, n: cs
 local function nelibc_x86_64_sse_memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
 local function nelibc_tcc_memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
 local function towlower(value: cwchar_t): cwchar_t <cimport> end
+local function towlower_l(value: cwchar_t, locale: pointer): cwchar_t <cimport> end
 local function wcwidth(value: cwchar_t): cint <cimport> end
 local function nelibc_tcc_sse_memcmp(left: pointer <const>, right: pointer <const>, n: csize): cint <cimport> end
 local function nelibc_x86_64_sse_memcmp(left: pointer <const>, right: pointer <const>, n: csize): cint <cimport> end
@@ -647,6 +648,31 @@ local function wcsncasecmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <cons
   while index < n do
     local x = towlower(left[index])
     local y = towlower(right[index])
+    if x ~= y then return x - y end
+    if x == 0 then return 0 end
+    index = index + 1
+  end
+  return 0
+end
+
+local function wcscasecmp_l(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>,
+    locale: pointer): cint <cexport, codename 'wcscasecmp_l'>
+  local index: csize = 0
+  while true do
+    local x = towlower_l(left[index], locale)
+    local y = towlower_l(right[index], locale)
+    if x ~= y then return x - y end
+    if x == 0 then return 0 end
+    index = index + 1
+  end
+end
+
+local function wcsncasecmp_l(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>,
+    n: csize, locale: pointer): cint <cexport, codename 'wcsncasecmp_l'>
+  local index: csize = 0
+  while index < n do
+    local x = towlower_l(left[index], locale)
+    local y = towlower_l(right[index], locale)
     if x ~= y then return x - y end
     if x == 0 then return 0 end
     index = index + 1

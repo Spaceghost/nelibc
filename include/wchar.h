@@ -53,6 +53,8 @@ int wcscmp(const wchar_t *, const wchar_t *);
 int wcsncmp(const wchar_t *, const wchar_t *, size_t);
 int wcscasecmp(const wchar_t *, const wchar_t *);
 int wcsncasecmp(const wchar_t *, const wchar_t *, size_t);
+int wcscasecmp_l(const wchar_t *, const wchar_t *, locale_t);
+int wcsncasecmp_l(const wchar_t *, const wchar_t *, size_t, locale_t);
 int wcwidth(wchar_t);
 int wcswidth(const wchar_t *, size_t);
 float wcstof(const wchar_t *restrict, wchar_t **restrict);
