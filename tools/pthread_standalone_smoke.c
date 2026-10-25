@@ -30,6 +30,8 @@ static volatile int detached_release;
 static volatile int pthread_kill_signal;
 static int atfork_order[16];
 static int atfork_order_count;
+static _Atomic int atfork_registration_stop;
+static _Atomic int atfork_registration_count;
 static volatile int detached_done;
 static _Atomic int join_release;
 static _Atomic int cancel_join_started;
@@ -195,6 +197,16 @@ static void atfork_parent_a(void) { atfork_order_add(3); }
 static void atfork_parent_b(void) { atfork_order_add(4); }
 static void atfork_child_a(void) { atfork_order_add(5); }
 static void atfork_child_b(void) { atfork_order_add(6); }
+static void *atfork_registration_worker(void *unused) {
+  (void)unused;
+  while (!atomic_load_explicit(&atfork_registration_stop, memory_order_acquire)) {
+    if (pthread_atfork(NULL, NULL, NULL) != 0) return (void *)1;
+    atomic_fetch_add_explicit(&atfork_registration_count, 1, memory_order_relaxed);
+    struct timespec pause = {.tv_sec = 0, .tv_nsec = 100000};
+    nanosleep(&pause, NULL);
+  }
+  return NULL;
+}
 
 static pthread_key_t initial_exit_key;
 
@@ -1919,6 +1931,30 @@ int main(void) {
       munmap((void *)initial_exit_marker, sizeof(*initial_exit_marker)) != 0)
     return 218;
   atfork_order_count = 0;
+
+  atomic_store_explicit(&atfork_registration_stop, 0, memory_order_relaxed);
+  atomic_store_explicit(&atfork_registration_count, 0, memory_order_relaxed);
+  pthread_t atfork_registrar;
+  if (pthread_create(&atfork_registrar, NULL, atfork_registration_worker, NULL) != 0)
+    return 285;
+  int concurrent_fork_failed = 0;
+  for (int iteration = 0; iteration < 32; ++iteration) {
+    pid_t concurrent_child = fork();
+    if (concurrent_child == 0) _exit(0);
+    int concurrent_status = -1;
+    if (concurrent_child < 0 ||
+        waitpid(concurrent_child, &concurrent_status, 0) != concurrent_child ||
+        concurrent_status != 0) {
+      concurrent_fork_failed = 1;
+      break;
+    }
+  }
+  atomic_store_explicit(&atfork_registration_stop, 1, memory_order_release);
+  void *atfork_registration_result = NULL;
+  if (pthread_join(atfork_registrar, &atfork_registration_result) != 0 ||
+      concurrent_fork_failed || atfork_registration_result != NULL ||
+      atomic_load_explicit(&atfork_registration_count, memory_order_relaxed) == 0)
+    return 286;
 
   volatile int *initial_cancel_marker = mmap(0, sizeof(*initial_cancel_marker),
       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);

@@ -74,6 +74,9 @@ still succeeds and preserves the caller's `errno`. The standalone Zig, GCC,
 and TinyCC matrix passed, followed by five repeat runs per compiler and the
 optional user-namespace RESETIDS check. This covers one deterministic `EINTR`
 path; it does not replace a broader process/signal/fork interaction audit.
+The standalone pthread smoke also registers no-op atfork handlers from a worker
+while the initial thread performs 32 forks. Zig, GCC, and TinyCC smoke binaries
+pass this concurrent registry/snapshot stress.
 
 ### Practical completeness estimate
 
