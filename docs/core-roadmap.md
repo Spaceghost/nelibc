@@ -331,8 +331,10 @@ musl export set.
   delivery for all five standard exceptions through x87-only and SSE-only trap
   paths, with only the selected exception unmasked in each unit;
   they also verify `feupdateenv` merges newly raised flags into the restored
-  environment and that an invalid rounding mode leaves the active mode intact.
-  Arbitrary saved-environment corruption cases still need validation. Bit-level
+  environment, `feholdexcept` masks traps while clearing flags, and an invalid
+  rounding mode leaves the active mode intact. `fesetenv` requires a valid
+  environment saved by `fegetenv`/`feholdexcept` or a defined environment
+  macro; malformed `fenv_t` bytes are outside its contract. Bit-level
   `ilogb`/`logb` cover normal/subnormal decomposition;
   `nextafter` advances binary32/binary64 encodings directly and handles signed
   zero and NaN values; `nextafter` and `nextafterf` explicitly raise

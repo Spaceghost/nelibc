@@ -148,6 +148,20 @@ int main(void) {
     if (child < 0 || waitpid(child, &child_status, 0) != child ||
         !WIFSIGNALED(child_status) || WTERMSIG(child_status) != SIGFPE) return 218;
   }
+  pid_t held_child = fork();
+  if (held_child == 0) {
+    fenv_t held_environment;
+    if (fesetenv(FE_NOMASK_ENV) != 0) _exit(230);
+    if (feholdexcept(&held_environment) != 0 ||
+        fetestexcept(FE_ALL_EXCEPT) != 0) _exit(231);
+    if (feraiseexcept(FE_INVALID) != 0 ||
+        fetestexcept(FE_ALL_EXCEPT) != FE_INVALID) _exit(232);
+    if (fesetenv(&held_environment) != 0) _exit(233);
+    _exit(0);
+  }
+  int held_child_status = 0;
+  if (held_child < 0 || waitpid(held_child, &held_child_status, 0) != held_child ||
+      !WIFEXITED(held_child_status) || WEXITSTATUS(held_child_status) != 0) return 234;
 
   const long double fma_x = 1.0L + 0x1p-63L;
   const long double fma_y = 1.0L - 0x1p-63L;

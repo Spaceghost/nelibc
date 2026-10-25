@@ -224,7 +224,9 @@ synchronize x87 and SSE exception flags and rounding modes. `FE_NOMASK_ENV`
 also supports the GNU all-traps-enabled environment; smoke tests verify
 `SIGFPE` delivery for each standard exception through x87 and SSE. Hybrid builds
 keep the host `fenv_t` ABI and use the host fenv implementation. Less-common
-environment edge cases and most of the C math API remain incomplete.
+environment edge cases and most of the C math API remain incomplete. Pass
+`fesetenv` only a snapshot from `fegetenv`/`feholdexcept` or a defined macro
+such as `FE_DFL_ENV`; `fenv_t` is opaque and arbitrary edited bytes are invalid.
 
 `cabs*`, `creal*`, `cimag*`, `conj*`, `cproj*`, `carg*`, `csqrt*`, `cexp*`,
 `clog*`, `csin*`, `ccos*`, `csinh*`, `ccosh*`, `ctan*`, `ctanh*`, `catan*`,
