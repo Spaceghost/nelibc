@@ -1090,9 +1090,16 @@ int main(int argc, char **argv) {
       observed_action.sa_handler != smoke_signal_handler) return 126;
   if (sigaction(SIGUSR2, &previous_action, NULL) != 0) return 127;
   sigset_t pending_set;
-  if (sigemptyset(&pending_set) != 0) return 121;
+  memset(&pending_set, 0xA5, sizeof pending_set);
   if (sigpending(&pending_set) != 0) return 121;
   if (sigismember(&pending_set, SIGUSR1) != 1) return 122;
+  const unsigned long *pending_words = (const unsigned long *)&pending_set;
+  for (size_t pending_word = 1;
+       pending_word < sizeof pending_set / sizeof pending_words[0];
+       ++pending_word) {
+    if (pending_words[pending_word] != 0) return 137;
+  }
+  if ((pending_words[0] & (1UL << 31)) != 0) return 138;
   errno = 0;
   if (raise(NSIG) != -1 || errno != EINVAL) return 123;
   char cwd[4096];

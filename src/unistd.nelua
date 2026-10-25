@@ -5201,10 +5201,20 @@ local function sigprocmask(how: cint, set: pointer <const>, oldset: pointer): ci
 end
 
 local function sigpending(set: pointer): cint <cexport, codename 'sigpending'>
-  return (@cint)(syscall_result(nelibc_raw_syscall6(
-    127_culong, (@culong)((@usize)(set)), 8_culong, 0_culong,
-    0_culong, 0_culong, 0_culong
-  )))
+  if set == nilptr then
+    nelibc_errno_location()[0] = 14_cint -- EFAULT
+    return -1_cint
+  end
+  local kernel_set: culong = 0_culong
+  local result = syscall_result(nelibc_raw_syscall6(
+    127_culong, (@culong)((@usize)(&kernel_set)), 8_culong,
+    0_culong, 0_culong, 0_culong, 0_culong
+  ))
+  if result ~= 0 then return (@cint)(result) end
+  local public_set: *[0]culong = (@*[0]culong)(set)
+  for index = 0, 15 do public_set[index] = 0_culong end
+  public_set[0] = kernel_set & ~(1_culong << 31)
+  return 0_cint
 end
 
 local function sigismember(set: pointer <const>, signal: cint): cint <cexport, codename 'sigismember'>

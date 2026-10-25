@@ -857,6 +857,8 @@ and Linux-specific `gettid`,
 translating raw kernel errors into
 `-1` plus the host libc's thread-local `errno`. Its remaining
 bootstrap imports are `__errno_location` and the assembly syscall shim.
+`sigpending` writes a fully initialized public `sigset_t` from the kernel's
+8-byte signal mask and hides Nelibc's reserved cancellation signal.
 `include/sys/mman.h` exposes the implemented mapping calls through their
 standard header. Hybrid builds inherit the host declarations; standalone builds
 provide Linux protection, mapping, huge-page, sync, lock, remapping, and advice
