@@ -11,8 +11,8 @@ archive; it does not certify every behavior required by C or POSIX.
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double `sqrtl`, `nanl`, `fabsl`, `copysignl`, `fmal`, `tgammal`, `lgammal`, `lgammal_r`, `erfl`, `erfcl`, `exp10l`, `pow10l`, `fmodl`, `remainderl`, `remquol`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `nexttowardl`, `atanl`, `atan2l`, `asinl`, `acosl`, `asinhl`, `acoshl`, `atanhl`, `powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`, `sincosl`, `tanl`, `tanhl`, `sinhl`, and `coshl`, plus `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; internal classification and sign-bit functions now cover binary32/64/80; all standard fenv entry points are implemented for standalone x86-64, while hybrid fenv delegates to the host | Expand long-double math coverage, fenv edge coverage, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
-| P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 633 undeclared candidates and record explicit intentional omissions |
+| P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), with ASCII-only case folding and partial width ranges; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 631 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -104,15 +104,16 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 888 declared names. Each of the four
-  hybrid archives exports 756; 114 APIs are marked as host-delegated and 18
+- The regenerated API inventory has 890 declared names. Each of the four
+  hybrid archives exports 757; 115 APIs are marked as host-delegated and 18
   have declared-but-unexported hybrid gaps. The manifest also contains one
   implementation-only entry. This is an inventory signal, not a completeness
-  percentage; see `build/api-coverage.csv` after `make api-coverage`.
+  percentage; the manifest currently has two implementation-only rows. See
+  `build/api-coverage.csv` after `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 712
-  in at least one hybrid profile, delegates 126 to a hybrid host, and does not
-  yet declare 633. The largest undeclared groups are wide characters (60), stdlib, unistd, and network database APIs. These
+  that are also exported by the pinned release archives: Nelibc exports 713
+  in at least one hybrid profile, delegates 127 to a hybrid host, and does not
+  yet declare 631. The largest undeclared groups are wide characters (58), stdlib, unistd, and network database APIs. These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
   command.
@@ -130,6 +131,11 @@ musl export set.
   character data. Their ASCII comparison and bounded-prefix behavior pass the
   differential matrix and all seven consumer profiles. Unicode case tables
   remain a locale/data gap.
+- `wcswidth` is implemented in Nelua and uses the selected host's `wcwidth` in
+  hybrid mode. The standalone locale backend provides C and C.UTF-8 behavior
+  for ASCII, common combining marks, CJK, and emoji; a complete generated
+  Unicode width table remains required. `wcwidth` is therefore recorded as
+  hybrid host-delegated, not as a Nelibc hybrid export.
 - Time APIs are already implemented across `src/unistd.nelua` and
   `src/stdlib.nelua`: clocks and sleeps, UTC/local conversion, `mktime`,
   `timegm`, `strftime`, `strptime`, and the `asctime`/`ctime` family. The

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <locale.h>
 #include <wchar.h>
 
 #define CASES 256
@@ -39,6 +40,17 @@ static void make_string(wchar_t *text, size_t *length) {
 }
 
 int main(void) {
+  if (setlocale(LC_CTYPE, "C") == NULL) return 3;
+  printf("width-C:%d,%d,%d,%d;", wcwidth(0), wcwidth(L'A'),
+      wcwidth(L'\t'), wcwidth(0x4e00));
+  if (setlocale(LC_CTYPE, "C.UTF-8") != NULL) {
+    const wchar_t width_text[] = {L'A', 0x301, 0x4e00, 0};
+    printf("width-utf8:%d,%d,%d,%d,%d;", wcwidth(L'A'), wcwidth(0x301),
+        wcwidth(0x4e00), wcswidth(width_text, 3), wcswidth(width_text, 2));
+  } else {
+    puts("width-utf8:unavailable;");
+  }
+  if (setlocale(LC_CTYPE, "C") == NULL) return 3;
   static const wchar_t accept[] = {L'A', L'C', 0x100, 0};
   static const wchar_t reject[] = {L'B', L'D', 0x101, 0};
   static const wchar_t delimiters[] = {L' ', 0x100, 0};

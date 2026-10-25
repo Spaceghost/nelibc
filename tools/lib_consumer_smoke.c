@@ -866,6 +866,11 @@ int main(int argc, char **argv) {
   if (locale_smoke_result != 0) return 84 + locale_smoke_result;
   if (setlocale(LC_CTYPE, "C.UTF-8") == NULL) return 34;
   if (btowc(0xc3) != WEOF || wctob(0xe9) != -1) return 76;
+  const wchar_t width_text[] = {L'A', 0x301, 0x4e00, 0};
+  if (wcwidth(L'A') != 1 || wcwidth(0x301) != 0 || wcwidth(0x4e00) != 2 ||
+      wcswidth(width_text, 3) != 3 || wcswidth(width_text, 2) != 1 ||
+      wcwidth(L'\t') != -1)
+    return 77;
   const char utf8_text[] = "\xc3\xa9";
   wchar_t unicode_character = 0;
   char utf8_output[4] = {0};
@@ -949,7 +954,9 @@ int main(int argc, char **argv) {
       (unsigned char)bounded_output[2] != 0xa9 || bounded_output[3] != 0 ||
       bounded_wide_cursor != NULL)
     return 73;
-  if (setlocale(LC_CTYPE, "C") == NULL || mbtowc(&unicode_character, utf8_text, 2) != -1)
+  if (setlocale(LC_CTYPE, "C") == NULL || mbtowc(&unicode_character, utf8_text, 2) != -1 ||
+      wcwidth(0x4e00) != -1 || wcwidth(L'A') != 1 ||
+      wcswidth(width_text, 3) != -1)
     return 35;
 #endif
   if (system(NULL) == 0) return 10;

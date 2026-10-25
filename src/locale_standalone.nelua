@@ -9,6 +9,41 @@ local function towlower(value: cwchar_t): cwchar_t <cexport, codename 'towlower'
   return value
 end
 
+local function nelibc_multibyte_mode(): cint <cimport> end
+
+local function wcwidth(value: cwchar_t): cint <cexport, codename 'wcwidth'>
+  if value == 0 then return 0 end
+  if value < 0 or value > 1114111 or (value >= 55296 and value <= 57343) then return -1 end
+  if value < 32 or (value >= 127 and value <= 159) then return -1 end
+  if nelibc_multibyte_mode() == 0 then
+    if value < 127 then return 1 end
+    return -1
+  end
+
+  -- Common Unicode combining ranges used by C.UTF-8. The complete UCD width
+  -- table is still needed for all scripts and marks (tracked in the roadmap).
+  if (value >= 768 and value <= 879) or
+      (value >= 6832 and value <= 6911) or
+      (value >= 7616 and value <= 7679) or
+      (value >= 8400 and value <= 8447) or
+      (value >= 65024 and value <= 65039) or
+      (value >= 65056 and value <= 65071) or
+      (value >= 917760 and value <= 917999) then return 0 end
+
+  if (value >= 4352 and value <= 4607) or
+      value == 9001 or value == 9002 or
+      (value >= 11904 and value <= 42191 and value ~= 12351) or
+      (value >= 44032 and value <= 55203) or
+      (value >= 63744 and value <= 64255) or
+      (value >= 65040 and value <= 65049) or
+      (value >= 65072 and value <= 65135) or
+      (value >= 65281 and value <= 65376) or
+      (value >= 65504 and value <= 65510) or
+      (value >= 127744 and value <= 129791) or
+      (value >= 131072 and value <= 262141) then return 2 end
+  return 1
+end
+
 local function nelibc_standalone_setlocale(category: cint,
     name: *[0]cchar <const>): *[0]cchar <cimport> end
 

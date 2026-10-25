@@ -13,6 +13,7 @@ local function nelibc_tcc_memmove_512(dest: pointer, src: pointer <const>, n: cs
 local function nelibc_x86_64_sse_memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
 local function nelibc_tcc_memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
 local function towlower(value: cwchar_t): cwchar_t <cimport> end
+local function wcwidth(value: cwchar_t): cint <cimport> end
 local function nelibc_tcc_sse_memcmp(left: pointer <const>, right: pointer <const>, n: csize): cint <cimport> end
 local function nelibc_x86_64_sse_memcmp(left: pointer <const>, right: pointer <const>, n: csize): cint <cimport> end
 ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
@@ -651,6 +652,19 @@ local function wcsncasecmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <cons
     index = index + 1
   end
   return 0
+end
+
+local function wcswidth(text: *[0]cwchar_t <const>, n: csize): cint
+    <cexport, codename 'wcswidth'>
+  local columns: cint = 0
+  local index: csize = 0
+  while index < n and text[index] ~= 0 do
+    local width = wcwidth(text[index])
+    if width < 0 or columns > 2147483647 - width then return -1 end
+    columns = columns + width
+    index = index + 1
+  end
+  return columns
 end
 
 local function wcschr(text: *[0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'wcschr'>

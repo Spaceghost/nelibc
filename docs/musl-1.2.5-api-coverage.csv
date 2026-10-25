@@ -1443,7 +1443,7 @@ wcstoul,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstoull,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstoumax,inttypes.h,,,not-declared
 wcswcs,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-wcswidth,wchar.h,,,not-declared
+wcswidth,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcsxfrm,wchar.h,,,not-declared
 wcsxfrm_l,wchar.h,,,not-declared
 wctob,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1452,7 +1452,7 @@ wctrans,wctype.h,,,not-declared
 wctrans_l,wctype.h,,,not-declared
 wctype,wchar.h;wctype.h,,,not-declared
 wctype_l,wctype.h,,,not-declared
-wcwidth,wchar.h,,,not-declared
+wcwidth,wchar.h,wchar.h,,host-delegated
 wmemchr,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wmemcmp,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wmemcpy,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

@@ -40,7 +40,7 @@ HOST_DELEGATED = {
         "pthread_getschedparam", "pthread_setschedparam", "pthread_setschedprio",
         "pthread_once",
         "pthread_key_create", "pthread_key_delete", "pthread_getspecific",
-        "pthread_setspecific",
+        "pthread_setspecific", "wcwidth",
         "pthread_mutexattr_destroy", "pthread_mutexattr_settype",
         "pthread_mutexattr_gettype", "pthread_mutexattr_setpshared",
         "pthread_mutexattr_getpshared", "pthread_mutexattr_setrobust",
