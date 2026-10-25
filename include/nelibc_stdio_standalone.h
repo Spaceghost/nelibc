@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdarg.h>
+#include <wchar.h>
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
@@ -27,6 +28,11 @@ typedef struct nelibc_FILE {
   unsigned char buffer[4096];
   unsigned char **memstream_buffer;
   size_t *memstream_size;
+  int orientation;
+  unsigned long wide_read_state[16];
+  unsigned long wide_write_state[16];
+  int has_wide_pushback;
+  int wide_pushback_value;
 } FILE;
 
 typedef long fpos_t;

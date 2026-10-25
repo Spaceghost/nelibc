@@ -72,6 +72,8 @@ extern int __nelibc_tz_file_signature(const char *path, char signature[56]);
 extern int __nelibc_set_localtime_path(const char *path);
 #endif
 #include <stdio.h>
+#include <wchar.h>
+#include <locale.h>
 #include <stdlib.h>
 #include <math.h>
 #ifndef NELIBC_STANDALONE
@@ -127,7 +129,7 @@ static int select_non_dot_entries(const struct dirent *entry) {
 }
 
 #ifdef NELIBC_STANDALONE
-_Static_assert(sizeof(FILE) == 4192, "standalone FILE ABI size");
+_Static_assert(sizeof(FILE) == 4464, "standalone FILE ABI size");
 _Static_assert(offsetof(FILE, pushback_value) == 8, "standalone FILE pushback offset");
 _Static_assert(offsetof(FILE, read_position) == 16, "standalone FILE read offset");
 _Static_assert(offsetof(FILE, buffer_size) == 56, "standalone FILE capacity offset");
@@ -136,6 +138,11 @@ _Static_assert(offsetof(FILE, next) == 72, "standalone FILE link offset");
 _Static_assert(offsetof(FILE, buffer) == 80, "standalone FILE buffer offset");
 _Static_assert(offsetof(FILE, memstream_buffer) == 4176, "standalone memstream buffer offset");
 _Static_assert(offsetof(FILE, memstream_size) == 4184, "standalone memstream size offset");
+_Static_assert(offsetof(FILE, orientation) == 4192, "standalone FILE orientation offset");
+_Static_assert(offsetof(FILE, wide_read_state) == 4200, "standalone FILE read state offset");
+_Static_assert(offsetof(FILE, wide_write_state) == 4328, "standalone FILE write state offset");
+_Static_assert(offsetof(FILE, has_wide_pushback) == 4456, "standalone FILE wide pushback flag offset");
+_Static_assert(offsetof(FILE, wide_pushback_value) == 4460, "standalone FILE wide pushback value offset");
 
 static int smoke_vfprintf(FILE *stream, const char *format, ...) {
   va_list arguments;
@@ -1872,6 +1879,7 @@ int main(int argc, char **argv) {
   if (setvbuf(stdout, NULL, _IOFBF, 4096) != 0 || printf("before") < 0) return 167;
 #endif
   if (puts("puts") != 0 || putchar('!') != '!') return 164;
+  if (fwide(stdout, 0) >= 0 || fwide(stdout, 1) >= 0) return 287;
   if (putchar_unlocked('U') != 'U' || fputs_unlocked("V", stdout) < 0) return 181;
   flockfile(stdout);
   if (ftrylockfile(stdout) != 0) return 169;
@@ -1887,6 +1895,33 @@ int main(int argc, char **argv) {
   char stdio_buffer[sizeof "puts\n!UV" - 1] = {0};
   if (read(pipefd[0], stdio_buffer, sizeof stdio_buffer) != (long)sizeof stdio_buffer ||
       memcmp(stdio_buffer, "puts\n!UV", sizeof stdio_buffer) != 0) return 166;
+  if (setlocale(LC_CTYPE, "C.UTF-8") == NULL) return 267;
+  char wide_stdio_bytes[32] = {0};
+  FILE *wide_stream = fmemopen(wide_stdio_bytes, sizeof wide_stdio_bytes, "w+");
+  if (wide_stream == NULL || fwide(wide_stream, 0) != 0) return 268;
+  if (putwc(L'A', wide_stream) != L'A') return 271;
+  if (putwc_unlocked(0xE9, wide_stream) != 0xE9) return 272;
+  if (fputws_unlocked(L"\nB\n", wide_stream) != 0) return 273;
+  if (fputws(L"Z", wide_stream) != 0 || fwide(wide_stream, 0) <= 0) return 274;
+  if (fflush(wide_stream) != 0) return 275;
+  if ((unsigned char)wide_stdio_bytes[0] != 'A' ||
+      (unsigned char)wide_stdio_bytes[1] != 0xC3 ||
+      (unsigned char)wide_stdio_bytes[2] != 0xA9) return 278;
+  if (fclose(wide_stream) != 0) return 279;
+  wide_stream = fmemopen(wide_stdio_bytes, sizeof wide_stdio_bytes, "r");
+  if (wide_stream == NULL || fwide(wide_stream, 1) <= 0) return 280;
+  wint_t first_wide = getwc(wide_stream);
+  if (first_wide != L'A') return 281;
+  if (getwc_unlocked(wide_stream) != 0xE9 || ungetwc(0xE9, wide_stream) != 0xE9 ||
+      fgetwc(wide_stream) != 0xE9) return 277;
+  wchar_t wide_line[4] = {0};
+  if (fgetws(wide_line, 4, wide_stream) != wide_line) return 282;
+  if (wide_line[0] != L'\n' || wide_line[1] != 0) return 283;
+  if (fgetws_unlocked(wide_line, 4, wide_stream) != wide_line) return 284;
+  if (wide_line[0] != L'B' || wide_line[1] != L'\n' || wide_line[2] != 0) return 285;
+  if (fgetwc(wide_stream) != L'Z' || fgetwc(wide_stream) != WEOF ||
+      fclose(wide_stream) != 0) return 286;
+  if (setlocale(LC_CTYPE, "C") == NULL) return 270;
 #else
   char stdio_buffer[sizeof "beforeputs\n!UVfputs?"] = {0};
   if (read(pipefd[0], stdio_buffer, sizeof stdio_buffer - 1) != (long)(sizeof stdio_buffer - 1) ||

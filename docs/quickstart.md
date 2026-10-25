@@ -59,6 +59,11 @@ ordering in `de_DE.UTF-8` locale handles. They also apply those German weights
 to narrow `strcoll`/`strxfrm` when that thread locale is selected. Hybrid links
 use the host libc implementations.
 
+Standalone stdio also provides `fwide`, `fgetwc`, `fputwc`, `fgetws`, `fputws`,
+their unlocked variants, `getwc`/`putwc` aliases, and `ungetwc`. Streams track
+wide orientation and UTF-8 conversion state. Hybrid builds use the selected
+host libc's stdio implementation.
+
 To link your own program against the default glibc hybrid archive:
 
 ```sh

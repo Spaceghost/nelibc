@@ -55,6 +55,9 @@ local function nelibc_host_format_write(stream: pointer, buffer: pointer <const>
 local function memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
 local function memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
 local function memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
+local function mbrtowc(wide: *cint, input: *[0]cchar <const>, count: csize,
+    state: pointer): csize <cimport> end
+local function wcrtomb(output: *[0]cchar, wide: cint, state: pointer): csize <cimport> end
 
 -- Standalone FILE ABI. Keep this record in sync with
 -- include/nelibc_stdio_standalone.h.
@@ -74,7 +77,12 @@ local FILE: type = @record{
   next: *FILE,
   buffer: [4096]byte,
   memstream_buffer: **byte,
-  memstream_size: *csize
+  memstream_size: *csize,
+  orientation: cint,
+  wide_read_state: [16]culong,
+  wide_write_state: [16]culong,
+  has_wide_pushback: cint,
+  wide_pushback_value: cint
 }
 
 local stderr_FILE: FILE <cexport, codename 'nelibc_stderr_FILE'> = {
@@ -397,18 +405,182 @@ local function write_bytes(stream: *FILE, buffer: pointer <const>, count: csize)
   return offset
 end
 
-local function fgetc(stream: *FILE): cint <cexport, codename 'fgetc'>
-  stream_lock(stream)
-  local value: byte = 0
-  if read_bytes(stream, (@pointer)(&value), 1) ~= 1 then stream_unlock(stream); return -1 end
-  stream_unlock(stream)
-  return (@cint)(value)
+local function stream_orient(stream: *FILE, orientation: cint): cint <inline>
+  if stream.orientation == 0 and orientation ~= 0 then stream.orientation = orientation end
+  return stream.orientation
 end
 
-local function fgetc_unlocked(stream: *FILE): cint <inline>
+local function reset_wide_stream_state(stream: *FILE): void <inline>
+  local state_size: csize = 16_csize * (@csize)(#culong)
+  memset((@pointer)(&stream.wide_read_state[0]), 0, state_size)
+  memset((@pointer)(&stream.wide_write_state[0]), 0, state_size)
+  stream.has_wide_pushback = 0
+end
+
+local function read_char_unoriented(stream: *FILE): cint <inline>
   local value: byte = 0
   if read_bytes(stream, (@pointer)(&value), 1) ~= 1 then return -1 end
   return (@cint)(value)
+end
+
+local function fgetc(stream: *FILE): cint <cexport, codename 'fgetc'>
+  stream_lock(stream)
+  stream_orient(stream, -1)
+  local result: cint = read_char_unoriented(stream)
+  stream_unlock(stream)
+  return result
+end
+
+local function fgetc_unlocked(stream: *FILE): cint <inline>
+  stream_orient(stream, -1)
+  return read_char_unoriented(stream)
+end
+
+local function fwide(stream: *FILE, mode: cint): cint <cexport, codename 'fwide'>
+  if stream == nilptr then return 0 end
+  stream_lock(stream)
+  local result: cint = stream.orientation
+  if mode > 0 then result = stream_orient(stream, 1)
+  elseif mode < 0 then result = stream_orient(stream, -1) end
+  stream_unlock(stream)
+  return result
+end
+
+local function fgetwc_unlocked(stream: *FILE): cuint <cexport, codename 'fgetwc_unlocked'>
+  if stream_orient(stream, 1) < 0 then return ~0_cuint end
+  if stream.has_wide_pushback ~= 0 then
+    stream.has_wide_pushback = 0
+    return (@cuint)(stream.wide_pushback_value)
+  end
+  local state: pointer = (@pointer)(&stream.wide_read_state[0])
+  local input: [1]cchar = {}
+  local wide: cint = 0
+  while true do
+    local value: cint = read_char_unoriented(stream)
+    if value < 0 then return ~0_cuint end
+    input[0] = (@cchar)(value)
+    local converted: csize = mbrtowc(&wide, &input[0], 1, state)
+    if converted == ~0_csize then return ~0_cuint end
+    if converted ~= ~1_csize then return (@cuint)(wide) end
+  end
+end
+
+local function fgetwc(stream: *FILE): cuint <cexport, codename 'fgetwc'>
+  stream_lock(stream)
+  local result: cuint = fgetwc_unlocked(stream)
+  stream_unlock(stream)
+  return result
+end
+
+local function ungetwc(wide: cuint, stream: *FILE): cuint <cexport, codename 'ungetwc'>
+  stream_lock(stream)
+  if wide == ~0_cuint or (stream.flags & READABLE) == 0 or
+      stream_orient(stream, 1) < 0 or stream.has_wide_pushback ~= 0 then
+    stream_unlock(stream)
+    return ~0_cuint
+  end
+  stream.wide_pushback_value = (@cint)(wide)
+  stream.has_wide_pushback = 1
+  stream.flags = stream.flags & 0xFFFFFFFE_cuint
+  stream_unlock(stream)
+  return wide
+end
+
+local function getwc(stream: *FILE): cuint <cexport, codename 'getwc'>
+  return fgetwc(stream)
+end
+
+local function getwc_unlocked(stream: *FILE): cuint <cexport, codename 'getwc_unlocked'>
+  return fgetwc_unlocked(stream)
+end
+
+local function getwchar(): cuint <cexport, codename 'getwchar'>
+  return fgetwc(&stdin_FILE)
+end
+
+local function getwchar_unlocked(): cuint <cexport, codename 'getwchar_unlocked'>
+  return fgetwc_unlocked(&stdin_FILE)
+end
+
+local function fputwc_unlocked(wide: cuint, stream: *FILE): cuint
+    <cexport, codename 'fputwc_unlocked'>
+  if stream_orient(stream, 1) < 0 then return ~0_cuint end
+  local output: [64]cchar = {}
+  local converted: csize = wcrtomb(&output[0], (@cint)(wide),
+      (@pointer)(&stream.wide_write_state[0]))
+  if converted == ~0_csize or write_bytes(stream, (@pointer)(&output[0]), converted) ~= converted then
+    return ~0_cuint
+  end
+  return wide
+end
+
+local function fputwc(wide: cuint, stream: *FILE): cuint <cexport, codename 'fputwc'>
+  stream_lock(stream)
+  local result: cuint = fputwc_unlocked(wide, stream)
+  stream_unlock(stream)
+  return result
+end
+
+local function putwc(wide: cuint, stream: *FILE): cuint <cexport, codename 'putwc'>
+  return fputwc(wide, stream)
+end
+
+local function putwc_unlocked(wide: cuint, stream: *FILE): cuint
+    <cexport, codename 'putwc_unlocked'>
+  return fputwc_unlocked(wide, stream)
+end
+
+local function putwchar(wide: cuint): cuint <cexport, codename 'putwchar'>
+  return fputwc(wide, &stdout_FILE)
+end
+
+local function putwchar_unlocked(wide: cuint): cuint
+    <cexport, codename 'putwchar_unlocked'>
+  return fputwc_unlocked(wide, &stdout_FILE)
+end
+
+local function fgetws_unlocked(output: *[0]cint, count: cint, stream: *FILE): *[0]cint
+    <cexport, codename 'fgetws_unlocked'>
+  if output == nilptr or count <= 0 then return nilptr end
+  local index: cint = 0
+  while index < count - 1 do
+    local wide: cuint = fgetwc_unlocked(stream)
+    if wide == ~0_cuint then
+      if index == 0 then return nilptr end
+      break
+    end
+    output[index] = (@cint)(wide)
+    index = index + 1
+    if wide == 10 then break end
+  end
+  output[index] = 0
+  return output
+end
+
+local function fgetws(output: *[0]cint, count: cint, stream: *FILE): *[0]cint
+    <cexport, codename 'fgetws'>
+  stream_lock(stream)
+  local result = fgetws_unlocked(output, count, stream)
+  stream_unlock(stream)
+  return result
+end
+
+local function fputws_unlocked(input: *[0]cint <const>, stream: *FILE): cint
+    <cexport, codename 'fputws_unlocked'>
+  if input == nilptr then return -1 end
+  local index: csize = 0
+  while input[index] ~= 0 do
+    if fputwc_unlocked((@cuint)(input[index]), stream) == ~0_cuint then return -1 end
+    index = index + 1
+  end
+  return 0
+end
+
+local function fputws(input: *[0]cint <const>, stream: *FILE): cint <cexport, codename 'fputws'>
+  stream_lock(stream)
+  local result = fputws_unlocked(input, stream)
+  stream_unlock(stream)
+  return result
 end
 
 local function getc(stream: *FILE): cint <cexport, codename 'getc'>
@@ -526,6 +698,7 @@ end
 
 local function ungetc(character: cint, stream: *FILE): cint <cexport, codename 'ungetc'>
   stream_lock(stream)
+  stream_orient(stream, -1)
   if character == -1 or stream.has_pushback ~= 0 or (stream.flags & READABLE) == 0 then stream_unlock(stream); return -1 end
   stream.pushback_value = character & 255
   stream.has_pushback = 1
@@ -543,6 +716,7 @@ local function fread(buffer: pointer, size: csize, count: csize, stream: *FILE):
     return 0
   end
   stream_lock(stream)
+  stream_orient(stream, -1)
   local bytes_read = read_bytes(stream, buffer, size * count)
   stream_unlock(stream)
   return bytes_read // size
@@ -556,6 +730,7 @@ local function fwrite(buffer: pointer <const>, size: csize, count: csize, stream
     return 0
   end
   stream_lock(stream)
+  stream_orient(stream, -1)
   local bytes_written = write_bytes(stream, buffer, size * count)
   stream_unlock(stream)
   return bytes_written // size
@@ -563,6 +738,7 @@ end
 
 local function fputc(character: cint, stream: *FILE): cint <cexport, codename 'fputc'>
   stream_lock(stream)
+  stream_orient(stream, -1)
   local value: byte = (@byte)(character)
   if write_bytes(stream, (@pointer)(&value), 1) ~= 1 then stream_unlock(stream); return -1 end
   stream_unlock(stream)
@@ -570,6 +746,7 @@ local function fputc(character: cint, stream: *FILE): cint <cexport, codename 'f
 end
 
 local function fputc_unlocked(character: cint, stream: *FILE): cint <inline>
+  stream_orient(stream, -1)
   local value: byte = (@byte)(character)
   if write_bytes(stream, (@pointer)(&value), 1) ~= 1 then return -1 end
   return (@cint)(value)
@@ -581,6 +758,7 @@ local function fputs(string: cstring <const>, stream: *FILE): cint <cexport, cod
   local length: csize = 0
   while bytes[length] ~= 0 do length = length + 1 end
   stream_lock(stream)
+  stream_orient(stream, -1)
   if write_bytes(stream, (@pointer)(string), length) ~= length then stream_unlock(stream); return -1 end
   stream_unlock(stream)
   return 0
@@ -591,6 +769,7 @@ local function fputs_unlocked(string: *[0]cchar <const>, stream: *FILE): cint
   local bytes: *[0]byte = (@*[0]byte)(string)
   local length: csize = 0
   while bytes[length] ~= 0 do length = length + 1 end
+  stream_orient(stream, -1)
   if write_bytes(stream, (@pointer)(string), length) ~= length then return -1 end
   return 0
 end
@@ -1104,6 +1283,7 @@ end
 local function discard_read_buffer(stream: *FILE): cint <inline>
   if stream.fd == -4 or stream.fd == -5 then
     stream.has_pushback = 0
+    reset_wide_stream_state(stream)
     stream.flags = stream.flags & ~LAST_READ
     return 0
   end
@@ -1116,6 +1296,7 @@ local function discard_read_buffer(stream: *FILE): cint <inline>
   stream.read_position = 0
   stream.read_length = 0
   stream.has_pushback = 0
+  reset_wide_stream_state(stream)
   stream.flags = stream.flags & ~LAST_READ
   return 0
 end
@@ -1131,7 +1312,8 @@ local function setvbuf(stream: *FILE, buffer: pointer, mode: cint, size: csize):
   end
   if (stream.flags & LAST_WRITE) ~= 0 then
     if flush_write_buffer(stream) < 0 then stream_unlock(stream); return 1 end
-  elseif (stream.flags & LAST_READ) ~= 0 or stream.has_pushback ~= 0 then
+  elseif (stream.flags & LAST_READ) ~= 0 or stream.has_pushback ~= 0 or
+      stream.has_wide_pushback ~= 0 then
     if discard_read_buffer(stream) < 0 then stream_unlock(stream); return 1 end
   end
   stream.flags = stream.flags & ~(LINE_BUFFERED | UNBUFFERED)
@@ -1206,6 +1388,7 @@ local function vfprintf(stream: *FILE, format: cstring <const>, arguments: cvali
     return -1
   end
   stream_lock(stream)
+  stream_orient(stream, -1)
   local written: csize = 0
   local index: csize = 0
   while format[index] ~= 0 do
@@ -2193,7 +2376,8 @@ local function fflush(stream: *FILE): cint <cexport, codename 'fflush'>
       stream_lock(cursor)
       if cursor.fd == -5 or (cursor.flags & LAST_WRITE) ~= 0 then
         if flush_write_buffer(cursor) < 0 then status = -1 end
-      elseif (cursor.flags & LAST_READ) ~= 0 or cursor.has_pushback ~= 0 then
+      elseif (cursor.flags & LAST_READ) ~= 0 or cursor.has_pushback ~= 0 or
+          cursor.has_wide_pushback ~= 0 then
         if discard_read_buffer(cursor) < 0 then status = -1 end
       end
       stream_unlock(cursor)
@@ -2211,7 +2395,8 @@ local function fflush(stream: *FILE): cint <cexport, codename 'fflush'>
   local result: cint = 0
   if stream.fd == -5 or (stream.flags & LAST_WRITE) ~= 0 then
     result = flush_write_buffer(stream)
-  elseif (stream.flags & LAST_READ) ~= 0 or stream.has_pushback ~= 0 then
+  elseif (stream.flags & LAST_READ) ~= 0 or stream.has_pushback ~= 0 or
+      stream.has_wide_pushback ~= 0 then
     result = discard_read_buffer(stream)
   end
   stream_unlock(stream)
@@ -2252,6 +2437,7 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
     end
     stream.read_position = (@csize)(target)
     stream.has_pushback = 0
+    reset_wide_stream_state(stream)
     stream.flags = stream.flags & 0xFFFFFFFE_cuint
     stream_unlock(stream)
     return 0
@@ -2271,6 +2457,7 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
     if target < 0 then nelibc_errno_location()[0] = 22; stream_unlock(stream); return -1 end
     stream.read_position = (@csize)(target)
     stream.has_pushback = 0
+    reset_wide_stream_state(stream)
     stream.flags = stream.flags & 0xFFFFFFFE_cuint
     stream_unlock(stream)
     return 0
@@ -2295,6 +2482,7 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
   stream.read_position = 0
   stream.read_length = 0
   stream.has_pushback = 0
+  reset_wide_stream_state(stream)
   stream.flags = stream.flags & 0xFFFFFFFE_cuint
   stream_unlock(stream)
   return 0

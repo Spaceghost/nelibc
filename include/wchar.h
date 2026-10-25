@@ -18,6 +18,26 @@ typedef union {
 
 #define WEOF ((wint_t)0xffffffffU)
 
+struct nelibc_FILE;
+int fwide(struct nelibc_FILE *, int);
+wint_t fgetwc(struct nelibc_FILE *);
+wint_t fgetwc_unlocked(struct nelibc_FILE *);
+wint_t getwc(struct nelibc_FILE *);
+wint_t getwc_unlocked(struct nelibc_FILE *);
+wint_t getwchar(void);
+wint_t getwchar_unlocked(void);
+wint_t fputwc(wint_t, struct nelibc_FILE *);
+wint_t fputwc_unlocked(wint_t, struct nelibc_FILE *);
+wint_t putwc(wint_t, struct nelibc_FILE *);
+wint_t putwc_unlocked(wint_t, struct nelibc_FILE *);
+wint_t putwchar(wint_t);
+wint_t putwchar_unlocked(wint_t);
+wint_t ungetwc(wint_t, struct nelibc_FILE *);
+wchar_t *fgetws(wchar_t *restrict, int, struct nelibc_FILE *restrict);
+wchar_t *fgetws_unlocked(wchar_t *restrict, int, struct nelibc_FILE *restrict);
+int fputws(const wchar_t *restrict, struct nelibc_FILE *restrict);
+int fputws_unlocked(const wchar_t *restrict, struct nelibc_FILE *restrict);
+
 wchar_t *wmemcpy(wchar_t *restrict, const wchar_t *restrict, size_t);
 wchar_t *wmemmove(wchar_t *, const wchar_t *, size_t);
 wchar_t *wmemset(wchar_t *, wchar_t, size_t);
