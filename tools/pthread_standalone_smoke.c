@@ -342,14 +342,24 @@ struct rwlock_timeout_request {
   pthread_rwlock_t *rwlock;
   struct timespec deadline;
   int write_lock;
+  int clock_wait;
+  clockid_t clock_id;
   int result;
 };
 
 static void *rwlock_timeout_worker(void *argument) {
   struct rwlock_timeout_request *request = argument;
-  request->result = request->write_lock
-      ? pthread_rwlock_timedwrlock(request->rwlock, &request->deadline)
-      : pthread_rwlock_timedrdlock(request->rwlock, &request->deadline);
+  if (request->clock_wait) {
+    request->result = request->write_lock
+        ? pthread_rwlock_clockwrlock(request->rwlock, request->clock_id,
+                                     &request->deadline)
+        : pthread_rwlock_clockrdlock(request->rwlock, request->clock_id,
+                                     &request->deadline);
+  } else {
+    request->result = request->write_lock
+        ? pthread_rwlock_timedwrlock(request->rwlock, &request->deadline)
+        : pthread_rwlock_timedrdlock(request->rwlock, &request->deadline);
+  }
   if (request->result == 0) pthread_rwlock_unlock(request->rwlock);
   return 0;
 }
@@ -1938,6 +1948,44 @@ int main(void) {
       timeout_request.result != ETIMEDOUT ||
       pthread_rwlock_unlock(&static_rwlock) != 0)
     return 209;
+  struct timespec rwlock_clock_start;
+  if (clock_gettime(CLOCK_MONOTONIC, &rwlock_clock_start) != 0) return 280;
+  timeout_request.deadline = rwlock_clock_start;
+  timeout_request.deadline.tv_nsec += 20000000L;
+  if (timeout_request.deadline.tv_nsec >= 1000000000L) {
+    ++timeout_request.deadline.tv_sec;
+    timeout_request.deadline.tv_nsec -= 1000000000L;
+  }
+  timeout_request.clock_wait = 1;
+  timeout_request.clock_id = CLOCK_MONOTONIC;
+  timeout_request.write_lock = 1;
+  if (pthread_rwlock_rdlock(&static_rwlock) != 0 ||
+      pthread_create(&thread, &attributes, rwlock_timeout_worker,
+                     &timeout_request) != 0 ||
+      pthread_join(thread, &result) != 0 || result != 0 ||
+      timeout_request.result != ETIMEDOUT ||
+      pthread_rwlock_unlock(&static_rwlock) != 0)
+    return 281;
+  if (pthread_rwlock_wrlock(&static_rwlock) != 0) return 282;
+  if (clock_gettime(CLOCK_MONOTONIC, &rwlock_clock_start) != 0) return 283;
+  timeout_request.deadline = rwlock_clock_start;
+  timeout_request.deadline.tv_nsec += 20000000L;
+  if (timeout_request.deadline.tv_nsec >= 1000000000L) {
+    ++timeout_request.deadline.tv_sec;
+    timeout_request.deadline.tv_nsec -= 1000000000L;
+  }
+  timeout_request.write_lock = 0;
+  timeout_request.result = 0;
+  if (pthread_create(&thread, &attributes, rwlock_timeout_worker,
+                     &timeout_request) != 0 ||
+      pthread_join(thread, &result) != 0 || result != 0 ||
+      timeout_request.result != ETIMEDOUT ||
+      pthread_rwlock_unlock(&static_rwlock) != 0)
+    return 284;
+  if (pthread_rwlock_clockrdlock(&static_rwlock, CLOCK_MONOTONIC_RAW,
+                                 &timeout_request.deadline) != EINVAL ||
+      pthread_rwlock_clockwrlock(&static_rwlock, CLOCK_MONOTONIC, NULL) != EINVAL)
+    return 285;
   if (pthread_rwlock_rdlock(&static_rwlock) != 0 ||
       pthread_rwlock_timedwrlock(&static_rwlock, &invalid_rwlock_deadline) != EINVAL ||
       pthread_rwlock_unlock(&static_rwlock) != 0 ||

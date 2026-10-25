@@ -244,9 +244,13 @@ int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock);
 int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock);
 int pthread_rwlock_timedrdlock(pthread_rwlock_t *rwlock,
                                const struct timespec *abstime);
+int pthread_rwlock_clockrdlock(pthread_rwlock_t *rwlock, clockid_t clock_id,
+                               const struct timespec *abstime);
 int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock);
 int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock);
 int pthread_rwlock_timedwrlock(pthread_rwlock_t *rwlock,
+                               const struct timespec *abstime);
+int pthread_rwlock_clockwrlock(pthread_rwlock_t *rwlock, clockid_t clock_id,
                                const struct timespec *abstime);
 int pthread_rwlock_unlock(pthread_rwlock_t *rwlock);
 

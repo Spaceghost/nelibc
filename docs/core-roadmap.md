@@ -38,8 +38,8 @@ matter more for completeness than for the initial common-program target.
 
 ### Standalone pthread gap audit
 
-The generated API inventory currently records 110 pthread declarations, and
-all 110 export from the Zig, GCC, and TinyCC standalone archives. This verifies
+The generated API inventory currently records 112 pthread declarations, and
+all 112 export from the Zig, GCC, and TinyCC standalone archives. This verifies
 symbol presence, not full behavior. The pinned musl 1.2.5 public-symbol baseline
 has 2 pthread entries without project declarations, both internal cleanup
 helpers. The GNU concurrency-hint calls are now implemented as standalone
@@ -60,6 +60,9 @@ so hybrid musl continues to expose the host API set. A correct compatibility
 implementation needs to select the clock inside musl's condition-wait path;
 translating deadlines before calling `pthread_cond_timedwait` would not preserve
 the requested clock if realtime changes while a wait is active.
+POSIX.1-2024 `pthread_rwlock_clockrdlock` and `pthread_rwlock_clockwrlock` are
+also implemented in standalone mode. They choose the futex clock per call and
+preserve the existing realtime semantics of `pthread_rwlock_timed*lock`.
 The standalone priority-ceiling attributes and mutex get/set operations are
 implemented. `PTHREAD_PRIO_PROTECT` raises and restores scheduler priority for
 held protected mutexes; on Linux, a `SCHED_OTHER` thread cannot acquire a
@@ -95,10 +98,10 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The current API inventory has 784 declared names: 665 exported in hybrid
+- The current API inventory has 786 declared names: 665 exported in hybrid
   archives, 114 host-delegated across all hybrid profiles, and four standalone
-  priority-ceiling exports that glibc supplies in hybrid mode but musl does
-  not. There is also one implementation-only entry. This is an
+  priority-ceiling and two clock-specific pthread exports that glibc supplies
+  in hybrid mode but musl does not. There is also one implementation-only entry. This is an
   inventory signal, not a completeness percentage.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
   that are also exported by the pinned release archives: Nelibc exports 621
