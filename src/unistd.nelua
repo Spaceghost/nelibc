@@ -12,6 +12,7 @@ local function realloc(ptr: pointer, size: csize): pointer <cimport> end
 local function memcpy(dest: pointer, src: pointer <const>, size: csize): pointer <cimport> end
 local function memset(dest: pointer, value: cint, size: csize): pointer <cimport> end
 local function getenv(name: *[0]cchar <const>): *[0]cchar <cimport> end
+local function nelibc_environment_vector(): **cchar <cimport> end
 local function snprintf(buffer: *[0]cchar, max_size: csize,
     format: *[0]cchar <const>, ...): cint <cimport> end
 local function qsort(base: pointer, count: csize, width: csize,
@@ -522,6 +523,119 @@ local function execve(pathname: *[0]cchar <const>, argv: *[0]*[0]cchar, envp: *[
     (@culong)((@usize)(argv)),
     (@culong)((@usize)(envp))
   )))
+end
+
+local function execve_with_shell_fallback(pathname: *[0]cchar <const>,
+    argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <inline>
+  local result = execve(pathname, argv, envp)
+  if result ~= -1_cint or nelibc_errno_location()[0] ~= 8_cint then return result end -- ENOEXEC
+  local argument_count: csize = 0
+  while argv[argument_count] ~= nilptr do argument_count = argument_count + 1_csize end
+  if argument_count > 0x7fffffffffffffff_csize // 8_csize - 2_csize then
+    nelibc_errno_location()[0] = 12_cint -- ENOMEM
+    return -1_cint
+  end
+  local shell_arguments = (@*[0]*[0]cchar)(malloc((argument_count + 2_csize) * 8_csize))
+  if shell_arguments == nilptr then
+    nelibc_errno_location()[0] = 12_cint -- ENOMEM
+    return -1_cint
+  end
+  shell_arguments[0] = '/bin/sh'
+  shell_arguments[1] = pathname
+  local index: csize = 1_csize
+  while index < argument_count do
+    shell_arguments[index + 1_csize] = argv[index]
+    index = index + 1_csize
+  end
+  shell_arguments[argument_count + 1_csize] = nilptr
+  result = execve('/bin/sh', shell_arguments, envp)
+  local error_number = nelibc_errno_location()[0]
+  free((@pointer)(shell_arguments))
+  nelibc_errno_location()[0] = error_number
+  return result
+end
+
+local function exec_search_path(file: *[0]cchar <const>, argv: *[0]*[0]cchar,
+    envp: *[0]*[0]cchar): cint <inline>
+  local file_length: csize = 0
+  local has_slash: boolean = false
+  while file[file_length] ~= 0 do
+    if file[file_length] == 47 then has_slash = true end
+    file_length = file_length + 1_csize
+  end
+  if has_slash then return execve_with_shell_fallback(file, argv, envp) end
+
+  local search_path: *[0]cchar = getenv('PATH')
+  if search_path == nilptr then search_path = '/bin:/usr/bin' end
+  local saw_access_denied: boolean = false
+  local path_start: csize = 0
+  while true do
+    local path_end = path_start
+    while search_path[path_end] ~= 0 and search_path[path_end] ~= 58 do
+      path_end = path_end + 1_csize
+    end
+    local directory_length = path_end - path_start
+    local prefix_length = directory_length
+    if prefix_length == 0_csize then prefix_length = 1_csize end -- empty PATH entry means '.'
+    if prefix_length > 0x7fffffffffffffff_csize - file_length - 2_csize then
+      nelibc_errno_location()[0] = 36_cint -- ENAMETOOLONG
+      return -1_cint
+    end
+    local candidate_length = prefix_length + 1_csize + file_length
+    local candidate = (@*[0]cchar)(malloc(candidate_length + 1_csize))
+    if candidate == nilptr then
+      nelibc_errno_location()[0] = 12_cint -- ENOMEM
+      return -1_cint
+    end
+    local index: csize = 0
+    if directory_length == 0_csize then
+      candidate[0] = 46_cchar -- '.'
+      index = 1_csize
+    else
+      while index < directory_length do
+        candidate[index] = search_path[path_start + index]
+        index = index + 1_csize
+      end
+    end
+    candidate[index] = 47_cchar -- '/'
+    index = 0_csize
+    while index < file_length do
+      candidate[prefix_length + 1_csize + index] = file[index]
+      index = index + 1_csize
+    end
+    candidate[candidate_length] = 0_cchar
+
+    local result = execve_with_shell_fallback(candidate, argv, envp)
+    local error_number = nelibc_errno_location()[0]
+    free((@pointer)(candidate))
+    nelibc_errno_location()[0] = error_number
+    if result ~= -1_cint then return result end
+    if error_number == 13_cint then
+      saw_access_denied = true -- EACCES
+    elseif error_number ~= 2_cint and error_number ~= 20_cint and
+        error_number ~= 116_cint and error_number ~= 19_cint and
+        error_number ~= 110_cint then
+      return -1_cint -- only continue for the errors execvp treats as search misses
+    end
+    if search_path[path_end] == 0 then break end
+    path_start = path_end + 1_csize
+  end
+  if saw_access_denied then nelibc_errno_location()[0] = 13_cint
+  else nelibc_errno_location()[0] = 2_cint end -- ENOENT
+  return -1_cint
+end
+
+local function execv(pathname: *[0]cchar <const>, argv: *[0]*[0]cchar): cint <cexport, codename 'execv'>
+  return execve(pathname, argv, (@*[0]*[0]cchar)(nelibc_environment_vector()))
+end
+
+local function execvp(file: *[0]cchar <const>, argv: *[0]*[0]cchar): cint <cexport, codename 'execvp'>
+  return exec_search_path(file, argv, (@*[0]*[0]cchar)(nelibc_environment_vector()))
+end
+
+local function execvpe(file: *[0]cchar <const>, argv: *[0]*[0]cchar,
+    envp: *[0]*[0]cchar): cint <cexport, codename 'execvpe'>
+  return exec_search_path(file, argv, envp)
 end
 
 -- Linux execveat resolves pathname relative to dirfd, with AT_EMPTY_PATH support.

@@ -551,6 +551,7 @@ static int tempfile_probe(void) {
   char append[] = "/tmp/nelibc-mkostemp-XXXXXX";
   char append_suffix[] = "/tmp/nelibc-mkostemps-XXXXXX.log";
   char directory[] = "/tmp/nelibc-mkdtemp-XXXXXX";
+  char script[] = "/tmp/nelibc-execvp-XXXXXX";
   struct stat state;
   int descriptor = -1;
   int created_plain = 0;
@@ -558,6 +559,7 @@ static int tempfile_probe(void) {
   int created_append = 0;
   int created_append_suffix = 0;
   int created_directory = 0;
+  int created_script = 0;
   int result = 0;
   char byte = 'N';
 
@@ -617,6 +619,28 @@ static int tempfile_probe(void) {
   created_directory = 1;
   if (stat(directory, &state) != 0 || !S_ISDIR(state.st_mode) ||
       (state.st_mode & 0077) != 0) result = 15;
+  descriptor = mkstemp(script);
+  if (descriptor < 0) { result = 16; goto done; }
+  created_script = 1;
+  static const char script_body[] = "exit 37\n";
+  if (write(descriptor, script_body, sizeof script_body - 1) !=
+          (ssize_t)(sizeof script_body - 1) || fchmod(descriptor, 0700) != 0 ||
+      close(descriptor) != 0) {
+    descriptor = -1;
+    result = 17;
+    goto done;
+  }
+  descriptor = -1;
+  pid_t script_child = fork();
+  if (script_child < 0) { result = 18; goto done; }
+  if (script_child == 0) {
+    char *script_arguments[] = {script, NULL};
+    execvp(script, script_arguments);
+    _Exit(127);
+  }
+  int script_status = 0;
+  if (waitpid(script_child, &script_status, 0) != script_child ||
+      !WIFEXITED(script_status) || WEXITSTATUS(script_status) != 37) result = 19;
 
 done:
   if (descriptor >= 0) close(descriptor);
@@ -625,6 +649,7 @@ done:
   if (created_append) unlink(append);
   if (created_append_suffix) unlink(append_suffix);
   if (created_directory) rmdir(directory);
+  if (created_script) unlink(script);
   return result;
 }
 
@@ -705,6 +730,9 @@ int main(int argc, char **argv) {
     return getenv("NELIBC_CONSUMER_SETENV_PROBE") == NULL && preserved != NULL &&
            strcmp(preserved, "present") == 0 ? 0 : 9;
   }
+  if (argc == 2 && strcmp(argv[1], "--verify-execvpe") == 0)
+    return getenv("NELIBC_EXEC_PROBE") != NULL &&
+           strcmp(getenv("NELIBC_EXEC_PROBE"), "yes") == 0 ? 0 : 10;
 
   const char input[] = "Nelua libc";
   if (strcasestr(input, "LIBC") != &input[6] ||
@@ -1204,7 +1232,29 @@ int main(int argc, char **argv) {
   if (clearenv() != 0 || environ != NULL || getenv("NELIBC_KEEP") != NULL)
     return 18;
   if (setenv("NELIBC_KEEP", "present", 1) != 0) return 19;
+  pid_t search_child = fork();
+  if (search_child < 0) return 24;
+  if (search_child == 0) {
+    char *search_arguments[] = {"true", NULL};
+    execvp("true", search_arguments);
+    _Exit(127);
+  }
+  int search_status = 0;
+  if (waitpid(search_child, &search_status, 0) != search_child ||
+      !WIFEXITED(search_status) || WEXITSTATUS(search_status) != 0) return 25;
+  pid_t custom_environment_child = fork();
+  if (custom_environment_child < 0) return 26;
+  if (custom_environment_child == 0) {
+    char *custom_arguments[] = {argv[0], "--verify-execvpe", NULL};
+    char *custom_environment[] = {"NELIBC_EXEC_PROBE=yes", NULL};
+    execvpe(argv[0], custom_arguments, custom_environment);
+    _Exit(127);
+  }
+  int custom_environment_status = 0;
+  if (waitpid(custom_environment_child, &custom_environment_status, 0) !=
+          custom_environment_child || !WIFEXITED(custom_environment_status) ||
+      WEXITSTATUS(custom_environment_status) != 0) return 27;
   char *child_argv[] = {argv[0], "--verify-unsetenv", NULL};
-  execve(argv[0], child_argv, environ);
+  execv(argv[0], child_argv);
   return 12;
 }

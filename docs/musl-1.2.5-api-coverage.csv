@@ -283,10 +283,10 @@ eventfd_write,sys/eventfd.h,sys/eventfd.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc
 execl,unistd.h,,,not-declared
 execle,unistd.h,,,not-declared
 execlp,unistd.h,,,not-declared
-execv,unistd.h,,,not-declared
+execv,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 execve,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-execvp,unistd.h,,,not-declared
-execvpe,unistd.h,,,not-declared
+execvp,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+execvpe,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exit,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 exp,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exp10,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

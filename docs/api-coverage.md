@@ -61,16 +61,16 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,471 APIs: 721 exported by Nelibc in at least
+The current snapshot contains 1,471 APIs: 724 exported by Nelibc in at least
 one tested hybrid profile, 162 intentionally delegated to the host in hybrid
-profiles, and 588 not declared by Nelibc. No declared API is missing from all
+profiles, and 585 not declared by Nelibc. No declared API is missing from all
 four hybrid archives. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 588 entries remain visible as unimplemented
+intentional omission; the 585 entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
 No real-valued `math.h` APIs in this pinned musl baseline remain undeclared.
-The largest remaining groups are wide characters (42), unistd (35), stdlib
+The largest remaining groups are wide characters (42), unistd (32), stdlib
 (33), and network database APIs (32). The pthread rows without Nelibc declarations are two private musl
 cleanup helper symbols. This is a breadth comparison, not a behavioral
 conformance score.
@@ -86,6 +86,12 @@ that it returns the same current directory as `getcwd`.
 
 The POSIX `swab` byte-pair routine is implemented in Nelua. The consumer matrix
 checks pair order, odd-length handling, and nonpositive counts.
+
+`execv`, `execvp`, and GNU `execvpe` are implemented in Nelua on top of
+`execve`. PATH search preserves `EACCES` precedence, and `execvp`/`execvpe`
+fall back to `/bin/sh` for executable text files that return `ENOEXEC`.
+Consumer checks cover inherited and explicit environments, PATH lookup, and
+the shell fallback across all seven profiles.
 
 The temporary-file family (`mkstemp`, `mkstemps`, `mkostemp`, `mkostemps`, and
 `mkdtemp`) is implemented in Nelua for hybrid and standalone profiles. It uses
