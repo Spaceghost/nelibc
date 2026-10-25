@@ -118,6 +118,7 @@ extern double nelibc_tan(double);
 extern float nelibc_hypotf(float, float);
 extern double nelibc_hypot(double, double);
 extern long double nelibc_hypotl(long double, long double);
+extern long double nelibc_nextafterl(long double, long double);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
 extern long double nelibc_sqrtl(long double);
@@ -1380,6 +1381,47 @@ int main(void) {
   long double signaling_hypot = nelibc_hypotl(signaling_nan.value, 1.0L);
   if (!isnan(signaling_hypot)) {
     fprintf(stderr, "hypotl signaling NaN propagation failed\n");
+    return 1;
+  }
+  const long double nextafter_minimum = nextafterl(0.0L, 1.0L);
+  const long double nextafter_negative_minimum = nextafterl(0.0L, -1.0L);
+  const long double nextafter_inputs[] = {
+      0.0L, -0.0L, nextafter_minimum, nextafter_negative_minimum,
+      LDBL_MIN, -LDBL_MIN, 1.0L, -1.0L, LDBL_MAX, -LDBL_MAX,
+      INFINITY, -INFINITY};
+  const long double nextafter_targets[] = {
+      0.0L, -0.0L, 1.0L, -1.0L, LDBL_MIN, -LDBL_MIN, INFINITY, -INFINITY};
+  for (size_t i = 0; i < sizeof(nextafter_inputs) / sizeof(nextafter_inputs[0]); ++i) {
+    for (size_t j = 0; j < sizeof(nextafter_targets) / sizeof(nextafter_targets[0]); ++j) {
+      long double expected_next = nextafterl(nextafter_inputs[i], nextafter_targets[j]);
+      /* musl 1.2.5 steps one value too far for -LDBL_MIN toward signed zero. */
+      if (nextafter_inputs[i] == -LDBL_MIN && nextafter_targets[j] > -LDBL_MIN)
+        expected_next = -nextafterl(LDBL_MIN, 0.0L);
+      long double actual_next = nelibc_nextafterl(nextafter_inputs[i], nextafter_targets[j]);
+      if (actual_next != expected_next ||
+          (actual_next == 0.0L && signbit(actual_next) != signbit(expected_next))) {
+        union { long double value; struct { uint64_t significand; uint16_t sign_exponent; } parts; } debug_actual;
+        union { long double value; struct { uint64_t significand; uint16_t sign_exponent; } parts; } debug_expected;
+        debug_actual.value = actual_next;
+        debug_expected.value = expected_next;
+        fprintf(stderr, "nextafterl mismatch values=%zu/%zu: %.21La != %.21La\n",
+          i, j, actual_next, expected_next);
+        fprintf(stderr, "actual encoding=%016llx/%04x\n",
+          (unsigned long long)debug_actual.parts.significand, debug_actual.parts.sign_exponent);
+        fprintf(stderr, "expected encoding=%016llx/%04x\n",
+          (unsigned long long)debug_expected.parts.significand, debug_expected.parts.sign_exponent);
+        return 1;
+      }
+    }
+  }
+  errno = 0;
+  if (nelibc_nextafterl(0.0L, 1.0L) != nextafter_minimum || errno != ERANGE) {
+    fprintf(stderr, "nextafterl zero/subnormal handling failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isinf(nelibc_nextafterl(LDBL_MAX, INFINITY)) || errno != ERANGE) {
+    fprintf(stderr, "nextafterl overflow handling failed\n");
     return 1;
   }
   errno = 0;

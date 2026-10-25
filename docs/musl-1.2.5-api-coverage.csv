@@ -799,7 +799,7 @@ nearbyintl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 newlocale,locale.h,,,not-declared
 nextafter,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nextafterf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-nextafterl,math.h,,,not-declared
+nextafterl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nexttoward,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nexttowardf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nexttowardl,math.h,,,not-declared

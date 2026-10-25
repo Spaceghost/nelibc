@@ -66,6 +66,7 @@ int main(void) {
   const double hypotenuse = hypot(3.0, 4.0);
   const float hypotenuse_float = hypotf(3.0f, 4.0f);
   const long double hypotenuse_long = hypotl(3.0L, 4.0L);
+  const long double adjacent_long = nextafterl(1.0L, 2.0L);
   const double sine = sin(1.0);
   const double cosine = cos(1.0);
   const float sine_float = sinf(1.0f);
@@ -125,6 +126,7 @@ int main(void) {
       !(logarithm > 0.69314718055994 && logarithm < 0.69314718055995) ||
       !(logarithm_float > 0.69314f && logarithm_float < 0.69315f) ||
       hypotenuse != 5.0 || hypotenuse_float != 5.0f || hypotenuse_long != 5.0L ||
+      !(adjacent_long > 1.0L) ||
       !(sine > 0.84147098480789 && sine < 0.84147098480790) ||
       !(cosine > 0.54030230586813 && cosine < 0.54030230586814) ||
       !(sine_float > 0.8414708f && sine_float < 0.8414712f) ||

@@ -2051,6 +2051,57 @@ local function hypotl(x: clongdouble, y: clongdouble): clongdouble
   return result
 end
 
+-- Advance one encoding in the 80-bit extended-precision value ordering.
+local function nextafterl(x: clongdouble, y: clongdouble): clongdouble
+    <cexport, codename 'nextafterl'>
+  if is_nan80(x) or is_nan80(y) then return x + y end
+  if x == y then return y end
+
+  local current: LongDoubleBits = {value = x}
+  local target: LongDoubleBits = {value = y}
+  local sign = current.parts.sign_exponent & 0x8000_cushort
+  local exponent = current.parts.sign_exponent & 0x7fff_cushort
+  local magnitude_increases = (sign == 0_cushort and x < y) or
+      (sign ~= 0_cushort and x > y)
+
+  if x == 0_clongdouble then
+    current.parts.significand = 1_culonglong
+    current.parts.sign_exponent = target.parts.sign_exponent & 0x8000_cushort
+  elseif magnitude_increases then
+    if exponent == 0_cushort and current.parts.significand == 0x7fffffffffffffff_culonglong then
+      exponent = 1_cushort
+      current.parts.significand = 0x8000000000000000_culonglong
+    elseif exponent ~= 0_cushort and current.parts.significand == 0xffffffffffffffff_culonglong then
+      exponent = exponent + 1_cushort
+      current.parts.significand = 0x8000000000000000_culonglong
+    else
+      current.parts.significand = current.parts.significand + 1_culonglong
+    end
+    current.parts.sign_exponent = sign | exponent
+  else
+    if exponent == 0x7fff_cushort then
+      exponent = 0x7ffe_cushort
+      current.parts.significand = 0xffffffffffffffff_culonglong
+    elseif exponent == 1_cushort and current.parts.significand == 0x8000000000000000_culonglong then
+      exponent = 0_cushort
+      current.parts.significand = 0x7fffffffffffffff_culonglong
+    elseif exponent > 1_cushort and current.parts.significand == 0x8000000000000000_culonglong then
+      exponent = exponent - 1_cushort
+      current.parts.significand = 0xffffffffffffffff_culonglong
+    else
+      current.parts.significand = current.parts.significand - 1_culonglong
+    end
+    current.parts.sign_exponent = sign | exponent
+  end
+
+  local result = current.value
+  if is_infinite80(result) or
+      ((current.parts.sign_exponent & 0x7fff_cushort) == 0_cushort) then
+    math_range_error()
+  end
+  return result
+end
+
 local function pio2_product_bit(product: *[0]cuint, bit_index: cint): cint <inline>
   if bit_index < 0 or bit_index >= 1272_cint then return 0_cint end
   local limb: cint = bit_index / 24_cint
