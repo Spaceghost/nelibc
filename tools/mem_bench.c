@@ -229,15 +229,21 @@ int main(void) {
   for (size_t k = 0; k < sizeof long_sizes / sizeof long_sizes[0]; ++k) {
     size_t needle_size = long_sizes[k];
     size_t reps = 256;
+    char needle_tail_name[40];
+    char periodic_absent_name[40];
+    snprintf(needle_tail_name, sizeof needle_tail_name,
+             "memmem-needle-tail-%u", (unsigned)needle_size);
+    snprintf(periodic_absent_name, sizeof periodic_absent_name,
+             "memmem-periodic-absent-%u", (unsigned)needle_size);
     for (size_t i = 0; i < needle_size; ++i) long_needle[i] = (unsigned char)(0x80u + (i * 29u) % 0x7Fu);
     memset(haystack, 0x11, size);
     memcpy(haystack + size - needle_size, long_needle, needle_size);
-    report("memmem-needle-tail", median_search(memmem, size, long_needle, needle_size, reps), size, reps);
+    report(needle_tail_name, median_search(memmem, size, long_needle, needle_size, reps), size, reps);
 
     memset(haystack, 'a', size);
     memset(long_needle, 'a', needle_size);
     long_needle[needle_size - 1] = 'b';
-    report("memmem-periodic-absent", median_search(memmem, size, long_needle, needle_size, reps), size, reps);
+    report(periodic_absent_name, median_search(memmem, size, long_needle, needle_size, reps), size, reps);
   }
   return sink == UINTPTR_MAX;
 }

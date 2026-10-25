@@ -10,6 +10,21 @@ completed after restoring the float shootout's C-locale radix callback.
 GCC/glibc, Zig/musl, and TinyCC/glibc, with host and Nelua implementations.
 The run covers copy, move, compare, fill, scan, and substring-search cases;
 values are seven-sample medians and machine-specific.
+`2026-10-24-memory-shootout-labelled-cases.csv` is a fresh four-profile run
+after the long-needle `memmem` case names were amended to include needle length.
+It contains 63 host/Nelibc pairs per profile and seven-sample medians. This
+un-pinned run was measured on Fedora 44, kernel 7.2.7, with an Intel Core
+i7-11700F; TinyCC was 0.9.28rc (`e23dabe`). It is a same-machine comparison,
+not a cross-machine performance claim.
+`2026-10-24-tcc-memory-shootout-cpu2.csv` is the median of three additional
+CPU-2-pinned TinyCC runs; each `repeatN` file preserves one run, with each row
+already the median of seven timed samples. For 64 KiB periodic absent needles,
+the median Nelibc/host ratio across nine needle lengths is 1.20 (geometric
+mean 1.28); lengths 8 through 256 cluster near 1.20, while length 4 is 2.25.
+This is a reproducible TCC substring-search performance target. Needle-tail
+matches are faster overall, with a 0.50 median ratio but a wide 0.03–3.59
+range, so the geometric mean alone is not representative. See the CSVs before
+changing the algorithm.
 `2026-10-22-memory-shootout-memmove-fastpath-repeat1.csv` and
 `2026-10-22-memory-shootout-memmove-fastpath-repeat2.csv` measure the Nelua
 fast path that delegates proven-disjoint ranges to `memcpy`. For 64-byte

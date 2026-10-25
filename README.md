@@ -144,6 +144,8 @@ legs use their own matrix targets where available. The October 22, 2026 full
 run's memory results are in `benchmarks/results/2026-10-22-memory-shootout.csv`;
 the current `rep movsb` comparison is in
 `benchmarks/results/2026-10-22-memory-shootout-repmovsb-matrix.csv`;
+the October 24 four-profile run with needle-length-labeled substring cases is
+`benchmarks/results/2026-10-24-memory-shootout-labelled-cases.csv`;
 string, float, and integer CSVs are in
 `benchmarks/results/2026-10-22-{strstr,strcasecmp,float,int,stdio}-shootout.csv`.
 `make lib-zig`, `make lib-gcc`, `make lib-zig-musl`, and `make lib-tcc` build
