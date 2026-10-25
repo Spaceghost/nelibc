@@ -2714,6 +2714,11 @@ local function nextafterl(x: clongdouble, y: clongdouble): clongdouble
   return result
 end
 
+local function nexttowardl(x: clongdouble, y: clongdouble): clongdouble
+    <cexport, codename 'nexttowardl'>
+  return nextafterl(x, y)
+end
+
 local function pio2_product_bit(product: *[0]cuint, bit_index: cint): cint <inline>
   if bit_index < 0 or bit_index >= 1272_cint then return 0_cint end
   local limb: cint = bit_index / 24_cint

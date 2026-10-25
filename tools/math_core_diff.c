@@ -119,6 +119,7 @@ extern float nelibc_hypotf(float, float);
 extern double nelibc_hypot(double, double);
 extern long double nelibc_hypotl(long double, long double);
 extern long double nelibc_nextafterl(long double, long double);
+extern long double nelibc_nexttowardl(long double, long double);
 extern long double nelibc_atanl(long double);
 extern long double nelibc_atan2l(long double, long double);
 extern long double nelibc_asinl(long double);
@@ -2110,6 +2111,14 @@ int main(void) {
           (unsigned long long)debug_actual.parts.significand, debug_actual.parts.sign_exponent);
         fprintf(stderr, "expected encoding=%016llx/%04x\n",
           (unsigned long long)debug_expected.parts.significand, debug_expected.parts.sign_exponent);
+        return 1;
+      }
+      long double actual_toward = nelibc_nexttowardl(nextafter_inputs[i], nextafter_targets[j]);
+      long double expected_toward = expected_next;
+      if (actual_toward != expected_toward ||
+          (actual_toward == 0.0L && signbit(actual_toward) != signbit(expected_toward))) {
+        fprintf(stderr, "nexttowardl mismatch values=%zu/%zu: %.21La != %.21La\n",
+                i, j, actual_toward, expected_toward);
         return 1;
       }
     }

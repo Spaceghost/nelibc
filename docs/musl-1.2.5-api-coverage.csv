@@ -802,7 +802,7 @@ nextafterf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nextafterl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nexttoward,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nexttowardf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-nexttowardl,math.h,,,not-declared
+nexttowardl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nftw,ftw.h,,,not-declared
 ngettext,libintl.h,,,not-declared
 nice,unistd.h,,,not-declared
