@@ -32,6 +32,34 @@ nelibc_atan2l_hw:
   ret
 .size nelibc_atan2l_hw, .-nelibc_atan2l_hw
 
+/* FYL2X evaluates y*log2(x) in the x87 extended-precision format. */
+.globl nelibc_logl_hw
+.type nelibc_logl_hw,@function
+nelibc_logl_hw:
+  fldln2
+  fldt 8(%rsp)
+  fyl2x
+  ret
+.size nelibc_logl_hw, .-nelibc_logl_hw
+
+.globl nelibc_log2l_hw
+.type nelibc_log2l_hw,@function
+nelibc_log2l_hw:
+  fld1
+  fldt 8(%rsp)
+  fyl2x
+  ret
+.size nelibc_log2l_hw, .-nelibc_log2l_hw
+
+.globl nelibc_log10l_hw
+.type nelibc_log10l_hw,@function
+nelibc_log10l_hw:
+  fldlg2
+  fldt 8(%rsp)
+  fyl2x
+  ret
+.size nelibc_log10l_hw, .-nelibc_log10l_hw
+
 /* FXTRACT returns the significand in ST(0) and the exponent in ST(1). */
 .globl nelibc_frexpl_hw
 .type nelibc_frexpl_hw,@function

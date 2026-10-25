@@ -217,6 +217,9 @@ local function nelibc_sqrt_hw(value: cdouble): cdouble <cimport> end
 local function nelibc_sqrtf_hw(value: cfloat): cfloat <cimport> end
 local function nelibc_sqrtl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_atan2l_hw(y: clongdouble, x: clongdouble): clongdouble <cimport> end
+local function nelibc_logl_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_log2l_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_log10l_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_frexpl_hw(value: clongdouble, exponent: *[0]cint): clongdouble <cimport> end
 local function nelibc_modfl_hw(value: clongdouble, integral: *[0]clongdouble): clongdouble <cimport> end
 local function nelibc_ilogbl_hw(value: clongdouble): cint <cimport> end
@@ -424,6 +427,36 @@ local function acosl(value: clongdouble): clongdouble <cexport, codename 'acosl'
   end
   local complement = sqrtl((1_clongdouble - value) * (1_clongdouble + value))
   return atan2l(complement, value)
+end
+
+local function logl(value: clongdouble): clongdouble <cexport, codename 'logl'>
+  if is_nan80(value) then return value + value end
+  if value == 0_clongdouble then
+    math_range_error()
+  elseif value < 0_clongdouble then
+    math_domain_error()
+  end
+  return nelibc_logl_hw(value)
+end
+
+local function log2l(value: clongdouble): clongdouble <cexport, codename 'log2l'>
+  if is_nan80(value) then return value + value end
+  if value == 0_clongdouble then
+    math_range_error()
+  elseif value < 0_clongdouble then
+    math_domain_error()
+  end
+  return nelibc_log2l_hw(value)
+end
+
+local function log10l(value: clongdouble): clongdouble <cexport, codename 'log10l'>
+  if is_nan80(value) then return value + value end
+  if value == 0_clongdouble then
+    math_range_error()
+  elseif value < 0_clongdouble then
+    math_domain_error()
+  end
+  return nelibc_log10l_hw(value)
 end
 
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>

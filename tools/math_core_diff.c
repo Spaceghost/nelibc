@@ -123,6 +123,9 @@ extern long double nelibc_atanl(long double);
 extern long double nelibc_atan2l(long double, long double);
 extern long double nelibc_asinl(long double);
 extern long double nelibc_acosl(long double);
+extern long double nelibc_logl(long double);
+extern long double nelibc_log2l(long double);
+extern long double nelibc_log10l(long double);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
 extern long double nelibc_sqrtl(long double);
@@ -1428,7 +1431,10 @@ int main(void) {
   if (!isnan(nelibc_atanl(quiet_nan.value)) ||
       !isnan(nelibc_atan2l(quiet_nan.value, 1.0L)) ||
       !isnan(nelibc_asinl(quiet_nan.value)) ||
-      !isnan(nelibc_acosl(quiet_nan.value))) {
+      !isnan(nelibc_acosl(quiet_nan.value)) ||
+      !isnan(nelibc_logl(quiet_nan.value)) ||
+      !isnan(nelibc_log2l(quiet_nan.value)) ||
+      !isnan(nelibc_log10l(quiet_nan.value))) {
     fprintf(stderr, "long-double arctangent NaN propagation failed\n");
     return 1;
   }
@@ -1460,6 +1466,46 @@ int main(void) {
   errno = 0;
   if (!isnan(nelibc_acosl(-2.0L)) || errno != EDOM) {
     fprintf(stderr, "acosl domain handling failed\n");
+    return 1;
+  }
+  const long double log_values[] = {
+      nextafterl(0.0L, 1.0L), LDBL_MIN, 0.125L, 0.5L, 1.0L, 2.0L, 10.0L,
+      LDBL_MAX, INFINITY, 0.0L, -0.0L, -1.0L, -INFINITY};
+  for (size_t i = 0; i < sizeof(log_values) / sizeof(log_values[0]); ++i) {
+    if (!long_double_close(nelibc_logl(log_values[i]), logl(log_values[i])) ||
+        !long_double_close(nelibc_log2l(log_values[i]), log2l(log_values[i])) ||
+        !long_double_close(nelibc_log10l(log_values[i]), log10l(log_values[i]))) {
+      fprintf(stderr, "long-double logarithm edge mismatch value=%zu\n", i);
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 512; ++i) {
+    int exponent = -16000 + (int)i * 62;
+    long double value = ldexpl(1.25L, exponent);
+    if (!long_double_close(nelibc_logl(value), logl(value)) ||
+        !long_double_close(nelibc_log2l(value), log2l(value)) ||
+        !long_double_close(nelibc_log10l(value), log10l(value))) {
+      fprintf(stderr, "long-double logarithm generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  if (!isinf(nelibc_logl(0.0L)) || signbit(nelibc_logl(0.0L)) == 0 ||
+      errno != ERANGE || fetestexcept(FE_DIVBYZERO) == 0) {
+    fprintf(stderr, "logl zero range behavior failed\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  if (!isnan(nelibc_log2l(-1.0L)) || errno != EDOM ||
+      fetestexcept(FE_INVALID) == 0) {
+    fprintf(stderr, "log2l negative domain behavior failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isnan(nelibc_log10l(-1.0L)) || errno != EDOM) {
+    fprintf(stderr, "log10l negative domain behavior failed\n");
     return 1;
   }
   const long double nextafter_minimum = nextafterl(0.0L, 1.0L);

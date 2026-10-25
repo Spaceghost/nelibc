@@ -69,6 +69,7 @@ int main(void) {
   const long double adjacent_long = nextafterl(1.0L, 2.0L);
   const long double arc_tangent_long = atan2l(1.0L, -1.0L);
   const long double arc_sine_long = asinl(0.5L);
+  const long double logarithm_long = logl(2.0L);
   const double sine = sin(1.0);
   const double cosine = cos(1.0);
   const float sine_float = sinf(1.0f);
@@ -131,6 +132,7 @@ int main(void) {
       !(adjacent_long > 1.0L) ||
       !(arc_tangent_long > 2.356L && arc_tangent_long < 2.357L) ||
       !(arc_sine_long > 0.523L && arc_sine_long < 0.524L) ||
+      !(logarithm_long > 0.693L && logarithm_long < 0.694L) ||
       !(sine > 0.84147098480789 && sine < 0.84147098480790) ||
       !(cosine > 0.54030230586813 && cosine < 0.54030230586814) ||
       !(sine_float > 0.8414708f && sine_float < 0.8414712f) ||

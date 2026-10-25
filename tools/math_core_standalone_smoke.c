@@ -36,6 +36,9 @@ int main(void) {
       !(atan2l(1.0L, -1.0L) > 2.35L && atan2l(1.0L, -1.0L) < 2.36L)) return 174;
   if (!(asinl(0.5L) > 0.523L && asinl(0.5L) < 0.524L) ||
       !(acosl(-1.0L) > 3.14L && acosl(-1.0L) < 3.15L)) return 175;
+  if (!(logl(2.0L) > 0.693L && logl(2.0L) < 0.694L) ||
+      !(log2l(8.0L) > 2.999L && log2l(8.0L) < 3.001L) ||
+      !(log10l(100.0L) > 1.999L && log10l(100.0L) < 2.001L)) return 176;
   errno = 0;
   if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;
 
