@@ -162,6 +162,24 @@ int main(void) {
   int held_child_status = 0;
   if (held_child < 0 || waitpid(held_child, &held_child_status, 0) != held_child ||
       !WIFEXITED(held_child_status) || WEXITSTATUS(held_child_status) != 0) return 234;
+  for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
+    pid_t child = fork();
+    if (child == 0) {
+      fenv_t trapping_environment;
+      fenv_t masked_environment;
+      if (fesetenv(FE_NOMASK_ENV) != 0 ||
+          fegetenv(&trapping_environment) != 0) _exit(240);
+      if (feholdexcept(&masked_environment) != 0 ||
+          fetestexcept(FE_ALL_EXCEPT) != 0) _exit(241);
+      if (feraiseexcept(trapped_exceptions[i]) != 0 ||
+          fetestexcept(FE_ALL_EXCEPT) != trapped_exceptions[i]) _exit(242);
+      (void)feupdateenv(&trapping_environment);
+      _exit(243);
+    }
+    int child_status = 0;
+    if (child < 0 || waitpid(child, &child_status, 0) != child ||
+        !WIFSIGNALED(child_status) || WTERMSIG(child_status) != SIGFPE) return 244;
+  }
 
   const long double fma_x = 1.0L + 0x1p-63L;
   const long double fma_y = 1.0L - 0x1p-63L;

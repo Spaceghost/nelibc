@@ -332,7 +332,9 @@ musl export set.
   paths, with only the selected exception unmasked in each unit;
   they also verify `feupdateenv` merges newly raised flags into the restored
   environment, `feholdexcept` masks traps while clearing flags, and an invalid
-  rounding mode leaves the active mode intact. `fesetenv` requires a valid
+  rounding mode leaves the active mode intact. Subprocess checks verify
+  `feupdateenv` re-raises each of the five accrued exceptions when restoring
+  an all-traps-enabled environment. `fesetenv` requires a valid
   environment saved by `fegetenv`/`feholdexcept` or a defined environment
   macro; malformed `fenv_t` bytes are outside its contract. Bit-level
   `ilogb`/`logb` cover normal/subnormal decomposition;
