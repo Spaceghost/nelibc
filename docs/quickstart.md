@@ -359,7 +359,7 @@ integer conversion, and the current Nelua math slice.
   `pthread_getattr_np` checks the main, Nelibc-managed, and caller supplied
   thread stack bounds and guard sizes.
   The smoke also checks that initialized and zero-filled Nelua TLS, plus
-  64-byte-aligned C TLS, are initialized independently in the main and worker
+  64-byte-aligned C TLS and `errno`, are isolated between the main and worker
   threads.
   Default pthread attributes can be inspected or changed with
   `pthread_getattr_default_np` and `pthread_setattr_default_np`; the smoke test

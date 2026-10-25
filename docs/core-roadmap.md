@@ -78,8 +78,11 @@ smoke passed with all three compilers; the Zig run passed 20 consecutive times.
 The 2026-10-25 pthread matrix now also exercises static TLS initialization and
 thread isolation: Nelua initialized and zero-filled TLS, plus 64-byte-aligned C
 TLS, are read and mutated independently by the initial thread and a new thread.
-All three pthread smoke binaries passed five additional repeat runs. This
-verifies symbol presence and the tested behavior, not full POSIX conformance.
+It also confirms a worker's `errno` is isolated from the initial thread's
+`errno`, using Nelibc's standalone TLS errno slot. The matrix passed with all
+three compilers, followed by five repeat runs before the errno check and three
+after it. This verifies symbol presence and the tested behavior, not full
+POSIX conformance.
 The pinned musl 1.2.5 public-symbol baseline
 has 2 pthread entries without project declarations, both internal cleanup
 helpers. The GNU concurrency-hint calls are now implemented as standalone

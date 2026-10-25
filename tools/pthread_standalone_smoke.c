@@ -22,7 +22,8 @@ static void *tls_isolation_worker(void *argument) {
   if (!nelibc_tls_fixture_check() || !nelibc_tls_fixture_recheck() ||
       !nelibc_tls_alignment_check() || !nelibc_tls_alignment_recheck())
     return (void *)1;
-  return 0;
+  errno = ERANGE;
+  return (void *)(uintptr_t)errno;
 }
 
 static volatile int detached_release;
@@ -1774,10 +1775,14 @@ typedef struct {
 int main(void) {
   void *tls_result = 0;
   pthread_t tls_worker;
-  if (!nelibc_tls_fixture_check() || !nelibc_tls_alignment_check() ||
-      pthread_create(&tls_worker, 0, tls_isolation_worker, 0) != 0 ||
-      pthread_join(tls_worker, &tls_result) != 0 || tls_result != 0 ||
-      !nelibc_tls_fixture_recheck() || !nelibc_tls_alignment_recheck())
+  if (!nelibc_tls_fixture_check() || !nelibc_tls_alignment_check())
+    return 318;
+  errno = EDOM;
+  if (pthread_create(&tls_worker, 0, tls_isolation_worker, 0) != 0 ||
+      pthread_join(tls_worker, &tls_result) != 0 ||
+      tls_result != (void *)(uintptr_t)ERANGE ||
+      !nelibc_tls_fixture_recheck() || !nelibc_tls_alignment_recheck() ||
+      errno != EDOM)
     return 318;
 
   if (scheduling_syscall_smoke() != 0) return 287;
