@@ -795,6 +795,8 @@ int main(void) {
     fprintf(stderr, "mq_open test setup failed: errno=%d\n", errno);
     return 148;
   }
+  char mq_buffer[128] = {0};
+  unsigned int mq_priority = 0;
   struct mq_attr observed_attributes = {0};
   if (mq_getattr(mq_descriptor, &observed_attributes) != 0 ||
       observed_attributes.mq_maxmsg != 1 || observed_attributes.mq_msgsize != 128 ||
@@ -807,9 +809,28 @@ int main(void) {
       observed_attributes.mq_flags != O_NONBLOCK) return 171;
   requested_attributes.mq_flags = 0;
   if (mq_setattr(mq_descriptor, &requested_attributes, NULL) != 0) return 172;
+  struct sigevent mq_notification = {0};
+  mq_notification.sigev_notify = SIGEV_NONE;
+  if (mq_notify(mq_descriptor, &mq_notification) != 0) return 173;
+  errno = 0;
+  if (mq_notify(mq_descriptor, &mq_notification) != -1 || errno != EBUSY) return 174;
+  if (mq_notify(mq_descriptor, NULL) != 0) return 175;
+  sigset_t mq_signal_set, old_signal_set;
+  sigemptyset(&mq_signal_set);
+  sigaddset(&mq_signal_set, SIGUSR1);
+  if (pthread_sigmask(SIG_BLOCK, &mq_signal_set, &old_signal_set) != 0) return 176;
+  mq_notification.sigev_notify = SIGEV_SIGNAL;
+  mq_notification.sigev_signo = SIGUSR1;
+  if (mq_notify(mq_descriptor, &mq_notification) != 0) return 177;
+  if (mq_send(mq_descriptor, "notice", 6, 0) != 0) return 178;
+  struct timespec mq_signal_timeout = { .tv_sec = 2, .tv_nsec = 0 };
+  siginfo_t mq_signal_info = {0};
+  if (sigtimedwait(&mq_signal_set, &mq_signal_info, &mq_signal_timeout) != SIGUSR1)
+    return 179;
+  if (mq_receive(mq_descriptor, mq_buffer, sizeof(mq_buffer), &mq_priority) != 6 ||
+      memcmp(mq_buffer, "notice", 6) != 0) return 180;
+  if (pthread_sigmask(SIG_SETMASK, &old_signal_set, NULL) != 0) return 181;
   if (mq_send(mq_descriptor, "hello", 5, 7) != 0) return 149;
-  char mq_buffer[128] = {0};
-  unsigned int mq_priority = 0;
   if (mq_receive(mq_descriptor, mq_buffer, sizeof(mq_buffer), &mq_priority) != 5 ||
       memcmp(mq_buffer, "hello", 5) != 0 || mq_priority != 7) return 150;
   if (clock_gettime(CLOCK_REALTIME, &mq_deadline) != 0) return 151;

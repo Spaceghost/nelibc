@@ -31,6 +31,8 @@ ssize_t mq_timedreceive(mqd_t mqdes, char *msg_ptr, size_t msg_len,
 mqd_t mq_open(const char *name, int oflag, ...);
 int mq_close(mqd_t mqdes);
 int mq_unlink(const char *name);
+struct sigevent;
+int mq_notify(mqd_t mqdes, const struct sigevent *notification);
 int mq_getattr(mqd_t mqdes, struct mq_attr *attr);
 int mq_setattr(mqd_t mqdes, const struct mq_attr *newattr,
                struct mq_attr *oldattr);

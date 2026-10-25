@@ -78,12 +78,15 @@ same deterministic pending-cancellation check covers it in all seven profiles.
 the smoke checks `EBADF` propagation and pending cancellation.
 The message-queue slice implements `mq_open`, `mq_close`, `mq_unlink`,
 `mq_getattr`, `mq_setattr`, `mq_send`, `mq_receive`, `mq_timedsend`, and
-`mq_timedreceive`; `mq_open`'s variadic argument handling is a small C ABI
-adapter, while the operations use Nelua Linux syscall wrappers. The smoke
+`mq_timedreceive`, plus kernel-backed `mq_notify`; `mq_open`'s variadic
+argument handling is a small C ABI adapter, while the operations use Nelua
+Linux syscall wrappers. `SIGEV_THREAD` notification still needs libc-managed
+thread support. The smoke
 checks queue attributes, send/receive bytes and priority, an expired receive
-timeout, and cancellation of blocked send and receive calls. The current run
-passes Zig/glibc, GCC/glibc, Zig/musl, and standalone Zig/GCC; TinyCC is not
-installed on this machine. `mq_notify` remains unimplemented.
+timeout, `SIGEV_NONE` registration/removal, `SIGEV_SIGNAL` delivery, and
+cancellation of blocked send and receive calls. The current run passes
+Zig/glibc, GCC/glibc, Zig/musl, and standalone Zig/GCC. TinyCC is not
+installed on this machine. `SIGEV_THREAD` remains unimplemented.
 The checks verify that deferred cancellation wakes each blocked thread and
 that `pthread_join` reports `PTHREAD_CANCELED`. This remains targeted behavior
 coverage, not a complete cancellation-point audit.
@@ -151,8 +154,8 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 971 declared names. Zig/glibc,
-  GCC/glibc, and Zig/musl hybrid archives each export 802; 161
+- The regenerated API inventory has 972 declared names. Zig/glibc,
+  GCC/glibc, and Zig/musl hybrid archives each export 803; 161
   APIs are marked as host-delegated and 8 have declared-but-unexported
   Zig/musl archive gaps.
   `pthread_mutex_clocklock` is provided by the glibc host in hybrid mode and
@@ -161,9 +164,9 @@ musl export set.
   percentage. See
   `build/api-coverage.csv` after `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 753
+  that are also exported by the pinned release archives: Nelibc exports 754
   in at least one tested hybrid profile, delegates 162 to a hybrid host, and does not
-  yet declare 556. No declared API is missing from the tested hybrid archives.
+  yet declare 555. No declared API is missing from the tested hybrid archives.
   The largest undeclared groups are wide characters (42), stdlib (32), network
   database APIs (32), and unistd (29). These
   are gap counts, not completion percentages; no API has yet been declared intentionally out

@@ -56,6 +56,50 @@ library symbols being evaluated. `nelibc_malloc` and related prefixed calls
 are declared in `include/nelibc_alloc.h` and avoid changing the host allocator
 for unrelated host-owned objects.
 
+### Use POSIX message queues
+
+The archive includes `mqueue.h` functions for opening, sending, receiving,
+configuring, and removing POSIX message queues. This small consumer links them
+from the Nelibc archive:
+
+```c
+#define _GNU_SOURCE
+#include <fcntl.h>
+#include <mqueue.h>
+#include <stdio.h>
+#include <unistd.h>
+
+int main(void) {
+  char name[64];
+  snprintf(name, sizeof name, "/nelibc-example-%ld", (long)getpid());
+  struct mq_attr attr = { .mq_maxmsg = 4, .mq_msgsize = 128 };
+  mqd_t queue = mq_open(name, O_CREAT | O_EXCL | O_RDWR, 0600, &attr);
+  if (queue == (mqd_t)-1) return 1;
+
+  const char message[] = "hello";
+  if (mq_send(queue, message, sizeof message, 0) != 0) return 2;
+  char buffer[128];
+  ssize_t size = mq_receive(queue, buffer, sizeof buffer, NULL);
+  if (size < 0) return 3;
+  printf("received %.*s\n", (int)size, buffer);
+
+  if (mq_close(queue) != 0) return 4;
+  return mq_unlink(name) != 0;
+}
+```
+
+Save it as `mq_example.c`, then run:
+
+```sh
+make lib-zig
+zig cc -Iinclude -fno-builtin -pthread mq_example.c build/libnelibc-zig.a -o mq_example
+./mq_example
+```
+
+The smoke test also covers timed waits, cancellation, queue attributes, and
+kernel notification registration. `SIGEV_THREAD` notification is not
+implemented yet.
+
 The archive also provides the legacy aligned-allocation API through
 `<malloc.h>`. For example, `memalign(128, 257)` returns storage aligned to
 128 bytes; release it with `free`. Alignments must be powers of two. Values
