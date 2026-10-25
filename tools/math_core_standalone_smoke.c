@@ -101,6 +101,25 @@ int main(void) {
         fetestexcept(FE_ALL_EXCEPT) != expected_flags) return 235;
   }
   if (feclearexcept(FE_ALL_EXCEPT) != 0) return 236;
+  const int combined_exceptions[] = {
+      FE_OVERFLOW | FE_INEXACT, FE_UNDERFLOW | FE_INEXACT};
+  for (unsigned i = 0;
+       i < sizeof(combined_exceptions) / sizeof(combined_exceptions[0]); ++i) {
+    if (feclearexcept(FE_ALL_EXCEPT) != 0 ||
+        feraiseexcept(FE_INVALID) != 0 ||
+        feraiseexcept(combined_exceptions[i]) != 0 ||
+        fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | combined_exceptions[i])) return 237;
+    pid_t child = fork();
+    if (child == 0) {
+      if (fesetenv(FE_NOMASK_ENV) != 0) _exit(238);
+      (void)feraiseexcept(combined_exceptions[i]);
+      _exit(239);
+    }
+    int child_status = 0;
+    if (child < 0 || waitpid(child, &child_status, 0) != child ||
+        !WIFSIGNALED(child_status) || WTERMSIG(child_status) != SIGFPE) return 240;
+  }
+  if (feclearexcept(FE_ALL_EXCEPT) != 0) return 241;
   for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
     pid_t child = fork();
     if (child == 0) {
