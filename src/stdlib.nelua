@@ -1864,6 +1864,44 @@ local function strtoull(text: *[0]cchar <const>, end_text: **cchar, base: cint):
   return parse_ulong(text, end_text, base, false)
 end
 
+-- intmax_t is long on the supported x86-64 Linux ABI. Keep these aliases in
+-- Nelua so inttypes consumers can replace the host conversion symbols too.
+local function strtoimax(text: *[0]cchar <const>, end_text: **cchar, base: cint): clong <cexport, codename 'strtoimax'>
+  return (@clong)(parse_long(text, end_text, base, false))
+end
+
+local function strtoumax(text: *[0]cchar <const>, end_text: **cchar, base: cint): culong <cexport, codename 'strtoumax'>
+  return (@culong)(parse_ulong(text, end_text, base, false))
+end
+
+local function isoc23_strtoimax(text: *[0]cchar <const>, end_text: **cchar, base: cint): clong
+    <cexport, codename '__isoc23_strtoimax'>
+  return (@clong)(parse_long(text, end_text, base, true))
+end
+
+local function isoc23_strtoumax(text: *[0]cchar <const>, end_text: **cchar, base: cint): culong
+    <cexport, codename '__isoc23_strtoumax'>
+  return (@culong)(parse_ulong(text, end_text, base, true))
+end
+
+local function wcstoimax(text: *[0]cint <const>, end_text: **cint, base: cint): clong <cexport, codename 'wcstoimax'>
+  return (@clong)(parse_wide_long(text, end_text, base, false))
+end
+
+local function wcstoumax(text: *[0]cint <const>, end_text: **cint, base: cint): culong <cexport, codename 'wcstoumax'>
+  return (@culong)(parse_wide_ulong(text, end_text, base, false))
+end
+
+local function isoc23_wcstoimax(text: *[0]cint <const>, end_text: **cint, base: cint): clong
+    <cexport, codename '__isoc23_wcstoimax'>
+  return (@clong)(parse_wide_long(text, end_text, base, true))
+end
+
+local function isoc23_wcstoumax(text: *[0]cint <const>, end_text: **cint, base: cint): culong
+    <cexport, codename '__isoc23_wcstoumax'>
+  return (@culong)(parse_wide_ulong(text, end_text, base, true))
+end
+
 local function wcstol(text: *[0]cint <const>, end_text: **cint, base: cint): clong
     <cexport, codename 'wcstol'>
   return (@clong)(parse_wide_long(text, end_text, base, false))
@@ -1942,6 +1980,11 @@ local function labs(value: clong): clong <cexport, codename 'labs'>
 end
 
 local function llabs(value: clonglong): clonglong <cexport, codename 'llabs'>
+  if value < 0 then return -value end
+  return value
+end
+
+local function imaxabs(value: clong): clong <cexport, codename 'imaxabs'>
   if value < 0 then return -value end
   return value
 end
@@ -2371,6 +2414,16 @@ end
 local function lldiv(numerator: clonglong, denominator: clonglong): LldivResult <cexport, codename 'lldiv'>
   local quotient: clonglong = numerator // denominator
   local remainder: clonglong = numerator % denominator
+  if remainder ~= 0 and ((numerator < 0) ~= (denominator < 0)) then
+    quotient = quotient + 1
+    remainder = remainder - denominator
+  end
+  return {quot = quotient, rem = remainder}
+end
+
+local function imaxdiv(numerator: clong, denominator: clong): LdivResult <cexport, codename 'imaxdiv'>
+  local quotient: clong = numerator // denominator
+  local remainder: clong = numerator % denominator
   if remainder ~= 0 and ((numerator < 0) ~= (denominator < 0)) then
     quotient = quotient + 1
     remainder = remainder - denominator

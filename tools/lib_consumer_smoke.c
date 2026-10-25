@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
@@ -1329,6 +1330,19 @@ int main(int argc, char **argv) {
   if (wcstoull(L"0xffffffffffffffff!", &wide_end, 0) != ULLONG_MAX ||
       *wide_end != L'!' || errno != 0)
     return 64;
+  if (wcstoimax(L"-9223372036854775808!", &wide_end, 10) != INTMAX_MIN ||
+      *wide_end != L'!' || errno != 0)
+    return 80;
+  if (wcstoumax(L"0xffffffffffffffff!", &wide_end, 0) != UINTMAX_MAX ||
+      *wide_end != L'!' || errno != 0)
+    return 81;
+  if (__isoc23_wcstoimax(L"0b101!", &wide_end, 0) != 5 || *wide_end != L'!')
+    return 85;
+  if (__isoc23_wcstoumax(L"0B101!", &wide_end, 0) != 5 || *wide_end != L'!')
+    return 86;
+  imaxdiv_t wide_division = imaxdiv(-17, 5);
+  if (wide_division.quot != -3 || wide_division.rem != -2 || imaxabs(-42) != 42)
+    return 84;
   if (__isoc23_wcstol(L"0b101!", &wide_end, 0) != 5 || *wide_end != L'!')
     return 68;
   if (__isoc23_wcstoll(L"0B1001!", &wide_end, 0) != 9 || *wide_end != L'!')
@@ -1362,6 +1376,15 @@ int main(int argc, char **argv) {
   char *end = NULL;
   long value = strtol("-42tail", &end, 10);
   if (value != -42 || end == NULL || strcmp(end, "tail") != 0) return 4;
+  errno = 0;
+  if (strtoimax("-9223372036854775808!", &end, 10) != INTMAX_MIN ||
+      *end != '!' || errno != 0)
+    return 82;
+  if (strtoumax("0xffffffffffffffff!", &end, 0) != UINTMAX_MAX ||
+      *end != '!' || errno != 0)
+    return 83;
+  if (__isoc23_strtoimax("0b101!", &end, 0) != 5 || *end != '!') return 87;
+  if (__isoc23_strtoumax("0B101!", &end, 0) != 5 || *end != '!') return 88;
   const char binary_text[] = "0b101!";
   if (nelibc_test_legacy_strtol(binary_text, &end, 0) != 0 ||
       end != &binary_text[1]) return 72;

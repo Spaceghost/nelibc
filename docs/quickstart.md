@@ -34,7 +34,9 @@ Nelua allocator + memory/string/strtol/math: nelua-libc:42 -> 42 (13 bytes, sqrt
 ```
 
 The example allocates through `nelibc_malloc`, uses standard memory, string,
-conversion, and math functions, including long-double `hypotl`, `nextafterl`,
+conversion and the six `<inttypes.h>` helpers (`imaxabs`, `imaxdiv`, `strtoimax`,
+`strtoumax`, `wcstoimax`, `wcstoumax`), plus math functions including
+long-double `hypotl`, `nextafterl`,
 `atan2l`, `asinl`, `logl`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`,
 `tanl`, `tanhl`, `sinhl`, `coshl`, `asinhl`, `acoshl`, `atanhl`, `powl`,
 `fminl`, `fmaxl`, `fdiml`, and `cbrtl`, plus

@@ -568,8 +568,8 @@ if_nametoindex,net/if.h,,,not-declared
 ilogb,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ilogbf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ilogbl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-imaxabs,inttypes.h,,,not-declared
-imaxdiv,inttypes.h,,,not-declared
+imaxabs,inttypes.h,include/inttypes.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+imaxdiv,inttypes.h,include/inttypes.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 index,strings.h,strings.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 inet_addr,arpa/inet.h,,,not-declared
 inet_aton,arpa/inet.h,,,not-declared
@@ -1260,7 +1260,7 @@ strtod,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implement
 strtod_l,stdlib.h,,,not-declared
 strtof,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strtof_l,stdlib.h,,,not-declared
-strtoimax,inttypes.h,,,not-declared
+strtoimax,inttypes.h,include/inttypes.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strtok,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strtok_r,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strtol,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1269,7 +1269,7 @@ strtold_l,stdlib.h,,,not-declared
 strtoll,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strtoul,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strtoull,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-strtoumax,inttypes.h,,,not-declared
+strtoumax,inttypes.h,include/inttypes.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strverscmp,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strxfrm,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strxfrm_l,string.h,,,not-declared
@@ -1434,7 +1434,7 @@ wcsspn,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcsstr,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstod,wchar.h,,,not-declared
 wcstof,wchar.h,,,not-declared
-wcstoimax,inttypes.h,,,not-declared
+wcstoimax,inttypes.h,include/inttypes.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstok,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstol,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstold,wchar.h,,,not-declared
@@ -1442,7 +1442,7 @@ wcstoll,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstombs,stdlib.h,nelibc_stdlib.h;wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstoul,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstoull,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-wcstoumax,inttypes.h,,,not-declared
+wcstoumax,inttypes.h,include/inttypes.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcswcs,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcswidth,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcsxfrm,wchar.h,,,not-declared
