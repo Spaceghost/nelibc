@@ -307,12 +307,14 @@ musl export set.
   or `pthread_cond_timedwait`. Async cancellation during a condition wait is
   deferred until after the mutex is reacquired, so cleanup handlers run with
   the required mutex ownership. Condition variables select realtime or monotonic
-  clocks through their attributes. Mutexes support absolute realtime timed locks,
-  Linux priority-inheritance futexes, and robust owner-death recovery through
-  Linux robust lists. The smoke covers robust PI recovery both with and without
-  a blocked waiter, PI timed-lock deadlines, and deferred cancellation while a
-  PI waiter is blocked. Forked processes
-  refresh their robust-list registration; process-shared robust recovery is
+  clocks through their attributes. `pthread_cond_clockwait` cancellation is
+  tested with a monotonic deadline; the waiter reacquires its mutex, runs its
+  cleanup handler, and clears the condition wait count. Mutexes support
+  absolute realtime timed locks, priority-inheritance futexes, and robust
+  owner-death recovery through Linux robust lists. The smoke covers robust PI
+  recovery both with and without a blocked waiter, PI timed-lock deadlines, and
+  deferred cancellation while a PI waiter is blocked. Forked processes refresh
+  their robust-list registration; process-shared robust recovery is
   exercised by a child that exits while holding the mutex. Spin locks, barriers,
   and read-write locks support process sharing. Reusable barriers use futex
   generations; async cancellation is deferred until the current generation
@@ -325,10 +327,14 @@ musl export set.
   wrappers, including read/write, socket I/O,
   poll/select, waits, sleeps, openat, and fsync. Condition-wait cancellation
   reacquires the mutex, then unwinds cleanup handlers before thread-specific
-  data destructors. The standalone smoke also cancels a semaphore waiter with
-  both a cleanup handler and a TSD value, then checks handler-before-destructor
-  order. In deferred mode, ordinary CPU-bound code must call
-  `pthread_testcancel`. Key deletion invalidates the generation, so another
+  data destructors. Semaphore wait retries check for deferred cancellation
+  after waiter registration races; without that check, a cancellation wake
+  could repeatedly change the sequence and spin instead of exiting. The
+  semaphore smoke cancels a blocked waiter and verifies the semaphore remains
+  destroyable. It also checks cancellation cleanup with a TSD value and verifies
+  handler-before-destructor order. In deferred mode, ordinary CPU-bound code
+  must call `pthread_testcancel`. Key deletion invalidates the generation, so
+  another
   thread's stored value receives no destructor after deletion even when the
   key slot is reused; the smoke verifies this behavior. A separate TSD test
   re-registers its value on every destructor call and confirms exactly the

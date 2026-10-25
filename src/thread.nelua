@@ -2824,8 +2824,10 @@ local function semaphore_wait(sem: *Semaphore, abstime: *Timespec, timed: boolea
   if not semaphore_valid(sem) then
     nelibc_errno_location()[0] = 22; return -1
   end
-  pthread_testcancel()
   while true do
+    -- A cancellation wake can race waiter registration and force the
+    -- sequence-recheck path to retry without entering the futex wait.
+    pthread_testcancel()
     local value = nelibc_atomic_load_int(&sem.value)
     if value > 0 and nelibc_atomic_cas_int(&sem.value, value, value - 1) == 0 then return 0 end
     if timed then

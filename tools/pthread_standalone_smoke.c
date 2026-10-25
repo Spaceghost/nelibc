@@ -218,6 +218,22 @@ static void *cancel_cond_worker(void *argument) {
   return 0;
 }
 
+static void *cancel_cond_clock_worker(void *argument) {
+  (void)argument;
+  struct timespec deadline;
+  if (clock_gettime(CLOCK_MONOTONIC, &deadline) != 0 ||
+      pthread_mutex_lock(&cancel_mutex) != 0)
+    return (void *)1;
+  deadline.tv_sec += 2;
+  pthread_cleanup_push(cancel_cleanup, &cancel_mutex);
+  cancel_waiting = 1;
+  (void)pthread_cond_clockwait(&cancel_condition, &cancel_mutex,
+                               CLOCK_MONOTONIC, &deadline);
+  pthread_cleanup_pop(0);
+  pthread_mutex_unlock(&cancel_mutex);
+  return 0;
+}
+
 static void *cancel_exit_order_worker(void *argument) {
   (void)argument;
   if (pthread_setspecific(cancel_exit_key, (void *)(uintptr_t)0x44) != 0)
@@ -1477,6 +1493,26 @@ int main(void) {
   if (pthread_mutex_lock(&cancel_mutex) != 0 ||
       pthread_mutex_unlock(&cancel_mutex) != 0)
     return 133;
+
+  cancel_waiting = 0;
+  cancel_cleanup_calls = 0;
+  if (pthread_create(&thread, 0, cancel_cond_clock_worker, 0) != 0)
+    return 320;
+  for (unsigned int i = 0; i < 10000000U && !cancel_waiting; ++i) {
+  }
+  for (unsigned int i = 0; i < 10000000U &&
+       __atomic_load_n(&cancel_condition.__waiters, __ATOMIC_ACQUIRE) == 0; ++i) {
+  }
+  if (!cancel_waiting ||
+      __atomic_load_n(&cancel_condition.__waiters, __ATOMIC_ACQUIRE) == 0 ||
+      pthread_cancel(thread) != 0 ||
+      pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 321;
+  if (pthread_mutex_lock(&cancel_mutex) != 0 ||
+      pthread_mutex_unlock(&cancel_mutex) != 0 ||
+      __atomic_load_n(&cancel_condition.__waiters, __ATOMIC_ACQUIRE) != 0)
+    return 322;
 
   cancel_exit_order = 0;
   cancel_exit_destructor_calls = 0;
