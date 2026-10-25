@@ -337,7 +337,7 @@ fesetexceptflag,fenv.h,fenv.h,,host-delegated
 fesetround,fenv.h,fenv.h,,host-delegated
 fetestexcept,fenv.h,fenv.h,,host-delegated
 feupdateenv,fenv.h,fenv.h,,host-delegated
-fexecve,unistd.h,,,not-declared
+fexecve,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fflush,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 fflush_unlocked,stdio.h,,,not-declared
 ffs,strings.h,strings.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

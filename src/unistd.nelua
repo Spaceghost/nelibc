@@ -651,6 +651,11 @@ local function execveat(dirfd: cint, pathname: *[0]cchar <const>, argv: *[0]*[0]
   )))
 end
 
+local function fexecve(descriptor: cint, argv: *[0]*[0]cchar,
+    envp: *[0]*[0]cchar): cint <cexport, codename 'fexecve'>
+  return execveat(descriptor, '', argv, envp, 0x1000_cint) -- AT_EMPTY_PATH
+end
+
 local function _exit(status: cint): void <cexport, codename '_exit'>
   nelibc_raw_syscall3(231_culong, (@culong)(status), 0_culong, 0_culong)
   while true do end

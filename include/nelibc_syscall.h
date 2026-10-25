@@ -320,6 +320,7 @@ int getdomainname(char *name, size_t length);
 int getpid(void);
 pid_t fork(void);
 int execve(const char *pathname, char *const argv[], char *const envp[]);
+int fexecve(int fd, char *const argv[], char *const envp[]);
 int execv(const char *pathname, char *const argv[]);
 int execvp(const char *file, char *const argv[]);
 #if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)

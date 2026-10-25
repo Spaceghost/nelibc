@@ -733,6 +733,9 @@ int main(int argc, char **argv) {
   if (argc == 2 && strcmp(argv[1], "--verify-execvpe") == 0)
     return getenv("NELIBC_EXEC_PROBE") != NULL &&
            strcmp(getenv("NELIBC_EXEC_PROBE"), "yes") == 0 ? 0 : 10;
+  if (argc == 2 && strcmp(argv[1], "--verify-fexecve") == 0)
+    return getenv("NELIBC_FEXEC_PROBE") != NULL &&
+           strcmp(getenv("NELIBC_FEXEC_PROBE"), "yes") == 0 ? 0 : 11;
 
   const char input[] = "Nelua libc";
   if (strcasestr(input, "LIBC") != &input[6] ||
@@ -1254,6 +1257,20 @@ int main(int argc, char **argv) {
   if (waitpid(custom_environment_child, &custom_environment_status, 0) !=
           custom_environment_child || !WIFEXITED(custom_environment_status) ||
       WEXITSTATUS(custom_environment_status) != 0) return 27;
+  pid_t descriptor_child = fork();
+  if (descriptor_child < 0) return 28;
+  if (descriptor_child == 0) {
+    int executable_fd = open(argv[0], O_RDONLY | O_CLOEXEC);
+    if (executable_fd < 0) _Exit(127);
+    char *descriptor_arguments[] = {argv[0], "--verify-fexecve", NULL};
+    char *descriptor_environment[] = {"NELIBC_FEXEC_PROBE=yes", NULL};
+    fexecve(executable_fd, descriptor_arguments, descriptor_environment);
+    _Exit(127);
+  }
+  int descriptor_status = 0;
+  if (waitpid(descriptor_child, &descriptor_status, 0) != descriptor_child ||
+      !WIFEXITED(descriptor_status) || WEXITSTATUS(descriptor_status) != 0)
+    return 29;
   char *child_argv[] = {argv[0], "--verify-unsetenv", NULL};
   execv(argv[0], child_argv);
   return 12;
