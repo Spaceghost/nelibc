@@ -142,6 +142,8 @@ extern long double nelibc_asinhl(long double);
 extern long double nelibc_acoshl(long double);
 extern long double nelibc_atanhl(long double);
 extern long double nelibc_powl(long double, long double);
+extern long double nelibc_exp10l(long double);
+extern long double nelibc_pow10l(long double);
 extern long double nelibc_nanl(const char *);
 extern long double nelibc_fminl(long double, long double);
 extern long double nelibc_fmaxl(long double, long double);
@@ -1691,6 +1693,29 @@ int main(void) {
       fprintf(stderr, "powl negative generated-input mismatch i=%zu\n", i);
       return 1;
     }
+  }
+  const long double exp10l_values[] = {
+      -INFINITY, -5000.0L, -100.0L, -1.0L, -0.0L,
+      0.0L, 1.0L, 10.0L, 100.0L, 5000.0L, INFINITY, NAN};
+  for (size_t i = 0; i < sizeof exp10l_values / sizeof exp10l_values[0]; ++i) {
+    const long double value = exp10l_values[i];
+    const long double expected = exp10l(value);
+    const long double actual = nelibc_exp10l(value);
+    const long double alias = nelibc_pow10l(value);
+    if (!long_double_math_close(actual, expected) ||
+        !long_double_math_close(alias, expected) ||
+        (expected == 0.0L && (signbit(actual) != signbit(expected) ||
+                              signbit(alias) != signbit(expected)))) {
+      fprintf(stderr, "exp10l/pow10l mismatch input=%zu actual=%.21Le alias=%.21Le expected=%.21Le\n",
+              i, actual, alias, expected);
+      return 1;
+    }
+  }
+  errno = 0;
+  if (nelibc_exp10l(1.0L) != 10.0L || nelibc_pow10l(0.0L) != 1.0L ||
+      !isinf(nelibc_exp10l(5000.0L)) || errno != ERANGE) {
+    fprintf(stderr, "exp10l/pow10l exact values or overflow handling failed\n");
+    return 1;
   }
   if (!isnan(nelibc_powl(-2.0L, 0.5L)) ||
       !isnan(nelibc_powl(quiet_nan.value, 2.0L)) ||

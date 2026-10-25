@@ -912,6 +912,14 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   return result
 end
 
+local function exp10l(value: clongdouble): clongdouble <cexport, codename 'exp10l'>
+  return powl(10_clongdouble, value)
+end
+
+local function pow10l(value: clongdouble): clongdouble <cexport, codename 'pow10l'>
+  return exp10l(value)
+end
+
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>
   local result = nelibc_ldexp_hw(value, exponent)
   local input_bits: DoubleBits = {value = value}

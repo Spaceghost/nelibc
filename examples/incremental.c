@@ -86,6 +86,8 @@ int main(void) {
   const long double power_long = powl(-2.0L, 5.0L);
   const long double fused_long = fmal(0x1.0000000000000002p0L,
                                       0x1.fffffffffffffffc000p-1L, -1.0L);
+  const long double decimal_power_long = exp10l(-2.0L);
+  const long double decimal_alias_long = pow10l(2.0L);
   const long double minimum_long = fminl(-0.0L, 0.0L);
   const long double maximum_long = fmaxl(-0.0L, 0.0L);
   const long double positive_difference_long = fdiml(5.0L, 3.0L);
@@ -198,6 +200,8 @@ int main(void) {
       !(inverse_hyperbolic_tangent_long > 0.549306144334054L && inverse_hyperbolic_tangent_long < 0.549306144334056L) ||
       power_long != -32.0L ||
       fused_long != -0x1p-126L ||
+      !(decimal_power_long > 0.009L && decimal_power_long < 0.011L) ||
+      decimal_alias_long != 100.0L ||
       !signbit(minimum_long) || signbit(maximum_long) || positive_difference_long != 2.0L ||
       cube_root_long != -0.5L ||
       long_double_long != 8.0L || long_double_truncated != -1.0L ||

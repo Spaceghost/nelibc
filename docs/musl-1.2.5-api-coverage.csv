@@ -291,7 +291,7 @@ exit,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 exp,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exp10,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exp10f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-exp10l,math.h,,,not-declared
+exp10l,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exp2,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exp2f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exp2l,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -868,7 +868,7 @@ posix_spawnp,spawn.h,,,not-declared
 pow,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 pow10,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 pow10f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-pow10l,math.h,,,not-declared
+pow10l,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 powf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 powl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ppoll,poll.h,,,not-declared

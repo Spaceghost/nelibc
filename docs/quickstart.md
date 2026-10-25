@@ -62,18 +62,18 @@ The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 `remainder`, `drem`, `dremf`, `remquo`, `remquof`, `fmin`, `fmax`, `fdim`, `fma`, `fmaf`, `erf`, `erff`, `erfc`, `erfcf`, `tgamma`, `tgammaf`, `lgamma`, `lgammaf`, `lgamma_r`, `lgammaf_r`, `jn`, `jnf`, `yn`, `ynf`, `j0`, `j0f`, `j1`, `j1f`, `sincos`, `sincosf`, `y0`, `y0f`, `y1`, `y1f`, `cbrt`, `frexp`, `modf`, `ldexp`, `scalbn`,
 `scalbln`, `pow`, `atan`, `atan2`, `asinh`, `acosh`, `atanh`, `ilogb`,
 `logb`, `nextafter`, and `nexttoward`.
-On x86-64, `nanl`, `fabsl`, `copysignl`, `sqrtl`, `fmodl`, `remainderl`, `frexpl`,
+On x86-64, `nanl`, `fabsl`, `copysignl`, `fmal`, `sqrtl`, `fmodl`, `remainderl`, `frexpl`,
 `modfl`, `hypotl`, `nextafterl`, `atanl`, `atan2l`, `asinl`, `acosl`, `logl`,
 `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`,
 `sincosl`, `tanl`, `tanhl`, `sinhl`, `coshl`, `asinhl`, `acoshl`, `atanhl`,
-`powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`,
+`powl`, `exp10l`, `pow10l`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`,
 `ilogbl`, `logbl`, `ldexpl`,
 `scalbnl`, `scalblnl`, `truncl`,
 `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`,
 `lroundl`, and `llroundl`
 operate directly on the extended precision
-`long double` representation; the rest of the long-double math API is still
-incomplete.
+`long double` representation; long-double error functions and gamma
+functions remain incomplete.
 `rint` and `rintl` observe the active rounding direction and may raise
 `FE_INEXACT`; `nearbyint` and `nearbyintl` preserve the direction and suppress
 newly raised inexact exceptions. `roundl` rounds halfway cases away from zero;

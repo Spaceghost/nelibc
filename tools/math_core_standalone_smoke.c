@@ -34,6 +34,7 @@ int main(void) {
   const long double fma_y = 1.0L - 0x1p-63L;
   if (fmal(fma_x, fma_y, -1.0L) != -0x1p-126L ||
       fmal(LDBL_MAX, 2.0L, -LDBL_MAX) != LDBL_MAX) return 183;
+  if (exp10l(1.0L) != 10.0L || pow10l(0.0L) != 1.0L) return 184;
   if (!signbit(fminl(-0.0L, 0.0L)) || signbit(fmaxl(-0.0L, 0.0L)) ||
       fdiml(5.0L, 3.0L) != 2.0L || fdiml(3.0L, 5.0L) != 0.0L) return 179;
   if (cbrtl(-0.125L) != -0.5L || cbrtl(LDBL_MIN) <= 0.0L) return 180;
@@ -63,6 +64,8 @@ int main(void) {
       !(acoshl(2.0L) > 1.316L && acoshl(2.0L) < 1.318L) ||
       !(atanhl(0.5L) > 0.549L && atanhl(0.5L) < 0.550L) ||
       powl(-2.0L, 5.0L) != -32.0L || powl(2.0L, -3.0L) != 0.125L ||
+      !(exp10l(-2.0L) > 0.009L && exp10l(-2.0L) < 0.011L) ||
+      pow10l(2.0L) != 100.0L ||
       !(expm1l(0x1p-60L) > 0.0L && expm1l(0x1p-60L) < 0x1p-59L)) return 178;
   errno = 0;
   if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;
