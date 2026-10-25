@@ -527,6 +527,7 @@ local function writev(fd: cint, iov: pointer <const>, iovcnt: cint): clong <cexp
 end
 
 local Timespec: type = @record{tv_sec: clong, tv_nsec: clong}
+local Timeval: type = @record{tv_sec: clong, tv_usec: clong}
 local Sigset: type = @record{bits: [16]culong}
 local PselectSigmask: type = @record{mask: pointer, size: csize}
 
@@ -4406,6 +4407,25 @@ local function utimensat(dirfd: cint, pathname: pointer <const>, timestamps: poi
     0_culong,
     0_culong
   )))
+end
+
+-- Legacy microsecond timestamp interface converted to the nanosecond syscall ABI.
+local function utimes(pathname: *[0]cchar <const>, timestamps: *Timeval <const>): cint
+    <cexport, codename 'utimes'>
+  if timestamps == nilptr then return utimensat(-100_cint, pathname, nilptr, 0_cint) end
+  local timeval_array: *[0]Timeval = (@*[0]Timeval)(timestamps)
+  local converted: [2]Timespec = {
+    {tv_sec = timeval_array[0].tv_sec, tv_nsec = 0_clong},
+    {tv_sec = timeval_array[1].tv_sec, tv_nsec = 0_clong}
+  }
+  for index = 0, 1 do
+    if timeval_array[index].tv_usec < 0_clong or timeval_array[index].tv_usec >= 1000000_clong then
+      nelibc_errno_location()[0] = 22_cint -- EINVAL
+      return -1_cint
+    end
+    converted[index].tv_nsec = timeval_array[index].tv_usec * 1000_clong
+  end
+  return utimensat(-100_cint, pathname, (@pointer)(&converted[0]), 0_cint)
 end
 
 -- POSIX futimens uses utimensat's Linux AT_EMPTY_PATH descriptor form.

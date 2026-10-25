@@ -69,6 +69,8 @@ int setitimer(int which, const struct itimerval *new_value,
 
 #endif
 
+int utimes(const char *pathname, const struct timeval timestamps[2]);
+
 /* Add Nelibc's Linux syscall declarations to the standard time API header. */
 #include "nelibc_syscall.h"
 

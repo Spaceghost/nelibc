@@ -131,6 +131,11 @@ parses them with Nelibc `strptime`, validates normalized calendar fields with
 consumer covers successful parsing, invalid dates, unmatched input, and
 missing/unset template paths in hybrid and standalone profiles.
 
+BSD/POSIX `utimes` converts timeval microseconds to the native `utimensat`
+timespec ABI, validates each microsecond field, and supports `NULL` for current
+timestamps. Consumer checks verify exact stored microseconds and invalid input
+across hybrid and standalone profiles.
+
 POSIX `pselect` uses Linux `pselect6` with its kernel signal-mask descriptor.
 It applies the same reserved-signal filtering and timeout copy as `ppoll`.
 The consumer matrix checks readiness, signal-mask use, and unchanged timeout

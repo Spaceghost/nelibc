@@ -2198,6 +2198,21 @@ int main(int argc, char **argv) {
   struct stat timestamp_status;
   if (stat(timestamp_path, &timestamp_status) != 0 || timestamp_status.st_mtim.tv_sec <= 0 ||
       close(timestamp_fd) != 0) return 390;
+  struct timeval legacy_timestamps[2] = {
+      {.tv_sec = 1000000000, .tv_usec = 123456},
+      {.tv_sec = 1000000001, .tv_usec = 654321}};
+  if (utimes(timestamp_path, legacy_timestamps) != 0 ||
+      stat(timestamp_path, &timestamp_status) != 0 ||
+      timestamp_status.st_atim.tv_sec != 1000000000 ||
+      timestamp_status.st_atim.tv_nsec != 123456000 ||
+      timestamp_status.st_mtim.tv_sec != 1000000001 ||
+      timestamp_status.st_mtim.tv_nsec != 654321000)
+    return 403;
+  legacy_timestamps[0].tv_usec = 1000000;
+  errno = 0;
+  if (utimes(timestamp_path, legacy_timestamps) != -1 || errno != EINVAL ||
+      utimes(timestamp_path, NULL) != 0)
+    return 404;
   errno = 0;
   if (utimensat(AT_FDCWD, timestamp_path, NULL, 0x40000000) != -1 || errno != EINVAL) return 391;
   if (unlink(timestamp_path) != 0) return 392;
