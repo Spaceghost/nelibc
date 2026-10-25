@@ -208,6 +208,8 @@ end
 local function nelibc_sqrt_hw(value: cdouble): cdouble <cimport> end
 local function nelibc_sqrtf_hw(value: cfloat): cfloat <cimport> end
 local function nelibc_sqrtl_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_frexpl_hw(value: clongdouble, exponent: *[0]cint): clongdouble <cimport> end
+local function nelibc_modfl_hw(value: clongdouble, integral: *[0]clongdouble): clongdouble <cimport> end
 local function nelibc_fmodl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
 local function nelibc_remainderl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
 local function nelibc_fabsl_hw(value: clongdouble): clongdouble <cimport> end
@@ -829,6 +831,11 @@ local function frexpf(value: cfloat, exponent: *[0]cint): cfloat
   exponent[0] = field - 126_cint
   representation.bits = (bits & 0x807FFFFF_cuint) | 0x3F000000_cuint
   return representation.value
+end
+
+local function frexpl(value: clongdouble, exponent: *[0]cint): clongdouble
+    <cexport, codename 'frexpl'>
+  return nelibc_frexpl_hw(value, exponent)
 end
 
 local function fabsf(value: cfloat): cfloat <cexport, codename 'fabsf'>
@@ -2319,6 +2326,11 @@ local function modff(value: cfloat, integral: *[0]cfloat): cfloat
     return float_from_bits(representation.bits & 0x80000000_cuint)
   end
   return value - integral[0]
+end
+
+local function modfl(value: clongdouble, integral: *[0]clongdouble): clongdouble
+    <cexport, codename 'modfl'>
+  return nelibc_modfl_hw(value, integral)
 end
 
 local function trunc(value: cdouble): cdouble <cexport, codename 'trunc'>

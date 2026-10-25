@@ -122,6 +122,8 @@ extern double nelibc_sqrt(double);
 extern long double nelibc_sqrtl(long double);
 extern long double nelibc_fmodl(long double, long double);
 extern long double nelibc_remainderl(long double, long double);
+extern long double nelibc_frexpl(long double, int *);
+extern long double nelibc_modfl(long double, long double *);
 extern float nelibc_fmodf(float, float);
 extern double nelibc_fmod(double, double);
 extern float nelibc_remainderf(float, float);
@@ -1343,6 +1345,54 @@ int main(void) {
     fprintf(stderr, "long-double remainder domain handling failed\n");
     return 1;
   }
+  const long double extended_values[] = {
+      0.0L, -0.0L, 0.75L, -12.75L, extended, -extended,
+      0x1p-16445L, LDBL_MAX, INFINITY, NAN};
+  for (size_t i = 0; i < sizeof(extended_values) / sizeof(extended_values[0]); ++i) {
+    long double value = extended_values[i];
+    int expected_exponent = 0, actual_exponent = 0;
+    long double expected_fraction = frexpl(value, &expected_exponent);
+    long double actual_fraction = nelibc_frexpl(value, &actual_exponent);
+    if ((!isnan(value) && (actual_fraction != expected_fraction ||
+                           (isfinite(value) && actual_exponent != expected_exponent))) ||
+        (isnan(value) && !isnan(actual_fraction))) {
+      fprintf(stderr, "frexpl mismatch at vector %zu: expected %.21Lg/%d actual %.21Lg/%d\n",
+              i, expected_fraction, expected_exponent, actual_fraction, actual_exponent);
+      return 1;
+    }
+    long double expected_integral = 0.0L, actual_integral = 0.0L;
+    expected_fraction = modfl(value, &expected_integral);
+    actual_fraction = nelibc_modfl(value, &actual_integral);
+    if ((!isnan(value) && (actual_fraction != expected_fraction ||
+                           actual_integral != expected_integral)) ||
+        (isnan(value) && (!isnan(actual_fraction) || !isnan(actual_integral)))) {
+      fprintf(stderr, "modfl mismatch at vector %zu: expected %.21Lg + %.21Lg actual %.21Lg + %.21Lg\n",
+              i, expected_integral, expected_fraction, actual_integral, actual_fraction);
+      return 1;
+    }
+  }
+  int saved_rounding = fegetround();
+  if (fesetround(FE_UPWARD) != 0) return 1;
+  long double integral_part = 0.0L;
+  if (nelibc_modfl(-12.75L, &integral_part) != -0.75L ||
+      integral_part != -12.0L || fegetround() != FE_UPWARD) {
+    fprintf(stderr, "modfl rounding-mode independence failed\n");
+    return 1;
+  }
+  if (fesetround(saved_rounding) != 0) return 1;
+  feclearexcept(FE_ALL_EXCEPT);
+  (void)nelibc_modfl(12.75L, &integral_part);
+  if (fetestexcept(FE_INEXACT) != 0) {
+    fprintf(stderr, "modfl unexpectedly raised FE_INEXACT\n");
+    return 1;
+  }
+  feraiseexcept(FE_INEXACT);
+  (void)nelibc_modfl(12.75L, &integral_part);
+  if (fetestexcept(FE_INEXACT) == 0) {
+    fprintf(stderr, "modfl cleared a pre-existing FE_INEXACT\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
 
   if (check_bessel_order(-100, 0, 0.0f) || check_bessel_order(-100, -0, -0.0f)) return 1;
   if (check_bessel_order(-100, 0.01, 0.01f) || check_bessel_order(-100, -0.01, -0.01f)) return 1;

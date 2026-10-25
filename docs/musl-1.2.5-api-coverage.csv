@@ -406,7 +406,7 @@ fremovexattr,sys/xattr.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc
 freopen,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 frexp,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 frexpf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-frexpl,math.h,,,not-declared
+frexpl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fscanf,stdio.h,,,not-declared
 fseek,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 fseeko,stdio.h,nelibc_stdio_standalone.h;stdio.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
@@ -765,7 +765,7 @@ mlockall,sys/mman.h,,,not-declared
 mmap,sys/mman.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 modf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 modff,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-modfl,math.h,,,not-declared
+modfl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 mount,sys/mount.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 mprotect,sys/mman.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 mq_close,mqueue.h,,,not-declared

@@ -21,6 +21,78 @@ nelibc_sqrtl_hw:
   ret
 .size nelibc_sqrtl_hw, .-nelibc_sqrtl_hw
 
+/* FXTRACT returns the significand in ST(0) and the exponent in ST(1). */
+.globl nelibc_frexpl_hw
+.type nelibc_frexpl_hw,@function
+nelibc_frexpl_hw:
+  movq 8(%rsp), %rax
+  movzwl 16(%rsp), %edx
+  andl $0x7fff, %edx
+  orq %rax, %rdx
+  jne 1f
+  movl $0, (%rdi)
+  fldt 8(%rsp)
+  ret
+1:
+  fldt 8(%rsp)
+  fxam
+  fnstsw %ax
+  andw $0x4500, %ax
+  cmpw $0x0500, %ax
+  je 2f
+  cmpw $0x0100, %ax
+  je 2f
+  fxtract
+  fxch %st(1)
+  fistpl (%rdi)
+  addl $1, (%rdi)
+  fldt .Ltwo
+  fdivrp %st, %st(1)
+  ret
+2:
+  movl $0, (%rdi)
+  ret
+.size nelibc_frexpl_hw, .-nelibc_frexpl_hw
+
+/* Round a copy toward zero, store it, and return x - integral. */
+.globl nelibc_modfl_hw
+.type nelibc_modfl_hw,@function
+nelibc_modfl_hw:
+  subq $48, %rsp
+  fnstsw 0(%rsp)
+  fldt 56(%rsp)
+  fxam
+  fnstsw %ax
+  andw $0x4500, %ax
+  cmpw $0x0500, %ax
+  je 2f
+  fnstcw 2(%rsp)
+  movzwl 2(%rsp), %eax
+  andl $0xfffff3ff, %eax
+  orl $0x0c00, %eax
+  movw %ax, 4(%rsp)
+  fldcw 4(%rsp)
+  fld %st(0)
+  frndint
+  fstpt (%rdi)
+  fldcw 2(%rsp)
+  fldt (%rdi)
+  fsubrp %st, %st(1)
+  fnstenv 16(%rsp)
+  testw $0x0020, 0(%rsp)
+  jne 1f
+  andw $0xffdf, 20(%rsp)
+1:
+  fldenv 16(%rsp)
+  addq $48, %rsp
+  ret
+2:
+  fstpt (%rdi)
+  fldz
+  addq $48, %rsp
+  ret
+.size nelibc_modfl_hw, .-nelibc_modfl_hw
+
 .globl nelibc_fmodl_hw
 .type nelibc_fmodl_hw,@function
 nelibc_fmodl_hw:
@@ -310,6 +382,10 @@ nelibc_log_pole_hw:
 .p2align 3
 .Lhalf:
   .double 0.5
+.p2align 4
+.Ltwo:
+  .quad 0x8000000000000000
+  .word 0x4000
 
 .text
 
