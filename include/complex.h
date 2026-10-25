@@ -34,6 +34,12 @@ long double complex cexpl(long double complex value);
 float complex clogf(float complex value);
 double complex clog(double complex value);
 long double complex clogl(long double complex value);
+float complex csinf(float complex value);
+double complex csin(double complex value);
+long double complex csinl(long double complex value);
+float complex ccosf(float complex value);
+double complex ccos(double complex value);
+long double complex ccosl(long double complex value);
 
 #else
 

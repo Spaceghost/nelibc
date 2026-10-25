@@ -30,6 +30,12 @@ int main(void) {
   float _Complex (*volatile call_clogf)(float _Complex) = clogf;
   double _Complex (*volatile call_clog)(double _Complex) = clog;
   long double _Complex (*volatile call_clogl)(long double _Complex) = clogl;
+  float _Complex (*volatile call_csinf)(float _Complex) = csinf;
+  double _Complex (*volatile call_csin)(double _Complex) = csin;
+  long double _Complex (*volatile call_csinl)(long double _Complex) = csinl;
+  float _Complex (*volatile call_ccosf)(float _Complex) = ccosf;
+  double _Complex (*volatile call_ccos)(double _Complex) = ccos;
+  long double _Complex (*volatile call_ccosl)(long double _Complex) = ccosl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -186,5 +192,28 @@ int main(void) {
       !isinf(call_creal(log_infinity)) || !isnan(call_cimag(log_infinity)) ||
       !isinf(call_creal(log_zero)) || !signbit(call_creal(log_zero)) ||
       fabs(call_cimag(log_zero) + acos(-1.0)) > 1e-15) return 9;
+  float _Complex sinf_value = call_csinf(__builtin_complex(1.0f, 0.5f));
+  double _Complex sin_value = call_csin(__builtin_complex(1.0, 0.5));
+  long double _Complex sinl_value = call_csinl(__builtin_complex(1.0L, 0.5L));
+  float _Complex cosf_value = call_ccosf(__builtin_complex(1.0f, 0.5f));
+  double _Complex cos_value = call_ccos(__builtin_complex(1.0, 0.5));
+  long double _Complex cosl_value = call_ccosl(__builtin_complex(1.0L, 0.5L));
+  float _Complex sinf_infinity = call_csinf(__builtin_complex(1.0f, INFINITY));
+  double _Complex cos_infinity = call_ccos(__builtin_complex(1.0, (double)INFINITY));
+  if (fabsf(call_crealf(sinf_value) - sinf(1.0f) * coshf(0.5f)) > 2e-6f ||
+      fabsf(call_cimagf(sinf_value) - cosf(1.0f) * sinhf(0.5f)) > 2e-6f ||
+      fabs(call_creal(sin_value) - sin(1.0) * cosh(0.5)) > 2e-15 ||
+      fabs(call_cimag(sin_value) - cos(1.0) * sinh(0.5)) > 2e-15 ||
+      fabsl(call_creall(sinl_value) - sinl(1.0L) * coshl(0.5L)) > 2e-18L ||
+      fabsl(call_cimagl(sinl_value) - cosl(1.0L) * sinhl(0.5L)) > 2e-18L ||
+      fabsf(call_crealf(cosf_value) - cosf(1.0f) * coshf(0.5f)) > 2e-6f ||
+      fabsf(call_cimagf(cosf_value) + sinf(1.0f) * sinhf(0.5f)) > 2e-6f ||
+      fabs(call_creal(cos_value) - cos(1.0) * cosh(0.5)) > 2e-15 ||
+      fabs(call_cimag(cos_value) + sin(1.0) * sinh(0.5)) > 2e-15 ||
+      fabsl(call_creall(cosl_value) - cosl(1.0L) * coshl(0.5L)) > 2e-18L ||
+      fabsl(call_cimagl(cosl_value) + sinl(1.0L) * sinhl(0.5L)) > 2e-18L ||
+      !isinf(call_crealf(sinf_infinity)) || !isinf(call_cimagf(sinf_infinity)) ||
+      !isinf(call_creal(cos_infinity)) || !isinf(call_cimag(cos_infinity)) ||
+      call_cimag(cos_infinity) > 0.0) return 10;
   return 0;
 }

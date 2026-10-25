@@ -4651,3 +4651,69 @@ local function nelibc_clogl_parts(x: clongdouble, y: clongdouble,
   end
   imaginary_out[0] = atan2l(y, x)
 end
+
+local function nelibc_csinparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_csinparts_f'>
+  local sine_x = sinf(x)
+  local cosine_x = cosf(x)
+  local sinh_y = sinhf(y)
+  local cosh_y = coshf(y)
+  real_out[0] = sine_x * cosh_y
+  imaginary_out[0] = cosine_x * sinh_y
+end
+
+local function nelibc_csinparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_csinparts'>
+  local sine_x = sin(x)
+  local cosine_x = cos(x)
+  local sinh_y = sinh(y)
+  local cosh_y = cosh(y)
+  real_out[0] = sine_x * cosh_y
+  imaginary_out[0] = cosine_x * sinh_y
+end
+
+local function nelibc_csinparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_csinparts_l'>
+  local sine_x = sinl(x)
+  local cosine_x = cosl(x)
+  local sinh_y = sinhl(y)
+  local cosh_y = coshl(y)
+  real_out[0] = sine_x * cosh_y
+  imaginary_out[0] = cosine_x * sinh_y
+end
+
+local function nelibc_ccosparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_ccosparts_f'>
+  local sine_x = sinf(x)
+  local cosine_x = cosf(x)
+  local sinh_y = sinhf(y)
+  local cosh_y = coshf(y)
+  real_out[0] = cosine_x * cosh_y
+  imaginary_out[0] = -(sine_x * sinh_y)
+end
+
+local function nelibc_ccosparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_ccosparts'>
+  local sine_x = sin(x)
+  local cosine_x = cos(x)
+  local sinh_y = sinh(y)
+  local cosh_y = cosh(y)
+  real_out[0] = cosine_x * cosh_y
+  imaginary_out[0] = -(sine_x * sinh_y)
+end
+
+local function nelibc_ccosparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_ccosparts_l'>
+  local sine_x = sinl(x)
+  local cosine_x = cosl(x)
+  local sinh_y = sinhl(y)
+  local cosh_y = coshl(y)
+  real_out[0] = cosine_x * cosh_y
+  imaginary_out[0] = -(sine_x * sinh_y)
+end
