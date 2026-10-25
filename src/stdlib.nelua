@@ -15,6 +15,8 @@ local function malloc(size: csize): pointer <cimport> end
 local function free(ptr: pointer): void <cimport> end
 local function realloc(ptr: pointer, size: csize): pointer <cimport> end
 local function strtod(text: cstring <const>, end_text: **cchar): cdouble <cimport> end
+local function strtof(text: cstring <const>, end_text: **cchar): cfloat <cimport> end
+local function strtold(text: cstring <const>, end_text: **cchar): clongdouble <cimport> end
 local function raise(signal: cint): cint <cimport> end
 local function _Exit(status: cint): void <cimport> end
 local function fork(): cint <cimport> end
@@ -2102,6 +2104,92 @@ end
 local function wcstoull(text: *[0]cint <const>, end_text: **cint, base: cint): culonglong
     <cexport, codename 'wcstoull'>
   return parse_wide_ulong(text, end_text, base, false)
+end
+
+local function wide_float_input(text: *[0]cint <const>, bytes_out: **cchar): boolean <inline>
+  local bytes_pointer: *[0]*cchar = (@*[0]*cchar)(bytes_out)
+  local source: *[0]cint = (@*[0]cint)(text)
+  local byte_length: csize = wcsrtombs(nilptr, &source, 0, nilptr)
+  if byte_length == ~0_csize then
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return false
+  end
+  local bytes: *[0]cchar = (@*[0]cchar)(malloc(byte_length + 1))
+  if bytes == nilptr then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return false
+  end
+  source = (@*[0]cint)(text)
+  if wcsrtombs(bytes, &source, byte_length + 1, nilptr) == ~0_csize then
+    free((@pointer)(bytes))
+    nelibc_errno_location()[0] = 84 -- EILSEQ
+    return false
+  end
+  bytes_pointer[0] = bytes
+  return true
+end
+
+local function wide_float_end(text: *[0]cint <const>, bytes: *[0]cchar <const>,
+    byte_end: *[0]cchar <const>): *[0]cint <inline>
+  local byte_offset: csize = (@csize)((@usize)(byte_end) - (@usize)(bytes))
+  local wide_offset: csize = 0
+  local byte_count: csize = 0
+  local state: [16]culong = {}
+  local encoded: [64]cchar = {}
+  while byte_count < byte_offset do
+    local converted: csize = wcrtomb((@*[0]cchar)(&encoded[0]), text[wide_offset],
+        (@pointer)(&state[0]))
+    if converted == ~0_csize then return &text[wide_offset] end
+    if converted > byte_offset - byte_count then return &text[wide_offset] end
+    byte_count = byte_count + converted
+    wide_offset = wide_offset + 1
+  end
+  return &text[wide_offset]
+end
+
+local function wcstod(text: *[0]cint <const>, end_text: **cint): cdouble
+    <cexport, codename 'wcstod'>
+  local end_pointer: *[0]*cint = (@*[0]*cint)(end_text)
+  local bytes: *[0]cchar = nilptr
+  if not wide_float_input(text, &bytes) then
+    if end_text ~= nilptr then end_pointer[0] = (@*[0]cint)(text) end
+    return 0.0_cdouble
+  end
+  local byte_end: *[0]cchar = bytes
+  local result: cdouble = strtod((@cstring)(bytes), &byte_end)
+  if end_text ~= nilptr then end_pointer[0] = wide_float_end(text, bytes, byte_end) end
+  free((@pointer)(bytes))
+  return result
+end
+
+local function wcstof(text: *[0]cint <const>, end_text: **cint): cfloat
+    <cexport, codename 'wcstof'>
+  local end_pointer: *[0]*cint = (@*[0]*cint)(end_text)
+  local bytes: *[0]cchar = nilptr
+  if not wide_float_input(text, &bytes) then
+    if end_text ~= nilptr then end_pointer[0] = (@*[0]cint)(text) end
+    return 0.0_cfloat
+  end
+  local byte_end: *[0]cchar = bytes
+  local result: cfloat = strtof((@cstring)(bytes), &byte_end)
+  if end_text ~= nilptr then end_pointer[0] = wide_float_end(text, bytes, byte_end) end
+  free((@pointer)(bytes))
+  return result
+end
+
+local function wcstold(text: *[0]cint <const>, end_text: **cint): clongdouble
+    <cexport, codename 'wcstold'>
+  local end_pointer: *[0]*cint = (@*[0]*cint)(end_text)
+  local bytes: *[0]cchar = nilptr
+  if not wide_float_input(text, &bytes) then
+    if end_text ~= nilptr then end_pointer[0] = (@*[0]cint)(text) end
+    return 0.0_clongdouble
+  end
+  local byte_end: *[0]cchar = bytes
+  local result: clongdouble = strtold((@cstring)(bytes), &byte_end)
+  if end_text ~= nilptr then end_pointer[0] = wide_float_end(text, bytes, byte_end) end
+  free((@pointer)(bytes))
+  return result
 end
 
 local function isoc23_wcstoull(text: *[0]cint <const>, end_text: **cint, base: cint): culonglong

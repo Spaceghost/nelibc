@@ -37,6 +37,7 @@ HOST_DELEGATED = {
         "pthread_attr_setschedparam", "pthread_attr_getschedparam",
         "pthread_create", "pthread_cancel", "pthread_sigmask", "pthread_kill", "pthread_getcpuclockid", "pthread_join", "pthread_tryjoin_np", "pthread_timedjoin_np", "pthread_getname_np", "pthread_setname_np", "pthread_getattr_np", "pthread_getattr_default_np", "pthread_setattr_default_np", "pthread_getconcurrency", "pthread_setconcurrency", "pthread_getaffinity_np", "pthread_setaffinity_np", "pthread_detach", "pthread_equal",
         "pthread_self", "pthread_exit", "pthread_testcancel",
+        "wcscoll", "wcscoll_l", "wcsxfrm", "wcsxfrm_l",
         "pthread_setcancelstate", "pthread_setcanceltype", "pthread_mutexattr_init",
         "pthread_getschedparam", "pthread_setschedparam", "pthread_setschedprio",
         "pthread_once",

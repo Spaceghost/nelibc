@@ -323,11 +323,11 @@ including APIs absent from the pinned musl export set.
   exported by all three standalone archives. This is an inventory signal, not
   a completeness percentage. See `build/api-coverage.csv` after
   `make api-coverage`.
-- The corrected musl 1.2.5 public-symbol comparison finds 1,472 declarations
-  that are also exported by the pinned release archives: Nelibc exports 792
-  in at least one tested hybrid profile, delegates 188 to a hybrid host, and does not
-  yet declare 492. No declared API is missing from the tested hybrid archives.
-  The largest undeclared groups are wide characters (42), network database
+- The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
+  that are also exported by the pinned release archives: Nelibc exports 799
+  in at least one tested hybrid profile, delegates 192 to a hybrid host, and does not
+  yet declare 480. No declared API is missing from the tested hybrid archives.
+  The largest undeclared groups are wide characters (35), network database
   APIs (32), stdlib (30), and unistd (29). These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
@@ -336,6 +336,9 @@ including APIs absent from the pinned musl export set.
   helpers, plus glibc's four C23 parser aliases. Consumer checks pass under
   Zig/glibc, GCC/glibc, Zig/musl, TinyCC/glibc, and standalone Zig, GCC, and
   TinyCC; the C23 cases check `0b` parsing and the signed/unsigned limits.
+- Wide floating conversions `wcstof`, `wcstod`, and `wcstold` now use Nelibc's
+  multibyte conversion and floating parser in hybrid and standalone profiles.
+  Consumer coverage checks end-pointer mapping and no-conversion behavior.
 - GNU locale-specific `strto*_l` and `wcsto*_l` conversions now use the Nelua
   narrow and wide integer parsers, restoring the caller's prior thread locale.
   Their eight glibc C23 aliases are also exported. All seven consumer profiles

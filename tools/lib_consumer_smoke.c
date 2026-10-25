@@ -1620,6 +1620,15 @@ int main(int argc, char **argv) {
   if (wcstoimax(L"-9223372036854775808!", &wide_end, 10) != INTMAX_MIN ||
       *wide_end != L'!' || errno != 0)
     return 80;
+  if (wcstod(L" -12.5e2tail", &wide_end) != -1250.0 || *wide_end != L't')
+    return 87;
+  if (wcstof(L"0.125!", &wide_end) != 0.125f || *wide_end != L'!') return 88;
+  if (wcstold(L"3.5x", &wide_end) != 3.5L || *wide_end != L'x') return 89;
+  const wchar_t wide_invalid_float[] = L"+Q";
+  errno = 0;
+  if (wcstod(wide_invalid_float, &wide_end) != 0.0 ||
+      wide_end != wide_invalid_float || errno != 0)
+    return 90;
   if (wcstoumax(L"0xffffffffffffffff!", &wide_end, 0) != UINTMAX_MAX ||
       *wide_end != L'!' || errno != 0)
     return 81;

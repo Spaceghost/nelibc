@@ -62,23 +62,29 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,472 APIs: 792 exported by Nelibc in at least
-one tested hybrid profile, 188 intentionally delegated to the host in hybrid
-profiles, and 492 not declared by Nelibc. Every declared API in this pinned
+The current snapshot contains 1,471 APIs: 799 exported by Nelibc in at least
+one tested hybrid profile, 192 intentionally delegated to the host in hybrid
+profiles, and 480 not declared by Nelibc. Every declared API in this pinned
 baseline is either exported by at least one hybrid archive or intentionally
 delegated to its host. The separate seven-profile inventory tracks per-profile
 gaps. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 515 entries remain visible as unimplemented
+intentional omission; the 480 undeclared entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
 No real-valued `math.h` APIs in this pinned musl baseline remain undeclared.
-The largest remaining groups are wide characters (42), network database APIs
+The largest remaining groups are wide characters (35), network database APIs
 (32), stdlib (30), unistd (29), and stdio (28). The pthread rows without
 Nelibc declarations are two private musl cleanup helper symbols. Hybrid `fork`
 and `pthread_atfork` are intentionally host-delegated so host fork handlers
 still run; standalone archives export Nelibc's implementations. This is a
 breadth comparison, not a behavioral conformance score.
+
+Nelua implements `wcstof`, `wcstod`, and `wcstold` in all four hybrid
+profiles and the standalone profiles. They convert through the active
+multibyte locale, call Nelibc's floating parser, and map the byte end position
+back to the original wide string. Consumer checks cover all three precisions,
+end pointers, and input with no conversion.
 
 `clearenv` is implemented in Nelua alongside the environment mutation
 functions. It clears `environ`, releases Nelibc-owned entries, and permits
