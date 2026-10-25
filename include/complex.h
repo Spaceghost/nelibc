@@ -19,6 +19,9 @@ long double cimagl(long double complex value);
 float complex conjf(float complex value);
 double complex conj(double complex value);
 long double complex conjl(long double complex value);
+float complex cprojf(float complex value);
+double complex cproj(double complex value);
+long double complex cprojl(long double complex value);
 
 #else
 

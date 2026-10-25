@@ -106,10 +106,10 @@ also supports the GNU all-traps-enabled environment; smoke tests verify
 keep the host `fenv_t` ABI and use the host fenv implementation. Less-common
 environment edge cases and most of the C math API remain incomplete.
 
-`cabs*`, `creal*`, `cimag*`, and `conj*` are the first C complex-math
+`cabs*`, `creal*`, `cimag*`, `conj*`, and `cproj*` are the first C complex-math
 replacements. The complex argument and return ABI is handled in
-`src/complex_abi.c`; Nelua computes magnitudes with `hypot*` and conjugates the
-imaginary components. Run
+`src/complex_abi.c`; Nelua computes magnitudes with `hypot*`, conjugates the
+imaginary components, and applies the projection rule for infinities. Run
 `make complex-math-smoke-matrix` to exercise all three precisions in Zig/glibc,
 GCC/glibc, Zig/musl, TinyCC-built Nelua archives, and standalone archives. The
 TinyCC profile uses Zig cc for the caller and ABI adapter because TinyCC does

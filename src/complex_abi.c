@@ -7,6 +7,12 @@ extern long double nelibc_cabsl_parts(long double real, long double imaginary);
 extern float nelibc_conjf_imaginary(float imaginary);
 extern double nelibc_conj_imaginary(double imaginary);
 extern long double nelibc_conjl_imaginary(long double imaginary);
+extern float nelibc_cprojf_real(float real, float imaginary);
+extern double nelibc_cproj_real(double real, double imaginary);
+extern long double nelibc_cprojl_real(long double real, long double imaginary);
+extern float nelibc_cprojf_imaginary(float real, float imaginary);
+extern double nelibc_cproj_imaginary(double real, double imaginary);
+extern long double nelibc_cprojl_imaginary(long double real, long double imaginary);
 
 float cabsf(float _Complex value) {
   return nelibc_cabsf_parts(__real__ value, __imag__ value);
@@ -57,4 +63,22 @@ double _Complex conj(double _Complex value) {
 long double _Complex conjl(long double _Complex value) {
   return __builtin_complex(__real__ value,
                            nelibc_conjl_imaginary(__imag__ value));
+}
+
+float _Complex cprojf(float _Complex value) {
+  return __builtin_complex(
+      nelibc_cprojf_real(__real__ value, __imag__ value),
+      nelibc_cprojf_imaginary(__real__ value, __imag__ value));
+}
+
+double _Complex cproj(double _Complex value) {
+  return __builtin_complex(
+      nelibc_cproj_real(__real__ value, __imag__ value),
+      nelibc_cproj_imaginary(__real__ value, __imag__ value));
+}
+
+long double _Complex cprojl(long double _Complex value) {
+  return __builtin_complex(
+      nelibc_cprojl_real(__real__ value, __imag__ value),
+      nelibc_cprojl_imaginary(__real__ value, __imag__ value));
 }

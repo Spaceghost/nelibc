@@ -186,9 +186,9 @@ cosl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cpow,complex.h,,,not-declared
 cpowf,complex.h,,,not-declared
 cpowl,complex.h,,,not-declared
-cproj,complex.h,,,not-declared
-cprojf,complex.h,,,not-declared
-cprojl,complex.h,,,not-declared
+cproj,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+cprojf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+cprojl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 creal,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 crealf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 creall,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

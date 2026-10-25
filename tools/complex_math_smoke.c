@@ -14,6 +14,9 @@ int main(void) {
   float _Complex (*volatile call_conjf)(float _Complex) = conjf;
   double _Complex (*volatile call_conj)(double _Complex) = conj;
   long double _Complex (*volatile call_conjl)(long double _Complex) = conjl;
+  float _Complex (*volatile call_cprojf)(float _Complex) = cprojf;
+  double _Complex (*volatile call_cproj)(double _Complex) = cproj;
+  long double _Complex (*volatile call_cprojl)(long double _Complex) = cprojl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -45,5 +48,27 @@ int main(void) {
       !isnan(call_cimagf(call_conjf(zf_infinity))) ||
       !isnan(call_cimag(call_conj(z_infinity))) ||
       !isnan(call_cimagl(call_conjl(zl_infinity)))) return 4;
+
+  float _Complex zf_projected =
+      call_cprojf(__builtin_complex((float)INFINITY, (float)-NAN));
+  double _Complex z_projected =
+      call_cproj(__builtin_complex(7.0, (double)-INFINITY));
+  long double _Complex zl_projected =
+      call_cprojl(__builtin_complex((long double)-INFINITY, (long double)NAN));
+  float _Complex zf_finite_projected = call_cprojf(zf);
+  double _Complex z_finite_projected = call_cproj(z);
+  long double _Complex zl_finite_projected = call_cprojl(zl);
+  if (!isinf(call_crealf(zf_projected)) || signbit(call_crealf(zf_projected)) ||
+      !isinf(call_creal(z_projected)) || signbit(call_creal(z_projected)) ||
+      !isinf(call_creall(zl_projected)) || signbit(call_creall(zl_projected)) ||
+      call_cimagf(zf_projected) != 0.0f || !signbit(call_cimagf(zf_projected)) ||
+      call_cimag(z_projected) != 0.0 || !signbit(call_cimag(z_projected)) ||
+      call_cimagl(zl_projected) != 0.0L || signbit(call_cimagl(zl_projected)) ||
+      call_crealf(zf_finite_projected) != 3.0f ||
+      call_cimagf(zf_finite_projected) != 4.0f ||
+      call_creal(z_finite_projected) != -3.0 ||
+      call_cimag(z_finite_projected) != 4.0 ||
+      call_creall(zl_finite_projected) != 3.0L ||
+      call_cimagl(zl_finite_projected) != -4.0L) return 5;
   return 0;
 }

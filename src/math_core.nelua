@@ -3165,6 +3165,57 @@ local function nelibc_conjl_imaginary(value: clongdouble): clongdouble
   return -value
 end
 
+local function nelibc_cprojf_real(real: cfloat, imaginary: cfloat): cfloat
+    <cexport, codename 'nelibc_cprojf_real'>
+  if is_infinite32(real) or is_infinite32(imaginary) then
+    return float_from_bits(0x7F800000_cuint)
+  end
+  return real
+end
+
+local function nelibc_cproj_real(real: cdouble, imaginary: cdouble): cdouble
+    <cexport, codename 'nelibc_cproj_real'>
+  if is_infinite64(real) or is_infinite64(imaginary) then
+    return double_from_bits(0x7FF0000000000000_culonglong)
+  end
+  return real
+end
+
+local function nelibc_cprojl_real(real: clongdouble, imaginary: clongdouble): clongdouble
+    <cexport, codename 'nelibc_cprojl_real'>
+  if is_infinite80(real) or is_infinite80(imaginary) then
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    return infinity.value
+  end
+  return real
+end
+
+local function nelibc_cprojf_imaginary(real: cfloat, imaginary: cfloat): cfloat
+    <cexport, codename 'nelibc_cprojf_imaginary'>
+  if is_infinite32(real) or is_infinite32(imaginary) then
+    return copysignf(0_cfloat, imaginary)
+  end
+  return imaginary
+end
+
+local function nelibc_cproj_imaginary(real: cdouble, imaginary: cdouble): cdouble
+    <cexport, codename 'nelibc_cproj_imaginary'>
+  if is_infinite64(real) or is_infinite64(imaginary) then
+    return copysign(0_cdouble, imaginary)
+  end
+  return imaginary
+end
+
+local function nelibc_cprojl_imaginary(real: clongdouble, imaginary: clongdouble): clongdouble
+    <cexport, codename 'nelibc_cprojl_imaginary'>
+  if is_infinite80(real) or is_infinite80(imaginary) then
+    return copysignl(0_clongdouble, imaginary)
+  end
+  return imaginary
+end
+
 -- Advance one encoding in the 80-bit extended-precision value ordering.
 local function nextafterl(x: clongdouble, y: clongdouble): clongdouble
     <cexport, codename 'nextafterl'>
