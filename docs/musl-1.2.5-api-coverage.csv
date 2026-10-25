@@ -669,8 +669,8 @@ lgamma,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 lgamma_r,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 lgammaf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 lgammaf_r,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-lgammal,math.h,,,not-declared
-lgammal_r,math.h,,,not-declared
+lgammal,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+lgammal_r,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 lgetxattr,sys/xattr.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 link,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 linkat,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1313,7 +1313,7 @@ textdomain,libintl.h,,,not-declared
 tfind,search.h,,,not-declared
 tgamma,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tgammaf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-tgammal,math.h,,,not-declared
+tgammal,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 time,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 timegm,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 timer_create,time.h,,,not-declared

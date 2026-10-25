@@ -40,6 +40,11 @@ int main(void) {
       !(erfcl(1.0L) > 0.1572992070502850L && erfcl(1.0L) < 0.1572992070502852L) ||
       erfl(-erf_infinity) != -1.0L || erfcl(-erf_infinity) != 2.0L ||
       erfl(erf_infinity) != 1.0L || erfcl(erf_infinity) != 0.0L) return 186;
+  int long_gamma_sign = 0;
+  if (!(lgammal(5.0L) > 3.17L && lgammal(5.0L) < 3.18L) ||
+      lgammal_r(-0.5L, &long_gamma_sign) < 1.26L || long_gamma_sign != -1 ||
+      !(tgammal(0.5L) > 1.77L && tgammal(0.5L) < 1.78L) ||
+      !(tgammal(-0.5L) < -3.54L && tgammal(-0.5L) > -3.55L)) return 187;
   if (__fpclassify(0.0) != FP_ZERO || __fpclassifyf(0x1p-149f) != FP_SUBNORMAL ||
       __fpclassifyl(0x1p-16445L) != FP_SUBNORMAL ||
       __signbit(-0.0) == 0 || __signbitf(-0.0f) == 0 ||

@@ -90,6 +90,10 @@ int main(void) {
   const long double decimal_alias_long = pow10l(2.0L);
   const long double error_function_long = erfl(1.0L);
   const long double complementary_error_function_long = erfcl(1.0L);
+  const long double gamma_long = tgammal(0.5L);
+  const long double log_gamma_long = lgammal(5.0L);
+  int log_gamma_sign_long = 0;
+  const long double negative_log_gamma_long = lgammal_r(-0.5L, &log_gamma_sign_long);
   const long double minimum_long = fminl(-0.0L, 0.0L);
   const long double maximum_long = fmaxl(-0.0L, 0.0L);
   const long double positive_difference_long = fdiml(5.0L, 3.0L);
@@ -206,6 +210,9 @@ int main(void) {
       decimal_alias_long != 100.0L ||
       !(error_function_long > 0.8427007929497148L && error_function_long < 0.8427007929497150L) ||
       !(complementary_error_function_long > 0.1572992070502850L && complementary_error_function_long < 0.1572992070502852L) ||
+      !(gamma_long > 1.77L && gamma_long < 1.78L) ||
+      !(log_gamma_long > 3.17L && log_gamma_long < 3.18L) ||
+      !(negative_log_gamma_long > 1.26L && negative_log_gamma_long < 1.27L) || log_gamma_sign_long != -1 ||
       __fpclassify(0.0) != FP_ZERO || __fpclassify(1.0) != FP_NORMAL ||
       __fpclassifyf(0x1p-149f) != FP_SUBNORMAL ||
       __fpclassifyl(0x1p-16445L) != FP_SUBNORMAL ||

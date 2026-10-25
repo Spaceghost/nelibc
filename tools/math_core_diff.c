@@ -146,6 +146,9 @@ extern long double nelibc_exp10l(long double);
 extern long double nelibc_pow10l(long double);
 extern long double nelibc_erfl(long double);
 extern long double nelibc_erfcl(long double);
+extern long double nelibc_tgammal(long double);
+extern long double nelibc_lgammal(long double);
+extern long double nelibc_lgammal_r(long double, int *);
 extern int nelibc___fpclassify(double);
 extern int nelibc___fpclassifyf(float);
 extern int nelibc___fpclassifyl(long double);
@@ -1481,6 +1484,46 @@ static int check_long_double_erf(void) {
   return 0;
 }
 
+static int long_double_gamma_close(long double actual, long double expected) {
+  if (actual == expected) return 1;
+  if (isnan(expected)) return isnan(actual);
+  if (!isfinite(expected) || !isfinite(actual) || expected == 0.0L) return 0;
+  return fabsl(actual - expected) <= 4096.0L * LDBL_EPSILON * fabsl(expected);
+}
+
+static int check_long_double_gamma(void) {
+  static const long double values[] = {
+      -INFINITY, -20.5L, -10.25L, -5.5L, -3.5L, -1.5L, -0.5L,
+      -0x1p-16445L, -0x1p-100L, -0.0L, 0.0L, 0x1p-16445L, 0x1p-100L, 0.5L, 1.0L, 1.5L,
+      2.5L, 5.5L, 10.25L, 16.0L, 100.0L, 1000.0L, INFINITY, NAN};
+  for (size_t i = 0; i < sizeof values / sizeof values[0]; ++i) {
+    const long double x = values[i];
+    int expected_sign = 0, actual_sign = 0;
+    const long double expected_lgamma = lgammal_r(x, &expected_sign);
+    const long double actual_lgamma = nelibc_lgammal_r(x, &actual_sign);
+    const long double expected_gamma = tgammal(x);
+    const long double actual_gamma = nelibc_tgammal(x);
+    if (!long_double_gamma_close(actual_lgamma, expected_lgamma) ||
+        (isfinite(expected_lgamma) && actual_sign != expected_sign) ||
+        !long_double_gamma_close(actual_gamma, expected_gamma)) {
+      fprintf(stderr, "long-double gamma mismatch at case %zu x=%.18Le: lgamma %.21Le/%.21Le sign %d/%d gamma %.21Le/%.21Le\n",
+              i, x, actual_lgamma, expected_lgamma, actual_sign, expected_sign,
+              actual_gamma, expected_gamma);
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 256; ++i) {
+    const long double x = -10.0L + (long double)(i + 1) * 0.08L;
+    if (x == truncl(x)) continue;
+    if (!long_double_gamma_close(nelibc_lgammal(x), lgammal(x)) ||
+        !long_double_gamma_close(nelibc_tgammal(x), tgammal(x))) {
+      fprintf(stderr, "long-double gamma generated-input mismatch i=%zu x=%.18Le\n", i, x);
+      return 1;
+    }
+  }
+  return 0;
+}
+
 static int long_double_hyperbolic_close(long double actual, long double expected) {
   if (actual == expected) return 1;
   if (isnan(expected)) return isnan(actual);
@@ -1521,6 +1564,7 @@ static int long_double_tan_close(long double actual, long double expected) {
 int main(void) {
   if (check_classification()) return 1;
   if (check_long_double_erf()) return 1;
+  if (check_long_double_gamma()) return 1;
   const long double hypot_values[] = {
       0.0L, -0.0L, nextafterl(0.0L, 1.0L), LDBL_MIN, 0.5L, 1.0L, 3.0L,
       0x1p+1000L, LDBL_MAX / 4.0L, LDBL_MAX};

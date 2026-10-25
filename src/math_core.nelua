@@ -3599,6 +3599,131 @@ local function tgammaf(value: cfloat): cfloat <cexport, codename 'tgammaf'>
   return result
 end
 
+local function gamma_lanczos_long_positive(value: clongdouble): clongdouble
+  -- Stirling's expansion after shifting the argument to 16. Coefficients are
+  -- kept as exact integer ratios so Nelua's decimal-literal conversion does
+  -- not silently limit binary80 constants to binary64 precision.
+  local numerators: [12]clonglong = {
+    1_clonglong, -1_clonglong, 1_clonglong, -1_clonglong,
+    1_clonglong, -691_clonglong, 1_clonglong, -3617_clonglong,
+    43867_clonglong, -174611_clonglong, 77683_clonglong, -236364091_clonglong
+  }
+  local denominators: [12]clonglong = {
+    12_clonglong, 360_clonglong, 1260_clonglong, 1680_clonglong,
+    1188_clonglong, 360360_clonglong, 156_clonglong, 122400_clonglong,
+    244188_clonglong, 125400_clonglong, 5796_clonglong, 1506960_clonglong
+  }
+  local shifted = value
+  local recurrence: clongdouble = 0_clongdouble
+  while shifted < 16_clongdouble do
+    recurrence = recurrence - logl(shifted)
+    shifted = shifted + 1_clongdouble
+  end
+  local inverse = 1_clongdouble / shifted
+  local inverse_power = inverse
+  local inverse_square = inverse * inverse
+  local correction: clongdouble = 0_clongdouble
+  for i = 0, 11 do
+    local coefficient = (@clongdouble)(numerators[i]) / (@clongdouble)(denominators[i])
+    correction = correction + coefficient * inverse_power
+    inverse_power = inverse_power * inverse_square
+  end
+  local pi = nelibc_x87_pi()
+  local half_log_two_pi = 0.5_clongdouble * logl(2_clongdouble * pi)
+  local z = shifted - 0.5_clongdouble
+  local result = recurrence + z * logl(shifted) - shifted + half_log_two_pi + correction
+  if is_infinite80(result) then math_range_error() end
+  return result
+end
+
+local function gamma_sin_pi_long(value: clongdouble): clongdouble
+  if value >= 0x1p64_clongdouble then return 0_clongdouble end
+  local reduced = value - 2_clongdouble * (@clongdouble)((@culonglong)(value * 0.5_clongdouble))
+  return sinl(nelibc_x87_pi() * reduced)
+end
+
+local function lgammal_r(value: clongdouble, sign_result: *[0]cint): clongdouble
+    <cexport, codename 'lgammal_r'>
+  sign_result[0] = 1
+  if is_nan80(value) or is_infinite80(value) then return value * value end
+  local magnitude = fabsl(value)
+  if magnitude == 0_clongdouble then
+    math_range_error()
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    return infinity.value
+  end
+  if value == 1_clongdouble or value == 2_clongdouble then return 0_clongdouble end
+  if value > 0_clongdouble then return gamma_lanczos_long_positive(value) end
+  if magnitude < 0x1p-64_clongdouble then
+    sign_result[0] = -1
+    return -logl(magnitude)
+  end
+  if magnitude == truncl(magnitude) then
+    math_range_error()
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    return infinity.value
+  end
+  local sine = gamma_sin_pi_long(magnitude)
+  if sine == 0_clongdouble then
+    math_range_error()
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    return infinity.value
+  end
+  if sine > 0_clongdouble then sign_result[0] = -1 end
+  return logl(nelibc_x87_pi()) - logl(magnitude) - logl(fabsl(sine)) -
+    gamma_lanczos_long_positive(magnitude)
+end
+
+local function lgammal(value: clongdouble): clongdouble <cexport, codename 'lgammal'>
+  local sign: cint = 1
+  local result = lgammal_r(value, &sign)
+  signgam = sign
+  return result
+end
+
+local function tgammal(value: clongdouble): clongdouble <cexport, codename 'tgammal'>
+  if is_nan80(value) then return value + value end
+  if is_infinite80(value) then
+    if value > 0_clongdouble then return value end
+    math_domain_error()
+    return sqrtl(-1_clongdouble)
+  end
+  if value == 0_clongdouble then
+    math_range_error()
+    local sign_exponent: cushort = 0x7fff_cushort
+    if is_negative_zero80(value) then sign_exponent = 0xffff_cushort end
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = sign_exponent}
+    }
+    return infinity.value
+  end
+  local sign: cint = 1
+  local logarithm = lgammal_r(value, &sign)
+  if is_infinite80(logarithm) then
+    if value < 0_clongdouble and fabsl(value) == truncl(fabsl(value)) then
+      math_domain_error()
+      return sqrtl(-1_clongdouble)
+    end
+    if value > 0_clongdouble then return expl(logarithm) end
+    math_range_error()
+    if sign < 0_cint then
+      local negative_zero: LongDoubleBits = {parts = {significand = 0_culonglong, sign_exponent = 0x8000_cushort}}
+      return negative_zero.value
+    end
+    return 0_clongdouble
+  end
+  local result = expl(logarithm)
+  if sign < 0_cint then result = -result end
+  if is_infinite80(result) or result == 0_clongdouble then math_range_error() end
+  return result
+end
+
 
 
 local function cosf(value: cfloat): cfloat <cexport, codename 'cosf'>
