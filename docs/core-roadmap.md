@@ -106,14 +106,13 @@ fork. A shared marker confirms the copied cleanup stack remains usable in the
 child, while the parent continues without running that handler.
 It also verifies that a disabled cancellation state is inherited by the child
 and that the parent restores its own state after the fork. For robust mutexes,
-the child retargets process-private non-PI locks held by the calling thread to
-its new TID and rebuilds its kernel robust list; process-shared mutexes are
-excluded so the child does not rewrite the parent's shared owner state. These
-cases pass in the Zig, GCC, and TinyCC standalone pthread smoke. Robust PI
-mutexes held across fork remain unsupported: a focused child-unlock probe
-returns `EPERM`, because the kernel PI futex owner cannot be transferred by
-the current userspace fork hook. The smoke does not claim this behavior as
-passing coverage.
+the child retargets process-private robust locks held by the calling thread to
+its new TID and rebuilds its kernel robust list. For PI locks, the hook resets
+the child-private futex word and reacquires it with `FUTEX_LOCK_PI`, establishing
+kernel ownership for the child TID; an unlock and reacquire are both tested.
+Process-shared robust mutexes are excluded so the child does not rewrite the
+parent's shared owner state. These cases pass in the Zig, GCC, and TinyCC
+standalone pthread smoke; the Zig smoke also passed ten consecutive runs.
 
 ### Practical completeness estimate
 

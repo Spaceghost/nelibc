@@ -2199,6 +2199,28 @@ int main(void) {
       pthread_mutex_destroy(&fork_robust_mutex) != 0)
     return 309;
 
+  if (pthread_mutexattr_init(&fork_robust_attributes) != 0 ||
+      pthread_mutexattr_setrobust(&fork_robust_attributes, PTHREAD_MUTEX_ROBUST) != 0 ||
+      pthread_mutexattr_setprotocol(&fork_robust_attributes, PTHREAD_PRIO_INHERIT) != 0 ||
+      pthread_mutex_init(&fork_robust_mutex, &fork_robust_attributes) != 0 ||
+      pthread_mutexattr_destroy(&fork_robust_attributes) != 0 ||
+      pthread_mutex_lock(&fork_robust_mutex) != 0)
+    return 313;
+  pid_t robust_pi_child = fork();
+  if (robust_pi_child == 0) {
+    int unlock_result = pthread_mutex_unlock(&fork_robust_mutex);
+    int lock_result = unlock_result == 0 ? pthread_mutex_lock(&fork_robust_mutex) : unlock_result;
+    int relock_result = lock_result == 0 ? pthread_mutex_unlock(&fork_robust_mutex) : lock_result;
+    _exit(relock_result == 0 ? 0 : 314);
+  }
+  int robust_pi_status = -1;
+  if (robust_pi_child < 0 ||
+      waitpid(robust_pi_child, &robust_pi_status, 0) != robust_pi_child ||
+      !WIFEXITED(robust_pi_status) || WEXITSTATUS(robust_pi_status) != 0 ||
+      pthread_mutex_unlock(&fork_robust_mutex) != 0 ||
+      pthread_mutex_destroy(&fork_robust_mutex) != 0)
+    return 315;
+
   pthread_mutex_t *fork_shared_robust = mmap(0, sizeof(*fork_shared_robust),
       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
   if (fork_shared_robust == MAP_FAILED) return 310;

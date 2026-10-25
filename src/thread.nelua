@@ -3495,14 +3495,45 @@ local function nelibc_thread_fork_child(): void <cexport, codename 'nelibc_threa
     local node = head.list_next
     local previous_mutex: *PthreadMutex = nilptr
     head.list_next = (@pointer)(head)
+    context.robust_pid = current_pid
+    context.robust_registered = 0
+    context.robust_slot.tid = current_tid
+    pthread_robust_register(context)
     while node ~= (@pointer)(head) do
       local mutex = (@*PthreadMutex)((@usize)(node) - robust_next_offset)
       local next_node = mutex.robust_next
-      if mutex.pshared == 0 and mutex.protocol ~= PTHREAD_PRIO_INHERIT then
-        local state = nelibc_atomic_load_int(&mutex.state)
-        local child_state = (state & ~FUTEX_TID_MASK) | current_tid
-        nelibc_atomic_store_int(&mutex.state, child_state)
-        mutex.owner = current_tid
+      local retain_mutex = false
+      if mutex.pshared == 0 then
+        if mutex.protocol == PTHREAD_PRIO_INHERIT then
+          -- PI futex ownership lives in the kernel and is not inherited by
+          -- fork. Reacquire the private copy so the surviving thread keeps
+          -- logical ownership under its new child TID.
+          local old_state = nelibc_atomic_load_int(&mutex.state)
+          local old_owner = mutex.owner
+          local old_count = mutex.count
+          nelibc_atomic_store_int(&mutex.state, 0)
+          local lock_result = nelibc_raw_syscall6(202_culong,
+              (@culong)((@usize)(&mutex.state)), 134_culong,
+              0_culong, 0_culong, 0_culong, 0_culong) -- FUTEX_LOCK_PI | PRIVATE
+          if lock_result >= 0 then
+            mutex.owner = current_tid
+            mutex.count = old_count
+            nelibc_atomic_store_int(&mutex.robust_state, 0)
+            retain_mutex = true
+          else
+            nelibc_atomic_store_int(&mutex.state, old_state)
+            mutex.owner = old_owner
+            mutex.count = old_count
+          end
+        else
+          local state = nelibc_atomic_load_int(&mutex.state)
+          local child_state = (state & ~FUTEX_TID_MASK) | current_tid
+          nelibc_atomic_store_int(&mutex.state, child_state)
+          mutex.owner = current_tid
+          retain_mutex = true
+        end
+      end
+      if retain_mutex then
         if previous_mutex == nilptr then head.list_next = node
         else previous_mutex.robust_next = node end
         previous_mutex = mutex
@@ -3511,9 +3542,6 @@ local function nelibc_thread_fork_child(): void <cexport, codename 'nelibc_threa
     end
     if previous_mutex ~= nilptr then previous_mutex.robust_next = (@pointer)(head) end
     head.list_op_pending = nilptr
-    context.robust_pid = current_pid
-    context.robust_registered = 0
-    context.robust_slot.tid = current_tid
   end
   nelibc_atomic_store_int(&pthread_objects_lock, 0)
   if context ~= nilptr then nelibc_atomic_store_int(&context.protect_lock, 0) end
