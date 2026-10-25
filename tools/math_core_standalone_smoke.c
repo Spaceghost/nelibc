@@ -35,9 +35,11 @@ static int same_float(float a, float b) {
 
 int main(void) {
   fenv_t saved_environment;
+  fenv_t clean_environment;
   fexcept_t saved_flags = 0;
   if (fegetenv(&saved_environment) != 0 || fesetround(FE_UPWARD) != 0 ||
       fegetround() != FE_UPWARD) return 189;
+  if (fesetround(-1) == 0 || fegetround() != FE_UPWARD) return 198;
   if (feraiseexcept(FE_INVALID | FE_INEXACT) != 0 ||
       fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | FE_INEXACT) ||
       fegetexceptflag(&saved_flags, FE_INVALID) != 0 || saved_flags != FE_INVALID) return 190;
@@ -50,6 +52,12 @@ int main(void) {
       fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | FE_INEXACT)) return 192;
   if (feupdateenv(&saved_environment) != 0 ||
       fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | FE_INEXACT)) return 193;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0 || fesetround(FE_DOWNWARD) != 0 ||
+      fegetenv(&clean_environment) != 0 || fesetround(FE_UPWARD) != 0 ||
+      feraiseexcept(FE_DIVBYZERO) != 0 ||
+      feupdateenv(&clean_environment) != 0 || fegetround() != FE_DOWNWARD ||
+      fetestexcept(FE_ALL_EXCEPT) != FE_DIVBYZERO ||
+      fesetround(FE_UPWARD) != 0) return 199;
   volatile double fenv_input = 1.25;
   volatile long double fenv_input_long = 1.25L;
   if (feclearexcept(FE_ALL_EXCEPT) != 0 || rint(fenv_input) != 2.0 ||

@@ -296,7 +296,9 @@ musl export set.
   `feupdateenv` with x87/SSE state synchronization. Hybrid profiles retain the
   host fenv ABI and implementation. Standalone smoke tests verify SIGFPE
   delivery for all five standard exceptions through x87 and SSE trap paths;
-  less common environment edge cases still need validation. Bit-level
+  they also verify `feupdateenv` merges newly raised flags into the restored
+  environment and that an invalid rounding mode leaves the active mode intact.
+  More trap-mask and environment corruption cases still need validation. Bit-level
   `ilogb`/`logb` cover normal/subnormal decomposition;
   `nextafter` advances binary32/binary64 encodings directly and handles signed
   zero and NaN values. `nexttoward` compares its long-double direction before
