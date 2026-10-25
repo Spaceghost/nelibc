@@ -124,9 +124,12 @@ useful when TinyCC runs in a container, but `TCC_LIBTCC1` must name an archive
 that the host Zig linker can read.
 
 The four-profile dogfood matrix passed on 2026-10-23 with Zig and GCC on glibc,
-Zig on musl, and TinyCC on glibc. The sample program checks that selected
-Nelibc symbols are linked into each executable and exercises allocation,
-memory, strings, integer conversion, and the current Nelua math slice.
+Zig on musl, and TinyCC on glibc. The TinyCC dogfood target was also rerun on
+2026-10-24 with TinyCC 0.9.28rc (upstream snapshot `e23dabe`); the same build
+also passed TinyCC math differential, standalone fenv trap, memory/stdio, and
+syscall smoke targets. The sample program checks that selected Nelibc symbols
+are linked into each executable and exercises allocation, memory, strings,
+integer conversion, and the current Nelua math slice.
 
 ## Useful checks
 

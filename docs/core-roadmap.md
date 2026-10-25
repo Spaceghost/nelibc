@@ -26,7 +26,7 @@ symbol-count ratios or standards-conformance claims:
 |---|---:|---|
 | Core memory, strings, allocation, integer conversion, process/startup, and common I/O | 75–85% | Edge-case conformance, ABI review, and wider consumer coverage |
 | Core time and basic signals/process APIs | 65–80% | Cross-libc differential coverage, locale names, and less common POSIX behavior |
-| Math | 42–50% | Remaining C math entry points, fenv trap/edge behavior, and quality/performance work |
+| Math | 42–50% | Remaining C math entry points, less-common fenv environment edges, and quality/performance work |
 | Standalone threading/TLS | 35–50% | Cancellation, synchronization breadth, and static-TLS ABI limits; dynamic TLS is deferred |
 | Locale and international text | 15–30% | Locale datasets, Unicode case conversion, collation, and numeric/time conventions |
 | Overall “core libc” for common Linux C programs | 65–75% | Math and threading gaps plus stronger compatibility evidence |
@@ -150,9 +150,9 @@ musl export set.
   `fegetexceptflag`, `feraiseexcept`, `fesetexceptflag`, `fetestexcept`,
   `fegetround`, `fesetround`, `fegetenv`, `feholdexcept`, `fesetenv`, and
   `feupdateenv` with x87/SSE state synchronization. Hybrid profiles retain the
-  host fenv ABI and implementation. Trap delivery and less common environment
-  edge cases still need validation. Standalone smoke tests verify SIGFPE delivery
-  for all five standard exceptions through x87 and SSE trap paths. Bit-level
+  host fenv ABI and implementation. Standalone smoke tests verify SIGFPE
+  delivery for all five standard exceptions through x87 and SSE trap paths;
+  less common environment edge cases still need validation. Bit-level
   `ilogb`/`logb` cover normal/subnormal decomposition;
   `nextafter` advances binary32/binary64 encodings directly and handles signed
   zero and NaN values. `nexttoward` compares its long-double direction before
