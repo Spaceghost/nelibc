@@ -184,6 +184,8 @@ long double nearbyintl(long double value);
 long double roundl(long double value);
 long lrintl(long double value);
 long long llrintl(long double value);
+long lroundl(long double value);
+long long llroundl(long double value);
 float nextafterf(float from, float to);
 double nextafter(double from, double to);
 float nexttowardf(float from, long double to);

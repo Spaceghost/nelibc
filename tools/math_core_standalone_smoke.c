@@ -43,7 +43,8 @@ int main(void) {
   if (truncl(-1.75L) != -1.0L || floorl(-0.25L) != -1.0L ||
       ceill(-0.25L) != -0.0L || rintl(2.5L) != 2.0L ||
       nearbyintl(-1.5L) != -2.0L || roundl(-0.5L) != -1.0L ||
-      roundl(0.5L) != 1.0L || lrintl(2.5L) != 2 || llrintl(-1.5L) != -2)
+      roundl(0.5L) != 1.0L || lrintl(2.5L) != 2 || llrintl(-1.5L) != -2 ||
+      lroundl(-1.5L) != -2 || llroundl(2.5L) != 3)
     return 112;
   if (exp2(0.5) < 1.4142135623730948 || exp2(0.5) > 1.4142135623730952 ||
       exp2f(0.5f) != 1.4142135381698608f) return 137;

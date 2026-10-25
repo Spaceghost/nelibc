@@ -137,6 +137,8 @@ extern long double nelibc_nearbyintl(long double);
 extern long double nelibc_roundl(long double);
 extern long nelibc_lrintl(long double);
 extern long long nelibc_llrintl(long double);
+extern long nelibc_lroundl(long double);
+extern long long nelibc_llroundl(long double);
 extern float nelibc_fmodf(float, float);
 extern double nelibc_fmod(double, double);
 extern float nelibc_remainderf(float, float);
@@ -1427,6 +1429,8 @@ int main(void) {
   }
   int long_saved_rounding = fegetround();
   const int long_rounding_modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+  const long double long_integer_rounding_values[] = {
+      -12.75L, -1.5L, -0.5L, -0.25L, 0.25L, 0.5L, 1.5L, 12.75L};
   for (size_t i = 0; i < sizeof(long_rounding_modes) / sizeof(long_rounding_modes[0]); ++i) {
     if (fesetround(long_rounding_modes[i]) != 0) return 1;
     if (nelibc_rintl(2.5L) != rintl(2.5L) ||
@@ -1434,9 +1438,18 @@ int main(void) {
         nelibc_nearbyintl(2.5L) != nearbyintl(2.5L) ||
         nelibc_lrintl(2.5L) != lrintl(2.5L) ||
         nelibc_llrintl(-1.5L) != llrintl(-1.5L) ||
+        nelibc_lroundl(1.5L) != 2 || nelibc_llroundl(-1.5L) != -2 ||
         nelibc_roundl(0.5L) != 1.0L || nelibc_roundl(-0.5L) != -1.0L) {
       fprintf(stderr, "long-double active-mode rounding mismatch\n");
       return 1;
+    }
+    for (size_t j = 0; j < sizeof(long_integer_rounding_values) / sizeof(long_integer_rounding_values[0]); ++j) {
+      const long double value = long_integer_rounding_values[j];
+      if (nelibc_lroundl(value) != lroundl(value) ||
+          nelibc_llroundl(value) != llroundl(value)) {
+        fprintf(stderr, "long-double round-to-integer mismatch at mode %zu/value %zu\n", i, j);
+        return 1;
+      }
     }
   }
   if (fesetround(long_saved_rounding) != 0) return 1;
@@ -1450,6 +1463,24 @@ int main(void) {
   (void)nelibc_nearbyintl(2.25L);
   if (fetestexcept(FE_INEXACT) == 0) {
     fprintf(stderr, "nearbyintl cleared pre-existing FE_INEXACT\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  (void)nelibc_llroundl(2.25L);
+  if (fetestexcept(FE_INEXACT) != 0) {
+    fprintf(stderr, "llroundl unexpectedly raised FE_INEXACT\n");
+    return 1;
+  }
+  feraiseexcept(FE_INEXACT);
+  (void)nelibc_lroundl(-2.25L);
+  if (fetestexcept(FE_INEXACT) == 0) {
+    fprintf(stderr, "lroundl cleared pre-existing FE_INEXACT\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  (void)nelibc_llroundl(LDBL_MAX);
+  if (fetestexcept(FE_INVALID) == 0) {
+    fprintf(stderr, "llroundl overflow did not raise FE_INVALID\n");
     return 1;
   }
   feclearexcept(FE_ALL_EXCEPT);

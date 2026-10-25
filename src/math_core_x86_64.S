@@ -286,6 +286,46 @@ nelibc_lrintl_hw:
   ret
 .size nelibc_lrintl_hw, .-nelibc_lrintl_hw
 
+/* lroundl/llroundl round halfway cases away from zero and suppress newly
+   raised FE_INEXACT, while preserving pre-existing and invalid flags. */
+.globl nelibc_lroundl_hw
+.type nelibc_lroundl_hw,@function
+nelibc_lroundl_hw:
+  subq $64, %rsp
+  fnstsw %ax
+  andw $0x0020, %ax
+  movw %ax, 6(%rsp)
+  movzwl 80(%rsp), %eax
+  andl $0x8000, %eax
+  movw %ax, 4(%rsp)
+  fnstcw 0(%rsp)
+  movzwl 0(%rsp), %eax
+  andl $0xfffff0ff, %eax
+  orl $0x0f00, %eax
+  movw %ax, 2(%rsp)
+  fldcw 2(%rsp)
+  fldt 72(%rsp)
+  fabs
+  fldt .Lhalf80
+  faddp %st, %st(1)
+  frndint
+  cmpw $0, 4(%rsp)
+  je .Llroundl_convert
+  fchs
+.Llroundl_convert:
+  fistpll 8(%rsp)
+  fldcw 0(%rsp)
+  fnstenv 16(%rsp)
+  testw $0x0020, 6(%rsp)
+  jne .Llroundl_restore_env
+  andw $0xffdf, 20(%rsp)
+.Llroundl_restore_env:
+  fldenv 16(%rsp)
+  movq 8(%rsp), %rax
+  addq $64, %rsp
+  ret
+.size nelibc_lroundl_hw, .-nelibc_lroundl_hw
+
 .globl nelibc_fmodl_hw
 .type nelibc_fmodl_hw,@function
 nelibc_fmodl_hw:
