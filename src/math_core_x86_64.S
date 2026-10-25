@@ -106,6 +106,23 @@ nelibc_expl_hw:
   ret
 .size nelibc_expl_hw, .-nelibc_expl_hw
 
+/* Compute 2^x directly: split x into an integral scale and a fraction. */
+.globl nelibc_exp2l_hw
+.type nelibc_exp2l_hw,@function
+nelibc_exp2l_hw:
+  fldt 8(%rsp)
+  fld %st(0)
+  frndint
+  fxch %st(1)
+  fsub %st(1), %st(0)
+  f2xm1
+  fld1
+  faddp %st, %st(1)
+  fscale
+  fstp %st(1)
+  ret
+.size nelibc_exp2l_hw, .-nelibc_exp2l_hw
+
 .section .rodata
 .p2align 4
 .Lnelibc_ln2_hi:

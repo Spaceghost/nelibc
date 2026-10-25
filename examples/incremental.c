@@ -72,6 +72,7 @@ int main(void) {
   const long double logarithm_long = logl(2.0L);
   const long double logarithm_one_plus_long = log1pl(0x1p-60L);
   const long double exponential_long = expl(1.0L);
+  const long double binary_exponential_long = exp2l(3.0L);
   const long double exponential_minus_one_long = expm1l(0x1p-60L);
   const double sine = sin(1.0);
   const double cosine = cos(1.0);
@@ -138,6 +139,7 @@ int main(void) {
       !(logarithm_long > 0.693L && logarithm_long < 0.694L) ||
       !(logarithm_one_plus_long > 0.0L) ||
       !(exponential_long > 2.718L && exponential_long < 2.719L) ||
+      binary_exponential_long != 8.0L ||
       !(exponential_minus_one_long > 0.0L) ||
       !(sine > 0.84147098480789 && sine < 0.84147098480790) ||
       !(cosine > 0.54030230586813 && cosine < 0.54030230586814) ||

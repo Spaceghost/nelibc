@@ -128,6 +128,7 @@ extern long double nelibc_log2l(long double);
 extern long double nelibc_log10l(long double);
 extern long double nelibc_log1pl(long double);
 extern long double nelibc_expl(long double);
+extern long double nelibc_exp2l(long double);
 extern long double nelibc_expm1l(long double);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
@@ -1447,6 +1448,7 @@ int main(void) {
       !isnan(nelibc_log10l(quiet_nan.value)) ||
       !isnan(nelibc_log1pl(quiet_nan.value)) ||
       !isnan(nelibc_expl(quiet_nan.value)) ||
+      !isnan(nelibc_exp2l(quiet_nan.value)) ||
       !isnan(nelibc_expm1l(quiet_nan.value))) {
     fprintf(stderr, "long-double arctangent NaN propagation failed\n");
     return 1;
@@ -1566,6 +1568,23 @@ int main(void) {
       fprintf(stderr, "long-double exponential edge mismatch value=%zu input=%.6Lf expl=%.21Lg/%.21Lg expm1l=%.21Lg/%.21Lg\n",
               i, exp_values[i], nelibc_expl(exp_values[i]), expl(exp_values[i]),
               nelibc_expm1l(exp_values[i]), expm1l(exp_values[i]));
+      return 1;
+    }
+  }
+  const long double exp2_values[] = {
+      -INFINITY, -16445.0L, -10000.5L, -1.0L, -0.0L, 0.0L,
+      0.5L, 1.0L, 10.0L, 1000.0L, 16383.5L, 16384.0L, INFINITY};
+  for (size_t i = 0; i < sizeof(exp2_values) / sizeof(exp2_values[0]); ++i) {
+    if (!long_double_close(nelibc_exp2l(exp2_values[i]), exp2l(exp2_values[i]))) {
+      fprintf(stderr, "exp2l edge mismatch value=%zu input=%.6Lf actual=%.21Lg expected=%.21Lg\n",
+              i, exp2_values[i], nelibc_exp2l(exp2_values[i]), exp2l(exp2_values[i]));
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 512; ++i) {
+    long double value = -16000.0L + (long double)i * 63.0L;
+    if (!long_double_close(nelibc_exp2l(value), exp2l(value))) {
+      fprintf(stderr, "exp2l generated-input mismatch i=%zu\n", i);
       return 1;
     }
   }

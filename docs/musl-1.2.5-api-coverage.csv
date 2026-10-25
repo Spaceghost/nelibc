@@ -294,7 +294,7 @@ exp10f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exp10l,math.h,,,not-declared
 exp2,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exp2f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-exp2l,math.h,,,not-declared
+exp2l,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 expf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 expl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 explicit_bzero,string.h,string.h;strings.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
