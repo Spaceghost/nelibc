@@ -45,6 +45,14 @@ long double strtold(const char *restrict text, char **restrict end_text);
 float strtof_l(const char *restrict text, char **restrict end_text, locale_t locale);
 double strtod_l(const char *restrict text, char **restrict end_text, locale_t locale);
 long double strtold_l(const char *restrict text, char **restrict end_text, locale_t locale);
+long strtol_l(const char *restrict text, char **restrict end_text, int base, locale_t locale);
+unsigned long strtoul_l(const char *restrict text, char **restrict end_text, int base, locale_t locale);
+long long strtoll_l(const char *restrict text, char **restrict end_text, int base, locale_t locale);
+unsigned long long strtoull_l(const char *restrict text, char **restrict end_text, int base, locale_t locale);
+long __isoc23_strtol_l(const char *restrict text, char **restrict end_text, int base, locale_t locale);
+unsigned long __isoc23_strtoul_l(const char *restrict text, char **restrict end_text, int base, locale_t locale);
+long long __isoc23_strtoll_l(const char *restrict text, char **restrict end_text, int base, locale_t locale);
+unsigned long long __isoc23_strtoull_l(const char *restrict text, char **restrict end_text, int base, locale_t locale);
 #endif
 long strtol(const char *restrict text, char **restrict end_text, int base);
 unsigned long strtoul(const char *restrict text, char **restrict end_text, int base);

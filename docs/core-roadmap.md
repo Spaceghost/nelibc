@@ -183,9 +183,9 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 1,005 declared names. All four hybrid
-  archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 833;
-  all three standalone archives export 1,006 including one implementation-only
+- The regenerated API inventory has 1,021 declared names. All four hybrid
+  archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 849;
+  all three standalone archives export 1,022 including one implementation-only
   entry. There are 162 host-delegated APIs and 10 declared-but-unexported
   Zig/musl archive gaps.
   `pthread_mutex_clocklock` is provided by the glibc host in hybrid mode and
@@ -205,6 +205,12 @@ musl export set.
   helpers, plus glibc's four C23 parser aliases. Consumer checks pass under
   Zig/glibc, GCC/glibc, Zig/musl, TinyCC/glibc, and standalone Zig, GCC, and
   TinyCC; the C23 cases check `0b` parsing and the signed/unsigned limits.
+- GNU locale-specific `strto*_l` and `wcsto*_l` conversions now use the Nelua
+  narrow and wide integer parsers, restoring the caller's prior thread locale.
+  Their eight glibc C23 aliases are also exported. All seven consumer profiles
+  check signed/unsigned limits, end pointers, `0b` parsing, and locale restore.
+  The existing 1,209-case narrow integer differential passes on all four
+  hybrid profiles.
 - `strtof_l`, `strtod_l`, and `strtold_l` reuse the exact Nelua conversion
   path under the requested thread locale and restore the prior locale before
   returning. Consumer checks cover C and German decimal separators where the

@@ -1,6 +1,10 @@
 #ifndef NELIBC_WCHAR_WRAPPER_H
 #define NELIBC_WCHAR_WRAPPER_H
 
+#if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
+#include <locale.h>
+#endif
+
 #ifdef NELIBC_STANDALONE
 
 #include <stddef.h>
@@ -71,12 +75,23 @@ long wcstol(const wchar_t *restrict, wchar_t **restrict, int);
 long long wcstoll(const wchar_t *restrict, wchar_t **restrict, int);
 unsigned long wcstoul(const wchar_t *restrict, wchar_t **restrict, int);
 unsigned long long wcstoull(const wchar_t *restrict, wchar_t **restrict, int);
+long wcstol_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
+unsigned long wcstoul_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
+long long wcstoll_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
+unsigned long long wcstoull_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
 
 #else
 
 /* Reuse the toolchain's wide-character types and standard API declarations. */
 #include_next <wchar.h>
 
+#endif
+
+#if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
+long wcstol_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
+unsigned long wcstoul_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
+long long wcstoll_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
+unsigned long long wcstoull_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
 #endif
 
 /* C23 integer conversion entry points used by GNU-mode headers. */
@@ -86,6 +101,10 @@ long __isoc23_wcstol(const wchar_t *restrict, wchar_t **restrict, int);
 long long __isoc23_wcstoll(const wchar_t *restrict, wchar_t **restrict, int);
 unsigned long __isoc23_wcstoul(const wchar_t *restrict, wchar_t **restrict, int);
 unsigned long long __isoc23_wcstoull(const wchar_t *restrict, wchar_t **restrict, int);
+long __isoc23_wcstol_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
+unsigned long __isoc23_wcstoul_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
+long long __isoc23_wcstoll_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
+unsigned long long __isoc23_wcstoull_l(const wchar_t *restrict, wchar_t **restrict, int, locale_t);
 #endif
 
 #endif

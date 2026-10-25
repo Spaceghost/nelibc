@@ -1,6 +1,12 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
 
+require 'C'
+## cinclude '<locale.h>'
+
+global C.locale_t: type <cimport,nodecl> = pointer
+local function uselocale(locale: C.locale_t): C.locale_t <cimport,nodecl> end
+
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_environment_vector(): **cchar <cimport> end
 local function nelibc_environment_set_vector(environment: **cchar): void <cimport> end
@@ -1900,6 +1906,138 @@ end
 local function isoc23_wcstoumax(text: *[0]cint <const>, end_text: **cint, base: cint): culong
     <cexport, codename '__isoc23_wcstoumax'>
   return (@culong)(parse_wide_ulong(text, end_text, base, true))
+end
+
+local function parse_long_locale(text: *[0]cchar <const>, end_text: **cchar,
+    base: cint, c23: boolean, locale: C.locale_t): clonglong <inline>
+  local previous: C.locale_t = uselocale(locale)
+  if previous == (@C.locale_t)(0) then
+    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = text end
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return 0_clonglong
+  end
+  local result: clonglong = parse_long(text, end_text, base, c23)
+  uselocale(previous)
+  return result
+end
+
+local function parse_ulong_locale(text: *[0]cchar <const>, end_text: **cchar,
+    base: cint, c23: boolean, locale: C.locale_t): culonglong <inline>
+  local previous: C.locale_t = uselocale(locale)
+  if previous == (@C.locale_t)(0) then
+    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = text end
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return 0_culonglong
+  end
+  local result: culonglong = parse_ulong(text, end_text, base, c23)
+  uselocale(previous)
+  return result
+end
+
+local function parse_wide_long_locale(text: *[0]cint <const>, end_text: **cint,
+    base: cint, c23: boolean, locale: C.locale_t): clonglong <inline>
+  local previous: C.locale_t = uselocale(locale)
+  if previous == (@C.locale_t)(0) then
+    if end_text ~= nilptr then (@*[0]*cint)(end_text)[0] = text end
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return 0_clonglong
+  end
+  local result: clonglong = parse_wide_long(text, end_text, base, c23)
+  uselocale(previous)
+  return result
+end
+
+local function parse_wide_ulong_locale(text: *[0]cint <const>, end_text: **cint,
+    base: cint, c23: boolean, locale: C.locale_t): culonglong <inline>
+  local previous: C.locale_t = uselocale(locale)
+  if previous == (@C.locale_t)(0) then
+    if end_text ~= nilptr then (@*[0]*cint)(end_text)[0] = text end
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return 0_culonglong
+  end
+  local result: culonglong = parse_wide_ulong(text, end_text, base, c23)
+  uselocale(previous)
+  return result
+end
+
+local function strtol_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    locale: C.locale_t): clong <cexport, codename 'strtol_l'>
+  return (@clong)(parse_long_locale(text, end_text, base, false, locale))
+end
+
+local function strtoul_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    locale: C.locale_t): culong <cexport, codename 'strtoul_l'>
+  return (@culong)(parse_ulong_locale(text, end_text, base, false, locale))
+end
+
+local function strtoll_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    locale: C.locale_t): clonglong <cexport, codename 'strtoll_l'>
+  return parse_long_locale(text, end_text, base, false, locale)
+end
+
+local function strtoull_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    locale: C.locale_t): culonglong <cexport, codename 'strtoull_l'>
+  return parse_ulong_locale(text, end_text, base, false, locale)
+end
+
+local function isoc23_strtol_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    locale: C.locale_t): clong <cexport, codename '__isoc23_strtol_l'>
+  return (@clong)(parse_long_locale(text, end_text, base, true, locale))
+end
+
+local function isoc23_strtoul_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    locale: C.locale_t): culong <cexport, codename '__isoc23_strtoul_l'>
+  return (@culong)(parse_ulong_locale(text, end_text, base, true, locale))
+end
+
+local function isoc23_strtoll_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    locale: C.locale_t): clonglong <cexport, codename '__isoc23_strtoll_l'>
+  return parse_long_locale(text, end_text, base, true, locale)
+end
+
+local function isoc23_strtoull_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+    locale: C.locale_t): culonglong <cexport, codename '__isoc23_strtoull_l'>
+  return parse_ulong_locale(text, end_text, base, true, locale)
+end
+
+local function wcstol_l(text: *[0]cint <const>, end_text: **cint, base: cint,
+    locale: C.locale_t): clong <cexport, codename 'wcstol_l'>
+  return (@clong)(parse_wide_long_locale(text, end_text, base, false, locale))
+end
+
+local function wcstoul_l(text: *[0]cint <const>, end_text: **cint, base: cint,
+    locale: C.locale_t): culong <cexport, codename 'wcstoul_l'>
+  return (@culong)(parse_wide_ulong_locale(text, end_text, base, false, locale))
+end
+
+local function wcstoll_l(text: *[0]cint <const>, end_text: **cint, base: cint,
+    locale: C.locale_t): clonglong <cexport, codename 'wcstoll_l'>
+  return parse_wide_long_locale(text, end_text, base, false, locale)
+end
+
+local function wcstoull_l(text: *[0]cint <const>, end_text: **cint, base: cint,
+    locale: C.locale_t): culonglong <cexport, codename 'wcstoull_l'>
+  return parse_wide_ulong_locale(text, end_text, base, false, locale)
+end
+
+local function isoc23_wcstol_l(text: *[0]cint <const>, end_text: **cint, base: cint,
+    locale: C.locale_t): clong <cexport, codename '__isoc23_wcstol_l'>
+  return (@clong)(parse_wide_long_locale(text, end_text, base, true, locale))
+end
+
+local function isoc23_wcstoul_l(text: *[0]cint <const>, end_text: **cint, base: cint,
+    locale: C.locale_t): culong <cexport, codename '__isoc23_wcstoul_l'>
+  return (@culong)(parse_wide_ulong_locale(text, end_text, base, true, locale))
+end
+
+local function isoc23_wcstoll_l(text: *[0]cint <const>, end_text: **cint, base: cint,
+    locale: C.locale_t): clonglong <cexport, codename '__isoc23_wcstoll_l'>
+  return parse_wide_long_locale(text, end_text, base, true, locale)
+end
+
+local function isoc23_wcstoull_l(text: *[0]cint <const>, end_text: **cint, base: cint,
+    locale: C.locale_t): culonglong <cexport, codename '__isoc23_wcstoull_l'>
+  return parse_wide_ulong_locale(text, end_text, base, true, locale)
 end
 
 local function wcstol(text: *[0]cint <const>, end_text: **cint, base: cint): clong

@@ -60,6 +60,52 @@ static int locale_float_parser_probe(void) {
   end = NULL;
   if (strtold_l("12.5tail", &end, c_locale) != 12.5L ||
       end == NULL || strcmp(end, "tail") != 0 || errno != 0) return 4;
+  end = NULL;
+  if (strtol_l("-42tail", &end, 10, c_locale) != -42 ||
+      end == NULL || strcmp(end, "tail") != 0) return 10;
+  end = NULL;
+  if (strtoul_l("42tail", &end, 10, c_locale) != 42UL ||
+      end == NULL || strcmp(end, "tail") != 0) return 11;
+  end = NULL;
+  if (strtoll_l("-9223372036854775808!", &end, 10, c_locale) != LLONG_MIN ||
+      end == NULL || *end != '!') return 12;
+  end = NULL;
+  if (strtoull_l("0xffffffffffffffff!", &end, 0, c_locale) != ULLONG_MAX ||
+      end == NULL || *end != '!') return 13;
+  const wchar_t wide_signed[] = L"-42tail";
+  wchar_t *wide_end = NULL;
+  if (wcstol_l(wide_signed, &wide_end, 10, c_locale) != -42 ||
+      wide_end == NULL || wcscmp(wide_end, L"tail") != 0) return 14;
+  const wchar_t wide_unsigned[] = L"42tail";
+  wide_end = NULL;
+  if (wcstoul_l(wide_unsigned, &wide_end, 10, c_locale) != 42UL ||
+      wide_end == NULL || wcscmp(wide_end, L"tail") != 0) return 15;
+  wide_end = NULL;
+  if (wcstoll_l(L"-9223372036854775808!", &wide_end, 10, c_locale) != LLONG_MIN ||
+      wide_end == NULL || *wide_end != L'!') return 16;
+  wide_end = NULL;
+  if (wcstoull_l(L"0xffffffffffffffff!", &wide_end, 0, c_locale) != ULLONG_MAX ||
+      wide_end == NULL || *wide_end != L'!') return 17;
+  end = NULL;
+  if (__isoc23_strtol_l("0b101!", &end, 0, c_locale) != 5 || end == NULL || *end != '!') return 18;
+  end = NULL;
+  if (__isoc23_strtoul_l("0B101!", &end, 0, c_locale) != 5 || end == NULL || *end != '!') return 19;
+  end = NULL;
+  if (__isoc23_strtoll_l("0b101!", &end, 0, c_locale) != 5 || end == NULL || *end != '!') return 20;
+  end = NULL;
+  if (__isoc23_strtoull_l("0B101!", &end, 0, c_locale) != 5 || end == NULL || *end != '!') return 21;
+  wide_end = NULL;
+  if (__isoc23_wcstol_l(L"0b101!", &wide_end, 0, c_locale) != 5 ||
+      wide_end == NULL || *wide_end != L'!') return 22;
+  wide_end = NULL;
+  if (__isoc23_wcstoul_l(L"0B101!", &wide_end, 0, c_locale) != 5 ||
+      wide_end == NULL || *wide_end != L'!') return 23;
+  wide_end = NULL;
+  if (__isoc23_wcstoll_l(L"0b101!", &wide_end, 0, c_locale) != 5 ||
+      wide_end == NULL || *wide_end != L'!') return 24;
+  wide_end = NULL;
+  if (__isoc23_wcstoull_l(L"0B101!", &wide_end, 0, c_locale) != 5 ||
+      wide_end == NULL || *wide_end != L'!') return 25;
   if (uselocale((locale_t)0) != original_locale) return 5;
   locale_t german_locale = newlocale(LC_NUMERIC_MASK, "de_DE.UTF-8", (locale_t)0);
   if (german_locale != (locale_t)0) {
@@ -130,6 +176,12 @@ static void *standalone_numeric_locale_worker(void *argument) {
   parse_end = NULL;
   if (strtold_l("12,5tail", &parse_end, numeric_de) != 12.5L ||
       parse_end == NULL || strcmp(parse_end, "tail") != 0) return (void *)23;
+  wchar_t *wide_parse_end = NULL;
+  if (strtol_l("-42tail", &parse_end, 10, numeric_de) != -42 ||
+      parse_end == NULL || strcmp(parse_end, "tail") != 0 ||
+      wcstol_l(L"-42tail", &wide_parse_end, 10, numeric_de) != -42 ||
+      wide_parse_end == NULL || wcscmp(wide_parse_end, L"tail") != 0)
+    return (void *)26;
   if (strcmp(localeconv()->decimal_point, ".") != 0) return (void *)24;
   if (uselocale((locale_t)0) != numeric_c) return (void *)25;
   struct lconv *thread_locale_data = localeconv();

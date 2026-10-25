@@ -45,7 +45,9 @@ contributes the symbols it owns; the host runtime supplies the rest.
 
 The archive also exports the six `<inttypes.h>` helpers `imaxabs`, `imaxdiv`,
 `strtoimax`, `strtoumax`, `wcstoimax`, and `wcstoumax`, plus locale-specific
-`strtof_l`, `strtod_l`, and `strtold_l` conversions.
+`strtof_l`, `strtod_l`, and `strtold_l` conversions. GNU builds also provide
+`strtol_l`, `strtoul_l`, `strtoll_l`, `strtoull_l`, and their wide-character
+counterparts.
 
 To link your own program against the default glibc hybrid archive:
 
