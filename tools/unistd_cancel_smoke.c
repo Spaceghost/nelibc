@@ -32,6 +32,8 @@ static int recvmsg_started;
 static int send_fd;
 static int send_started;
 static int sendmsg_started;
+static int nanosleep_started;
+static int clock_nanosleep_started;
 static int poll_fd;
 static int poll_started;
 static int ppoll_started;
@@ -144,6 +146,20 @@ static void *blocked_sendmsg_worker(void *unused) {
   message.msg_iovlen = 1;
   mark_started(&sendmsg_started);
   return (void *)(long)sendmsg(send_fd, &message, MSG_NOSIGNAL);
+}
+
+static void *blocked_nanosleep_worker(void *unused) {
+  (void)unused;
+  struct timespec request = {3600, 0};
+  mark_started(&nanosleep_started);
+  return (void *)(long)nanosleep(&request, NULL);
+}
+
+static void *blocked_clock_nanosleep_worker(void *unused) {
+  (void)unused;
+  struct timespec request = {3600, 0};
+  mark_started(&clock_nanosleep_started);
+  return (void *)(long)clock_nanosleep(CLOCK_MONOTONIC, 0, &request, NULL);
 }
 
 static int fill_socket_send_buffer(int fd) {
@@ -448,6 +464,26 @@ int main(void) {
   alarm(0);
   close(sockets[0]);
   close(sockets[1]);
+
+  pthread_t sleeper;
+  if (pthread_create(&sleeper, NULL, blocked_nanosleep_worker, NULL) != 0) return 87;
+  wait_started(&nanosleep_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(sleeper) != 0) return 88;
+  result = NULL;
+  if (pthread_join(sleeper, &result) != 0 || result != PTHREAD_CANCELED) return 89;
+  alarm(0);
+
+  pthread_t clock_sleeper;
+  if (pthread_create(&clock_sleeper, NULL, blocked_clock_nanosleep_worker, NULL) != 0) return 90;
+  wait_started(&clock_nanosleep_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(clock_sleeper) != 0) return 91;
+  result = NULL;
+  if (pthread_join(clock_sleeper, &result) != 0 || result != PTHREAD_CANCELED) return 92;
+  alarm(0);
 
   wait_child = fork();
   if (wait_child < 0) return 28;

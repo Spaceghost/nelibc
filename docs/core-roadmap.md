@@ -53,7 +53,8 @@ standalone implementation follows glibc's observable behavior, including
 The Unix cancellation smoke covers blocked `poll`, `ppoll`, `select`, and
 `pselect`, plus socket `send`, `sendmsg`, `recv`, `recvfrom`, and `recvmsg`, in
 addition to blocking scalar and vectored (`readv`, `writev`) I/O and process
-calls. These cases now run in the hybrid glibc, musl, and TinyCC-compiled
+calls. Both `nanosleep` and `clock_nanosleep` are tested as well. These cases
+now run in the hybrid glibc, musl, and TinyCC-compiled
 profiles and the standalone Zig, GCC, and TinyCC profiles; `make smoke-matrix` includes the
 standalone group.
 The checks verify that deferred cancellation wakes each blocked thread and
