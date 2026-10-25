@@ -167,10 +167,12 @@ collation, and time state. Process-global `setlocale` also supports `C` and
 `de_DE.UTF-8` for `LC_TIME`; `LC_ALL` reports and accepts the matching
 category composites. `duplocale(LC_GLOBAL_LOCALE)` snapshots the selected
 time category. Floating parsing/formatting, grouping, `strcoll`,
-`strxfrm`, `strftime`, `strptime`, and `localeconv` observe the selection.
+`strxfrm`, `strftime`/`strptime`, and their POSIX `_l` forms accept the
+selected locale; the `_l` forms temporarily switch only the calling thread
+and restore its prior locale before returning. `localeconv` results are kept
+in per-thread storage.
 German time data currently covers localized weekday/month names and `%c`/`%x`
-formats. `localeconv` results are kept in per-thread storage. Non-C collation
-and additional time locales remain incomplete.
+formats. Non-C collation and additional time locales remain incomplete.
 
 `scalb` and `scalbf` scale by integral exponents and report invalid fractional
 exponents; `significand` and `significandf` normalize finite nonzero inputs so

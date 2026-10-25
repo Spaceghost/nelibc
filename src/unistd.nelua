@@ -8,6 +8,7 @@ local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, a
 local function nelibc_timerid_store(output: pointer, timer_id: cint): void <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_time_locale_is_german(): cint <cimport> end
+local function uselocale(locale: pointer): pointer <cimport> end
 local function malloc(size: csize): pointer <cimport> end
 local function free(ptr: pointer): void <cimport> end
 local function realloc(ptr: pointer, size: csize): pointer <cimport> end
@@ -2484,6 +2485,18 @@ local function strptime(input: *[0]cchar <const>, format: *[0]cchar <const>,
   return (@*[0]cchar)(&input[input_position])
 end
 
+-- POSIX locale-explicit wrappers use the thread-local locale mechanism so
+-- callers can mix Nelibc's time functions with an independent locale handle.
+local function strptime_l(input: *[0]cchar <const>, format: *[0]cchar <const>,
+    time_value: *Tm, locale: pointer): *[0]cchar
+    <cexport, codename 'strptime_l'>
+  local previous: pointer = uselocale(locale)
+  if previous == nilptr then return nilptr end
+  local result: *[0]cchar = strptime(input, format, time_value)
+  uselocale(previous)
+  return result
+end
+
 -- C-locale strftime directives; locale-specific names can replace these tables later.
 local function strftime(buffer: *[0]cchar, max_size: csize,
     format: *[0]cchar <const>, time_value: *Tm <const>): csize
@@ -2798,6 +2811,16 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
   if not ok then buffer[0] = 0_cchar; return 0 end
   buffer[position] = 0_cchar
   return position
+end
+
+local function strftime_l(buffer: *[0]cchar, max_size: csize,
+    format: *[0]cchar <const>, time_value: *Tm <const>, locale: pointer): csize
+    <cexport, codename 'strftime_l'>
+  local previous: pointer = uselocale(locale)
+  if previous == nilptr then return 0 end
+  local result: csize = strftime(buffer, max_size, format, time_value)
+  uselocale(previous)
+  return result
 end
 
 -- ISO C clock reports process CPU time in CLOCKS_PER_SEC ticks.

@@ -245,8 +245,9 @@ musl export set.
   `%c`/`%x` formats. Global `setlocale` selects C or German `LC_TIME`,
   reports/accepts its supported `LC_ALL` composites, and `duplocale` snapshots
   the global time category. `strtod`, floating formatting, grouping, `strcoll`,
-  `strxfrm`, `strftime`, `strptime`, and `localeconv` use the selected
-  thread's state. The `localeconv` result itself is stored per thread. Other
+  `strxfrm`, `strftime`, `strptime`, and their `_l` forms use the selected
+  thread's state; the `_l` forms restore the calling thread's prior locale.
+  The `localeconv` result itself is stored per thread. Other
   time locales and formats remain incomplete. The standalone consumer matrix
   checks a worker switching C/German numeric, monetary, and time conventions
   while the main thread keeps its global locale, including parse/format

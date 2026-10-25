@@ -89,6 +89,8 @@ int timer_settime(timer_t timer_id, int flags,
 
 #endif
 
+#include <locale.h>
+
 void tzset(void);
 extern char *tzname[2];
 extern int daylight;
@@ -106,11 +108,16 @@ time_t mktime(struct tm *time_value);
 time_t timegm(struct tm *time_value);
 char *strptime(const char *restrict input, const char *restrict format,
                struct tm *restrict time_value);
+char *strptime_l(const char *restrict input, const char *restrict format,
+                 struct tm *restrict time_value, locale_t locale);
 char *asctime_r(const struct tm *restrict time_value, char *restrict buffer);
 char *asctime(const struct tm *time_value);
 char *ctime_r(const time_t *restrict timer, char *restrict buffer);
 char *ctime(const time_t *timer);
 size_t strftime(char *restrict buffer, size_t max_size,
                 const char *restrict format, const struct tm *restrict time_value);
+size_t strftime_l(char *restrict buffer, size_t max_size,
+                  const char *restrict format,
+                  const struct tm *restrict time_value, locale_t locale);
 
 #endif

@@ -1237,7 +1237,7 @@ strerror_r,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strfmon,monetary.h,,,not-declared
 strfmon_l,monetary.h,,,not-declared
 strftime,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-strftime_l,time.h,,,not-declared
+strftime_l,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strlcat,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strlcpy,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strlen,string.h;sys/un.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1250,6 +1250,7 @@ strndup,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strnlen,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strpbrk,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strptime,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+strptime_l,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strrchr,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strsep,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 strsignal,string.h,,,not-declared

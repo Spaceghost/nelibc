@@ -131,7 +131,15 @@ static void *standalone_numeric_locale_worker(void *argument) {
       .tm_isdst = 0, .tm_gmtoff = 0, .tm_zone = "UTC"};
   char time_text[128];
   struct tm parsed_time = {0};
-  if (uselocale(time_de) != LC_GLOBAL_LOCALE ||
+  if (strftime_l(time_text, sizeof time_text, "%A|%B|%x", &sample_time,
+          time_de) == 0 ||
+      strcmp(time_text, "Freitag|März|01.03.2024") != 0 ||
+      uselocale((locale_t)0) != LC_GLOBAL_LOCALE ||
+      strptime_l(time_text, "%A|%B|%x", &parsed_time, time_de) == NULL ||
+      parsed_time.tm_wday != 5 || parsed_time.tm_mon != 2 ||
+      parsed_time.tm_mday != 1 || parsed_time.tm_year != 124 ||
+      uselocale((locale_t)0) != LC_GLOBAL_LOCALE ||
+      uselocale(time_de) != LC_GLOBAL_LOCALE ||
       strftime(time_text, sizeof time_text, "%A|%B|%x", &sample_time) == 0 ||
       strcmp(time_text, "Freitag|März|01.03.2024") != 0 ||
       strptime(time_text, "%A|%B|%x", &parsed_time) == NULL ||
