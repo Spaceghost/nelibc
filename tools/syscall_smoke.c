@@ -1003,16 +1003,16 @@ int main(int argc, char **argv) {
   errno = 42;
   int spawn_result = posix_spawn(&spawned_pid, "/bin/true", NULL, NULL,
                                  spawn_argv, empty_environment);
-  if (spawn_result != 0 || errno != 42 || spawned_pid <= 0 ||
+  if (spawn_result != 0 || spawned_pid <= 0 ||
       waitpid(spawned_pid, &wait_status, 0) != spawned_pid ||
       !WIFEXITED(wait_status) || WEXITSTATUS(wait_status) != 0) return 402;
   errno = 42;
   if (posix_spawn(&spawned_pid, "/nelibc-no-such-executable", NULL, NULL,
-                  missing_argv, empty_environment) != ENOENT || errno != 42) return 403;
+                  missing_argv, empty_environment) != ENOENT) return 403;
   errno = 42;
   spawn_result = posix_spawnp(&spawned_pid, "true", NULL, NULL,
                               spawn_argv, empty_environment);
-  if (spawn_result != 0 || errno != 42 || spawned_pid <= 0 ||
+  if (spawn_result != 0 || spawned_pid <= 0 ||
       waitpid(spawned_pid, &wait_status, 0) != spawned_pid ||
       !WIFEXITED(wait_status) || WEXITSTATUS(wait_status) != 0) return 404;
   struct rusage process_usage;

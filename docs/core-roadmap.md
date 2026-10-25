@@ -18,6 +18,13 @@ archive; it does not certify every behavior required by C or POSIX.
 
 ## Current evidence
 
+The four hybrid syscall smoke profiles pass with Zig/glibc, GCC/glibc,
+Zig/musl, and TinyCC/glibc. Hybrid spawn uses the host implementation and its
+native attributes ABI. The static musl profile keeps musl's `execvp` symbol
+visible because musl's `posix_spawnp` pulls its internal `__execvpe` from the
+same archive member; the corresponding Nelibc `execvp` object symbol is
+localized for that profile.
+
 ### Practical completeness estimate
 
 These are engineering estimates for a Linux x86-64 general-purpose libc, not

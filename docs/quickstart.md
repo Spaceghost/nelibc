@@ -73,10 +73,11 @@ for unrelated host-owned objects.
 ### Start a child with `posix_spawnp`
 
 The standalone Nelibc implementation supports direct execution and PATH search.
-It reports child exec failures synchronously and leaves `errno` unchanged as
-POSIX requires. Standalone file-action lists support `addclose`, `adddup2`,
-and `addopen` in registration order. Hybrid archives leave spawn APIs to the
-host libc, preserving glibc/musl's native spawn-attribute ABI.
+It reports child exec failures synchronously as the returned error number.
+Standalone file-action lists support `addclose`, `adddup2`, and `addopen` in
+registration order. Hybrid archives leave spawn APIs to the host libc,
+preserving glibc/musl's native spawn-attribute ABI; check the returned error
+number rather than assuming a particular `errno` behavior.
 
 ```c
 #include <spawn.h>
