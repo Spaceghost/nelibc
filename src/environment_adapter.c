@@ -10,6 +10,25 @@
 #include <locale.h>
 #include <time.h>
 
+#ifdef NELIBC_STANDALONE
+extern void nelibc_pthread_cancel_defer_begin(void) __attribute__((weak));
+extern void nelibc_pthread_cancel_defer_end(void) __attribute__((weak));
+#endif
+
+void nelibc_allocator_cancel_defer_begin(void) {
+#ifdef NELIBC_STANDALONE
+  if (nelibc_pthread_cancel_defer_begin != NULL)
+    nelibc_pthread_cancel_defer_begin();
+#endif
+}
+
+void nelibc_allocator_cancel_defer_end(void) {
+#ifdef NELIBC_STANDALONE
+  if (nelibc_pthread_cancel_defer_end != NULL)
+    nelibc_pthread_cancel_defer_end();
+#endif
+}
+
 /* timer_t is opaque and has different public representations across libcs. */
 void nelibc_timerid_store(void *output, int timer_id) {
   timer_t value = (timer_t)(uintptr_t)timer_id;

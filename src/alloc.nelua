@@ -42,6 +42,8 @@ local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, a
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_allocator_lock(): void <cimport> end
 local function nelibc_allocator_unlock(): void <cimport> end
+local function nelibc_allocator_cancel_defer_begin(): void <cimport> end
+local function nelibc_allocator_cancel_defer_end(): void <cimport> end
 local function nelibc_memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
 local function memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
 local function nelibc_memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
@@ -55,6 +57,16 @@ local function nelibc_direct_registry_read_leave(): void <cimport> end
 local function nelibc_direct_registry_write_begin(): void <cimport> end
 local function nelibc_direct_registry_write_end(): void <cimport> end
 local nelibc_allocator_fastpath_supported: cint <cimport>
+
+local function allocator_lock(): void <inline>
+  nelibc_allocator_cancel_defer_begin()
+  nelibc_allocator_lock()
+end
+
+local function allocator_unlock(): void <inline>
+  nelibc_allocator_unlock()
+  nelibc_allocator_cancel_defer_end()
+end
 
 local function pool_size(index: csize): csize <inline>
   return 64_csize << index
@@ -113,7 +125,7 @@ local function allocate(size: csize, alignment: csize): pointer <inline>
       cursor.bump = (@pointer)((@usize)(cursor.bump) + (@usize)(block_size))
       cursor.available = cursor.available - block_size
     else
-      nelibc_allocator_lock()
+      allocator_lock()
       local pool: *PoolState = &pools[pool_index]
       if pool.free_list ~= nilptr then
         if cursor == nilptr then
@@ -139,12 +151,12 @@ local function allocate(size: csize, alignment: csize): pointer <inline>
           header.next_free = nilptr
           cursor.free_count = cursor.free_count - 1
         end
-        nelibc_allocator_unlock()
+        allocator_unlock()
       else
         if pool.available < block_size then
           local slab = map_anonymous(SLAB_SIZE)
           if slab == nilptr then
-            nelibc_allocator_unlock()
+            allocator_unlock()
             return nilptr
           end
           -- Keep an in-band descriptor in the first block so provenance
@@ -176,7 +188,7 @@ local function allocate(size: csize, alignment: csize): pointer <inline>
           pool.bump = (@pointer)((@usize)(pool.bump) + (@usize)(block_size))
           pool.available = pool.available - block_size
         end
-        nelibc_allocator_unlock()
+        allocator_unlock()
       end
     end
     base = (@usize)(header)
@@ -207,11 +219,11 @@ local function allocate(size: csize, alignment: csize): pointer <inline>
   header.requested_size = size
   header.alignment = alignment
   if mapping_size ~= 0 then
-    nelibc_allocator_lock()
+    allocator_lock()
     -- pool_index links direct mappings in the ownership registry.
     header.pool_index = (@csize)((@usize)(nelibc_direct_registry_head()))
     nelibc_direct_registry_publish((@pointer)(header))
-    nelibc_allocator_unlock()
+    allocator_unlock()
   end
   local user_address: usize = base + (@usize)(HEADER_SIZE)
   local mask: usize = (@usize)(alignment - 1)
@@ -266,13 +278,13 @@ local function nelibc_free(ptr: pointer): void <cexport, codename 'nelibc_free'>
         return
       end
     end
-    nelibc_allocator_lock()
+    allocator_lock()
     header.next_free = pools[pool_index].free_list
     pools[pool_index].free_list = header
-    nelibc_allocator_unlock()
+    allocator_unlock()
     return
   end
-  nelibc_allocator_lock()
+  allocator_lock()
   nelibc_direct_registry_write_begin()
   local previous: *AllocationHeader = nilptr
   local current: *AllocationHeader =
@@ -297,7 +309,7 @@ local function nelibc_free(ptr: pointer): void <cexport, codename 'nelibc_free'>
     nelibc_errno_location()[0] = (@cint)(-result)
   end
   nelibc_direct_registry_write_end()
-  nelibc_allocator_unlock()
+  allocator_unlock()
 end
 
 -- Safe provenance test for hybrid adapters: never read metadata before an
@@ -354,10 +366,10 @@ local function nelibc_allocator_thread_cleanup(state: pointer): void
     if free_head ~= nilptr then
       local tail: *AllocationHeader = free_head
       while tail.next_free ~= nilptr do tail = tail.next_free end
-      nelibc_allocator_lock()
+      allocator_lock()
       tail.next_free = pools[pool_index].free_list
       pools[pool_index].free_list = free_head
-      nelibc_allocator_unlock()
+      allocator_unlock()
     end
     cursor.free_list = nilptr
     cursor.bump = nilptr
@@ -417,7 +429,7 @@ local function nelibc_realloc(ptr: pointer, size: csize): pointer <cexport, code
       required_size = 0
     end
     if required_size > old_header.mapping_size then
-      nelibc_allocator_lock()
+      allocator_lock()
       nelibc_direct_registry_write_begin()
       local previous: *AllocationHeader = nilptr
       local current: *AllocationHeader =
@@ -459,12 +471,12 @@ local function nelibc_realloc(ptr: pointer, size: csize): pointer <cexport, code
             (@*[0]usize)(new_user_address - (@usize)(HEADER_SLOT_SIZE))
           new_header_slot[0] = new_base
           nelibc_direct_registry_write_end()
-          nelibc_allocator_unlock()
+          allocator_unlock()
           return (@pointer)(new_user_address)
         end
       end
       nelibc_direct_registry_write_end()
-      nelibc_allocator_unlock()
+      allocator_unlock()
     end
   end
 

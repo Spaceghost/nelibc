@@ -354,12 +354,12 @@ end
 -- signal arrives in the protected region, keep it pending and retrigger it
 -- only after the lock has been released.
 local function pthread_cancel_defer_begin(): void <inline>
-  local context = pthread_current_context()
+  local context = nelibc_thread_current_pthread_context()
   if context ~= nilptr then context.cancel_defer_depth = context.cancel_defer_depth + 1 end
 end
 
 local function pthread_cancel_defer_end(): void <inline>
-  local context = pthread_current_context()
+  local context = nelibc_thread_current_pthread_context()
   if context == nilptr or context.cancel_defer_depth <= 0 then return end
   context.cancel_defer_depth = context.cancel_defer_depth - 1
   if context.cancel_defer_depth == 0 and
@@ -370,6 +370,14 @@ local function pthread_cancel_defer_end(): void <inline>
     local tid = nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong)
     nelibc_raw_syscall3(234_culong, (@culong)(pid), (@culong)(tid), 32_culong)
   end
+end
+
+local function nelibc_pthread_cancel_defer_begin(): void <cexport, codename 'nelibc_pthread_cancel_defer_begin'>
+  pthread_cancel_defer_begin()
+end
+
+local function nelibc_pthread_cancel_defer_end(): void <cexport, codename 'nelibc_pthread_cancel_defer_end'>
+  pthread_cancel_defer_end()
 end
 
 local function pthread_key_lock_acquire(): void <inline>
