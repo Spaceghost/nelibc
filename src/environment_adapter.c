@@ -8,6 +8,13 @@
 #include <wchar.h>
 #include <string.h>
 #include <locale.h>
+#include <time.h>
+
+/* timer_t is opaque and has different public representations across libcs. */
+void nelibc_timerid_store(void *output, int timer_id) {
+  timer_t value = (timer_t)(uintptr_t)timer_id;
+  memcpy(output, &value, sizeof(value));
+}
 
 int nelibc_atfork_lock_try(int *lock) {
   int expected = 0;

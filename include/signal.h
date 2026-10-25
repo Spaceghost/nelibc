@@ -8,6 +8,26 @@
 typedef int sig_atomic_t;
 typedef void (*sighandler_t)(int);
 typedef struct { unsigned long __bits[16]; } sigset_t;
+union sigval {
+  int sival_int;
+  void *sival_ptr;
+};
+struct sigevent {
+  union sigval sigev_value;
+  int sigev_signo;
+  int sigev_notify;
+  union {
+    int _pad[12];
+    int _tid;
+    struct {
+      void (*_function)(union sigval);
+      void *_attribute;
+    } _thread;
+  } _sigev_un;
+};
+#define sigev_notify_function _sigev_un._thread._function
+#define sigev_notify_attributes _sigev_un._thread._attribute
+#define sigev_notify_thread_id _sigev_un._tid
 
 struct sigaction {
   sighandler_t sa_handler;
@@ -61,6 +81,10 @@ struct sigaction {
 #define SIG_BLOCK 0
 #define SIG_UNBLOCK 1
 #define SIG_SETMASK 2
+#define SIGEV_SIGNAL 0
+#define SIGEV_NONE 1
+#define SIGEV_THREAD 2
+#define SIGEV_THREAD_ID 4
 
 #define SA_NOCLDSTOP 0x00000001
 #define SA_NOCLDWAIT 0x00000002

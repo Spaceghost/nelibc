@@ -1316,11 +1316,11 @@ tgammaf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tgammal,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 time,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 timegm,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-timer_create,time.h,,,not-declared
-timer_delete,time.h,,,not-declared
-timer_getoverrun,time.h,,,not-declared
-timer_gettime,time.h,,,not-declared
-timer_settime,time.h,,,not-declared
+timer_create,time.h,include/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+timer_delete,time.h,include/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+timer_getoverrun,time.h,include/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+timer_gettime,time.h,include/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+timer_settime,time.h,include/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 timerfd_create,sys/timerfd.h,sys/timerfd.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 timerfd_gettime,sys/timerfd.h,sys/timerfd.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 timerfd_settime,sys/timerfd.h,sys/timerfd.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

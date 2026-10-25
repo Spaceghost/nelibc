@@ -712,6 +712,20 @@ int main(int argc, char **argv) {
     return 41;
   close(poll_pipe[0]);
   close(poll_pipe[1]);
+  struct sigevent posix_timer_event = {0};
+  posix_timer_event.sigev_notify = SIGEV_NONE;
+  timer_t posix_timer;
+  if (timer_create(CLOCK_MONOTONIC, &posix_timer_event, &posix_timer) != 0)
+    return 42;
+  struct itimerspec posix_timer_value = {{0, 0}, {60, 0}};
+  struct itimerspec observed_posix_timer;
+  if (timer_settime(posix_timer, 0, &posix_timer_value, NULL) != 0 ||
+      timer_gettime(posix_timer, &observed_posix_timer) != 0 ||
+      observed_posix_timer.it_value.tv_sec < 1 ||
+      observed_posix_timer.it_value.tv_sec > 60 ||
+      timer_getoverrun(posix_timer) != 0)
+    return 43;
+  if (timer_delete(posix_timer) != 0) return 44;
   int timer_descriptor = timerfd_create(CLOCK_MONOTONIC,
                                         TFD_NONBLOCK | TFD_CLOEXEC);
   if (timer_descriptor < 0 ||

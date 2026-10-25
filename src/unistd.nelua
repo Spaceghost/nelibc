@@ -5,6 +5,7 @@
 -- libc during bootstrap; this dependency goes away when nelibc owns TLS errno.
 local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
 local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
+local function nelibc_timerid_store(output: pointer, timer_id: cint): void <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function malloc(size: csize): pointer <cimport> end
 local function free(ptr: pointer): void <cimport> end
@@ -2922,6 +2923,51 @@ end
 local function timerfd_gettime(fd: cint, current_value: pointer): cint <cexport, codename 'timerfd_gettime'>
   return (@cint)(syscall_result(nelibc_raw_syscall3(
     287_culong, (@culong)(fd), (@culong)((@usize)(current_value)), 0_culong
+  )))
+end
+
+-- POSIX timers expose an opaque timer_t that differs between host libcs. Keep
+-- a small nonzero public ID and translate it to the Linux kernel timer ID.
+local function timer_create(clock_id: cint, event: pointer <const>, timer_id: pointer): cint
+    <cexport, codename 'timer_create'>
+  local kernel_timer_id: cint = -1
+  local result = syscall_result(nelibc_raw_syscall3(
+    222_culong, (@culong)(clock_id), (@culong)((@usize)(event)),
+    (@culong)((@usize)(&kernel_timer_id))
+  ))
+  if result == 0 then
+    nelibc_timerid_store(timer_id, kernel_timer_id + 1)
+  end
+  return (@cint)(result)
+end
+
+local function timer_settime(timer_id: cint, flags: cint,
+    new_value: pointer <const>, old_value: pointer): cint
+    <cexport, codename 'timer_settime'>
+  return (@cint)(syscall_result(nelibc_raw_syscall6(
+    223_culong, (@culong)(timer_id - 1), (@culong)(flags),
+    (@culong)((@usize)(new_value)), (@culong)((@usize)(old_value)),
+    0_culong, 0_culong
+  )))
+end
+
+local function timer_gettime(timer_id: cint, current_value: pointer): cint
+    <cexport, codename 'timer_gettime'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    224_culong, (@culong)(timer_id - 1),
+    (@culong)((@usize)(current_value)), 0_culong
+  )))
+end
+
+local function timer_getoverrun(timer_id: cint): cint <cexport, codename 'timer_getoverrun'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    225_culong, (@culong)(timer_id - 1), 0_culong, 0_culong
+  )))
+end
+
+local function timer_delete(timer_id: cint): cint <cexport, codename 'timer_delete'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    226_culong, (@culong)(timer_id - 1), 0_culong, 0_culong
   )))
 end
 

@@ -6,6 +6,12 @@
 #ifdef NELIBC_STANDALONE
 
 #include <sys/types.h>
+struct sigevent;
+
+#ifndef __timer_t_defined
+#define __timer_t_defined 1
+typedef int timer_t;
+#endif
 
 #ifndef _STRUCT_TIMESPEC
 #define _STRUCT_TIMESPEC 1
@@ -68,6 +74,13 @@ int clock_nanosleep(clockid_t clock_id, int flags,
                     const struct timespec *requested,
                     struct timespec *remaining);
 time_t time(time_t *timer);
+int timer_create(clockid_t clock_id, struct sigevent *event, timer_t *timer_id);
+int timer_delete(timer_t timer_id);
+int timer_getoverrun(timer_t timer_id);
+int timer_gettime(timer_t timer_id, struct itimerspec *current_value);
+int timer_settime(timer_t timer_id, int flags,
+                  const struct itimerspec *new_value,
+                  struct itimerspec *old_value);
 
 #else
 
