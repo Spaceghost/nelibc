@@ -1,5 +1,18 @@
 #include "string.h"
 
+/* memory.nelua also exports wide APIs that are not exercised by this byte and
+   string smoke. Keep their C-locale link providers local to this small harness;
+   the full standalone archive supplies the Unicode-backed Nelua versions. */
+int towlower(int value) {
+  return value >= 'A' && value <= 'Z' ? value + ('a' - 'A') : value;
+}
+
+int wcwidth(int value) {
+  if (value == 0) return 0;
+  if (value < 0 || value > 0x7f || value < 0x20 || value == 0x7f) return -1;
+  return 1;
+}
+
 static unsigned char heap[32];
 
 void *malloc(size_t size) {

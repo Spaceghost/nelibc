@@ -988,7 +988,11 @@ x86_64-specific; the smoke executable still uses host C startup code.
 
 `make smoke-freestanding-zig` and `make smoke-freestanding-gcc` link the string
 and memory objects with a custom `_start`, `-nostdlib`, and no undefined
-symbols. These targets cover the freestanding string and memory core. The GCC target disables loop-to-memory-call
+symbols. These targets cover the freestanding string and memory core. The
+small smoke harness supplies ASCII C-locale link providers for wide routines
+that the `memory` object exports but this focused freestanding slice does not
+include; full standalone archives use the Unicode-backed Nelua implementations.
+The GCC target disables loop-to-memory-call
 recognition so the compiler cannot turn nelibc's own `memset` loop into a call
 to itself.
 
