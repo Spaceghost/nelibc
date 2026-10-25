@@ -2774,6 +2774,8 @@ local function semaphore_wait(sem: *Semaphore, abstime: *Timespec, timed: boolea
     end
     local sequence = nelibc_atomic_load_int(&sem.sequence)
     local context = pthread_current_context()
+    -- Keep async cancellation from abandoning the waiter count or wake address.
+    pthread_cancel_defer_begin()
     nelibc_atomic_fetch_add_int(&sem.waiters, 1)
     if context ~= nilptr then
       if semaphore_shared(sem) then context.cancel_wait_wake_operation = 1
@@ -2788,6 +2790,7 @@ local function semaphore_wait(sem: *Semaphore, abstime: *Timespec, timed: boolea
        nelibc_atomic_load_int(&sem.sequence) ~= sequence then
       if context ~= nilptr then nelibc_atomic_store_pointer(&context.cancel_wait_address, nilptr) end
       nelibc_atomic_fetch_add_int(&sem.waiters, -1)
+      pthread_cancel_defer_end()
       continue
     end
     local operation: culong = 0_culong
@@ -2804,6 +2807,7 @@ local function semaphore_wait(sem: *Semaphore, abstime: *Timespec, timed: boolea
       operation, (@culong)(sequence), timeout_pointer, 0_culong, mask)
     if context ~= nilptr then nelibc_atomic_store_pointer(&context.cancel_wait_address, nilptr) end
     nelibc_atomic_fetch_add_int(&sem.waiters, -1)
+    pthread_cancel_defer_end()
     pthread_testcancel()
     if result == -110 then nelibc_errno_location()[0] = 110; return -1 end
     if result == -4 then

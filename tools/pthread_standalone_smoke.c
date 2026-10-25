@@ -61,6 +61,7 @@ static volatile int cancel_type_release;
 static _Atomic int cancel_cleanup_calls;
 static sem_t cancel_semaphore;
 static volatile int cancel_sem_started;
+static _Atomic int cancel_async_sem_ready;
 enum { NAMED_SEMAPHORE_RACE_WORKERS = 8 };
 static char named_semaphore_path[64];
 static _Atomic int named_semaphore_race_ready;
@@ -267,6 +268,17 @@ static void *cancel_sem_worker(void *argument) {
   (void)sem_wait(&cancel_semaphore);
   pthread_cleanup_pop(0);
   return (void *)5;
+}
+
+static void *cancel_async_sem_worker(void *argument) {
+  (void)argument;
+  pthread_cleanup_push(cancel_cleanup, 0);
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0)
+    return (void *)10;
+  atomic_store_explicit(&cancel_async_sem_ready, 1, memory_order_release);
+  (void)sem_wait(&cancel_semaphore);
+  pthread_cleanup_pop(0);
+  return (void *)11;
 }
 
 static void *cancel_disabled_sem_worker(void *argument) {
@@ -1323,6 +1335,28 @@ int main(void) {
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
       cancel_cleanup_calls != 1)
     return 156;
+  cancel_cleanup_calls = 0;
+  atomic_store_explicit(&cancel_async_sem_ready, 0, memory_order_relaxed);
+  if (pthread_create(&thread, 0, cancel_async_sem_worker, 0) != 0) return 217;
+  for (unsigned int i = 0; i < 10000000U &&
+       !atomic_load_explicit(&cancel_async_sem_ready, memory_order_acquire); ++i) {
+  }
+  for (unsigned int i = 0; i < 10000000U &&
+       __atomic_load_n(&cancel_semaphore.__waiters, __ATOMIC_ACQUIRE) == 0; ++i) {
+  }
+  if (!atomic_load_explicit(&cancel_async_sem_ready, memory_order_acquire) ||
+      __atomic_load_n(&cancel_semaphore.__waiters, __ATOMIC_ACQUIRE) == 0)
+    return 218;
+  struct timespec async_sem_delay = {0, 20000000};
+  if (nanosleep(&async_sem_delay, 0) != 0 || pthread_cancel(thread) != 0)
+    return 219;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1 ||
+      __atomic_load_n(&cancel_semaphore.__waiters, __ATOMIC_ACQUIRE) != 0 ||
+      sem_destroy(&cancel_semaphore) != 0 ||
+      sem_init(&cancel_semaphore, 0, 0) != 0)
+    return 220;
   cancel_cleanup_calls = 0;
   cancel_sem_started = 0;
   if (pthread_create(&thread, 0, cancel_disabled_sem_worker, 0) != 0) return 166;

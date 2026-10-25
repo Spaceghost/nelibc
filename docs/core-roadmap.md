@@ -340,7 +340,9 @@ musl export set.
   `pthread_setschedparam` query and change live Linux thread scheduling.
 - Standalone unnamed POSIX semaphores now provide `sem_init`, `sem_destroy`,
   `sem_wait`, `sem_timedwait`, `sem_trywait`, `sem_post`, and `sem_getvalue`.
-  They use Nelua-owned futex waits, including cancellation at blocking waits.
+  They use Nelua-owned futex waits. Async cancellation is deferred until the
+  waiter count and cancellation wake address are cleared; smoke coverage checks
+  that a canceled waiter leaves the semaphore destroyable.
 - Standalone named POSIX semaphores provide `sem_open`, `sem_close`, and
   `sem_unlink` through shared `/dev/shm` mappings and a small C varargs ABI
   bridge; initialization, mapping, wait, and lifetime tracking are Nelua-owned.
