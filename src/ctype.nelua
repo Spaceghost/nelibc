@@ -1,6 +1,12 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
 
+require 'C'
+## cinclude '<locale.h>'
+
+global C.locale_t: type <cimport,nodecl> = pointer
+local function uselocale(locale: C.locale_t): C.locale_t <cimport,nodecl> end
+
 -- C-locale character classification. Arguments outside EOF and the unsigned
 -- char range are outside the C contract; return false unchanged for safety.
 local function valid_character(character: cint): boolean <inline>
@@ -85,4 +91,120 @@ end
 local function toupper(character: cint): cint <cexport, codename 'toupper'>
   if islower(character) ~= 0 then return character - 32 end
   return character
+end
+
+-- For the currently supported C and C.UTF-8 byte tables, narrow ctype results
+-- are identical: UTF-8 multibyte bytes are not standalone characters. Select
+-- and restore the requested thread locale so *_l calls remain independent of
+-- the caller's active locale and use the same locale handles as the wide APIs.
+local function isalnum_l(character: cint, locale: C.locale_t): cint <cexport, codename 'isalnum_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = isalnum(character)
+  uselocale(previous)
+  return result
+end
+
+local function isalpha_l(character: cint, locale: C.locale_t): cint <cexport, codename 'isalpha_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = isalpha(character)
+  uselocale(previous)
+  return result
+end
+
+local function isblank_l(character: cint, locale: C.locale_t): cint <cexport, codename 'isblank_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = isblank(character)
+  uselocale(previous)
+  return result
+end
+
+local function iscntrl_l(character: cint, locale: C.locale_t): cint <cexport, codename 'iscntrl_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = iscntrl(character)
+  uselocale(previous)
+  return result
+end
+
+local function isdigit_l(character: cint, locale: C.locale_t): cint <cexport, codename 'isdigit_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = isdigit(character)
+  uselocale(previous)
+  return result
+end
+
+local function isgraph_l(character: cint, locale: C.locale_t): cint <cexport, codename 'isgraph_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = isgraph(character)
+  uselocale(previous)
+  return result
+end
+
+local function islower_l(character: cint, locale: C.locale_t): cint <cexport, codename 'islower_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = islower(character)
+  uselocale(previous)
+  return result
+end
+
+local function isprint_l(character: cint, locale: C.locale_t): cint <cexport, codename 'isprint_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = isprint(character)
+  uselocale(previous)
+  return result
+end
+
+local function ispunct_l(character: cint, locale: C.locale_t): cint <cexport, codename 'ispunct_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = ispunct(character)
+  uselocale(previous)
+  return result
+end
+
+local function isspace_l(character: cint, locale: C.locale_t): cint <cexport, codename 'isspace_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = isspace(character)
+  uselocale(previous)
+  return result
+end
+
+local function isupper_l(character: cint, locale: C.locale_t): cint <cexport, codename 'isupper_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = isupper(character)
+  uselocale(previous)
+  return result
+end
+
+local function isxdigit_l(character: cint, locale: C.locale_t): cint <cexport, codename 'isxdigit_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return 0 end
+  local result = isxdigit(character)
+  uselocale(previous)
+  return result
+end
+
+local function tolower_l(character: cint, locale: C.locale_t): cint <cexport, codename 'tolower_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return character end
+  local result = tolower(character)
+  uselocale(previous)
+  return result
+end
+
+local function toupper_l(character: cint, locale: C.locale_t): cint <cexport, codename 'toupper_l'>
+  local previous = uselocale(locale)
+  if previous == (@C.locale_t)(0) then return character end
+  local result = toupper(character)
+  uselocale(previous)
+  return result
 end

@@ -61,15 +61,15 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,472 APIs: 780 exported by Nelibc in at least
+The current snapshot contains 1,472 APIs: 794 exported by Nelibc in at least
 one tested hybrid profile, 163 intentionally delegated to the host in hybrid
-profiles, and 529 not declared by Nelibc. Every declared API in this pinned
+profiles, and 515 not declared by Nelibc. Every declared API in this pinned
 baseline is either exported by at least one hybrid archive or intentionally
 delegated to its host. The separate seven-profile inventory tracks per-profile
 gaps. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 529 entries remain visible as unimplemented
+intentional omission; the 515 entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
 No real-valued `math.h` APIs in this pinned musl baseline remain undeclared.
 The largest remaining groups are wide characters (42), network database APIs

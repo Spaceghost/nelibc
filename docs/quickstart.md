@@ -47,7 +47,11 @@ The archive also exports the six `<inttypes.h>` helpers `imaxabs`, `imaxdiv`,
 `strtoimax`, `strtoumax`, `wcstoimax`, and `wcstoumax`, plus locale-specific
 `strtof_l`, `strtod_l`, and `strtold_l` conversions. GNU builds also provide
 `strtol_l`, `strtoul_l`, `strtoll_l`, `strtoull_l`, and their wide-character
-counterparts.
+counterparts. GNU builds also export the narrow byte classification and case
+conversion `_l` functions (`isalnum_l` through `toupper_l`). In the current
+locale data, byte results are shared by `C` and `C.UTF-8`; locale-sensitive
+wide-character operations use the selected locale's Unicode data in standalone
+mode.
 
 To link your own program against the default glibc hybrid archive:
 

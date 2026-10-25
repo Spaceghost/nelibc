@@ -12,7 +12,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread locale handles carry ctype, numeric, monetary, collation, and time state, while non-C collation and additional time locales remain limited | Add locale-sensitive non-C collation and time locales; expand locale data |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 529 undeclared candidates and record explicit intentional omissions |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 515 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -183,9 +183,9 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 1,021 declared names. All four hybrid
-  archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 849;
-  all three standalone archives export 1,022 including one implementation-only
+- The regenerated API inventory has 1,035 declared names. All four hybrid
+  archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 863;
+  all three standalone archives export 1,036 including one implementation-only
   entry. There are 162 host-delegated APIs and 10 declared-but-unexported
   Zig/musl archive gaps.
   `pthread_mutex_clocklock` is provided by the glibc host in hybrid mode and
@@ -193,9 +193,9 @@ musl export set.
   a completeness percentage. See `build/api-coverage.csv` after
   `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,472 declarations
-  that are also exported by the pinned release archives: Nelibc exports 780
+  that are also exported by the pinned release archives: Nelibc exports 794
   in at least one tested hybrid profile, delegates 163 to a hybrid host, and does not
-  yet declare 529. No declared API is missing from the tested hybrid archives.
+  yet declare 515. No declared API is missing from the tested hybrid archives.
   The largest undeclared groups are wide characters (42), network database
   APIs (32), stdlib (30), and unistd (29). These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
@@ -247,7 +247,11 @@ musl export set.
   Unicode mapping smoke checks cover Greek, Cyrillic, Deseret, and polytonic
   Greek. The twelve standard `isw*` classifiers use generated Unicode letter,
   number, case, whitespace, and general-category data in `C.UTF-8`, with
-  ASCII classifications in `C`. `wctype`/`iswctype`, all classifier `_l`
+  ASCII classifications in `C`. All 14 narrow byte classifier and
+  case-conversion `_l` functions now export in every hybrid and standalone
+  archive; they select and restore the thread locale. Their current byte-table
+  results are the same for `C` and `C.UTF-8`, the two supported ctype modes.
+  `wctype`/`iswctype`, all classifier `_l`
   forms, and `towupper_l`/`towlower_l` use locale handles. Standalone
   `newlocale` and `duplocale` return static handles for supported combinations
   of `C`/`C.UTF-8` ctype, `C`/`de_DE.UTF-8` numeric/monetary/time state;

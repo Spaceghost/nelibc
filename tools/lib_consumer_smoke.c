@@ -13,6 +13,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <time.h>
+#include <ctype.h>
 #include <sys/time.h>
 #include <sys/timerfd.h>
 #include <sys/signalfd.h>
@@ -49,7 +50,20 @@ static void system_signal_probe(int signal_number) {
 static int locale_float_parser_probe(void) {
   locale_t c_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
   if (c_locale == (locale_t)0) return 1;
+  locale_t ctype_locale = newlocale(LC_CTYPE_MASK, "C", (locale_t)0);
+  locale_t utf8_ctype_locale = newlocale(LC_CTYPE_MASK, "C.UTF-8", (locale_t)0);
+  if (ctype_locale == (locale_t)0 || utf8_ctype_locale == (locale_t)0) return 26;
   locale_t original_locale = uselocale((locale_t)0);
+  if (!isalnum_l('A', ctype_locale) || !isalpha_l('A', ctype_locale) ||
+      !isblank_l(' ', ctype_locale) || !iscntrl_l('\n', ctype_locale) ||
+      !isdigit_l('4', ctype_locale) || !isgraph_l('!', ctype_locale) ||
+      !islower_l('a', ctype_locale) || !isprint_l(' ', ctype_locale) ||
+      !ispunct_l('!', ctype_locale) || !isspace_l('\t', ctype_locale) ||
+      !isupper_l('A', ctype_locale) || !isxdigit_l('F', ctype_locale) ||
+      tolower_l('A', ctype_locale) != 'a' ||
+      toupper_l('a', ctype_locale) != 'A' ||
+      isalpha_l(0xe9, utf8_ctype_locale) ||
+      uselocale((locale_t)0) != original_locale) return 27;
   char *end = NULL;
   errno = 0;
   if (strtof_l("12.5tail", &end, c_locale) != 12.5f ||
@@ -131,6 +145,8 @@ static int locale_float_parser_probe(void) {
     freelocale(german_locale);
   }
   freelocale(c_locale);
+  freelocale(utf8_ctype_locale);
+  freelocale(ctype_locale);
   return 0;
 }
 
