@@ -157,6 +157,7 @@ local PthreadRwlock: type = @record{
   sequence: cint,
   pshared: cint,
   kind: cint,
+  rt_waiting_writers: cint,
   waiting_writer_priority_counts: [99]cint
 }
 local Semaphore: type = @record{
@@ -1672,6 +1673,7 @@ end
 
 local function pthread_rwlock_recompute_max_priority(
     rwlock: *PthreadRwlock): cint
+  if nelibc_atomic_load_int(&rwlock.rt_waiting_writers) == 0 then return 0 end
   local maximum: cint = 0
   local priority: cint = 99
   while priority > 0 do
@@ -1701,6 +1703,7 @@ local function pthread_rwlock_waiter_register(context: *PthreadContext,
   if priority > 0 then
     nelibc_atomic_fetch_add_int(
         &rwlock.waiting_writer_priority_counts[priority - 1], 1)
+    nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, 1)
   end
   nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, 1)
   pthread_priority_context_unlock(context)
@@ -1716,6 +1719,7 @@ local function pthread_rwlock_waiter_unregister(context: *PthreadContext,
     if priority > 0 then
       nelibc_atomic_fetch_add_int(
           &rwlock.waiting_writer_priority_counts[priority - 1], -1)
+      nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, -1)
     end
     nelibc_atomic_store_pointer(&context.rwlock_waiting_on, nilptr)
     nelibc_atomic_store_int(&context.rwlock_waiting_priority, 0)
@@ -1745,6 +1749,11 @@ local function pthread_rwlock_waiter_priority_update(context: *PthreadContext,
     if old_priority > 0 then
       nelibc_atomic_fetch_add_int(
           &rwlock.waiting_writer_priority_counts[old_priority - 1], -1)
+    end
+    if old_priority == 0 and next_priority > 0 then
+      nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, 1)
+    elseif old_priority > 0 and next_priority == 0 then
+      nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, -1)
     end
     context.rwlock_waiting_policy = policy
     nelibc_atomic_store_int(&context.rwlock_waiting_priority, next_priority)
@@ -2893,6 +2902,7 @@ local function pthread_rwlock_init(rwlock: *PthreadRwlock,
   rwlock.sequence = 0
   rwlock.pshared = pshared
   rwlock.kind = kind
+  rwlock.rt_waiting_writers = 0
   local priority_index: csize = 0
   while priority_index < 99 do
     rwlock.waiting_writer_priority_counts[priority_index] = 0

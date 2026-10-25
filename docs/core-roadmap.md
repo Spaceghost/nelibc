@@ -126,17 +126,22 @@ Nelibc reports `_SC_PRIORITY_SCHEDULING` and
 options are verified. Development work adds per-priority atomic writer counts
 to the rwlock and a current-wait record to each thread. This lets
 `pthread_setschedparam` and `pthread_setschedprio` update a queued writer's
-priority and wake lock waiters. Counts live in the rwlock itself, so
-process-shared locks do not depend on pointers to another process's thread
-context. Timed-out and asynchronously canceled writers remove their counts.
-The smoke suite now has a real-time-gated case for reprioritizing a queued
-writer and checking writer order. It passed on Bak with real-time scheduling
-permission for both Zig and GCC standalone profiles, including 10 repeat runs
-per compiler. The local development machine has `RLIMIT_RTPRIO=0`, so its run
-skips this case. Add coverage for priority decreases, reader-versus-writer
-ties, and process-shared real-time waiters before enabling the sysconf options.
-The GNU nonrecursive writer-preference attribute remains a separate policy and
-does not provide these scheduling guarantees.
+priority and wake lock waiters. An aggregate real-time waiter count keeps
+ordinary rwlock calls from scanning the priority buckets. Counts live in the
+rwlock itself, so process-shared locks do not depend on pointers to another
+process's thread context. Timed-out and asynchronously canceled writers remove
+their counts.
+The real-time-gated smoke cases cover queued writer priority increases and
+decreases, equal-priority reader-versus-writer precedence, process-shared
+writer ordering across a fork, and priority-count cleanup after timeouts and
+asynchronous cancellation. They passed on Bak with
+real-time scheduling permission for both Zig and GCC standalone profiles,
+including 10 repeat runs per compiler. The local development machine has
+`RLIMIT_RTPRIO=0`, so its run skips these cases. Keep the sysconf options
+unsupported pending a wider audit
+of Linux scheduling-policy behavior and POSIX requirements. The GNU
+nonrecursive writer-preference attribute remains a separate policy and does
+not provide these scheduling guarantees.
 
 Per-thread read ownership is tracked in standalone mode using four inline lock
 slots plus dynamically allocated overflow entries. Recursive reads are
