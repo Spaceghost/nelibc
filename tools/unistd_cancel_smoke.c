@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
+#include <sys/uio.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -18,6 +19,10 @@ static int read_fd;
 static int read_started;
 static int write_fd;
 static int write_started;
+static int readv_fd;
+static int readv_started;
+static int writev_fd;
+static int writev_started;
 static int listen_fd;
 static int accept_started;
 static int recv_fd;
@@ -65,6 +70,22 @@ static void *blocked_writer(void *unused) {
   mark_started(&write_started);
   (void)write(write_fd, &byte, 1);
   return (void *)1;
+}
+
+static void *blocked_readv_worker(void *unused) {
+  (void)unused;
+  char byte;
+  struct iovec vector = {&byte, 1};
+  mark_started(&readv_started);
+  return (void *)(long)readv(readv_fd, &vector, 1);
+}
+
+static void *blocked_writev_worker(void *unused) {
+  (void)unused;
+  char byte = 'x';
+  struct iovec vector = {&byte, 1};
+  mark_started(&writev_started);
+  return (void *)(long)writev(writev_fd, &vector, 1);
 }
 
 static void *blocked_acceptor(void *unused) {
@@ -173,6 +194,20 @@ int main(void) {
   close(pipe_fds[0]);
   close(pipe_fds[1]);
 
+  if (pipe(pipe_fds) != 0) return 66;
+  readv_fd = pipe_fds[0];
+  pthread_t readv_thread;
+  if (pthread_create(&readv_thread, NULL, blocked_readv_worker, NULL) != 0) return 67;
+  wait_started(&readv_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(readv_thread) != 0) return 68;
+  result = NULL;
+  if (pthread_join(readv_thread, &result) != 0 || result != PTHREAD_CANCELED) return 69;
+  alarm(0);
+  close(pipe_fds[0]);
+  close(pipe_fds[1]);
+
   if (pipe(pipe_fds) != 0) return 5;
   int flags = fcntl(pipe_fds[1], F_GETFL);
   if (flags < 0 || fcntl(pipe_fds[1], F_SETFL, flags | O_NONBLOCK) != 0)
@@ -194,6 +229,30 @@ int main(void) {
   if (pthread_cancel(writer) != 0) return 10;
   result = NULL;
   if (pthread_join(writer, &result) != 0 || result != PTHREAD_CANCELED) return 11;
+  alarm(0);
+  close(pipe_fds[0]);
+  close(pipe_fds[1]);
+
+  if (pipe(pipe_fds) != 0) return 70;
+  flags = fcntl(pipe_fds[1], F_GETFL);
+  if (flags < 0 || fcntl(pipe_fds[1], F_SETFL, flags | O_NONBLOCK) != 0)
+    return 71;
+  for (;;) {
+    ssize_t count = write(pipe_fds[1], fill, sizeof fill);
+    if (count > 0) continue;
+    if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+    return 72;
+  }
+  if (fcntl(pipe_fds[1], F_SETFL, flags & ~O_NONBLOCK) != 0) return 73;
+  writev_fd = pipe_fds[1];
+  pthread_t writev_thread;
+  if (pthread_create(&writev_thread, NULL, blocked_writev_worker, NULL) != 0) return 74;
+  wait_started(&writev_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(writev_thread) != 0) return 75;
+  result = NULL;
+  if (pthread_join(writev_thread, &result) != 0 || result != PTHREAD_CANCELED) return 76;
   alarm(0);
   close(pipe_fds[0]);
   close(pipe_fds[1]);
