@@ -4432,6 +4432,15 @@ local function utimes(pathname: *[0]cchar <const>, timestamps: *Timeval <const>)
   return utimensat(-100_cint, pathname, (@pointer)(&converted[0]), 0_cint)
 end
 
+-- BSD timeval interface that updates a symlink itself rather than its target.
+local function lutimes(pathname: *[0]cchar <const>, timestamps: *Timeval <const>): cint
+    <cexport, codename 'lutimes'>
+  if timestamps == nilptr then return utimensat(-100_cint, pathname, nilptr, 0x100_cint) end
+  local converted: [2]Timespec
+  if timeval_to_timespec(timestamps, &converted[0]) ~= 0_cint then return -1_cint end
+  return utimensat(-100_cint, pathname, (@pointer)(&converted[0]), 0x100_cint)
+end
+
 -- Legacy timeval interface relative to a directory descriptor.
 local function futimesat(dirfd: cint, pathname: *[0]cchar <const>, timestamps: *Timeval <const>): cint
     <cexport, codename 'futimesat'>

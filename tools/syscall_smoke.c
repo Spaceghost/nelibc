@@ -2246,6 +2246,26 @@ int main(int argc, char **argv) {
   if (futimesat(timestamp_directory, timestamp_name, legacy_timestamps) != -1 || errno != EINVAL ||
       futimesat(timestamp_directory, timestamp_name, NULL) != 0 || close(timestamp_directory) != 0)
     return 410;
+  char timestamp_link_path[96];
+  if (snprintf(timestamp_link_path, sizeof timestamp_link_path, "%s.link", timestamp_path) < 0 ||
+      symlink(timestamp_path, timestamp_link_path) != 0)
+    return 411;
+  struct timeval link_times[2] = {
+      {.tv_sec = 1000000008, .tv_usec = 333333},
+      {.tv_sec = 1000000009, .tv_usec = 444444}};
+  struct stat link_status;
+  if (lutimes(timestamp_link_path, link_times) != 0 ||
+      lstat(timestamp_link_path, &link_status) != 0 ||
+      stat(timestamp_path, &timestamp_status) != 0 || !S_ISLNK(link_status.st_mode) ||
+      link_status.st_atim.tv_sec != 1000000008 || link_status.st_atim.tv_nsec != 333333000 ||
+      link_status.st_mtim.tv_sec != 1000000009 || link_status.st_mtim.tv_nsec != 444444000 ||
+      timestamp_status.st_atim.tv_sec != 1000000000 || timestamp_status.st_atim.tv_nsec != 234567000)
+    return 412;
+  link_times[0].tv_usec = -1;
+  errno = 0;
+  if (lutimes(timestamp_link_path, link_times) != -1 || errno != EINVAL ||
+      lutimes(timestamp_link_path, NULL) != 0 || unlink(timestamp_link_path) != 0)
+    return 413;
   errno = 0;
   if (utimensat(AT_FDCWD, timestamp_path, NULL, 0x40000000) != -1 || errno != EINVAL) return 391;
   if (unlink(timestamp_path) != 0) return 392;

@@ -70,6 +70,7 @@ int setitimer(int which, const struct itimerval *new_value,
 #endif
 
 int utimes(const char *pathname, const struct timeval timestamps[2]);
+int lutimes(const char *pathname, const struct timeval timestamps[2]);
 int futimes(int fd, const struct timeval timestamps[2]);
 int futimesat(int dirfd, const char *pathname, const struct timeval timestamps[2]);
 

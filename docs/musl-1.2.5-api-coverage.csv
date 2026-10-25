@@ -719,7 +719,7 @@ lsearch,search.h,,,not-declared
 lseek,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 lsetxattr,sys/xattr.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 lstat,sys/stat.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-lutimes,sys/time.h,,,not-declared
+lutimes,sys/time.h,sys/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 madvise,sys/mman.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 malloc,malloc.h;stdlib.h,stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 malloc_usable_size,malloc.h,,,not-declared

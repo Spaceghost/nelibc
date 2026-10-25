@@ -499,6 +499,42 @@ static int futimesat_probe(void) {
   return futimesat(-1, "missing-nelibc-futimesat-path", NULL) == -1 && errno == EBADF ? 0 : 6;
 }
 
+static int lutimes_probe(void) {
+  char target[] = "/tmp/nelibc-lutimes-target-XXXXXX";
+  char linkpath[] = "/tmp/nelibc-lutimes-link-XXXXXX";
+  int descriptor = mkstemp(target);
+  if (descriptor < 0 || close(descriptor) != 0) return 1;
+  descriptor = mkstemp(linkpath);
+  if (descriptor < 0 || close(descriptor) != 0 || unlink(linkpath) != 0) {
+    unlink(target);
+    return 2;
+  }
+  struct timeval target_times[2] = {
+      {.tv_sec = 1000000006, .tv_usec = 111111},
+      {.tv_sec = 1000000007, .tv_usec = 222222}};
+  struct timeval link_times[2] = {
+      {.tv_sec = 1000000008, .tv_usec = 333333},
+      {.tv_sec = 1000000009, .tv_usec = 444444}};
+  struct stat target_status, link_status;
+  if (utimes(target, target_times) != 0 || symlink(target, linkpath) != 0 ||
+      lutimes(linkpath, link_times) != 0 || lstat(linkpath, &link_status) != 0 ||
+      stat(linkpath, &target_status) != 0 ||
+      !S_ISLNK(link_status.st_mode) ||
+      link_status.st_atim.tv_sec != 1000000008 || link_status.st_atim.tv_nsec != 333333000 ||
+      link_status.st_mtim.tv_sec != 1000000009 || link_status.st_mtim.tv_nsec != 444444000 ||
+      target_status.st_atim.tv_sec != 1000000006 || target_status.st_atim.tv_nsec != 111111000 ||
+      target_status.st_mtim.tv_sec != 1000000007 || target_status.st_mtim.tv_nsec != 222222000) {
+    unlink(linkpath); unlink(target); return 3;
+  }
+  link_times[1].tv_usec = 1000000;
+  errno = 0;
+  if (lutimes(linkpath, link_times) != -1 || errno != EINVAL ||
+      lutimes(linkpath, NULL) != 0) {
+    unlink(linkpath); unlink(target); return 4;
+  }
+  return unlink(linkpath) == 0 && unlink(target) == 0 ? 0 : 5;
+}
+
 static int semaphore_clock_probe(void) {
   sem_t semaphore;
   if (sem_init(&semaphore, 0, 1) != 0) return 1;
@@ -966,6 +1002,8 @@ int main(int argc, char **argv) {
   if (futimes_result != 0) return 600 + futimes_result;
   int futimesat_result = futimesat_probe();
   if (futimesat_result != 0) return 610 + futimesat_result;
+  int lutimes_result = lutimes_probe();
+  if (lutimes_result != 0) return 620 + lutimes_result;
   char cwd_buffer[4096];
   if (getcwd(cwd_buffer, sizeof cwd_buffer) == NULL) return 20;
   char *allocated_cwd = get_current_dir_name();

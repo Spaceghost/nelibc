@@ -146,6 +146,10 @@ The legacy `futimesat` interface applies the same conversion through
 checks cover relative lookup, stored precision, invalid microseconds, `NULL`,
 and invalid directory descriptors.
 
+`lutimes` sets timestamps on a symlink itself with `AT_SYMLINK_NOFOLLOW`.
+Consumer checks compare link and target timestamps to ensure the target remains
+unchanged, and cover invalid microseconds and `NULL`.
+
 POSIX `pselect` uses Linux `pselect6` with its kernel signal-mask descriptor.
 It applies the same reserved-signal filtering and timeout copy as `ppoll`.
 The consumer matrix checks readiness, signal-mask use, and unchanged timeout
