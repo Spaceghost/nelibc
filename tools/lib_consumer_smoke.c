@@ -46,7 +46,7 @@ static void system_signal_probe(int signal_number) {
 
 #ifdef NELIBC_STANDALONE
 typedef struct {
-  locale_t locales[4];
+  locale_t locales[5];
   struct lconv *main_locale_data;
   int locale_data_isolated;
 } standalone_numeric_locale_args;
@@ -71,6 +71,7 @@ static void *standalone_numeric_locale_worker(void *argument) {
   locale_t numeric_de = args->locales[1];
   locale_t monetary_c = args->locales[2];
   locale_t monetary_de = args->locales[3];
+  locale_t collate_c = args->locales[4];
   if (uselocale(numeric_c) != LC_GLOBAL_LOCALE ||
       strcmp(localeconv()->decimal_point, ".") != 0 || !iswalpha(0xe9))
     return (void *)1;
@@ -114,6 +115,14 @@ static void *standalone_numeric_locale_worker(void *argument) {
       uselocale(LC_GLOBAL_LOCALE) != monetary_c ||
       localeconv()->currency_symbol[0] != '\0')
     return (void *)7;
+  char transformed[8];
+  if (uselocale(collate_c) != LC_GLOBAL_LOCALE ||
+      uselocale((locale_t)0) != collate_c ||
+      strcoll("a", "B") <= 0 ||
+      strxfrm(transformed, "aB", sizeof transformed) != 2 ||
+      strcmp(transformed, "aB") != 0 ||
+      uselocale(LC_GLOBAL_LOCALE) != collate_c)
+    return (void *)8;
   return 0;
 }
 #endif
@@ -1207,14 +1216,19 @@ int main(int argc, char **argv) {
   locale_t monetary_de = newlocale(LC_MONETARY_MASK, "de_DE.UTF-8", monetary_c);
   locale_t numeric_de_monetary_de =
       newlocale(LC_MONETARY_MASK, "de_DE.UTF-8", numeric_de);
+  locale_t collate_c = newlocale(LC_COLLATE_MASK, "C", numeric_de);
   if (numeric_c == (locale_t)0 || numeric_de == (locale_t)0 ||
       monetary_c == (locale_t)0 || monetary_de == (locale_t)0 ||
-      numeric_de_monetary_de == (locale_t)0 ||
-      setlocale(LC_NUMERIC, "de_DE.UTF-8") == NULL) return 86;
+      numeric_de_monetary_de == (locale_t)0 || collate_c != numeric_de)
+    return 86;
+  errno = 0;
+  if (newlocale(LC_COLLATE_MASK, "de_DE.UTF-8", numeric_de) != (locale_t)0 ||
+      errno != EINVAL || setlocale(LC_NUMERIC, "de_DE.UTF-8") == NULL)
+    return 89;
   struct lconv *main_locale_data = localeconv();
   if (strcmp(main_locale_data->decimal_point, ",") != 0) return 87;
   standalone_numeric_locale_args numeric_locale_args = {
-      .locales = {numeric_c, numeric_de, monetary_c, monetary_de},
+      .locales = {numeric_c, numeric_de, monetary_c, monetary_de, collate_c},
       .main_locale_data = main_locale_data,
       .locale_data_isolated = 0};
   pthread_t numeric_worker;

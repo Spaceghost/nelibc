@@ -69,6 +69,14 @@ local function nelibc_locale_monetary_mode(locale: pointer): cint <inline>
   return -1
 end
 
+local function nelibc_locale_collate_mode(locale: pointer): cint <inline>
+  if locale == nilptr or locale == (@pointer)(~0_usize) then return 0 end
+  for index: cint = 0, 7 do
+    if locale == (@pointer)(&locale_tokens[index]) then return 0 end
+  end
+  return -1
+end
+
 local function nelibc_locale_name_is(name: *[0]cchar <const>, literal: *[0]cchar <const>): boolean <inline>
   local index: csize = 0
   while name[index] ~= 0 and name[index] == literal[index] do index = index + 1 end
@@ -106,6 +114,10 @@ local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): po
       nelibc_locale_name_is(name, "de_DE.utf8") or
       nelibc_locale_name_is(name, "de_DE")
   if not name_is_c and not name_is_utf8 and not name_is_german then
+    nelibc_errno_location()[0] = 22
+    return nilptr
+  end
+  if (mask & 8) ~= 0 and not name_is_c and not name_is_utf8 then
     nelibc_errno_location()[0] = 22
     return nilptr
   end
@@ -155,13 +167,13 @@ local function freelocale(locale: pointer): void <cexport, codename 'freelocale'
 end
 
 local function uselocale(locale: pointer): pointer <cexport, codename 'uselocale'>
-  local active = (@*[0]cint)(nelibc_thread_state(16, 12_csize))
+  local active = (@*[0]cint)(nelibc_thread_state(16, 16_csize))
   if active == nilptr then
     nelibc_errno_location()[0] = 12 -- ENOMEM
     return nilptr
   end
   local previous: pointer = (@pointer)(~0_usize)
-  if active[0] ~= 0 or active[1] ~= 0 or active[2] ~= 0 then
+  if active[0] ~= 0 or active[1] ~= 0 or active[2] ~= 0 or active[3] ~= 0 then
     local ctype_mode = active[0] - 1
     local numeric_mode = active[1] - 1
     if active[0] == 0 then ctype_mode = nelibc_multibyte_mode() end
@@ -175,18 +187,21 @@ local function uselocale(locale: pointer): pointer <cexport, codename 'uselocale
     active[0] = 0
     active[1] = 0
     active[2] = 0
+    active[3] = 0
     return previous
   end
   local ctype_mode = nelibc_locale_ctype_mode(locale)
   local numeric_mode = nelibc_locale_numeric_mode(locale)
   local monetary_mode = nelibc_locale_monetary_mode(locale)
-  if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 then
+  local collate_mode = nelibc_locale_collate_mode(locale)
+  if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 or collate_mode < 0 then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr
   end
   active[0] = ctype_mode + 1
   active[1] = numeric_mode + 1
   active[2] = monetary_mode + 1
+  active[3] = collate_mode + 1
   return previous
 end
 
