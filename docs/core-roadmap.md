@@ -319,8 +319,11 @@ musl export set.
   the pthread-key and default-attribute locks, robust-list slot allocation,
   priority-protection bookkeeping, and the named-semaphore registry defer
   asynchronous cancellation until after releasing their locks, then retrigger
-  a pending request. Blocking calls made while those locks are held remain a
-  target for focused cancellation testing.
+  a pending request. The standalone pthread smoke holds this deferral region
+  across an async-cancel request while repeatedly exercising allocation and
+  pthread-attribute operations, then verifies cleanup runs after release on
+  Zig, GCC, and TinyCC builds. Blocking calls made while internal locks are
+  held still need focused cancellation testing.
 - Standalone pthread attributes support configurable stack sizes, page-
   protected guard regions, and scheduler inheritance/policy/priority. Explicit
   scheduling is applied before a startup gate releases the worker; permission

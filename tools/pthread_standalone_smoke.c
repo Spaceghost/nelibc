@@ -5,6 +5,7 @@
 #include <semaphore.h>
 #include <stdatomic.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
@@ -50,9 +51,11 @@ static volatile int cancel_sleep_started;
 static volatile int cancel_state_ready;
 static volatile int cancel_state_release;
 static volatile int cancel_async_ready;
+static volatile int cancel_guard_ready;
+static volatile int cancel_guard_release;
 static volatile int cancel_type_ready;
 static volatile int cancel_type_release;
-static int cancel_cleanup_calls;
+static _Atomic int cancel_cleanup_calls;
 static sem_t cancel_semaphore;
 static volatile int cancel_sem_started;
 enum { NAMED_SEMAPHORE_RACE_WORKERS = 8 };
@@ -68,6 +71,27 @@ static struct {
 static void cancel_cleanup(void *argument) {
   ++cancel_cleanup_calls;
   if (argument != 0) pthread_mutex_unlock((pthread_mutex_t *)argument);
+}
+
+void nelibc_pthread_cancel_defer_begin(void);
+void nelibc_pthread_cancel_defer_end(void);
+
+static void *cancel_deferred_lock_worker(void *argument) {
+  (void)argument;
+  pthread_cleanup_push(cancel_cleanup, 0);
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0)
+    return (void *)1;
+  nelibc_pthread_cancel_defer_begin();
+  cancel_guard_ready = 1;
+  while (!cancel_guard_release) {
+    void *allocation = malloc(48);
+    if (allocation != 0) free(allocation);
+    pthread_attr_t attributes;
+    if (pthread_attr_init(&attributes) == 0) pthread_attr_destroy(&attributes);
+  }
+  nelibc_pthread_cancel_defer_end();
+  pthread_cleanup_pop(0);
+  return 0;
 }
 
 static void pthread_kill_handler(int signal) {
@@ -1354,6 +1378,22 @@ int main(void) {
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
       cancel_cleanup_calls != 1)
     return 196;
+
+  cancel_guard_ready = 0;
+  cancel_guard_release = 0;
+  cancel_cleanup_calls = 0;
+  if (pthread_create(&thread, 0, cancel_deferred_lock_worker, 0) != 0) return 201;
+  for (unsigned int i = 0; i < 10000000U && !cancel_guard_ready; ++i) {
+  }
+  if (!cancel_guard_ready || pthread_cancel(thread) != 0) return 202;
+  struct timespec cancel_guard_delay = {0, 20000000};
+  if (nanosleep(&cancel_guard_delay, 0) != 0 || cancel_cleanup_calls != 0)
+    return 203;
+  cancel_guard_release = 1;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1)
+    return 204;
 
   cancel_type_ready = 0;
   cancel_type_release = 0;
