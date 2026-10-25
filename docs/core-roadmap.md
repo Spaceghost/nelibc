@@ -620,9 +620,10 @@ including APIs absent from the pinned musl export set.
   or `pthread_cond_timedwait`. Async cancellation during a condition wait is
   deferred until after the mutex is reacquired, so cleanup handlers run with
   the required mutex ownership. Condition variables select realtime or monotonic
-  clocks through their attributes. `pthread_cond_clockwait` cancellation is
-  tested with a monotonic deadline; the waiter reacquires its mutex, runs its
-  cleanup handler, and clears the condition wait count. Mutexes support
+  clocks through their attributes. Cancellation smoke covers `pthread_cond_wait`,
+  realtime `pthread_cond_timedwait`, and monotonic `pthread_cond_clockwait`; it
+  synchronizes on the waiter's mutex handoff and checks cleanup runs with the
+  mutex reacquired and the condition wait count cleared. Mutexes support
   absolute realtime timed locks, priority-inheritance futexes, and robust
   owner-death recovery through Linux robust lists. The smoke covers robust PI
   recovery both with and without a blocked waiter, PI timed-lock deadlines, and
