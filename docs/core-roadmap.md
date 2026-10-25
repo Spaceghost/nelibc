@@ -110,10 +110,10 @@ musl export set.
   in hybrid mode but musl does not. There is also one implementation-only entry. This is an
   inventory signal, not a completeness percentage.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 659
+  that are also exported by the pinned release archives: Nelibc exports 662
   in at least one hybrid profile, delegates 126 to a hybrid host, and does not
-  yet declare 686. The largest undeclared groups are complex math
-  (48), wide characters (65), stdlib, unistd, and network database APIs. These
+  yet declare 683. The largest undeclared groups are complex math
+  (45), wide characters (65), stdlib, unistd, and network database APIs. These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
   command.
@@ -137,10 +137,11 @@ musl export set.
   `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`, plus
   binary32/64/80 internal classification and sign-bit functions, through all
   four hybrid profiles and standalone archives. Its
-  complex-math coverage now includes `cabs*`, `creal*`, `cimag*`, `conj*`, `cproj*`, and `carg*`: a small C ABI
-  shim extracts components and packages complex returns, while Nelua computes
-  magnitudes, conjugates and projects values, and evaluates arguments with
-  `atan2*`.
+  complex-math coverage now includes `cabs*`, `creal*`, `cimag*`, `conj*`,
+  `cproj*`, `carg*`, and `csqrt*`: a small C ABI shim extracts components and
+  packages complex returns, while Nelua computes
+  magnitudes, conjugates and projects values, evaluates arguments with
+  `atan2*`, and computes principal square roots with scaled intermediates.
   The remaining C complex arithmetic and transcendental families are still a
   substantial gap.
   Nelua functions implement `fmin`/`fmax` NaN behavior and rounding rules;

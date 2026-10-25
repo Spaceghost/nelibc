@@ -201,9 +201,9 @@ csinh,complex.h,,,not-declared
 csinhf,complex.h,,,not-declared
 csinhl,complex.h,,,not-declared
 csinl,complex.h,,,not-declared
-csqrt,complex.h,,,not-declared
-csqrtf,complex.h,,,not-declared
-csqrtl,complex.h,,,not-declared
+csqrt,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+csqrtf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+csqrtl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ctan,complex.h,,,not-declared
 ctanf,complex.h,,,not-declared
 ctanh,complex.h,,,not-declared

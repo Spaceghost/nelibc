@@ -1,4 +1,5 @@
 #include <complex.h>
+#include <float.h>
 #include <math.h>
 
 int main(void) {
@@ -20,6 +21,9 @@ int main(void) {
   float (*volatile call_cargf)(float _Complex) = cargf;
   double (*volatile call_carg)(double _Complex) = carg;
   long double (*volatile call_cargl)(long double _Complex) = cargl;
+  float _Complex (*volatile call_csqrtf)(float _Complex) = csqrtf;
+  double _Complex (*volatile call_csqrt)(double _Complex) = csqrt;
+  long double _Complex (*volatile call_csqrtl)(long double _Complex) = csqrtl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -91,5 +95,35 @@ int main(void) {
       fabsl(anglel_axis - acosl(-1.0L)) > 1e-18L ||
       !signbit(anglef_zero) || !signbit(angle_zero) || !signbit(anglel_zero))
     return 6;
+  float _Complex rootf = call_csqrtf(__builtin_complex(3.0f, 4.0f));
+  double _Complex root = call_csqrt(__builtin_complex(-3.0, 4.0));
+  long double _Complex rootl = call_csqrtl(__builtin_complex(3.0L, -4.0L));
+  float _Complex cutf = call_csqrtf(__builtin_complex(-4.0f, -0.0f));
+  double _Complex cut = call_csqrt(__builtin_complex(-4.0, -0.0));
+  long double _Complex cutl = call_csqrtl(__builtin_complex(-4.0L, -0.0L));
+  float _Complex zerof = call_csqrtf(__builtin_complex(-0.0f, -0.0f));
+  double _Complex zero = call_csqrt(__builtin_complex(-0.0, -0.0));
+  long double _Complex zerol = call_csqrtl(__builtin_complex(-0.0L, -0.0L));
+  float _Complex largef = call_csqrtf(__builtin_complex(FLT_MAX, FLT_MAX));
+  double _Complex large = call_csqrt(__builtin_complex(DBL_MAX, DBL_MAX));
+  long double _Complex largel = call_csqrtl(__builtin_complex(LDBL_MAX, LDBL_MAX));
+  float _Complex infnanf = call_csqrtf(__builtin_complex(INFINITY, NAN));
+  double _Complex infnan = call_csqrt(__builtin_complex(-INFINITY, NAN));
+  long double _Complex infnanl = call_csqrtl(__builtin_complex(INFINITY, NAN));
+  if (call_crealf(rootf) != 2.0f || call_cimagf(rootf) != 1.0f ||
+      call_creal(root) != 1.0 || call_cimag(root) != 2.0 ||
+      call_creall(rootl) != 2.0L || call_cimagl(rootl) != -1.0L ||
+      call_crealf(cutf) != 0.0f || call_cimagf(cutf) != -2.0f ||
+      call_creal(cut) != 0.0 || call_cimag(cut) != -2.0 ||
+      call_creall(cutl) != 0.0L || call_cimagl(cutl) != -2.0L ||
+      call_crealf(zerof) != 0.0f || !signbit(call_cimagf(zerof)) ||
+      call_creal(zero) != 0.0 || !signbit(call_cimag(zero)) ||
+      call_creall(zerol) != 0.0L || !signbit(call_cimagl(zerol)) ||
+      !isfinite(call_crealf(largef)) || !isfinite(call_cimagf(largef)) ||
+      !isfinite(call_creal(large)) || !isfinite(call_cimag(large)) ||
+      !isfinite(call_creall(largel)) || !isfinite(call_cimagl(largel)) ||
+      !isinf(call_crealf(infnanf)) || !isnan(call_cimagf(infnanf)) ||
+      !isnan(call_creal(infnan)) || !isinf(call_cimag(infnan)) ||
+      !isinf(call_creall(infnanl)) || !isnan(call_cimagl(infnanl))) return 7;
   return 0;
 }

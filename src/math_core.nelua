@@ -3231,6 +3231,182 @@ local function nelibc_cargl(real: clongdouble, imaginary: clongdouble): clongdou
   return atan2l(imaginary, real)
 end
 
+-- Scaled principal square root: intermediate ratios stay in [0, 1], so inputs
+-- near the largest finite value do not overflow while forming x*x or x+y.
+local function nelibc_csqrtf_parts(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_csqrtf_parts'>
+  if is_infinite32(y) then
+    real_out[0] = float_from_bits(0x7F800000_cuint)
+    imaginary_out[0] = copysignf(float_from_bits(0x7F800000_cuint), y)
+    return
+  end
+  if is_infinite32(x) then
+    if x > 0_cfloat then
+      real_out[0] = x
+      if is_nan32(y) then
+        imaginary_out[0] = x + y
+      else
+        imaginary_out[0] = copysignf(0_cfloat, y)
+      end
+    else
+      if is_nan32(y) then
+        real_out[0] = x + y
+      else
+        real_out[0] = 0_cfloat
+      end
+      imaginary_out[0] = copysignf(float_from_bits(0x7F800000_cuint), y)
+    end
+    return
+  end
+  if is_nan32(x) or is_nan32(y) then
+    local nan_value = x + y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  if x == 0_cfloat and y == 0_cfloat then
+    real_out[0] = 0_cfloat
+    imaginary_out[0] = y
+    return
+  end
+  local ax = fabsf(x)
+  local ay = fabsf(y)
+  local magnitude: cfloat
+  if ax >= ay then
+    local ratio = ay / ax
+    magnitude = sqrtf(ax) * sqrtf((1_cfloat + sqrtf(1_cfloat + ratio * ratio)) * 0.5_cfloat)
+  else
+    local ratio = ax / ay
+    magnitude = sqrtf(ay) * sqrtf((ratio + sqrtf(1_cfloat + ratio * ratio)) * 0.5_cfloat)
+  end
+  if x >= 0_cfloat then
+    real_out[0] = magnitude
+    imaginary_out[0] = y / (2_cfloat * magnitude)
+  else
+    real_out[0] = ay / (2_cfloat * magnitude)
+    imaginary_out[0] = copysignf(magnitude, y)
+  end
+end
+
+local function nelibc_csqrt_parts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_csqrt_parts'>
+  if is_infinite64(y) then
+    real_out[0] = double_from_bits(0x7ff0000000000000_culonglong)
+    imaginary_out[0] = copysign(double_from_bits(0x7ff0000000000000_culonglong), y)
+    return
+  end
+  if is_infinite64(x) then
+    if x > 0_cdouble then
+      real_out[0] = x
+      if is_nan64(y) then
+        imaginary_out[0] = x + y
+      else
+        imaginary_out[0] = copysign(0_cdouble, y)
+      end
+    else
+      if is_nan64(y) then
+        real_out[0] = x + y
+      else
+        real_out[0] = 0_cdouble
+      end
+      imaginary_out[0] = copysign(double_from_bits(0x7ff0000000000000_culonglong), y)
+    end
+    return
+  end
+  if is_nan64(x) or is_nan64(y) then
+    local nan_value = x + y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  if x == 0_cdouble and y == 0_cdouble then
+    real_out[0] = 0_cdouble
+    imaginary_out[0] = y
+    return
+  end
+  local ax = fabs(x)
+  local ay = fabs(y)
+  local magnitude: cdouble
+  if ax >= ay then
+    local ratio = ay / ax
+    magnitude = sqrt(ax) * sqrt((1_cdouble + sqrt(1_cdouble + ratio * ratio)) * 0.5_cdouble)
+  else
+    local ratio = ax / ay
+    magnitude = sqrt(ay) * sqrt((ratio + sqrt(1_cdouble + ratio * ratio)) * 0.5_cdouble)
+  end
+  if x >= 0_cdouble then
+    real_out[0] = magnitude
+    imaginary_out[0] = y / (2_cdouble * magnitude)
+  else
+    real_out[0] = ay / (2_cdouble * magnitude)
+    imaginary_out[0] = copysign(magnitude, y)
+  end
+end
+
+local function nelibc_csqrtl_parts(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_csqrtl_parts'>
+  if is_infinite80(y) then
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    real_out[0] = infinity.value
+    imaginary_out[0] = copysignl(infinity.value, y)
+    return
+  end
+  if is_infinite80(x) then
+    if x > 0_clongdouble then
+      real_out[0] = x
+      if is_nan80(y) then
+        imaginary_out[0] = x + y
+      else
+        imaginary_out[0] = copysignl(0_clongdouble, y)
+      end
+    else
+      local infinity: LongDoubleBits = {
+        parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+      }
+      if is_nan80(y) then
+        real_out[0] = x + y
+      else
+        real_out[0] = 0_clongdouble
+      end
+      imaginary_out[0] = copysignl(infinity.value, y)
+    end
+    return
+  end
+  if is_nan80(x) or is_nan80(y) then
+    local nan_value = x + y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  if x == 0_clongdouble and y == 0_clongdouble then
+    real_out[0] = 0_clongdouble
+    imaginary_out[0] = y
+    return
+  end
+  local ax = fabsl(x)
+  local ay = fabsl(y)
+  local magnitude: clongdouble
+  if ax >= ay then
+    local ratio = ay / ax
+    magnitude = sqrtl(ax) * sqrtl((1_clongdouble + sqrtl(1_clongdouble + ratio * ratio)) * 0.5_clongdouble)
+  else
+    local ratio = ax / ay
+    magnitude = sqrtl(ay) * sqrtl((ratio + sqrtl(1_clongdouble + ratio * ratio)) * 0.5_clongdouble)
+  end
+  if x >= 0_clongdouble then
+    real_out[0] = magnitude
+    imaginary_out[0] = y / (2_clongdouble * magnitude)
+  else
+    real_out[0] = ay / (2_clongdouble * magnitude)
+    imaginary_out[0] = copysignl(magnitude, y)
+  end
+end
+
 -- Advance one encoding in the 80-bit extended-precision value ordering.
 local function nextafterl(x: clongdouble, y: clongdouble): clongdouble
     <cexport, codename 'nextafterl'>
