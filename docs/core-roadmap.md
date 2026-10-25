@@ -335,11 +335,11 @@ musl export set.
   Nearest-mode calls above magnitude 576 and directed-mode calls above 256 use
   a double-double atanh-series logarithm to retain the low component through
   the exponent product. This
-  path covers magnitudes through 4096 in round-to-nearest and 512 in directed
+  path covers magnitudes through 8192 in round-to-nearest and 4096 in directed
   rounding modes; larger exponents still use `exp(y * log(x))` and need more
   accuracy work. Deterministic random comparisons cover arbitrary fractions
-  through 4096 on bases with binary exponents from -4 to 4, and
-  directed-rounding fractions through 512; wide-base cases are also checked in
+  through 8192 on bases with binary exponents from -4 to 4 in round-to-nearest
+  and through 4096 in directed modes; wide-base cases are also checked in
   all four rounding modes. Musl's
   `powl` reference differs by hundreds of ULP in
   some wide-fraction cases, so its wide-range comparison allows up to 1024 ULP

@@ -1596,9 +1596,9 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   local result: clongdouble
   local exponent_magnitude = exponent
   if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
-  local fractional_exponent_limit = 512_clongdouble
+  local fractional_exponent_limit = 4096_clongdouble
   if nelibc_x87_rounding_mode() == 0_cint then
-    fractional_exponent_limit = 4096_clongdouble
+    fractional_exponent_limit = 8192_clongdouble
   end
   -- Preserve exact powers of two, including fractional exponents whose product
   -- with the base's binary exponent is integral.
