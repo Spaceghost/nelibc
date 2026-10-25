@@ -5,6 +5,7 @@
 
 #include <stddef.h>
 #include <sys/types.h>
+#include <time.h>
 
 #define SCHED_OTHER 0
 #define SCHED_FIFO 1
@@ -54,5 +55,14 @@ int sched_setaffinity(pid_t process, size_t size, const cpu_set_t *mask);
 #include "nelibc_syscall.h"
 
 #endif
+
+int sched_get_priority_max(int policy);
+int sched_get_priority_min(int policy);
+int sched_getparam(pid_t pid, struct sched_param *param);
+int sched_getscheduler(pid_t pid);
+int sched_setparam(pid_t pid, const struct sched_param *param);
+int sched_setscheduler(pid_t pid, int policy,
+                       const struct sched_param *param);
+int sched_rr_get_interval(pid_t pid, struct timespec *interval);
 
 #endif

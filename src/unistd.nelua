@@ -2809,6 +2809,58 @@ local function sched_yield(): cint <cexport, codename 'sched_yield'>
   return (@cint)(syscall_result(nelibc_raw_syscall3(24_culong, 0_culong, 0_culong, 0_culong)))
 end
 
+local SchedParam: type = @record{sched_priority: cint}
+
+local function sched_get_priority_max(policy: cint): cint
+    <cexport, codename 'sched_get_priority_max'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    146_culong, (@culong)(policy), 0_culong, 0_culong
+  )))
+end
+
+local function sched_get_priority_min(policy: cint): cint
+    <cexport, codename 'sched_get_priority_min'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    147_culong, (@culong)(policy), 0_culong, 0_culong
+  )))
+end
+
+local function sched_getparam(pid: cint, param: *SchedParam): cint
+    <cexport, codename 'sched_getparam'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    143_culong, (@culong)(pid), (@culong)((@usize)(param)), 0_culong
+  )))
+end
+
+local function sched_getscheduler(pid: cint): cint
+    <cexport, codename 'sched_getscheduler'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    145_culong, (@culong)(pid), 0_culong, 0_culong
+  )))
+end
+
+local function sched_setparam(pid: cint, param: *SchedParam <const>): cint
+    <cexport, codename 'sched_setparam'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    142_culong, (@culong)(pid), (@culong)((@usize)(param)), 0_culong
+  )))
+end
+
+local function sched_setscheduler(pid: cint, policy: cint,
+    param: *SchedParam <const>): cint <cexport, codename 'sched_setscheduler'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    144_culong, (@culong)(pid), (@culong)(policy),
+    (@culong)((@usize)(param))
+  )))
+end
+
+local function sched_rr_get_interval(pid: cint, interval: *Timespec): cint
+    <cexport, codename 'sched_rr_get_interval'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    148_culong, (@culong)(pid), (@culong)((@usize)(interval)), 0_culong
+  )))
+end
+
 -- Linux getaffinity returns bytes copied; POSIX sched_getaffinity returns zero.
 local function sched_getaffinity(pid: cint, size: csize, mask: pointer): cint <cexport, codename 'sched_getaffinity'>
   local result = syscall_result(nelibc_raw_syscall3(
@@ -4457,7 +4509,7 @@ local function sysconf(name: cint): clong <cexport, codename 'sysconf'>
   if name == 7 or name == 8 then return 1_clong end -- JOB_CONTROL, SAVED_IDS
   if name == 9 or name == 11 or name == 12 or
       (name >= 15 and name <= 22) then return 200809_clong end
-  if name == 10 then return -1_clong end -- POSIX process priority scheduling is incomplete
+  if name == 10 then return 200809_clong end -- POSIX process priority scheduling
   if name == 13 or name == 14 or name == 23 or name == 24 or
       name == 27 or name == 32 or name == 35 then return -1_clong end
   if name == 25 then return 0_clong end -- _SC_AIO_PRIO_DELTA_MAX

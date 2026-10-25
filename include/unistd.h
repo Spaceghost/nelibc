@@ -32,6 +32,9 @@ extern char **environ;
 #ifndef _SC_CLK_TCK
 #define _SC_CLK_TCK 2
 #endif
+#ifndef _POSIX_PRIORITY_SCHEDULING
+#define _POSIX_PRIORITY_SCHEDULING 200809L
+#endif
 #ifndef _CS_PATH
 #define _CS_PATH 0
 #endif

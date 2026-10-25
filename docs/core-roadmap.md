@@ -121,27 +121,28 @@ setting, and nonrecursive writer preference; the latter blocks new readers
 while a writer is queued. The smoke verifies both writer-preference modes
 against the default. This extension follows the behavior documented by the
 [Linux pthread rwlock attribute manual](https://man7.org/linux/man-pages/man3/pthread_rwlockattr_setkind_np.3.html).
-Nelibc reports `_SC_PRIORITY_SCHEDULING` and
-`_SC_THREAD_PRIORITY_SCHEDULING` as unsupported until the full scheduling
-options are verified. Development work adds per-priority atomic writer counts
-to the rwlock and a current-wait record to each thread. This lets
-`pthread_setschedparam` and `pthread_setschedprio` update a queued writer's
-priority and wake lock waiters. An aggregate real-time waiter count keeps
-ordinary rwlock calls from scanning the priority buckets. Counts live in the
-rwlock itself, so process-shared locks do not depend on pointers to another
-process's thread context. Timed-out and asynchronously canceled writers remove
-their counts.
-The real-time-gated smoke cases cover queued writer priority increases and
-decreases, equal-priority reader-versus-writer precedence, process-shared
-writer ordering across a fork, and priority-count cleanup after timeouts and
-asynchronous cancellation. They passed on Bak with
-real-time scheduling permission for both Zig and GCC standalone profiles,
-including 10 repeat runs per compiler. The local development machine has
-`RLIMIT_RTPRIO=0`, so its run skips these cases. Keep the sysconf options
-unsupported pending a wider audit
-of Linux scheduling-policy behavior and POSIX requirements. The GNU
-nonrecursive writer-preference attribute remains a separate policy and does
-not provide these scheduling guarantees.
+Process priority scheduling is now exposed: `_SC_PRIORITY_SCHEDULING` returns
+200809, with Nelua wrappers for scheduler policy/parameter calls, policy
+priority ranges, and the round-robin interval query. The standalone smoke
+checks the wrappers and their error paths.
+
+`_SC_THREAD_PRIORITY_SCHEDULING` remains unsupported. Per-priority atomic
+writer counts and per-thread wait records let `pthread_setschedparam` and
+`pthread_setschedprio` reprioritize queued writers. An aggregate real-time
+waiter count avoids scanning the buckets on ordinary lock operations. Counts
+live in the rwlock itself, so process-shared locks do not depend on pointers to
+another process's thread context. Timeout and asynchronous-cancellation paths
+remove waiter counts. The real-time-gated smoke covers FIFO and RR writer
+priority increases/decreases, equal-priority reader/writer precedence,
+process-shared writer ordering across a fork, and timeout/cancellation cleanup.
+It passed on Bak for Zig and GCC, with 10 repeat runs per compiler.
+
+The thread option stays off because blocked readers are not yet represented in
+the priority admission state. After unlock, a higher-priority reader can race
+a lower-priority writer; mixed scheduling policies among current readers also
+need to be reflected in admission. Add reader wait records and cover those
+cases before advertising the thread option. The GNU nonrecursive
+writer-preference attribute remains a separate policy.
 
 Per-thread read ownership is tracked in standalone mode using four inline lock
 slots plus dynamically allocated overflow entries. Recursive reads are
