@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <limits.h>
 #include <sched.h>
 #include <signal.h>
 #include <time.h>

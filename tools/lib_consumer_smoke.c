@@ -438,7 +438,8 @@ static int allocator_probe(void) {
   for (size_t i = 0; i < 8; ++i)
     if (standard_zeroed[i] != 0) return 16;
   errno = 0;
-  if (calloc(SIZE_MAX, 2) != NULL || errno != ENOMEM) return 17;
+  volatile size_t oversized_count = SIZE_MAX;
+  if (calloc(oversized_count, 2) != NULL || errno != ENOMEM) return 17;
   errno = 0;
   void *standard_aligned = aligned_alloc(64, 128);
   if (standard_aligned == NULL || (uintptr_t)standard_aligned % 64 != 0 ||
@@ -843,7 +844,8 @@ static int archive_unistd_adapter_probe(void) {
   for (size_t i = 0; i < 24; ++i)
     if (larger_array[i] != (unsigned char)(i + 9)) return 19;
   errno = 0;
-  if (reallocarray(larger_array, SIZE_MAX, 2) != NULL || errno != ENOMEM)
+  volatile size_t oversized_count = SIZE_MAX;
+  if (reallocarray(larger_array, oversized_count, 2) != NULL || errno != ENOMEM)
     return 20;
   for (size_t i = 0; i < 24; ++i)
     if (larger_array[i] != (unsigned char)(i + 9)) return 21;
@@ -1397,7 +1399,8 @@ int main(int argc, char **argv) {
   if (swab_destination[0] != 2 || swab_destination[1] != 1 ||
       swab_destination[2] != 4 || swab_destination[3] != 3 ||
       swab_destination[4] != 9) return 22;
-  swab(swab_source, swab_destination, -1);
+  volatile ssize_t negative_swab_count = -1;
+  swab(swab_source, swab_destination, negative_swab_count);
   if (swab_destination[4] != 9) return 23;
 #ifndef NELIBC_STANDALONE
   if (archive_unistd_adapter_probe() != 0) return 84;

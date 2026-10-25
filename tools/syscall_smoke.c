@@ -938,7 +938,8 @@ int main(int argc, char **argv) {
   free(supplementary_groups);
   if (supplementary_result != supplementary_count) return 359;
   errno = 0;
-  if (getgroups(-1, NULL) != -1 || errno != EINVAL) return 360;
+  volatile int invalid_group_count = -1;
+  if (getgroups(invalid_group_count, NULL) != -1 || errno != EINVAL) return 360;
   struct rlimit nofile_limit;
   if (getrlimit(RLIMIT_NOFILE, &nofile_limit) != 0) return 361;
   if (setrlimit(RLIMIT_NOFILE, &nofile_limit) != 0) return 362;
