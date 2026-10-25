@@ -130,10 +130,15 @@ waiter policies or priorities. POSIX requires `SCHED_FIFO`, `SCHED_RR`, and
 precedence over readers at equal priority. Implementing this correctly needs
 priority-aware admission for readers, priority ordering when writers compete,
 and removal of timed-out or canceled waiters without leaving stale priority
-state. The GNU nonrecursive writer-preference attribute is a separate policy
-and does not provide these scheduling guarantees. Keep the sysconf options
-unsupported until these behaviors and their cancellation, timeout, and
-process-shared cases have dedicated tests.
+state. Reader admission also needs per-thread read ownership: POSIX permits a
+thread that already holds a read lock to acquire it recursively despite a
+blocked equal- or higher-priority writer, and Nelibc currently stores only the
+aggregate reader count. The implementation order is therefore reader-owner
+tracking, priority-aware admission and waiter cleanup, then cancellation,
+timeout, priority-change, and process-shared tests. The GNU nonrecursive
+writer-preference attribute is a separate policy and does not provide these
+scheduling guarantees. Keep the sysconf options unsupported until this full
+behavior is verified.
 The standalone priority-ceiling attributes and mutex get/set operations are
 implemented. `PTHREAD_PRIO_PROTECT` raises and restores scheduler priority for
 held protected mutexes; on Linux, a `SCHED_OTHER` thread cannot acquire a
