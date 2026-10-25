@@ -8,6 +8,30 @@
 typedef int sig_atomic_t;
 typedef void (*sighandler_t)(int);
 typedef struct { unsigned long __bits[16]; } sigset_t;
+#ifndef __siginfo_t_defined
+#define __siginfo_t_defined 1
+typedef struct siginfo {
+  int si_signo;
+  int si_errno;
+  int si_code;
+  int __pad0;
+  union {
+    int _pad[28];
+    struct {
+      pid_t si_pid;
+      uid_t si_uid;
+      int si_status;
+      long si_utime;
+      long si_stime;
+    } _sigchld;
+  } _sifields;
+} siginfo_t;
+#define si_pid _sifields._sigchld.si_pid
+#define si_uid _sifields._sigchld.si_uid
+#define si_status _sifields._sigchld.si_status
+#define si_utime _sifields._sigchld.si_utime
+#define si_stime _sifields._sigchld.si_stime
+#endif
 union sigval {
   int sival_int;
   void *sival_ptr;
@@ -81,6 +105,12 @@ struct sigaction {
 #define SIG_BLOCK 0
 #define SIG_UNBLOCK 1
 #define SIG_SETMASK 2
+#define CLD_EXITED 1
+#define CLD_KILLED 2
+#define CLD_DUMPED 3
+#define CLD_TRAPPED 4
+#define CLD_STOPPED 5
+#define CLD_CONTINUED 6
 #define SIGEV_SIGNAL 0
 #define SIGEV_NONE 1
 #define SIGEV_THREAD 2

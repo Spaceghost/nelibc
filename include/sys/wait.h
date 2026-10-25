@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 #include <sys/resource.h>
+#include <signal.h>
 
 #ifdef NELIBC_STANDALONE
 #ifndef WNOHANG
@@ -22,6 +23,10 @@
 #endif
 #ifndef WNOWAIT
 #define WNOWAIT 0x01000000
+#endif
+#ifndef P_ALL
+typedef enum { P_ALL = 0, P_PID = 1, P_PGID = 2 } idtype_t;
+#define P_PIDFD 3
 #endif
 #ifndef WCOREDUMP
 #define WCOREDUMP(status) ((status) & 0x80)
@@ -56,5 +61,6 @@
 pid_t wait(int *status);
 pid_t waitpid(pid_t pid, int *status, int options);
 pid_t wait4(pid_t pid, int *status, int options, struct rusage *usage);
+int waitid(idtype_t idtype, id_t id, siginfo_t *info, int options);
 
 #endif

@@ -171,6 +171,7 @@ typedef ssize_t (*nelibc_recvfrom_fn)(int, void *, size_t, int, struct sockaddr 
 typedef ssize_t (*nelibc_sendmsg_fn)(int, const struct msghdr *, int);
 typedef ssize_t (*nelibc_recvmsg_fn)(int, struct msghdr *, int);
 typedef pid_t (*nelibc_wait4_fn)(pid_t, int *, int, struct rusage *);
+typedef int (*nelibc_waitid_fn)(idtype_t, id_t, siginfo_t *, int);
 typedef ssize_t (*nelibc_vectored_offset_fn)(int, const struct iovec *, int, off_t);
 typedef ssize_t (*nelibc_vectored_offset_flags_fn)(int, const struct iovec *, int, off_t, int);
 static struct {
@@ -201,6 +202,7 @@ static struct {
   nelibc_sendmsg_fn sendmsg;
   nelibc_recvmsg_fn recvmsg;
   nelibc_wait4_fn wait4;
+  nelibc_waitid_fn waitid;
 } nelibc_glibc;
 static pthread_once_t nelibc_glibc_once = PTHREAD_ONCE_INIT;
 static void nelibc_glibc_resolve(void) {
@@ -231,6 +233,7 @@ static void nelibc_glibc_resolve(void) {
   nelibc_glibc.sendmsg = (nelibc_sendmsg_fn)dlvsym(RTLD_NEXT, "sendmsg", "GLIBC_2.2.5");
   nelibc_glibc.recvmsg = (nelibc_recvmsg_fn)dlvsym(RTLD_NEXT, "recvmsg", "GLIBC_2.2.5");
   nelibc_glibc.wait4 = (nelibc_wait4_fn)dlvsym(RTLD_NEXT, "wait4", "GLIBC_2.2.5");
+  nelibc_glibc.waitid = (nelibc_waitid_fn)dlvsym(RTLD_NEXT, "waitid", "GLIBC_2.2.5");
 }
 static long nelibc_glibc_result(long r) { return r == -1 ? -(long)errno : r; }
 #define NELIBC_GLIBC_RESULT_OR_FALLBACK(function, call) \
@@ -270,6 +273,7 @@ static long nelibc_glibc_cp6(unsigned long nr, unsigned long a, unsigned long b,
     case 23: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.select, nelibc_glibc.select((int)a, (void *)b, (void *)c, (void *)d, (void *)e));
     case 230: { if (nelibc_glibc.clock_nanosleep == NULL) return LONG_MIN; int r = nelibc_glibc.clock_nanosleep((clockid_t)a, (int)b, (void *)c, (void *)d); return r ? -(long)r : 0; }
     case 288: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.accept4, nelibc_glibc.accept4((int)a, (void *)b, (void *)c, (int)d));
+    case 247: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.waitid, nelibc_glibc.waitid((idtype_t)a, (id_t)b, (siginfo_t *)c, (int)d));
     case 295: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.preadv, nelibc_glibc.preadv((int)a, (void *)b, (int)c, (off_t)d));
     case 296: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pwritev, nelibc_glibc.pwritev((int)a, (void *)b, (int)c, (off_t)d));
     case 327: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.preadv2, nelibc_glibc.preadv2((int)a, (void *)b, (int)c, (off_t)d, (int)f));

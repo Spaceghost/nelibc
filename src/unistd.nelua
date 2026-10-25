@@ -600,6 +600,14 @@ local function wait4(pid: cint, status: pointer, options: cint, usage: pointer):
   return (@cint)(syscall_result(raw_result))
 end
 
+local function waitid(idtype: cint, id: cuint, info: pointer, options: cint): cint <cexport, codename 'waitid'>
+  local raw_result = nelibc_cancellable_syscall6(
+    247_culong, (@culong)(idtype), (@culong)(id),
+    (@culong)((@usize)(info)), (@culong)(options), 0_culong, 0_culong
+  )
+  return (@cint)(syscall_result(raw_result))
+end
+
 local function nelibc_waitpid(pid: cint, status: pointer, options: cint): cint <cexport, codename 'nelibc_waitpid'>
   return wait4(pid, status, options, nilptr)
 end

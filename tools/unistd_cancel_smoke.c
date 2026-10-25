@@ -48,6 +48,7 @@ static int select_started;
 static int pselect_started;
 static pid_t wait_child;
 static int wait_started_flag;
+static int waitid_started_flag;
 static char fifo_path[128];
 static int open_started;
 static int sync_fd;
@@ -248,6 +249,13 @@ static void *blocked_waiter(void *unused) {
   (void)unused;
   mark_started(&wait_started_flag);
   return (void *)(long)waitpid(wait_child, NULL, 0);
+}
+
+static void *blocked_waitid_worker(void *unused) {
+  (void)unused;
+  siginfo_t info = {0};
+  mark_started(&waitid_started_flag);
+  return (void *)(long)waitid(P_PID, (id_t)wait_child, &info, WEXITED);
 }
 
 static void *blocked_opener(void *unused) {
@@ -594,6 +602,32 @@ int main(void) {
   close(lock_wait_fd);
   if (kill(lock_child, SIGKILL) != 0 || waitpid(lock_child, NULL, 0) != lock_child) return 112;
   if (unlink(fifo_path) != 0) return 113;
+
+  pid_t exited_child = fork();
+  if (exited_child < 0) return 114;
+  if (exited_child == 0) _exit(42);
+  siginfo_t exited_info = {0};
+  if (waitid(P_PID, (id_t)exited_child, &exited_info, WEXITED) != 0 ||
+      exited_info.si_pid != exited_child || exited_info.si_signo != SIGCHLD ||
+      exited_info.si_code != CLD_EXITED || exited_info.si_status != 42)
+    return 115;
+
+  wait_child = fork();
+  if (wait_child < 0) return 116;
+  if (wait_child == 0) {
+    for (;;) pause();
+  }
+  pthread_t waitid_thread;
+  if (pthread_create(&waitid_thread, NULL, blocked_waitid_worker, NULL) != 0) return 117;
+  wait_started(&waitid_started_flag);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(waitid_thread) != 0) return 118;
+  result = NULL;
+  if (pthread_join(waitid_thread, &result) != 0 || result != PTHREAD_CANCELED) return 119;
+  alarm(0);
+  if (kill(wait_child, SIGKILL) != 0 || waitpid(wait_child, NULL, 0) != wait_child)
+    return 120;
 
   wait_child = fork();
   if (wait_child < 0) return 28;

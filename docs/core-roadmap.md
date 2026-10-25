@@ -62,6 +62,11 @@ them as cancellation points; this avoids introducing cancellation there.
 `fcntl(F_SETLKW)` enters the cancellation path, and the smoke verifies that a
 blocked record-lock request can be canceled while another process holds the
 lock.
+`waitid` is implemented over Linux `waitid` syscall 247, exposed through
+`sys/wait.h`, and delegated to glibc's cancellation-aware entry point in hybrid
+glibc builds. Smoke coverage checks both `siginfo_t` child-exit fields and
+cancellation of a blocked `P_PID` wait; remaining signal-wait APIs are still
+missing.
 The checks verify that deferred cancellation wakes each blocked thread and
 that `pthread_join` reports `PTHREAD_CANCELED`. This remains targeted behavior
 coverage, not a complete cancellation-point audit.

@@ -319,6 +319,7 @@ static int (*volatile public_pause)(void) = pause;
 static pid_t (*volatile public_wait)(int *) = wait;
 static pid_t (*volatile public_waitpid)(pid_t, int *, int) = waitpid;
 static pid_t (*volatile public_wait4)(pid_t, int *, int, struct rusage *) = wait4;
+static int (*volatile public_waitid)(idtype_t, id_t, siginfo_t *, int) = waitid;
 static pid_t (*volatile public_fork)(void) = fork;
 static int (*volatile public_mount)(const char *, const char *, const char *, unsigned long, const void *) = mount;
 static int (*volatile public_umount)(const char *) = umount;
@@ -376,7 +377,8 @@ int main(void) {
          public_times == 0 || public_gettimeofday == 0 ||
          public_sched_yield == 0 || public_sched_getaffinity == 0 || public_sched_setaffinity == 0 ||
          public_sleep == 0 || public_alarm == 0 || public_pause == 0 || public_wait == 0 ||
-         public_waitpid == 0 || public_wait4 == 0 || public_fork == 0 ||
+         public_waitpid == 0 || public_wait4 == 0 || public_waitid == 0 ||
+         public_fork == 0 ||
          public_mount == 0 || public_umount == 0 || public_umount2 == 0 || public_pivot_root == 0 ||
          public_unshare == 0 || public_setns == 0 ||
          public_sethostname == 0 || public_setdomainname == 0 ||
