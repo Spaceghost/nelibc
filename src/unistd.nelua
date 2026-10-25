@@ -2905,6 +2905,26 @@ local function eventfd(initial_value: cuint, flags: cint): cint <cexport, codena
   )))
 end
 
+local function timerfd_create(clock_id: cint, flags: cint): cint <cexport, codename 'timerfd_create'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    283_culong, (@culong)(clock_id), (@culong)(flags), 0_culong
+  )))
+end
+
+local function timerfd_settime(fd: cint, flags: cint, new_value: pointer <const>, old_value: pointer): cint <cexport, codename 'timerfd_settime'>
+  return (@cint)(syscall_result(nelibc_raw_syscall6(
+    286_culong, (@culong)(fd), (@culong)(flags),
+    (@culong)((@usize)(new_value)), (@culong)((@usize)(old_value)),
+    0_culong, 0_culong
+  )))
+end
+
+local function timerfd_gettime(fd: cint, current_value: pointer): cint <cexport, codename 'timerfd_gettime'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    287_culong, (@culong)(fd), (@culong)((@usize)(current_value)), 0_culong
+  )))
+end
+
 -- Linux x86_64 memfd_create creates an anonymous, sealable file descriptor.
 local function memfd_create(name: *[0]cchar <const>, flags: cuint): cint
     <cexport, codename 'memfd_create'>

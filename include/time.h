@@ -15,6 +15,14 @@ struct timespec {
 };
 #endif
 
+#ifndef __itimerspec_defined
+#define __itimerspec_defined 1
+struct itimerspec {
+  struct timespec it_interval;
+  struct timespec it_value;
+};
+#endif
+
 struct tm {
   int tm_sec;
   int tm_min;

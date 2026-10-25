@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/timerfd.h>
 #include <locale.h>
 #include <wchar.h>
 #include <wctype.h>
@@ -710,6 +711,24 @@ int main(int argc, char **argv) {
     return 41;
   close(poll_pipe[0]);
   close(poll_pipe[1]);
+  int timer_descriptor = timerfd_create(CLOCK_MONOTONIC,
+                                        TFD_NONBLOCK | TFD_CLOEXEC);
+  if (timer_descriptor < 0 ||
+      (fcntl(timer_descriptor, F_GETFL) & O_NONBLOCK) == 0 ||
+      (fcntl(timer_descriptor, F_GETFD) & FD_CLOEXEC) == 0) return 42;
+  struct itimerspec descriptor_timer = {{0, 0}, {60, 0}};
+  if (timerfd_settime(timer_descriptor, 0, &descriptor_timer, NULL) != 0)
+    return 43;
+  struct itimerspec observed_descriptor_timer;
+  if (timerfd_gettime(timer_descriptor, &observed_descriptor_timer) != 0 ||
+      observed_descriptor_timer.it_value.tv_sec < 1 ||
+      observed_descriptor_timer.it_value.tv_sec > 60) return 44;
+  descriptor_timer.it_value.tv_sec = 0;
+  if (timerfd_settime(timer_descriptor, 0, &descriptor_timer, NULL) != 0 ||
+      timerfd_gettime(timer_descriptor, &observed_descriptor_timer) != 0 ||
+      observed_descriptor_timer.it_value.tv_sec != 0 ||
+      observed_descriptor_timer.it_value.tv_nsec != 0) return 45;
+  close(timer_descriptor);
   const unsigned char swab_source[] = {1, 2, 3, 4, 5};
   unsigned char swab_destination[] = {9, 9, 9, 9, 9};
   swab(swab_source, swab_destination, 5);

@@ -1321,9 +1321,9 @@ timer_delete,time.h,,,not-declared
 timer_getoverrun,time.h,,,not-declared
 timer_gettime,time.h,,,not-declared
 timer_settime,time.h,,,not-declared
-timerfd_create,sys/timerfd.h,,,not-declared
-timerfd_gettime,sys/timerfd.h,,,not-declared
-timerfd_settime,sys/timerfd.h,,,not-declared
+timerfd_create,sys/timerfd.h,sys/timerfd.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+timerfd_gettime,sys/timerfd.h,sys/timerfd.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+timerfd_settime,sys/timerfd.h,sys/timerfd.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 times,sys/times.h,sys/times.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 timespec_get,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tmpfile,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
