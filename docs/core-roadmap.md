@@ -73,10 +73,12 @@ held protected mutexes; on Linux, a `SCHED_OTHER` thread cannot acquire a
 positive ceiling and receives `EINVAL`. Calls to `pthread_setschedparam` and
 `pthread_setschedprio` while holding protected mutexes update the base priority
 while preserving the active ceiling; `pthread_getschedparam` reports that base
-priority. The smoke test attempts this path when the host permits `SCHED_FIFO`
-priority changes and skips it when the host denies real-time scheduling. The
-protected-priority transition path passed on Fedora and Bak with real-time
-scheduling permission. `pthread_tryjoin_np` is implemented in standalone mode;
+priority. The smoke test checks nested protection locks: a higher ceiling may
+be acquired while a lower ceiling is held, while a lower ceiling must be
+rejected once a higher effective priority is active. It attempts this path when
+the host permits `SCHED_FIFO` priority changes and skips it when the host denies
+real-time scheduling. The protected-priority transition path passed on Fedora
+and Bak with real-time scheduling permission. `pthread_tryjoin_np` is implemented in standalone mode;
 it returns `EBUSY` while the target is live and reclaims resources after exit.
 `pthread_timedjoin_np` accepts an absolute realtime deadline, returns
 `ETIMEDOUT` without consuming the joinable thread, and succeeds when the thread

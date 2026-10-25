@@ -533,6 +533,42 @@ static int priority_protect_schedule_smoke(void) {
   if (pthread_getschedparam(pthread_self(), &policy, &param) != 0 ||
       policy != SCHED_FIFO || param.sched_priority != 1)
     status = 5;
+
+  pthread_mutex_t lower_mutex;
+  pthread_mutex_t higher_mutex;
+  int lower_mutex_ready = 0;
+  int higher_mutex_ready = 0;
+  if (status == 0 &&
+      (pthread_mutexattr_setprioceiling(&attributes, 2) != 0 ||
+       pthread_mutex_init(&lower_mutex, &attributes) != 0))
+    status = 12;
+  else if (status == 0)
+    lower_mutex_ready = 1;
+  if (status == 0) {
+    result = pthread_mutex_lock(&lower_mutex);
+    if (result != EINVAL) {
+      if (result == 0) pthread_mutex_unlock(&lower_mutex);
+      status = 13;
+    }
+  }
+  if (status == 0 &&
+      (pthread_mutexattr_setprioceiling(&attributes, 5) != 0 ||
+       pthread_mutex_init(&higher_mutex, &attributes) != 0))
+    status = 14;
+  else if (status == 0)
+    higher_mutex_ready = 1;
+  if (status == 0) {
+    result = pthread_mutex_lock(&higher_mutex);
+    if (result != 0) {
+      status = 15;
+    } else if (pthread_mutex_unlock(&higher_mutex) != 0) {
+      status = 16;
+    }
+  }
+  if (lower_mutex_ready) pthread_mutex_destroy(&lower_mutex);
+  if (higher_mutex_ready) pthread_mutex_destroy(&higher_mutex);
+  pthread_mutexattr_setprioceiling(&attributes, 3);
+
   param.sched_priority = 2;
   if (status == 0 &&
       (pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) != 0 ||

@@ -1492,6 +1492,12 @@ local function pthread_priority_protect_enter(mutex: *PthreadMutex): cint
   else
     policy = context.protect_base_policy
     priority = context.protect_base_priority
+    local held_cursor = context.protect_mutexes
+    while held_cursor ~= nilptr do
+      local held = (@*PthreadMutex)(held_cursor)
+      if held.prioceiling > priority then priority = held.prioceiling end
+      held_cursor = held.protect_next
+    end
   end
   if priority > mutex.prioceiling or
      (policy == SCHED_OTHER and mutex.prioceiling > 0) then
