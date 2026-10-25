@@ -140,6 +140,9 @@ extern long double nelibc_asinhl(long double);
 extern long double nelibc_acoshl(long double);
 extern long double nelibc_atanhl(long double);
 extern long double nelibc_powl(long double, long double);
+extern long double nelibc_fminl(long double, long double);
+extern long double nelibc_fmaxl(long double, long double);
+extern long double nelibc_fdiml(long double, long double);
 extern void nelibc_sincosl(long double, long double *, long double *);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
@@ -1454,6 +1457,76 @@ int main(void) {
   long double signaling_hypot = nelibc_hypotl(signaling_nan.value, 1.0L);
   if (!isnan(signaling_hypot)) {
     fprintf(stderr, "hypotl signaling NaN propagation failed\n");
+    return 1;
+  }
+  const long double minmax_values[] = {
+      -INFINITY, -LDBL_MAX, -1.0L, -0.0L, 0.0L, nextafterl(0.0L, 1.0L),
+      1.0L, LDBL_MAX, INFINITY};
+  for (size_t i = 0; i < sizeof(minmax_values) / sizeof(minmax_values[0]); ++i) {
+    for (size_t j = 0; j < sizeof(minmax_values) / sizeof(minmax_values[0]); ++j) {
+      long double expected_min = fminl(minmax_values[i], minmax_values[j]);
+      long double actual_min = nelibc_fminl(minmax_values[i], minmax_values[j]);
+      long double expected_max = fmaxl(minmax_values[i], minmax_values[j]);
+      long double actual_max = nelibc_fmaxl(minmax_values[i], minmax_values[j]);
+      long double expected_dim = fdiml(minmax_values[i], minmax_values[j]);
+      long double actual_dim = nelibc_fdiml(minmax_values[i], minmax_values[j]);
+      if (!long_double_close(actual_min, expected_min) ||
+          !long_double_close(actual_max, expected_max) ||
+          !long_double_close(actual_dim, expected_dim) ||
+          (expected_dim == 0.0L && signbit(actual_dim))) {
+        fprintf(stderr, "fminl/fmaxl/fdiml edge mismatch values=%zu/%zu\n", i, j);
+        return 1;
+      }
+    }
+  }
+  for (size_t i = 0; i < 4096; ++i) {
+    long double x = (long double)((long long)((i * 7919) % 20001) - 10000) / 7.0L;
+    long double y = (long double)((long long)((i * 3571) % 20003) - 10001) / 11.0L;
+    if (nelibc_fminl(x, y) != fminl(x, y) ||
+        nelibc_fmaxl(x, y) != fmaxl(x, y) ||
+        nelibc_fdiml(x, y) != fdiml(x, y)) {
+      fprintf(stderr, "fminl/fmaxl/fdiml generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  if (!signbit(nelibc_fminl(-0.0L, 0.0L)) ||
+      !signbit(nelibc_fminl(0.0L, -0.0L)) ||
+      signbit(nelibc_fmaxl(-0.0L, 0.0L)) ||
+      signbit(nelibc_fmaxl(0.0L, -0.0L))) {
+    fprintf(stderr, "long-double min/max signed-zero behavior failed\n");
+    return 1;
+  }
+  if (nelibc_fminl(quiet_nan.value, 2.0L) != 2.0L ||
+      nelibc_fminl(2.0L, quiet_nan.value) != 2.0L ||
+      nelibc_fmaxl(quiet_nan.value, 2.0L) != 2.0L ||
+      nelibc_fmaxl(2.0L, quiet_nan.value) != 2.0L ||
+      !isnan(nelibc_fminl(quiet_nan.value, quiet_nan.value)) ||
+      !isnan(nelibc_fmaxl(quiet_nan.value, quiet_nan.value)) ||
+      !isnan(nelibc_fdiml(quiet_nan.value, 2.0L))) {
+    fprintf(stderr, "long-double min/max/dim NaN handling failed\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  if (!isnan(nelibc_fminl(signaling_nan.value, 1.0L)) ||
+      fetestexcept(FE_INVALID) == 0) {
+    fprintf(stderr, "fminl signaling NaN handling failed\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  if (!isnan(nelibc_fmaxl(1.0L, signaling_nan.value)) ||
+      fetestexcept(FE_INVALID) == 0) {
+    fprintf(stderr, "fmaxl signaling NaN handling failed\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  if (!isnan(nelibc_fdiml(signaling_nan.value, 1.0L)) ||
+      fetestexcept(FE_INVALID) == 0) {
+    fprintf(stderr, "fdiml signaling NaN handling failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isinf(nelibc_fdiml(LDBL_MAX, -LDBL_MAX)) || errno != ERANGE) {
+    fprintf(stderr, "fdiml overflow handling failed\n");
     return 1;
   }
   const long double atan_values[] = {

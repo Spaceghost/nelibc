@@ -319,7 +319,7 @@ fcvt,stdlib.h,,,not-declared
 fdatasync,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fdim,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fdimf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-fdiml,math.h,,,not-declared
+fdiml,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fdopen,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fdopendir,dirent.h,dirent.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 feclearexcept,fenv.h,,,not-declared
@@ -372,11 +372,11 @@ fmaf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmal,math.h,,,not-declared
 fmax,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmaxf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-fmaxl,math.h,,,not-declared
+fmaxl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmemopen,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmin,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fminf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-fminl,math.h,,,not-declared
+fminl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmod,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmodf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmodl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

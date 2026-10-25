@@ -29,6 +29,8 @@ static int same_float(float a, float b) {
 }
 
 int main(void) {
+  if (!signbit(fminl(-0.0L, 0.0L)) || signbit(fmaxl(-0.0L, 0.0L)) ||
+      fdiml(5.0L, 3.0L) != 2.0L || fdiml(3.0L, 5.0L) != 0.0L) return 179;
   if (hypotl(3.0L, 4.0L) != 5.0L || hypotl(0.0L, -0.0L) != 0.0L) return 171;
   if (!(nextafterl(1.0L, 2.0L) > 1.0L) ||
       !signbit(nextafterl(0.0L, -1.0L))) return 173;

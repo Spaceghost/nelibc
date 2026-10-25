@@ -338,6 +338,14 @@ local function is_nan80(value: clongdouble): boolean <inline>
     representation.parts.significand ~= 0x8000000000000000_culonglong
 end
 
+local function is_signaling_nan80(value: clongdouble): boolean <inline>
+  local representation: LongDoubleBits = {value = value}
+  local significand = representation.parts.significand
+  return (representation.parts.sign_exponent & 0x7fff_cushort) == 0x7fff_cushort and
+    (significand & 0x4000000000000000_culonglong) == 0_culonglong and
+    (significand & 0x3fffffffffffffff_culonglong) ~= 0_culonglong
+end
+
 local function is_integer80(value: clongdouble): boolean <inline>
   local representation: LongDoubleBits = {value = value}
   local exponent_field = representation.parts.sign_exponent & 0x7fff_cushort
@@ -1360,6 +1368,57 @@ local function fdimf(x: cfloat, y: cfloat): cfloat <cexport, codename 'fdimf'>
   if x <= y then return 0_cfloat end
   local result = x - y
   if is_infinite32(result) and not is_infinite32(x) and not is_infinite32(y) then
+    math_range_error()
+  end
+  return result
+end
+
+local function fminl(x: clongdouble, y: clongdouble): clongdouble
+    <cexport, codename 'fminl'>
+  if is_signaling_nan80(x) then return x + x end
+  if is_signaling_nan80(y) then return y + y end
+  if is_nan80(x) then return y end
+  if is_nan80(y) then return x end
+  if x < y then return x end
+  if y < x then return y end
+  if x == 0_clongdouble then
+    if is_negative_zero80(x) or is_negative_zero80(y) then
+      local negative_zero: LongDoubleBits = {
+        parts = {significand = 0_culonglong, sign_exponent = 0x8000_cushort}
+      }
+      return negative_zero.value
+    end
+    return 0_clongdouble
+  end
+  return y
+end
+
+local function fmaxl(x: clongdouble, y: clongdouble): clongdouble
+    <cexport, codename 'fmaxl'>
+  if is_signaling_nan80(x) then return x + x end
+  if is_signaling_nan80(y) then return y + y end
+  if is_nan80(x) then return y end
+  if is_nan80(y) then return x end
+  if x < y then return y end
+  if y < x then return x end
+  if x == 0_clongdouble then
+    if not is_negative_zero80(x) or not is_negative_zero80(y) then
+      return 0_clongdouble
+    end
+    local negative_zero: LongDoubleBits = {
+      parts = {significand = 0_culonglong, sign_exponent = 0x8000_cushort}
+    }
+    return negative_zero.value
+  end
+  return y
+end
+
+local function fdiml(x: clongdouble, y: clongdouble): clongdouble
+    <cexport, codename 'fdiml'>
+  if is_nan80(x) or is_nan80(y) then return x + y end
+  if x <= y then return 0_clongdouble end
+  local result = x - y
+  if is_infinite80(result) and not is_infinite80(x) and not is_infinite80(y) then
     math_range_error()
   end
   return result
