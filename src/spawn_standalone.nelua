@@ -216,7 +216,7 @@ local function nelibc_spawn_append_action(actions: *SpawnFileActions, kind: cint
     pathname: *[0]cchar <const>): cint
   if actions == nilptr or actions.magic ~= spawn_actions_magic then return 22_cint end
   if fd < 0_cint or (kind == 2_cint and newfd < 0_cint) or
-      (kind == 3_cint and pathname == nilptr) then return 22_cint end
+      ((kind == 3_cint or kind == 4_cint) and pathname == nilptr) then return 22_cint end
   local saved_errno = nelibc_errno_location()[0]
   local action = (@*SpawnAction)(malloc(40_csize))
   if action == nilptr then
@@ -276,6 +276,19 @@ local function posix_spawn_file_actions_addopen(actions: *SpawnFileActions,
                                     mode, pathname)
 end
 
+local function posix_spawn_file_actions_addchdir_np(actions: *SpawnFileActions,
+    pathname: *[0]cchar <const>): cint
+    <cexport, codename 'posix_spawn_file_actions_addchdir_np'>
+  return nelibc_spawn_append_action(actions, 4_cint, 0_cint, 0_cint, 0_cint,
+                                    0_cuint, pathname)
+end
+
+local function posix_spawn_file_actions_addfchdir_np(actions: *SpawnFileActions,
+    fd: cint): cint <cexport, codename 'posix_spawn_file_actions_addfchdir_np'>
+  return nelibc_spawn_append_action(actions, 5_cint, fd, 0_cint, 0_cint,
+                                    0_cuint, nilptr)
+end
+
 local function nelibc_spawn_child_fail(error_fd: cint, error_number: cint): void
   local written: csize = 0
   while written < 4_csize do
@@ -313,7 +326,7 @@ local function nelibc_spawn_apply_actions(actions: *SpawnFileActions,
     elseif action.kind == 2_cint then
       result = nelibc_raw_syscall3(33_culong, (@culong)(action.fd),
           (@culong)(action.newfd), 0_culong)
-    else
+    elseif action.kind == 3_cint then
       result = nelibc_raw_syscall6(257_culong, 0xffffffffffffff9c_culong,
           (@culong)((@usize)(action.pathname)), (@culong)(action.flags),
           (@culong)(action.mode), 0_culong, 0_culong)
@@ -323,6 +336,11 @@ local function nelibc_spawn_apply_actions(actions: *SpawnFileActions,
             (@culong)(action.fd), 0_culong)
         nelibc_raw_syscall3(3_culong, (@culong)(opened_fd), 0_culong, 0_culong)
       end
+    elseif action.kind == 4_cint then
+      result = nelibc_raw_syscall3(80_culong,
+          (@culong)((@usize)(action.pathname)), 0_culong, 0_culong)
+    else
+      result = nelibc_raw_syscall3(81_culong, (@culong)(action.fd), 0_culong, 0_culong)
     end
     if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
     action = action.next

@@ -11,7 +11,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep the seven-profile `make smoke-matrix` and four-profile `make dogfood-matrix` green as the source changes |
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
-| P1 | Process creation APIs | Standalone `posix_spawn`/`posix_spawnp` handles direct execution, PATH lookup, synchronous setup/exec-error reporting, ordered close/dup2/open file actions, and standard spawn attributes | Add GNU chdir actions; test reset-ID/scheduler behavior under varied credentials; audit multithreaded spawn semantics; hybrid profiles continue to use host spawn implementations |
+| P1 | Process creation APIs | Standalone `posix_spawn`/`posix_spawnp` handles direct execution, PATH lookup, synchronous setup/exec-error reporting, ordered close/dup2/open/chdir/fchdir file actions, and standard spawn attributes | Test reset-ID/scheduler behavior under varied credentials; audit multithreaded spawn semantics; hybrid profiles continue to use host spawn implementations |
 | P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, a limited German UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread locale handles carry ctype, numeric, monetary, collation, and time state | Expand Unicode collation weights and global `LC_COLLATE`; add more locale datasets |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the remaining undeclared candidates by program impact and record intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
@@ -192,10 +192,10 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 1,060 declared names. All four hybrid
+- The regenerated API inventory has 1,062 declared names. All four hybrid
   archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 864
-  functions each; all three standalone archives export 1,062, including two
-  implementation-only entries. The inventory classifies 183 APIs as
+  functions each; all three standalone archives export 1,064, including two
+  implementation-only entries. The inventory classifies 185 APIs as
   host-delegated and 10 declared-but-unexported in the Zig/musl archive.
   `pthread_mutex_clocklock` is provided by the glibc host in hybrid mode and
   exported by all three standalone archives. This is an inventory signal, not
@@ -203,8 +203,8 @@ musl export set.
   `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,472 declarations
   that are also exported by the pinned release archives: Nelibc exports 794
-  in at least one tested hybrid profile, delegates 184 to a hybrid host, and does not
-  yet declare 494. No declared API is missing from the tested hybrid archives.
+  in at least one tested hybrid profile, delegates 186 to a hybrid host, and does not
+  yet declare 492. No declared API is missing from the tested hybrid archives.
   The largest undeclared groups are wide characters (42), network database
   APIs (32), stdlib (30), and unistd (29). These
   are gap counts, not completion percentages; no API has yet been declared intentionally out

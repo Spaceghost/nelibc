@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <errno.h>
 #include <fcntl.h>
 #include <spawn.h>
@@ -28,6 +29,11 @@ int main(int argc, char **argv) {
     if (strcmp(argv[1], "--fd9-closed") == 0) {
       errno = 0;
       return fcntl(9, F_GETFD) == -1 && errno == EBADF ? 0 : 12;
+    }
+    if (strcmp(argv[1], "--cwd-tmp") == 0) {
+      char current_directory[4096];
+      return getcwd(current_directory, sizeof(current_directory)) != 0 &&
+          strcmp(current_directory, "/tmp") == 0 ? 0 : 14;
     }
     if (strcmp(argv[1], "--attr-state") == 0) {
       sigset_t current_mask;
@@ -104,6 +110,44 @@ int main(int argc, char **argv) {
   if (run_action_case(&actions, "--fd9-closed") != 0 ||
       posix_spawn_file_actions_destroy(&actions) != 0)
     return 16;
+
+  errno = 42;
+  if (posix_spawn_file_actions_init(&actions) != 0 ||
+      posix_spawn_file_actions_addchdir_np(&actions, 0) != EINVAL ||
+      posix_spawn_file_actions_addfchdir_np(&actions, -1) != EINVAL || errno != 42 ||
+      posix_spawn_file_actions_addchdir_np(&actions, "/") != 0 ||
+      posix_spawn_file_actions_addchdir_np(&actions, "tmp") != 0 ||
+      run_action_case(&actions, "--cwd-tmp") != 0 ||
+      posix_spawn_file_actions_destroy(&actions) != 0)
+    return 23;
+
+  if (posix_spawn_file_actions_init(&actions) != 0) return 24;
+  int directory_fd = open("/tmp", O_RDONLY | O_DIRECTORY);
+  if (directory_fd < 0 ||
+      posix_spawn_file_actions_addfchdir_np(&actions, directory_fd) != 0 ||
+      run_action_case(&actions, "--cwd-tmp") != 0 || close(directory_fd) != 0 ||
+      posix_spawn_file_actions_destroy(&actions) != 0)
+    return 25;
+
+  if (posix_spawn_file_actions_init(&actions) != 0) return 28;
+  int regular_file_fd = open("/dev/null", O_RDONLY);
+  if (regular_file_fd < 0 ||
+      posix_spawn_file_actions_addfchdir_np(&actions, regular_file_fd) != 0)
+    return 29;
+  errno = 42;
+  result = posix_spawn(&child, "/bin/true", &actions, 0, arguments, environment);
+  if (result != ENOTDIR || errno != 42 || close(regular_file_fd) != 0 ||
+      posix_spawn_file_actions_destroy(&actions) != 0)
+    return 30;
+
+  if (posix_spawn_file_actions_init(&actions) != 0 ||
+      posix_spawn_file_actions_addchdir_np(&actions, "/nelibc-spawn-missing") != 0)
+    return 26;
+  errno = 42;
+  result = posix_spawn(&child, "/bin/true", &actions, 0, arguments, environment);
+  if (result != ENOENT || errno != 42 ||
+      posix_spawn_file_actions_destroy(&actions) != 0)
+    return 27;
 
   if (posix_spawn_file_actions_init(&actions) != 0 ||
       posix_spawn_file_actions_addopen(&actions, 9, "/nelibc-spawn-missing", O_RDONLY, 0) != 0)

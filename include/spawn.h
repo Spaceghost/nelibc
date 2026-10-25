@@ -48,6 +48,12 @@ int posix_spawn_file_actions_adddup2(posix_spawn_file_actions_t *actions,
 int posix_spawn_file_actions_addopen(posix_spawn_file_actions_t *actions,
                                      int fd, const char *path,
                                      int oflag, mode_t mode);
+#ifdef _GNU_SOURCE
+int posix_spawn_file_actions_addchdir_np(posix_spawn_file_actions_t *actions,
+                                         const char *path);
+int posix_spawn_file_actions_addfchdir_np(posix_spawn_file_actions_t *actions,
+                                          int fd);
+#endif
 int posix_spawnattr_init(posix_spawnattr_t *attributes);
 int posix_spawnattr_destroy(posix_spawnattr_t *attributes);
 int posix_spawnattr_getflags(const posix_spawnattr_t *restrict attributes,

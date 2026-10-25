@@ -843,10 +843,10 @@ posix_madvise,sys/mman.h,,,not-declared
 posix_memalign,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 posix_openpt,stdlib.h,,,not-declared
 posix_spawn,spawn.h,spawn.h,,host-delegated
-posix_spawn_file_actions_addchdir_np,spawn.h,,,not-declared
+posix_spawn_file_actions_addchdir_np,spawn.h,spawn.h,,host-delegated
 posix_spawn_file_actions_addclose,spawn.h,spawn.h,,host-delegated
 posix_spawn_file_actions_adddup2,spawn.h,spawn.h,,host-delegated
-posix_spawn_file_actions_addfchdir_np,spawn.h,,,not-declared
+posix_spawn_file_actions_addfchdir_np,spawn.h,spawn.h,,host-delegated
 posix_spawn_file_actions_addopen,spawn.h,spawn.h,,host-delegated
 posix_spawn_file_actions_destroy,spawn.h,spawn.h,,host-delegated
 posix_spawn_file_actions_init,spawn.h,spawn.h,,host-delegated
