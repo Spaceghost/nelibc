@@ -2935,7 +2935,9 @@ int main(void) {
       {1.0L + 0x1p-63L, 1.0L - 0x1p-63L, -1.0L},
       {LDBL_MAX, 2.0L, -LDBL_MAX}, {LDBL_MAX, 2.0L, 0.0L},
       {0x1p-16445L, 0.5L, 0.0L}, {-0x1p-16445L, 0.5L, 0.0L},
-      {LDBL_MIN, 0.5L, 0.0L}, {1.0L, 1.0L, -1.0L},
+      {LDBL_MIN, 0.5L, 0.0L},
+      {LDBL_MIN, 1.0L - 0x1p-64L, 0.0L},
+      {1.0L, 1.0L, -1.0L},
       {INFINITY, 1.0L, -INFINITY}, {0.0L, INFINITY, 1.0L},
   };
   const int fmal_rounding_modes[] = {

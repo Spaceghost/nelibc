@@ -126,6 +126,19 @@ int main(void) {
   const long double fma_y = 1.0L - 0x1p-63L;
   if (fmal(fma_x, fma_y, -1.0L) != -0x1p-126L ||
       fmal(LDBL_MAX, 2.0L, -LDBL_MAX) != LDBL_MAX) return 183;
+  const int fmal_tiny_modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+  const long double fmal_tiny_input = 1.0L - 0x1p-64L;
+  const long double fmal_tiny_predecessor = nextafterl(LDBL_MIN, 0.0L);
+  for (unsigned i = 0; i < sizeof(fmal_tiny_modes) / sizeof(fmal_tiny_modes[0]); ++i) {
+    if (fesetround(fmal_tiny_modes[i]) != 0 || feclearexcept(FE_ALL_EXCEPT) != 0) return 214;
+    volatile long double fmal_tiny_result = fmal(LDBL_MIN, fmal_tiny_input, 0.0L);
+    long double fmal_tiny_expected =
+        (fmal_tiny_modes[i] == FE_DOWNWARD || fmal_tiny_modes[i] == FE_TOWARDZERO)
+            ? fmal_tiny_predecessor : LDBL_MIN;
+    if (fmal_tiny_result != fmal_tiny_expected ||
+        fetestexcept(FE_UNDERFLOW | FE_INEXACT) != (FE_UNDERFLOW | FE_INEXACT)) return 215;
+  }
+  if (fesetround(FE_TONEAREST) != 0) return 216;
   if (exp10l(1.0L) != 10.0L || pow10l(0.0L) != 1.0L) return 184;
   if (scalb(1.5, 2.0) != 6.0 || scalbf(-1.5f, 2.0f) != -6.0f ||
       significand(12.0) != 1.5 || significandf(-0.125f) != -1.0f) return 188;

@@ -268,7 +268,9 @@ musl export set.
   least normal does not. The zero-to-subnormal path leaves `errno` unchanged;
   overflow `errno` differs between the tested glibc and musl hosts, so the
   differential test compares exception flags for that case.
-  The standalone behavior is covered under Zig, GCC, and TinyCC. Complex-math
+  `fmal` also checks a halfway product at the subnormal boundary under all four
+  rounding modes. The standalone check runs under Zig, GCC, and TinyCC.
+  Complex-math
   coverage now includes `cabs*`, `creal*`, `cimag*`, `conj*`,
   `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, `ccos*`, `csinh*`,
   `ccosh*`, `ctan*`, `ctanh*`, `catan*`, `catanh*`, `casin*`, `cacos*`,
