@@ -135,9 +135,9 @@ ccosl,complex.h,,,not-declared
 ceil,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ceilf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ceill,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-cexp,complex.h,,,not-declared
-cexpf,complex.h,,,not-declared
-cexpl,complex.h,,,not-declared
+cexp,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+cexpf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+cexpl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cfgetispeed,termios.h,,,not-declared
 cfgetospeed,termios.h,,,not-declared
 cfmakeraw,termios.h,,,not-declared

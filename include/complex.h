@@ -28,6 +28,9 @@ long double cargl(long double complex value);
 float complex csqrtf(float complex value);
 double complex csqrt(double complex value);
 long double complex csqrtl(long double complex value);
+float complex cexpf(float complex value);
+double complex cexp(double complex value);
+long double complex cexpl(long double complex value);
 
 #else
 

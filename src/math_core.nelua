@@ -4476,3 +4476,80 @@ end
 local function ynf(n: cint, value: cfloat): cfloat <cexport, codename 'ynf'>
   return (@cfloat)(yn(n, (@cdouble)(value)))
 end
+
+-- C complex ABI adaptation is in complex_abi.c; keep the scalar calculation
+-- here so cexp composes only Nelibc's real exp and trigonometric functions.
+local function nelibc_cexpf_parts(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_cexpf_parts'>
+  if y == 0_cfloat then
+    real_out[0] = expf(x)
+    imaginary_out[0] = y
+    return
+  end
+  if is_infinite32(y) then
+    local nan_value = y - y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  if is_nan32(y) or is_nan32(x) then
+    local nan_value = x + y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  local scale = expf(x)
+  real_out[0] = scale * cosf(y)
+  imaginary_out[0] = scale * sinf(y)
+end
+
+local function nelibc_cexp_parts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_cexp_parts'>
+  if y == 0_cdouble then
+    real_out[0] = exp(x)
+    imaginary_out[0] = y
+    return
+  end
+  if is_infinite64(y) then
+    local nan_value = y - y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  if is_nan64(y) or is_nan64(x) then
+    local nan_value = x + y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  local scale = exp(x)
+  real_out[0] = scale * cos(y)
+  imaginary_out[0] = scale * sin(y)
+end
+
+local function nelibc_cexpl_parts(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_cexpl_parts'>
+  if y == 0_clongdouble then
+    real_out[0] = expl(x)
+    imaginary_out[0] = y
+    return
+  end
+  if is_infinite80(y) then
+    local nan_value = y - y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  if is_nan80(y) or is_nan80(x) then
+    local nan_value = x + y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  local scale = expl(x)
+  real_out[0] = scale * cosl(y)
+  imaginary_out[0] = scale * sinl(y)
+end

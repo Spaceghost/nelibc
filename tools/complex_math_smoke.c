@@ -24,6 +24,9 @@ int main(void) {
   float _Complex (*volatile call_csqrtf)(float _Complex) = csqrtf;
   double _Complex (*volatile call_csqrt)(double _Complex) = csqrt;
   long double _Complex (*volatile call_csqrtl)(long double _Complex) = csqrtl;
+  float _Complex (*volatile call_cexpf)(float _Complex) = cexpf;
+  double _Complex (*volatile call_cexp)(double _Complex) = cexp;
+  long double _Complex (*volatile call_cexpl)(long double _Complex) = cexpl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -125,5 +128,31 @@ int main(void) {
       !isinf(call_crealf(infnanf)) || !isnan(call_cimagf(infnanf)) ||
       !isnan(call_creal(infnan)) || !isinf(call_cimag(infnan)) ||
       !isinf(call_creall(infnanl)) || !isnan(call_cimagl(infnanl))) return 7;
+  float _Complex expf_value = call_cexpf(__builtin_complex(1.0f, 1.0f));
+  double _Complex exp_value = call_cexp(__builtin_complex(1.0, 1.0));
+  long double _Complex expl_value = call_cexpl(__builtin_complex(1.0L, 1.0L));
+  float _Complex expf_zero = call_cexpf(__builtin_complex(1.0f, -0.0f));
+  double _Complex exp_zero = call_cexp(__builtin_complex(1.0, -0.0));
+  long double _Complex expl_zero = call_cexpl(__builtin_complex(1.0L, -0.0L));
+  float _Complex expf_infinity = call_cexpf(__builtin_complex(-INFINITY, -0.0f));
+  double _Complex exp_infinity = call_cexp(__builtin_complex((double)INFINITY, -0.0));
+  long double _Complex expl_infinity = call_cexpl(__builtin_complex(-(long double)INFINITY, -0.0L));
+  double _Complex exp_nan = call_cexp(__builtin_complex(0.0, (double)INFINITY));
+  if (fabsf(call_crealf(expf_value) - expf(1.0f) * cosf(1.0f)) > 2e-6f ||
+      fabsf(call_cimagf(expf_value) - expf(1.0f) * sinf(1.0f)) > 2e-6f ||
+      fabs(call_creal(exp_value) - exp(1.0) * cos(1.0)) > 2e-15 ||
+      fabs(call_cimag(exp_value) - exp(1.0) * sin(1.0)) > 2e-15 ||
+      fabsl(call_creall(expl_value) - expl(1.0L) * cosl(1.0L)) > 2e-18L ||
+      fabsl(call_cimagl(expl_value) - expl(1.0L) * sinl(1.0L)) > 2e-18L ||
+      call_crealf(expf_zero) != expf(1.0f) || !signbit(call_cimagf(expf_zero)) ||
+      call_creal(exp_zero) != exp(1.0) || !signbit(call_cimag(exp_zero)) ||
+      call_creall(expl_zero) != expl(1.0L) || !signbit(call_cimagl(expl_zero)) ||
+      call_crealf(expf_infinity) != 0.0f || signbit(call_crealf(expf_infinity)) ||
+      call_cimagf(expf_infinity) != 0.0f || !signbit(call_cimagf(expf_infinity)) ||
+      !isinf(call_creal(exp_infinity)) || call_cimag(exp_infinity) != 0.0 ||
+      !signbit(call_cimag(exp_infinity)) ||
+      call_creall(expl_infinity) != 0.0L || signbit(call_creall(expl_infinity)) ||
+      call_cimagl(expl_infinity) != 0.0L || !signbit(call_cimagl(expl_infinity)) ||
+      !isnan(call_creal(exp_nan)) || !isnan(call_cimag(exp_nan))) return 8;
   return 0;
 }

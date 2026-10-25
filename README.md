@@ -27,9 +27,9 @@ edge cases, ABI, and cross-libc behavior are established. Keep the compiler
 runtime and platform syscall layer separate from the public libc surface.
 
 The initial C complex-math slice replaces `cabs*`, `creal*`, `cimag*`,
-`conj*`, `cproj*`, `carg*`, and `csqrt*`. Nelua computes magnitude,
-conjugation, projection, arguments, and scaled principal square roots; a small
-C shim handles the x86-64 complex-value ABI.
+`conj*`, `cproj*`, `carg*`, `csqrt*`, and `cexp*`. Nelua computes magnitude,
+conjugation, projection, arguments, scaled principal square roots, and complex
+exponentials; a small C shim handles the x86-64 complex-value ABI.
 `make complex-math-smoke-matrix` covers four hybrid profiles and three
 standalone archives. TinyCC builds the Nelua core, while
 Zig cc compiles the shim and complex-valued caller because TinyCC does not
