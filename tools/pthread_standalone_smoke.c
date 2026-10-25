@@ -53,6 +53,11 @@ static pthread_key_t value_key;
 static int value_destructor_calls;
 static pthread_mutex_t cancel_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cancel_condition = PTHREAD_COND_INITIALIZER;
+static pthread_key_t cancel_exit_key;
+static sem_t cancel_exit_semaphore;
+static _Atomic int cancel_exit_ready;
+static volatile int cancel_exit_order;
+static int cancel_exit_destructor_calls;
 static int cancel_read_pipe[2];
 static volatile int cancel_waiting;
 static int cancel_cond_cleanup_unlock_result;
@@ -89,6 +94,17 @@ static void cancel_cond_cleanup(void *argument) {
   ++cancel_cleanup_calls;
   cancel_cond_cleanup_unlock_result =
       pthread_mutex_unlock((pthread_mutex_t *)argument);
+}
+
+static void cancel_exit_cleanup(void *argument) {
+  (void)argument;
+  cancel_exit_order = cancel_exit_order == 0 ? 1 : -1;
+}
+
+static void cancel_exit_destructor(void *value) {
+  if (value != (void *)(uintptr_t)0x44) return;
+  ++cancel_exit_destructor_calls;
+  cancel_exit_order = cancel_exit_order == 1 ? 2 : -1;
 }
 
 void nelibc_pthread_cancel_defer_begin(void);
@@ -183,6 +199,18 @@ static void *cancel_cond_worker(void *argument) {
   pthread_cleanup_pop(0);
   pthread_mutex_unlock(&cancel_mutex);
   return 0;
+}
+
+static void *cancel_exit_order_worker(void *argument) {
+  (void)argument;
+  if (pthread_setspecific(cancel_exit_key, (void *)(uintptr_t)0x44) != 0)
+    return (void *)1;
+  int wait_result = 0;
+  pthread_cleanup_push(cancel_exit_cleanup, 0);
+  atomic_store_explicit(&cancel_exit_ready, 1, memory_order_release);
+  wait_result = sem_wait(&cancel_exit_semaphore);
+  pthread_cleanup_pop(0);
+  return (void *)(intptr_t)wait_result;
 }
 
 static void *cancel_async_cond_worker(void *argument) {
@@ -1360,6 +1388,26 @@ int main(void) {
   if (pthread_mutex_lock(&cancel_mutex) != 0 ||
       pthread_mutex_unlock(&cancel_mutex) != 0)
     return 133;
+
+  cancel_exit_order = 0;
+  cancel_exit_destructor_calls = 0;
+  atomic_store_explicit(&cancel_exit_ready, 0, memory_order_relaxed);
+  if (pthread_key_create(&cancel_exit_key, cancel_exit_destructor) != 0 ||
+      sem_init(&cancel_exit_semaphore, 0, 0) != 0 ||
+      pthread_create(&thread, 0, cancel_exit_order_worker, 0) != 0)
+    return 309;
+  for (unsigned int i = 0; i < 10000000U &&
+       (!atomic_load_explicit(&cancel_exit_ready, memory_order_acquire) ||
+        __atomic_load_n(&cancel_exit_semaphore.__waiters, __ATOMIC_ACQUIRE) == 0); ++i) {
+  }
+  if (!atomic_load_explicit(&cancel_exit_ready, memory_order_acquire) ||
+      __atomic_load_n(&cancel_exit_semaphore.__waiters, __ATOMIC_ACQUIRE) == 0 ||
+      pthread_cancel(thread) != 0 ||
+      pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_exit_order != 2 || cancel_exit_destructor_calls != 1 ||
+      sem_destroy(&cancel_exit_semaphore) != 0 ||
+      pthread_key_delete(cancel_exit_key) != 0)
+    return 310;
 
   cancel_waiting = 0;
   cancel_cleanup_calls = 0;

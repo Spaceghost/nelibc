@@ -313,7 +313,9 @@ musl export set.
   wrappers, including read/write, socket I/O,
   poll/select, waits, sleeps, openat, and fsync. Condition-wait cancellation
   reacquires the mutex, then unwinds cleanup handlers before thread-specific
-  data destructors. In deferred mode, ordinary CPU-bound code must call
+  data destructors. The standalone smoke also cancels a semaphore waiter with
+  both a cleanup handler and a TSD value, then checks handler-before-destructor
+  order. In deferred mode, ordinary CPU-bound code must call
   `pthread_testcancel`.
   Signal 32 is reserved internally and cannot be installed or blocked by
   applications. Asynchronous cancellation requires application code to stay
