@@ -1534,7 +1534,7 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   local result: clongdouble
   local exponent_magnitude = exponent
   if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
-  local fractional_exponent_limit = 128_clongdouble
+  local fractional_exponent_limit = 256_clongdouble
   if nelibc_x87_rounding_mode() == 0_cint then
     fractional_exponent_limit = 512_clongdouble
   end
