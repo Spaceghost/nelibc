@@ -136,6 +136,9 @@ extern long double nelibc_tanl(long double);
 extern long double nelibc_tanhl(long double);
 extern long double nelibc_sinhl(long double);
 extern long double nelibc_coshl(long double);
+extern long double nelibc_asinhl(long double);
+extern long double nelibc_acoshl(long double);
+extern long double nelibc_atanhl(long double);
 extern void nelibc_sincosl(long double, long double *, long double *);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
@@ -1498,7 +1501,10 @@ int main(void) {
       !isnan(nelibc_cosl(quiet_nan.value)) ||
       !isnan(nelibc_tanhl(quiet_nan.value)) ||
       !isnan(nelibc_sinhl(quiet_nan.value)) ||
-      !isnan(nelibc_coshl(quiet_nan.value))) {
+      !isnan(nelibc_coshl(quiet_nan.value)) ||
+      !isnan(nelibc_asinhl(quiet_nan.value)) ||
+      !isnan(nelibc_acoshl(quiet_nan.value)) ||
+      !isnan(nelibc_atanhl(quiet_nan.value))) {
     fprintf(stderr, "long-double arctangent NaN propagation failed\n");
     return 1;
   }
@@ -1530,6 +1536,94 @@ int main(void) {
   errno = 0;
   if (!isnan(nelibc_acosl(-2.0L)) || errno != EDOM) {
     fprintf(stderr, "acosl domain handling failed\n");
+    return 1;
+  }
+  const long double asinhl_values[] = {
+      -INFINITY, -LDBL_MAX, -0x1p8191L, -1000.0L, -1.0L, -LDBL_MIN,
+      -0.0L, 0.0L, nextafterl(0.0L, 1.0L), LDBL_MIN, 1.0L, 1000.0L,
+      0x1p8191L, LDBL_MAX, INFINITY};
+  for (size_t i = 0; i < sizeof(asinhl_values) / sizeof(asinhl_values[0]); ++i) {
+    long double actual = nelibc_asinhl(asinhl_values[i]);
+    long double expected = asinhl(asinhl_values[i]);
+    if (!long_double_close(actual, expected) ||
+        (expected == 0.0L && signbit(actual) != signbit(expected))) {
+      fprintf(stderr, "asinhl edge mismatch i=%zu actual=%.21Le expected=%.21Le\n",
+              i, actual, expected);
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 4096; ++i) {
+    long double value = (long double)((long long)((i * 83) % 20001) - 10000) / 10.0L;
+    if (!long_double_close(nelibc_asinhl(value), asinhl(value))) {
+      fprintf(stderr, "asinhl generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  if (nelibc_asinhl(-0.0L) != 0.0L || !signbit(nelibc_asinhl(-0.0L))) {
+    fprintf(stderr, "asinhl signed-zero behavior failed\n");
+    return 1;
+  }
+  const long double acoshl_values[] = {
+      1.0L, nextafterl(1.0L, 2.0L), 1.0001L, 1.5L, 2.0L, 1000.0L,
+      0x1p8191L, LDBL_MAX, INFINITY};
+  for (size_t i = 0; i < sizeof(acoshl_values) / sizeof(acoshl_values[0]); ++i) {
+    if (!long_double_close(nelibc_acoshl(acoshl_values[i]), acoshl(acoshl_values[i]))) {
+      fprintf(stderr, "acoshl edge mismatch i=%zu actual=%.21Le expected=%.21Le\n",
+              i, nelibc_acoshl(acoshl_values[i]), acoshl(acoshl_values[i]));
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 2048; ++i) {
+    long double value = 1.0L + (long double)i / 8.0L;
+    if (!long_double_close(nelibc_acoshl(value), acoshl(value))) {
+      fprintf(stderr, "acoshl generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  errno = 0;
+  if (!isnan(nelibc_acoshl(0.5L)) || errno != EDOM) {
+    fprintf(stderr, "acoshl domain handling failed\n");
+    return 1;
+  }
+  if (nelibc_acoshl(1.0L) != 0.0L || signbit(nelibc_acoshl(1.0L))) {
+    fprintf(stderr, "acoshl boundary behavior failed\n");
+    return 1;
+  }
+  const long double atanhl_values[] = {
+      -INFINITY, -1.0L, nextafterl(-1.0L, 0.0L), -0.5L, -LDBL_MIN,
+      -0.0L, 0.0L, nextafterl(0.0L, 1.0L), LDBL_MIN, 0.5L,
+      nextafterl(1.0L, 0.0L), 1.0L, nextafterl(1.0L, INFINITY), INFINITY};
+  for (size_t i = 0; i < sizeof(atanhl_values) / sizeof(atanhl_values[0]); ++i) {
+    if (!long_double_close(nelibc_atanhl(atanhl_values[i]), atanhl(atanhl_values[i]))) {
+      fprintf(stderr, "atanhl edge mismatch i=%zu actual=%.21Le expected=%.21Le\n",
+              i, nelibc_atanhl(atanhl_values[i]), atanhl(atanhl_values[i]));
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 4096; ++i) {
+    long double value = -0.999L + (long double)i * (1.998L / 4095.0L);
+    if (!long_double_close(nelibc_atanhl(value), atanhl(value))) {
+      fprintf(stderr, "atanhl generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  if (nelibc_atanhl(-0.0L) != 0.0L || !signbit(nelibc_atanhl(-0.0L))) {
+    fprintf(stderr, "atanhl signed-zero behavior failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isinf(nelibc_atanhl(1.0L)) || signbit(nelibc_atanhl(1.0L)) || errno != ERANGE) {
+    fprintf(stderr, "atanhl positive pole behavior failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isinf(nelibc_atanhl(-1.0L)) || !signbit(nelibc_atanhl(-1.0L)) || errno != ERANGE) {
+    fprintf(stderr, "atanhl negative pole behavior failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isnan(nelibc_atanhl(1.5L)) || errno != EDOM) {
+    fprintf(stderr, "atanhl domain handling failed\n");
     return 1;
   }
   const long double log_values[] = {

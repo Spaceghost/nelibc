@@ -723,6 +723,63 @@ local function coshl(value: clongdouble): clongdouble <cexport, codename 'coshl'
   return infinity.value
 end
 
+local function asinhl(value: clongdouble): clongdouble <cexport, codename 'asinhl'>
+  if is_nan80(value) or is_infinite80(value) or value == 0_clongdouble then return value end
+  local magnitude = value
+  if magnitude < 0_clongdouble then magnitude = -magnitude end
+  local result: clongdouble
+  if magnitude >= 0x1p512_clongdouble then
+    result = logl(magnitude) + 0.6931471805599453094286904741849753008863_clongdouble
+  else
+    local square = magnitude * magnitude
+    result = log1pl(magnitude + square / (1_clongdouble + sqrtl(square + 1_clongdouble)))
+  end
+  if value < 0_clongdouble then return -result end
+  return result
+end
+
+local function acoshl(value: clongdouble): clongdouble <cexport, codename 'acoshl'>
+  if is_nan80(value) then return value + value end
+  if value < 1_clongdouble then
+    math_domain_error()
+    return sqrtl(-1_clongdouble)
+  end
+  if value == 1_clongdouble then return 0_clongdouble end
+  if is_infinite80(value) then return value end
+  if value >= 0x1p512_clongdouble then
+    return logl(value) + 0.6931471805599453094286904741849753008863_clongdouble
+  end
+  if value < 2_clongdouble then
+    local delta = value - 1_clongdouble
+    return log1pl(delta + sqrtl(delta * (delta + 2_clongdouble)))
+  end
+  return 2_clongdouble * asinhl(sqrtl((value - 1_clongdouble) * 0.5_clongdouble))
+end
+
+local function atanhl(value: clongdouble): clongdouble <cexport, codename 'atanhl'>
+  if is_nan80(value) then return value + value end
+  if value == 0_clongdouble then return value end
+  local magnitude = value
+  if magnitude < 0_clongdouble then magnitude = -magnitude end
+  if magnitude == 1_clongdouble then
+    math_range_error()
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    if value < 0_clongdouble then
+      infinity.parts.sign_exponent = 0xffff_cushort
+    end
+    return infinity.value
+  end
+  if magnitude > 1_clongdouble then
+    math_domain_error()
+    return sqrtl(-1_clongdouble)
+  end
+  local result = 0.5_clongdouble * log1pl((2_clongdouble * magnitude) / (1_clongdouble - magnitude))
+  if value < 0_clongdouble then return -result end
+  return result
+end
+
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>
   local result = nelibc_ldexp_hw(value, exponent)
   local input_bits: DoubleBits = {value = value}
@@ -1645,10 +1702,10 @@ local function finitef(value: cfloat): cint <cexport, codename 'finitef'>
   return 0_cint
 end
 
-local function nan(tag: *[0]cchar <const>): cdouble <cexport, codename 'nan'>
+local function nan(tag: *cchar <const>): cdouble <cexport, codename 'nan'>
   return double_from_bits(0x7FF8000000000000_culonglong)
 end
-local function nanf(tag: *[0]cchar <const>): cfloat <cexport, codename 'nanf'>
+local function nanf(tag: *cchar <const>): cfloat <cexport, codename 'nanf'>
   return float_from_bits(0x7FC00000_cuint)
 end
 
