@@ -61,7 +61,8 @@ int main(void) {
         wcslen(left), wcsnlen(left, bound), signum(wcscmp(left, right)),
         signum(wcsncmp(left, right, bound)), wcsspn(left, accept), wcscspn(left, reject),
         pointer_offset(left, wcschr(left, probe)), pointer_offset(left, wcsrchr(left, probe)),
-        pointer_offset(left, wcspbrk(left, reject)), pointer_offset(left, wcsstr(left, needle)));
+        pointer_offset(left, wcspbrk(left, reject)), pointer_offset(left, wcsstr(left, needle)),
+        pointer_offset(left, wcswcs(left, needle)));
 
     printf("%d,%td,", signum(wmemcmp(left, right, left_length < right_length ? left_length + 1 : right_length + 1)),
         pointer_offset(left, wmemchr(left, probe, left_length + 1)));
@@ -77,11 +78,21 @@ int main(void) {
     wchar_t copied[WIDTH] = {0};
     wcscpy(copied, left);
     print_wide(copied);
+    wchar_t end_copied[WIDTH] = {0};
+    wchar_t *copy_end = wcpcpy(end_copied, right);
+    printf("%td,", pointer_offset(end_copied, copy_end));
+    print_wide(end_copied);
     wchar_t padded[WIDTH];
     for (size_t i = 0; i < WIDTH; ++i) padded[i] = 0x777;
     size_t copy_limit = (size_t)(random_u64() % 18);
     wcsncpy(padded, right, copy_limit);
     for (size_t i = 0; i < 18; ++i) printf("%x,", (unsigned)padded[i]);
+    putchar(';');
+    wchar_t padded_copy[WIDTH];
+    for (size_t i = 0; i < WIDTH; ++i) padded_copy[i] = 0x777;
+    wchar_t *padded_result = wcpncpy(padded_copy, right, copy_limit);
+    printf("%td,", pointer_offset(padded_copy, padded_result));
+    for (size_t i = 0; i < 18; ++i) printf("%x,", (unsigned)padded_copy[i]);
     putchar(';');
 
     wchar_t concatenated[WIDTH] = {0};

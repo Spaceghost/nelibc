@@ -670,6 +670,31 @@ local function wcsncpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize):
   return dest
 end
 
+local function wcpcpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>): *cwchar_t
+    <cexport, codename 'wcpcpy'>
+  local index: csize = 0
+  while true do
+    dest[index] = src[index]
+    if src[index] == 0 then return &dest[index] end
+    index = index + 1
+  end
+end
+
+local function wcpncpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize): *[0]cwchar_t
+    <cexport, codename 'wcpncpy'>
+  local index: csize = 0
+  while index < n and src[index] ~= 0 do
+    dest[index] = src[index]
+    index = index + 1
+  end
+  local end_index: csize = index
+  while index < n do
+    dest[index] = 0
+    index = index + 1
+  end
+  return &dest[end_index]
+end
+
 local function wcscat(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>): *[0]cwchar_t
     <cexport, codename 'wcscat'>
   local offset: csize = wcslen(dest)
@@ -784,6 +809,11 @@ local function wcsstr(haystack: *[0]cwchar_t, needle: *[0]cwchar_t <const>): *cw
     start = start + 1
   end
   return nilptr
+end
+
+local function wcswcs(haystack: *[0]cwchar_t, needle: *[0]cwchar_t <const>): *cwchar_t
+    <cexport, codename 'wcswcs'>
+  return wcsstr(haystack, needle)
 end
 
 local function nelibc_memset(dest: pointer, value: cint, n: csize): pointer <cexport, codename 'nelibc_memset'>

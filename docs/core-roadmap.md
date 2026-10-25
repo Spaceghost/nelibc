@@ -12,7 +12,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double `sqrtl`, `nanl`, `fabsl`, `copysignl`, `fmal`, `tgammal`, `lgammal`, `lgammal_r`, `erfl`, `erfcl`, `exp10l`, `pow10l`, `fmodl`, `remainderl`, `remquol`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `nexttowardl`, `atanl`, `atan2l`, `asinl`, `acosl`, `asinhl`, `acoshl`, `atanhl`, `powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`, `sincosl`, `tanl`, `tanhl`, `sinhl`, and `coshl`, plus `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; internal classification and sign-bit functions now cover binary32/64/80; all standard fenv entry points are implemented for standalone x86-64, while hybrid fenv delegates to the host | Expand long-double math coverage, fenv edge coverage, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 638 undeclared candidates and record explicit intentional omissions |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 635 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -104,21 +104,26 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 883 declared names. Each of the four
-  hybrid archives exports 751; 114 APIs are marked as host-delegated and 18
+- The regenerated API inventory has 886 declared names. Each of the four
+  hybrid archives exports 754; 114 APIs are marked as host-delegated and 18
   have declared-but-unexported hybrid gaps. The manifest also contains one
   implementation-only entry. This is an inventory signal, not a completeness
   percentage; see `build/api-coverage.csv` after `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 707
+  that are also exported by the pinned release archives: Nelibc exports 710
   in at least one hybrid profile, delegates 126 to a hybrid host, and does not
-  yet declare 638. The largest undeclared groups are wide characters (65), stdlib, unistd, and network database APIs. These
+  yet declare 635. The largest undeclared groups are wide characters (62), stdlib, unistd, and network database APIs. These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
   command.
 - Differential tests cover meaningful memory, string, integer, floating
   conversion, wide-string, tokenizer, collation, and syscall behavior across
   glibc, musl, GCC, Zig cc, and TinyCC profiles.
+- `wcpcpy`, `wcpncpy`, and the GNU `wcswcs` alias are now implemented and
+  declared. Their bounded-copy return values, terminator padding, and search
+  result match the host in 256 wide-string differential cases per profile;
+  consumer smoke tests also call all three in the four hybrid profiles and
+  standalone Zig, GCC, and TinyCC builds.
 - Time APIs are already implemented across `src/unistd.nelua` and
   `src/stdlib.nelua`: clocks and sleeps, UTC/local conversion, `mktime`,
   `timegm`, `strftime`, `strptime`, and the `asctime`/`ctime` family. The

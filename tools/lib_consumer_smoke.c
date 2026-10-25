@@ -843,6 +843,17 @@ int main(int argc, char **argv) {
       wctomb(multibyte_buffer, L'Z') != 1 || multibyte_buffer[0] != 'Z') return 33;
   if (btowc(-1) != WEOF || btowc('Q') != L'Q' || wctob(WEOF) != -1 ||
       wctob(L'Q') != 'Q' || wctob(0xe9) != -1) return 75;
+  wchar_t wide_copy_endbuf[16] = {0};
+  wchar_t *wide_copy_end = wcpcpy(wide_copy_endbuf, L"copy");
+  wchar_t bounded_wide_copy[16];
+  for (size_t i = 0; i < 16; ++i) bounded_wide_copy[i] = 0x777;
+  wchar_t *bounded_wide_end = wcpncpy(bounded_wide_copy, L"X", 4);
+  const wchar_t wide_search[] = L"wide string";
+  if (wide_copy_end != wide_copy_endbuf + 4 || wcscmp(wide_copy_endbuf, L"copy") != 0 ||
+      bounded_wide_end != bounded_wide_copy + 1 || bounded_wide_copy[0] != L'X' ||
+      bounded_wide_copy[1] != 0 || bounded_wide_copy[2] != 0 ||
+      bounded_wide_copy[3] != 0 || wcswcs(wide_search, L"string") != wide_search + 5)
+    return 76;
 #ifndef NELIBC_STANDALONE
   if (mbrlen_thread_isolation()) return 82;
   if (allocator_thread_isolation()) return 84;

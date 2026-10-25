@@ -1403,8 +1403,8 @@ waitid,sys/wait.h,,,not-declared
 waitpid,sys/wait.h,sys/wait.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 warn,err.h,,,not-declared
 warnx,err.h,,,not-declared
-wcpcpy,wchar.h,,,not-declared
-wcpncpy,wchar.h,,,not-declared
+wcpcpy,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+wcpncpy,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcrtomb,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcscasecmp,wchar.h,,,not-declared
 wcscasecmp_l,wchar.h,,,not-declared
@@ -1442,7 +1442,7 @@ wcstombs,stdlib.h,nelibc_stdlib.h;wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc
 wcstoul,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstoull,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcstoumax,inttypes.h,,,not-declared
-wcswcs,wchar.h,,,not-declared
+wcswcs,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcswidth,wchar.h,,,not-declared
 wcsxfrm,wchar.h,,,not-declared
 wcsxfrm_l,wchar.h,,,not-declared

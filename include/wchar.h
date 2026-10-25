@@ -36,6 +36,9 @@ wchar_t *wcspbrk(const wchar_t *, const wchar_t *);
 wchar_t *wcstok(wchar_t *restrict, const wchar_t *restrict,
                 wchar_t **restrict);
 wchar_t *wcsstr(const wchar_t *, const wchar_t *);
+wchar_t *wcpcpy(wchar_t *restrict, const wchar_t *restrict);
+wchar_t *wcpncpy(wchar_t *restrict, const wchar_t *restrict, size_t);
+wchar_t *wcswcs(const wchar_t *, const wchar_t *);
 
 int mblen(const char *, size_t);
 int mbtowc(wchar_t *restrict, const char *restrict, size_t);
