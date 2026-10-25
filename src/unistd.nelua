@@ -253,6 +253,13 @@ local function ioctl(fd: cint, request: culong, argument: pointer): cint <cexpor
   )))
 end
 
+-- Linux libc implements tcdrain with TCSBRK and a nonzero argument.
+local function tcdrain(fd: cint): cint <cexport, codename 'tcdrain'>
+  return (@cint)(syscall_result(nelibc_cancellable_syscall3(
+    16_culong, (@culong)(fd), 0x5409_culong, 1_culong
+  )))
+end
+
 -- Linux mount attaches a filesystem to a target path.
 local function mount(source: pointer <const>, target: pointer <const>, filesystem: pointer <const>, mountflags: culong, data: pointer <const>): cint <cexport, codename 'mount'>
   return (@cint)(syscall_result(nelibc_raw_syscall6(

@@ -503,6 +503,7 @@ int faccessat(int dirfd, const char *pathname, int mode, int flags);
 int faccessat2(int dirfd, const char *pathname, int mode, int flags);
 int access(const char *pathname, int mode);
 int isatty(int fd);
+int tcdrain(int fd);
 #if defined(__GLIBC__) || defined(NELIBC_STANDALONE)
 int ioctl(int fd, unsigned long request, ...);
 #else

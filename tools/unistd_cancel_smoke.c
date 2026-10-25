@@ -14,6 +14,7 @@
 #include <sys/un.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
+#include <termios.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -307,6 +308,13 @@ static void *self_cancel_msync_worker(void *unused) {
   (void)unused;
   if (pthread_cancel(pthread_self()) != 0) return (void *)1;
   (void)msync(NULL, 0, MS_SYNC);
+  return NULL;
+}
+
+static void *self_cancel_tcdrain_worker(void *unused) {
+  (void)unused;
+  if (pthread_cancel(pthread_self()) != 0) return (void *)1;
+  (void)tcdrain(-1);
   return NULL;
 }
 
@@ -732,6 +740,13 @@ int main(void) {
   if (pthread_create(&msync_thread, NULL, self_cancel_msync_worker, NULL) != 0) return 142;
   result = NULL;
   if (pthread_join(msync_thread, &result) != 0 || result != PTHREAD_CANCELED) return 143;
+
+  errno = 0;
+  if (tcdrain(-1) != -1 || errno != EBADF) return 144;
+  pthread_t tcdrain_thread;
+  if (pthread_create(&tcdrain_thread, NULL, self_cancel_tcdrain_worker, NULL) != 0) return 145;
+  result = NULL;
+  if (pthread_join(tcdrain_thread, &result) != 0 || result != PTHREAD_CANCELED) return 146;
 
   pid_t exited_child = fork();
   if (exited_child < 0) return 114;
