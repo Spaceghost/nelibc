@@ -338,7 +338,10 @@ musl export set.
   leaves the active mode intact. `fesetexceptflag` restores each flag while
   traps are enabled without raising the trap. Subprocess checks verify
   `feupdateenv` re-raises each of the five accrued exceptions when restoring
-  an all-traps-enabled environment. `fesetenv` requires a valid
+  an all-traps-enabled environment. A standalone pthread smoke also verifies
+  fenv isolation: a worker changes its rounding mode and raises `FE_INVALID`,
+  while the joining thread retains its prior mode and clean flags. Zig, GCC,
+  and TinyCC standalone profiles pass. `fesetenv` requires a valid
   environment saved by `fegetenv`/`feholdexcept` or a defined environment
   macro; malformed `fenv_t` bytes are outside its contract. Bit-level
   `ilogb`/`logb` cover normal/subnormal decomposition;

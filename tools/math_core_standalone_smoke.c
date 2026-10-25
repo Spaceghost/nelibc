@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <float.h>
 #include <stdint.h>
+#include <pthread.h>
 #include <limits.h>
 
 typedef union {
@@ -33,12 +34,25 @@ static int same_float(float a, float b) {
   return left.bits == right.bits;
 }
 
+static void *change_thread_fenv(void *unused) {
+  (void)unused;
+  if (fesetround(FE_DOWNWARD) != 0 || feraiseexcept(FE_INVALID) != 0 ||
+      fegetround() != FE_DOWNWARD || fetestexcept(FE_INVALID) == 0) return (void *)1;
+  return 0;
+}
+
 int main(void) {
   fenv_t saved_environment;
   fenv_t clean_environment;
   fexcept_t saved_flags = 0;
   if (fegetenv(&saved_environment) != 0 || fesetround(FE_UPWARD) != 0 ||
       fegetround() != FE_UPWARD) return 189;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0) return 220;
+  pthread_t fenv_worker;
+  void *fenv_worker_result = 0;
+  if (pthread_create(&fenv_worker, 0, change_thread_fenv, 0) != 0 ||
+      pthread_join(fenv_worker, &fenv_worker_result) != 0 || fenv_worker_result != 0 ||
+      fegetround() != FE_UPWARD || fetestexcept(FE_ALL_EXCEPT) != 0) return 221;
   if (fesetround(-1) == 0 || fegetround() != FE_UPWARD) return 198;
   if (feraiseexcept(FE_INVALID | FE_INEXACT) != 0 ||
       fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | FE_INEXACT) ||
