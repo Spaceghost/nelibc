@@ -322,6 +322,7 @@ int getdtablesize(void);
 pid_t fork(void);
 #if defined(_DEFAULT_SOURCE) || defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
 int usleep(unsigned int usec);
+unsigned int ualarm(unsigned int usecs, unsigned int interval);
 #endif
 int execve(const char *pathname, char *const argv[], char *const envp[]);
 int fexecve(int fd, char *const argv[], char *const envp[]);

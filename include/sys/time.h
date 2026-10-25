@@ -11,6 +11,20 @@ struct timeval {
 };
 #endif
 
+#ifndef __itimerval_defined
+#define __itimerval_defined 1
+struct itimerval {
+  struct timeval it_interval;
+  struct timeval it_value;
+};
+#endif
+
+#ifndef ITIMER_REAL
+#define ITIMER_REAL 0
+#define ITIMER_VIRTUAL 1
+#define ITIMER_PROF 2
+#endif
+
 #ifndef __timezone_defined
 #define __timezone_defined 1
 struct timezone {
@@ -23,6 +37,9 @@ struct timezone {
 #include <time.h>
 
 int gettimeofday(struct timeval *restrict tv, void *restrict timezone);
+int getitimer(int which, struct itimerval *current_value);
+int setitimer(int which, const struct itimerval *new_value,
+              struct itimerval *old_value);
 
 #define timerclear(tv) ((tv)->tv_sec = (tv)->tv_usec = 0)
 #define timerisset(tv) ((tv)->tv_sec != 0 || (tv)->tv_usec != 0)

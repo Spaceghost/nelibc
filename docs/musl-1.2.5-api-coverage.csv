@@ -474,7 +474,7 @@ gethostent,netdb.h,,,not-declared
 gethostid,unistd.h,,,not-declared
 gethostname,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getifaddrs,ifaddrs.h,,,not-declared
-getitimer,sys/time.h,,,not-declared
+getitimer,sys/time.h,sys/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getline,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 getloadavg,stdlib.h,,,not-declared
 getlogin,unistd.h,,,not-declared
@@ -1124,7 +1124,7 @@ setgrent,grp.h,,,not-declared
 setgroups,grp.h;unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sethostent,netdb.h,,,not-declared
 sethostname,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-setitimer,sys/time.h,,,not-declared
+setitimer,sys/time.h,sys/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 setjmp,setjmp.h,,,not-declared
 setkey,stdlib.h,,,not-declared
 setlinebuf,stdio.h,nelibc_stdio_standalone.h;stdio.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1348,7 +1348,7 @@ ttyname,unistd.h,,,not-declared
 ttyname_r,unistd.h,,,not-declared
 twalk,search.h,,,not-declared
 tzset,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-ualarm,unistd.h,,,not-declared
+ualarm,unistd.h,unistd.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ulckpwdf,shadow.h,,,not-declared
 ulimit,ulimit.h,,,not-declared
 umask,sys/stat.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
+#include <sys/time.h>
 #include <locale.h>
 #include <wchar.h>
 #include <wctype.h>
@@ -675,6 +676,20 @@ int main(int argc, char **argv) {
   if (usleep(1000) != 0) return 31;
   errno = 0;
   if (usleep(1000000) != -1 || errno != EINVAL) return 32;
+  struct itimerval timer = {{0, 0}, {60, 0}};
+  struct itimerval previous_timer;
+  if (setitimer(ITIMER_REAL, &timer, &previous_timer) != 0) return 33;
+  struct itimerval observed_timer;
+  if (getitimer(ITIMER_REAL, &observed_timer) != 0 ||
+      observed_timer.it_value.tv_sec < 1 || observed_timer.it_value.tv_sec > 60)
+    return 34;
+  if (ualarm(0, 0) > 60000000U) return 35;
+  if (getitimer(ITIMER_REAL, &observed_timer) != 0 ||
+      observed_timer.it_value.tv_sec != 0 || observed_timer.it_value.tv_usec != 0)
+    return 36;
+  if (ualarm(60000000U, 0) != 0) return 37;
+  unsigned int previous_alarm = ualarm(0, 0);
+  if (previous_alarm < 50000000U || previous_alarm > 60000000U) return 38;
   const unsigned char swab_source[] = {1, 2, 3, 4, 5};
   unsigned char swab_destination[] = {9, 9, 9, 9, 9};
   swab(swab_source, swab_destination, 5);

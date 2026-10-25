@@ -456,6 +456,40 @@ local function usleep(microseconds: cuint): cint <cexport, codename 'usleep'>
   return nanosleep((@pointer)(&requested), nilptr)
 end
 
+local Timeval: type = @record{tv_sec: clong, tv_usec: clong}
+local Itimerval: type = @record{it_interval: Timeval, it_value: Timeval}
+
+local function getitimer(which: cint, current: pointer): cint <cexport, codename 'getitimer'>
+  return (@cint)(syscall_result(nelibc_cancellable_syscall3(
+    36_culong, (@culong)(which), (@culong)((@usize)(current)), 0_culong
+  )))
+end
+
+local function setitimer(which: cint, new_value: pointer <const>, old_value: pointer): cint <cexport, codename 'setitimer'>
+  return (@cint)(syscall_result(nelibc_cancellable_syscall3(
+    38_culong, (@culong)(which), (@culong)((@usize)(new_value)),
+    (@culong)((@usize)(old_value))
+  )))
+end
+
+local function ualarm(microseconds: cuint, interval: cuint): cuint <cexport, codename 'ualarm'>
+  local replacement: Itimerval = {
+    it_interval = {tv_sec = (@clong)(interval // 1000000_cuint),
+                   tv_usec = (@clong)(interval % 1000000_cuint)},
+    it_value = {tv_sec = (@clong)(microseconds // 1000000_cuint),
+                tv_usec = (@clong)(microseconds % 1000000_cuint)}
+  }
+  local previous: Itimerval = {
+    it_interval = {tv_sec = 0_clong, tv_usec = 0_clong},
+    it_value = {tv_sec = 0_clong, tv_usec = 0_clong}
+  }
+  local timer_result = setitimer(0_cint, (@pointer)(&replacement), (@pointer)(&previous))
+  if timer_result ~= 0_cint then
+    return ~0_cuint
+  end
+  return (@cuint)(previous.it_value.tv_sec * 1000000_clong + previous.it_value.tv_usec)
+end
+
 local Tm: type = @record{
   tm_sec: cint, tm_min: cint, tm_hour: cint, tm_mday: cint, tm_mon: cint,
   tm_year: cint, tm_wday: cint, tm_yday: cint, tm_isdst: cint,
