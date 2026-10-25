@@ -2,6 +2,7 @@
 ## pragmas.noentrypoint = true
 
 local function nelibc_posix_memalign(output: *[0]pointer, alignment: csize, size: csize): cint <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
 
 local function posix_memalign(output: *[0]pointer, alignment: csize,
     size: csize): cint <cexport, codename 'posix_memalign'>
@@ -11,4 +12,23 @@ local function posix_memalign(output: *[0]pointer, alignment: csize,
   end
 
   return nelibc_posix_memalign(output, alignment, size)
+end
+
+local function memalign(alignment: csize, size: csize): pointer
+    <cexport, codename 'memalign'>
+  if alignment == 0 or (alignment & (alignment - 1)) ~= 0 then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  local requested_alignment = alignment
+  if requested_alignment < (@csize)(#pointer) then
+    requested_alignment = (@csize)(#pointer)
+  end
+  local output: pointer = nilptr
+  local error = posix_memalign(&output, requested_alignment, size)
+  if error ~= 0 then
+    nelibc_errno_location()[0] = error
+    return nilptr
+  end
+  return output
 end

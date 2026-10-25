@@ -16,6 +16,7 @@
 #include <sys/timerfd.h>
 #include <sys/signalfd.h>
 #include <locale.h>
+#include <malloc.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <semaphore.h>
@@ -657,6 +658,14 @@ done:
 }
 
 int main(int argc, char **argv) {
+  void *minimal_aligned = memalign(1, 17);
+  if (minimal_aligned == NULL || (uintptr_t)minimal_aligned % sizeof(void *) != 0)
+    return 82;
+  free(minimal_aligned);
+  void *legacy_aligned = memalign(128, 257);
+  if (legacy_aligned == NULL || (uintptr_t)legacy_aligned % 128 != 0)
+    return 84;
+  free(legacy_aligned);
   char format_count_buffer[32];
   int format_count = -1;
   if (snprintf(format_count_buffer, sizeof format_count_buffer,

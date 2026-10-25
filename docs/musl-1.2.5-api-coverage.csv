@@ -733,7 +733,7 @@ mbsnrtowcs,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 mbsrtowcs,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 mbstowcs,stdlib.h,nelibc_stdlib.h;wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 mbtowc,stdlib.h,nelibc_stdlib.h;wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-memalign,malloc.h;stdlib.h,,,not-declared
+memalign,malloc.h;stdlib.h,malloc.h,zig_glibc;gcc_glibc;zig_musl,implemented
 membarrier,sys/membarrier.h,,,not-declared
 memccpy,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 memchr,string.h,string.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
