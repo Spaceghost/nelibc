@@ -31,6 +31,10 @@ static int writev_fd;
 static int writev_started;
 static int listen_fd;
 static int accept_started;
+static struct sockaddr_un connect_address;
+static socklen_t connect_address_length;
+static int connect_fd;
+static int connect_started;
 static int recv_fd;
 static int recv_started;
 static int recvfrom_started;
@@ -219,6 +223,13 @@ static void *blocked_accept4(void *unused) {
   (void)unused;
   mark_started(&accept_started);
   return (void *)(long)accept4(listen_fd, NULL, NULL, SOCK_CLOEXEC);
+}
+
+static void *blocked_connector(void *unused) {
+  (void)unused;
+  mark_started(&connect_started);
+  return (void *)(long)connect(connect_fd,
+      (struct sockaddr *)&connect_address, connect_address_length);
 }
 
 static void *blocked_receiver(void *unused) {
@@ -575,6 +586,33 @@ int main(void) {
   result = NULL;
   if (pthread_join(acceptor, &result) != 0 || result != PTHREAD_CANCELED) return 19;
   alarm(0);
+
+  /* A Unix listener with backlog 1 accepts two queued connections on Linux;
+     a third blocking connect remains inside syscall 42 until queue space opens. */
+  connect_address = address;
+  connect_address_length = address_length;
+  int queued_clients[2];
+  for (int i = 0; i < 2; ++i) {
+    queued_clients[i] = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (queued_clients[i] < 0 || connect(queued_clients[i],
+        (struct sockaddr *)&connect_address, connect_address_length) != 0)
+      return 195;
+  }
+  connect_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (connect_fd < 0) return 196;
+  pthread_t connector;
+  if (pthread_create(&connector, NULL, blocked_connector, NULL) != 0) return 197;
+  wait_started(&connect_started);
+  if (wait_for_blocked_syscall(&connect_started, 42, &delay) != 0) return 198;
+  alarm(5);
+  if (pthread_cancel(connector) != 0) return 199;
+  result = NULL;
+  if (pthread_join(connector, &result) != 0 || result != PTHREAD_CANCELED)
+    return 200;
+  alarm(0);
+  close(connect_fd);
+  close(queued_clients[0]);
+  close(queued_clients[1]);
   close(listen_fd);
 
   int sockets[2];

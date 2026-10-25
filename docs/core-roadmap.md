@@ -638,8 +638,8 @@ including APIs absent from the pinned musl export set.
   process sharing, try-locks, and absolute realtime timed locks; the reader-
   preference policy can starve writers under a continuous reader stream. It
   also interrupts blocking calls routed through the cancellable syscall
-  wrappers, including read/write, socket I/O,
-  poll/select, waits, sleeps, `pause`, openat, and fsync. The cancellation smoke
+  wrappers, including read/write, socket I/O (`connect`, `accept`, `recv`,
+  `send`), poll/select, waits, sleeps, `pause`, openat, and fsync. The smoke
   checks `/proc` for blocking workers' active syscalls before cancellation
   when procfs allows it. The small-file `fsync` case retains a timed wait
   because it usually completes immediately.
