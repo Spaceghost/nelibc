@@ -35,11 +35,15 @@ The API manifest marks both functions as host-delegated in hybrid mode.
 
 The four hybrid syscall smoke profiles pass with Zig/glibc, GCC/glibc,
 Zig/musl, and TinyCC/glibc. Hybrid spawn uses the host implementation and its
-native attributes ABI. In the static musl profile, Nelibc exports both
-`execvp` and `__execvpe`: musl's `posix_spawnp` resolves its internal
-`__execvpe` call to Nelibc's PATH-search implementation, preserving the shell
-fallback for executable text files without a shebang. This avoids pulling
-musl's public `execvp` archive member and colliding with Nelibc's replacement.
+native attributes ABI. `make spawn-hybrid-smoke-matrix` also passes shared
+PATH-search, open-action, working-directory, and synchronous setup-error cases
+on those four hybrid profiles. The smoke avoids invalid-input validation
+details that differ between host libcs. In the static musl profile, Nelibc
+exports both `execvp` and `__execvpe`: musl's `posix_spawnp` resolves its
+internal `__execvpe` call to Nelibc's PATH-search implementation, preserving
+the shell fallback for executable text files without a shebang. This avoids
+pulling musl's public `execvp` archive member and colliding with Nelibc's
+replacement.
 Standalone `system()` now registers its child-kill/reap, signal-restore, and
 system-lock cleanup on Nelibc's pthread cleanup stack while waiting for the
 shell. The standalone consumer cancels a thread blocked in `system("exec sleep 5")`,

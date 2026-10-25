@@ -118,6 +118,17 @@ mismatch in a rootless user namespace; it skips when subordinate ID mapping or
 user namespaces are unavailable. The standalone spawn matrix includes this
 check.
 
+Run the shared-behavior hybrid smoke against host `posix_spawn` with:
+
+```sh
+make spawn-hybrid-smoke-matrix
+```
+
+It links each hybrid archive and exercises PATH search, an open file action,
+working-directory changes, and synchronous child setup errors on Zig/glibc,
+GCC/glibc, Zig/musl, and TinyCC/glibc. It avoids standalone validation details
+that differ between host libcs.
+
 ### Use POSIX message queues
 
 The archive includes `mqueue.h` functions for opening, sending, receiving,

@@ -2855,8 +2855,28 @@ spawn-smoke-resetids-userns: spawn-smoke-standalone-zig tools/spawn_resetids_use
 
 spawn-smoke-standalone-matrix: spawn-smoke-standalone-zig spawn-smoke-standalone-gcc spawn-smoke-standalone-tcc spawn-smoke-resetids-userns
 
+spawn-hybrid-smoke-zig: $(OUT)/libnelibc-zig.a tools/spawn_hybrid_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -pthread -Iinclude -fno-builtin tools/spawn_hybrid_smoke.c $(OUT)/libnelibc-zig.a -o $(OUT)/spawn-hybrid-smoke-zig
+	$(OUT)/spawn-hybrid-smoke-zig
 
-.PHONY: lib-standalone-zig lib-standalone-gcc lib-standalone-tcc smoke-lib-standalone-zig smoke-lib-standalone-gcc smoke-lib-standalone-matrix lib-consumer-standalone-zig lib-consumer-standalone-gcc lib-consumer-link-standalone-tcc lib-consumer-standalone-matrix rand-r-diff-standalone-zig rand-r-diff-standalone-gcc rand-r-diff-standalone-matrix exit-smoke-standalone-zig exit-smoke-standalone-gcc exit-smoke-standalone-matrix abort-smoke-zig abort-smoke-gcc abort-smoke-zig-musl abort-smoke-tcc abort-smoke-standalone-zig abort-smoke-standalone-gcc abort-smoke-matrix locale-format-diff-zig locale-format-diff-gcc locale-format-diff-tcc locale-format-diff-matrix spawn-smoke-standalone-zig spawn-smoke-standalone-gcc spawn-smoke-standalone-tcc spawn-smoke-standalone-matrix spawn-smoke-resetids-userns
+spawn-hybrid-smoke-gcc: $(OUT)/libnelibc-gcc.a tools/spawn_hybrid_smoke.c
+	gcc -pthread -Iinclude -fno-builtin tools/spawn_hybrid_smoke.c $(OUT)/libnelibc-gcc.a -o $(OUT)/spawn-hybrid-smoke-gcc
+	$(OUT)/spawn-hybrid-smoke-gcc
+
+spawn-hybrid-smoke-zig-musl: $(OUT)/libnelibc-zig-musl.a tools/spawn_hybrid_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -pthread -Iinclude -fno-builtin $(MUSL_STDIO_WRAP_FLAGS) tools/spawn_hybrid_smoke.c $(OUT)/libnelibc-zig-musl.a -o $(OUT)/spawn-hybrid-smoke-zig-musl
+	$(OUT)/spawn-hybrid-smoke-zig-musl
+
+spawn-hybrid-smoke-tcc: $(OUT)/libnelibc-tcc.a tools/spawn_hybrid_smoke.c
+	$(TCC) -pthread -Iinclude -fno-builtin -c tools/spawn_hybrid_smoke.c -o $(OUT)/spawn-hybrid-smoke-tcc.o
+	$(ZIG) cc $(ZIGFLAGS) -pthread -Iinclude -fno-builtin $(OUT)/spawn-hybrid-smoke-tcc.o $(OUT)/libnelibc-tcc.a $(TCC_LIBTCC1) -o $(OUT)/spawn-hybrid-smoke-tcc
+	$(OUT)/spawn-hybrid-smoke-tcc
+
+spawn-hybrid-smoke-matrix: spawn-hybrid-smoke-zig spawn-hybrid-smoke-gcc spawn-hybrid-smoke-zig-musl spawn-hybrid-smoke-tcc
+
+
+.PHONY: spawn-hybrid-smoke-zig spawn-hybrid-smoke-gcc spawn-hybrid-smoke-zig-musl spawn-hybrid-smoke-tcc spawn-hybrid-smoke-matrix
+.PHONY: lib-standalone-zig lib-standalone-gcc lib-standalone-tcc smoke-lib-standalone-zig smoke-lib-standalone-gcc smoke-lib-standalone-matrix lib-consumer-standalone-zig lib-consumer-standalone-gcc lib-consumer-link-standalone-tcc lib-consumer-standalone-matrix rand-r-diff-standalone-zig rand-diff-standalone-gcc rand-diff-standalone-matrix exit-smoke-standalone-zig exit-smoke-standalone-gcc exit-smoke-standalone-matrix abort-smoke-zig abort-smoke-gcc abort-smoke-zig-musl abort-smoke-tcc abort-smoke-standalone-zig abort-smoke-standalone-gcc abort-smoke-matrix locale-format-diff-zig locale-format-diff-gcc locale-format-diff-tcc locale-format-diff-matrix spawn-smoke-standalone-zig spawn-smoke-standalone-gcc spawn-smoke-standalone-tcc spawn-smoke-standalone-matrix spawn-smoke-resetids-userns
 
 clean:
 	rm -rf $(OUT)
