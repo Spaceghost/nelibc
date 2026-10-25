@@ -88,6 +88,7 @@ typedef struct {
   int __sequence;
   int __pshared;
   int __kind;
+  int __waiting_writer_priority_counts[99];
 } pthread_rwlock_t;
 
 #define PTHREAD_CREATE_JOINABLE 0
@@ -124,7 +125,7 @@ typedef struct {
 #define PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP 2
 #define PTHREAD_RWLOCK_DEFAULT_NP PTHREAD_RWLOCK_PREFER_READER_NP
 #define PTHREAD_RWLOCK_INITIALIZER \
-  {0x4E52574C4F434Bu, 0, 0, 0, 0, PTHREAD_PROCESS_PRIVATE, PTHREAD_RWLOCK_PREFER_READER_NP}
+  {0x4E52574C4F434Bu, 0, 0, 0, 0, PTHREAD_PROCESS_PRIVATE, PTHREAD_RWLOCK_PREFER_READER_NP, {0}}
 
 int pthread_attr_init(pthread_attr_t *attr);
 int pthread_attr_destroy(pthread_attr_t *attr);

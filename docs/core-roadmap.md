@@ -122,24 +122,27 @@ while a writer is queued. The smoke verifies both writer-preference modes
 against the default. This extension follows the behavior documented by the
 [Linux pthread rwlock attribute manual](https://man7.org/linux/man-pages/man3/pthread_rwlockattr_setkind_np.3.html).
 Nelibc reports `_SC_PRIORITY_SCHEDULING` and
-`_SC_THREAD_PRIORITY_SCHEDULING` as unsupported because it does not implement
-the full POSIX scheduling options, including priority-aware rwlock admission.
-The rwlock currently stores only a count of waiting writers; it does not retain
-waiter policies or priorities. POSIX requires `SCHED_FIFO`, `SCHED_RR`, and
-`SCHED_SPORADIC` waiters to acquire in priority order, with writers taking
-precedence over readers at equal priority. Implementing this correctly needs
-priority-aware admission for readers, priority ordering when writers compete,
-and removal of timed-out or canceled waiters without leaving stale priority
-state. Per-thread read ownership is now tracked in standalone mode using four
-inline lock slots plus dynamically allocated overflow entries. Recursive reads
-are counted, and a thread that did not acquire a read lock gets `EPERM` when it
+`_SC_THREAD_PRIORITY_SCHEDULING` as unsupported until the full scheduling
+options are verified. Development work adds per-priority atomic writer counts
+to the rwlock and a current-wait record to each thread. This lets
+`pthread_setschedparam` and `pthread_setschedprio` update a queued writer's
+priority and wake lock waiters. Counts live in the rwlock itself, so
+process-shared locks do not depend on pointers to another process's thread
+context. Timed-out and asynchronously canceled writers remove their counts.
+The smoke suite now has a real-time-gated case for reprioritizing a queued
+writer and checking writer order. It passed on Bak with real-time scheduling
+permission for both Zig and GCC standalone profiles, including 10 repeat runs
+per compiler. The local development machine has `RLIMIT_RTPRIO=0`, so its run
+skips this case. Add coverage for priority decreases, reader-versus-writer
+ties, and process-shared real-time waiters before enabling the sysconf options.
+The GNU nonrecursive writer-preference attribute remains a separate policy and
+does not provide these scheduling guarantees.
+
+Per-thread read ownership is tracked in standalone mode using four inline lock
+slots plus dynamically allocated overflow entries. Recursive reads are
+counted, and a thread that did not acquire a read lock gets `EPERM` when it
 tries to unlock one. The Zig and GCC standalone pthread smoke profiles pass
-this ownership test. Priority admission still needs waiter records keyed by
-thread so priority changes while queued can update the lock's ordering, then
-dedicated admission, cancellation, timeout, and process-shared tests. The GNU
-nonrecursive writer-preference attribute is a separate policy and does not
-provide these scheduling guarantees. Keep the sysconf options unsupported
-until this full behavior is verified.
+this ownership test.
 The standalone priority-ceiling attributes and mutex get/set operations are
 implemented. `PTHREAD_PRIO_PROTECT` raises and restores scheduler priority for
 held protected mutexes; on Linux, a `SCHED_OTHER` thread cannot acquire a
