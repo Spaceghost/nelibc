@@ -326,7 +326,9 @@ musl export set.
   after confirming it is queued on a mutex futex, then checks that the owner can
   unlock and reuse the mutex. A separate async test cancels a waiter queued on
   a priority-inheritance futex while the owner still holds the mutex, then
-  verifies unlock and reacquisition. These checks run on Zig, GCC, and TinyCC.
+  verifies unlock and reacquisition. The robust PI variant also verifies the
+  surviving owner does not receive `EOWNERDEAD` after canceling its waiter.
+  These checks run on Zig, GCC, and TinyCC.
 - Standalone pthread attributes support configurable stack sizes, page-
   protected guard regions, and scheduler inheritance/policy/priority. Explicit
   scheduling is applied before a startup gate releases the worker; permission

@@ -1741,6 +1741,36 @@ int main(void) {
       pthread_mutex_destroy(&robust_mutex) != 0)
     return 264;
 
+  if (pthread_mutexattr_init(&mutex_attributes) != 0 ||
+      pthread_mutexattr_setrobust(&mutex_attributes, PTHREAD_MUTEX_ROBUST) != 0 ||
+      pthread_mutexattr_setprotocol(&mutex_attributes, PTHREAD_PRIO_INHERIT) != 0 ||
+      pthread_mutex_init(&robust_mutex, &mutex_attributes) != 0 ||
+      pthread_mutexattr_destroy(&mutex_attributes) != 0 ||
+      pthread_mutex_lock(&robust_mutex) != 0)
+    return 275;
+  atomic_store_explicit(&pi_cancel_acquired, 0, memory_order_relaxed);
+  atomic_store_explicit(&pi_async_cancel_waiting, 0, memory_order_relaxed);
+  if (pthread_create(&pi_waiter, 0, pi_async_cancel_mutex_worker,
+                     &robust_mutex) != 0)
+    return 276;
+  int robust_pi_cancel_queued = 0;
+  for (int i = 0; i < 1000000; ++i) {
+    if (atomic_load_explicit(&pi_async_cancel_waiting, memory_order_acquire) &&
+        robust_mutex.__state < 0) {
+      robust_pi_cancel_queued = 1;
+      break;
+    }
+    sched_yield();
+  }
+  if (!robust_pi_cancel_queued || pthread_cancel(pi_waiter) != 0 ||
+      pthread_join(pi_waiter, &result) != 0 || result != PTHREAD_CANCELED ||
+      atomic_load_explicit(&pi_cancel_acquired, memory_order_acquire) != 0 ||
+      pthread_mutex_unlock(&robust_mutex) != 0 ||
+      pthread_mutex_lock(&robust_mutex) != 0 ||
+      pthread_mutex_unlock(&robust_mutex) != 0 ||
+      pthread_mutex_destroy(&robust_mutex) != 0)
+    return 277;
+
   struct process_shared_robust_state {
     pthread_mutex_t mutex;
   };
