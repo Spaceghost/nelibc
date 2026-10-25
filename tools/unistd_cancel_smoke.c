@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <errno.h>
 #include <fcntl.h>
+#include <mqueue.h>
 #include <pthread.h>
 #include <poll.h>
 #include <signal.h>
@@ -56,6 +57,12 @@ static int sigwait_started_flag;
 static int sigwaitinfo_started_flag;
 static int sigtimedwait_started_flag;
 static int sigsuspend_started_flag;
+static mqd_t mq_descriptor;
+static struct timespec mq_deadline;
+static int mq_receive_started_flag;
+static int mq_timedreceive_started_flag;
+static int mq_send_started_flag;
+static int mq_timedsend_started_flag;
 static char fifo_path[128];
 static int open_started;
 static int sync_fd;
@@ -316,6 +323,35 @@ static void *self_cancel_tcdrain_worker(void *unused) {
   if (pthread_cancel(pthread_self()) != 0) return (void *)1;
   (void)tcdrain(-1);
   return NULL;
+}
+
+static void *blocked_mq_receive_worker(void *unused) {
+  (void)unused;
+  char message[128];
+  unsigned int priority;
+  mark_started(&mq_receive_started_flag);
+  return (void *)(long)mq_receive(mq_descriptor, message, sizeof(message), &priority);
+}
+
+static void *blocked_mq_timedreceive_worker(void *unused) {
+  (void)unused;
+  char message[128];
+  unsigned int priority;
+  mark_started(&mq_timedreceive_started_flag);
+  return (void *)(long)mq_timedreceive(mq_descriptor, message, sizeof(message),
+                                       &priority, &mq_deadline);
+}
+
+static void *blocked_mq_send_worker(void *unused) {
+  (void)unused;
+  mark_started(&mq_send_started_flag);
+  return (void *)(long)mq_send(mq_descriptor, "blocked", 7, 0);
+}
+
+static void *blocked_mq_timedsend_worker(void *unused) {
+  (void)unused;
+  mark_started(&mq_timedsend_started_flag);
+  return (void *)(long)mq_timedsend(mq_descriptor, "blocked", 7, 0, &mq_deadline);
 }
 
 static void *blocked_opener(void *unused) {
@@ -747,6 +783,83 @@ int main(void) {
   if (pthread_create(&tcdrain_thread, NULL, self_cancel_tcdrain_worker, NULL) != 0) return 145;
   result = NULL;
   if (pthread_join(tcdrain_thread, &result) != 0 || result != PTHREAD_CANCELED) return 146;
+
+  char mq_name[64];
+  if (snprintf(mq_name, sizeof(mq_name), "/nelibc-cancel-%ld", (long)getpid()) >=
+      (int)sizeof(mq_name)) return 147;
+  struct mq_attr mq_attributes = {0};
+  mq_attributes.mq_maxmsg = 1;
+  mq_attributes.mq_msgsize = 128;
+  mq_descriptor = mq_open(mq_name, O_CREAT | O_EXCL | O_RDWR, 0600, &mq_attributes);
+  if (mq_descriptor == (mqd_t)-1) {
+    fprintf(stderr, "mq_open test setup failed: errno=%d\n", errno);
+    return 148;
+  }
+  struct mq_attr observed_attributes = {0};
+  if (mq_getattr(mq_descriptor, &observed_attributes) != 0 ||
+      observed_attributes.mq_maxmsg != 1 || observed_attributes.mq_msgsize != 128 ||
+      observed_attributes.mq_curmsgs != 0) return 169;
+  struct mq_attr requested_attributes = {0};
+  requested_attributes.mq_flags = O_NONBLOCK;
+  if (mq_setattr(mq_descriptor, &requested_attributes, &observed_attributes) != 0 ||
+      observed_attributes.mq_flags != 0) return 170;
+  if (mq_getattr(mq_descriptor, &observed_attributes) != 0 ||
+      observed_attributes.mq_flags != O_NONBLOCK) return 171;
+  requested_attributes.mq_flags = 0;
+  if (mq_setattr(mq_descriptor, &requested_attributes, NULL) != 0) return 172;
+  if (mq_send(mq_descriptor, "hello", 5, 7) != 0) return 149;
+  char mq_buffer[128] = {0};
+  unsigned int mq_priority = 0;
+  if (mq_receive(mq_descriptor, mq_buffer, sizeof(mq_buffer), &mq_priority) != 5 ||
+      memcmp(mq_buffer, "hello", 5) != 0 || mq_priority != 7) return 150;
+  if (clock_gettime(CLOCK_REALTIME, &mq_deadline) != 0) return 151;
+  mq_deadline.tv_sec -= 1;
+  errno = 0;
+  if (mq_timedreceive(mq_descriptor, mq_buffer, sizeof(mq_buffer), &mq_priority,
+                      &mq_deadline) != -1 || errno != ETIMEDOUT) return 152;
+
+  if (clock_gettime(CLOCK_REALTIME, &mq_deadline) != 0) return 153;
+  mq_deadline.tv_sec += 3600;
+  pthread_t mq_thread;
+  if (pthread_create(&mq_thread, NULL, blocked_mq_receive_worker, NULL) != 0) return 154;
+  wait_started(&mq_receive_started_flag);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(mq_thread) != 0) return 155;
+  result = NULL;
+  if (pthread_join(mq_thread, &result) != 0 || result != PTHREAD_CANCELED) return 156;
+  alarm(0);
+
+  if (pthread_create(&mq_thread, NULL, blocked_mq_timedreceive_worker, NULL) != 0) return 157;
+  wait_started(&mq_timedreceive_started_flag);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(mq_thread) != 0) return 158;
+  result = NULL;
+  if (pthread_join(mq_thread, &result) != 0 || result != PTHREAD_CANCELED) return 159;
+  alarm(0);
+
+  if (mq_send(mq_descriptor, "full", 4, 0) != 0) return 160;
+  if (pthread_create(&mq_thread, NULL, blocked_mq_send_worker, NULL) != 0) return 161;
+  wait_started(&mq_send_started_flag);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(mq_thread) != 0) return 162;
+  result = NULL;
+  if (pthread_join(mq_thread, &result) != 0 || result != PTHREAD_CANCELED) return 163;
+  alarm(0);
+
+  if (pthread_create(&mq_thread, NULL, blocked_mq_timedsend_worker, NULL) != 0) return 164;
+  wait_started(&mq_timedsend_started_flag);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(mq_thread) != 0) return 165;
+  result = NULL;
+  if (pthread_join(mq_thread, &result) != 0 || result != PTHREAD_CANCELED) return 166;
+  alarm(0);
+  if (mq_receive(mq_descriptor, mq_buffer, sizeof(mq_buffer), &mq_priority) != 4 ||
+      memcmp(mq_buffer, "full", 4) != 0) return 167;
+  if (mq_close(mq_descriptor) != 0 || mq_unlink(mq_name) != 0) return 168;
 
   pid_t exited_child = fork();
   if (exited_child < 0) return 114;

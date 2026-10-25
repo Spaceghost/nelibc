@@ -12,7 +12,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double `sqrtl`, `nanl`, `fabsl`, `copysignl`, `fmal`, `tgammal`, `lgammal`, `lgammal_r`, `erfl`, `erfcl`, `exp10l`, `pow10l`, `fmodl`, `remainderl`, `remquol`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `nexttowardl`, `atanl`, `atan2l`, `asinl`, `acosl`, `asinhl`, `acoshl`, `atanhl`, `powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`, `sincosl`, `tanl`, `tanhl`, `sinhl`, and `coshl`, plus `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; internal classification and sign-bit functions now cover binary32/64/80; all standard fenv entry points are implemented for standalone x86-64, while hybrid fenv delegates to the host | Expand long-double math coverage, fenv edge coverage, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification data; locale handles currently model only C and C.UTF-8 `LC_CTYPE`, while collation and broad numeric/time conventions remain limited | Add locale category state and thread-local locale selection; expand ctype, collation, numeric, monetary, and time data |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 565 undeclared candidates and record explicit intentional omissions |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 561 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -76,6 +76,14 @@ across all seven profiles, without depending on filesystem latency.
 same deterministic pending-cancellation check covers it in all seven profiles.
 `tcdrain` uses Linux `ioctl(TCSBRK, 1)`, matching glibc's implementation, and
 the smoke checks `EBADF` propagation and pending cancellation.
+The message-queue slice implements `mq_open`, `mq_close`, `mq_unlink`,
+`mq_getattr`, `mq_setattr`, `mq_send`, `mq_receive`, `mq_timedsend`, and
+`mq_timedreceive`; `mq_open`'s variadic argument handling is a small C ABI
+adapter, while the operations use Nelua Linux syscall wrappers. The smoke
+checks queue attributes, send/receive bytes and priority, an expired receive
+timeout, and cancellation of blocked send and receive calls. The current run
+passes Zig/glibc, GCC/glibc, Zig/musl, and standalone Zig/GCC; TinyCC is not
+installed on this machine. `mq_notify` remains unimplemented.
 The checks verify that deferred cancellation wakes each blocked thread and
 that `pthread_join` reports `PTHREAD_CANCELED`. This remains targeted behavior
 coverage, not a complete cancellation-point audit.
@@ -143,8 +151,8 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 962 declared names. The Zig/glibc,
-  GCC/glibc, Zig/musl, and TinyCC/glibc hybrid archives each export 793; 161
+- The regenerated API inventory has 971 declared names. Zig/glibc,
+  GCC/glibc, and Zig/musl hybrid archives each export 802; 161
   APIs are marked as host-delegated and 8 have declared-but-unexported
   Zig/musl archive gaps.
   `pthread_mutex_clocklock` is provided by the glibc host in hybrid mode and
@@ -153,9 +161,9 @@ musl export set.
   percentage. See
   `build/api-coverage.csv` after `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 744
+  that are also exported by the pinned release archives: Nelibc exports 753
   in at least one tested hybrid profile, delegates 162 to a hybrid host, and does not
-  yet declare 565. No declared API is missing from the tested hybrid archives.
+  yet declare 556. No declared API is missing from the tested hybrid archives.
   The largest undeclared groups are wide characters (42), stdlib (32), network
   database APIs (32), and unistd (29). These
   are gap counts, not completion percentages; no API has yet been declared intentionally out

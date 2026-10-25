@@ -260,6 +260,98 @@ local function tcdrain(fd: cint): cint <cexport, codename 'tcdrain'>
   )))
 end
 
+-- Linux POSIX message queues use file descriptors and absolute realtime deadlines.
+local function mq_timedsend(mqdes: cint, message: pointer <const>, message_length: csize,
+                            priority: cuint, timeout: pointer <const>): cint
+    <cexport, codename 'mq_timedsend'>
+  return (@cint)(syscall_result(nelibc_cancellable_syscall6(
+    242_culong, (@culong)(mqdes), (@culong)((@usize)(message)),
+    (@culong)(message_length), (@culong)(priority),
+    (@culong)((@usize)(timeout)), 0_culong
+  )))
+end
+
+local function mq_timedreceive(mqdes: cint, message: pointer, message_length: csize,
+                               priority: pointer, timeout: pointer <const>): clong
+    <cexport, codename 'mq_timedreceive'>
+  return syscall_result(nelibc_cancellable_syscall6(
+    243_culong, (@culong)(mqdes), (@culong)((@usize)(message)),
+    (@culong)(message_length), (@culong)((@usize)(priority)),
+    (@culong)((@usize)(timeout)), 0_culong
+  ))
+end
+
+local function mq_send(mqdes: cint, message: pointer <const>, message_length: csize,
+                       priority: cuint): cint <cexport, codename 'mq_send'>
+  return mq_timedsend(mqdes, message, message_length, priority, nilptr)
+end
+
+local function mq_receive(mqdes: cint, message: pointer, message_length: csize,
+                          priority: pointer): clong <cexport, codename 'mq_receive'>
+  return mq_timedreceive(mqdes, message, message_length, priority, nilptr)
+end
+
+local function mq_name_for_kernel(name: pointer <const>): pointer <inline>
+  if name == nilptr then
+    nelibc_errno_location()[0] = 22_cint -- EINVAL
+    return nilptr
+  end
+  local chars = (@*[0]cchar)(name)
+  if chars[0] ~= 47_cchar or chars[1] == 0_cchar or chars[1] == 47_cchar then
+    nelibc_errno_location()[0] = 22_cint -- EINVAL
+    return nilptr
+  end
+  local index: csize = 1
+  while chars[index] ~= 0_cchar do
+    if chars[index] == 47_cchar then
+      nelibc_errno_location()[0] = 22_cint -- EINVAL
+      return nilptr
+    end
+    index = index + 1
+  end
+  return (@pointer)((@usize)(name) + 1_usize)
+end
+
+local function nelibc_mq_open_impl(name: pointer <const>, flags: cint, mode: cuint,
+                                   attributes: pointer <const>): cint
+    <cexport, codename '__nelibc_mq_open_impl'>
+  local kernel_name = mq_name_for_kernel(name)
+  if kernel_name == nilptr then return -1_cint end
+  return (@cint)(syscall_result(nelibc_raw_syscall6(
+    240_culong, (@culong)((@usize)(kernel_name)), (@culong)(flags),
+    (@culong)(mode), (@culong)((@usize)(attributes)), 0_culong, 0_culong
+  )))
+end
+
+local function mq_close(mqdes: cint): cint <cexport, codename 'mq_close'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    3_culong, (@culong)(mqdes), 0_culong, 0_culong
+  )))
+end
+
+local function mq_unlink(name: pointer <const>): cint <cexport, codename 'mq_unlink'>
+  local kernel_name = mq_name_for_kernel(name)
+  if kernel_name == nilptr then return -1_cint end
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    241_culong, (@culong)((@usize)(kernel_name)), 0_culong, 0_culong
+  )))
+end
+
+local function mq_getattr(mqdes: cint, attributes: pointer): cint <cexport, codename 'mq_getattr'>
+  return (@cint)(syscall_result(nelibc_raw_syscall6(
+    245_culong, (@culong)(mqdes), 0_culong, (@culong)((@usize)(attributes)),
+    0_culong, 0_culong, 0_culong
+  )))
+end
+
+local function mq_setattr(mqdes: cint, new_attributes: pointer <const>, old_attributes: pointer): cint
+    <cexport, codename 'mq_setattr'>
+  return (@cint)(syscall_result(nelibc_raw_syscall6(
+    245_culong, (@culong)(mqdes), (@culong)((@usize)(new_attributes)),
+    (@culong)((@usize)(old_attributes)), 0_culong, 0_culong, 0_culong
+  )))
+end
+
 -- Linux mount attaches a filesystem to a target path.
 local function mount(source: pointer <const>, target: pointer <const>, filesystem: pointer <const>, mountflags: culong, data: pointer <const>): cint <cexport, codename 'mount'>
   return (@cint)(syscall_result(nelibc_raw_syscall6(
