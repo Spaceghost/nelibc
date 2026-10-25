@@ -639,6 +639,11 @@ int main(int argc, char **argv) {
   if (semaphore_result != 0) return 85 + semaphore_result;
   int tempfile_result = tempfile_probe();
   if (tempfile_result != 0) return 570 + tempfile_result;
+  char cwd_buffer[4096];
+  if (getcwd(cwd_buffer, sizeof cwd_buffer) == NULL) return 20;
+  char *allocated_cwd = get_current_dir_name();
+  if (allocated_cwd == NULL || strcmp(allocated_cwd, cwd_buffer) != 0) return 21;
+  free(allocated_cwd);
 #ifndef NELIBC_STANDALONE
   if (archive_unistd_adapter_probe() != 0) return 84;
   if (pthread_protocol_probe() != 0) return 86;

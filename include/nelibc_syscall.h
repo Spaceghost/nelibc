@@ -507,6 +507,9 @@ int symlink(const char *target, const char *linkpath);
 ssize_t readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz);
 ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
 char *getcwd(char *buf, size_t size);
+#if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
+char *get_current_dir_name(void);
+#endif
 int chdir(const char *pathname);
 int fchdir(int fd);
 uid_t getuid(void);

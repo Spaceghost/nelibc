@@ -436,7 +436,7 @@ fwscanf,wchar.h,,,not-declared
 gai_strerror,netdb.h,,,not-declared
 gcvt,stdlib.h,,,not-declared
 get_avphys_pages,sys/sysinfo.h,,,not-declared
-get_current_dir_name,unistd.h,,,not-declared
+get_current_dir_name,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 get_nprocs,sys/sysinfo.h,,,not-declared
 get_nprocs_conf,sys/sysinfo.h,,,not-declared
 get_phys_pages,sys/sysinfo.h,,,not-declared

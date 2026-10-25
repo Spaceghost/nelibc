@@ -4115,6 +4115,29 @@ local function getcwd(buf: pointer, size: csize): pointer <cexport, codename 'ge
   return buf
 end
 
+local function get_current_dir_name(): *[0]cchar <cexport, codename 'get_current_dir_name'>
+  local size: csize = 128_csize
+  while true do
+    local buffer = (@*[0]cchar)(malloc(size))
+    if buffer == nilptr then
+      nelibc_errno_location()[0] = 12_cint -- ENOMEM
+      return nilptr
+    end
+    if getcwd((@pointer)(buffer), size) ~= nilptr then return buffer end
+    local error_number = nelibc_errno_location()[0]
+    free((@pointer)(buffer))
+    if error_number ~= 34_cint then -- ERANGE
+      nelibc_errno_location()[0] = error_number
+      return nilptr
+    end
+    if size > 0x7fffffffffffffff_csize // 2_csize then
+      nelibc_errno_location()[0] = 12_cint -- ENOMEM
+      return nilptr
+    end
+    size = size * 2_csize
+  end
+end
+
 local function chdir(pathname: pointer <const>): cint <cexport, codename 'chdir'>
   local result = nelibc_raw_syscall3(
     80_culong,
