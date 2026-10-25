@@ -52,6 +52,9 @@ long double complex ctanl(long double complex value);
 float complex ctanhf(float complex value);
 double complex ctanh(double complex value);
 long double complex ctanhl(long double complex value);
+float complex catanf(float complex value);
+double complex catan(double complex value);
+long double complex catanl(long double complex value);
 
 #else
 

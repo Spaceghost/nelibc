@@ -112,8 +112,8 @@ musl export set.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
   that are also exported by the pinned release archives: Nelibc exports 662
   in at least one hybrid profile, delegates 126 to a hybrid host, and does not
-  yet declare 659. The largest undeclared groups are complex math
-  (21), wide characters (65), stdlib, unistd, and network database APIs. These
+  yet declare 656. The largest undeclared groups are complex math
+  (18), wide characters (65), stdlib, unistd, and network database APIs. These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
   command.
@@ -139,7 +139,7 @@ musl export set.
   four hybrid profiles and standalone archives. Its
   complex-math coverage now includes `cabs*`, `creal*`, `cimag*`, `conj*`,
   `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, `ccos*`, `csinh*`,
-  `ccosh*`, `ctan*`, and `ctanh*`: a small C ABI shim extracts
+  `ccosh*`, `ctan*`, `ctanh*`, and `catan*`: a small C ABI shim extracts
   components and
   packages complex returns, while Nelua computes
   magnitudes, conjugates and projects values, evaluates arguments with
@@ -147,7 +147,8 @@ musl export set.
   complex exponentials from the Nelua real `exp*`, `sin*`, and `cos*`, uses a
   scaled logarithmic modulus for complex logarithms, and composes complex
   circular and hyperbolic sine and cosine from the corresponding real functions,
-  and uses scaled exponentials for large complex tangent inputs.
+  uses scaled exponentials for large complex tangent inputs, and evaluates
+  complex inverse tangent with scaled quadratic expressions.
   The remaining C complex arithmetic and transcendental families are still a
   substantial gap.
   Nelua functions implement `fmin`/`fmax` NaN behavior and rounding rules;

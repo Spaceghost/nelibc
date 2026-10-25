@@ -4885,3 +4885,78 @@ local function nelibc_ctanhparts_l(x: clongdouble, y: clongdouble,
     imaginary_out[0] = sine_2y / denominator
   end
 end
+
+local function nelibc_catanparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_catanparts_f'>
+  if is_infinite32(x) or is_infinite32(y) then
+    real_out[0] = copysignf(0.5_cfloat * acosf(-1_cfloat), x)
+    imaginary_out[0] = copysignf(0_cfloat, y)
+    return
+  end
+  if is_nan32(x) or is_nan32(y) then
+    local nan_value = x + y
+    real_out[0], imaginary_out[0] = nan_value, nan_value
+    return
+  end
+  local scale = 1_cfloat
+  if fabsf(x) > scale then scale = fabsf(x) end
+  if fabsf(y) > scale then scale = fabsf(y) end
+  local sx = x / scale
+  local sy = y / scale
+  local reciprocal = 1_cfloat / scale
+  local denominator = sx * sx + sy * sy + reciprocal * reciprocal
+  real_out[0] = 0.5_cfloat * atan2f(2_cfloat * sx * reciprocal,
+    reciprocal * reciprocal - sx * sx - sy * sy)
+  imaginary_out[0] = 0.5_cfloat * atanhf(2_cfloat * sy * reciprocal / denominator)
+end
+
+local function nelibc_catanparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_catanparts'>
+  if is_infinite64(x) or is_infinite64(y) then
+    real_out[0] = copysign(0.5_cdouble * acos(-1_cdouble), x)
+    imaginary_out[0] = copysign(0_cdouble, y)
+    return
+  end
+  if is_nan64(x) or is_nan64(y) then
+    local nan_value = x + y
+    real_out[0], imaginary_out[0] = nan_value, nan_value
+    return
+  end
+  local scale = 1_cdouble
+  if fabs(x) > scale then scale = fabs(x) end
+  if fabs(y) > scale then scale = fabs(y) end
+  local sx = x / scale
+  local sy = y / scale
+  local reciprocal = 1_cdouble / scale
+  local denominator = sx * sx + sy * sy + reciprocal * reciprocal
+  real_out[0] = 0.5_cdouble * atan2(2_cdouble * sx * reciprocal,
+    reciprocal * reciprocal - sx * sx - sy * sy)
+  imaginary_out[0] = 0.5_cdouble * atanh(2_cdouble * sy * reciprocal / denominator)
+end
+
+local function nelibc_catanparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_catanparts_l'>
+  if is_infinite80(x) or is_infinite80(y) then
+    real_out[0] = copysignl(0.5_clongdouble * acosl(-1_clongdouble), x)
+    imaginary_out[0] = copysignl(0_clongdouble, y)
+    return
+  end
+  if is_nan80(x) or is_nan80(y) then
+    local nan_value = x + y
+    real_out[0], imaginary_out[0] = nan_value, nan_value
+    return
+  end
+  local scale = 1_clongdouble
+  if fabsl(x) > scale then scale = fabsl(x) end
+  if fabsl(y) > scale then scale = fabsl(y) end
+  local sx = x / scale
+  local sy = y / scale
+  local reciprocal = 1_clongdouble / scale
+  local denominator = sx * sx + sy * sy + reciprocal * reciprocal
+  real_out[0] = 0.5_clongdouble * atan2l(2_clongdouble * sx * reciprocal,
+    reciprocal * reciprocal - sx * sx - sy * sy)
+  imaginary_out[0] = 0.5_clongdouble * atanhl(2_clongdouble * sy * reciprocal / denominator)
+end
