@@ -2142,7 +2142,7 @@ int main(void) {
       const long double base = ldexpl(mantissa, binary_exponent);
       long double exponent = 0.25L +
           (long double)(next_bits() >> 1) * 0x1p-63L *
-              (wide_powl_rounding_modes[mode] == FE_TONEAREST ? 8191.75L : 6143.75L);
+              8191.75L;
       if (next_bits() & 1) exponent = -exponent;
       const long double expected = powl(base, exponent);
       const long double actual = nelibc_powl(base, exponent);
@@ -2158,24 +2158,28 @@ int main(void) {
         return 1;
       }
     }
-    const long double regression_base = 0x9.bd410acddf1c789p-3L;
-    const long double regression_exponent = 0x9.2f3861f696afb5bp+9L;
-    const long double regression_expected = powl(regression_base, regression_exponent);
-    const long double regression_actual = nelibc_powl(regression_base, regression_exponent);
-    if (fegetround() != wide_powl_rounding_modes[mode]) {
-      fprintf(stderr, "powl changed the caller rounding mode at mode=%zu\n", mode);
-      return 1;
-    }
+    static const long double regression_bases[] = {
+        0x9.bd410acddf1c789p-3L, 0xe.20c950aedd2f638p-6L};
+    static const long double regression_exponents[] = {
+        0x9.2f3861f696afb5bp+9L, 0xd.0ec2aed8a2e9038p+9L};
+    for (size_t i = 0; i < sizeof regression_bases / sizeof regression_bases[0]; ++i) {
+      const long double regression_expected = powl(regression_bases[i], regression_exponents[i]);
+      const long double regression_actual = nelibc_powl(regression_bases[i], regression_exponents[i]);
+      if (fegetround() != wide_powl_rounding_modes[mode]) {
+        fprintf(stderr, "powl changed the caller rounding mode at mode=%zu\n", mode);
+        return 1;
+      }
 #ifdef NELIBC_MUSL_PROFILE
-    const int regression_matches = fabsl(regression_actual - regression_expected) <=
-        1024.0L * LDBL_EPSILON * fabsl(regression_expected);
+      const int regression_matches = fabsl(regression_actual - regression_expected) <=
+          1024.0L * LDBL_EPSILON * fabsl(regression_expected);
 #else
-    const int regression_matches = long_double_math_close(regression_actual, regression_expected);
+      const int regression_matches = long_double_math_close(regression_actual, regression_expected);
 #endif
-    if (!regression_matches) {
-      fprintf(stderr, "powl directed-rounding regression mismatch mode=%zu actual=%La expected=%La\n",
-              mode, regression_actual, regression_expected);
-      return 1;
+      if (!regression_matches) {
+        fprintf(stderr, "powl directed-rounding regression mismatch mode=%zu i=%zu actual=%La expected=%La\n",
+                mode, i, regression_actual, regression_expected);
+        return 1;
+      }
     }
   }
   if (fesetround(FE_TONEAREST) != 0) return 1;
