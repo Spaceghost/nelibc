@@ -1597,7 +1597,7 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   local result: clongdouble
   local exponent_magnitude = exponent
   if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
-  local fractional_exponent_limit = 262144_clongdouble
+  local fractional_exponent_limit = 524288_clongdouble
   -- Preserve exact powers of two, including fractional exponents whose product
   -- with the base's binary exponent is integral.
   if exponent_magnitude <= 32768_clongdouble then
@@ -1647,10 +1647,10 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
     local mantissa = nelibc_frexpl_hw(absolute, &base_exponent) * 2_clongdouble
     base_exponent = base_exponent - 1_cint
     local scaled_exponent = exponent * (@clongdouble)(base_exponent)
-    -- With exponent magnitudes capped at 262144, the binary scale product is
-    -- below 4.312 billion and fits safely in a 64-bit C long.
-    if scaled_exponent >= -5000000000_clongdouble and
-        scaled_exponent <= 5000000000_clongdouble then
+    -- With exponent magnitudes capped at 524288, the binary scale product is
+    -- below 8.622 billion and fits safely in a 64-bit C long.
+    if scaled_exponent >= -10000000000_clongdouble and
+        scaled_exponent <= 10000000000_clongdouble then
       local caller_rounding_mode = nelibc_x87_rounding_mode()
       if caller_rounding_mode ~= 0_cint then
         -- The error-free transforms below require round-to-nearest. Restore
