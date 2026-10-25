@@ -1,5 +1,8 @@
 #include <math.h>
 #include <fenv.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #include <errno.h>
 #include <float.h>
 #include <stdint.h>
@@ -57,6 +60,39 @@ int main(void) {
       fetestexcept(FE_INEXACT) != 0) return 197;
   if (fesetenv(FE_DFL_ENV) != 0 || fegetround() != FE_TONEAREST ||
       fetestexcept(FE_ALL_EXCEPT) != 0 || fesetround(FE_TONEAREST) != 0) return 194;
+  const int trapped_exceptions[] = {
+      FE_INVALID, FE_DIVBYZERO, FE_OVERFLOW, FE_UNDERFLOW, FE_INEXACT};
+  for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
+    pid_t child = fork();
+    if (child == 0) {
+      if (fesetenv(FE_NOMASK_ENV) != 0) _exit(201);
+      (void)feraiseexcept(trapped_exceptions[i]);
+      _exit(202);
+    }
+    int child_status = 0;
+    if (child < 0 || waitpid(child, &child_status, 0) != child ||
+        !WIFSIGNALED(child_status) || WTERMSIG(child_status) != SIGFPE) return 203;
+  }
+  for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
+    pid_t child = fork();
+    if (child == 0) {
+      fenv_t sse_trap_environment;
+      if (fesetenv(FE_DFL_ENV) != 0 || fegetenv(&sse_trap_environment) != 0) _exit(204);
+      /* Mask x87 exceptions but unmask SSE exceptions to test both units. */
+      sse_trap_environment.__state[0] = 0x7f;
+      sse_trap_environment.__state[1] = 0x03;
+      sse_trap_environment.__state[24] = 0;
+      sse_trap_environment.__state[25] = 0;
+      sse_trap_environment.__state[26] = 0;
+      sse_trap_environment.__state[27] = 0;
+      if (fesetenv(&sse_trap_environment) != 0) _exit(205);
+      (void)feraiseexcept(trapped_exceptions[i]);
+      _exit(206);
+    }
+    int child_status = 0;
+    if (child < 0 || waitpid(child, &child_status, 0) != child ||
+        !WIFSIGNALED(child_status) || WTERMSIG(child_status) != SIGFPE) return 207;
+  }
 
   const long double fma_x = 1.0L + 0x1p-63L;
   const long double fma_y = 1.0L - 0x1p-63L;

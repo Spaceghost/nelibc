@@ -100,10 +100,11 @@ platform. Negative `sqrt` and invalid `fmod`/`remainder` domains set `EDOM`;
 `exp` overflow/underflow, `log` domain/pole, and infinite `sin`/`cos` inputs
 set the expected `errno`; `ldexp`/`scalbn` overflow and underflow to zero set
 `ERANGE`. Standalone builds provide all standard `fenv.h` functions and
-synchronize x87 and SSE exception flags and rounding modes. Hybrid builds keep
-the host `fenv_t` ABI and use the host fenv implementation. Trap delivery is
-not yet covered by the standalone fenv smoke test, and most of the C math API
-remains incomplete.
+synchronize x87 and SSE exception flags and rounding modes. `FE_NOMASK_ENV`
+also supports the GNU all-traps-enabled environment; smoke tests verify
+`SIGFPE` delivery for each standard exception through x87 and SSE. Hybrid builds
+keep the host `fenv_t` ABI and use the host fenv implementation. Less-common
+environment edge cases and most of the C math API remain incomplete.
 
 ## Compare supported build profiles
 

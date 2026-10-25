@@ -13,6 +13,77 @@ nelibc_fenv_fxrstor:
   ret
 .size nelibc_fenv_fxrstor, .-nelibc_fenv_fxrstor
 
+/* Deliver requested exceptions if their SSE masks are clear. Pending x87
+   flags are delivered by FWAIT; explicit SSE operations cover MXCSR-only
+   unmasking. XMM registers are caller-saved under the SysV ABI. */
+.globl nelibc_fenv_raise_hw
+.type nelibc_fenv_raise_hw,@function
+nelibc_fenv_raise_hw:
+  pushq %rbx
+  subq $16, %rsp
+  movl %edi, %ebx
+  stmxcsr 4(%rsp)
+  fwait
+
+  testl $0x01, %ebx
+  jz .Lnelibc_fenv_raise_divzero
+  testl $0x80, 4(%rsp)
+  jnz .Lnelibc_fenv_raise_divzero
+  pxor %xmm0, %xmm0
+  pxor %xmm1, %xmm1
+  divsd %xmm1, %xmm0
+
+.Lnelibc_fenv_raise_divzero:
+  testl $0x04, %ebx
+  jz .Lnelibc_fenv_raise_overflow
+  testl $0x200, 4(%rsp)
+  jnz .Lnelibc_fenv_raise_overflow
+  movsd .Lnelibc_fenv_one(%rip), %xmm0
+  pxor %xmm1, %xmm1
+  divsd %xmm1, %xmm0
+
+.Lnelibc_fenv_raise_overflow:
+  testl $0x08, %ebx
+  jz .Lnelibc_fenv_raise_underflow
+  testl $0x400, 4(%rsp)
+  jnz .Lnelibc_fenv_raise_underflow
+  movsd .Lnelibc_fenv_max(%rip), %xmm0
+  movsd .Lnelibc_fenv_two(%rip), %xmm1
+  mulsd %xmm1, %xmm0
+
+.Lnelibc_fenv_raise_underflow:
+  testl $0x10, %ebx
+  jz .Lnelibc_fenv_raise_inexact
+  testl $0x800, 4(%rsp)
+  jnz .Lnelibc_fenv_raise_inexact
+  movsd .Lnelibc_fenv_min(%rip), %xmm0
+  movsd .Lnelibc_fenv_min(%rip), %xmm1
+  mulsd %xmm1, %xmm0
+
+.Lnelibc_fenv_raise_inexact:
+  testl $0x20, %ebx
+  jz .Lnelibc_fenv_raise_done
+  testl $0x1000, 4(%rsp)
+  jnz .Lnelibc_fenv_raise_done
+  movsd .Lnelibc_fenv_one(%rip), %xmm0
+  movsd .Lnelibc_fenv_three(%rip), %xmm1
+  divsd %xmm1, %xmm0
+
+.Lnelibc_fenv_raise_done:
+  addq $16, %rsp
+  popq %rbx
+  ret
+.size nelibc_fenv_raise_hw, .-nelibc_fenv_raise_hw
+
+.section .rodata
+.p2align 3
+.Lnelibc_fenv_one:    .double 1.0
+.Lnelibc_fenv_two:    .double 2.0
+.Lnelibc_fenv_three:  .double 3.0
+.Lnelibc_fenv_max:    .double 0x1.fffffffffffffp1023
+.Lnelibc_fenv_min:    .double 0x1p-1022
+.text
+
 .globl nelibc_sqrt_hw
 .type nelibc_sqrt_hw,@function
 nelibc_sqrt_hw:

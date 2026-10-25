@@ -5,6 +5,7 @@
 -- fenv_t layout is defined in include/fenv.h and matches FXSAVE.
 local function nelibc_fenv_fxsave(state: *[0]cuchar): void <cimport> end
 local function nelibc_fenv_fxrstor(state: *[0]cuchar): void <cimport> end
+local function nelibc_fenv_raise_hw(exceptions: cint): void <cimport> end
 
 local function aligned_scratch(raw: *[528]cuchar): *[0]cuchar <inline>
   local address = (@usize)(&raw[0])
@@ -56,7 +57,15 @@ end
 local function feraiseexcept(exceptions: cint): cint <cexport, codename 'feraiseexcept'>
   local raw: [528]cuchar
   local state = save_current(&raw)
-  set_flags(state, current_flags(state) | requested(exceptions))
+  local flags = current_flags(state) | requested(exceptions)
+  set_flags(state, flags)
+  nelibc_fenv_fxrstor(state)
+  nelibc_fenv_raise_hw((@cint)(requested(exceptions)))
+  -- Hardware operations used to deliver enabled traps can accrue secondary
+  -- flags (for example, underflow also raises inexact). Keep only requested
+  -- flags plus any flags that were already set on entry.
+  state = save_current(&raw)
+  set_flags(state, flags)
   nelibc_fenv_fxrstor(state)
   return 0_cint
 end
@@ -120,7 +129,8 @@ end
 
 local function fesetenv(environment: *[0]cuchar <const>): cint <cexport, codename 'fesetenv'>
   if environment == nilptr then return 1_cint end
-  if (@usize)(environment) == 0xffffffffffffffff_usize then
+  if (@usize)(environment) == 0xffffffffffffffff_usize or
+      (@usize)(environment) == 0xfffffffffffffffe_usize then
     local raw: [528]cuchar
     local state = aligned_scratch(&raw)
     local bytes = state
@@ -131,8 +141,13 @@ local function fesetenv(environment: *[0]cuchar <const>): cint <cexport, codenam
     end
     local control = (@*[0]cushort)(state)
     local mxcsr = (@*[0]cuint)(&state[24])
-    control[0] = 0x037f_cushort
-    mxcsr[0] = 0x1f80_cuint
+    if (@usize)(environment) == 0xffffffffffffffff_usize then
+      control[0] = 0x037f_cushort
+      mxcsr[0] = 0x1f80_cuint
+    else
+      control[0] = 0x0340_cushort
+      mxcsr[0] = 0_cuint
+    end
     nelibc_fenv_fxrstor(state)
   else
     nelibc_fenv_fxrstor((@*[0]cuchar)(environment))

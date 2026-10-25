@@ -9,7 +9,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | Priority | Gap | Why it blocks a compelling libc | Next milestone |
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
-| P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double `sqrtl`, `nanl`, `fabsl`, `copysignl`, `fmal`, `tgammal`, `lgammal`, `lgammal_r`, `erfl`, `erfcl`, `exp10l`, `pow10l`, `fmodl`, `remainderl`, `remquol`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `nexttowardl`, `atanl`, `atan2l`, `asinl`, `acosl`, `asinhl`, `acoshl`, `atanhl`, `powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`, `sincosl`, `tanl`, `tanhl`, `sinhl`, and `coshl`, plus `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; internal classification and sign-bit functions now cover binary32/64/80; all standard fenv entry points are implemented for standalone x86-64, while hybrid fenv delegates to the host | Validate fenv trap behavior and expand long-double math coverage and math quality/performance |
+| P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double `sqrtl`, `nanl`, `fabsl`, `copysignl`, `fmal`, `tgammal`, `lgammal`, `lgammal_r`, `erfl`, `erfcl`, `exp10l`, `pow10l`, `fmodl`, `remainderl`, `remquol`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `nexttowardl`, `atanl`, `atan2l`, `asinl`, `acosl`, `asinhl`, `acoshl`, `atanhl`, `powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`, `sincosl`, `tanl`, `tanhl`, `sinhl`, and `coshl`, plus `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; internal classification and sign-bit functions now cover binary32/64/80; all standard fenv entry points are implemented for standalone x86-64, while hybrid fenv delegates to the host | Expand long-double math coverage, fenv edge coverage, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 704 undeclared candidates and record explicit intentional omissions |
@@ -151,7 +151,9 @@ musl export set.
   `fegetround`, `fesetround`, `fegetenv`, `feholdexcept`, `fesetenv`, and
   `feupdateenv` with x87/SSE state synchronization. Hybrid profiles retain the
   host fenv ABI and implementation. Trap delivery and less common environment
-  edge cases still need validation. Bit-level `ilogb`/`logb` cover normal/subnormal decomposition;
+  edge cases still need validation. Standalone smoke tests verify SIGFPE delivery
+  for all five standard exceptions through x87 and SSE trap paths. Bit-level
+  `ilogb`/`logb` cover normal/subnormal decomposition;
   `nextafter` advances binary32/binary64 encodings directly and handles signed
   zero and NaN values. `nexttoward` compares its long-double direction before
   narrowing, including when the direction lies between adjacent float or
@@ -209,8 +211,8 @@ musl export set.
   infinities, quiet NaNs, and largest finite values, plus 100,000 generated
   scalar inputs and input pairs per profile against host libm. Signaling-NaN
   operations are exercised, with min/max result comparison relaxed where host
-  runtimes differ. Remaining long-double entry points and complete fenv trap
-  semantics remain outside this slice. `sinh`/`cosh`/`tanh` and their float forms use small-input series,
+  runtimes differ. Remaining long-double entry points and less-common fenv trap
+  environment edge cases remain outside this slice. `sinh`/`cosh`/`tanh` and their float forms use small-input series,
   range-safe exponential formulas, signed-zero and infinity handling, and
   overflow `ERANGE`; differential checks cover the near-overflow transition.
   `atan` uses fdlibm range reduction and its polynomial kernel; `atan2` handles

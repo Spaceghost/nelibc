@@ -22,6 +22,8 @@ typedef struct __attribute__((aligned(16))) {
 #define FE_TOWARDZERO 0x0c00
 
 #define FE_DFL_ENV ((const fenv_t *)(-1))
+/* GNU-compatible environment with all IEEE exception traps unmasked. */
+#define FE_NOMASK_ENV ((const fenv_t *)(-2))
 
 int feclearexcept(int exceptions);
 int fegetexceptflag(fexcept_t *flag, int exceptions);
