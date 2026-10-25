@@ -72,10 +72,11 @@ for unrelated host-owned objects.
 
 ### Start a child with `posix_spawnp`
 
-The current Nelibc implementation supports direct execution and PATH search
-when file actions and spawn attributes are null. It reports an exec failure
-from the child before returning, and leaves `errno` unchanged as POSIX
-requires:
+The standalone Nelibc implementation supports direct execution and PATH search.
+It reports child exec failures synchronously and leaves `errno` unchanged as
+POSIX requires. Standalone file-action lists support `addclose`, `adddup2`,
+and `addopen` in registration order. Hybrid archives leave spawn APIs to the
+host libc, preserving glibc/musl's native spawn-attribute ABI.
 
 ```c
 #include <spawn.h>
@@ -94,10 +95,10 @@ int main(void) {
 }
 ```
 
-Non-null file-action or attribute objects currently return `ENOTSUP`; the
-standard initialization, setter, getter, and action-building APIs are not
-implemented yet. The standalone spawn smoke uses this null-object subset with
-Zig, GCC, and TinyCC builds.
+Standalone spawn attributes and GNU file actions such as `addchdir_np` are not
+implemented yet. The standalone smoke covers direct execution, PATH search,
+close/dup2/open actions, action ordering, and synchronous action/exec errors
+with Zig, GCC, and TinyCC builds.
 
 ### Use POSIX message queues
 

@@ -1,0 +1,383 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
+local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function malloc(size: csize): pointer <cimport> end
+local function free(ptr: pointer): void <cimport> end
+local function getenv(name: *[0]cchar <const>): *[0]cchar <cimport> end
+local function execve(pathname: *[0]cchar <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <cimport> end
+local function pipe2(pipefd: *[0]cint, flags: cint): cint <cimport> end
+local function nelibc_waitpid(pid: cint, status: pointer, options: cint): cint <cimport> end
+
+local function syscall_result(result: clong): clong <inline>
+  if result < 0 and result >= -4095 then
+    nelibc_errno_location()[0] = (@cint)(-result)
+    return -1_clong
+  end
+  return result
+end
+
+local SpawnAction: type = @record{
+  next: *SpawnAction,
+  kind: cint,
+  fd: cint,
+  newfd: cint,
+  flags: cint,
+  mode: cuint,
+  pathname: *[0]cchar
+}
+local SpawnFileActions: type = @record{
+  first: *SpawnAction,
+  last: *SpawnAction,
+  magic: cuint,
+  reserved: [44]cuchar
+}
+local spawn_actions_magic: cuint <comptime> = 0x4e535041_cuint
+
+local function posix_spawn_file_actions_init(actions: *SpawnFileActions): cint
+    <cexport, codename 'posix_spawn_file_actions_init'>
+  if actions == nilptr then return 22_cint end -- EINVAL
+  actions.first = nilptr
+  actions.last = nilptr
+  actions.magic = spawn_actions_magic
+  return 0_cint
+end
+
+local function posix_spawn_file_actions_destroy(actions: *SpawnFileActions): cint
+    <cexport, codename 'posix_spawn_file_actions_destroy'>
+  if actions == nilptr or actions.magic ~= spawn_actions_magic then return 22_cint end
+  local action = actions.first
+  while action ~= nilptr do
+    local next_action = action.next
+    if action.pathname ~= nilptr then free((@pointer)(action.pathname)) end
+    free((@pointer)(action))
+    action = next_action
+  end
+  actions.first = nilptr
+  actions.last = nilptr
+  actions.magic = 0_cuint
+  return 0_cint
+end
+
+local function nelibc_spawn_append_action(actions: *SpawnFileActions, kind: cint,
+    fd: cint, newfd: cint, flags: cint, mode: cuint,
+    pathname: *[0]cchar <const>): cint
+  if actions == nilptr or actions.magic ~= spawn_actions_magic then return 22_cint end
+  if fd < 0_cint or (kind == 2_cint and newfd < 0_cint) or
+      (kind == 3_cint and pathname == nilptr) then return 22_cint end
+  local saved_errno = nelibc_errno_location()[0]
+  local action = (@*SpawnAction)(malloc(40_csize))
+  if action == nilptr then
+    nelibc_errno_location()[0] = saved_errno
+    return 12_cint -- ENOMEM
+  end
+  action.next = nilptr
+  action.kind = kind
+  action.fd = fd
+  action.newfd = newfd
+  action.flags = flags
+  action.mode = mode
+  action.pathname = nilptr
+  if pathname ~= nilptr then
+    local path_length: csize = 0
+    while pathname[path_length] ~= 0 do path_length = path_length + 1_csize end
+    if path_length == 0x7fffffffffffffff_csize then
+      free((@pointer)(action))
+      nelibc_errno_location()[0] = saved_errno
+      return 12_cint -- ENOMEM
+    end
+    action.pathname = (@*[0]cchar)(malloc(path_length + 1_csize))
+    if action.pathname == nilptr then
+      free((@pointer)(action))
+      nelibc_errno_location()[0] = saved_errno
+      return 12_cint -- ENOMEM
+    end
+    local index: csize = 0
+    while index <= path_length do
+      action.pathname[index] = pathname[index]
+      index = index + 1_csize
+    end
+  end
+  if actions.last == nilptr then actions.first = action
+  else actions.last.next = action end
+  actions.last = action
+  nelibc_errno_location()[0] = saved_errno
+  return 0_cint
+end
+
+local function posix_spawn_file_actions_addclose(actions: *SpawnFileActions,
+    fd: cint): cint <cexport, codename 'posix_spawn_file_actions_addclose'>
+  return nelibc_spawn_append_action(actions, 1_cint, fd, 0_cint, 0_cint,
+                                    0_cuint, nilptr)
+end
+
+local function posix_spawn_file_actions_adddup2(actions: *SpawnFileActions,
+    fd: cint, newfd: cint): cint <cexport, codename 'posix_spawn_file_actions_adddup2'>
+  return nelibc_spawn_append_action(actions, 2_cint, fd, newfd, 0_cint,
+                                    0_cuint, nilptr)
+end
+
+local function posix_spawn_file_actions_addopen(actions: *SpawnFileActions,
+    fd: cint, pathname: *[0]cchar <const>, flags: cint, mode: cuint): cint
+    <cexport, codename 'posix_spawn_file_actions_addopen'>
+  return nelibc_spawn_append_action(actions, 3_cint, fd, 0_cint, flags,
+                                    mode, pathname)
+end
+
+local function nelibc_spawn_child_fail(error_fd: cint, error_number: cint): void
+  local written: csize = 0
+  while written < 4_csize do
+    local address = (@pointer)((@usize)(&error_number) + (@usize)(written))
+    local write_result = nelibc_raw_syscall3(1_culong, (@culong)(error_fd),
+        (@culong)((@usize)(address)), (@culong)(4_csize - written))
+    if write_result == -4_clong then continue end -- EINTR
+    if write_result <= 0_clong then break end
+    written = written + (@csize)(write_result)
+  end
+  nelibc_raw_syscall3(60_culong, 127_culong, 0_culong, 0_culong)
+  while true do end
+end
+
+local function nelibc_spawn_max_action_fd(actions: *SpawnFileActions): cint
+  local maximum: cint = 2_cint
+  if actions == nilptr then return maximum end
+  local action = actions.first
+  while action ~= nilptr do
+    if action.fd > maximum then maximum = action.fd end
+    if action.kind == 2_cint and action.newfd > maximum then maximum = action.newfd end
+    action = action.next
+  end
+  return maximum
+end
+
+local function nelibc_spawn_apply_actions(actions: *SpawnFileActions,
+    error_fd: cint): void
+  if actions == nilptr then return end
+  local action = actions.first
+  while action ~= nilptr do
+    local result: clong = 0_clong
+    if action.kind == 1_cint then
+      result = nelibc_raw_syscall3(3_culong, (@culong)(action.fd), 0_culong, 0_culong)
+    elseif action.kind == 2_cint then
+      result = nelibc_raw_syscall3(33_culong, (@culong)(action.fd),
+          (@culong)(action.newfd), 0_culong)
+    else
+      result = nelibc_raw_syscall6(257_culong, 0xffffffffffffff9c_culong,
+          (@culong)((@usize)(action.pathname)), (@culong)(action.flags),
+          (@culong)(action.mode), 0_culong, 0_culong)
+      if result >= 0_clong and result ~= action.fd then
+        local opened_fd = result
+        result = nelibc_raw_syscall3(33_culong, (@culong)(opened_fd),
+            (@culong)(action.fd), 0_culong)
+        nelibc_raw_syscall3(3_culong, (@culong)(opened_fd), 0_culong, 0_culong)
+      end
+    end
+    if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
+    action = action.next
+  end
+end
+
+-- Spawn without host libc by reporting the child's exec error through a
+-- close-on-exec pipe.  The initial standalone slice accepts only null
+-- spawn attributes; file actions are applied in registration order.
+local function nelibc_spawn_resolve_path(file: *[0]cchar <const>): pointer
+  local file_length: csize = 0
+  local has_slash: boolean = false
+  while file[file_length] ~= 0 do
+    if file[file_length] == 47 then has_slash = true end
+    file_length = file_length + 1_csize
+  end
+  if has_slash then return (@pointer)(file) end
+
+  local search_path: *[0]cchar = getenv('PATH')
+  if search_path == nilptr then search_path = '/bin:/usr/bin' end
+  local search_start: csize = 0
+  local saw_access_denied: boolean = false
+  while true do
+    local search_end = search_start
+    while search_path[search_end] ~= 0 and search_path[search_end] ~= 58 do
+      search_end = search_end + 1_csize
+    end
+    local directory_length = search_end - search_start
+    local prefix_length = directory_length
+    if prefix_length == 0_csize then prefix_length = 1_csize end
+    if prefix_length <= 0x7fffffffffffffff_csize - file_length - 2_csize then
+      local candidate_length = prefix_length + 1_csize + file_length
+      local candidate = (@*[0]cchar)(malloc(candidate_length + 1_csize))
+      if candidate == nilptr then
+        nelibc_errno_location()[0] = 12_cint -- ENOMEM
+        return nilptr
+      end
+      local index: csize = 0
+      if directory_length == 0_csize then
+        candidate[0] = 46_cchar -- empty PATH component means '.'
+        index = 1_csize
+      else
+        while index < directory_length do
+          candidate[index] = search_path[search_start + index]
+          index = index + 1_csize
+        end
+      end
+      candidate[index] = 47_cchar
+      index = 0_csize
+      while index < file_length do
+        candidate[prefix_length + 1_csize + index] = file[index]
+        index = index + 1_csize
+      end
+      candidate[candidate_length] = 0_cchar
+      local access_result = syscall_result(nelibc_raw_syscall3(269_culong,
+          0xffffffffffffff9c_culong, (@culong)((@usize)(candidate)), 1_culong))
+      if access_result == 0_clong then return (@pointer)(candidate) end
+      if nelibc_errno_location()[0] == 13_cint then saw_access_denied = true end
+      free((@pointer)(candidate))
+    end
+    if search_path[search_end] == 0 then break end
+    search_start = search_end + 1_csize
+  end
+  if saw_access_denied then nelibc_errno_location()[0] = 13_cint
+  else nelibc_errno_location()[0] = 2_cint end
+  return nilptr
+end
+
+local function nelibc_posix_spawn_common(pid_output: *[0]cint,
+    pathname: *[0]cchar <const>, file_actions: pointer,
+    attributes: pointer, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar,
+    search_path: boolean): cint
+  if pid_output == nilptr or pathname == nilptr or argv == nilptr or envp == nilptr then
+    return 22_cint -- EINVAL
+  end
+  if attributes ~= nilptr then return 95_cint end -- ENOTSUP until spawn attrs are implemented
+  local action_state: *SpawnFileActions = nilptr
+  if file_actions ~= nilptr then
+    action_state = (@*SpawnFileActions)(file_actions)
+    if action_state.magic ~= spawn_actions_magic then return 22_cint end -- EINVAL
+  end
+
+  local saved_errno = nelibc_errno_location()[0]
+  local executable = pathname
+  local owned_executable = false
+  if search_path then
+    local resolved = nelibc_spawn_resolve_path(pathname)
+    if resolved == nilptr then
+      local error_number = nelibc_errno_location()[0]
+      nelibc_errno_location()[0] = saved_errno
+      return error_number
+    end
+    executable = (@*[0]cchar)(resolved)
+    owned_executable = executable ~= pathname
+  end
+  local error_pipe: [2]cint
+  if pipe2(&error_pipe[0], 0x80000_cint) ~= 0_cint then
+    local error_number = nelibc_errno_location()[0]
+    if owned_executable then free((@pointer)(executable)) end
+    nelibc_errno_location()[0] = saved_errno
+    return error_number
+  end
+  local maximum_action_fd = nelibc_spawn_max_action_fd(action_state)
+  if maximum_action_fd >= 0x7ffffffe_cint then
+    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+    if owned_executable then free((@pointer)(executable)) end
+    nelibc_errno_location()[0] = saved_errno
+    return 24_cint -- EMFILE: no room above all action descriptors for the error channel
+  end
+  local minimum_error_fd = maximum_action_fd + 1_cint
+  if minimum_error_fd < 3_cint then minimum_error_fd = 3_cint end
+  local raw_read_fd = nelibc_raw_syscall3(72_culong, (@culong)(error_pipe[0]),
+      1030_culong, (@culong)(minimum_error_fd))
+  if raw_read_fd < 0_clong then
+    local error_number = (@cint)(-raw_read_fd)
+    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+    if owned_executable then free((@pointer)(executable)) end
+    nelibc_errno_location()[0] = saved_errno
+    return error_number
+  end
+  local raw_write_fd = nelibc_raw_syscall3(72_culong, (@culong)(error_pipe[1]),
+      1030_culong, (@culong)(minimum_error_fd + 1_cint))
+  if raw_write_fd < 0_clong then
+    local error_number = (@cint)(-raw_write_fd)
+    nelibc_raw_syscall3(3_culong, (@culong)(raw_read_fd), 0_culong, 0_culong)
+    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+    if owned_executable then free((@pointer)(executable)) end
+    nelibc_errno_location()[0] = saved_errno
+    return error_number
+  end
+  nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+  nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+  error_pipe[0] = (@cint)(raw_read_fd)
+  error_pipe[1] = (@cint)(raw_write_fd)
+  local raw_child = nelibc_raw_syscall3(57_culong, 0_culong, 0_culong, 0_culong)
+  local child = (@cint)(syscall_result(raw_child))
+  if child < 0_cint then
+    local error_number = nelibc_errno_location()[0]
+    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+    if owned_executable then free((@pointer)(executable)) end
+    nelibc_errno_location()[0] = saved_errno
+    return error_number
+  end
+  if child == 0_cint then
+    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_spawn_apply_actions(action_state, error_pipe[1])
+    execve(executable, argv, envp)
+    local child_error = nelibc_errno_location()[0]
+    nelibc_spawn_child_fail(error_pipe[1], child_error)
+  end
+
+  nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+  local child_error: cint = 0
+  local received: csize = 0
+  local read_error: cint = 0
+  while received < 4_csize do
+    local address = (@pointer)((@usize)(&child_error) + (@usize)(received))
+    local result = nelibc_raw_syscall3(0_culong, (@culong)(error_pipe[0]),
+                                       (@culong)((@usize)(address)),
+                                       (@culong)(4_csize - received))
+    if result == 0_culong then break end
+    if result == -4_clong then continue end -- EINTR
+    if result < 0_clong then
+      read_error = (@cint)(-result)
+      break
+    end
+    received = received + (@csize)(result)
+  end
+  nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+  if read_error ~= 0_cint or (received ~= 0_csize and received ~= 4_csize) then
+    nelibc_raw_syscall3(62_culong, (@culong)(child), 9_culong, 0_culong) -- kill SIGKILL
+    nelibc_waitpid(child, nilptr, 0_cint)
+    if owned_executable then free((@pointer)(executable)) end
+    nelibc_errno_location()[0] = saved_errno
+    if read_error ~= 0_cint then return read_error end
+    return 5_cint -- EIO
+  end
+  if received == 4_csize then
+    nelibc_waitpid(child, nilptr, 0_cint)
+    if owned_executable then free((@pointer)(executable)) end
+    nelibc_errno_location()[0] = saved_errno
+    return child_error
+  end
+  pid_output[0] = child
+  if owned_executable then free((@pointer)(executable)) end
+  nelibc_errno_location()[0] = saved_errno
+  return 0_cint
+end
+
+local function posix_spawn(pid_output: *[0]cint,
+    pathname: *[0]cchar <const>, file_actions: pointer <const>,
+    attributes: pointer <const>, argv: *[0]*[0]cchar,
+    envp: *[0]*[0]cchar): cint <cexport, codename 'posix_spawn'>
+  return nelibc_posix_spawn_common(pid_output, pathname,
+      (@pointer)(file_actions), (@pointer)(attributes), argv, envp, false)
+end
+
+local function posix_spawnp(pid_output: *[0]cint,
+    file: *[0]cchar <const>, file_actions: pointer <const>,
+    attributes: pointer <const>, argv: *[0]*[0]cchar,
+    envp: *[0]*[0]cchar): cint <cexport, codename 'posix_spawnp'>
+  return nelibc_posix_spawn_common(pid_output, file,
+      (@pointer)(file_actions), (@pointer)(attributes), argv, envp, true)
+end
