@@ -5209,6 +5209,56 @@ local function sigprocmask(how: cint, set: pointer <const>, oldset: pointer): ci
   return (@cint)(result)
 end
 
+local function sigsuspend(mask: pointer <const>): cint <cexport, codename 'sigsuspend'>
+  local kernel_set: culong
+  local mask_pointer: pointer = nilptr
+  if mask ~= nilptr then
+    kernel_set = ((@*Sigset)(mask)).bits[0] & ~(1_culong << 31)
+    mask_pointer = (@pointer)(&kernel_set)
+  end
+  return (@cint)(syscall_result(nelibc_cancellable_syscall6(
+    130_culong, (@culong)((@usize)(mask_pointer)), 8_culong,
+    0_culong, 0_culong, 0_culong, 0_culong
+  )))
+end
+
+local function sigtimedwait(set: pointer <const>, info: pointer, timeout: pointer <const>): cint
+    <cexport, codename 'sigtimedwait'>
+  local kernel_set: culong
+  local set_pointer: pointer = nilptr
+  if set ~= nilptr then
+    kernel_set = ((@*Sigset)(set)).bits[0] & ~(1_culong << 31)
+    set_pointer = (@pointer)(&kernel_set)
+  end
+  return (@cint)(syscall_result(nelibc_cancellable_syscall6(
+    128_culong, (@culong)((@usize)(set_pointer)),
+    (@culong)((@usize)(info)), (@culong)((@usize)(timeout)),
+    8_culong, 0_culong, 0_culong
+  )))
+end
+
+local function sigwaitinfo(set: pointer <const>, info: pointer): cint <cexport, codename 'sigwaitinfo'>
+  return sigtimedwait(set, info, nilptr)
+end
+
+-- POSIX sigwait returns an error number directly and must leave errno unchanged.
+local function sigwait(set: pointer <const>, signal: *[0]cint): cint <cexport, codename 'sigwait'>
+  if signal == nilptr then return 14_cint end -- EFAULT
+  local kernel_set: culong
+  local set_pointer: pointer = nilptr
+  if set ~= nilptr then
+    kernel_set = ((@*Sigset)(set)).bits[0] & ~(1_culong << 31)
+    set_pointer = (@pointer)(&kernel_set)
+  end
+  local result = nelibc_cancellable_syscall6(
+    128_culong, (@culong)((@usize)(set_pointer)), 0_culong, 0_culong,
+    8_culong, 0_culong, 0_culong
+  )
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  signal[0] = (@cint)(result)
+  return 0_cint
+end
+
 local function sigpending(set: pointer): cint <cexport, codename 'sigpending'>
   if set == nilptr then
     nelibc_errno_location()[0] = 14_cint -- EFAULT

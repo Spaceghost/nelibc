@@ -49,6 +49,11 @@ static int pselect_started;
 static pid_t wait_child;
 static int wait_started_flag;
 static int waitid_started_flag;
+static sigset_t signal_wait_set;
+static int sigwait_started_flag;
+static int sigwaitinfo_started_flag;
+static int sigtimedwait_started_flag;
+static int sigsuspend_started_flag;
 static char fifo_path[128];
 static int open_started;
 static int sync_fd;
@@ -256,6 +261,37 @@ static void *blocked_waitid_worker(void *unused) {
   siginfo_t info = {0};
   mark_started(&waitid_started_flag);
   return (void *)(long)waitid(P_PID, (id_t)wait_child, &info, WEXITED);
+}
+
+static void *blocked_sigwait_worker(void *unused) {
+  (void)unused;
+  int signal = 0;
+  mark_started(&sigwait_started_flag);
+  int result = sigwait(&signal_wait_set, &signal);
+  return (void *)(long)(result == 0 ? signal : -result);
+}
+
+static void *blocked_sigwaitinfo_worker(void *unused) {
+  (void)unused;
+  siginfo_t info = {0};
+  mark_started(&sigwaitinfo_started_flag);
+  return (void *)(long)sigwaitinfo(&signal_wait_set, &info);
+}
+
+static void *blocked_sigtimedwait_worker(void *unused) {
+  (void)unused;
+  siginfo_t info = {0};
+  struct timespec timeout = {3600, 0};
+  mark_started(&sigtimedwait_started_flag);
+  return (void *)(long)sigtimedwait(&signal_wait_set, &info, &timeout);
+}
+
+static void *blocked_sigsuspend_worker(void *unused) {
+  (void)unused;
+  sigset_t mask;
+  sigemptyset(&mask);
+  mark_started(&sigsuspend_started_flag);
+  return (void *)(long)sigsuspend(&mask);
 }
 
 static void *blocked_opener(void *unused) {
@@ -602,6 +638,74 @@ int main(void) {
   close(lock_wait_fd);
   if (kill(lock_child, SIGKILL) != 0 || waitpid(lock_child, NULL, 0) != lock_child) return 112;
   if (unlink(fifo_path) != 0) return 113;
+
+  sigset_t previous_signal_mask;
+  if (sigemptyset(&signal_wait_set) != 0 ||
+      sigaddset(&signal_wait_set, SIGUSR1) != 0 ||
+      pthread_sigmask(SIG_BLOCK, &signal_wait_set, &previous_signal_mask) != 0)
+    return 121;
+  struct timespec no_wait = {0, 0};
+  siginfo_t timeout_info = {0};
+  errno = 0;
+  if (sigtimedwait(&signal_wait_set, &timeout_info, &no_wait) != -1 || errno != EAGAIN)
+    return 138;
+  siginfo_t received_info = {0};
+  if (kill(getpid(), SIGUSR1) != 0 ||
+      sigwaitinfo(&signal_wait_set, &received_info) != SIGUSR1 ||
+      received_info.si_signo != SIGUSR1)
+    return 139;
+  sigwait_started_flag = 0;
+  pthread_t sigwait_thread;
+  if (pthread_create(&sigwait_thread, NULL, blocked_sigwait_worker, NULL) != 0) return 122;
+  wait_started(&sigwait_started_flag);
+  alarm(5);
+  if (kill(getpid(), SIGUSR1) != 0) return 123;
+  result = NULL;
+  if (pthread_join(sigwait_thread, &result) != 0 ||
+      result != (void *)(long)SIGUSR1)
+    return 124;
+  alarm(0);
+
+  sigwait_started_flag = 0;
+  if (pthread_create(&sigwait_thread, NULL, blocked_sigwait_worker, NULL) != 0) return 125;
+  wait_started(&sigwait_started_flag);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(sigwait_thread) != 0) return 126;
+  result = NULL;
+  if (pthread_join(sigwait_thread, &result) != 0 || result != PTHREAD_CANCELED) return 127;
+  alarm(0);
+
+  pthread_t sigwaitinfo_thread;
+  if (pthread_create(&sigwaitinfo_thread, NULL, blocked_sigwaitinfo_worker, NULL) != 0) return 128;
+  wait_started(&sigwaitinfo_started_flag);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(sigwaitinfo_thread) != 0) return 129;
+  result = NULL;
+  if (pthread_join(sigwaitinfo_thread, &result) != 0 || result != PTHREAD_CANCELED) return 130;
+  alarm(0);
+
+  pthread_t sigtimedwait_thread;
+  if (pthread_create(&sigtimedwait_thread, NULL, blocked_sigtimedwait_worker, NULL) != 0) return 131;
+  wait_started(&sigtimedwait_started_flag);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(sigtimedwait_thread) != 0) return 132;
+  result = NULL;
+  if (pthread_join(sigtimedwait_thread, &result) != 0 || result != PTHREAD_CANCELED) return 133;
+  alarm(0);
+
+  pthread_t sigsuspend_thread;
+  if (pthread_create(&sigsuspend_thread, NULL, blocked_sigsuspend_worker, NULL) != 0) return 134;
+  wait_started(&sigsuspend_started_flag);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(sigsuspend_thread) != 0) return 135;
+  result = NULL;
+  if (pthread_join(sigsuspend_thread, &result) != 0 || result != PTHREAD_CANCELED) return 136;
+  alarm(0);
+  if (pthread_sigmask(SIG_SETMASK, &previous_signal_mask, NULL) != 0) return 137;
 
   pid_t exited_child = fork();
   if (exited_child < 0) return 114;

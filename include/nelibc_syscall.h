@@ -561,6 +561,11 @@ int sigemptyset(sigset_t *set);
 int sigaddset(sigset_t *set, int signal);
 int sigdelset(sigset_t *set, int signal);
 int sigfillset(sigset_t *set);
+int sigsuspend(const sigset_t *mask);
+int sigwait(const sigset_t *set, int *signal);
+int sigwaitinfo(const sigset_t *set, siginfo_t *info);
+int sigtimedwait(const sigset_t *set, siginfo_t *info,
+                 const struct timespec *timeout);
 struct sigaction;
 int sigaction(int signal, const struct sigaction *action,
               struct sigaction *old_action);
