@@ -274,10 +274,18 @@ static void *standalone_numeric_locale_worker(void *argument) {
       .tm_mon = 2, .tm_year = 124, .tm_wday = 5, .tm_yday = 60,
       .tm_isdst = 0, .tm_gmtoff = 0, .tm_zone = "UTC"};
   char time_text[128];
+  wchar_t wide_time_text[128];
+  wchar_t short_wide_time_text[8];
   struct tm parsed_time = {0};
   if (strftime_l(time_text, sizeof time_text, "%A|%B|%x", &sample_time,
           time_de) == 0 ||
       strcmp(time_text, "Freitag|März|01.03.2024") != 0 ||
+      wcsftime_l(wide_time_text, 128, L"%A|%B|%x", &sample_time, time_de) == 0 ||
+      wcscmp(wide_time_text, L"Freitag|März|01.03.2024") != 0 ||
+      wcsftime_l(short_wide_time_text, 8, L"%A|%B|%x", &sample_time,
+          time_de) != 0 || short_wide_time_text[0] != 0 ||
+      wcsftime_l(wide_time_text, 128, L"%A|%B|%x", &sample_time, time_c) == 0 ||
+      wcscmp(wide_time_text, L"Friday|March|03/01/24") != 0 ||
       uselocale((locale_t)0) != LC_GLOBAL_LOCALE ||
       strptime_l(time_text, "%A|%B|%x", &parsed_time, time_de) == NULL ||
       parsed_time.tm_wday != 5 || parsed_time.tm_mon != 2 ||

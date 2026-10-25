@@ -62,18 +62,18 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,471 APIs: 801 exported by Nelibc in at least
+The current snapshot contains 1,471 APIs: 803 exported by Nelibc in at least
 one tested hybrid profile, 212 intentionally delegated to the host in hybrid
-profiles, and 458 not declared by Nelibc. Every declared API in this pinned
+profiles, and 456 not declared by Nelibc. Every declared API in this pinned
 baseline is either exported by at least one hybrid archive or intentionally
 delegated to its host. The separate seven-profile inventory tracks per-profile
 gaps. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 458 undeclared entries remain visible as unimplemented
+intentional omission; the 456 undeclared entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
 No real-valued `math.h` APIs in this pinned musl baseline remain undeclared.
-The largest remaining groups are wide characters (13), network database APIs
+The largest remaining groups are wide characters (11), network database APIs
 (32), stdlib (30), unistd (29), and stdio (28). The pthread rows without
 Nelibc declarations are two private musl cleanup helper symbols. Hybrid `fork`
 and `pthread_atfork` are intentionally host-delegated so host fork handlers
@@ -98,6 +98,11 @@ Hybrid archives delegate both functions to the selected host libc.
 mapping while comparing, including bounded comparisons. The consumer matrix
 checks ASCII folding, UTF-8 Greek and German case pairs, the C locale's
 non-ASCII behavior, and zero/short bounds across hybrid and standalone builds.
+
+`wcsftime` and `wcsftime_l` convert the wide format through Nelibc's active
+multibyte locale, use Nelibc's `strftime` implementation, then convert the
+result back to wide characters. The consumer checks German UTF-8 and C-locale
+output, locale restoration, and bounded output in all seven profiles.
 
 Nelua implements `wcstof`, `wcstod`, and `wcstold` in all four hybrid
 profiles and the standalone profiles. They convert through the active

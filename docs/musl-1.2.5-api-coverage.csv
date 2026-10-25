@@ -1416,8 +1416,8 @@ wcscoll_l,wchar.h,wchar.h,,host-delegated
 wcscpy,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcscspn,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcsdup,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-wcsftime,wchar.h,,,not-declared
-wcsftime_l,wchar.h,,,not-declared
+wcsftime,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+wcsftime_l,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcslen,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcsncasecmp,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcsncasecmp_l,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

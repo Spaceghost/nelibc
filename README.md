@@ -21,9 +21,9 @@ constants and kernels, whose original notice is preserved.
 ## Completeness tracker
 
 The pinned musl 1.2.5 audit is the broad, reproducible function-symbol baseline.
-It covers 1,471 public functions: 801 are implemented by Nelibc in at least one
+It covers 1,471 public functions: 803 are implemented by Nelibc in at least one
 hybrid profile, 212 are intentionally delegated to the host in hybrid mode, and
-458 are not declared yet. These are symbol counts, not behavior-completeness
+456 are not declared yet. These are symbol counts, not behavior-completeness
 percentages. Host-delegated functions do not count as Nelua implementations;
 each exported function still needs ABI and behavior evidence.
 

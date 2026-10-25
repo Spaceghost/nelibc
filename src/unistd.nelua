@@ -9,6 +9,10 @@ local function nelibc_timerid_store(output: pointer, timer_id: cint): void <cimp
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_time_locale_is_german(): cint <cimport> end
 local function uselocale(locale: pointer): pointer <cimport> end
+local function wcsrtombs(output: *[0]cchar, source: *[0]*[0]cint,
+    limit: csize, state: pointer): csize <cimport> end
+local function mbsrtowcs(output: *[0]cint, source: *[0]*[0]cchar,
+    limit: csize, state: pointer): csize <cimport> end
 local function malloc(size: csize): pointer <cimport> end
 local function free(ptr: pointer): void <cimport> end
 local function realloc(ptr: pointer, size: csize): pointer <cimport> end
@@ -3026,6 +3030,65 @@ local function strftime_l(buffer: *[0]cchar, max_size: csize,
   local previous: pointer = uselocale(locale)
   if previous == nilptr then return 0 end
   local result: csize = strftime(buffer, max_size, format, time_value)
+  uselocale(previous)
+  return result
+end
+
+local function wcsftime(buffer: *[0]cint, max_size: csize,
+    format: *[0]cint <const>, time_value: *Tm <const>): csize
+    <cexport, codename 'wcsftime'>
+  if buffer == nilptr or format == nilptr or time_value == nilptr or max_size == 0 then
+    return 0
+  end
+  if max_size > (~0_csize - 1_csize) // 16_csize then return 0 end
+
+  local wide_format: *[0]cint = (@*[0]cint)(format)
+  local format_size: csize = wcsrtombs(nilptr, &wide_format, 0_csize, nilptr)
+  if format_size == ~0_csize or format_size == ~0_csize - 1_csize then return 0 end
+  local byte_format: *[0]cchar = (@*[0]cchar)(malloc(format_size + 1_csize))
+  if byte_format == nilptr then return 0 end
+  wide_format = (@*[0]cint)(format)
+  if wcsrtombs(byte_format, &wide_format, format_size + 1_csize, nilptr) == ~0_csize then
+    free((@pointer)(byte_format))
+    return 0
+  end
+
+  local byte_capacity: csize = max_size * 16_csize + 1_csize
+  local byte_output: *[0]cchar = (@*[0]cchar)(malloc(byte_capacity))
+  if byte_output == nilptr then
+    free((@pointer)(byte_format))
+    return 0
+  end
+  local byte_length: csize = strftime(byte_output, byte_capacity, byte_format, time_value)
+  free((@pointer)(byte_format))
+  if byte_length == 0_csize then
+    buffer[0] = 0_cint
+    free((@pointer)(byte_output))
+    return 0_csize
+  end
+  local byte_source: *[0]cchar = byte_output
+  local wide_length: csize = mbsrtowcs(nilptr, &byte_source, 0_csize, nilptr)
+  if wide_length == ~0_csize or wide_length >= max_size then
+    buffer[0] = 0_cint
+    free((@pointer)(byte_output))
+    return 0
+  end
+  byte_source = byte_output
+  local converted: csize = mbsrtowcs(buffer, &byte_source, max_size, nilptr)
+  free((@pointer)(byte_output))
+  if converted == ~0_csize then
+    buffer[0] = 0_cint
+    return 0
+  end
+  return converted
+end
+
+local function wcsftime_l(buffer: *[0]cint, max_size: csize,
+    format: *[0]cint <const>, time_value: *Tm <const>, locale: pointer): csize
+    <cexport, codename 'wcsftime_l'>
+  local previous: pointer = uselocale(locale)
+  if previous == nilptr then return 0 end
+  local result: csize = wcsftime(buffer, max_size, format, time_value)
   uselocale(previous)
   return result
 end

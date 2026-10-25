@@ -80,7 +80,7 @@ signal, mask, and handler remain unchanged. A deferred cancellation queued
 before `posix_spawn` remains pending until the caller's explicit
 `pthread_testcancel`; POSIX.1-2024 excludes `posix_spawn` from its cancellation
 point list and prohibits adding cancellation points to other specified
-functions ([cancellation-point rules](https://pubs.opengroup.org/onlinepubs/9801919801/functions/V2_chap02.html)).
+functions ([cancellation-point rules](https://pubs.opengroup.org/onlinepubs/9799919799/functions/V2_chap02.html)).
 This also holds on child setup/exec failure: spawn cleanup now reaps with a
 raw `wait4` loop that retries `EINTR`, rather than entering Nelibc's
 cancellation-aware `waitpid`. The smoke queues cancellation before a spawn
@@ -324,10 +324,10 @@ including APIs absent from the pinned musl export set.
   a completeness percentage. See `build/api-coverage.csv` after
   `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 801
+  that are also exported by the pinned release archives: Nelibc exports 803
   in at least one tested hybrid profile, delegates 212 to a hybrid host, and does not
-  yet declare 458. No declared API is missing from the tested hybrid archives.
-  The largest undeclared groups are wide characters (13), network database
+  yet declare 456. No declared API is missing from the tested hybrid archives.
+  The largest undeclared groups are wide characters (11), network database
   APIs (32), stdlib (30), and unistd (29). These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
@@ -350,6 +350,9 @@ including APIs absent from the pinned musl export set.
 - `wcscasecmp_l` and `wcsncasecmp_l` now use the selected locale's wide case
   mapping in hybrid and standalone builds. Consumer cases cover C versus
   UTF-8 folding and bounded comparisons across all seven profiles.
+- `wcsftime` and `wcsftime_l` now format through Nelibc's locale-aware
+  `strftime` path and multibyte conversion routines. German UTF-8, C-locale,
+  locale-restoration, and truncation cases pass across all seven profiles.
 - GNU locale-specific `strto*_l` and `wcsto*_l` conversions now use the Nelua
   narrow and wide integer parsers, restoring the caller's prior thread locale.
   Their eight glibc C23 aliases are also exported. All seven consumer profiles
