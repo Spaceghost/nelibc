@@ -2142,7 +2142,7 @@ int main(void) {
       const long double base = ldexpl(mantissa, binary_exponent);
       long double exponent = 0.25L +
           (long double)(next_bits() >> 1) * 0x1p-63L *
-              524287.75L;
+              281474976710655.75L;
       if (next_bits() & 1) exponent = -exponent;
       const long double expected = powl(base, exponent);
       const long double actual = nelibc_powl(base, exponent);
@@ -2161,11 +2161,12 @@ int main(void) {
     static const long double regression_bases[] = {
         0x9.bd410acddf1c789p-3L, 0xe.20c950aedd2f638p-6L,
         0xc.e48889a779babdcp-5L, 0.75L, 0x1p-16445L,
-        0x1.0000000000000002p+0L, LDBL_MAX};
+        0x1.0000000000000002p+0L, LDBL_MAX, 0x1p-16445L};
     static const long double regression_exponents[] = {
         0x9.2f3861f696afb5bp+9L, 0xd.0ec2aed8a2e9038p+9L,
         -0xd.e6335503ec23536p+11L, -28100.25L, 131071.25L,
-        524287.25L, 524287.25L};
+        281474976710655.25L, 281474976710655.25L,
+        281474976710655.25L};
     for (size_t i = 0; i < sizeof regression_bases / sizeof regression_bases[0]; ++i) {
       const long double regression_expected = powl(regression_bases[i], regression_exponents[i]);
       const long double regression_actual = nelibc_powl(regression_bases[i], regression_exponents[i]);
