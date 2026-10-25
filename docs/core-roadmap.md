@@ -51,10 +51,10 @@ standalone implementation follows glibc's observable behavior, including
 `EINVAL` for negative levels:
 
 The Unix cancellation smoke covers blocked `poll`, `ppoll`, `select`, and
-`pselect`, plus socket `recv`, `recvfrom`, and `recvmsg`, in addition to
-blocking scalar and vectored (`readv`, `writev`) I/O and process calls. These
-cases now run in the hybrid glibc, musl, and TinyCC-compiled profiles and the
-standalone Zig, GCC, and TinyCC profiles; `make smoke-matrix` includes the
+`pselect`, plus socket `send`, `sendmsg`, `recv`, `recvfrom`, and `recvmsg`, in
+addition to blocking scalar and vectored (`readv`, `writev`) I/O and process
+calls. These cases now run in the hybrid glibc, musl, and TinyCC-compiled
+profiles and the standalone Zig, GCC, and TinyCC profiles; `make smoke-matrix` includes the
 standalone group.
 The checks verify that deferred cancellation wakes each blocked thread and
 that `pthread_join` reports `PTHREAD_CANCELED`. This remains targeted behavior

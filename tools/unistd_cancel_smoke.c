@@ -29,6 +29,9 @@ static int recv_fd;
 static int recv_started;
 static int recvfrom_started;
 static int recvmsg_started;
+static int send_fd;
+static int send_started;
+static int sendmsg_started;
 static int poll_fd;
 static int poll_started;
 static int ppoll_started;
@@ -123,6 +126,37 @@ static void *blocked_recvmsg_worker(void *unused) {
   message.msg_iovlen = 1;
   mark_started(&recvmsg_started);
   return (void *)(long)recvmsg(recv_fd, &message, 0);
+}
+
+static void *blocked_sender(void *unused) {
+  (void)unused;
+  char byte = 'x';
+  mark_started(&send_started);
+  return (void *)(long)send(send_fd, &byte, 1, MSG_NOSIGNAL);
+}
+
+static void *blocked_sendmsg_worker(void *unused) {
+  (void)unused;
+  char byte = 'x';
+  struct iovec vector = {&byte, 1};
+  struct msghdr message = {0};
+  message.msg_iov = &vector;
+  message.msg_iovlen = 1;
+  mark_started(&sendmsg_started);
+  return (void *)(long)sendmsg(send_fd, &message, MSG_NOSIGNAL);
+}
+
+static int fill_socket_send_buffer(int fd) {
+  int flags = fcntl(fd, F_GETFL);
+  if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) != 0) return -1;
+  char fill[4096] = {0};
+  for (;;) {
+    ssize_t count = send(fd, fill, sizeof fill, MSG_DONTWAIT | MSG_NOSIGNAL);
+    if (count > 0) continue;
+    if (errno == EAGAIN || errno == EWOULDBLOCK) break;
+    return -1;
+  }
+  return fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
 }
 
 static void *blocked_poller(void *unused) {
@@ -381,6 +415,36 @@ int main(void) {
   if (pthread_cancel(recvmsg_thread) != 0) return 64;
   result = NULL;
   if (pthread_join(recvmsg_thread, &result) != 0 || result != PTHREAD_CANCELED) return 65;
+  alarm(0);
+  close(sockets[0]);
+  close(sockets[1]);
+
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) return 77;
+  send_fd = sockets[0];
+  if (fill_socket_send_buffer(send_fd) != 0) return 78;
+  pthread_t sender;
+  if (pthread_create(&sender, NULL, blocked_sender, NULL) != 0) return 79;
+  wait_started(&send_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(sender) != 0) return 80;
+  result = NULL;
+  if (pthread_join(sender, &result) != 0 || result != PTHREAD_CANCELED) return 81;
+  alarm(0);
+  close(sockets[0]);
+  close(sockets[1]);
+
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) return 82;
+  send_fd = sockets[0];
+  if (fill_socket_send_buffer(send_fd) != 0) return 83;
+  pthread_t sendmsg_thread;
+  if (pthread_create(&sendmsg_thread, NULL, blocked_sendmsg_worker, NULL) != 0) return 84;
+  wait_started(&sendmsg_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(sendmsg_thread) != 0) return 85;
+  result = NULL;
+  if (pthread_join(sendmsg_thread, &result) != 0 || result != PTHREAD_CANCELED) return 86;
   alarm(0);
   close(sockets[0]);
   close(sockets[1]);
