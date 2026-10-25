@@ -264,9 +264,9 @@ erand48,stdlib.h,,,not-declared
 erf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 erfc,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 erfcf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-erfcl,math.h,,,not-declared
+erfcl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 erff,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-erfl,math.h,,,not-declared
+erfl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 err,err.h,,,not-declared
 errx,err.h,,,not-declared
 ether_aton,netinet/ether.h,,,not-declared

@@ -399,6 +399,7 @@ local function nelibc_tanl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_pio2l_hi_hw(): clongdouble <cimport> end
 local function nelibc_pio2l_lo_hw(): clongdouble <cimport> end
 local function nelibc_x87_rounding_mode(): cint <cimport> end
+local function nelibc_x87_pi(): clongdouble <cimport> end
 local function nelibc_math_raise_except(exceptions: cint): void <cimport> end
 local function nelibc_neg_one_up_hw(): clongdouble <cimport> end
 local function nelibc_frexpl_hw(value: clongdouble, exponent: *[0]cint): clongdouble <cimport> end
@@ -703,6 +704,94 @@ local function expm1l(value: clongdouble): clongdouble <cexport, codename 'expm1
     return nelibc_expm1l_small_hw(value)
   end
   return expl(value) - 1_clongdouble
+end
+
+local function erf_abs_l(value: clongdouble): clongdouble <inline>
+  if value < 0_clongdouble then return -value end
+  return value
+end
+
+local function erf_series_l(value: clongdouble): clongdouble
+  local square = value * value
+  local term = value
+  local sum = value
+  local index: cint = 1_cint
+  while index < 256_cint do
+    term = -term * square / (@clongdouble)(index)
+    local addition = term / (@clongdouble)(2_cint * index + 1_cint)
+    sum = sum + addition
+    if erf_abs_l(addition) <= erf_abs_l(sum) * 0x1p-66_clongdouble then break end
+    index = index + 1_cint
+  end
+  return (2_clongdouble / sqrtl(nelibc_x87_pi())) * sum
+end
+
+local function erfc_positive_l(value: clongdouble): clongdouble
+  if value == 0_clongdouble then return 1_clongdouble end
+  if value >= 2000_clongdouble then
+    math_range_error()
+    return 0_clongdouble
+  end
+  local square = value * value
+  if value < 1.5_clongdouble then return 1_clongdouble - erf_series_l(value) end
+
+  -- Continued fraction for Q(1/2, x^2), which is exactly erfc(x). It avoids
+  -- subtracting erf(x) from one in the tail and keeps binary80 precision.
+  local a = 0.5_clongdouble
+  local b = square + 0.5_clongdouble
+  local c = 0x1p10000_clongdouble
+  local d = 1_clongdouble / b
+  local h = d
+  local tiny = 0x1p-10000_clongdouble
+  local index: cint = 1_cint
+  while index < 512_cint do
+    local iteration = (@clongdouble)(index)
+    local coefficient = -iteration * (iteration - a)
+    b = b + 2_clongdouble
+    d = coefficient * d + b
+    if erf_abs_l(d) < tiny then
+      if d < 0_clongdouble then d = -tiny else d = tiny end
+    end
+    c = b + coefficient / c
+    if erf_abs_l(c) < tiny then
+      if c < 0_clongdouble then c = -tiny else c = tiny end
+    end
+    d = 1_clongdouble / d
+    local delta = d * c
+    h = h * delta
+    if erf_abs_l(delta - 1_clongdouble) <= 0x1p-63_clongdouble then break end
+    index = index + 1_cint
+  end
+  return expl(-square) * sqrtl(square / nelibc_x87_pi()) * h
+end
+
+local function erfl(value: clongdouble): clongdouble <cexport, codename 'erfl'>
+  if is_nan80(value) then return value + value end
+  if is_infinite80(value) then
+    if value < 0_clongdouble then return -1_clongdouble end
+    return 1_clongdouble
+  end
+  if value == 0_clongdouble then return value end
+  local magnitude = erf_abs_l(value)
+  if magnitude >= 8_clongdouble then
+    if value < 0_clongdouble then return -1_clongdouble end
+    return 1_clongdouble
+  end
+  if magnitude < 1.5_clongdouble then return erf_series_l(value) end
+  local result = 1_clongdouble - erfc_positive_l(magnitude)
+  if value < 0_clongdouble then return -result end
+  return result
+end
+
+local function erfcl(value: clongdouble): clongdouble <cexport, codename 'erfcl'>
+  if is_nan80(value) then return value + value end
+  if is_infinite80(value) then
+    if value < 0_clongdouble then return 2_clongdouble end
+    return 0_clongdouble
+  end
+  if value <= -8_clongdouble then return 2_clongdouble end
+  if value >= 0_clongdouble then return erfc_positive_l(value) end
+  return 2_clongdouble - erfc_positive_l(-value)
 end
 
 local function sinhl(value: clongdouble): clongdouble <cexport, codename 'sinhl'>

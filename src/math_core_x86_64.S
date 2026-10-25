@@ -231,6 +231,13 @@ nelibc_x87_rounding_mode:
   ret
 .size nelibc_x87_rounding_mode, .-nelibc_x87_rounding_mode
 
+.globl nelibc_x87_pi
+.type nelibc_x87_pi,@function
+nelibc_x87_pi:
+  fldpi
+  ret
+.size nelibc_x87_pi, .-nelibc_x87_pi
+
 /* Merge standard FE_* exception bits into the active x87 and SSE state. */
 .globl nelibc_math_raise_except
 .type nelibc_math_raise_except,@function

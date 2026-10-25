@@ -35,6 +35,11 @@ int main(void) {
   if (fmal(fma_x, fma_y, -1.0L) != -0x1p-126L ||
       fmal(LDBL_MAX, 2.0L, -LDBL_MAX) != LDBL_MAX) return 183;
   if (exp10l(1.0L) != 10.0L || pow10l(0.0L) != 1.0L) return 184;
+  volatile long double erf_infinity = 1.0L / 0.0L;
+  if (!(erfl(1.0L) > 0.8427007929497148L && erfl(1.0L) < 0.8427007929497150L) ||
+      !(erfcl(1.0L) > 0.1572992070502850L && erfcl(1.0L) < 0.1572992070502852L) ||
+      erfl(-erf_infinity) != -1.0L || erfcl(-erf_infinity) != 2.0L ||
+      erfl(erf_infinity) != 1.0L || erfcl(erf_infinity) != 0.0L) return 186;
   if (__fpclassify(0.0) != FP_ZERO || __fpclassifyf(0x1p-149f) != FP_SUBNORMAL ||
       __fpclassifyl(0x1p-16445L) != FP_SUBNORMAL ||
       __signbit(-0.0) == 0 || __signbitf(-0.0f) == 0 ||

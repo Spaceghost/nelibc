@@ -144,6 +144,8 @@ extern long double nelibc_atanhl(long double);
 extern long double nelibc_powl(long double, long double);
 extern long double nelibc_exp10l(long double);
 extern long double nelibc_pow10l(long double);
+extern long double nelibc_erfl(long double);
+extern long double nelibc_erfcl(long double);
 extern int nelibc___fpclassify(double);
 extern int nelibc___fpclassifyf(float);
 extern int nelibc___fpclassifyl(long double);
@@ -1449,6 +1451,36 @@ static int long_double_math_close(long double actual, long double expected) {
   return fabsl(actual - expected) <= 128.0L * LDBL_EPSILON * fabsl(expected);
 }
 
+static int check_long_double_erf(void) {
+  static const long double values[] = {
+      -INFINITY, -2000.0L, -120.0L, -100.0L, -8.0L, -4.0L, -1.5L,
+      -1.0L, -0.125L, -0.0L, 0.0L, 0x1p-16445L, 0.125L, 1.0L,
+      1.5L, 4.0L, 8.0L, 100.0L, 120.0L, 2000.0L, INFINITY, NAN};
+  for (size_t i = 0; i < sizeof values / sizeof values[0]; ++i) {
+    const long double x = values[i];
+    const long double expected_erf = erfl(x);
+    const long double expected_erfc = erfcl(x);
+    const long double actual_erf = nelibc_erfl(x);
+    const long double actual_erfc = nelibc_erfcl(x);
+    if (!long_double_math_close(actual_erf, expected_erf) ||
+        !long_double_math_close(actual_erfc, expected_erfc) ||
+        (expected_erf == 0.0L && signbit(actual_erf) != signbit(expected_erf))) {
+      fprintf(stderr, "erfl/erfcl mismatch at case %zu: erf %.21Le/%.21Le erfc %.21Le/%.21Le\n",
+              i, actual_erf, expected_erf, actual_erfc, expected_erfc);
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 512; ++i) {
+    const long double x = (long double)((long long)(i * 17 % 2401) - 1200) / 100.0L;
+    if (!long_double_math_close(nelibc_erfl(x), erfl(x)) ||
+        !long_double_math_close(nelibc_erfcl(x), erfcl(x))) {
+      fprintf(stderr, "erfl/erfcl generated-input mismatch i=%zu x=%.18Le\n", i, x);
+      return 1;
+    }
+  }
+  return 0;
+}
+
 static int long_double_hyperbolic_close(long double actual, long double expected) {
   if (actual == expected) return 1;
   if (isnan(expected)) return isnan(actual);
@@ -1488,6 +1520,7 @@ static int long_double_tan_close(long double actual, long double expected) {
 
 int main(void) {
   if (check_classification()) return 1;
+  if (check_long_double_erf()) return 1;
   const long double hypot_values[] = {
       0.0L, -0.0L, nextafterl(0.0L, 1.0L), LDBL_MIN, 0.5L, 1.0L, 3.0L,
       0x1p+1000L, LDBL_MAX / 4.0L, LDBL_MAX};
