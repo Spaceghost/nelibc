@@ -333,6 +333,8 @@ musl export set.
   a priority-inheritance futex while the owner still holds the mutex, then
   verifies unlock and reacquisition. The robust PI variant also verifies the
   surviving owner does not receive `EOWNERDEAD` after canceling its waiter.
+  Robust non-PI waiters also have queued-cancel, owner-unlock, and mutex-reuse
+  smoke coverage.
   Async-canceled rwlock writers leave `waiting_writers` clear and the lock
   usable. If an async-canceled thread exits inside a `pthread_once` initializer,
   cleanup resets the once control so a later caller can retry; a full cleanup
