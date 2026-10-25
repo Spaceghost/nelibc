@@ -2083,7 +2083,7 @@ int main(void) {
     const int binary_exponent = (int)(next_bits() % 129) - 64;
     const long double base = ldexpl(mantissa, binary_exponent);
     long double exponent = 0.25L +
-        (long double)(next_bits() >> 1) * 0x1p-63L * 255.75L;
+        (long double)(next_bits() >> 1) * 0x1p-63L * 511.75L;
     if (next_bits() & 1) exponent = -exponent;
     const long double expected = powl(base, exponent);
     const long double actual = nelibc_powl(base, exponent);

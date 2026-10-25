@@ -330,11 +330,12 @@ musl export set.
   cover powers of arbitrary binary80 mantissas. Those checks exposed loss of
   accuracy for large binary exponents. Half-integer powers use a square-root
   decomposition; other noninteger exponents split the base into a small
-  mantissa logarithm and a compensated binary exponent before scaling. This
-  path covers magnitudes through 256 in round-to-nearest and 128 in directed
+  mantissa logarithm and compensated binary exponents before scaling; the
+  mantissa-log product retains its FMA residual through the `exp2l` call. This
+  path covers magnitudes through 512 in round-to-nearest and 128 in directed
   rounding modes; larger exponents still use `exp(y * log(x))` and need more
   accuracy work. Deterministic random comparisons cover arbitrary fractions
-  through 256 and directed-rounding fractions through 128; wide-base cases are
+  through 512 and directed-rounding fractions through 128; wide-base cases are
   also checked in all four rounding modes. Musl's
   `powl` reference differs by hundreds of ULP in
   some directed-rounding cases, so its wide-range comparison allows up to 1024
