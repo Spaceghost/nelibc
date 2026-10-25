@@ -181,7 +181,7 @@ cos,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cosf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cosh,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 coshf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-coshl,math.h,,,not-declared
+coshl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cosl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cpow,complex.h,,,not-declared
 cpowf,complex.h,,,not-declared
@@ -1196,7 +1196,7 @@ sincosl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sinf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sinh,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sinhf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-sinhl,math.h,,,not-declared
+sinhl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sinl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sleep,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 snprintf,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

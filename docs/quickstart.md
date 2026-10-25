@@ -36,7 +36,7 @@ Nelua allocator + memory/string/strtol/math: nelua-libc:42 -> 42 (13 bytes, sqrt
 The example allocates through `nelibc_malloc`, uses standard memory, string,
 conversion, and math functions, including long-double `hypotl`, `nextafterl`,
 `atan2l`, `asinl`, `logl`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`,
-`tanl` and `tanhl`, plus long-double scaling and rounding. It also uses GNU's
+`tanl`, `tanhl`, `sinhl`, and `coshl`, plus long-double scaling and rounding. It also uses GNU's
 `exp10` extension from the archive, and prints through the host's `printf`.
 This is the incremental replacement model: each archive
 contributes the symbols it owns; the host runtime supplies the rest.
@@ -63,7 +63,8 @@ The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 On x86-64, `fabsl`, `copysignl`, `sqrtl`, `fmodl`, `remainderl`, `frexpl`,
 `modfl`, `hypotl`, `nextafterl`, `atanl`, `atan2l`, `asinl`, `acosl`, `logl`,
 `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`,
-`sincosl`, `tanl`, `tanhl`, `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`,
+`sincosl`, `tanl`, `tanhl`, `sinhl`, `coshl`, `ilogbl`, `logbl`, `ldexpl`,
+`scalbnl`, `scalblnl`, `truncl`,
 `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`,
 `lroundl`, and `llroundl`
 operate directly on the extended precision

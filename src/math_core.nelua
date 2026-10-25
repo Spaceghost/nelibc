@@ -353,6 +353,7 @@ local function nelibc_log2l_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_log10l_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_log1pl_small_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_expl_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_expl_half_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_exp2l_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_expm1l_small_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_sincosl_hw(value: clongdouble, cosine_out: *[0]clongdouble): clongdouble <cimport> end
@@ -662,6 +663,64 @@ local function expm1l(value: clongdouble): clongdouble <cexport, codename 'expm1
     return nelibc_expm1l_small_hw(value)
   end
   return expl(value) - 1_clongdouble
+end
+
+local function sinhl(value: clongdouble): clongdouble <cexport, codename 'sinhl'>
+  if is_nan80(value) then return value + value end
+  if is_infinite80(value) then return value end
+  if value == 0_clongdouble then return value end
+  local magnitude = value
+  if magnitude < 0_clongdouble then magnitude = -magnitude end
+  local result: clongdouble
+  if magnitude < 1_clongdouble then
+    result = 0.5_clongdouble * (expm1l(magnitude) - expm1l(-magnitude))
+  elseif magnitude <= 40_clongdouble then
+    local exponential = expl(magnitude)
+    result = 0.5_clongdouble * (exponential - 1_clongdouble / exponential)
+  elseif magnitude <= 12000_clongdouble then
+    result = nelibc_expl_half_hw(magnitude)
+    if is_infinite80(result) then math_range_error() end
+  else
+    nelibc_expl_half_hw(12000_clongdouble)
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    math_range_error()
+    result = infinity.value
+  end
+  if value < 0_clongdouble then return -result end
+  return result
+end
+
+local function coshl(value: clongdouble): clongdouble <cexport, codename 'coshl'>
+  if is_nan80(value) then return value + value end
+  if is_infinite80(value) then
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    return infinity.value
+  end
+  local magnitude = value
+  if magnitude < 0_clongdouble then magnitude = -magnitude end
+  if magnitude < 1_clongdouble then
+    local half_sine = sinhl(0.5_clongdouble * magnitude)
+    return 1_clongdouble + 2_clongdouble * half_sine * half_sine
+  end
+  if magnitude <= 40_clongdouble then
+    local exponential = expl(magnitude)
+    return 0.5_clongdouble * (exponential + 1_clongdouble / exponential)
+  end
+  if magnitude <= 12000_clongdouble then
+    local result = nelibc_expl_half_hw(magnitude)
+    if is_infinite80(result) then math_range_error() end
+    return result
+  end
+  local infinity: LongDoubleBits = {
+    parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+  }
+  nelibc_expl_half_hw(12000_clongdouble)
+  math_range_error()
+  return infinity.value
 end
 
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>

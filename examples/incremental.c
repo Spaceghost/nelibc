@@ -78,6 +78,8 @@ int main(void) {
   const long double cosine_long = cosl(1.0L);
   const long double tangent_long = tanl(1.0L);
   const long double hyperbolic_tangent_long = tanhl(1.0L);
+  const long double hyperbolic_sine_long = sinhl(1.0L);
+  const long double hyperbolic_cosine_long = coshl(1.0L);
   const double sine = sin(1.0);
   const double cosine = cos(1.0);
   const float sine_float = sinf(1.0f);
@@ -179,6 +181,8 @@ int main(void) {
       long_double_scaled != 24.0L || long_double_binary != -0.1875L ||
       !(tangent_long > 1.5574077246549L && tangent_long < 1.5574077246550L) ||
       !(hyperbolic_tangent_long > 0.7615941559556L && hyperbolic_tangent_long < 0.7615941559559L) ||
+      !(hyperbolic_sine_long > 1.1752011936437L && hyperbolic_sine_long < 1.1752011936439L) ||
+      !(hyperbolic_cosine_long > 1.5430806348151L && hyperbolic_cosine_long < 1.5430806348154L) ||
       long_double_long != 8.0L || long_double_truncated != -1.0L ||
       long_double_floor != -1.0L || long_double_ceiling != -0.0L ||
       long_double_rounded != 2.0L || long_double_nearby != -2.0L ||

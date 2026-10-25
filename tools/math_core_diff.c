@@ -134,6 +134,8 @@ extern long double nelibc_sinl(long double);
 extern long double nelibc_cosl(long double);
 extern long double nelibc_tanl(long double);
 extern long double nelibc_tanhl(long double);
+extern long double nelibc_sinhl(long double);
+extern long double nelibc_coshl(long double);
 extern void nelibc_sincosl(long double, long double *, long double *);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
@@ -1367,6 +1369,19 @@ static int long_double_math_close(long double actual, long double expected) {
   return fabsl(actual - expected) <= 128.0L * LDBL_EPSILON * fabsl(expected);
 }
 
+static int long_double_hyperbolic_close(long double actual, long double expected) {
+  if (actual == expected) return 1;
+  if (isnan(expected)) return isnan(actual);
+  if (!isfinite(expected) || !isfinite(actual) || expected == 0.0L) return 0;
+#ifdef NELIBC_MUSL_PROFILE
+  if (fabsl(expected) > 1000.0L) {
+    /* musl sinh near binary80 overflow differs from glibc by thousands of ULP. */
+    return fabsl(actual - expected) <= 8192.0L * LDBL_EPSILON * fabsl(expected);
+  }
+#endif
+  return fabsl(actual - expected) <= 8.0L * LDBL_EPSILON * fabsl(expected);
+}
+
 static int long_double_trig_close(long double actual, long double expected) {
   if (actual == expected) return 1;
   if (!isfinite(actual) || !isfinite(expected) || expected == 0.0L) return 0;
@@ -1481,7 +1496,9 @@ int main(void) {
       !isnan(nelibc_expm1l(quiet_nan.value)) ||
       !isnan(nelibc_sinl(quiet_nan.value)) ||
       !isnan(nelibc_cosl(quiet_nan.value)) ||
-      !isnan(nelibc_tanhl(quiet_nan.value))) {
+      !isnan(nelibc_tanhl(quiet_nan.value)) ||
+      !isnan(nelibc_sinhl(quiet_nan.value)) ||
+      !isnan(nelibc_coshl(quiet_nan.value))) {
     fprintf(stderr, "long-double arctangent NaN propagation failed\n");
     return 1;
   }
@@ -1694,6 +1711,48 @@ int main(void) {
   errno = 0;
   if (nelibc_tanhl(LDBL_MAX) != 1.0L || errno != 0) {
     fprintf(stderr, "long-double tanh saturation raised errno\n");
+    return 1;
+  }
+  const long double hyperbolic_values[] = {
+      -INFINITY, -LDBL_MAX, -11357.3L, -11357.0L, -11356.0L, -40.0L,
+      -1.0L, -LDBL_MIN, -0.0L, 0.0L, nextafterl(0.0L, 1.0L), LDBL_MIN,
+      1.0L, 40.0L, 11356.0L, 11357.0L, 11357.3L, LDBL_MAX, INFINITY};
+  for (size_t i = 0; i < sizeof(hyperbolic_values) / sizeof(hyperbolic_values[0]); ++i) {
+    if (!long_double_hyperbolic_close(nelibc_sinhl(hyperbolic_values[i]), sinhl(hyperbolic_values[i])) ||
+        !long_double_hyperbolic_close(nelibc_coshl(hyperbolic_values[i]), coshl(hyperbolic_values[i]))) {
+      fprintf(stderr, "long-double hyperbolic edge mismatch i=%zu input=%.6Le sinh=%.21Le/%.21Le cosh=%.21Le/%.21Le\n",
+              i, hyperbolic_values[i], nelibc_sinhl(hyperbolic_values[i]),
+              sinhl(hyperbolic_values[i]), nelibc_coshl(hyperbolic_values[i]),
+              coshl(hyperbolic_values[i]));
+      return 1;
+    }
+  }
+  if (nelibc_sinhl(-0.0L) != 0.0L || !signbit(nelibc_sinhl(-0.0L)) ||
+      nelibc_coshl(-0.0L) != 1.0L) {
+    fprintf(stderr, "long-double hyperbolic signed-zero behavior failed\n");
+    return 1;
+  }
+  for (size_t i = 0; i < 1024; ++i) {
+    long double value = -45.0L + (long double)i * (90.0L / 1023.0L);
+    if (!long_double_hyperbolic_close(nelibc_sinhl(value), sinhl(value)) ||
+        !long_double_hyperbolic_close(nelibc_coshl(value), coshl(value))) {
+      fprintf(stderr, "long-double hyperbolic generated-input mismatch i=%zu input=%.6Le sinh=%.21Le/%.21Le cosh=%.21Le/%.21Le\n",
+              i, value, nelibc_sinhl(value), sinhl(value), nelibc_coshl(value), coshl(value));
+      return 1;
+    }
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  if (!isinf(nelibc_sinhl(LDBL_MAX)) || errno != ERANGE ||
+      fetestexcept(FE_OVERFLOW) == 0) {
+    fprintf(stderr, "long-double sinhl overflow behavior failed\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  if (!isinf(nelibc_coshl(LDBL_MAX)) || errno != ERANGE ||
+      fetestexcept(FE_OVERFLOW) == 0) {
+    fprintf(stderr, "long-double coshl overflow behavior failed\n");
     return 1;
   }
   for (size_t i = 0; i < 512; ++i) {

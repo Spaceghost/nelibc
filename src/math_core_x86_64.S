@@ -106,6 +106,43 @@ nelibc_expl_hw:
   ret
 .size nelibc_expl_hw, .-nelibc_expl_hw
 
+/* Compute exp(x)/2 by reducing as exp(x), then decrementing the binary scale.
+   This preserves the sinh/cosh overflow boundary without an intermediate exp overflow. */
+.globl nelibc_expl_half_hw
+.type nelibc_expl_half_hw,@function
+nelibc_expl_half_hw:
+  subq $16, %rsp
+  fldt 24(%rsp)
+  fldl2e
+  fmulp %st, %st(1)
+  fld %st(0)
+  frndint
+  fistpq (%rsp)
+  fstp %st(0)
+  fildq (%rsp)
+  fldl .Lnelibc_ln2_hi(%rip)
+  fmulp %st, %st(1)
+  fldt 24(%rsp)
+  fsub %st(1), %st(0)
+  fstp %st(1)
+  fildq (%rsp)
+  fldl .Lnelibc_ln2_lo(%rip)
+  fmulp %st, %st(1)
+  fsubrp %st, %st(1)
+  fldl2e
+  fmulp %st, %st(1)
+  f2xm1
+  fld1
+  faddp %st, %st(1)
+  subq $1, (%rsp)
+  fildq (%rsp)
+  fxch %st(1)
+  fscale
+  fstp %st(1)
+  addq $16, %rsp
+  ret
+.size nelibc_expl_half_hw, .-nelibc_expl_half_hw
+
 /* Compute 2^x directly: split x into an integral scale and a fraction. */
 .globl nelibc_exp2l_hw
 .type nelibc_exp2l_hw,@function
