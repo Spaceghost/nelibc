@@ -64,6 +64,9 @@ their unlocked variants, `getwc`/`putwc` aliases, and `ungetwc`. Streams track
 wide orientation and UTF-8 conversion state. Standalone `swprintf` and
 `vswprintf` handle wide literals and strings, integer and double conversions,
 wide `%s`/`%c`, `%n`, and bounded output; `%L` formats currently return `EINVAL`.
+Standalone `fwprintf`/`vfwprintf` and `wprintf`/`vwprintf` use the same
+formatter and wide stream conversion state. Hybrid builds use the selected
+host libc's wide formatted I/O.
 Hybrid builds use the selected host libc's stdio implementation.
 
 To link your own program against the default glibc hybrid archive:

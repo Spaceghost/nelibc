@@ -138,6 +138,14 @@ static int call_vswprintf(wchar_t *output, size_t capacity,
   va_end(arguments);
   return result;
 }
+
+static int call_vfwprintf(FILE *stream, const wchar_t *format, ...) {
+  va_list arguments;
+  va_start(arguments, format);
+  int result = vfwprintf(stream, format, arguments);
+  va_end(arguments);
+  return result;
+}
 #endif
 
 #ifdef NELIBC_STANDALONE
@@ -1943,6 +1951,17 @@ int main(int argc, char **argv) {
   if (call_vswprintf(formatted_wide, 32, L"x%04d", 7) != 5 ||
       wcscmp(formatted_wide, L"x0007") != 0)
     return 289;
+  FILE *formatted_stream = tmpfile();
+  int stream_wide_count = -1;
+  if (formatted_stream == NULL ||
+      fwprintf(formatted_stream, L"%ls:%d%n", L"\u00c4", 42,
+               &stream_wide_count) != 4 || stream_wide_count != 4 ||
+      call_vfwprintf(formatted_stream, L"/%C:%ls", 0xE9, L"ok") != 5 ||
+      fseek(formatted_stream, 0, SEEK_SET) != 0 ||
+      fgetws(formatted_wide, 32, formatted_stream) != formatted_wide ||
+      wcscmp(formatted_wide, L"\u00c4:42/\u00e9:ok") != 0 ||
+      fclose(formatted_stream) != 0)
+    return 292;
   errno = 0;
   if (swprintf(formatted_wide, 32, L"%Lf", 1.0L) >= 0 || errno != EINVAL)
     return 291;

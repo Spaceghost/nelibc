@@ -40,6 +40,10 @@ int fputws(const wchar_t *restrict, struct nelibc_FILE *restrict);
 int fputws_unlocked(const wchar_t *restrict, struct nelibc_FILE *restrict);
 int swprintf(wchar_t *restrict, size_t, const wchar_t *restrict, ...);
 int vswprintf(wchar_t *restrict, size_t, const wchar_t *restrict, va_list);
+int fwprintf(struct nelibc_FILE *restrict, const wchar_t *restrict, ...);
+int vfwprintf(struct nelibc_FILE *restrict, const wchar_t *restrict, va_list);
+int wprintf(const wchar_t *restrict, ...);
+int vwprintf(const wchar_t *restrict, va_list);
 struct tm;
 size_t wcsftime(wchar_t *restrict, size_t, const wchar_t *restrict,
                 const struct tm *restrict);

@@ -429,7 +429,7 @@ futimens,sys/stat.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,impl
 futimes,sys/time.h,sys/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 futimesat,sys/time.h,sys/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fwide,wchar.h,wchar.h,,host-delegated
-fwprintf,wchar.h,,,not-declared
+fwprintf,wchar.h,wchar.h,,host-delegated
 fwrite,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 fwrite_unlocked,stdio.h,,,not-declared
 fwscanf,wchar.h,,,not-declared
@@ -1380,7 +1380,7 @@ versionsort,dirent.h,dirent.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 vfork,unistd.h,,,not-declared
 vfprintf,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 vfscanf,stdio.h,,,not-declared
-vfwprintf,wchar.h,,,not-declared
+vfwprintf,wchar.h,wchar.h,,host-delegated
 vfwscanf,wchar.h,,,not-declared
 vhangup,unistd.h,,,not-declared
 vmsplice,fcntl.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1394,7 +1394,7 @@ vswscanf,wchar.h,,,not-declared
 vsyslog,syslog.h,,,not-declared
 vwarn,err.h,,,not-declared
 vwarnx,err.h,,,not-declared
-vwprintf,wchar.h,,,not-declared
+vwprintf,wchar.h,wchar.h,,host-delegated
 vwscanf,wchar.h,,,not-declared
 wait,sys/wait.h,sys/wait.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wait3,sys/wait.h,,,not-declared
@@ -1460,7 +1460,7 @@ wmemmove,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wmemset,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wordexp,wordexp.h,,,not-declared
 wordfree,wordexp.h,,,not-declared
-wprintf,wchar.h,,,not-declared
+wprintf,wchar.h,wchar.h,,host-delegated
 write,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 writev,sys/uio.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wscanf,wchar.h,,,not-declared
