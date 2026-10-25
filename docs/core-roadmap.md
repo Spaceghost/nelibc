@@ -315,10 +315,12 @@ musl export set.
   within async-cancel-safe operations. The initial thread has its own pthread
   context; cancellation state, cleanup handlers, `pthread_exit`, and thread-
   specific destructors use the same path as created threads. The cleanup stack
-  is bounded to 32 entries per thread. Internal allocator critical sections
-  and the pthread-key lock defer asynchronous cancellation until after releasing
-  their locks, then retrigger a pending request. Other internal lock paths still
-  need an async-cancellation safety audit.
+  is bounded to 32 entries per thread. Internal allocator critical sections,
+  the pthread-key and default-attribute locks, robust-list slot allocation,
+  priority-protection bookkeeping, and the named-semaphore registry defer
+  asynchronous cancellation until after releasing their locks, then retrigger
+  a pending request. Blocking calls made while those locks are held remain a
+  target for focused cancellation testing.
 - Standalone pthread attributes support configurable stack sizes, page-
   protected guard regions, and scheduler inheritance/policy/priority. Explicit
   scheduling is applied before a startup gate releases the worker; permission

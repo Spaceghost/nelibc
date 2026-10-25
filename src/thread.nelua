@@ -262,12 +262,45 @@ local function munmap(address: pointer, length: csize): cint <cimport> end
 local function unlink(pathname: pointer <const>): cint <cimport> end
 local function strlen(string: *[0]cchar <const>): csize <cimport> end
 
+-- Async cancellation must not run cleanup handlers while this thread owns a
+-- libc lock that those handlers or TLS destructors may need. If the reserved
+-- signal arrives in the protected region, keep it pending and retrigger it
+-- only after the lock has been released.
+local function pthread_cancel_defer_begin(): void <inline>
+  local context = nelibc_thread_current_pthread_context()
+  if context ~= nilptr then context.cancel_defer_depth = context.cancel_defer_depth + 1 end
+end
+
+local function pthread_cancel_defer_end(): void <inline>
+  local context = nelibc_thread_current_pthread_context()
+  if context == nilptr or context.cancel_defer_depth <= 0 then return end
+  context.cancel_defer_depth = context.cancel_defer_depth - 1
+  if context.cancel_defer_depth == 0 and
+     context.cancel_state == PTHREAD_CANCEL_ENABLE and
+     context.cancel_type == PTHREAD_CANCEL_ASYNCHRONOUS and
+     nelibc_atomic_load_int(&context.cancel_pending) ~= 0 then
+    local pid = nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong)
+    local tid = nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong)
+    nelibc_raw_syscall3(234_culong, (@culong)(pid), (@culong)(tid), 32_culong)
+  end
+end
+
+local function nelibc_pthread_cancel_defer_begin(): void <cexport, codename 'nelibc_pthread_cancel_defer_begin'>
+  pthread_cancel_defer_begin()
+end
+
+local function nelibc_pthread_cancel_defer_end(): void <cexport, codename 'nelibc_pthread_cancel_defer_end'>
+  pthread_cancel_defer_end()
+end
+
 local function pthread_robust_slot_lock_acquire(): void <inline>
+  pthread_cancel_defer_begin()
   while nelibc_atomic_cas_int(&pthread_robust_slot_lock, 0, 1) ~= 0 do end
 end
 
 local function pthread_robust_slot_lock_release(): void <inline>
   nelibc_atomic_store_int(&pthread_robust_slot_lock, 0)
+  pthread_cancel_defer_end()
 end
 
 local function pthread_robust_slot_alloc(): *PthreadRobustSlot
@@ -347,37 +380,6 @@ local function pthread_current_context(): *PthreadContext <inline>
     initial_thread_tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
   end
   return context
-end
-
--- Async cancellation must not run cleanup handlers while this thread owns a
--- libc lock that those handlers or TLS destructors may need. If the reserved
--- signal arrives in the protected region, keep it pending and retrigger it
--- only after the lock has been released.
-local function pthread_cancel_defer_begin(): void <inline>
-  local context = nelibc_thread_current_pthread_context()
-  if context ~= nilptr then context.cancel_defer_depth = context.cancel_defer_depth + 1 end
-end
-
-local function pthread_cancel_defer_end(): void <inline>
-  local context = nelibc_thread_current_pthread_context()
-  if context == nilptr or context.cancel_defer_depth <= 0 then return end
-  context.cancel_defer_depth = context.cancel_defer_depth - 1
-  if context.cancel_defer_depth == 0 and
-     context.cancel_state == PTHREAD_CANCEL_ENABLE and
-     context.cancel_type == PTHREAD_CANCEL_ASYNCHRONOUS and
-     nelibc_atomic_load_int(&context.cancel_pending) ~= 0 then
-    local pid = nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong)
-    local tid = nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong)
-    nelibc_raw_syscall3(234_culong, (@culong)(pid), (@culong)(tid), 32_culong)
-  end
-end
-
-local function nelibc_pthread_cancel_defer_begin(): void <cexport, codename 'nelibc_pthread_cancel_defer_begin'>
-  pthread_cancel_defer_begin()
-end
-
-local function nelibc_pthread_cancel_defer_end(): void <cexport, codename 'nelibc_pthread_cancel_defer_end'>
-  pthread_cancel_defer_end()
 end
 
 local function pthread_key_lock_acquire(): void <inline>
@@ -993,6 +995,7 @@ local function pthread_attr_valid(attr: *PthreadAttr): boolean <inline>
 end
 
 local function pthread_default_attr_lock_acquire(): void <inline>
+  pthread_cancel_defer_begin()
   while true do
     if nelibc_atomic_cas_int(&default_thread_attr_lock, 0, 1) == 0 then return end
     nelibc_raw_syscall6(202_culong,
@@ -1006,6 +1009,7 @@ local function pthread_default_attr_lock_release(): void <inline>
   nelibc_raw_syscall6(202_culong,
       (@culong)((@usize)(&default_thread_attr_lock)), 129_culong, 1_culong,
       0_culong, 0_culong, 0_culong)
+  pthread_cancel_defer_end()
 end
 
 local function pthread_default_attr_ensure_initialized(): void <inline>
@@ -1470,11 +1474,13 @@ local function pthread_priority_protect_refresh(context: *PthreadContext,
 end
 
 local function pthread_priority_context_lock(context: *PthreadContext): void <inline>
+  pthread_cancel_defer_begin()
   while nelibc_atomic_cas_int(&context.protect_lock, 0, 1) ~= 0 do end
 end
 
 local function pthread_priority_context_unlock(context: *PthreadContext): void <inline>
   nelibc_atomic_store_int(&context.protect_lock, 0)
+  pthread_cancel_defer_end()
 end
 
 local function pthread_priority_protect_can_set(context: *PthreadContext,
@@ -2834,6 +2840,7 @@ local function sem_getvalue(sem: *Semaphore, value: *[0]cint): cint <cexport, co
 end
 
 local function named_sem_registry_lock(): void
+  pthread_cancel_defer_begin()
   while nelibc_atomic_cas_int(&named_semaphore_handles_lock, 0, 1) ~= 0 do
     nelibc_raw_syscall3(24_culong, 0_culong, 0_culong, 0_culong)
   end
@@ -2841,6 +2848,7 @@ end
 
 local function named_sem_registry_unlock(): void
   nelibc_atomic_store_int(&named_semaphore_handles_lock, 0)
+  pthread_cancel_defer_end()
 end
 
 local function named_sem_build_path(name: *[0]cchar <const>, path: *[0]cchar): cint
