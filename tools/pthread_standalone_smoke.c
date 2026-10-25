@@ -30,8 +30,11 @@ static volatile int detached_release;
 static volatile int pthread_kill_signal;
 static int atfork_order[16];
 static int atfork_order_count;
+static volatile int atfork_child_lock_failure;
 static _Atomic int atfork_registration_stop;
 static _Atomic int atfork_registration_count;
+static _Atomic int fork_lock_ready;
+static _Atomic int fork_lock_release;
 static volatile int detached_done;
 static _Atomic int join_release;
 static _Atomic int cancel_join_started;
@@ -195,7 +198,14 @@ static void atfork_prepare_a(void) { atfork_order_add(1); }
 static void atfork_prepare_b(void) { atfork_order_add(2); }
 static void atfork_parent_a(void) { atfork_order_add(3); }
 static void atfork_parent_b(void) { atfork_order_add(4); }
-static void atfork_child_a(void) { atfork_order_add(5); }
+static void atfork_child_a(void) {
+  atfork_order_add(5);
+  void *allocation = malloc(16);
+  if (allocation == NULL) atfork_child_lock_failure = 1;
+  else free(allocation);
+  if (ftrylockfile(stdout) != 0) atfork_child_lock_failure = 1;
+  else funlockfile(stdout);
+}
 static void atfork_child_b(void) { atfork_order_add(6); }
 static void *atfork_registration_worker(void *unused) {
   (void)unused;
@@ -206,6 +216,65 @@ static void *atfork_registration_worker(void *unused) {
     nanosleep(&pause, NULL);
   }
   return NULL;
+}
+extern void nelibc_allocator_lock(void);
+extern void nelibc_allocator_unlock(void);
+static void *fork_internal_lock_holder(void *argument) {
+  if ((intptr_t)argument == 0) nelibc_allocator_lock();
+  else flockfile(stdout);
+  atomic_store_explicit(&fork_lock_ready, 1, memory_order_release);
+  while (!atomic_load_explicit(&fork_lock_release, memory_order_acquire)) {
+    struct timespec pause = {.tv_sec = 0, .tv_nsec = 100000};
+    nanosleep(&pause, NULL);
+  }
+  if ((intptr_t)argument == 0) nelibc_allocator_unlock();
+  else funlockfile(stdout);
+  return NULL;
+}
+static void *fork_internal_lock_releaser(void *unused) {
+  (void)unused;
+  while (!atomic_load_explicit(&fork_lock_ready, memory_order_acquire) &&
+         !atomic_load_explicit(&fork_lock_release, memory_order_acquire)) {
+    struct timespec start_pause = {.tv_sec = 0, .tv_nsec = 100000};
+    nanosleep(&start_pause, NULL);
+  }
+  if (atomic_load_explicit(&fork_lock_release, memory_order_acquire)) return NULL;
+  struct timespec pause = {.tv_sec = 0, .tv_nsec = 5000000};
+  nanosleep(&pause, NULL);
+  atomic_store_explicit(&fork_lock_release, 1, memory_order_release);
+  return NULL;
+}
+static int fork_internal_lock_probe(int lock_kind) {
+  atomic_store_explicit(&fork_lock_ready, 0, memory_order_relaxed);
+  atomic_store_explicit(&fork_lock_release, 0, memory_order_relaxed);
+  pthread_t holder, releaser;
+  if (pthread_create(&releaser, NULL, fork_internal_lock_releaser, NULL) != 0)
+    return 1;
+  if (pthread_create(&holder, NULL, fork_internal_lock_holder,
+                     (void *)(intptr_t)lock_kind) != 0) {
+    atomic_store_explicit(&fork_lock_release, 1, memory_order_release);
+    pthread_join(releaser, NULL);
+    return 1;
+  }
+  while (!atomic_load_explicit(&fork_lock_ready, memory_order_acquire)) {
+    struct timespec pause = {.tv_sec = 0, .tv_nsec = 100000};
+    nanosleep(&pause, NULL);
+  }
+  pid_t child = fork();
+  if (child == 0) {
+    void *allocation = malloc(32);
+    if (allocation == NULL) _exit(3);
+    free(allocation);
+    if (ftrylockfile(stdout) != 0) _exit(4);
+    funlockfile(stdout);
+    _exit(0);
+  }
+  int status = -1;
+  int failed = child < 0 || waitpid(child, &status, 0) != child ||
+      !WIFEXITED(status) || WEXITSTATUS(status) != 0;
+  if (pthread_join(holder, NULL) != 0 || pthread_join(releaser, NULL) != 0)
+    failed = 1;
+  return failed;
 }
 
 static pthread_key_t initial_exit_key;
@@ -1908,11 +1977,12 @@ int main(void) {
       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
   if (initial_exit_marker == MAP_FAILED) return 216;
   *initial_exit_marker = 0;
+  atfork_child_lock_failure = 0;
   pid_t initial_exit_child = fork();
   if (initial_exit_child == 0) {
     if (atfork_order_count != 4 || atfork_order[0] != 2 ||
         atfork_order[1] != 1 || atfork_order[2] != 5 ||
-        atfork_order[3] != 6)
+        atfork_order[3] != 6 || atfork_child_lock_failure != 0)
       _exit(280);
     if (pthread_setspecific(initial_exit_key, (void *)initial_exit_marker) != 0)
       _exit(217);
@@ -1940,7 +2010,8 @@ int main(void) {
   int concurrent_fork_failed = 0;
   for (int iteration = 0; iteration < 32; ++iteration) {
     pid_t concurrent_child = fork();
-    if (concurrent_child == 0) _exit(0);
+    if (concurrent_child == 0)
+      _exit(atfork_child_lock_failure == 0 ? 0 : 288);
     int concurrent_status = -1;
     if (concurrent_child < 0 ||
         waitpid(concurrent_child, &concurrent_status, 0) != concurrent_child ||
@@ -1955,6 +2026,8 @@ int main(void) {
       concurrent_fork_failed || atfork_registration_result != NULL ||
       atomic_load_explicit(&atfork_registration_count, memory_order_relaxed) == 0)
     return 286;
+  if (fork_internal_lock_probe(0) != 0 || fork_internal_lock_probe(1) != 0)
+    return 287;
 
   volatile int *initial_cancel_marker = mmap(0, sizeof(*initial_cancel_marker),
       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);

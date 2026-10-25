@@ -35,6 +35,9 @@ local function nelibc_cancellable_syscall3(number: culong, arg1: culong, arg2: c
 local function nelibc_cancellable_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
 local function nelibc_atfork_lock_try(value: *[0]cint): cint <cimport> end
 local function nelibc_atfork_lock_reset(value: *[0]cint): void <cimport> end
+local function nelibc_fork_prepare(): void <cimport> end
+local function nelibc_fork_parent(): void <cimport> end
+local function nelibc_fork_child(): void <cimport> end
 
 local AtforkHandler: type = @record{
   prepare: pointer,
@@ -744,11 +747,14 @@ end
 
 local function fork(): cint <cexport, codename 'fork'>
   local snapshot = nelibc_atfork_prepare()
+  nelibc_fork_prepare()
   local result = nelibc_raw_syscall3(57_culong, 0_culong, 0_culong, 0_culong)
   if result == 0 then
+    nelibc_fork_child()
     nelibc_atfork_child(snapshot)
     return 0
   end
+  nelibc_fork_parent()
   nelibc_atfork_parent(snapshot)
   return (@cint)(syscall_result(result))
 end

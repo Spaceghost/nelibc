@@ -113,6 +113,34 @@ end
 local function stream_list_unlock(): void <inline>
   nelibc_stdio_unlock(&stream_list_lock_word, &stream_list_lock_owner, &stream_list_lock_depth)
 end
+local function nelibc_stdio_fork_prepare(): void <cexport, codename 'nelibc_stdio_fork_prepare'>
+  stream_list_lock()
+  local stream = all_streams
+  while stream ~= nilptr do
+    stream_lock(stream)
+    stream = stream.next
+  end
+end
+local function nelibc_stdio_fork_parent(): void <cexport, codename 'nelibc_stdio_fork_parent'>
+  local stream = all_streams
+  while stream ~= nilptr do
+    stream_unlock(stream)
+    stream = stream.next
+  end
+  stream_list_unlock()
+end
+local function nelibc_stdio_fork_child(): void <cexport, codename 'nelibc_stdio_fork_child'>
+  local stream = all_streams
+  while stream ~= nilptr do
+    stream.lock_word = 0
+    stream.lock_owner = 0
+    stream.lock_depth = 0
+    stream = stream.next
+  end
+  stream_list_lock_word = 0
+  stream_list_lock_owner = 0
+  stream_list_lock_depth = 0
+end
 local function stream_buffer(stream: *FILE): pointer <inline>
   if stream.user_buffer == nilptr then return (@pointer)(&stream.buffer[0]) end
   return (@pointer)(stream.user_buffer)

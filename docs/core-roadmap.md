@@ -77,6 +77,15 @@ path; it does not replace a broader process/signal/fork interaction audit.
 The standalone pthread smoke also registers no-op atfork handlers from a worker
 while the initial thread performs 32 forks. Zig, GCC, and TinyCC smoke binaries
 pass this concurrent registry/snapshot stress.
+Standalone `fork()` now brackets user handlers with internal lock preparation:
+it waits for stdio stream locks, then the allocator lock; the parent releases
+them and the child resets inherited owners before user child handlers run. The
+pthread smoke holds the allocator lock or `stdout` lock in a worker while the
+initial thread forks, then verifies the child can allocate and lock stdout.
+The registered child handler also allocates and try-locks stdout, checking
+that Nelibc releases internal locks before invoking application handlers.
+The standalone pthread smoke and consumer pass with Zig, GCC, and TinyCC; the
+hybrid consumer passes with Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc.
 
 ### Practical completeness estimate
 

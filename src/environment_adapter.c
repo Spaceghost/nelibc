@@ -50,6 +50,28 @@ int nelibc_atfork_lock_try(int *lock) {
 void nelibc_atfork_lock_reset(int *lock) {
   __atomic_store_n(lock, 0, __ATOMIC_RELEASE);
 }
+
+extern void nelibc_allocator_lock(void) __attribute__((weak));
+extern void nelibc_allocator_unlock(void) __attribute__((weak));
+extern void nelibc_stdio_fork_prepare(void) __attribute__((weak));
+extern void nelibc_stdio_fork_parent(void) __attribute__((weak));
+extern void nelibc_stdio_fork_child(void) __attribute__((weak));
+
+void nelibc_fork_prepare(void) {
+  if (nelibc_stdio_fork_prepare != NULL) nelibc_stdio_fork_prepare();
+  if (nelibc_allocator_lock != NULL) nelibc_allocator_lock();
+}
+
+void nelibc_fork_parent(void) {
+  if (nelibc_allocator_unlock != NULL) nelibc_allocator_unlock();
+  if (nelibc_stdio_fork_parent != NULL) nelibc_stdio_fork_parent();
+}
+
+void nelibc_fork_child(void) {
+  if (nelibc_allocator_unlock != NULL) nelibc_allocator_unlock();
+  if (nelibc_stdio_fork_child != NULL) nelibc_stdio_fork_child();
+}
+
 #include <stdlib.h>
 #include <stdio.h>
 #ifndef NELIBC_STANDALONE
