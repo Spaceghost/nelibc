@@ -822,7 +822,7 @@ ntohs,arpa/inet.h;netinet/in.h,,,not-declared
 open,fcntl.h,fcntl.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 open_by_handle_at,fcntl.h,,,not-declared
 open_memstream,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-open_wmemstream,wchar.h,,,not-declared
+open_wmemstream,wchar.h,wchar.h,,host-delegated
 openat,fcntl.h,fcntl.h;nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 opendir,dirent.h,dirent.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 openlog,syslog.h,,,not-declared

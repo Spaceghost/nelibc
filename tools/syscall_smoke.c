@@ -1962,6 +1962,22 @@ int main(int argc, char **argv) {
       wcscmp(formatted_wide, L"\u00c4:42/\u00e9:ok") != 0 ||
       fclose(formatted_stream) != 0)
     return 292;
+  wchar_t *wide_memory = NULL;
+  size_t wide_memory_size = 99;
+  FILE *wide_memory_stream = open_wmemstream(&wide_memory, &wide_memory_size);
+  if (wide_memory_stream == NULL || wide_memory != NULL || wide_memory_size != 0 ||
+      fwide(wide_memory_stream, 0) <= 0 ||
+      fputws(L"wide memory stream", wide_memory_stream) != 0 ||
+      fflush(wide_memory_stream) != 0 || wide_memory_size != 18 ||
+      wcscmp(wide_memory, L"wide memory stream") != 0 ||
+      fseek(wide_memory_stream, 5, SEEK_SET) != 0 ||
+      fputwc(L'X', wide_memory_stream) != L'X' ||
+      fflush(wide_memory_stream) != 0 || wide_memory_size != 18 ||
+      wcscmp(wide_memory, L"wide Xemory stream") != 0 ||
+      fclose(wide_memory_stream) != 0 ||
+      wcscmp(wide_memory, L"wide Xemory stream") != 0)
+    return 293;
+  free(wide_memory);
   errno = 0;
   if (swprintf(formatted_wide, 32, L"%Lf", 1.0L) >= 0 || errno != EINVAL)
     return 291;

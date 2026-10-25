@@ -44,6 +44,7 @@ int fwprintf(struct nelibc_FILE *restrict, const wchar_t *restrict, ...);
 int vfwprintf(struct nelibc_FILE *restrict, const wchar_t *restrict, va_list);
 int wprintf(const wchar_t *restrict, ...);
 int vwprintf(const wchar_t *restrict, va_list);
+struct nelibc_FILE *open_wmemstream(wchar_t **restrict, size_t *restrict);
 struct tm;
 size_t wcsftime(wchar_t *restrict, size_t, const wchar_t *restrict,
                 const struct tm *restrict);

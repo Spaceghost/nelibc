@@ -325,9 +325,9 @@ including APIs absent from the pinned musl export set.
   `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
   that are also exported by the pinned release archives: Nelibc exports 803
-  in at least one tested hybrid profile, delegates 216 to a hybrid host, and does not
-  yet declare 452. No declared API is missing from the tested hybrid archives.
-  The largest undeclared groups are wide characters (7), network database
+  in at least one tested hybrid profile, delegates 217 to a hybrid host, and does not
+  yet declare 451. No declared API is missing from the tested hybrid archives.
+  The largest undeclared groups are wide characters (6), network database
   APIs (32), stdlib (30), and unistd (29). These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
@@ -350,6 +350,10 @@ including APIs absent from the pinned musl export set.
 - Standalone `fwprintf`, `vfwprintf`, `wprintf`, and `vwprintf` use the same
   locale-aware wide formatter and stream conversion state; `%n` is evaluated
   once with a wide-character count. Hybrid profiles continue to use host stdio.
+- Standalone `open_wmemstream` owns a growable wide-character buffer, publishes
+  its pointer and element count on flush/close, and supports seek/overwrite.
+  Zig, GCC, and TinyCC smoke checks cover growth, publication, and ownership;
+  hybrid profiles delegate to their host libc.
 - `wcscasecmp_l` and `wcsncasecmp_l` now use the selected locale's wide case
   mapping in hybrid and standalone builds. Consumer cases cover C versus
   UTF-8 folding and bounded comparisons across all seven profiles.

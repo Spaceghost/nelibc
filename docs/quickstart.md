@@ -67,6 +67,9 @@ wide `%s`/`%c`, `%n`, and bounded output; `%L` formats currently return `EINVAL`
 Standalone `fwprintf`/`vfwprintf` and `wprintf`/`vwprintf` use the same
 formatter and wide stream conversion state. Hybrid builds use the selected
 host libc's wide formatted I/O.
+Standalone `open_wmemstream` grows and publishes a wide-character buffer on
+flush and close; the caller owns the final buffer. Hybrid builds delegate it
+to the host libc.
 Hybrid builds use the selected host libc's stdio implementation.
 
 To link your own program against the default glibc hybrid archive:

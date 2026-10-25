@@ -63,17 +63,17 @@ python3 tools/musl_api_audit.py \
 ```
 
 The current snapshot contains 1,471 APIs: 803 exported by Nelibc in at least
-one tested hybrid profile, 216 intentionally delegated to the host in hybrid
-profiles, and 452 not declared by Nelibc. Every declared API in this pinned
+one tested hybrid profile, 217 intentionally delegated to the host in hybrid
+profiles, and 451 not declared by Nelibc. Every declared API in this pinned
 baseline is either exported by at least one hybrid archive or intentionally
 delegated to its host. The separate seven-profile inventory tracks per-profile
 gaps. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 452 undeclared entries remain visible as unimplemented
+intentional omission; the 451 undeclared entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
 No real-valued `math.h` APIs in this pinned musl baseline remain undeclared.
-The largest remaining groups are wide characters (7), network database APIs
+The largest remaining groups are wide characters (6), network database APIs
 (32), stdlib (30), unistd (29), and stdio (28). The pthread rows without
 Nelibc declarations are two private musl cleanup helper symbols. Hybrid `fork`
 and `pthread_atfork` are intentionally host-delegated so host fork handlers
@@ -98,6 +98,11 @@ Standalone `fwprintf`, `vfwprintf`, `wprintf`, and `vwprintf` share the wide
 formatter and write the resulting wide characters through the stream's wide
 orientation and multibyte state. `%n` receives the wide-character count once.
 Hybrid archives keep the selected host libc's wide stdio functions.
+
+Standalone `open_wmemstream` stores `wchar_t` elements in a growable buffer,
+publishes the buffer and wide-character count on flush/close, and supports
+seeking and overwriting. Closing transfers buffer ownership to the caller.
+Hybrid profiles delegate it to the host libc.
 
 `wcscasecmp_l` and `wcsncasecmp_l` apply the supplied locale's wide lowercase
 mapping while comparing, including bounded comparisons. The consumer matrix

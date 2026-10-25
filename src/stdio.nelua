@@ -187,6 +187,16 @@ local function nelibc_stdio_init(): void <cexport, codename 'nelibc_stdio_init'>
 end
 
 local function flush_write_buffer(stream: *FILE): cint <inline>
+  if stream.fd == -7 then
+    local memory: *[0]cint = (@*[0]cint)(stream.user_buffer)
+    local published_buffer: *[0]*[0]cint = (@*[0]*[0]cint)(stream.memstream_buffer)
+    local published_size: *[0]csize = (@*[0]csize)(stream.memstream_size)
+    memory[stream.read_length] = 0
+    published_buffer[0] = (@*[0]cint)(stream.user_buffer)
+    published_size[0] = stream.read_length
+    stream.write_length = 0
+    return 0
+  end
   if stream.fd == -5 then
     local memory: *[0]byte = (@*[0]byte)(stream.user_buffer)
     local published_buffer: *[0]*byte = (@*[0]*byte)(stream.memstream_buffer)
@@ -284,6 +294,10 @@ end
 
 local function write_bytes(stream: *FILE, buffer: pointer <const>, count: csize): csize <inline>
   if (stream.flags & WRITABLE) == 0 then
+    stream.flags = stream.flags | STREAM_ERROR
+    return 0
+  end
+  if stream.fd == -7 then
     stream.flags = stream.flags | STREAM_ERROR
     return 0
   end
@@ -513,6 +527,52 @@ end
 local function fputwc_unlocked(wide: cuint, stream: *FILE): cuint
     <cexport, codename 'fputwc_unlocked'>
   if stream_orient(stream, 1) < 0 then return ~0_cuint end
+  if stream.fd == -7 then
+    local position: csize = stream.read_position
+    if position > MAX_CSIZE - 2 then
+      nelibc_errno_location()[0] = 75 -- EOVERFLOW
+      stream.flags = stream.flags | STREAM_ERROR
+      return ~0_cuint
+    end
+    local needed: csize = position + 2
+    if needed > MAX_CSIZE // (@csize)(#cint) then
+      nelibc_errno_location()[0] = 75 -- EOVERFLOW
+      stream.flags = stream.flags | STREAM_ERROR
+      return ~0_cuint
+    end
+    if needed > stream.buffer_size then
+      local capacity: csize = stream.buffer_size
+      while capacity < needed and capacity <= MAX_CSIZE // 2 do
+        capacity = capacity * 2
+      end
+      if capacity < needed then capacity = needed end
+      if capacity > MAX_CSIZE // (@csize)(#cint) then
+        nelibc_errno_location()[0] = 75 -- EOVERFLOW
+        stream.flags = stream.flags | STREAM_ERROR
+        return ~0_cuint
+      end
+      local grown: pointer = nelibc_realloc((@pointer)(stream.user_buffer),
+          capacity * (@csize)(#cint))
+      if grown == nilptr then
+        stream.flags = stream.flags | STREAM_ERROR
+        return ~0_cuint
+      end
+      stream.user_buffer = (@*byte)(grown)
+      stream.buffer_size = capacity
+    end
+    local memory: *[0]cint = (@*[0]cint)(stream.user_buffer)
+    local gap: csize = stream.read_length
+    while gap < position do
+      memory[gap] = 0
+      gap = gap + 1
+    end
+    memory[position] = (@cint)(wide)
+    if position >= stream.read_length then stream.read_length = position + 1 end
+    memory[stream.read_length] = 0
+    stream.read_position = position + 1
+    stream.flags = (stream.flags & ~LAST_READ) | LAST_WRITE
+    return wide
+  end
   local output: [64]cchar = {}
   local converted: csize = wcrtomb(&output[0], (@cint)(wide),
       (@pointer)(&stream.wide_write_state[0]))
@@ -1017,6 +1077,41 @@ local function open_memstream(buffer: **byte, size: *csize): *FILE <cexport, cod
   return stream
 end
 
+local function open_wmemstream(buffer: **cint, size: *csize): *FILE
+    <cexport, codename 'open_wmemstream'>
+  if buffer == nilptr or size == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return nilptr
+  end
+  local output_buffer: *[0]*[0]cint = (@*[0]*[0]cint)(buffer)
+  local output_size: *[0]csize = (@*[0]csize)(size)
+  output_buffer[0] = nilptr
+  output_size[0] = 0
+
+  local capacity: csize = 8
+  local memory: pointer = nelibc_malloc(capacity * (@csize)(#cint))
+  if memory == nilptr then return nilptr end
+  ((@*[0]cint)(memory))[0] = 0
+  local stream: *FILE = (@*FILE)(nelibc_malloc((@csize)(#FILE)))
+  if stream == nilptr then
+    nelibc_free(memory)
+    return nilptr
+  end
+  memset((@pointer)(stream), 0, (@csize)(#FILE))
+  stream.fd = -7
+  stream.flags = WRITABLE
+  stream.buffer_size = capacity
+  stream.user_buffer = (@*byte)(memory)
+  stream.memstream_buffer = (@**byte)(buffer)
+  stream.memstream_size = size
+  stream.orientation = 1
+  stream_list_lock()
+  stream.next = all_streams
+  all_streams = stream
+  stream_list_unlock()
+  return stream
+end
+
 local function fdopen(fd: cint, mode: cstring <const>): *FILE <cexport, codename 'fdopen'>
   local mode: *[0]cchar = (@*[0]cchar)(mode)
   if mode == nilptr then
@@ -1191,9 +1286,9 @@ local function close_stream(stream: *FILE, release_stream: boolean): cint
   stream_list_lock()
   stream_lock(stream)
   local result: cint = flush_write_buffer(stream)
-  if stream.fd ~= -4 and stream.fd ~= -5 and close(stream.fd) < 0 then result = -1 end
+  if stream.fd ~= -4 and stream.fd ~= -5 and stream.fd ~= -7 and close(stream.fd) < 0 then result = -1 end
   local owned_buffer: pointer = nilptr
-  if stream.fd == -5 then
+  if stream.fd == -5 or stream.fd == -7 then
     if flush_write_buffer(stream) < 0 then result = -1 end
   elseif (stream.flags & MEMORY_OWNED) ~= 0 then
     owned_buffer = (@pointer)(stream.user_buffer)
@@ -1289,7 +1384,7 @@ local function freopen(pathname: cstring <const>, mode: cstring <const>, stream:
 end
 
 local function discard_read_buffer(stream: *FILE): cint <inline>
-  if stream.fd == -4 or stream.fd == -5 then
+  if stream.fd == -4 or stream.fd == -5 or stream.fd == -7 then
     stream.has_pushback = 0
     reset_wide_stream_state(stream)
     stream.flags = stream.flags & ~LAST_READ
@@ -2745,7 +2840,7 @@ local function fflush(stream: *FILE): cint <cexport, codename 'fflush'>
     local status: cint = 0
     while cursor ~= nilptr do
       stream_lock(cursor)
-      if cursor.fd == -5 or (cursor.flags & LAST_WRITE) ~= 0 then
+      if cursor.fd == -5 or cursor.fd == -7 or (cursor.flags & LAST_WRITE) ~= 0 then
         if flush_write_buffer(cursor) < 0 then status = -1 end
       elseif (cursor.flags & LAST_READ) ~= 0 or cursor.has_pushback ~= 0 or
           cursor.has_wide_pushback ~= 0 then
@@ -2758,13 +2853,13 @@ local function fflush(stream: *FILE): cint <cexport, codename 'fflush'>
     return status
   end
   stream_lock(stream)
-  if stream.fd < 0 and stream.fd ~= -4 and stream.fd ~= -5 then
+  if stream.fd < 0 and stream.fd ~= -4 and stream.fd ~= -5 and stream.fd ~= -7 then
     nelibc_errno_location()[0] = 9 -- EBADF
     stream_unlock(stream)
     return -1
   end
   local result: cint = 0
-  if stream.fd == -5 or (stream.flags & LAST_WRITE) ~= 0 then
+  if stream.fd == -5 or stream.fd == -7 or (stream.flags & LAST_WRITE) ~= 0 then
     result = flush_write_buffer(stream)
   elseif (stream.flags & LAST_READ) ~= 0 or stream.has_pushback ~= 0 or
       stream.has_wide_pushback ~= 0 then
@@ -2780,7 +2875,7 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
     return -1
   end
   stream_lock(stream)
-  if stream.fd < 0 and stream.fd ~= -4 and stream.fd ~= -5 then
+  if stream.fd < 0 and stream.fd ~= -4 and stream.fd ~= -5 and stream.fd ~= -7 then
     nelibc_errno_location()[0] = 9 -- EBADF
     stream_unlock(stream)
     return -1
@@ -2813,7 +2908,7 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
     stream_unlock(stream)
     return 0
   end
-  if stream.fd == -5 then
+  if stream.fd == -5 or stream.fd == -7 then
     local base: clong = 0
     if whence == 1 then base = (@clong)(stream.read_position)
     elseif whence == 2 then base = (@clong)(stream.read_length)
@@ -2869,7 +2964,7 @@ local function ftell(stream: *FILE): clong <cexport, codename 'ftell'>
     return -1
   end
   stream_lock(stream)
-  if stream.fd < 0 and stream.fd ~= -4 and stream.fd ~= -5 then
+  if stream.fd < 0 and stream.fd ~= -4 and stream.fd ~= -5 and stream.fd ~= -7 then
     nelibc_errno_location()[0] = 9 -- EBADF
     stream_unlock(stream)
     return -1
@@ -2879,7 +2974,7 @@ local function ftell(stream: *FILE): clong <cexport, codename 'ftell'>
     stream_unlock(stream)
     return position
   end
-  if stream.fd == -5 then
+  if stream.fd == -5 or stream.fd == -7 then
     local position: clong = (@clong)(stream.read_position)
     stream_unlock(stream)
     return position
