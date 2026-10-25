@@ -47,6 +47,7 @@ local PthreadContext: type = @record{
   object: pointer,
   lifecycle: cint,
   cancel_pending: cint,
+  exiting: cint,
   cancel_defer_depth: cint,
   cancel_state: cint,
   cancel_type: cint,
@@ -366,6 +367,7 @@ local function pthread_current_context(): *PthreadContext <inline>
     initial_thread_context.cancel_state = PTHREAD_CANCEL_ENABLE
     initial_thread_context.cancel_type = PTHREAD_CANCEL_DEFERRED
     initial_thread_context.cancel_defer_depth = 0
+    initial_thread_context.exiting = 0
     nelibc_thread_set_pthread_context((@pointer)(context))
     initial_thread_identity = nelibc_thread_current_identity()
     nelibc_thread_cancel_signal_install()
@@ -894,6 +896,15 @@ local function pthread_cleanup_run(context: *PthreadContext): void
 end
 
 local function pthread_context_exit(context: *PthreadContext, result: pointer): void
+  if context ~= nilptr then
+    if nelibc_atomic_exchange_int(&context.exiting, 1) ~= 0 then
+      nelibc_raw_syscall3(60_culong, 0_culong, 0_culong, 0_culong)
+      while true do end
+    end
+    context.cancel_state = PTHREAD_CANCEL_DISABLE
+    context.cancel_type = PTHREAD_CANCEL_DEFERRED
+    nelibc_atomic_store_int(&context.cancel_pending, 0)
+  end
   pthread_cleanup_run(context)
   if context ~= nilptr then
     context.result = result
@@ -917,7 +928,8 @@ end
 
 local function pthread_testcancel(): void <cexport, codename 'pthread_testcancel'>
   local context = pthread_current_context()
-  if context == nilptr or context.cancel_state == PTHREAD_CANCEL_DISABLE or
+  if context == nilptr or context.exiting ~= 0 or
+     context.cancel_state == PTHREAD_CANCEL_DISABLE or
      nelibc_atomic_load_int(&context.cancel_pending) == 0 then return end
   nelibc_atomic_store_int(&context.cancel_pending, 0)
   pthread_context_exit(context, PTHREAD_CANCELED)
@@ -926,6 +938,7 @@ end
 local function nelibc_pthread_cancel_signal(): void <cexport, codename 'nelibc_pthread_cancel_signal'>
   local context = pthread_current_context()
   if context == nilptr or context.cancel_state == PTHREAD_CANCEL_DISABLE or
+     context.exiting ~= 0 or
      context.cancel_type ~= PTHREAD_CANCEL_ASYNCHRONOUS or
      context.cancel_defer_depth ~= 0 or
      nelibc_atomic_load_int(&context.cancel_pending) == 0 then return end
@@ -1016,9 +1029,7 @@ local function pthread_trampoline(argument: pointer): cint <cexport, codename 'n
   pthread_key_reset_values()
   pthread_testcancel()
   context.result = context.start(context.arg)
-  pthread_cleanup_run(context)
-  pthread_key_run_destructors()
-  pthread_finish(context)
+  pthread_context_exit(context, context.result)
   return 0
 end
 
@@ -3183,6 +3194,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.handle = &state.handle
   state.context.object = object
   state.context.cancel_pending = 0
+  state.context.exiting = 0
   state.context.cancel_defer_depth = 0
   state.context.cancel_state = PTHREAD_CANCEL_ENABLE
   state.context.cancel_type = PTHREAD_CANCEL_DEFERRED

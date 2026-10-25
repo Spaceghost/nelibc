@@ -325,7 +325,12 @@ musl export set.
   applications. Asynchronous cancellation requires application code to stay
   within async-cancel-safe operations. The initial thread has its own pthread
   context; cancellation state, cleanup handlers, `pthread_exit`, and thread-
-  specific destructors use the same path as created threads. The cleanup stack
+  specific destructors use the same path as created threads. Once exit begins,
+  cancellation is disabled through cleanup handlers and TSD destructors, so a
+  cancellation point inside a destructor cannot recursively restart thread
+  exit. `pthread-exit-standalone-matrix` covers a canceled request during a
+  blocked TSD destructor and checks the original thread result and one destructor
+  call under Zig, GCC, and TinyCC. The cleanup stack
   is bounded to 32 entries per thread. Internal allocator critical sections,
   the pthread-key and default-attribute locks, robust-list slot allocation,
   priority-protection bookkeeping, and the named-semaphore registry defer

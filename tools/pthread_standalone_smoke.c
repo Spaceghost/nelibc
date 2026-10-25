@@ -53,6 +53,11 @@ static pthread_key_t value_key;
 static int value_destructor_calls;
 static pthread_key_t iteration_key;
 static int iteration_destructor_calls;
+static pthread_key_t exit_blocked_key;
+static sem_t exit_blocked_semaphore;
+static _Atomic int exit_blocked_destructor_started;
+static _Atomic int exit_blocked_destructor_calls;
+static _Atomic int exit_blocked_destructor_error;
 static pthread_mutex_t cancel_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cancel_condition = PTHREAD_COND_INITIALIZER;
 static pthread_key_t cancel_exit_key;
@@ -588,8 +593,24 @@ static void iteration_destructor(void *value) {
   pthread_setspecific(iteration_key, value);
 }
 
+static void exit_blocked_destructor(void *value) {
+  if (value != (void *)(uintptr_t)0x88) return;
+  atomic_store_explicit(&exit_blocked_destructor_started, 1,
+                        memory_order_release);
+  if (sem_wait(&exit_blocked_semaphore) != 0)
+    atomic_store_explicit(&exit_blocked_destructor_error, errno,
+                          memory_order_relaxed);
+  atomic_fetch_add_explicit(&exit_blocked_destructor_calls, 1,
+                            memory_order_relaxed);
+}
+
 static void *iteration_value_worker(void *argument) {
   if (pthread_setspecific(iteration_key, argument) != 0) return (void *)1;
+  return 0;
+}
+
+static void *exit_blocked_value_worker(void *argument) {
+  if (pthread_setspecific(exit_blocked_key, argument) != 0) return (void *)1;
   return 0;
 }
 
@@ -2634,6 +2655,33 @@ int main(void) {
       iteration_destructor_calls != PTHREAD_DESTRUCTOR_ITERATIONS ||
       pthread_key_delete(iteration_key) != 0)
     return 315;
+  atomic_store_explicit(&exit_blocked_destructor_started, 0,
+                        memory_order_relaxed);
+  atomic_store_explicit(&exit_blocked_destructor_calls, 0,
+                        memory_order_relaxed);
+  atomic_store_explicit(&exit_blocked_destructor_error, 0,
+                        memory_order_relaxed);
+  if (pthread_key_create(&exit_blocked_key, exit_blocked_destructor) != 0 ||
+      sem_init(&exit_blocked_semaphore, 0, 0) != 0 ||
+      pthread_create(&thread, &attributes, exit_blocked_value_worker,
+                     (void *)(uintptr_t)0x88) != 0)
+    return 316;
+  for (unsigned int i = 0; i < 10000000U &&
+       !atomic_load_explicit(&exit_blocked_destructor_started,
+                             memory_order_acquire); ++i) {
+  }
+  if (!atomic_load_explicit(&exit_blocked_destructor_started,
+                            memory_order_acquire) ||
+      __atomic_load_n(&exit_blocked_semaphore.__waiters, __ATOMIC_ACQUIRE) == 0 ||
+      pthread_cancel(thread) != 0 || sem_post(&exit_blocked_semaphore) != 0 ||
+      pthread_join(thread, &result) != 0 || result != 0 ||
+      atomic_load_explicit(&exit_blocked_destructor_calls,
+                           memory_order_relaxed) != 1 ||
+      atomic_load_explicit(&exit_blocked_destructor_error,
+                           memory_order_relaxed) != 0 ||
+      sem_destroy(&exit_blocked_semaphore) != 0 ||
+      pthread_key_delete(exit_blocked_key) != 0)
+    return 317;
   atomic_store_explicit(&deleted_value_ready, 0, memory_order_relaxed);
   atomic_store_explicit(&deleted_value_release, 0, memory_order_relaxed);
   atomic_store_explicit(&deleted_value_destructor_calls, 0, memory_order_relaxed);

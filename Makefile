@@ -2673,7 +2673,24 @@ pthread-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/pthread_standalo
 
 pthread-standalone-matrix: pthread-standalone-zig pthread-standalone-gcc pthread-standalone-tcc
 
-.PHONY: pthread-standalone-zig pthread-standalone-gcc pthread-standalone-tcc pthread-standalone-matrix
+pthread-exit-standalone-zig: $(OUT)/libnelibc-standalone-zig.a tools/pthread_exit_tsd_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/pthread_exit_tsd_smoke.c -o $(OUT)/pthread-exit-tsd-standalone-zig
+	@test -z "$$($(NM) -u $(OUT)/pthread-exit-tsd-standalone-zig)"
+	$(OUT)/pthread-exit-tsd-standalone-zig
+
+pthread-exit-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a tools/pthread_exit_tsd_smoke.c
+	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-gcc.a -Wl,--no-whole-archive -Iinclude tools/pthread_exit_tsd_smoke.c -o $(OUT)/pthread-exit-tsd-standalone-gcc
+	@test -z "$$($(NM) -u $(OUT)/pthread-exit-tsd-standalone-gcc)"
+	$(OUT)/pthread-exit-tsd-standalone-gcc
+
+pthread-exit-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/pthread_exit_tsd_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-tcc.a -Wl,--no-whole-archive -Iinclude tools/pthread_exit_tsd_smoke.c -o $(OUT)/pthread-exit-tsd-standalone-tcc
+	@test -z "$$($(NM) -u $(OUT)/pthread-exit-tsd-standalone-tcc)"
+	$(OUT)/pthread-exit-tsd-standalone-tcc
+
+pthread-exit-standalone-matrix: pthread-exit-standalone-zig pthread-exit-standalone-gcc pthread-exit-standalone-tcc
+
+.PHONY: pthread-standalone-zig pthread-standalone-gcc pthread-standalone-tcc pthread-standalone-matrix pthread-exit-standalone-zig pthread-exit-standalone-gcc pthread-exit-standalone-tcc pthread-exit-standalone-matrix
 
 sem-clockwait-musl-smoke: $(OUT)/libnelibc-zig-musl.a tools/sem_clockwait_musl_smoke.c
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -pthread -Iinclude -fno-builtin $(MUSL_STDIO_WRAP_FLAGS) tools/sem_clockwait_musl_smoke.c $(OUT)/libnelibc-zig-musl.a -o $(OUT)/sem-clockwait-musl-smoke
