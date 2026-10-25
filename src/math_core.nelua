@@ -1698,6 +1698,8 @@ local function fmaf(x: cfloat, y: cfloat, z: cfloat): cfloat
 end
 
 local function nextafter(x: cdouble, y: cdouble): cdouble <cexport, codename 'nextafter'>
+  if is_signaling_nan(x) then return x + x end
+  if is_signaling_nan(y) then return y + y end
   if is_nan64(x) then return x + y end
   if is_nan64(y) then return x + y end
   if x == y then return y end
@@ -1724,6 +1726,8 @@ local function nextafter(x: cdouble, y: cdouble): cdouble <cexport, codename 'ne
 end
 
 local function nextafterf(x: cfloat, y: cfloat): cfloat <cexport, codename 'nextafterf'>
+  if is_signaling_nanf(x) then return x + x end
+  if is_signaling_nanf(y) then return y + y end
   if is_nan32(x) then return x + y end
   if is_nan32(y) then return x + y end
   if x == y then return y end
@@ -3550,6 +3554,8 @@ end
 -- Advance one encoding in the 80-bit extended-precision value ordering.
 local function nextafterl(x: clongdouble, y: clongdouble): clongdouble
     <cexport, codename 'nextafterl'>
+  if is_signaling_nan80(x) then return x + x end
+  if is_signaling_nan80(y) then return y + y end
   if is_nan80(x) or is_nan80(y) then return x + y end
   if x == y then return y end
 

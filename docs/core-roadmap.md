@@ -339,8 +339,9 @@ musl export set.
   overflow/inexact when stepping from the largest finite value to infinity.
   These cases are compared with the host across the four math profiles.
   `nexttoward` compares its long-double direction before narrowing, including
-  when the direction lies between adjacent float or double values. Signaling-
-  NaN exception behavior and broader zero/NaN flag cases still need coverage. Its
+  when the direction lies between adjacent float or double values. Signaling
+  NaNs in either `nextafter*` argument raise `FE_INVALID` across the four hybrid
+  compiler/libc profiles. Broader zero/quiet-NaN flag cases still need coverage. Its
   Nelua `exp`/`expf` and `log`/`logf` use a range-reduced degree-20 exponential
   polynomial and an atanh logarithm series with split ln(2) constants. The
   differential run over edge values and 100,000 generated inputs reports a

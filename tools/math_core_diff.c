@@ -231,6 +231,14 @@ typedef union {
   float value;
 } float_bits;
 
+union long_double_bits {
+  struct {
+    uint64_t significand;
+    uint16_t sign_exponent;
+  } parts;
+  long double value;
+};
+
 static uint64_t state = UINT64_C(0xD1B54A32D192ED03);
 static uint64_t max_exp_ulps, max_log_ulps;
 static uint64_t max_erf_ulps, max_erfc_ulps;
@@ -839,6 +847,52 @@ static int check_float(uint32_t input_bits) {
   }
   return 0;
 }
+
+#define CHECK_NEXTAFTER_SNAN_CASE(label, type, reference, replacement, snan, finite) \
+  do { \
+    feclearexcept(FE_ALL_EXCEPT); \
+    volatile type host_result = reference((snan), (finite)); \
+    int host_flags = fetestexcept(FE_INVALID); \
+    feclearexcept(FE_ALL_EXCEPT); \
+    volatile type nelibc_result = replacement((snan), (finite)); \
+    int nelibc_flags = fetestexcept(FE_INVALID); \
+    if (!isnan(host_result) || !isnan(nelibc_result) || \
+        host_flags != FE_INVALID || nelibc_flags != host_flags) { \
+      fprintf(stderr, label " signaling-NaN x flags failed host=%x Nelibc=%x\n", \
+              host_flags, nelibc_flags); \
+      return 1; \
+    } \
+    feclearexcept(FE_ALL_EXCEPT); \
+    host_result = reference((finite), (snan)); \
+    host_flags = fetestexcept(FE_INVALID); \
+    feclearexcept(FE_ALL_EXCEPT); \
+    nelibc_result = replacement((finite), (snan)); \
+    nelibc_flags = fetestexcept(FE_INVALID); \
+    if (!isnan(host_result) || !isnan(nelibc_result) || \
+        host_flags != FE_INVALID || nelibc_flags != host_flags) { \
+      fprintf(stderr, label " signaling-NaN y flags failed host=%x Nelibc=%x\n", \
+              host_flags, nelibc_flags); \
+      return 1; \
+    } \
+  } while (0)
+
+static int check_nextafter_signaling_nan(void) {
+  double_bits double_snan = {.bits = UINT64_C(0x7FF0000000000001)};
+  float_bits float_snan = {.bits = UINT32_C(0x7F800001)};
+  union long_double_bits long_double_snan = {
+      .parts = {.significand = UINT64_C(0x8000000000000001),
+                .sign_exponent = UINT16_C(0x7FFF)}};
+  CHECK_NEXTAFTER_SNAN_CASE("nextafter", double, nextafter,
+                            nelibc_nextafter, double_snan.value, 1.0);
+  CHECK_NEXTAFTER_SNAN_CASE("nextafterf", float, nextafterf,
+                            nelibc_nextafterf, float_snan.value, 1.0f);
+  CHECK_NEXTAFTER_SNAN_CASE("nextafterl", long double, nextafterl,
+                            nelibc_nextafterl, long_double_snan.value, 1.0L);
+  feclearexcept(FE_ALL_EXCEPT);
+  return 0;
+}
+
+#undef CHECK_NEXTAFTER_SNAN_CASE
 
 static int check_math_extensions(void) {
   const double values[] = {0.0, -0.0, 0x1p-1074, DBL_MIN, DBL_MAX, INFINITY, -INFINITY, NAN};
@@ -1610,6 +1664,7 @@ static int long_double_tan_close(long double actual, long double expected) {
 
 int main(void) {
   if (check_classification()) return 1;
+  if (check_nextafter_signaling_nan()) return 1;
   if (check_long_double_erf()) return 1;
   if (check_long_double_gamma()) return 1;
   const long double hypot_values[] = {
