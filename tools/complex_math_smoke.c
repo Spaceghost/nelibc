@@ -17,6 +17,9 @@ int main(void) {
   float _Complex (*volatile call_cprojf)(float _Complex) = cprojf;
   double _Complex (*volatile call_cproj)(double _Complex) = cproj;
   long double _Complex (*volatile call_cprojl)(long double _Complex) = cprojl;
+  float (*volatile call_cargf)(float _Complex) = cargf;
+  double (*volatile call_carg)(double _Complex) = carg;
+  long double (*volatile call_cargl)(long double _Complex) = cargl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -70,5 +73,23 @@ int main(void) {
       call_cimag(z_finite_projected) != 4.0 ||
       call_creall(zl_finite_projected) != 3.0L ||
       call_cimagl(zl_finite_projected) != -4.0L) return 5;
+
+  float anglef = call_cargf(__builtin_complex(1.0f, 1.0f));
+  double angle = call_carg(__builtin_complex(1.0, 1.0));
+  long double anglel = call_cargl(__builtin_complex(1.0L, 1.0L));
+  float anglef_axis = call_cargf(__builtin_complex(-1.0f, 0.0f));
+  double angle_axis = call_carg(__builtin_complex(-1.0, -0.0));
+  long double anglel_axis = call_cargl(__builtin_complex(-1.0L, 0.0L));
+  float anglef_zero = call_cargf(__builtin_complex(1.0f, -0.0f));
+  double angle_zero = call_carg(__builtin_complex(1.0, -0.0));
+  long double anglel_zero = call_cargl(__builtin_complex(1.0L, -0.0L));
+  if (fabsf(anglef - atan2f(1.0f, 1.0f)) > 1e-6f ||
+      fabs(angle - atan2(1.0, 1.0)) > 1e-15 ||
+      fabsl(anglel - atan2l(1.0L, 1.0L)) > 1e-18L ||
+      fabsf(anglef_axis - acosf(-1.0f)) > 1e-6f ||
+      fabs(angle_axis + acos(-1.0)) > 1e-15 ||
+      fabsl(anglel_axis - acosl(-1.0L)) > 1e-18L ||
+      !signbit(anglef_zero) || !signbit(angle_zero) || !signbit(anglel_zero))
+    return 6;
   return 0;
 }

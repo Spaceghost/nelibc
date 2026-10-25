@@ -105,9 +105,9 @@ cacoshf,complex.h,,,not-declared
 cacoshl,complex.h,,,not-declared
 cacosl,complex.h,,,not-declared
 calloc,malloc.h;sched.h;stdlib.h,stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-carg,complex.h,,,not-declared
-cargf,complex.h,,,not-declared
-cargl,complex.h,,,not-declared
+carg,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+cargf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+cargl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 casin,complex.h,,,not-declared
 casinf,complex.h,,,not-declared
 casinh,complex.h,,,not-declared

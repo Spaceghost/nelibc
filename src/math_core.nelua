@@ -3216,6 +3216,21 @@ local function nelibc_cprojl_imaginary(real: clongdouble, imaginary: clongdouble
   return imaginary
 end
 
+local function nelibc_cargf(real: cfloat, imaginary: cfloat): cfloat
+    <cexport, codename 'nelibc_cargf'>
+  return atan2f(imaginary, real)
+end
+
+local function nelibc_carg(real: cdouble, imaginary: cdouble): cdouble
+    <cexport, codename 'nelibc_carg'>
+  return atan2(imaginary, real)
+end
+
+local function nelibc_cargl(real: clongdouble, imaginary: clongdouble): clongdouble
+    <cexport, codename 'nelibc_cargl'>
+  return atan2l(imaginary, real)
+end
+
 -- Advance one encoding in the 80-bit extended-precision value ordering.
 local function nextafterl(x: clongdouble, y: clongdouble): clongdouble
     <cexport, codename 'nextafterl'>

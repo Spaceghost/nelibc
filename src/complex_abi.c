@@ -13,6 +13,9 @@ extern long double nelibc_cprojl_real(long double real, long double imaginary);
 extern float nelibc_cprojf_imaginary(float real, float imaginary);
 extern double nelibc_cproj_imaginary(double real, double imaginary);
 extern long double nelibc_cprojl_imaginary(long double real, long double imaginary);
+extern float nelibc_cargf(float real, float imaginary);
+extern double nelibc_carg(double real, double imaginary);
+extern long double nelibc_cargl(long double real, long double imaginary);
 
 float cabsf(float _Complex value) {
   return nelibc_cabsf_parts(__real__ value, __imag__ value);
@@ -81,4 +84,16 @@ long double _Complex cprojl(long double _Complex value) {
   return __builtin_complex(
       nelibc_cprojl_real(__real__ value, __imag__ value),
       nelibc_cprojl_imaginary(__real__ value, __imag__ value));
+}
+
+float cargf(float _Complex value) {
+  return nelibc_cargf(__real__ value, __imag__ value);
+}
+
+double carg(double _Complex value) {
+  return nelibc_carg(__real__ value, __imag__ value);
+}
+
+long double cargl(long double _Complex value) {
+  return nelibc_cargl(__real__ value, __imag__ value);
 }

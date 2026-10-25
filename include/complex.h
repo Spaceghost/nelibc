@@ -22,6 +22,9 @@ long double complex conjl(long double complex value);
 float complex cprojf(float complex value);
 double complex cproj(double complex value);
 long double complex cprojl(long double complex value);
+float cargf(float complex value);
+double carg(double complex value);
+long double cargl(long double complex value);
 
 #else
 
