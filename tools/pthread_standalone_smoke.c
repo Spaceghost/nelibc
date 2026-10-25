@@ -18,6 +18,7 @@ static int atfork_order[16];
 static int atfork_order_count;
 static volatile int detached_done;
 static _Atomic int join_release;
+static _Atomic int cancel_join_started;
 static volatile int mutex_counter;
 static pthread_mutex_t static_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int spin_counter;
@@ -330,6 +331,11 @@ static void *gated_join_worker(void *argument) {
   while (!atomic_load_explicit(&join_release, memory_order_acquire)) {
   }
   return argument;
+}
+
+static void *deferred_cancel_join_worker(void *argument) {
+  atomic_store_explicit(&cancel_join_started, 1, memory_order_release);
+  return (void *)(intptr_t)pthread_join((pthread_t)argument, 0);
 }
 
 static void *exit_with_value(void *argument) {
@@ -1281,6 +1287,28 @@ int main(void) {
   if (pthread_timedjoin_np(thread, &result, &join_deadline) != 0 ||
       result != exit_value)
     return 25;
+
+  atomic_store_explicit(&join_release, 0, memory_order_release);
+  atomic_store_explicit(&cancel_join_started, 0, memory_order_relaxed);
+  pthread_t cancel_join_target;
+  pthread_t cancel_joiner;
+  if (pthread_create(&cancel_join_target, 0, gated_join_worker, exit_value) != 0 ||
+      pthread_create(&cancel_joiner, 0, deferred_cancel_join_worker,
+                     (void *)cancel_join_target) != 0)
+    return 300;
+  for (unsigned int i = 0; i < 10000000U &&
+       !atomic_load_explicit(&cancel_join_started, memory_order_acquire); ++i) {
+  }
+  if (!atomic_load_explicit(&cancel_join_started, memory_order_acquire))
+    return 301;
+  struct timespec cancel_join_delay = {0, 20000000};
+  if (nanosleep(&cancel_join_delay, 0) != 0 ||
+      pthread_cancel(cancel_joiner) != 0 ||
+      pthread_join(cancel_joiner, &result) != 0 || result != PTHREAD_CANCELED)
+    return 302;
+  atomic_store_explicit(&join_release, 1, memory_order_release);
+  if (pthread_join(cancel_join_target, &result) != 0 || result != exit_value)
+    return 303;
 
   cancel_waiting = 0;
   cancel_cleanup_calls = 0;

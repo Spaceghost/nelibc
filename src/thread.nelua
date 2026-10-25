@@ -66,6 +66,10 @@ local PthreadContext: type = @record{
   protect_base_priority: cint,
   protect_lock: cint
 }
+local PthreadJoinCleanup: type = @record{
+  context: *PthreadContext,
+  lifecycle: cint
+}
 local SchedParam: type = @record{
   sched_priority: cint
 }
@@ -733,7 +737,7 @@ end
 -- A non-null deadline is an absolute CLOCK_REALTIME deadline. Keep futex sleeps
 -- short so this waiter continues to service process-wide credential work.
 local function thread_wait_until(handle: *ThreadHandle,
-    deadline: *Timespec): cint
+    deadline: *Timespec, cancelable: boolean): cint
   if handle == nilptr or handle.state ~= 1 then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -746,6 +750,15 @@ local function thread_wait_until(handle: *ThreadHandle,
   local tid_word: *[0]cint = handle.tid_word
   if tid_word == nilptr then tid_word = &handle.tid end
   while nelibc_thread_tid_load((@pointer)(tid_word)) ~= 0 do
+    if cancelable then
+      local context = pthread_current_context()
+      if context ~= nilptr and context.cancel_state == PTHREAD_CANCEL_ENABLE and
+         context.cancel_type == PTHREAD_CANCEL_DEFERRED and
+         nelibc_atomic_load_int(&context.cancel_pending) ~= 0 then
+        nelibc_errno_location()[0] = 4 -- EINTR; caller releases its join claim
+        return -1
+      end
+    end
     local expected_tid: cint = nelibc_thread_tid_load((@pointer)(tid_word))
     nelibc_credential_sync_serve()
     if nelibc_thread_tid_load((@pointer)(tid_word)) ~= 0 then
@@ -799,7 +812,7 @@ local function thread_wait_until(handle: *ThreadHandle,
 end
 
 local function thread_wait(handle: *ThreadHandle): cint
-  return thread_wait_until(handle, nilptr)
+  return thread_wait_until(handle, nilptr, false)
 end
 
 local function nelibc_thread_join(handle: *ThreadHandle, result: *[0]cint): cint <cexport, codename 'nelibc_thread_join'>
@@ -832,6 +845,24 @@ local function pthread_join_release_claim(context: *PthreadContext,
   if nelibc_atomic_load_int(&context.lifecycle) == 7 then
     nelibc_atomic_store_int(&context.lifecycle, 2)
   end
+end
+
+local function pthread_join_cancel_cleanup(argument: pointer): void
+  local cleanup = (@*PthreadJoinCleanup)(argument)
+  pthread_join_release_claim(cleanup.context, cleanup.lifecycle)
+end
+
+local function pthread_join_cleanup_pop(cleanup_context: *PthreadContext,
+    cleanup: *PthreadJoinCleanup): boolean
+  if cleanup_context == nilptr or cleanup_context.cleanup_count <= 0 then return false end
+  local index = cleanup_context.cleanup_count - 1
+  local entry = cleanup_context.cleanup_entries[index]
+  if entry.routine ~= pthread_join_cancel_cleanup or
+     entry.arg ~= (@pointer)(cleanup) then return false end
+  cleanup_context.cleanup_count = index
+  cleanup_context.cleanup_entries[index].routine = nilptr
+  cleanup_context.cleanup_entries[index].arg = nilptr
+  return true
 end
 
 local function pthread_finish(context: *PthreadContext): void
@@ -3235,19 +3266,48 @@ local function pthread_join(thread: pointer, result: *[0]pointer): cint <cexport
   if thread == nelibc_thread_current_identity() then return 35 end -- EDEADLK
   local state = (@*PthreadObject)(thread)
   if state.magic ~= PTHREAD_OBJECT_MAGIC then return 3 end -- ESRCH
+  pthread_testcancel()
+  pthread_cancel_defer_begin()
   local lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
   while true do
-    if lifecycle ~= 0 and lifecycle ~= 2 then return 22 end -- EINVAL
+    if lifecycle ~= 0 and lifecycle ~= 2 then
+      pthread_cancel_defer_end()
+      return 22 -- EINVAL
+    end
     if nelibc_atomic_cas_int(&state.context.lifecycle, lifecycle, 4) == 0 then break end
     lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
   end
+  local cleanup_context = pthread_current_context()
+  local cleanup: PthreadJoinCleanup
+  cleanup.context = &state.context
+  cleanup.lifecycle = lifecycle
+  local cleanup_registered = cleanup_context ~= nilptr and
+      cleanup_context.cleanup_count < 32
+  if cleanup_registered then
+    cleanup_context.cleanup_entries[cleanup_context.cleanup_count].routine = pthread_join_cancel_cleanup
+    cleanup_context.cleanup_entries[cleanup_context.cleanup_count].arg = (@pointer)(&cleanup)
+    cleanup_context.cleanup_count = cleanup_context.cleanup_count + 1
+    pthread_cancel_defer_end()
+  end
   local tid_word: *[0]cint = state.handle.tid_word
-  if thread_wait(&state.handle) ~= 0 then return nelibc_errno_location()[0] end
+  if thread_wait_until(&state.handle, nilptr, cleanup_registered) ~= 0 then
+    local wait_error = nelibc_errno_location()[0]
+    if cleanup_registered then
+      pthread_join_cleanup_pop(cleanup_context, &cleanup)
+    end
+    pthread_join_release_claim(&state.context, lifecycle)
+    if not cleanup_registered then pthread_cancel_defer_end() end
+    pthread_testcancel()
+    return wait_error
+  end
+  if cleanup_registered then pthread_join_cleanup_pop(cleanup_context, &cleanup) end
   if result ~= nilptr then result[0] = state.context.result end
   pthread_robust_slot_release(state.context.robust_slot)
   nelibc_thread_tid_slot_release(tid_word)
   state.magic = 0
   nelibc_free(thread)
+  if not cleanup_registered then pthread_cancel_defer_end() end
+  pthread_testcancel()
   return 0
 end
 
@@ -3288,23 +3348,48 @@ local function pthread_timedjoin_np(thread: pointer, result: *[0]pointer,
   if thread == nelibc_thread_current_identity() then return 35 end -- EDEADLK
   local state = (@*PthreadObject)(thread)
   if state.magic ~= PTHREAD_OBJECT_MAGIC then return 3 end -- ESRCH
+  pthread_testcancel()
+  pthread_cancel_defer_begin()
   local lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
   while true do
-    if lifecycle ~= 0 and lifecycle ~= 2 then return 22 end -- EINVAL
+    if lifecycle ~= 0 and lifecycle ~= 2 then
+      pthread_cancel_defer_end()
+      return 22 -- EINVAL
+    end
     if nelibc_atomic_cas_int(&state.context.lifecycle, lifecycle, 4) == 0 then break end
     lifecycle = nelibc_atomic_load_int(&state.context.lifecycle)
   end
+  local cleanup_context = pthread_current_context()
+  local cleanup: PthreadJoinCleanup
+  cleanup.context = &state.context
+  cleanup.lifecycle = lifecycle
+  local cleanup_registered = cleanup_context ~= nilptr and
+      cleanup_context.cleanup_count < 32
+  if cleanup_registered then
+    cleanup_context.cleanup_entries[cleanup_context.cleanup_count].routine = pthread_join_cancel_cleanup
+    cleanup_context.cleanup_entries[cleanup_context.cleanup_count].arg = (@pointer)(&cleanup)
+    cleanup_context.cleanup_count = cleanup_context.cleanup_count + 1
+    pthread_cancel_defer_end()
+  end
   local tid_word: *[0]cint = state.handle.tid_word
-  if thread_wait_until(&state.handle, abstime) ~= 0 then
+  if thread_wait_until(&state.handle, abstime, cleanup_registered) ~= 0 then
     local wait_error = nelibc_errno_location()[0]
+    if cleanup_registered then
+      pthread_join_cleanup_pop(cleanup_context, &cleanup)
+    end
     pthread_join_release_claim(&state.context, lifecycle)
+    if not cleanup_registered then pthread_cancel_defer_end() end
+    pthread_testcancel()
     return wait_error
   end
+  if cleanup_registered then pthread_join_cleanup_pop(cleanup_context, &cleanup) end
   if result ~= nilptr then result[0] = state.context.result end
   pthread_robust_slot_release(state.context.robust_slot)
   nelibc_thread_tid_slot_release(tid_word)
   state.magic = 0
   nelibc_free(thread)
+  if not cleanup_registered then pthread_cancel_defer_end() end
+  pthread_testcancel()
   return 0
 end
 
