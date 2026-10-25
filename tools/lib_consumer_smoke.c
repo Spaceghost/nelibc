@@ -287,6 +287,10 @@ static void *standalone_numeric_locale_worker(void *argument) {
       wcsftime_l(wide_time_text, 128, L"%A|%B|%x", &sample_time, time_c) == 0 ||
       wcscmp(wide_time_text, L"Friday|March|03/01/24") != 0 ||
       uselocale((locale_t)0) != LC_GLOBAL_LOCALE ||
+      uselocale(time_de) != LC_GLOBAL_LOCALE ||
+      wcsftime(wide_time_text, 128, L"%A|%B|%x", &sample_time) == 0 ||
+      wcscmp(wide_time_text, L"Freitag|März|01.03.2024") != 0 ||
+      uselocale(LC_GLOBAL_LOCALE) != time_de ||
       strptime_l(time_text, "%A|%B|%x", &parsed_time, time_de) == NULL ||
       parsed_time.tm_wday != 5 || parsed_time.tm_mon != 2 ||
       parsed_time.tm_mday != 1 || parsed_time.tm_year != 124 ||
