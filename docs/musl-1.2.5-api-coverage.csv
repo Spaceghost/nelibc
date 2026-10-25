@@ -384,7 +384,7 @@ fmtmsg,fmtmsg.h,,,not-declared
 fnmatch,fnmatch.h,,,not-declared
 fopen,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fopencookie,stdio.h,,,not-declared
-fork,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+fork,unistd.h,nelibc_syscall.h,,host-delegated
 forkpty,pty.h,,,not-declared
 fpathconf,unistd.h,unistd.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fprintf,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -883,7 +883,7 @@ process_vm_writev,sys/uio.h,,,not-declared
 pselect,sys/select.h,sys/select.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 psiginfo,signal.h,,,not-declared
 psignal,signal.h,,,not-declared
-pthread_atfork,pthread.h,pthread.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+pthread_atfork,pthread.h,pthread.h,,host-delegated
 pthread_attr_destroy,pthread.h,pthread.h,,host-delegated
 pthread_attr_getdetachstate,pthread.h,pthread.h,,host-delegated
 pthread_attr_getguardsize,pthread.h,pthread.h,,host-delegated

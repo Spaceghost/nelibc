@@ -61,8 +61,8 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,472 APIs: 794 exported by Nelibc in at least
-one tested hybrid profile, 186 intentionally delegated to the host in hybrid
+The current snapshot contains 1,472 APIs: 792 exported by Nelibc in at least
+one tested hybrid profile, 188 intentionally delegated to the host in hybrid
 profiles, and 492 not declared by Nelibc. Every declared API in this pinned
 baseline is either exported by at least one hybrid archive or intentionally
 delegated to its host. The separate seven-profile inventory tracks per-profile
@@ -74,9 +74,10 @@ scope candidates until an explicit policy records why an API is excluded.
 No real-valued `math.h` APIs in this pinned musl baseline remain undeclared.
 The largest remaining groups are wide characters (42), network database APIs
 (32), stdlib (30), unistd (29), and stdio (28). The pthread rows without
-Nelibc declarations are two private musl cleanup helper symbols. This is a
-breadth comparison, not a behavioral
-conformance score.
+Nelibc declarations are two private musl cleanup helper symbols. Hybrid `fork`
+and `pthread_atfork` are intentionally host-delegated so host fork handlers
+still run; standalone archives export Nelibc's implementations. This is a
+breadth comparison, not a behavioral conformance score.
 
 `clearenv` is implemented in Nelua alongside the environment mutation
 functions. It clears `environ`, releases Nelibc-owned entries, and permits

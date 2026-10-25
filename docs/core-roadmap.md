@@ -18,6 +18,14 @@ archive; it does not certify every behavior required by C or POSIX.
 
 ## Current evidence
 
+Hybrid archives now leave `fork` and `pthread_atfork` to the host libc. The
+Nelua raw-syscall fork and Nelibc atfork registry remain available in standalone
+builds; the hybrid unistd objects localize those symbols so glibc and musl can
+run their own internal fork handlers for allocator, stdio, and thread state.
+`make lib-consumer-matrix` passed across Zig/glibc, GCC/glibc, Zig/musl, and
+TinyCC/glibc, including the consumer's prepare/parent/child handler-order
+checks. The API manifest marks both functions as host-delegated in hybrid mode.
+
 The four hybrid syscall smoke profiles pass with Zig/glibc, GCC/glibc,
 Zig/musl, and TinyCC/glibc. Hybrid spawn uses the host implementation and its
 native attributes ABI. In the static musl profile, Nelibc exports both
@@ -219,13 +227,13 @@ setter follows the Linux manual's replacement behavior; musl 1.2.5 instead
 only raises its stack and guard defaults.
 The `pthread_kill`, `pthread_getcpuclockid`, and `pthread_setschedprio` are
 implemented in standalone mode and delegated to the host in hybrid mode.
-`pthread_atfork` is implemented
-alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
-against the current POSIX pthread index, including APIs absent from the pinned
-musl export set.
+Hybrid archives delegate `pthread_atfork` and `fork` to the selected libc so
+its internal fork handlers still run. Nelibc keeps its own implementations
+for standalone mode. Also audit against the current POSIX pthread index,
+including APIs absent from the pinned musl export set.
 
 - The regenerated API inventory has 1,062 declared names. All four hybrid
-  archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 864
+  archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 862
   functions each; all three standalone archives export 1,064, including two
   implementation-only entries. The inventory classifies 185 APIs as
   host-delegated and 10 declared-but-unexported in the Zig/musl archive.
@@ -234,8 +242,8 @@ musl export set.
   a completeness percentage. See `build/api-coverage.csv` after
   `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,472 declarations
-  that are also exported by the pinned release archives: Nelibc exports 794
-  in at least one tested hybrid profile, delegates 186 to a hybrid host, and does not
+  that are also exported by the pinned release archives: Nelibc exports 792
+  in at least one tested hybrid profile, delegates 188 to a hybrid host, and does not
   yet declare 492. No declared API is missing from the tested hybrid archives.
   The largest undeclared groups are wide characters (42), network database
   APIs (32), stdlib (30), and unistd (29). These

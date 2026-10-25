@@ -25,6 +25,7 @@ DEFAULT_PROFILES = {
 HOST_DELEGATED = {
     name: {"zig_glibc", "gcc_glibc", "zig_musl", "tcc_glibc"}
     for name in (
+        "fork", "pthread_atfork",
         "pthread_attr_init", "pthread_attr_destroy",
         "pthread_attr_setdetachstate", "pthread_attr_getdetachstate",
         "pthread_attr_setscope", "pthread_attr_getscope",

@@ -5,6 +5,7 @@ TCC ?= tcc
 TCC_LIBTCC1 ?= $(shell $(TCC) -print-search-dirs 2>/dev/null | sed -n 's/^install: //p')/libtcc1.a
 AR ?= ar
 OBJCOPY ?= objcopy
+HYBRID_HOST_SYMBOLS := --localize-symbol=fork --localize-symbol=pthread_atfork
 NM ?= nm
 OUT ?= build
 PATHCONF_PATHS ?= . /proc /dev/shm /boot
@@ -457,6 +458,7 @@ $(OUT)/libnelibc-zig.a: Makefile zig $(OUT)/stdio-format-zig.o src/environment_a
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-zig.o src/fmemopen_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/fopen-hybrid-zig.o src/fopen_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/unistd-zig.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-zig.o $(OUT)/unistd-zig.o.host && mv $(OUT)/unistd-zig.o.host $(OUT)/unistd-zig.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-zig.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/fclose-hybrid-zig.o src/fclose_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-zig.o src/sys/linux_x86_64.nelua
@@ -505,6 +507,7 @@ $(OUT)/libnelibc-gcc.a: Makefile gcc $(OUT)/stdio-format-gcc.o src/environment_a
 	$(NELUA) -B -r --cc 'gcc' --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-gcc.o src/fmemopen_hybrid.nelua
 	$(NELUA) -B -r --cc 'gcc' --cflags=-fno-builtin -o $(OUT)/fopen-hybrid-gcc.o src/fopen_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/unistd-gcc.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-gcc.o $(OUT)/unistd-gcc.o.host && mv $(OUT)/unistd-gcc.o.host $(OUT)/unistd-gcc.o
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-gcc.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/fclose-hybrid-gcc.o src/fclose_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-gcc.o src/sys/linux_x86_64.nelua
@@ -551,6 +554,7 @@ $(OUT)/libnelibc-zig-musl.a: Makefile zig-musl $(OUT)/malloc-hybrid-zig-musl.o $
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-zig-musl.o src/fmemopen_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/fopen-hybrid-zig-musl.o src/fopen_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/unistd-zig-musl.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-zig-musl.o $(OUT)/unistd-zig-musl.o.host && mv $(OUT)/unistd-zig-musl.o.host $(OUT)/unistd-zig-musl.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-zig-musl.o src/stdio_hybrid_musl.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/atexit-musl-hybrid-zig-musl.o src/atexit_musl_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-zig-musl.o src/sys/linux_x86_64.nelua
@@ -600,6 +604,7 @@ $(OUT)/libnelibc-tcc.a: Makefile tcc $(OUT)/stdio-format-tcc.o src/environment_a
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-tcc.o src/fmemopen_hybrid.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/fopen-hybrid-tcc.o src/fopen_hybrid.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/unistd-tcc.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-tcc.o $(OUT)/unistd-tcc.o.host && mv $(OUT)/unistd-tcc.o.host $(OUT)/unistd-tcc.o
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-tcc.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/fclose-hybrid-tcc.o src/fclose_hybrid.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-tcc.o src/sys/linux_x86_64.nelua
@@ -2360,7 +2365,9 @@ syscall-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-zig.o $(OUT
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/errno-host-zig.o src/errno/host.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/alloc-zig.o src/alloc.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/unistd-zig.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-zig.o $(OUT)/unistd-zig.o.host && mv $(OUT)/unistd-zig.o.host $(OUT)/unistd-zig.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -D NELIBC_TESTING=true -o $(OUT)/unistd-smoke-zig.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-smoke-zig.o $(OUT)/unistd-smoke-zig.o.host && mv $(OUT)/unistd-smoke-zig.o.host $(OUT)/unistd-smoke-zig.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-zig.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-zig.o src/open_memstream_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-zig.o src/fmemopen_hybrid.nelua
@@ -2378,7 +2385,9 @@ syscall-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-gcc.o $(OUT
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/errno-host-gcc.o src/errno/host.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/alloc-gcc.o src/alloc.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/unistd-gcc.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-gcc.o $(OUT)/unistd-gcc.o.host && mv $(OUT)/unistd-gcc.o.host $(OUT)/unistd-gcc.o
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -D NELIBC_TESTING=true -o $(OUT)/unistd-smoke-gcc.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-smoke-gcc.o $(OUT)/unistd-smoke-gcc.o.host && mv $(OUT)/unistd-smoke-gcc.o.host $(OUT)/unistd-smoke-gcc.o
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-gcc.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-gcc.o src/open_memstream_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-gcc.o src/fmemopen_hybrid.nelua
@@ -2396,7 +2405,9 @@ syscall-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-zig-mu
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/errno-host-zig-musl.o src/errno/host.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/alloc-zig-musl.o src/alloc.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/unistd-zig-musl.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-zig-musl.o $(OUT)/unistd-zig-musl.o.host && mv $(OUT)/unistd-zig-musl.o.host $(OUT)/unistd-zig-musl.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -D NELIBC_TESTING=true -o $(OUT)/unistd-smoke-zig-musl.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-smoke-zig-musl.o $(OUT)/unistd-smoke-zig-musl.o.host && mv $(OUT)/unistd-smoke-zig-musl.o.host $(OUT)/unistd-smoke-zig-musl.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-zig-musl.o src/stdio_hybrid_musl.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-zig-musl.o src/open_memstream_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-zig-musl.o src/fmemopen_hybrid.nelua
@@ -2411,7 +2422,9 @@ syscall-tcc: tcc $(OUT)/memory-x86_64-simd.o
 	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-tcc.o src/sys/linux_x86_64.nelua
 	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/alloc-tcc.o src/alloc.nelua
 	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/unistd-tcc.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-tcc.o $(OUT)/unistd-tcc.o.host && mv $(OUT)/unistd-tcc.o.host $(OUT)/unistd-tcc.o
 	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -D NELIBC_TESTING=true -o $(OUT)/unistd-smoke-tcc.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-smoke-tcc.o $(OUT)/unistd-smoke-tcc.o.host && mv $(OUT)/unistd-smoke-tcc.o.host $(OUT)/unistd-smoke-tcc.o
 	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-tcc.o src/open_memstream_hybrid.nelua
 	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-tcc.o src/fmemopen_hybrid.nelua
 	@$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-tcc-asm.o
@@ -2435,6 +2448,7 @@ syscall-tls-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-gcc.o $
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ftls-model=initial-exec -o $(OUT)/errno-tls-gcc.o src/errno/standalone.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/alloc-tls-gcc.o src/alloc.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/unistd-tls-gcc.o src/unistd.nelua
+	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-tls-gcc.o $(OUT)/unistd-tls-gcc.o.host && mv $(OUT)/unistd-tls-gcc.o.host $(OUT)/unistd-tls-gcc.o
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-tls-gcc.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-tls-gcc.o src/open_memstream_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-tls-gcc.o src/fmemopen_hybrid.nelua
