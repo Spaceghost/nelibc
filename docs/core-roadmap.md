@@ -316,7 +316,9 @@ musl export set.
   data destructors. The standalone smoke also cancels a semaphore waiter with
   both a cleanup handler and a TSD value, then checks handler-before-destructor
   order. In deferred mode, ordinary CPU-bound code must call
-  `pthread_testcancel`.
+  `pthread_testcancel`. Key deletion invalidates the generation, so another
+  thread's stored value receives no destructor after deletion even when the
+  key slot is reused; the smoke verifies this behavior.
   Signal 32 is reserved internally and cannot be installed or blocked by
   applications. Asynchronous cancellation requires application code to stay
   within async-cancel-safe operations. The initial thread has its own pthread

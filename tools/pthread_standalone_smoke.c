@@ -58,6 +58,10 @@ static sem_t cancel_exit_semaphore;
 static _Atomic int cancel_exit_ready;
 static volatile int cancel_exit_order;
 static int cancel_exit_destructor_calls;
+static pthread_key_t deleted_value_key;
+static _Atomic int deleted_value_ready;
+static _Atomic int deleted_value_release;
+static _Atomic int deleted_value_destructor_calls;
 static int cancel_read_pipe[2];
 static volatile int cancel_waiting;
 static int cancel_cond_cleanup_unlock_result;
@@ -105,6 +109,12 @@ static void cancel_exit_destructor(void *value) {
   if (value != (void *)(uintptr_t)0x44) return;
   ++cancel_exit_destructor_calls;
   cancel_exit_order = cancel_exit_order == 1 ? 2 : -1;
+}
+
+static void deleted_value_destructor(void *value) {
+  if (value == (void *)(uintptr_t)0x55)
+    atomic_fetch_add_explicit(&deleted_value_destructor_calls, 1,
+                              memory_order_relaxed);
 }
 
 void nelibc_pthread_cancel_defer_begin(void);
@@ -574,6 +584,16 @@ static void *value_exit_worker(void *argument) {
   if (pthread_setspecific(value_key, (void *)(uintptr_t)22) != 0)
     return (void *)1;
   pthread_exit(argument);
+  return 0;
+}
+
+static void *deleted_value_worker(void *argument) {
+  (void)argument;
+  if (pthread_setspecific(deleted_value_key, (void *)(uintptr_t)0x55) != 0)
+    return (void *)1;
+  atomic_store_explicit(&deleted_value_ready, 1, memory_order_release);
+  while (!atomic_load_explicit(&deleted_value_release, memory_order_acquire)) {
+  }
   return 0;
 }
 
@@ -2593,6 +2613,31 @@ int main(void) {
       value_destructor_calls != 3 ||
       pthread_getspecific(value_key) != (void *)(uintptr_t)11)
     return 79;
+  atomic_store_explicit(&deleted_value_ready, 0, memory_order_relaxed);
+  atomic_store_explicit(&deleted_value_release, 0, memory_order_relaxed);
+  atomic_store_explicit(&deleted_value_destructor_calls, 0, memory_order_relaxed);
+  if (pthread_key_create(&deleted_value_key, deleted_value_destructor) != 0 ||
+      pthread_create(&thread, &attributes, deleted_value_worker, 0) != 0)
+    return 311;
+  for (unsigned int i = 0; i < 10000000U &&
+       !atomic_load_explicit(&deleted_value_ready, memory_order_acquire); ++i) {
+  }
+  if (!atomic_load_explicit(&deleted_value_ready, memory_order_acquire) ||
+      pthread_key_delete(deleted_value_key) != 0)
+    return 312;
+  pthread_key_t reused_deleted_key;
+  if (pthread_key_create(&reused_deleted_key, 0) != 0 ||
+      reused_deleted_key == deleted_value_key ||
+      pthread_getspecific(reused_deleted_key) != 0 ||
+      pthread_setspecific(reused_deleted_key, (void *)(uintptr_t)0x66) != 0 ||
+      pthread_getspecific(reused_deleted_key) != (void *)(uintptr_t)0x66)
+    return 313;
+  atomic_store_explicit(&deleted_value_release, 1, memory_order_release);
+  if (pthread_join(thread, &result) != 0 || result != 0 ||
+      atomic_load_explicit(&deleted_value_destructor_calls,
+                           memory_order_relaxed) != 0 ||
+      pthread_key_delete(reused_deleted_key) != 0)
+    return 314;
   if (pthread_key_delete(value_key) != 0 ||
       pthread_getspecific(value_key) != 0 ||
       pthread_setspecific(value_key, (void *)(uintptr_t)33) != EINVAL)
