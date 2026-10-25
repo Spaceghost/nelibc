@@ -2580,7 +2580,6 @@ local function getdate(input: *[0]cchar <const>): *Tm <cexport, codename 'getdat
   base.tm_isdst = -1_cint
   local line: *[0]cchar = nilptr
   local capacity: csize = 0
-  local matched_invalid: boolean = false
   while true do
     nelibc_errno_location()[0] = 0_cint
     local line_length: clong = getline(&line, &capacity, stream)
@@ -2629,7 +2628,6 @@ local function getdate(input: *[0]cchar <const>): *Tm <cexport, codename 'getdat
         }
         if gmtime_r((@*[0]clong)(&ordinal_seconds), &ordinal_date) == nilptr or
             ordinal_date.tm_year ~= candidate.tm_year then
-          matched_invalid = true
           candidate_invalid = true
         else
           candidate.tm_mon = ordinal_date.tm_mon
@@ -2648,14 +2646,13 @@ local function getdate(input: *[0]cchar <const>): *Tm <cexport, codename 'getdat
           candidate.tm_mday ~= expected_day or candidate.tm_hour ~= expected_hour or
           candidate.tm_min ~= expected_minute or candidate.tm_sec ~= expected_second or
           (timestamp == -1_clong and nelibc_errno_location()[0] == 75_cint) then
-        matched_invalid = true
-      else
-        getdate_result = candidate
-        free((@pointer)(line))
-        fclose(stream)
-        error_location[0] = 0_cint
-        return &getdate_result
+        return getdate_fail(stream, line, 8_cint)
       end
+      getdate_result = candidate
+      free((@pointer)(line))
+      fclose(stream)
+      error_location[0] = 0_cint
+      return &getdate_result
     end
   end
   local read_error = ferror(stream) ~= 0_cint
@@ -2663,8 +2660,6 @@ local function getdate(input: *[0]cchar <const>): *Tm <cexport, codename 'getdat
   fclose(stream)
   if read_error then
     error_location[0] = 5_cint
-  elseif matched_invalid then
-    error_location[0] = 8_cint
   else
     error_location[0] = 7_cint
   end
