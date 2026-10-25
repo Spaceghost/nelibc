@@ -4960,3 +4960,35 @@ local function nelibc_catanparts_l(x: clongdouble, y: clongdouble,
     reciprocal * reciprocal - sx * sx - sy * sy)
   imaginary_out[0] = 0.5_clongdouble * atanhl(2_clongdouble * sy * reciprocal / denominator)
 end
+
+-- atanh(z) = -i atan(i z); rotating the components preserves the stable
+-- scaled inverse-tangent implementation and its branch-cut handling.
+local function nelibc_catanhparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_catanhparts_f'>
+  local tangent_real: cfloat
+  local tangent_imaginary: cfloat
+  nelibc_catanparts_f(-y, x, &tangent_real, &tangent_imaginary)
+  real_out[0] = tangent_imaginary
+  imaginary_out[0] = -tangent_real
+end
+
+local function nelibc_catanhparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_catanhparts'>
+  local tangent_real: cdouble
+  local tangent_imaginary: cdouble
+  nelibc_catanparts(-y, x, &tangent_real, &tangent_imaginary)
+  real_out[0] = tangent_imaginary
+  imaginary_out[0] = -tangent_real
+end
+
+local function nelibc_catanhparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_catanhparts_l'>
+  local tangent_real: clongdouble
+  local tangent_imaginary: clongdouble
+  nelibc_catanparts_l(-y, x, &tangent_real, &tangent_imaginary)
+  real_out[0] = tangent_imaginary
+  imaginary_out[0] = -tangent_real
+end

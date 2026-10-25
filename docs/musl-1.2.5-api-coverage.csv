@@ -116,9 +116,9 @@ casinhl,complex.h,,,not-declared
 casinl,complex.h,,,not-declared
 catan,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 catanf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-catanh,complex.h,,,not-declared
-catanhf,complex.h,,,not-declared
-catanhl,complex.h,,,not-declared
+catanh,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+catanhf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+catanhl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 catanl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 catclose,nl_types.h,,,not-declared
 catgets,nl_types.h,,,not-declared

@@ -46,6 +46,9 @@ extern void nelibc_ctanhparts_l(long double real, long double imaginary, long do
 extern void nelibc_catanparts_f(float real, float imaginary, float *out_real, float *out_imaginary);
 extern void nelibc_catanparts(double real, double imaginary, double *out_real, double *out_imaginary);
 extern void nelibc_catanparts_l(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
+extern void nelibc_catanhparts_f(float real, float imaginary, float *out_real, float *out_imaginary);
+extern void nelibc_catanhparts(double real, double imaginary, double *out_real, double *out_imaginary);
+extern void nelibc_catanhparts_l(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
 
 float cabsf(float _Complex value) {
   return nelibc_cabsf_parts(__real__ value, __imag__ value);
@@ -305,5 +308,23 @@ double _Complex catan(double _Complex value) {
 long double _Complex catanl(long double _Complex value) {
   long double real, imaginary;
   nelibc_catanparts_l(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+float _Complex catanhf(float _Complex value) {
+  float real, imaginary;
+  nelibc_catanhparts_f(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+double _Complex catanh(double _Complex value) {
+  double real, imaginary;
+  nelibc_catanhparts(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+long double _Complex catanhl(long double _Complex value) {
+  long double real, imaginary;
+  nelibc_catanhparts_l(__real__ value, __imag__ value, &real, &imaginary);
   return __builtin_complex(real, imaginary);
 }

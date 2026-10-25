@@ -51,6 +51,9 @@ int main(void) {
   float _Complex (*volatile call_catanf)(float _Complex) = catanf;
   double _Complex (*volatile call_catan)(double _Complex) = catan;
   long double _Complex (*volatile call_catanl)(long double _Complex) = catanl;
+  float _Complex (*volatile call_catanhf)(float _Complex) = catanhf;
+  double _Complex (*volatile call_catanh)(double _Complex) = catanh;
+  long double _Complex (*volatile call_catanhl)(long double _Complex) = catanhl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -313,5 +316,28 @@ int main(void) {
       fabs(call_creal(atan_large) - acos(-1.0) / 2.0) > 1e-15 ||
       !isfinite(call_cimag(atan_large)) ||
       !isinf(call_cimag(atan_pole)) || call_cimag(atan_pole) < 0.0) return 13;
+  float _Complex atanhf_value = call_catanhf(__builtin_complex(0.5f, 0.25f));
+  double _Complex atanh_value = call_catanh(__builtin_complex(0.5, 0.25));
+  long double _Complex atanhl_value = call_catanhl(__builtin_complex(0.5L, 0.25L));
+  float _Complex atanhf_axis = call_catanhf(__builtin_complex(0.5f, -0.0f));
+  double _Complex atanh_axis = call_catanh(__builtin_complex(0.5, -0.0));
+  long double _Complex atanhl_axis = call_catanhl(__builtin_complex(0.5L, -0.0L));
+  double _Complex atanh_pole = call_catanh(__builtin_complex(1.0, 0.0));
+  double _Complex atanh_large = call_catanh(__builtin_complex(DBL_MAX, 1.0));
+  if (fabsf(call_crealf(atanhf_value) - 0.5f * atanhf(1.0f / 1.3125f)) > 2e-6f ||
+      fabsf(call_cimagf(atanhf_value) - 0.5f * atan2f(0.5f, 0.6875f)) > 2e-6f ||
+      fabs(call_creal(atanh_value) - 0.5 * atanh(1.0 / 1.3125)) > 2e-15 ||
+      fabs(call_cimag(atanh_value) - 0.5 * atan2(0.5, 0.6875)) > 2e-15 ||
+      fabsl(call_creall(atanhl_value) - 0.5L * atanhl(1.0L / 1.3125L)) > 2e-18L ||
+      fabsl(call_cimagl(atanhl_value) - 0.5L * atan2l(0.5L, 0.6875L)) > 2e-18L ||
+      fabsf(call_crealf(atanhf_axis) - atanhf(0.5f)) > 2e-6f ||
+      fabs(call_creal(atanh_axis) - atanh(0.5)) > 2e-15 ||
+      fabsl(call_creall(atanhl_axis) - atanhl(0.5L)) > 2e-18L ||
+      !signbit(call_cimagf(atanhf_axis)) || !signbit(call_cimag(atanh_axis)) ||
+      !signbit(call_cimagl(atanhl_axis)) ||
+      !isinf(call_creal(atanh_pole)) || call_creal(atanh_pole) < 0.0 ||
+      call_cimag(atanh_pole) != 0.0 ||
+      !isfinite(call_creal(atanh_large)) || !isfinite(call_cimag(atanh_large)) ||
+      fabs(call_cimag(atanh_large) - acos(-1.0) / 2.0) > 1e-15) return 14;
   return 0;
 }
