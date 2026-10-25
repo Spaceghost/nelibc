@@ -753,6 +753,18 @@ char *nelibc_standalone_setlocale(int category, const char *name) {
 }
 #endif
 
+int nelibc_time_locale_is_german(void) {
+#ifdef NELIBC_STANDALONE
+  int *thread_locale = (int *)nelibc_thread_state(16, 5 * sizeof(int));
+  if (thread_locale != NULL && thread_locale[4] != 0)
+    return thread_locale[4] == 2;
+  return 0;
+#else
+  const char *january = nl_langinfo(MON_1);
+  return january != NULL && strcmp(january, "Januar") == 0;
+#endif
+}
+
 int nelibc_radix_character(void) {
 #ifdef NELIBC_STANDALONE
   return nelibc_standalone_numeric_is_de() ? ',' : '.';

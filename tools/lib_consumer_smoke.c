@@ -46,7 +46,7 @@ static void system_signal_probe(int signal_number) {
 
 #ifdef NELIBC_STANDALONE
 typedef struct {
-  locale_t locales[5];
+  locale_t locales[7];
   struct lconv *main_locale_data;
   int locale_data_isolated;
 } standalone_numeric_locale_args;
@@ -72,6 +72,8 @@ static void *standalone_numeric_locale_worker(void *argument) {
   locale_t monetary_c = args->locales[2];
   locale_t monetary_de = args->locales[3];
   locale_t collate_c = args->locales[4];
+  locale_t time_c = args->locales[5];
+  locale_t time_de = args->locales[6];
   if (uselocale(numeric_c) != LC_GLOBAL_LOCALE ||
       strcmp(localeconv()->decimal_point, ".") != 0 || !iswalpha(0xe9))
     return (void *)1;
@@ -123,6 +125,30 @@ static void *standalone_numeric_locale_worker(void *argument) {
       strcmp(transformed, "aB") != 0 ||
       uselocale(LC_GLOBAL_LOCALE) != collate_c)
     return (void *)8;
+  struct tm sample_time = {
+      .tm_sec = 9, .tm_min = 5, .tm_hour = 13, .tm_mday = 1,
+      .tm_mon = 2, .tm_year = 124, .tm_wday = 5, .tm_yday = 60,
+      .tm_isdst = 0, .tm_gmtoff = 0, .tm_zone = "UTC"};
+  char time_text[128];
+  struct tm parsed_time = {0};
+  if (uselocale(time_de) != LC_GLOBAL_LOCALE ||
+      strftime(time_text, sizeof time_text, "%A|%B|%x", &sample_time) == 0 ||
+      strcmp(time_text, "Freitag|März|01.03.2024") != 0 ||
+      strptime(time_text, "%A|%B|%x", &parsed_time) == NULL ||
+      parsed_time.tm_wday != 5 || parsed_time.tm_mon != 2 ||
+      parsed_time.tm_mday != 1 || parsed_time.tm_year != 124 ||
+      strftime(time_text, sizeof time_text, "%c", &sample_time) == 0 ||
+      strcmp(time_text, "Fr 01. Mär 2024, 13:05:09") != 0 ||
+      strptime(time_text, "%c", &parsed_time) == NULL ||
+      parsed_time.tm_wday != 5 || parsed_time.tm_mon != 2 ||
+      parsed_time.tm_mday != 1 || parsed_time.tm_year != 124 ||
+      parsed_time.tm_hour != 13 || parsed_time.tm_min != 5 ||
+      parsed_time.tm_sec != 9 ||
+      uselocale(time_c) != time_de ||
+      strftime(time_text, sizeof time_text, "%A|%B|%x", &sample_time) == 0 ||
+      strcmp(time_text, "Friday|March|03/01/24") != 0 ||
+      uselocale(LC_GLOBAL_LOCALE) != time_c)
+    return (void *)9;
   return 0;
 }
 #endif
@@ -1217,9 +1243,12 @@ int main(int argc, char **argv) {
   locale_t numeric_de_monetary_de =
       newlocale(LC_MONETARY_MASK, "de_DE.UTF-8", numeric_de);
   locale_t collate_c = newlocale(LC_COLLATE_MASK, "C", numeric_de);
+  locale_t time_c = newlocale(LC_TIME_MASK, "C", numeric_de);
+  locale_t time_de = newlocale(LC_TIME_MASK, "de_DE.UTF-8", time_c);
   if (numeric_c == (locale_t)0 || numeric_de == (locale_t)0 ||
       monetary_c == (locale_t)0 || monetary_de == (locale_t)0 ||
-      numeric_de_monetary_de == (locale_t)0 || collate_c != numeric_de)
+      numeric_de_monetary_de == (locale_t)0 || collate_c != numeric_de ||
+      time_c != numeric_de || time_de == (locale_t)0)
     return 86;
   errno = 0;
   if (newlocale(LC_COLLATE_MASK, "de_DE.UTF-8", numeric_de) != (locale_t)0 ||
@@ -1228,7 +1257,8 @@ int main(int argc, char **argv) {
   struct lconv *main_locale_data = localeconv();
   if (strcmp(main_locale_data->decimal_point, ",") != 0) return 87;
   standalone_numeric_locale_args numeric_locale_args = {
-      .locales = {numeric_c, numeric_de, monetary_c, monetary_de, collate_c},
+      .locales = {numeric_c, numeric_de, monetary_c, monetary_de, collate_c,
+          time_c, time_de},
       .main_locale_data = main_locale_data,
       .locale_data_isolated = 0};
   pthread_t numeric_worker;

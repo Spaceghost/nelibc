@@ -9,24 +9,33 @@ local function nelibc_standalone_global_ctype_mode(): cint <cimport> end
 local function nelibc_standalone_global_numeric_is_de(): cint <cimport> end
 local function nelibc_standalone_global_monetary_is_de(): cint <cimport> end
 local function nelibc_standalone_monetary_is_de(): cint <cimport> end
+local function nelibc_time_locale_is_german(): cint <cimport> end
 
--- These static opaque handles combine the supported CTYPE, NUMERIC, and
--- MONETARY states.
-local LocaleToken: type = @record{ctype_mode: cint, numeric_mode: cint, monetary_mode: cint}
-local locale_tokens: [8]LocaleToken = {
-  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 0},
-  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 0},
-  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 0},
-  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 0},
-  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 1},
-  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 1},
-  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 1},
-  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 1}
+-- Static handles combine CTYPE, NUMERIC, MONETARY, and TIME state. Collation
+-- is the C byte-ordering mode for every supported handle.
+local LocaleToken: type = @record{ctype_mode: cint, numeric_mode: cint, monetary_mode: cint, time_mode: cint}
+local locale_tokens: [16]LocaleToken = {
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 0, time_mode = 0},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 0, time_mode = 0},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 0, time_mode = 0},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 0, time_mode = 0},
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 1, time_mode = 0},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 1, time_mode = 0},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 1, time_mode = 0},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 1, time_mode = 0},
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 0, time_mode = 1},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 0, time_mode = 1},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 0, time_mode = 1},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 0, time_mode = 1},
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 1, time_mode = 1},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 1, time_mode = 1},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 1, time_mode = 1},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 1, time_mode = 1}
 }
 
 local function nelibc_locale_token(ctype_mode: cint, numeric_mode: cint,
-    monetary_mode: cint): pointer <inline>
-  local index = ctype_mode + numeric_mode * 2 + monetary_mode * 4
+    monetary_mode: cint, time_mode: cint): pointer <inline>
+  local index = ctype_mode + numeric_mode * 2 + monetary_mode * 4 + time_mode * 8
   return (@pointer)(&locale_tokens[index])
 end
 
@@ -35,7 +44,7 @@ local function nelibc_locale_ctype_mode(locale: pointer): cint <inline>
   if locale == (@pointer)(~0_usize) then
     return nelibc_standalone_global_ctype_mode()
   end
-  for index: cint = 0, 7 do
+  for index: cint = 0, 15 do
     if locale == (@pointer)(&locale_tokens[index]) then
       return locale_tokens[index].ctype_mode
     end
@@ -48,7 +57,7 @@ local function nelibc_locale_numeric_mode(locale: pointer): cint <inline>
   if locale == (@pointer)(~0_usize) then
     return nelibc_standalone_global_numeric_is_de()
   end
-  for index: cint = 0, 7 do
+  for index: cint = 0, 15 do
     if locale == (@pointer)(&locale_tokens[index]) then
       return locale_tokens[index].numeric_mode
     end
@@ -61,7 +70,7 @@ local function nelibc_locale_monetary_mode(locale: pointer): cint <inline>
   if locale == (@pointer)(~0_usize) then
     return nelibc_standalone_global_monetary_is_de()
   end
-  for index: cint = 0, 7 do
+  for index: cint = 0, 15 do
     if locale == (@pointer)(&locale_tokens[index]) then
       return locale_tokens[index].monetary_mode
     end
@@ -71,8 +80,19 @@ end
 
 local function nelibc_locale_collate_mode(locale: pointer): cint <inline>
   if locale == nilptr or locale == (@pointer)(~0_usize) then return 0 end
-  for index: cint = 0, 7 do
+  for index: cint = 0, 15 do
     if locale == (@pointer)(&locale_tokens[index]) then return 0 end
+  end
+  return -1
+end
+
+local function nelibc_locale_time_mode(locale: pointer): cint <inline>
+  if locale == nilptr then return nelibc_time_locale_is_german() end
+  if locale == (@pointer)(~0_usize) then return 0 end
+  for index: cint = 0, 15 do
+    if locale == (@pointer)(&locale_tokens[index]) then
+      return locale_tokens[index].time_mode
+    end
   end
   return -1
 end
@@ -96,11 +116,13 @@ local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): po
   local ctype_mode: cint = 0
   local numeric_mode: cint = 0
   local monetary_mode: cint = 0
+  local time_mode: cint = 0
   if base ~= nilptr then
     ctype_mode = nelibc_locale_ctype_mode(base)
     numeric_mode = nelibc_locale_numeric_mode(base)
     monetary_mode = nelibc_locale_monetary_mode(base)
-    if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 then
+    time_mode = nelibc_locale_time_mode(base)
+    if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 or time_mode < 0 then
       nelibc_errno_location()[0] = 22
       return nilptr
     end
@@ -136,7 +158,7 @@ local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): po
       nelibc_errno_location()[0] = 22
       return nilptr
     end
-  elseif name_is_german and (mask & 16) == 0 then
+  elseif name_is_german and (mask & 22) == 0 then
     nelibc_errno_location()[0] = 22
     return nilptr
   end
@@ -148,18 +170,27 @@ local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): po
       return nilptr
     end
   end
-  return nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode)
+  if (mask & 4) ~= 0 then
+    if name_is_c or name_is_utf8 then time_mode = 0
+    elseif name_is_german then time_mode = 1
+    else
+      nelibc_errno_location()[0] = 22
+      return nilptr
+    end
+  end
+  return nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode, time_mode)
 end
 
 local function duplocale(locale: pointer): pointer <cexport, codename 'duplocale'>
   local ctype_mode = nelibc_locale_ctype_mode(locale)
   local numeric_mode = nelibc_locale_numeric_mode(locale)
   local monetary_mode = nelibc_locale_monetary_mode(locale)
-  if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 then
+  local time_mode = nelibc_locale_time_mode(locale)
+  if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 or time_mode < 0 then
     nelibc_errno_location()[0] = 22
     return nilptr
   end
-  return nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode)
+  return nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode, time_mode)
 end
 
 local function freelocale(locale: pointer): void <cexport, codename 'freelocale'>
@@ -167,20 +198,22 @@ local function freelocale(locale: pointer): void <cexport, codename 'freelocale'
 end
 
 local function uselocale(locale: pointer): pointer <cexport, codename 'uselocale'>
-  local active = (@*[0]cint)(nelibc_thread_state(16, 16_csize))
+  local active = (@*[0]cint)(nelibc_thread_state(16, 20_csize))
   if active == nilptr then
     nelibc_errno_location()[0] = 12 -- ENOMEM
     return nilptr
   end
   local previous: pointer = (@pointer)(~0_usize)
-  if active[0] ~= 0 or active[1] ~= 0 or active[2] ~= 0 or active[3] ~= 0 then
+  if active[0] ~= 0 or active[1] ~= 0 or active[2] ~= 0 or active[3] ~= 0 or active[4] ~= 0 then
     local ctype_mode = active[0] - 1
     local numeric_mode = active[1] - 1
     if active[0] == 0 then ctype_mode = nelibc_multibyte_mode() end
     if active[1] == 0 then numeric_mode = nelibc_standalone_numeric_is_de() end
     local monetary_mode = active[2] - 1
     if active[2] == 0 then monetary_mode = nelibc_standalone_monetary_is_de() end
-    previous = nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode)
+    local time_mode = active[4] - 1
+    if active[4] == 0 then time_mode = nelibc_time_locale_is_german() end
+    previous = nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode, time_mode)
   end
   if locale == nilptr then return previous end
   if locale == (@pointer)(~0_usize) then
@@ -188,13 +221,16 @@ local function uselocale(locale: pointer): pointer <cexport, codename 'uselocale
     active[1] = 0
     active[2] = 0
     active[3] = 0
+    active[4] = 0
     return previous
   end
   local ctype_mode = nelibc_locale_ctype_mode(locale)
   local numeric_mode = nelibc_locale_numeric_mode(locale)
   local monetary_mode = nelibc_locale_monetary_mode(locale)
   local collate_mode = nelibc_locale_collate_mode(locale)
-  if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 or collate_mode < 0 then
+  local time_mode = nelibc_locale_time_mode(locale)
+  if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 or
+      collate_mode < 0 or time_mode < 0 then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr
   end
@@ -202,6 +238,7 @@ local function uselocale(locale: pointer): pointer <cexport, codename 'uselocale
   active[1] = numeric_mode + 1
   active[2] = monetary_mode + 1
   active[3] = collate_mode + 1
+  active[4] = time_mode + 1
   return previous
 end
 

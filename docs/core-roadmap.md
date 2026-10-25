@@ -11,7 +11,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep the seven-profile `make smoke-matrix` and four-profile `make dogfood-matrix` green as the source changes |
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
-| P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification data, C-style C/C.UTF-8 collation, and C/German numeric/monetary conventions; thread locale handles carry `LC_CTYPE`, `LC_NUMERIC`, `LC_MONETARY`, and C-style `LC_COLLATE`, while non-C collation and broad time conventions remain limited | Add locale-sensitive non-C collation and thread locale time categories; expand locale data |
+| P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread locale handles carry ctype, numeric, monetary, collation, and time state, while non-C collation and additional time locales remain limited | Add locale-sensitive non-C collation and time locales; expand locale data |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 555 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
@@ -235,19 +235,20 @@ musl export set.
   ASCII classifications in `C`. `wctype`/`iswctype`, all classifier `_l`
   forms, and `towupper_l`/`towlower_l` use locale handles. Standalone
   `newlocale` and `duplocale` return static handles for supported combinations
-  of `C`/`C.UTF-8` ctype and `C`/`de_DE.UTF-8` numeric/monetary state;
+  of `C`/`C.UTF-8` ctype, `C`/`de_DE.UTF-8` numeric/monetary/time state;
   `freelocale` is a no-op for those handles. Standalone `uselocale` and locale
-  handles now carry per-thread `LC_CTYPE`, `LC_NUMERIC`, and
-  `LC_MONETARY`, and C-style `LC_COLLATE` state for `C`, `C.UTF-8`, and
-  `de_DE.UTF-8` numeric and monetary conventions. Standalone collation
+  handles now carry per-thread `LC_CTYPE`, `LC_NUMERIC`, `LC_MONETARY`,
+  C-style `LC_COLLATE`, and `LC_TIME` state for `C`, `C.UTF-8`, and
+  `de_DE.UTF-8` numeric, monetary, and time conventions. Standalone collation
   supports byte ordering for `C` and `C.UTF-8`; German collation data is not
-  implemented. `strtod`, floating formatting, grouping, `strcoll`, `strxfrm`,
-  and `localeconv` use the selected thread's state. The `localeconv` result
-  itself is stored per thread. Thread locale time state is not yet implemented.
-  The standalone consumer matrix checks a worker switching between C and German
-  numeric and monetary conventions while the main thread keeps its global
-  locale, including `strtod`, `snprintf`, `strcoll`, `strxfrm`,
-  `localeconv`, locale composition, and global-locale snapshots; Zig, GCC, and
+  implemented. German time data covers localized weekday/month names and
+  `%c`/`%x` formats. `strtod`, floating formatting, grouping, `strcoll`,
+  `strxfrm`, `strftime`, `strptime`, and `localeconv` use the selected
+  thread's state. The `localeconv` result itself is stored per thread. Other
+  time locales and formats remain incomplete. The standalone consumer matrix
+  checks a worker switching C/German numeric, monetary, and time conventions
+  while the main thread keeps its global locale, including parse/format
+  roundtrips, locale composition, and global-locale snapshots; Zig, GCC, and
   TinyCC pass.
 - `wcswidth` is implemented in Nelua and uses the selected host's `wcwidth` in
   hybrid mode. The standalone locale backend uses generated Unicode 16.0

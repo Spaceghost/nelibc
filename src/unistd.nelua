@@ -7,6 +7,7 @@ local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, a
 local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
 local function nelibc_timerid_store(output: pointer, timer_id: cint): void <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_time_locale_is_german(): cint <cimport> end
 local function malloc(size: csize): pointer <cimport> end
 local function free(ptr: pointer): void <cimport> end
 local function realloc(ptr: pointer, size: csize): pointer <cimport> end
@@ -2098,6 +2099,7 @@ end
 local function strptime(input: *[0]cchar <const>, format: *[0]cchar <const>,
     time_value: *Tm): *[0]cchar <cexport, codename 'strptime'>
   if input == nilptr or format == nilptr or time_value == nilptr then return nilptr end
+  local german_time = nelibc_time_locale_is_german() ~= 0
   local input_position: csize = 0
   local format_position: csize = 0
   local parsed_year: boolean = false
@@ -2240,8 +2242,12 @@ local function strptime(input: *[0]cchar <const>, format: *[0]cchar <const>,
         if directive == 84_cchar or directive == 88_cchar then nested_format = "%H:%M:%S"
         elseif directive == 82_cchar then nested_format = "%H:%M"
         elseif directive == 68_cchar then nested_format = "%m/%d/%y"
-        elseif directive == 99_cchar then nested_format = "%a %b %e %H:%M:%S %Y"
-        elseif directive == 120_cchar then nested_format = "%m/%d/%y"
+        elseif directive == 99_cchar then
+          if german_time then nested_format = "%a %d. %b %Y, %H:%M:%S"
+          else nested_format = "%a %b %e %H:%M:%S %Y" end
+        elseif directive == 120_cchar then
+          if german_time then nested_format = "%d.%m.%Y"
+          else nested_format = "%m/%d/%y" end
         elseif directive == 114_cchar then nested_format = "%I:%M:%S %p" end
         local nested_end: *[0]cchar = strptime(&input[input_position], nested_format, time_value)
         if nested_end == nilptr then return nilptr end
@@ -2255,18 +2261,33 @@ local function strptime(input: *[0]cchar <const>, format: *[0]cchar <const>,
         while month < 12 and not matched do
           local name3: *[0]cchar = "Jan"
           local name_full: *[0]cchar = "January"
-          if month == 0 then name3 = "Jan"; name_full = "January"
-          elseif month == 1 then name3 = "Feb"; name_full = "February"
-          elseif month == 2 then name3 = "Mar"; name_full = "March"
-          elseif month == 3 then name3 = "Apr"; name_full = "April"
-          elseif month == 4 then name3 = "May"; name_full = "May"
-          elseif month == 5 then name3 = "Jun"; name_full = "June"
-          elseif month == 6 then name3 = "Jul"; name_full = "July"
-          elseif month == 7 then name3 = "Aug"; name_full = "August"
-          elseif month == 8 then name3 = "Sep"; name_full = "September"
-          elseif month == 9 then name3 = "Oct"; name_full = "October"
-          elseif month == 10 then name3 = "Nov"; name_full = "November"
-          else name3 = "Dec"; name_full = "December" end
+          if german_time then
+            if month == 0 then name3 = "Jan"; name_full = "Januar"
+            elseif month == 1 then name3 = "Feb"; name_full = "Februar"
+            elseif month == 2 then name3 = "Mär"; name_full = "März"
+            elseif month == 3 then name3 = "Apr"; name_full = "April"
+            elseif month == 4 then name3 = "Mai"; name_full = "Mai"
+            elseif month == 5 then name3 = "Jun"; name_full = "Juni"
+            elseif month == 6 then name3 = "Jul"; name_full = "Juli"
+            elseif month == 7 then name3 = "Aug"; name_full = "August"
+            elseif month == 8 then name3 = "Sep"; name_full = "September"
+            elseif month == 9 then name3 = "Okt"; name_full = "Oktober"
+            elseif month == 10 then name3 = "Nov"; name_full = "November"
+            else name3 = "Dez"; name_full = "Dezember" end
+          else
+            if month == 0 then name3 = "Jan"; name_full = "January"
+            elseif month == 1 then name3 = "Feb"; name_full = "February"
+            elseif month == 2 then name3 = "Mar"; name_full = "March"
+            elseif month == 3 then name3 = "Apr"; name_full = "April"
+            elseif month == 4 then name3 = "May"; name_full = "May"
+            elseif month == 5 then name3 = "Jun"; name_full = "June"
+            elseif month == 6 then name3 = "Jul"; name_full = "July"
+            elseif month == 7 then name3 = "Aug"; name_full = "August"
+            elseif month == 8 then name3 = "Sep"; name_full = "September"
+            elseif month == 9 then name3 = "Oct"; name_full = "October"
+            elseif month == 10 then name3 = "Nov"; name_full = "November"
+            else name3 = "Dec"; name_full = "December" end
+          end
           local candidate_position: csize = input_position
           if strptime_word(input, &candidate_position, name3) then
             local full_position: csize = input_position
@@ -2287,13 +2308,23 @@ local function strptime(input: *[0]cchar <const>, format: *[0]cchar <const>,
         while weekday < 7 and not matched do
           local name3: *[0]cchar = "Sun"
           local name_full: *[0]cchar = "Sunday"
-          if weekday == 0 then name3 = "Sun"; name_full = "Sunday"
-          elseif weekday == 1 then name3 = "Mon"; name_full = "Monday"
-          elseif weekday == 2 then name3 = "Tue"; name_full = "Tuesday"
-          elseif weekday == 3 then name3 = "Wed"; name_full = "Wednesday"
-          elseif weekday == 4 then name3 = "Thu"; name_full = "Thursday"
-          elseif weekday == 5 then name3 = "Fri"; name_full = "Friday"
-          else name3 = "Sat"; name_full = "Saturday" end
+          if german_time then
+            if weekday == 0 then name3 = "So"; name_full = "Sonntag"
+            elseif weekday == 1 then name3 = "Mo"; name_full = "Montag"
+            elseif weekday == 2 then name3 = "Di"; name_full = "Dienstag"
+            elseif weekday == 3 then name3 = "Mi"; name_full = "Mittwoch"
+            elseif weekday == 4 then name3 = "Do"; name_full = "Donnerstag"
+            elseif weekday == 5 then name3 = "Fr"; name_full = "Freitag"
+            else name3 = "Sa"; name_full = "Samstag" end
+          else
+            if weekday == 0 then name3 = "Sun"; name_full = "Sunday"
+            elseif weekday == 1 then name3 = "Mon"; name_full = "Monday"
+            elseif weekday == 2 then name3 = "Tue"; name_full = "Tuesday"
+            elseif weekday == 3 then name3 = "Wed"; name_full = "Wednesday"
+            elseif weekday == 4 then name3 = "Thu"; name_full = "Thursday"
+            elseif weekday == 5 then name3 = "Fri"; name_full = "Friday"
+            else name3 = "Sat"; name_full = "Saturday" end
+          end
           local candidate_position: csize = input_position
           if strptime_word(input, &candidate_position, name3) then
             local full_position: csize = input_position
@@ -2459,6 +2490,7 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
     <cexport, codename 'strftime'>
   if buffer == nilptr or format == nilptr or time_value == nilptr then return 0 end
   if max_size == 0 then return 0 end
+  local german_time = nelibc_time_locale_is_german() ~= 0
   local position: csize = 0
   local index: csize = 0
   local ok: boolean = true
@@ -2494,6 +2526,14 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
       elseif directive == 116_cchar then ok = strftime_append_text(buffer, max_size, &position, "\t")
       elseif directive == 97_cchar then
         if time_value.tm_wday < 0 or time_value.tm_wday > 6 then ok = false
+        elseif german_time then
+          if time_value.tm_wday == 0 then ok = strftime_append_text(buffer, max_size, &position, "So")
+          elseif time_value.tm_wday == 1 then ok = strftime_append_text(buffer, max_size, &position, "Mo")
+          elseif time_value.tm_wday == 2 then ok = strftime_append_text(buffer, max_size, &position, "Di")
+          elseif time_value.tm_wday == 3 then ok = strftime_append_text(buffer, max_size, &position, "Mi")
+          elseif time_value.tm_wday == 4 then ok = strftime_append_text(buffer, max_size, &position, "Do")
+          elseif time_value.tm_wday == 5 then ok = strftime_append_text(buffer, max_size, &position, "Fr")
+          else ok = strftime_append_text(buffer, max_size, &position, "Sa") end
         elseif time_value.tm_wday == 0 then ok = strftime_append_text(buffer, max_size, &position, "Sun")
         elseif time_value.tm_wday == 1 then ok = strftime_append_text(buffer, max_size, &position, "Mon")
         elseif time_value.tm_wday == 2 then ok = strftime_append_text(buffer, max_size, &position, "Tue")
@@ -2503,6 +2543,13 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         else ok = strftime_append_text(buffer, max_size, &position, "Sat") end
       elseif directive == 65_cchar then
         if time_value.tm_wday < 0 or time_value.tm_wday > 6 then ok = false
+        elseif german_time and time_value.tm_wday == 0 then ok = strftime_append_text(buffer, max_size, &position, "Sonntag")
+        elseif german_time and time_value.tm_wday == 1 then ok = strftime_append_text(buffer, max_size, &position, "Montag")
+        elseif german_time and time_value.tm_wday == 2 then ok = strftime_append_text(buffer, max_size, &position, "Dienstag")
+        elseif german_time and time_value.tm_wday == 3 then ok = strftime_append_text(buffer, max_size, &position, "Mittwoch")
+        elseif german_time and time_value.tm_wday == 4 then ok = strftime_append_text(buffer, max_size, &position, "Donnerstag")
+        elseif german_time and time_value.tm_wday == 5 then ok = strftime_append_text(buffer, max_size, &position, "Freitag")
+        elseif german_time then ok = strftime_append_text(buffer, max_size, &position, "Samstag")
         elseif time_value.tm_wday == 0 then ok = strftime_append_text(buffer, max_size, &position, "Sunday")
         elseif time_value.tm_wday == 1 then ok = strftime_append_text(buffer, max_size, &position, "Monday")
         elseif time_value.tm_wday == 2 then ok = strftime_append_text(buffer, max_size, &position, "Tuesday")
@@ -2512,6 +2559,18 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         else ok = strftime_append_text(buffer, max_size, &position, "Saturday") end
       elseif directive == 98_cchar or directive == 104_cchar then
         if time_value.tm_mon < 0 or time_value.tm_mon > 11 then ok = false
+        elseif german_time and time_value.tm_mon == 0 then ok = strftime_append_text(buffer, max_size, &position, "Jan")
+        elseif german_time and time_value.tm_mon == 1 then ok = strftime_append_text(buffer, max_size, &position, "Feb")
+        elseif german_time and time_value.tm_mon == 2 then ok = strftime_append_text(buffer, max_size, &position, "Mär")
+        elseif german_time and time_value.tm_mon == 3 then ok = strftime_append_text(buffer, max_size, &position, "Apr")
+        elseif german_time and time_value.tm_mon == 4 then ok = strftime_append_text(buffer, max_size, &position, "Mai")
+        elseif german_time and time_value.tm_mon == 5 then ok = strftime_append_text(buffer, max_size, &position, "Jun")
+        elseif german_time and time_value.tm_mon == 6 then ok = strftime_append_text(buffer, max_size, &position, "Jul")
+        elseif german_time and time_value.tm_mon == 7 then ok = strftime_append_text(buffer, max_size, &position, "Aug")
+        elseif german_time and time_value.tm_mon == 8 then ok = strftime_append_text(buffer, max_size, &position, "Sep")
+        elseif german_time and time_value.tm_mon == 9 then ok = strftime_append_text(buffer, max_size, &position, "Okt")
+        elseif german_time and time_value.tm_mon == 10 then ok = strftime_append_text(buffer, max_size, &position, "Nov")
+        elseif german_time then ok = strftime_append_text(buffer, max_size, &position, "Dez")
         elseif time_value.tm_mon == 0 then ok = strftime_append_text(buffer, max_size, &position, "Jan")
         elseif time_value.tm_mon == 1 then ok = strftime_append_text(buffer, max_size, &position, "Feb")
         elseif time_value.tm_mon == 2 then ok = strftime_append_text(buffer, max_size, &position, "Mar")
@@ -2526,6 +2585,18 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         else ok = strftime_append_text(buffer, max_size, &position, "Dec") end
       elseif directive == 66_cchar then
         if time_value.tm_mon < 0 or time_value.tm_mon > 11 then ok = false
+        elseif german_time and time_value.tm_mon == 0 then ok = strftime_append_text(buffer, max_size, &position, "Januar")
+        elseif german_time and time_value.tm_mon == 1 then ok = strftime_append_text(buffer, max_size, &position, "Februar")
+        elseif german_time and time_value.tm_mon == 2 then ok = strftime_append_text(buffer, max_size, &position, "März")
+        elseif german_time and time_value.tm_mon == 3 then ok = strftime_append_text(buffer, max_size, &position, "April")
+        elseif german_time and time_value.tm_mon == 4 then ok = strftime_append_text(buffer, max_size, &position, "Mai")
+        elseif german_time and time_value.tm_mon == 5 then ok = strftime_append_text(buffer, max_size, &position, "Juni")
+        elseif german_time and time_value.tm_mon == 6 then ok = strftime_append_text(buffer, max_size, &position, "Juli")
+        elseif german_time and time_value.tm_mon == 7 then ok = strftime_append_text(buffer, max_size, &position, "August")
+        elseif german_time and time_value.tm_mon == 8 then ok = strftime_append_text(buffer, max_size, &position, "September")
+        elseif german_time and time_value.tm_mon == 9 then ok = strftime_append_text(buffer, max_size, &position, "Oktober")
+        elseif german_time and time_value.tm_mon == 10 then ok = strftime_append_text(buffer, max_size, &position, "November")
+        elseif german_time then ok = strftime_append_text(buffer, max_size, &position, "Dezember")
         elseif time_value.tm_mon == 0 then ok = strftime_append_text(buffer, max_size, &position, "January")
         elseif time_value.tm_mon == 1 then ok = strftime_append_text(buffer, max_size, &position, "February")
         elseif time_value.tm_mon == 2 then ok = strftime_append_text(buffer, max_size, &position, "March")
@@ -2614,19 +2685,35 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         if ok then ok = strftime_append_text(buffer, max_size, &position, ":") end
         if ok then ok = strftime_append_number(buffer, max_size, &position, time_value.tm_min, 2_cint, 48_cchar) end
       elseif directive == 68_cchar or directive == 120_cchar then
-        ok = strftime_append_number(buffer, max_size, &position, (@clonglong)(time_value.tm_mon) + 1_clonglong, 2_cint, 48_cchar)
-        if ok then ok = strftime_append_text(buffer, max_size, &position, "/") end
-        if ok then ok = strftime_append_number(buffer, max_size, &position, time_value.tm_mday, 2_cint, 48_cchar) end
-        if ok then ok = strftime_append_text(buffer, max_size, &position, "/") end
-        if ok then
-          local year_suffix: clonglong = ((@clonglong)(time_value.tm_year) + 1900_clonglong) % 100_clonglong
-          if year_suffix < 0 then year_suffix = year_suffix + 100_clonglong end
-          ok = strftime_append_number(buffer, max_size, &position, year_suffix, 2_cint, 48_cchar)
+        if german_time and directive == 120_cchar then
+          ok = strftime_append_number(buffer, max_size, &position, time_value.tm_mday, 2_cint, 48_cchar)
+          if ok then ok = strftime_append_text(buffer, max_size, &position, ".") end
+          if ok then ok = strftime_append_number(buffer, max_size, &position, (@clonglong)(time_value.tm_mon) + 1_clonglong, 2_cint, 48_cchar) end
+          if ok then ok = strftime_append_text(buffer, max_size, &position, ".") end
+          if ok then ok = strftime_append_number(buffer, max_size, &position,
+            (@clonglong)(time_value.tm_year) + 1900_clonglong, 4_cint, 48_cchar) end
+        else
+          ok = strftime_append_number(buffer, max_size, &position, (@clonglong)(time_value.tm_mon) + 1_clonglong, 2_cint, 48_cchar)
+          if ok then ok = strftime_append_text(buffer, max_size, &position, "/") end
+          if ok then ok = strftime_append_number(buffer, max_size, &position, time_value.tm_mday, 2_cint, 48_cchar) end
+          if ok then ok = strftime_append_text(buffer, max_size, &position, "/") end
+          if ok then
+            local year_suffix: clonglong = ((@clonglong)(time_value.tm_year) + 1900_clonglong) % 100_clonglong
+            if year_suffix < 0 then year_suffix = year_suffix + 100_clonglong end
+            ok = strftime_append_number(buffer, max_size, &position, year_suffix, 2_cint, 48_cchar)
+          end
         end
       elseif directive == 99_cchar then
         -- C-locale composite: abbreviated weekday/month, day, time, and year.
         local weekday_abbrev: *[0]cchar
-        if time_value.tm_wday == 0 then weekday_abbrev = "Sun"
+        if german_time and time_value.tm_wday == 0 then weekday_abbrev = "So"
+        elseif german_time and time_value.tm_wday == 1 then weekday_abbrev = "Mo"
+        elseif german_time and time_value.tm_wday == 2 then weekday_abbrev = "Di"
+        elseif german_time and time_value.tm_wday == 3 then weekday_abbrev = "Mi"
+        elseif german_time and time_value.tm_wday == 4 then weekday_abbrev = "Do"
+        elseif german_time and time_value.tm_wday == 5 then weekday_abbrev = "Fr"
+        elseif german_time and time_value.tm_wday == 6 then weekday_abbrev = "Sa"
+        elseif time_value.tm_wday == 0 then weekday_abbrev = "Sun"
         elseif time_value.tm_wday == 1 then weekday_abbrev = "Mon"
         elseif time_value.tm_wday == 2 then weekday_abbrev = "Tue"
         elseif time_value.tm_wday == 3 then weekday_abbrev = "Wed"
@@ -2635,7 +2722,19 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         elseif time_value.tm_wday == 6 then weekday_abbrev = "Sat"
         else weekday_abbrev = nilptr; ok = false end
         local month_abbrev: *[0]cchar
-        if time_value.tm_mon == 0 then month_abbrev = "Jan"
+        if german_time and time_value.tm_mon == 0 then month_abbrev = "Jan"
+        elseif german_time and time_value.tm_mon == 1 then month_abbrev = "Feb"
+        elseif german_time and time_value.tm_mon == 2 then month_abbrev = "Mär"
+        elseif german_time and time_value.tm_mon == 3 then month_abbrev = "Apr"
+        elseif german_time and time_value.tm_mon == 4 then month_abbrev = "Mai"
+        elseif german_time and time_value.tm_mon == 5 then month_abbrev = "Jun"
+        elseif german_time and time_value.tm_mon == 6 then month_abbrev = "Jul"
+        elseif german_time and time_value.tm_mon == 7 then month_abbrev = "Aug"
+        elseif german_time and time_value.tm_mon == 8 then month_abbrev = "Sep"
+        elseif german_time and time_value.tm_mon == 9 then month_abbrev = "Okt"
+        elseif german_time and time_value.tm_mon == 10 then month_abbrev = "Nov"
+        elseif german_time and time_value.tm_mon == 11 then month_abbrev = "Dez"
+        elseif time_value.tm_mon == 0 then month_abbrev = "Jan"
         elseif time_value.tm_mon == 1 then month_abbrev = "Feb"
         elseif time_value.tm_mon == 2 then month_abbrev = "Mar"
         elseif time_value.tm_mon == 3 then month_abbrev = "Apr"
@@ -2650,17 +2749,28 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         else month_abbrev = nilptr; ok = false end
         if ok then ok = strftime_append_text(buffer, max_size, &position, weekday_abbrev) end
         if ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
+        if german_time then
+          if ok then ok = strftime_append_number(buffer, max_size, &position, time_value.tm_mday, 2_cint, 48_cchar) end
+          if ok then ok = strftime_append_text(buffer, max_size, &position, ". ") end
+        end
         if ok then ok = strftime_append_text(buffer, max_size, &position, month_abbrev) end
-        if ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
-        if ok then ok = strftime_append_number(buffer, max_size, &position, time_value.tm_mday, 2_cint, 32_cchar) end
-        if ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
+        if german_time then
+          if ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
+          if ok then ok = strftime_append_number(buffer, max_size, &position,
+            (@clonglong)(time_value.tm_year) + 1900_clonglong, 4_cint, 48_cchar) end
+          if ok then ok = strftime_append_text(buffer, max_size, &position, ", ") end
+        else
+          if ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
+          if ok then ok = strftime_append_number(buffer, max_size, &position, time_value.tm_mday, 2_cint, 32_cchar) end
+          if ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
+        end
         if ok then ok = strftime_append_number(buffer, max_size, &position, time_value.tm_hour, 2_cint, 48_cchar) end
         if ok then ok = strftime_append_text(buffer, max_size, &position, ":") end
         if ok then ok = strftime_append_number(buffer, max_size, &position, time_value.tm_min, 2_cint, 48_cchar) end
         if ok then ok = strftime_append_text(buffer, max_size, &position, ":") end
         if ok then ok = strftime_append_number(buffer, max_size, &position, time_value.tm_sec, 2_cint, 48_cchar) end
-        if ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
-        if ok then ok = strftime_append_number(buffer, max_size, &position,
+        if not german_time and ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
+        if not german_time and ok then ok = strftime_append_number(buffer, max_size, &position,
           (@clonglong)(time_value.tm_year) + 1900_clonglong, 4_cint, 48_cchar) end
       elseif directive == 114_cchar then
         local hour12: cint = time_value.tm_hour % 12

@@ -161,11 +161,13 @@ whitespace, and printability properties, with ASCII-only classes in `C`;
 `towlower_l`/`towupper_l` use explicit locale handles. Standalone `newlocale`
 constructs static handles for supported combinations of `C`/`C.UTF-8`
 `LC_CTYPE`, `C`/`de_DE.UTF-8` `LC_NUMERIC` and `LC_MONETARY`, plus
-`C`/`C.UTF-8` `LC_COLLATE`. Standalone `uselocale` switches the calling
-thread's ctype, numeric, monetary, and C-style collation state; floating
-parsing, formatting, grouping, `strcoll`, `strxfrm`, and `localeconv`
-observe the thread selection. `localeconv` results are kept in per-thread
-storage. Non-C collation and thread-local time categories remain incomplete.
+`C`/`C.UTF-8` `LC_COLLATE` and `C`/`de_DE.UTF-8` `LC_TIME`. Standalone
+`uselocale` switches the calling thread's ctype, numeric, monetary, C-style
+collation, and time state. Floating parsing/formatting, grouping, `strcoll`,
+`strxfrm`, `strftime`, `strptime`, and `localeconv` observe the selection.
+German time data currently covers localized weekday/month names and `%c`/`%x`
+formats. `localeconv` results are kept in per-thread storage. Non-C collation
+and additional time locales remain incomplete.
 
 `scalb` and `scalbf` scale by integral exponents and report invalid fractional
 exponents; `significand` and `significandf` normalize finite nonzero inputs so
