@@ -1974,6 +1974,49 @@ int main(void) {
       return 1;
     }
   }
+  const int fractional_powl_modes[] = {
+      FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+  const long double fractional_powl_rounding_exponents[] = {
+      -8222.75L, -8222.25L,
+      nextafterl(-8191.0L, -INFINITY), nextafterl(-8191.0L, INFINITY)};
+  for (size_t mode = 0;
+       mode < sizeof fractional_powl_modes / sizeof fractional_powl_modes[0]; ++mode) {
+    if (fesetround(fractional_powl_modes[mode]) != 0) return 1;
+    for (size_t i = 0;
+         i < sizeof fractional_powl_rounding_exponents / sizeof fractional_powl_rounding_exponents[0];
+         ++i) {
+      feclearexcept(FE_ALL_EXCEPT);
+      errno = 0;
+      volatile long double host_fractional_powl =
+          powl(4.0L, fractional_powl_rounding_exponents[i]);
+      int host_fractional_powl_errno = errno;
+      int host_fractional_powl_flags =
+          fetestexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INEXACT);
+      feclearexcept(FE_ALL_EXCEPT);
+      errno = 0;
+      volatile long double nelibc_fractional_powl =
+          nelibc_powl(4.0L, fractional_powl_rounding_exponents[i]);
+      int nelibc_fractional_powl_flags =
+          fetestexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INEXACT);
+#ifdef NELIBC_MUSL_PROFILE
+      /* musl omits FE_UNDERFLOW for some upward-rounded subnormal results. */
+      const int fractional_powl_flags_match = 1;
+#else
+      const int fractional_powl_flags_match =
+          nelibc_fractional_powl_flags == host_fractional_powl_flags;
+#endif
+      if (!long_double_math_close(nelibc_fractional_powl, host_fractional_powl) ||
+          (host_fractional_powl != 0.0L && errno != host_fractional_powl_errno) ||
+          !fractional_powl_flags_match) {
+        fprintf(stderr, "powl fractional rounding mismatch mode=%zu case=%zu actual=%La expected=%La flags=%x/%x errno=%d/%d\n",
+                mode, i, nelibc_fractional_powl, host_fractional_powl,
+                nelibc_fractional_powl_flags, host_fractional_powl_flags,
+                errno, host_fractional_powl_errno);
+        return 1;
+      }
+    }
+  }
+  if (fesetround(FE_TONEAREST) != 0) return 1;
   feclearexcept(FE_ALL_EXCEPT);
   errno = 0;
   if (nelibc_powl(LDBL_MAX, -2.0L) != 0.0L || errno != ERANGE ||

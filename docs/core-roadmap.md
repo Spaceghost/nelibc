@@ -301,10 +301,15 @@ musl export set.
   `FSCALE` primitives implement `ldexp`/`scalbn`; overflow and zero results
   from underflow set `ERANGE`. Long-double `powl` preserves exact powers of two
   through the binary80 subnormal range, including fractional exponents whose
-  product with the base exponent is integral. This avoids false `ERANGE` on
-  exact results; differential checks cover `powl(LDBL_MIN, 1)`,
-  `powl(2, -16445)`, and fractional cases under glibc and musl, with standalone
-  coverage under Zig, GCC, and TinyCC. It sets `EDOM` for negative square root and
+  product with the base exponent is integral. Other powers of two use the x87
+  `exp2l` path so fractional results round correctly around the binary80
+  subnormal/normal boundary under all four rounding modes. Nonzero subnormal
+  results preserve `errno`; underflow exception flags are checked against glibc,
+  while musl's known omission of `FE_UNDERFLOW` for some upward-rounded
+  subnormals is recorded as a profile difference. Differential checks cover
+  `powl(LDBL_MIN, 1)`, `powl(2, -16445)`, exact fractional cases, half-subnormal
+  rounding, and values immediately around `LDBL_MIN`; standalone coverage runs
+  under Zig, GCC, and TinyCC. It sets `EDOM` for negative square root and
   invalid remainder domains. Standalone x86-64 implements `feclearexcept`,
   `fegetexceptflag`, `feraiseexcept`, `fesetexceptflag`, `fetestexcept`,
   `fegetround`, `fesetround`, `fegetenv`, `feholdexcept`, `fesetenv`, and

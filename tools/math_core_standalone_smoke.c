@@ -203,6 +203,24 @@ int main(void) {
   if (powl(4.0L, -8222.5L) != 0x1p-16445L || errno != 0) return 223;
   errno = 0;
   if (powl(16.0L, -4111.25L) != 0x1p-16445L || errno != 0) return 224;
+  const int powl_boundary_modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+  const long double powl_boundary_exponents[] = {
+      -8222.75L, -8222.25L,
+      nextafterl(-8191.0L, -10000.0L), nextafterl(-8191.0L, -1.0L)};
+  for (unsigned mode = 0; mode < sizeof(powl_boundary_modes) / sizeof(powl_boundary_modes[0]); ++mode) {
+    if (fesetround(powl_boundary_modes[mode]) != 0) return 225;
+    for (unsigned i = 0; i < sizeof(powl_boundary_exponents) / sizeof(powl_boundary_exponents[0]); ++i) {
+      long double expected = exp2l(2.0L * powl_boundary_exponents[i]);
+      errno = 0;
+      if (feclearexcept(FE_ALL_EXCEPT) != 0) return 226;
+      volatile long double actual = powl(4.0L, powl_boundary_exponents[i]);
+      int expected_flags = FE_INEXACT;
+      if (actual == 0.0L || actual < LDBL_MIN) expected_flags |= FE_UNDERFLOW;
+      if (actual != expected || errno != (actual == 0.0L ? ERANGE : 0) ||
+          fetestexcept(FE_UNDERFLOW | FE_INEXACT) != expected_flags) return 227;
+    }
+  }
+  if (fesetround(FE_TONEAREST) != 0) return 228;
   errno = 0;
   if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;
 

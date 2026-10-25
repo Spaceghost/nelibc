@@ -996,6 +996,7 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
     return sqrtl(-1_clongdouble)
   end
 
+  local saved_errno = nelibc_errno_location()[0]
   local result: clongdouble
   local exponent_magnitude = exponent
   if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
@@ -1005,15 +1006,29 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
     local base_exponent = nelibc_ilogbl_hw(absolute)
     local ignored_range_error: cint = 0_cint
     local power_of_two = nelibc_ldexpl_hw(1_clongdouble, base_exponent, &ignored_range_error)
-    if power_of_two == absolute and
-        powl_scaled_exponent_is_integer(exponent, base_exponent) then
+    if power_of_two == absolute then
       local scaled_exponent = exponent * (@clongdouble)(base_exponent)
-      local result_exponent = (@clonglong)(scaled_exponent)
-      if result_exponent >= -16445_clonglong and result_exponent <= 16383_clonglong then
-        result = nelibc_ldexpl_hw(1_clongdouble, (@cint)(result_exponent), &ignored_range_error)
-        if value < 0_clongdouble and odd then result = -result end
-        return result
+      if powl_scaled_exponent_is_integer(exponent, base_exponent) then
+        local result_exponent = (@clonglong)(scaled_exponent)
+        if result_exponent >= -16445_clonglong and result_exponent <= 16383_clonglong then
+          result = nelibc_ldexpl_hw(1_clongdouble, (@cint)(result_exponent), &ignored_range_error)
+          if value < 0_clongdouble and odd then result = -result end
+          return result
+        end
       end
+      result = nelibc_exp2l_hw(scaled_exponent)
+      if value < 0_clongdouble and odd then result = -result end
+      local result_bits: LongDoubleBits = {value = result}
+      if is_infinite80(result) or scaled_exponent >= 16384_clongdouble then
+        math_range_error()
+        nelibc_math_raise_except(0x28_cint) -- FE_OVERFLOW | FE_INEXACT
+      elseif result == 0_clongdouble then
+        math_range_error()
+        nelibc_math_raise_except(0x30_cint) -- FE_UNDERFLOW | FE_INEXACT
+      elseif (result_bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort then
+        nelibc_math_raise_except(0x30_cint) -- FE_UNDERFLOW | FE_INEXACT
+      end
+      return result
     end
   end
   if exponent_magnitude == 0.5_clongdouble then
@@ -1048,7 +1063,8 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
     math_range_error()
   elseif (result_bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort and
       result_bits.parts.significand ~= 0_culonglong then
-    math_range_error()
+    -- Underflow to a nonzero subnormal does not set errno in glibc or musl.
+    nelibc_errno_location()[0] = saved_errno
   end
   return result
 end
