@@ -2213,6 +2213,22 @@ int main(int argc, char **argv) {
   if (utimes(timestamp_path, legacy_timestamps) != -1 || errno != EINVAL ||
       utimes(timestamp_path, NULL) != 0)
     return 404;
+  int timestamp_fd_for_futimes = open(timestamp_path, O_RDWR);
+  if (timestamp_fd_for_futimes < 0) return 405;
+  legacy_timestamps[0].tv_usec = 234567;
+  legacy_timestamps[1].tv_usec = 765432;
+  if (futimes(timestamp_fd_for_futimes, legacy_timestamps) != 0 ||
+      fstat(timestamp_fd_for_futimes, &timestamp_status) != 0 ||
+      timestamp_status.st_atim.tv_sec != 1000000000 ||
+      timestamp_status.st_atim.tv_nsec != 234567000 ||
+      timestamp_status.st_mtim.tv_sec != 1000000001 ||
+      timestamp_status.st_mtim.tv_nsec != 765432000)
+    return 406;
+  legacy_timestamps[1].tv_usec = -1;
+  errno = 0;
+  if (futimes(timestamp_fd_for_futimes, legacy_timestamps) != -1 || errno != EINVAL ||
+      futimes(timestamp_fd_for_futimes, NULL) != 0 || close(timestamp_fd_for_futimes) != 0)
+    return 407;
   errno = 0;
   if (utimensat(AT_FDCWD, timestamp_path, NULL, 0x40000000) != -1 || errno != EINVAL) return 391;
   if (unlink(timestamp_path) != 0) return 392;

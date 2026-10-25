@@ -136,6 +136,11 @@ timespec ABI, validates each microsecond field, and supports `NULL` for current
 timestamps. Consumer checks verify exact stored microseconds and invalid input
 across hybrid and standalone profiles.
 
+`futimes` shares the timeval conversion and updates an open descriptor through
+`futimens`. Consumer checks cover exact timestamp precision, invalid
+microseconds, `NULL`, and invalid descriptors across hybrid and standalone
+profiles.
+
 POSIX `pselect` uses Linux `pselect6` with its kernel signal-mask descriptor.
 It applies the same reserved-signal filtering and timeout copy as `ppoll`.
 The consumer matrix checks readiness, signal-mask use, and unchanged timeout

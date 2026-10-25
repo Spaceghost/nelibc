@@ -444,6 +444,34 @@ static int utimes_probe(void) {
   return unlink(path) == 0 ? 0 : 4;
 }
 
+static int futimes_probe(void) {
+  char path[] = "/tmp/nelibc-futimes-XXXXXX";
+  int descriptor = mkstemp(path);
+  if (descriptor < 0) return 1;
+  struct timeval timestamps[2] = {
+      {.tv_sec = 1000000002, .tv_usec = 234567},
+      {.tv_sec = 1000000003, .tv_usec = 765432}};
+  struct stat status;
+  if (futimes(descriptor, timestamps) != 0 || fstat(descriptor, &status) != 0 ||
+      status.st_atim.tv_sec != 1000000002 || status.st_atim.tv_nsec != 234567000 ||
+      status.st_mtim.tv_sec != 1000000003 || status.st_mtim.tv_nsec != 765432000) {
+    close(descriptor);
+    unlink(path);
+    return 2;
+  }
+  timestamps[1].tv_usec = -1;
+  errno = 0;
+  if (futimes(descriptor, timestamps) != -1 || errno != EINVAL ||
+      futimes(descriptor, NULL) != 0) {
+    close(descriptor);
+    unlink(path);
+    return 3;
+  }
+  if (close(descriptor) != 0 || unlink(path) != 0) return 4;
+  errno = 0;
+  return futimes(-1, NULL) == -1 && errno == EBADF ? 0 : 5;
+}
+
 static int semaphore_clock_probe(void) {
   sem_t semaphore;
   if (sem_init(&semaphore, 0, 1) != 0) return 1;
@@ -907,6 +935,8 @@ int main(int argc, char **argv) {
   if (getdate_result != 0) return 580 + getdate_result;
   int utimes_result = utimes_probe();
   if (utimes_result != 0) return 590 + utimes_result;
+  int futimes_result = futimes_probe();
+  if (futimes_result != 0) return 600 + futimes_result;
   char cwd_buffer[4096];
   if (getcwd(cwd_buffer, sizeof cwd_buffer) == NULL) return 20;
   char *allocated_cwd = get_current_dir_name();
