@@ -132,6 +132,7 @@ extern long double nelibc_exp2l(long double);
 extern long double nelibc_expm1l(long double);
 extern long double nelibc_sinl(long double);
 extern long double nelibc_cosl(long double);
+extern long double nelibc_tanl(long double);
 extern void nelibc_sincosl(long double, long double *, long double *);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
@@ -1377,6 +1378,18 @@ static int long_double_trig_close(long double actual, long double expected) {
   return fabsl(actual - expected) <= tolerance * fabsl(expected);
 }
 
+static int long_double_tan_close(long double actual, long double expected) {
+  if (actual == expected) return 1;
+  if (!isfinite(actual) || !isfinite(expected) || expected == 0.0L) return 0;
+#ifdef NELIBC_MUSL_PROFILE
+  /* musl's large-input tanl reference differs by more than 64 ULP. */
+  const long double tolerance = 128.0L * LDBL_EPSILON;
+#else
+  const long double tolerance = 8.0L * LDBL_EPSILON;
+#endif
+  return fabsl(actual - expected) <= tolerance * fabsl(expected);
+}
+
 int main(void) {
 
   const long double hypot_values[] = {
@@ -1607,22 +1620,28 @@ int main(void) {
   }
   const long double trigl_values[] = {
       0.0L, -0.0L, LDBL_MIN, -LDBL_MIN, 0.1L, -1.0L,
-      0x1.921fb54442d1846ap+0L, 1.0L, 1.0e6L, 1.0e20L,
+      0x1.921fb54442d1846ap+0L,
+      nextafterl(0x1.921fb54442d1846ap+0L, -INFINITY),
+      nextafterl(0x1.921fb54442d1846ap+0L, INFINITY),
+      1.0L, 1.0e6L, 1.0e20L,
       1.0e100L, 0x1p1000L, LDBL_MAX, -LDBL_MAX};
   for (size_t i = 0; i < sizeof(trigl_values) / sizeof(trigl_values[0]); ++i) {
     long double sine, cosine;
     nelibc_sincosl(trigl_values[i], &sine, &cosine);
     if (!long_double_trig_close(nelibc_sinl(trigl_values[i]), sinl(trigl_values[i])) ||
         !long_double_trig_close(nelibc_cosl(trigl_values[i]), cosl(trigl_values[i])) ||
+        !long_double_tan_close(nelibc_tanl(trigl_values[i]), tanl(trigl_values[i])) ||
         !long_double_trig_close(sine, sinl(trigl_values[i])) ||
         !long_double_trig_close(cosine, cosl(trigl_values[i]))) {
-      fprintf(stderr, "long-double trig edge mismatch i=%zu input=%.6Le sin=%.21Le/%.21Le cos=%.21Le/%.21Le\n",
-              i, trigl_values[i], sine, sinl(trigl_values[i]), cosine, cosl(trigl_values[i]));
+      fprintf(stderr, "long-double trig edge mismatch i=%zu input=%.6Le sin=%.21Le/%.21Le cos=%.21Le/%.21Le tan=%.21Le/%.21Le\n",
+              i, trigl_values[i], sine, sinl(trigl_values[i]), cosine, cosl(trigl_values[i]),
+              nelibc_tanl(trigl_values[i]), tanl(trigl_values[i]));
       return 1;
     }
   }
   if (nelibc_sinl(-0.0L) != 0.0L || !signbit(nelibc_sinl(-0.0L)) ||
-      nelibc_cosl(-0.0L) != 1.0L) {
+      nelibc_cosl(-0.0L) != 1.0L || nelibc_tanl(-0.0L) != 0.0L ||
+      !signbit(nelibc_tanl(-0.0L))) {
     fprintf(stderr, "long-double trig signed-zero behavior failed sin=%.21La sign=%d cos=%.21La\n",
             nelibc_sinl(-0.0L), signbit(nelibc_sinl(-0.0L)), nelibc_cosl(-0.0L));
     return 1;
@@ -1630,14 +1649,22 @@ int main(void) {
   for (int exponent = 0; exponent < LDBL_MAX_EXP - 2; exponent += 61) {
     long double value = ldexpl(1.234567890123456789L, exponent);
     if (!long_double_trig_close(nelibc_sinl(value), sinl(value)) ||
-        !long_double_trig_close(nelibc_cosl(value), cosl(value))) {
-      fprintf(stderr, "long-double trig generated-input mismatch exponent=%d\n", exponent);
+        !long_double_trig_close(nelibc_cosl(value), cosl(value)) ||
+        !long_double_tan_close(nelibc_tanl(value), tanl(value))) {
+      fprintf(stderr, "long-double trig generated-input mismatch exponent=%d sin=%.21Le/%.21Le cos=%.21Le/%.21Le tan=%.21Le/%.21Le\n",
+              exponent, nelibc_sinl(value), sinl(value), nelibc_cosl(value), cosl(value),
+              nelibc_tanl(value), tanl(value));
       return 1;
     }
   }
   errno = 0;
   if (!isnan(nelibc_sinl(INFINITY)) || errno != EDOM) {
     fprintf(stderr, "long-double trig infinite-domain behavior failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isnan(nelibc_tanl(INFINITY)) || errno != EDOM) {
+    fprintf(stderr, "long-double tan infinite-domain behavior failed\n");
     return 1;
   }
   for (size_t i = 0; i < 512; ++i) {

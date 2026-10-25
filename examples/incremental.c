@@ -76,6 +76,7 @@ int main(void) {
   const long double exponential_minus_one_long = expm1l(0x1p-60L);
   const long double sine_long = sinl(1.0L);
   const long double cosine_long = cosl(1.0L);
+  const long double tangent_long = tanl(1.0L);
   const double sine = sin(1.0);
   const double cosine = cos(1.0);
   const float sine_float = sinf(1.0f);
@@ -175,6 +176,7 @@ int main(void) {
       exponential_base_ten != 100.0 ||
       long_scaled != 12.0 || long_scaled_float != -12.0f ||
       long_double_scaled != 24.0L || long_double_binary != -0.1875L ||
+      !(tangent_long > 1.5574077246549L && tangent_long < 1.5574077246550L) ||
       long_double_long != 8.0L || long_double_truncated != -1.0L ||
       long_double_floor != -1.0L || long_double_ceiling != -0.0L ||
       long_double_rounded != 2.0L || long_double_nearby != -2.0L ||

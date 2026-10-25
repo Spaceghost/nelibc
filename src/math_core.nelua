@@ -356,6 +356,7 @@ local function nelibc_expl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_exp2l_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_expm1l_small_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_sincosl_hw(value: clongdouble, cosine_out: *[0]clongdouble): clongdouble <cimport> end
+local function nelibc_tanl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_pio2l_hi_hw(): clongdouble <cimport> end
 local function nelibc_pio2l_lo_hw(): clongdouble <cimport> end
 local function nelibc_x87_rounding_mode(): cint <cimport> end
@@ -2686,6 +2687,27 @@ local function cosl(value: clongdouble): clongdouble <cexport, codename 'cosl'>
   local cosine: clongdouble
   sincosl(value, &sine, &cosine)
   return cosine
+end
+
+local function tanl(value: clongdouble): clongdouble <cexport, codename 'tanl'>
+  if is_nan80(value) then return value + value end
+  if is_infinite80(value) then
+    math_domain_error()
+    return value - value
+  end
+  if value == 0_clongdouble then return value end
+  local quadrant: cint = 0_cint
+  local x: clongdouble = value
+  local y: clongdouble = 0_clongdouble
+  if fabsl(value) > 0.7853981633974483096282022398515465511082_clongdouble then
+    reduce_pio2l(value, &quadrant, &x, &y)
+  end
+  local reduced_tangent = nelibc_tanl_hw(x + y)
+  -- An odd multiple of pi/2 leaves -cot(remainder); an even one leaves tan.
+  if (quadrant & 1_cint) ~= 0_cint then
+    return -1_clongdouble / reduced_tangent
+  end
+  return reduced_tangent
 end
 
 local function sinf(value: cfloat): cfloat <cexport, codename 'sinf'>

@@ -151,6 +151,7 @@ long double exp2l(long double value);
 long double expm1l(long double value);
 long double sinl(long double value);
 long double cosl(long double value);
+long double tanl(long double value);
 void sincosl(long double value, long double *sine, long double *cosine);
 float sqrtf(float value);
 double sqrt(double value);

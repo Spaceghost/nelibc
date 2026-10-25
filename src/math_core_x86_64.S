@@ -133,6 +133,16 @@ nelibc_sincosl_hw:
   ret
 .size nelibc_sincosl_hw, .-nelibc_sincosl_hw
 
+/* Evaluate tanl on a Payne-Hanek-reduced binary80 argument. */
+.globl nelibc_tanl_hw
+.type nelibc_tanl_hw,@function
+nelibc_tanl_hw:
+  fldt 8(%rsp)
+  fptan
+  fstp %st(0)
+  ret
+.size nelibc_tanl_hw, .-nelibc_tanl_hw
+
 .section .rodata
 .p2align 4
 .Lnelibc_ln2_hi:

@@ -1292,7 +1292,7 @@ tanf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tanh,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tanhf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tanhl,math.h,,,not-declared
-tanl,math.h,,,not-declared
+tanl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tcdrain,termios.h,,,not-declared
 tcflow,termios.h,,,not-declared
 tcflush,termios.h,,,not-declared
