@@ -405,6 +405,7 @@ local function nelibc_tanl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_pio2l_hi_hw(): clongdouble <cimport> end
 local function nelibc_pio2l_lo_hw(): clongdouble <cimport> end
 local function nelibc_x87_rounding_mode(): cint <cimport> end
+local function nelibc_x87_set_rounding_mode(rounding: cint): void <cimport> end
 local function nelibc_x87_pi(): clongdouble <cimport> end
 local function nelibc_math_raise_except(exceptions: cint): void <cimport> end
 local function nelibc_neg_one_up_hw(): clongdouble <cimport> end
@@ -1597,8 +1598,11 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   local exponent_magnitude = exponent
   if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
   local fractional_exponent_limit = 4096_clongdouble
-  if nelibc_x87_rounding_mode() == 0_cint then
+  local rounding_mode = nelibc_x87_rounding_mode()
+  if rounding_mode == 0_cint then
     fractional_exponent_limit = 8192_clongdouble
+  else
+    fractional_exponent_limit = 6144_clongdouble
   end
   -- Preserve exact powers of two, including fractional exponents whose product
   -- with the base's binary exponent is integral.
@@ -1650,6 +1654,12 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
     base_exponent = base_exponent - 1_cint
     local scaled_exponent = exponent * (@clongdouble)(base_exponent)
     if scaled_exponent >= -20000_clongdouble and scaled_exponent <= 20000_clongdouble then
+      local caller_rounding_mode = nelibc_x87_rounding_mode()
+      if caller_rounding_mode ~= 0_cint then
+        -- The error-free transforms below require round-to-nearest. Restore
+        -- the caller's mode before evaluating the final result.
+        nelibc_x87_set_rounding_mode(0_cint)
+      end
       local scaled_error = nelibc_fmal(exponent, (@clongdouble)(base_exponent), -scaled_exponent)
       local integral_exponent = truncl(scaled_exponent)
       local fractional_exponent = scaled_exponent - integral_exponent + scaled_error
@@ -1670,10 +1680,28 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
       local mantissa_scaled_exponent = powl_dd_mul(
         mantissa_log2, {hi = exponent, lo = 0_clongdouble}
       )
-      local mantissa_power = exp2l(mantissa_scaled_exponent.hi) *
-          exp2l(mantissa_scaled_exponent.lo)
-      local fractional_power = exp2l(fractional_exponent)
-      result = ldexpl(mantissa_power * fractional_power, (@cint)(integral_exponent))
+      local mantissa_integral_exponent = truncl(mantissa_scaled_exponent.hi)
+      local mantissa_fraction = powl_dd_add(
+        {
+          hi = mantissa_scaled_exponent.hi - mantissa_integral_exponent,
+          lo = mantissa_scaled_exponent.lo
+        },
+        {hi = fractional_exponent, lo = 0_clongdouble}
+      )
+      local final_fractional_exponent = mantissa_fraction.hi + mantissa_fraction.lo
+      local final_integral_exponent = integral_exponent + mantissa_integral_exponent
+      if caller_rounding_mode ~= 0_cint then
+        nelibc_x87_set_rounding_mode(caller_rounding_mode)
+      end
+      if caller_rounding_mode == 0_cint then
+        local mantissa_power = exp2l(mantissa_scaled_exponent.hi) *
+            exp2l(mantissa_scaled_exponent.lo)
+        result = ldexpl(mantissa_power * exp2l(fractional_exponent),
+                        (@cint)(integral_exponent))
+      else
+        result = ldexpl(exp2l(final_fractional_exponent),
+                        (@cint)(final_integral_exponent))
+      end
       if value < 0_clongdouble and odd then result = -result end
     else
       local logarithm = logl(absolute)

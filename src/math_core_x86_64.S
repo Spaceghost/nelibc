@@ -326,6 +326,30 @@ nelibc_x87_rounding_mode:
   ret
 .size nelibc_x87_rounding_mode, .-nelibc_x87_rounding_mode
 
+/* Set the x87 and SSE rounding controls without changing exception flags. */
+.globl nelibc_x87_set_rounding_mode
+.type nelibc_x87_set_rounding_mode,@function
+nelibc_x87_set_rounding_mode:
+  subq $8, %rsp
+  fnstcw (%rsp)
+  movzwl (%rsp), %eax
+  andl $0xfffff3ff, %eax
+  andl $0x0c00, %edi
+  orl %edi, %eax
+  movw %ax, (%rsp)
+  fldcw (%rsp)
+  stmxcsr 4(%rsp)
+  movl 4(%rsp), %eax
+  andl $0xffff9fff, %eax
+  movl %edi, %ecx
+  shll $3, %ecx
+  orl %ecx, %eax
+  movl %eax, 4(%rsp)
+  ldmxcsr 4(%rsp)
+  addq $8, %rsp
+  ret
+.size nelibc_x87_set_rounding_mode, .-nelibc_x87_set_rounding_mode
+
 .globl nelibc_x87_pi
 .type nelibc_x87_pi,@function
 nelibc_x87_pi:
