@@ -107,8 +107,8 @@ keep the host `fenv_t` ABI and use the host fenv implementation. Less-common
 environment edge cases and most of the C math API remain incomplete.
 
 `cabs*`, `creal*`, `cimag*`, `conj*`, `cproj*`, `carg*`, `csqrt*`, `cexp*`,
-`clog*`, `csin*`, `ccos*`, `csinh*`, `ccosh*`, `ctan*`, `ctanh*`, `catan*`, and
-`catanh*` are the first C complex-math
+`clog*`, `csin*`, `ccos*`, `csinh*`, `ccosh*`, `ctan*`, `ctanh*`, `catan*`,
+`catanh*`, `casin*`, and `cacos*` are the first C complex-math
 replacements. The complex argument and
 return ABI is handled in
 `src/complex_abi.c`; Nelua computes magnitudes with `hypot*`, conjugates the
@@ -117,8 +117,9 @@ complex arguments with `atan2*`, principal square roots with scaled
 intermediates, and complex exponentials by composing Nelibc's real `exp*` and
 trigonometric kernels, complex logarithms with scaled log-magnitude, and
 complex circular and hyperbolic sine and cosine from the corresponding real
-functions. Complex tangent functions use exponential scaling for large
-components to retain their finite limits. The inverse tangent scales its
+functions, and complex inverse sine and cosine from scaled distances to their
+branch points at +1 and -1. Complex tangent functions use exponential scaling
+for large components to retain their finite limits. The inverse tangent scales its
 components before forming quadratic expressions; `catanh*` reuses that scaled
 implementation through the identity `atanh(z) = -i atan(i z)`. Run
 `make complex-math-smoke-matrix` to exercise all three precisions in Zig/glibc,

@@ -28,10 +28,12 @@ runtime and platform syscall layer separate from the public libc surface.
 
 The initial C complex-math slice replaces `cabs*`, `creal*`, `cimag*`,
 `conj*`, `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, `ccos*`,
-`csinh*`, `ccosh*`, `ctan*`, `ctanh*`, `catan*`, and `catanh*`.
+`csinh*`, `ccosh*`, `ctan*`, `ctanh*`, `catan*`, `catanh*`, `casin*`, and
+`cacos*`.
 Nelua computes magnitude, conjugation, projection, arguments, complex square
-roots, exponentials, logarithms, circular and hyperbolic trig functions; a
-small C shim handles the x86-64 complex-value ABI. The inverse tangent uses a
+roots, exponentials, logarithms, circular and hyperbolic trig functions, and
+complex inverse sine and cosine; a
+small C shim handles the x86-64 complex-value ABI. The inverse tangent uses
 scaled formulas to avoid squaring large components directly.
 `make complex-math-smoke-matrix` covers four hybrid profiles and three
 standalone archives. TinyCC builds the Nelua core, while

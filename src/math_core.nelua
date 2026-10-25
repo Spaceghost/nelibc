@@ -4992,3 +4992,248 @@ local function nelibc_catanhparts_l(x: clongdouble, y: clongdouble,
   real_out[0] = tangent_imaginary
   imaginary_out[0] = -tangent_real
 end
+
+local function nelibc_casinparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_casinparts_f'>
+  if is_infinite32(y) then
+    local infinity = float_from_bits(0x7F800000_cuint)
+    if is_infinite32(x) then
+      real_out[0] = copysignf(0.25_cfloat * acosf(-1_cfloat), x)
+    elseif is_nan32(x) then
+      real_out[0] = x + y
+    else
+      real_out[0] = copysignf(0_cfloat, x)
+    end
+    imaginary_out[0] = copysignf(infinity, y)
+    return
+  end
+  if is_infinite32(x) then
+    if is_nan32(y) then
+      local nan_value = x + y
+      real_out[0], imaginary_out[0] = nan_value, nan_value
+      return
+    end
+    real_out[0] = copysignf(0.5_cfloat * acosf(-1_cfloat), x)
+    imaginary_out[0] = copysignf(float_from_bits(0x7F800000_cuint), y)
+    return
+  end
+  if is_nan32(x) or is_nan32(y) then
+    local nan_value = x + y
+    real_out[0], imaginary_out[0] = nan_value, nan_value
+    return
+  end
+  local scale = 1_cfloat
+  if fabsf(x) > scale then scale = fabsf(x) end
+  if fabsf(y) > scale then scale = fabsf(y) end
+  local reciprocal = 1_cfloat / scale
+  local sx = x / scale
+  local sy = y / scale
+  local plus_distance = sqrtf((sx + reciprocal) * (sx + reciprocal) + sy * sy)
+  local minus_distance = sqrtf((sx - reciprocal) * (sx - reciprocal) + sy * sy)
+  local alpha_scaled = 0.5_cfloat * (plus_distance + minus_distance)
+  local beta = sx / alpha_scaled
+  if beta > 1_cfloat then beta = 1_cfloat elseif beta < -1_cfloat then beta = -1_cfloat end
+  real_out[0] = asinf(beta)
+  local imaginary_magnitude: cfloat
+  local absolute_x = fabsf(x)
+  local absolute_y = fabsf(y)
+  if absolute_x < 1_cfloat then
+    local cosine_real = sqrtf((1_cfloat - absolute_x) * (1_cfloat + absolute_x))
+    if absolute_y < 0x1p-12_cfloat * cosine_real then
+      imaginary_magnitude = asinhf(absolute_y / cosine_real)
+    elseif scale > 0x1p16_cfloat then
+      imaginary_magnitude = logf(scale) + logf(alpha_scaled) + 0.6931471805599453_cfloat
+    else
+      local alpha = scale * alpha_scaled
+      if alpha < 1_cfloat then alpha = 1_cfloat end
+      imaginary_magnitude = acoshf(alpha)
+    end
+  elseif absolute_x == 1_cfloat and absolute_y < 1_cfloat then
+    local delta = 0.5_cfloat * absolute_y + absolute_y * absolute_y /
+      (2_cfloat * (sqrtf(4_cfloat + absolute_y * absolute_y) + 2_cfloat))
+    imaginary_magnitude = 2_cfloat * asinhf(sqrtf(0.5_cfloat * delta))
+  elseif scale > 0x1p16_cfloat then
+    imaginary_magnitude = logf(scale) + logf(alpha_scaled) + 0.6931471805599453_cfloat
+  else
+    local alpha = scale * alpha_scaled
+    if alpha < 1_cfloat then alpha = 1_cfloat end
+    imaginary_magnitude = acoshf(alpha)
+  end
+  imaginary_out[0] = copysignf(imaginary_magnitude, y)
+end
+
+local function nelibc_casinparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_casinparts'>
+  if is_infinite64(y) then
+    local infinity = double_from_bits(0x7ff0000000000000_culonglong)
+    if is_infinite64(x) then
+      real_out[0] = copysign(0.25_cdouble * acos(-1_cdouble), x)
+    elseif is_nan64(x) then
+      real_out[0] = x + y
+    else
+      real_out[0] = copysign(0_cdouble, x)
+    end
+    imaginary_out[0] = copysign(infinity, y)
+    return
+  end
+  if is_infinite64(x) then
+    if is_nan64(y) then
+      local nan_value = x + y
+      real_out[0], imaginary_out[0] = nan_value, nan_value
+      return
+    end
+    real_out[0] = copysign(0.5_cdouble * acos(-1_cdouble), x)
+    imaginary_out[0] = copysign(double_from_bits(0x7ff0000000000000_culonglong), y)
+    return
+  end
+  if is_nan64(x) or is_nan64(y) then
+    local nan_value = x + y
+    real_out[0], imaginary_out[0] = nan_value, nan_value
+    return
+  end
+  local scale = 1_cdouble
+  if fabs(x) > scale then scale = fabs(x) end
+  if fabs(y) > scale then scale = fabs(y) end
+  local reciprocal = 1_cdouble / scale
+  local sx = x / scale
+  local sy = y / scale
+  local plus_distance = sqrt((sx + reciprocal) * (sx + reciprocal) + sy * sy)
+  local minus_distance = sqrt((sx - reciprocal) * (sx - reciprocal) + sy * sy)
+  local alpha_scaled = 0.5_cdouble * (plus_distance + minus_distance)
+  local beta = sx / alpha_scaled
+  if beta > 1_cdouble then beta = 1_cdouble elseif beta < -1_cdouble then beta = -1_cdouble end
+  real_out[0] = asin(beta)
+  local imaginary_magnitude: cdouble
+  local absolute_x = fabs(x)
+  local absolute_y = fabs(y)
+  if absolute_x < 1_cdouble then
+    local cosine_real = sqrt((1_cdouble - absolute_x) * (1_cdouble + absolute_x))
+    if absolute_y < 0x1p-26_cdouble * cosine_real then
+      imaginary_magnitude = asinh(absolute_y / cosine_real)
+    elseif scale > 0x1p32_cdouble then
+      imaginary_magnitude = log(scale) + log(alpha_scaled) + 0.693147180559945309417232121458176568_cdouble
+    else
+      local alpha = scale * alpha_scaled
+      if alpha < 1_cdouble then alpha = 1_cdouble end
+      imaginary_magnitude = acosh(alpha)
+    end
+  elseif absolute_x == 1_cdouble and absolute_y < 1_cdouble then
+    local delta = 0.5_cdouble * absolute_y + absolute_y * absolute_y /
+      (2_cdouble * (sqrt(4_cdouble + absolute_y * absolute_y) + 2_cdouble))
+    imaginary_magnitude = 2_cdouble * asinh(sqrt(0.5_cdouble * delta))
+  elseif scale > 0x1p32_cdouble then
+    imaginary_magnitude = log(scale) + log(alpha_scaled) + 0.693147180559945309417232121458176568_cdouble
+  else
+    local alpha = scale * alpha_scaled
+    if alpha < 1_cdouble then alpha = 1_cdouble end
+    imaginary_magnitude = acosh(alpha)
+  end
+  imaginary_out[0] = copysign(imaginary_magnitude, y)
+end
+
+local function nelibc_casinparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_casinparts_l'>
+  if is_infinite80(y) then
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    if is_infinite80(x) then
+      real_out[0] = copysignl(0.25_clongdouble * acosl(-1_clongdouble), x)
+    elseif is_nan80(x) then
+      real_out[0] = x + y
+    else
+      real_out[0] = copysignl(0_clongdouble, x)
+    end
+    imaginary_out[0] = copysignl(infinity.value, y)
+    return
+  end
+  if is_infinite80(x) then
+    if is_nan80(y) then
+      local nan_value = x + y
+      real_out[0], imaginary_out[0] = nan_value, nan_value
+      return
+    end
+    real_out[0] = copysignl(0.5_clongdouble * acosl(-1_clongdouble), x)
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    imaginary_out[0] = copysignl(infinity.value, y)
+    return
+  end
+  if is_nan80(x) or is_nan80(y) then
+    local nan_value = x + y
+    real_out[0], imaginary_out[0] = nan_value, nan_value
+    return
+  end
+  local scale = 1_clongdouble
+  if fabsl(x) > scale then scale = fabsl(x) end
+  if fabsl(y) > scale then scale = fabsl(y) end
+  local reciprocal = 1_clongdouble / scale
+  local sx = x / scale
+  local sy = y / scale
+  local plus_distance = sqrtl((sx + reciprocal) * (sx + reciprocal) + sy * sy)
+  local minus_distance = sqrtl((sx - reciprocal) * (sx - reciprocal) + sy * sy)
+  local alpha_scaled = 0.5_clongdouble * (plus_distance + minus_distance)
+  local beta = sx / alpha_scaled
+  if beta > 1_clongdouble then beta = 1_clongdouble elseif beta < -1_clongdouble then beta = -1_clongdouble end
+  real_out[0] = asinl(beta)
+  local imaginary_magnitude: clongdouble
+  local absolute_x = fabsl(x)
+  local absolute_y = fabsl(y)
+  if absolute_x < 1_clongdouble then
+    local cosine_real = sqrtl((1_clongdouble - absolute_x) * (1_clongdouble + absolute_x))
+    if absolute_y < 0x1p-32_clongdouble * cosine_real then
+      imaginary_magnitude = asinhl(absolute_y / cosine_real)
+    elseif scale > 0x1p64_clongdouble then
+      imaginary_magnitude = logl(scale) + logl(alpha_scaled) + 0.693147180559945309417232121458176568_clongdouble
+    else
+      local alpha = scale * alpha_scaled
+      if alpha < 1_clongdouble then alpha = 1_clongdouble end
+      imaginary_magnitude = acoshl(alpha)
+    end
+  elseif absolute_x == 1_clongdouble and absolute_y < 1_clongdouble then
+    local delta = 0.5_clongdouble * absolute_y + absolute_y * absolute_y /
+      (2_clongdouble * (sqrtl(4_clongdouble + absolute_y * absolute_y) + 2_clongdouble))
+    imaginary_magnitude = 2_clongdouble * asinhl(sqrtl(0.5_clongdouble * delta))
+  elseif scale > 0x1p64_clongdouble then
+    imaginary_magnitude = logl(scale) + logl(alpha_scaled) + 0.693147180559945309417232121458176568_clongdouble
+  else
+    local alpha = scale * alpha_scaled
+    if alpha < 1_clongdouble then alpha = 1_clongdouble end
+    imaginary_magnitude = acoshl(alpha)
+  end
+  imaginary_out[0] = copysignl(imaginary_magnitude, y)
+end
+
+local function nelibc_cacosparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_cacosparts_f'>
+  local asin_real: cfloat
+  local asin_imaginary: cfloat
+  nelibc_casinparts_f(x, y, &asin_real, &asin_imaginary)
+  real_out[0] = 0.5_cfloat * acosf(-1_cfloat) - asin_real
+  imaginary_out[0] = -asin_imaginary
+end
+
+local function nelibc_cacosparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_cacosparts'>
+  local asin_real: cdouble
+  local asin_imaginary: cdouble
+  nelibc_casinparts(x, y, &asin_real, &asin_imaginary)
+  real_out[0] = 0.5_cdouble * acos(-1_cdouble) - asin_real
+  imaginary_out[0] = -asin_imaginary
+end
+
+local function nelibc_cacosparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_cacosparts_l'>
+  local asin_real: clongdouble
+  local asin_imaginary: clongdouble
+  nelibc_casinparts_l(x, y, &asin_real, &asin_imaginary)
+  real_out[0] = 0.5_clongdouble * acosl(-1_clongdouble) - asin_real
+  imaginary_out[0] = -asin_imaginary
+end

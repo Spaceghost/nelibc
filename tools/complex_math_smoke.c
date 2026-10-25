@@ -54,6 +54,12 @@ int main(void) {
   float _Complex (*volatile call_catanhf)(float _Complex) = catanhf;
   double _Complex (*volatile call_catanh)(double _Complex) = catanh;
   long double _Complex (*volatile call_catanhl)(long double _Complex) = catanhl;
+  float _Complex (*volatile call_casinf)(float _Complex) = casinf;
+  double _Complex (*volatile call_casin)(double _Complex) = casin;
+  long double _Complex (*volatile call_casinl)(long double _Complex) = casinl;
+  float _Complex (*volatile call_cacosf)(float _Complex) = cacosf;
+  double _Complex (*volatile call_cacos)(double _Complex) = cacos;
+  long double _Complex (*volatile call_cacosl)(long double _Complex) = cacosl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -339,5 +345,60 @@ int main(void) {
       call_cimag(atanh_pole) != 0.0 ||
       !isfinite(call_creal(atanh_large)) || !isfinite(call_cimag(atanh_large)) ||
       fabs(call_cimag(atanh_large) - acos(-1.0) / 2.0) > 1e-15) return 14;
+  float _Complex asinf_value = call_casinf(__builtin_complex(0.5f, 0.25f));
+  double _Complex asin_value = call_casin(__builtin_complex(0.5, 0.25));
+  long double _Complex asinl_value = call_casinl(__builtin_complex(0.5L, 0.25L));
+  float _Complex acosf_value = call_cacosf(__builtin_complex(0.5f, 0.25f));
+  double _Complex acos_value = call_cacos(__builtin_complex(0.5, 0.25));
+  long double _Complex acosl_value = call_cacosl(__builtin_complex(0.5L, 0.25L));
+  float _Complex asin_largef = call_casinf(__builtin_complex(FLT_MAX, FLT_MAX));
+  double _Complex asin_large = call_casin(__builtin_complex(DBL_MAX, DBL_MAX));
+  long double _Complex asin_largel = call_casinl(__builtin_complex(LDBL_MAX, LDBL_MAX));
+  float alpha_f = 0.5f * (hypotf(1.5f, 0.25f) + hypotf(-0.5f, 0.25f));
+  double alpha = 0.5 * (hypot(1.5, 0.25) + hypot(-0.5, 0.25));
+  long double alpha_l = 0.5L * (hypotl(1.5L, 0.25L) + hypotl(-0.5L, 0.25L));
+  float _Complex acos_axisf = call_cacosf(__builtin_complex(2.0f, 0.0f));
+  double _Complex acos_axis = call_cacos(__builtin_complex(2.0, 0.0));
+  long double _Complex acos_axisl = call_cacosl(__builtin_complex(2.0L, 0.0L));
+  float _Complex asin_inf_f = call_casinf(__builtin_complex(INFINITY, INFINITY));
+  double _Complex asin_inf = call_casin(__builtin_complex(INFINITY, INFINITY));
+  long double _Complex asin_inf_l = call_casinl(__builtin_complex(INFINITY, INFINITY));
+  double _Complex asin_inf_nan = call_casin(__builtin_complex(INFINITY, NAN));
+  double _Complex asin_nan_inf = call_casin(__builtin_complex(NAN, INFINITY));
+  float _Complex asin_tiny_f = call_casinf(__builtin_complex(0.5f, 1e-20f));
+  double _Complex asin_tiny = call_casin(__builtin_complex(0.5, 1e-30));
+  long double _Complex asin_tiny_l = call_casinl(__builtin_complex(0.5L, 1e-30L));
+  double _Complex asin_branch_tiny = call_casin(__builtin_complex(1.0, 1e-30));
+  if (fabsf(call_crealf(asinf_value) - asinf(0.5f / alpha_f)) > 2e-6f ||
+      fabsf(call_cimagf(asinf_value) - acoshf(alpha_f)) > 2e-6f ||
+      fabs(call_creal(asin_value) - asin(0.5 / alpha)) > 2e-15 ||
+      fabs(call_cimag(asin_value) - acosh(alpha)) > 2e-15 ||
+      fabsl(call_creall(asinl_value) - asinl(0.5L / alpha_l)) > 2e-18L ||
+      fabsl(call_cimagl(asinl_value) - acoshl(alpha_l)) > 2e-18L ||
+      !isfinite(call_crealf(asinf_value)) || !isfinite(call_cimagf(asinf_value)) ||
+      !isfinite(call_creal(asin_value)) || !isfinite(call_cimag(asin_value)) ||
+      !isfinite(call_creall(asinl_value)) || !isfinite(call_cimagl(asinl_value))) return 15;
+  if (fabsf(call_crealf(asinf_value) + call_crealf(acosf_value) - acosf(-1.0f) / 2.0f) > 2e-6f ||
+      fabs(call_creal(asin_value) + call_creal(acos_value) - acos(-1.0) / 2.0) > 2e-15 ||
+      fabsl(call_creall(asinl_value) + call_creall(acosl_value) - acosl(-1.0L) / 2.0L) > 2e-18L ||
+      fabsf(call_cimagf(asinf_value) + call_cimagf(acosf_value)) > 2e-6f ||
+      fabs(call_cimag(asin_value) + call_cimag(acos_value)) > 2e-15 ||
+      fabsl(call_cimagl(asinl_value) + call_cimagl(acosl_value)) > 2e-18L) return 16;
+  if (!isfinite(call_crealf(asin_largef)) || !isfinite(call_cimagf(asin_largef)) ||
+      !isfinite(call_creal(asin_large)) || !isfinite(call_cimag(asin_large)) ||
+      !isfinite(call_creall(asin_largel)) || !isfinite(call_cimagl(asin_largel))) return 17;
+  if (fabsf(call_crealf(asin_inf_f) - acosf(-1.0f) / 4.0f) > 2e-6f ||
+      fabs(call_creal(asin_inf) - acos(-1.0) / 4.0) > 2e-15 ||
+      fabsl(call_creall(asin_inf_l) - acosl(-1.0L) / 4.0L) > 2e-18L ||
+      !isinf(call_cimagf(asin_inf_f)) || !isinf(call_cimag(asin_inf)) ||
+      !isinf(call_cimagl(asin_inf_l)) ||
+      !isnan(call_creal(asin_inf_nan)) || !isnan(call_cimag(asin_inf_nan)) ||
+      !isnan(call_creal(asin_nan_inf)) || !isinf(call_cimag(asin_nan_inf))) return 18;
+  if (fabsf(call_cimagf(asin_tiny_f) - asinhf(1e-20f / sqrtf(0.75f))) > 2e-26f ||
+      fabs(call_cimag(asin_tiny) - asinh(1e-30 / sqrt(0.75))) > 1e-36 ||
+      fabsl(call_cimagl(asin_tiny_l) - asinhl(1e-30L / sqrtl(0.75L))) > 1e-36L ||
+      fabs(call_cimag(asin_branch_tiny) - sqrt(1e-30)) > 1e-22 ||
+      call_cimagf(acos_axisf) >= 0.0f || call_cimag(acos_axis) >= 0.0 ||
+      call_cimagl(acos_axisl) >= 0.0L) return 19;
   return 0;
 }

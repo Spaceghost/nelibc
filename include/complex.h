@@ -58,6 +58,12 @@ long double complex catanl(long double complex value);
 float complex catanhf(float complex value);
 double complex catanh(double complex value);
 long double complex catanhl(long double complex value);
+float complex casinf(float complex value);
+double complex casin(double complex value);
+long double complex casinl(long double complex value);
+float complex cacosf(float complex value);
+double complex cacos(double complex value);
+long double complex cacosl(long double complex value);
 
 #else
 
