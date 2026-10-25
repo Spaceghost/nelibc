@@ -28,6 +28,9 @@ typedef struct {
 } sem_t;
 
 #define SEM_FAILED ((sem_t *)0)
+#ifdef SEM_VALUE_MAX
+#undef SEM_VALUE_MAX
+#endif
 #define SEM_VALUE_MAX 2147483647
 
 int sem_init(sem_t *sem, int pshared, unsigned int value);
