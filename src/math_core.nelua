@@ -2286,6 +2286,29 @@ local function cbrtf(value: cfloat): cfloat <cexport, codename 'cbrtf'>
   return (@cfloat)(cbrt((@cdouble)(value)))
 end
 
+local function cbrtl(value: clongdouble): clongdouble <cexport, codename 'cbrtl'>
+  if is_nan80(value) then return value + value end
+  if is_infinite80(value) or value == 0_clongdouble then return value end
+
+  local magnitude = value
+  if magnitude < 0_clongdouble then magnitude = -magnitude end
+  local exponent: cint = 0_cint
+  local mantissa = frexpl(magnitude, &exponent)
+  -- Keep the reduced input in [0.5, 4) so Newton iteration remains well scaled.
+  local quotient: cint = exponent // 3_cint
+  local residual: cint = exponent - quotient * 3_cint
+  local reduced = ldexpl(mantissa, residual)
+  local root = expl(logl(reduced) / 3_clongdouble)
+  local iteration: cint = 0_cint
+  while iteration < 3_cint do
+    root = (2_clongdouble * root + reduced / (root * root)) / 3_clongdouble
+    iteration = iteration + 1_cint
+  end
+  root = ldexpl(root, quotient)
+  if value < 0_clongdouble then return -root end
+  return root
+end
+
 local function log1p_core(value: cdouble): cdouble
   if fabs(value) >= 0.125_cdouble then
     local adjusted = 1_cdouble + value

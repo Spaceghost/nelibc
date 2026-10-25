@@ -37,7 +37,7 @@ The example allocates through `nelibc_malloc`, uses standard memory, string,
 conversion, and math functions, including long-double `hypotl`, `nextafterl`,
 `atan2l`, `asinl`, `logl`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`,
 `tanl`, `tanhl`, `sinhl`, `coshl`, `asinhl`, `acoshl`, `atanhl`, `powl`,
-`fminl`, `fmaxl`, and `fdiml`, plus
+`fminl`, `fmaxl`, `fdiml`, and `cbrtl`, plus
 long-double scaling and rounding. It also uses GNU's
 `exp10` extension from the archive, and prints through the host's `printf`.
 This is the incremental replacement model: each archive
@@ -66,7 +66,7 @@ On x86-64, `fabsl`, `copysignl`, `sqrtl`, `fmodl`, `remainderl`, `frexpl`,
 `modfl`, `hypotl`, `nextafterl`, `atanl`, `atan2l`, `asinl`, `acosl`, `logl`,
 `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`,
 `sincosl`, `tanl`, `tanhl`, `sinhl`, `coshl`, `asinhl`, `acoshl`, `atanhl`,
-`powl`, `fminl`, `fmaxl`, `fdiml`,
+`powl`, `fminl`, `fmaxl`, `fdiml`, `cbrtl`,
 `ilogbl`, `logbl`, `ldexpl`,
 `scalbnl`, `scalblnl`, `truncl`,
 `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`,

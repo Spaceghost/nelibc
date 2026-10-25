@@ -125,7 +125,7 @@ catgets,nl_types.h,,,not-declared
 catopen,nl_types.h,,,not-declared
 cbrt,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cbrtf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-cbrtl,math.h,,,not-declared
+cbrtl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ccos,complex.h,,,not-declared
 ccosf,complex.h,,,not-declared
 ccosh,complex.h,,,not-declared

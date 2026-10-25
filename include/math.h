@@ -126,6 +126,7 @@ float log1pf(float value);
 double log1p(double value);
 float cbrtf(float value);
 double cbrt(double value);
+long double cbrtl(long double value);
 float sinf(float value);
 double sin(double value);
 void sincosf(float value, float *sine, float *cosine);

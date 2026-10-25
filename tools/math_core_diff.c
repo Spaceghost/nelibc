@@ -143,6 +143,7 @@ extern long double nelibc_powl(long double, long double);
 extern long double nelibc_fminl(long double, long double);
 extern long double nelibc_fmaxl(long double, long double);
 extern long double nelibc_fdiml(long double, long double);
+extern long double nelibc_cbrtl(long double);
 extern void nelibc_sincosl(long double, long double *, long double *);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
@@ -1522,6 +1523,42 @@ int main(void) {
   if (!isnan(nelibc_fdiml(signaling_nan.value, 1.0L)) ||
       fetestexcept(FE_INVALID) == 0) {
     fprintf(stderr, "fdiml signaling NaN handling failed\n");
+    return 1;
+  }
+  const long double cbrtl_values[] = {
+      -INFINITY, -LDBL_MAX, -8.0L, -1.0L, -LDBL_MIN,
+      -nextafterl(0.0L, 1.0L), -0.0L, 0.0L, nextafterl(0.0L, 1.0L),
+      LDBL_MIN, 0.125L, 1.0L, 2.0L, 8.0L, LDBL_MAX, INFINITY};
+  for (size_t i = 0; i < sizeof(cbrtl_values) / sizeof(cbrtl_values[0]); ++i) {
+    long double actual = nelibc_cbrtl(cbrtl_values[i]);
+    long double expected = cbrtl(cbrtl_values[i]);
+    if (!long_double_math_close(actual, expected) ||
+        (expected == 0.0L && signbit(actual) != signbit(expected))) {
+      fprintf(stderr, "cbrtl edge mismatch i=%zu actual=%.21Le expected=%.21Le\n",
+              i, actual, expected);
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 512; ++i) {
+    int exponent = -16000 + (int)i * 62;
+    long double value = ldexpl(1.25L + (long double)(i % 7) / 16.0L, exponent);
+    if (i & 1) value = -value;
+    if (!long_double_math_close(nelibc_cbrtl(value), cbrtl(value))) {
+      fprintf(stderr, "cbrtl exponent-range mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 4096; ++i) {
+    long double value = (long double)((long long)((i * 79) % 20001) - 10000) / 17.0L;
+    if (!long_double_math_close(nelibc_cbrtl(value), cbrtl(value))) {
+      fprintf(stderr, "cbrtl generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  if (!isnan(nelibc_cbrtl(quiet_nan.value)) ||
+      !isnan(nelibc_cbrtl(signaling_nan.value)) ||
+      !signbit(nelibc_cbrtl(-0.0L))) {
+    fprintf(stderr, "cbrtl NaN/signed-zero handling failed\n");
     return 1;
   }
   errno = 0;
