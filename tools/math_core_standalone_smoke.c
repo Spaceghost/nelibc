@@ -189,6 +189,17 @@ int main(void) {
       pow10l(2.0L) != 100.0L ||
       !(expm1l(0x1p-60L) > 0.0L && expm1l(0x1p-60L) < 0x1p-59L)) return 178;
   errno = 0;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0) return 217;
+  volatile long double powl_min_identity = powl(LDBL_MIN, 1.0L);
+  if (powl_min_identity != LDBL_MIN) return 219;
+  if (errno != 0) return 220;
+  if (fetestexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INEXACT) != 0) return 221;
+  errno = 0;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0 || powl(2.0L, -16445.0L) != 0x1p-16445L ||
+      errno != 0) return 218;
+  errno = 0;
+  if (powl(-0.5L, 16445.0L) != -0x1p-16445L || errno != 0) return 222;
+  errno = 0;
   if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;
 
   if (sqrtl(4.0L) != 2.0L || fabsl(-3.0L) != 3.0L ||

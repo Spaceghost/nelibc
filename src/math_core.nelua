@@ -918,6 +918,7 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
     <cexport, codename 'powl'>
   if exponent == 0_clongdouble or value == 1_clongdouble then return 1_clongdouble end
   if is_nan80(value) or is_nan80(exponent) then return value + exponent end
+  if exponent == 1_clongdouble then return value end
   local absolute = value
   if absolute < 0_clongdouble then absolute = -absolute end
   local odd = is_odd_integer80(exponent)
@@ -969,6 +970,21 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   local result: clongdouble
   local exponent_magnitude = exponent
   if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
+  -- Preserve exact integral powers of two, including representable subnormals.
+  -- The logarithm/exponential path turns those into ERANGE on an exact result.
+  if is_integer80(exponent) and exponent_magnitude <= 32768_clongdouble then
+    local base_exponent = nelibc_ilogbl_hw(absolute)
+    local ignored_range_error: cint = 0_cint
+    local power_of_two = nelibc_ldexpl_hw(1_clongdouble, base_exponent, &ignored_range_error)
+    if power_of_two == absolute then
+      local result_exponent = (@clonglong)(base_exponent) * (@clonglong)(exponent)
+      if result_exponent >= -16445_clonglong and result_exponent <= 16383_clonglong then
+        result = nelibc_ldexpl_hw(1_clongdouble, (@cint)(result_exponent), &ignored_range_error)
+        if value < 0_clongdouble and odd then result = -result end
+        return result
+      end
+    end
+  end
   if exponent_magnitude == 0.5_clongdouble then
     result = sqrtl(absolute)
     if exponent < 0_clongdouble then result = 1_clongdouble / result end

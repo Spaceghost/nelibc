@@ -1920,6 +1920,44 @@ int main(void) {
   }
   feclearexcept(FE_ALL_EXCEPT);
   errno = 0;
+  volatile long double host_powl_identity = powl(LDBL_MIN, 1.0L);
+  int host_powl_identity_flags = fetestexcept(FE_ALL_EXCEPT);
+  int host_powl_identity_errno = errno;
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  volatile long double nelibc_powl_identity = nelibc_powl(LDBL_MIN, 1.0L);
+  if (nelibc_powl_identity != host_powl_identity ||
+      fetestexcept(FE_ALL_EXCEPT) != host_powl_identity_flags ||
+      errno != host_powl_identity_errno) {
+    fprintf(stderr, "powl exponent-one identity raised unexpected flags or errno\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  volatile long double host_powl_exact_subnormal = powl(2.0L, -16445.0L);
+  int host_powl_exact_subnormal_errno = errno;
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  volatile long double nelibc_powl_exact_subnormal = nelibc_powl(2.0L, -16445.0L);
+  if (nelibc_powl_exact_subnormal != host_powl_exact_subnormal ||
+      errno != host_powl_exact_subnormal_errno) {
+    fprintf(stderr, "powl exact subnormal result or errno mismatch\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  volatile long double host_powl_negative_subnormal = powl(-0.5L, 16445.0L);
+  int host_powl_negative_subnormal_errno = errno;
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  volatile long double nelibc_powl_negative_subnormal = nelibc_powl(-0.5L, 16445.0L);
+  if (nelibc_powl_negative_subnormal != host_powl_negative_subnormal ||
+      errno != host_powl_negative_subnormal_errno) {
+    fprintf(stderr, "powl exact negative subnormal result or errno mismatch\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
   if (nelibc_powl(LDBL_MAX, -2.0L) != 0.0L || errno != ERANGE ||
       (fetestexcept(FE_UNDERFLOW) == 0) || (fetestexcept(FE_OVERFLOW) != 0)) {
     fprintf(stderr, "powl negative-exponent underflow flags failed\n");
