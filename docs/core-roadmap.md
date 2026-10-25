@@ -9,10 +9,10 @@ archive; it does not certify every behavior required by C or POSIX.
 | Priority | Gap | Why it blocks a compelling libc | Next milestone |
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
-| P1 | C math library | The Nelua slice includes binary32/binary64 math, plus x86-64 long-double `sqrtl`, `fabsl`, `copysignl`, `fmodl`, `remainderl`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `atanl`, `atan2l`, `asinl`, `acosl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; the arithmetic backend is x86-64-specific, full fenv reporting remains incomplete, and 36 musl math APIs remain undeclared | Add remaining high-use long-double functions, then improve fenv semantics and math quality/performance |
+| P1 | C math library | The Nelua slice includes binary32/binary64 math, plus x86-64 long-double `sqrtl`, `fabsl`, `copysignl`, `fmodl`, `remainderl`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `atanl`, `atan2l`, `asinl`, `acosl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`, `exp2l`, `expm1l`, `sinl`, `cosl`, and `sincosl`, plus `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`; the arithmetic backend is x86-64-specific, full fenv reporting remains incomplete, and 33 musl math APIs remain undeclared | Add remaining high-use long-double functions, then improve fenv semantics and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 751 undeclared candidates and record explicit intentional omissions |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 748 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -26,7 +26,7 @@ symbol-count ratios or standards-conformance claims:
 |---|---:|---|
 | Core memory, strings, allocation, integer conversion, process/startup, and common I/O | 75–85% | Edge-case conformance, ABI review, and wider consumer coverage |
 | Core time and basic signals/process APIs | 65–80% | Cross-libc differential coverage, locale names, and less common POSIX behavior |
-| Math | 38–45% | Most C math entry points, long double, fenv behavior, and quality/performance work |
+| Math | 42–50% | Remaining C math entry points, fenv behavior, and quality/performance work |
 | Standalone threading/TLS | 35–50% | Cancellation, synchronization breadth, and static-TLS ABI limits; dynamic TLS is deferred |
 | Locale and international text | 15–30% | Locale datasets, Unicode case conversion, collation, and numeric/time conventions |
 | Overall “core libc” for common Linux C programs | 65–75% | Math and threading gaps plus stronger compatibility evidence |
@@ -88,15 +88,15 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The current API inventory has 767 declared names: 649 exported in hybrid
+- The current API inventory has 770 declared names: 652 exported in hybrid
   archives, 114 host-delegated across all hybrid profiles, and four standalone
   priority-ceiling exports that glibc supplies in hybrid mode but musl does
   not. There is also one implementation-only entry. This is an
   inventory signal, not a completeness percentage.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 605
+  that are also exported by the pinned release archives: Nelibc exports 608
   in at least one hybrid profile, delegates 115 to a hybrid host, and does not
-  yet declare 751. The largest undeclared groups are math (36), complex math
+  yet declare 748. The largest undeclared groups are math (33), complex math
   (66), wide characters (65), stdlib, unistd, and network database APIs. These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
@@ -114,7 +114,7 @@ musl export set.
   functions plus x86-64 extended-precision `sqrtl`, `fabsl`, `copysignl`,
   `fmodl`, `remainderl`, `frexpl`, `modfl`, `hypotl`, `nextafterl`, `atanl`,
   `atan2l`, `asinl`, `acosl`, `logl`, `log2l`, `log10l`, `log1pl`, `expl`,
-  `exp2l`, `expm1l`, `ilogbl`, `logbl`,
+  `exp2l`, `expm1l`, `sinl`, `cosl`, `sincosl`, `ilogbl`, `logbl`,
   `ldexpl`,
   `scalbnl`, `scalblnl`, `truncl`, `floorl`, `ceill`, `rintl`, and
   `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl` through all
@@ -187,8 +187,8 @@ musl export set.
   infinities, quiet NaNs, and largest finite values, plus 100,000 generated
   scalar inputs and input pairs per profile against host libm. Signaling-NaN
   operations are exercised, with min/max result comparison relaxed where host
-  runtimes differ. Long double and most transcendental functions remain outside
-  this slice. `sinh`/`cosh`/`tanh` and their float forms use small-input series,
+  runtimes differ. Remaining long-double entry points and complete fenv
+  reporting remain outside this slice. `sinh`/`cosh`/`tanh` and their float forms use small-input series,
   range-safe exponential formulas, signed-zero and infinity handling, and
   overflow `ERANGE`; differential checks cover the near-overflow transition.
   `atan` uses fdlibm range reduction and its polynomial kernel; `atan2` handles

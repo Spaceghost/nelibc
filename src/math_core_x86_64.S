@@ -123,13 +123,44 @@ nelibc_exp2l_hw:
   ret
 .size nelibc_exp2l_hw, .-nelibc_exp2l_hw
 
+/* Return sinl(value) and store cosl(value) through the pointer. */
+.globl nelibc_sincosl_hw
+.type nelibc_sincosl_hw,@function
+nelibc_sincosl_hw:
+  fldt 8(%rsp)
+  fsincos
+  fstpt (%rdi)
+  ret
+.size nelibc_sincosl_hw, .-nelibc_sincosl_hw
+
 .section .rodata
 .p2align 4
 .Lnelibc_ln2_hi:
   .double 0.693147180369123816490
 .Lnelibc_ln2_lo:
   .double 1.90821492927058770002e-10
+.p2align 4
+.Lnelibc_pio2_hi:
+  .byte 0x35, 0xc2, 0x68, 0x21, 0xa2, 0xda, 0x0f, 0xc9, 0xff, 0x3f
+  .zero 6
+.Lnelibc_pio2_lo:
+  .byte 0xbb, 0x8c, 0x8f, 0xfc, 0xd1, 0x75, 0xe6, 0xec, 0xbd, 0xbf
+  .zero 6
 .text
+
+.globl nelibc_pio2l_hi_hw
+.type nelibc_pio2l_hi_hw,@function
+nelibc_pio2l_hi_hw:
+  fldt .Lnelibc_pio2_hi(%rip)
+  ret
+.size nelibc_pio2l_hi_hw, .-nelibc_pio2l_hi_hw
+
+.globl nelibc_pio2l_lo_hw
+.type nelibc_pio2l_lo_hw,@function
+nelibc_pio2l_lo_hw:
+  fldt .Lnelibc_pio2_lo(%rip)
+  ret
+.size nelibc_pio2l_lo_hw, .-nelibc_pio2l_lo_hw
 
 /* Accurate cancellation-free expm1(x) for inputs scaled into [-1,1]. */
 .globl nelibc_expm1l_small_hw

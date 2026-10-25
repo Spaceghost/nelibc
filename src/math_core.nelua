@@ -3,8 +3,8 @@
 
 -- This math slice uses IEEE-754 binary32 and binary64 layouts. Correctly
 -- rounded sqrt/remainder primitives use x86-64 hardware; other semantics live
--- in Nelua. Long-double and remaining transcendental entry points are still
--- separate work.
+-- in Nelua. Long-double transcendental reduction uses a binary80 Payne-Hanek
+-- path with generated 2/pi limbs and x87 evaluation for reduced arguments.
 local FloatBits: type = @union{bits: cuint, value: cfloat}
 local DoubleBits: type = @union{bits: culonglong, value: cdouble}
 local LongDoubleParts: type = @record{significand: culonglong, sign_exponent: cushort}
@@ -12,11 +12,12 @@ local LongDoubleBits: type = @union{parts: LongDoubleParts, value: clongdouble}
 local FmaNumber: type = @record{mantissa: culonglong, exponent: cint, sign: cint}
 local FmaProduct: type = @record{high: culonglong, low: culonglong}
 global signgam: cint <cexport, codename 'signgam'> = 1_cint
--- The 2/pi digits and math-kernel coefficients follow FreeBSD libmsun/musl fdlibm
--- constants. Copyright (C) 1993 by Sun Microsystems, Inc.; developed at
+-- Regenerate the 700-limb 2/pi table with tools/gen_two_over_pi.py. Its first
+-- limbs and the double kernels follow FreeBSD libmsun/musl fdlibm constants.
+-- The fdlibm code is Copyright (C) 1993 by Sun Microsystems, Inc.; developed at
 -- SunSoft. Permission to use, copy, modify, and distribute is freely granted
 -- provided this notice is preserved.
-local two_over_pi: [50]cuint = {
+local two_over_pi: [700]cuint = {
   0xA2F983_cuint, 0x6E4E44_cuint, 0x1529FC_cuint, 0x2757D1_cuint, 0xF534DD_cuint,
   0xC0DB62_cuint, 0x95993C_cuint, 0x439041_cuint, 0xFE5163_cuint, 0xABDEBB_cuint,
   0xC561B7_cuint, 0x246E3A_cuint, 0x424DD2_cuint, 0xE00649_cuint, 0x2EEA09_cuint,
@@ -27,6 +28,136 @@ local two_over_pi: [50]cuint = {
   0x367ECF_cuint, 0x27CB09_cuint, 0xB74F46_cuint, 0x3F669E_cuint, 0x5FEA2D_cuint,
   0x7527BA_cuint, 0xC7EBE5_cuint, 0xF17B3D_cuint, 0x0739F7_cuint, 0x8A5292_cuint,
   0xEA6BFB_cuint, 0x5FB11F_cuint, 0x8D5D08_cuint, 0x560330_cuint, 0x46FC7B_cuint,
+  0x6BABF0_cuint, 0xCFBC20_cuint, 0x9AF436_cuint, 0x1DA9E3_cuint, 0x91615E_cuint,
+  0xE61B08_cuint, 0x659985_cuint, 0x5F14A0_cuint, 0x68408D_cuint, 0xFFD880_cuint,
+  0x4D7327_cuint, 0x310606_cuint, 0x1556CA_cuint, 0x73A8C9_cuint, 0x60E27B_cuint,
+  0xC08C6B_cuint, 0x47C419_cuint, 0xC367CD_cuint, 0xDCE809_cuint, 0x2A8359_cuint,
+  0xC4768B_cuint, 0x961CA6_cuint, 0xDDAF44_cuint, 0xD15719_cuint, 0x053EA5_cuint,
+  0xFF0705_cuint, 0x3F7E33_cuint, 0xE832C2_cuint, 0xDE4F98_cuint, 0x327DBB_cuint,
+  0xC33D26_cuint, 0xEF6B1E_cuint, 0x5EF89F_cuint, 0x3A1F35_cuint, 0xCAF27F_cuint,
+  0x1D87F1_cuint, 0x21907C_cuint, 0x7C246A_cuint, 0xFA6ED5_cuint, 0x772D30_cuint,
+  0x433B15_cuint, 0xC614B5_cuint, 0x9D19C3_cuint, 0xC2C4AD_cuint, 0x414D2C_cuint,
+  0x5D000C_cuint, 0x467D86_cuint, 0x2D71E3_cuint, 0x9AC69B_cuint, 0x006233_cuint,
+  0x7CD2B4_cuint, 0x97A7B4_cuint, 0xD55537_cuint, 0xF63ED7_cuint, 0x1810A3_cuint,
+  0xFC764D_cuint, 0x2A9D64_cuint, 0xABD770_cuint, 0xF87C63_cuint, 0x57B07A_cuint,
+  0xE71517_cuint, 0x5649C0_cuint, 0xD9D63B_cuint, 0x3884A7_cuint, 0xCB2324_cuint,
+  0x778AD6_cuint, 0x23545A_cuint, 0xB91F00_cuint, 0x1B0AF1_cuint, 0xDFCE19_cuint,
+  0xFF319F_cuint, 0x6A1E66_cuint, 0x615799_cuint, 0x47FBAC_cuint, 0xD87F7E_cuint,
+  0xB76522_cuint, 0x89E832_cuint, 0x60BFE6_cuint, 0xCDC4EF_cuint, 0x09366C_cuint,
+  0xD43F5D_cuint, 0xD7DE16_cuint, 0xDE3B58_cuint, 0x929BDE_cuint, 0x2822D2_cuint,
+  0xE88628_cuint, 0x4D58E2_cuint, 0x32CAC6_cuint, 0x16E308_cuint, 0xCB7DE0_cuint,
+  0x50C017_cuint, 0xA71DF3_cuint, 0x5BE018_cuint, 0x34132E_cuint, 0x621283_cuint,
+  0x014883_cuint, 0x5B8EF5_cuint, 0x7FB0AD_cuint, 0xF2E91E_cuint, 0x434A48_cuint,
+  0xD36710_cuint, 0xD8DDAA_cuint, 0x425FAE_cuint, 0xCE616A_cuint, 0xA4280A_cuint,
+  0xB499D3_cuint, 0xF2A606_cuint, 0x7F775C_cuint, 0x83C2A3_cuint, 0x883C61_cuint,
+  0x78738A_cuint, 0x5A8CAF_cuint, 0xBDD76F_cuint, 0x63A62D_cuint, 0xCBBFF4_cuint,
+  0xEF818D_cuint, 0x67C126_cuint, 0x45CA55_cuint, 0x36D9CA_cuint, 0xD2A828_cuint,
+  0x8D61C2_cuint, 0x77C912_cuint, 0x142604_cuint, 0x9B4612_cuint, 0xC459C4_cuint,
+  0x44C5C8_cuint, 0x91B24D_cuint, 0xF31700_cuint, 0xAD43D4_cuint, 0xE54929_cuint,
+  0x10D5FD_cuint, 0xFCBE00_cuint, 0xCC941E_cuint, 0xEECE70_cuint, 0xF53E13_cuint,
+  0x80F1EC_cuint, 0xC3E7B3_cuint, 0x28F8C7_cuint, 0x940593_cuint, 0x3E71C1_cuint,
+  0xB3092E_cuint, 0xF3450B_cuint, 0x9C1288_cuint, 0x7B20AB_cuint, 0x9FB52E_cuint,
+  0xC29247_cuint, 0x2F327B_cuint, 0x6D550C_cuint, 0x90A772_cuint, 0x1FE76B_cuint,
+  0x96CB31_cuint, 0x4A1679_cuint, 0xE27941_cuint, 0x89DFF4_cuint, 0x9794E8_cuint,
+  0x84E6E2_cuint, 0x973199_cuint, 0x6BED88_cuint, 0x365F5F_cuint, 0x0EFDBB_cuint,
+  0xB49A48_cuint, 0x6CA467_cuint, 0x427271_cuint, 0x325D8D_cuint, 0xB8159F_cuint,
+  0x09E5BC_cuint, 0x25318D_cuint, 0x3974F7_cuint, 0x1C0530_cuint, 0x010C0D_cuint,
+  0x68084B_cuint, 0x58EE2C_cuint, 0x90AA47_cuint, 0x02E774_cuint, 0x24D6BD_cuint,
+  0xA67DF7_cuint, 0x72486E_cuint, 0xEF169F_cuint, 0xA6948E_cuint, 0xF691B4_cuint,
+  0x5153D1_cuint, 0xF20ACF_cuint, 0x339820_cuint, 0x7E4BF5_cuint, 0x6863B2_cuint,
+  0x5F3EDD_cuint, 0x035D40_cuint, 0x7F8985_cuint, 0x295255_cuint, 0xC06437_cuint,
+  0x10D86D_cuint, 0x324832_cuint, 0x754C5B_cuint, 0xD4714E_cuint, 0x6E5445_cuint,
+  0xC1090B_cuint, 0x69F52A_cuint, 0xD56614_cuint, 0x9D0727_cuint, 0x50045D_cuint,
+  0xDB3BB4_cuint, 0xC576EA_cuint, 0x17F987_cuint, 0x7D6B49_cuint, 0xBA271D_cuint,
+  0x296996_cuint, 0xACCCC6_cuint, 0x5414AD_cuint, 0x6AE290_cuint, 0x89D988_cuint,
+  0x50722C_cuint, 0xBEA404_cuint, 0x940777_cuint, 0x7030F3_cuint, 0x27FC00_cuint,
+  0xA871EA_cuint, 0x49C266_cuint, 0x3DE064_cuint, 0x83DD97_cuint, 0x973FA3_cuint,
+  0xFD9443_cuint, 0x8C860D_cuint, 0xDE4131_cuint, 0x9D3992_cuint, 0x8C70DD_cuint,
+  0xE7B717_cuint, 0x3BDF08_cuint, 0x2B3715_cuint, 0xA0805C_cuint, 0x93805A_cuint,
+  0x921110_cuint, 0xD8E80F_cuint, 0xAF806C_cuint, 0x4BFFDB_cuint, 0x0F9038_cuint,
+  0x761859_cuint, 0x15A562_cuint, 0xBBCB61_cuint, 0xB989C7_cuint, 0xBD4010_cuint,
+  0x04F2D2_cuint, 0x277549_cuint, 0xF6B6EB_cuint, 0xBB22DB_cuint, 0xAA140A_cuint,
+  0x2F2689_cuint, 0x768364_cuint, 0x333B09_cuint, 0x1A940E_cuint, 0xAA3A51_cuint,
+  0xC2A31D_cuint, 0xAEEDAF_cuint, 0x12265C_cuint, 0x4DC26D_cuint, 0x9C7A2D_cuint,
+  0x9756C0_cuint, 0x833F03_cuint, 0xF6F009_cuint, 0x8C402B_cuint, 0x99316D_cuint,
+  0x07B439_cuint, 0x15200C_cuint, 0x5BC3D8_cuint, 0xC492F5_cuint, 0x4BADC6_cuint,
+  0xA5CA4E_cuint, 0xCD37A7_cuint, 0x36A9E6_cuint, 0x9492AB_cuint, 0x6842DD_cuint,
+  0xDE6319_cuint, 0xEF8C76_cuint, 0x528B68_cuint, 0x37DBFC_cuint, 0xABA1AE_cuint,
+  0x3115DF_cuint, 0xA1AE00_cuint, 0xDAFB0C_cuint, 0x664D64_cuint, 0xB705ED_cuint,
+  0x306529_cuint, 0xBF5657_cuint, 0x3AFF47_cuint, 0xB9F96A_cuint, 0xF3BE75_cuint,
+  0xDF9328_cuint, 0x3080AB_cuint, 0xF68C66_cuint, 0x15CB04_cuint, 0x0622FA_cuint,
+  0x1DE4D9_cuint, 0xA4B33D_cuint, 0x8F1B57_cuint, 0x09CD36_cuint, 0xE9424E_cuint,
+  0xA4BE13_cuint, 0xB52333_cuint, 0x1AAAF0_cuint, 0xA8654F_cuint, 0xA5C1D2_cuint,
+  0x0F3F0B_cuint, 0xCD785B_cuint, 0x76F923_cuint, 0x048B7B_cuint, 0x721789_cuint,
+  0x53A6C6_cuint, 0xE26E6F_cuint, 0x00EBEF_cuint, 0x584A9B_cuint, 0xB7DAC4_cuint,
+  0xBA66AA_cuint, 0xCFCF76_cuint, 0x1D02D1_cuint, 0x2DF1B1_cuint, 0xC1998C_cuint,
+  0x77ADC3_cuint, 0xDA4886_cuint, 0xA05DF7_cuint, 0xF480C6_cuint, 0x2FF0AC_cuint,
+  0x9AECDD_cuint, 0xBC5C3F_cuint, 0x6DDED0_cuint, 0x1FC790_cuint, 0xB6DB2A_cuint,
+  0x3A25A3_cuint, 0x9AAF00_cuint, 0x9353AD_cuint, 0x0457B6_cuint, 0xB42D29_cuint,
+  0x7E804B_cuint, 0xA707DA_cuint, 0x0EAA76_cuint, 0xA1597B_cuint, 0x2A1216_cuint,
+  0x2DB7DC_cuint, 0xFDE5FA_cuint, 0xFEDB89_cuint, 0xFDBE89_cuint, 0x6C76E4_cuint,
+  0xFCA906_cuint, 0x70803E_cuint, 0x156E85_cuint, 0xFF87FD_cuint, 0x073E28_cuint,
+  0x336761_cuint, 0x86182A_cuint, 0xEABD4D_cuint, 0xAFE7B3_cuint, 0x6E6D8F_cuint,
+  0x396795_cuint, 0x5BBF31_cuint, 0x48D784_cuint, 0x16DF30_cuint, 0x432DC7_cuint,
+  0x356125_cuint, 0xCE70C9_cuint, 0xB8CB30_cuint, 0xFD6CBF_cuint, 0xA200A4_cuint,
+  0xE46C05_cuint, 0xA0DD5A_cuint, 0x476F21_cuint, 0xD21262_cuint, 0x845CB9_cuint,
+  0x496170_cuint, 0xE0566B_cuint, 0x015299_cuint, 0x375550_cuint, 0xB7D51E_cuint,
+  0xC4F133_cuint, 0x5F6E13_cuint, 0xE4305D_cuint, 0xA92E85_cuint, 0xC3B21D_cuint,
+  0x3632A1_cuint, 0xA4B708_cuint, 0xD4B1EA_cuint, 0x21F716_cuint, 0xE4698F_cuint,
+  0x77FF27_cuint, 0x80030C_cuint, 0x2D408D_cuint, 0xA0CD4F_cuint, 0x99A520_cuint,
+  0xD3A2B3_cuint, 0x0A5D2F_cuint, 0x42F9B4_cuint, 0xCBDA11_cuint, 0xD0BE7D_cuint,
+  0xC1DB9B_cuint, 0xBD17AB_cuint, 0x81A2CA_cuint, 0x5C6A08_cuint, 0x17552E_cuint,
+  0x550027_cuint, 0xF0147F_cuint, 0x8607E1_cuint, 0x640B14_cuint, 0x8D4196_cuint,
+  0xDEBE87_cuint, 0x2AFDDA_cuint, 0xB6256B_cuint, 0x34897B_cuint, 0xFEF305_cuint,
+  0x9EBFB9_cuint, 0x4F6A68_cuint, 0xA82A4A_cuint, 0x5AC44F_cuint, 0xBCF82D_cuint,
+  0x985AD7_cuint, 0x95C7F4_cuint, 0x8D4D0D_cuint, 0xA63A20_cuint, 0x5F57A4_cuint,
+  0xB13F14_cuint, 0x953880_cuint, 0x0120CC_cuint, 0x86DD71_cuint, 0xB6DEC9_cuint,
+  0xF560BF_cuint, 0x11654D_cuint, 0x6B0701_cuint, 0xACB08C_cuint, 0xD0C0B2_cuint,
+  0x485551_cuint, 0x0EFB1E_cuint, 0xC37295_cuint, 0x3B06A3_cuint, 0x3540C0_cuint,
+  0x7BDC06_cuint, 0xCC45E0_cuint, 0xFA294E_cuint, 0xC8CAD6_cuint, 0x41F3E8_cuint,
+  0xDE647C_cuint, 0xD8649B_cuint, 0x31BED9_cuint, 0xC397A4_cuint, 0xD45877_cuint,
+  0xC5E369_cuint, 0x13DAF0_cuint, 0x3C3ABA_cuint, 0x461846_cuint, 0x5F7555_cuint,
+  0xF5BDD2_cuint, 0xC6926E_cuint, 0x5D2EAC_cuint, 0xED440E_cuint, 0x423E1C_cuint,
+  0x87C461_cuint, 0xE9FD29_cuint, 0xF3D6E7_cuint, 0xCA7C22_cuint, 0x35916F_cuint,
+  0xC5E008_cuint, 0x8DD7FF_cuint, 0xE26A6E_cuint, 0xC6FDB0_cuint, 0xC10893_cuint,
+  0x745D7C_cuint, 0xB2AD6B_cuint, 0x9D6ECD_cuint, 0x7B723E_cuint, 0x6A11C6_cuint,
+  0xA9CFF7_cuint, 0xDF7329_cuint, 0xBAC9B5_cuint, 0x5100B7_cuint, 0x0DB2E2_cuint,
+  0x24BA74_cuint, 0x607DE5_cuint, 0x8AD874_cuint, 0x2C150D_cuint, 0x0C1881_cuint,
+  0x94667E_cuint, 0x162901_cuint, 0x767A9F_cuint, 0xBEFDFD_cuint, 0xEF4556_cuint,
+  0x367ED9_cuint, 0x13D9EC_cuint, 0xB9BA8B_cuint, 0xFC97C4_cuint, 0x27A831_cuint,
+  0xC36EF1_cuint, 0x36C594_cuint, 0x56A8D8_cuint, 0xB5A8B4_cuint, 0x0ECCCF_cuint,
+  0x2D8912_cuint, 0x34576F_cuint, 0x89562C_cuint, 0xE3CE99_cuint, 0xB920D6_cuint,
+  0xAA5E6B_cuint, 0x9C2A3E_cuint, 0xCC5F11_cuint, 0x4A0BFD_cuint, 0xFBF4E1_cuint,
+  0x6D3B8E_cuint, 0x2C86E2_cuint, 0x84D4E9_cuint, 0xA9B4FC_cuint, 0xD1EEEF_cuint,
+  0xC9352E_cuint, 0x61392F_cuint, 0x442138_cuint, 0xC8D91B_cuint, 0x0AFC81_cuint,
+  0x6A4AFB_cuint, 0xD81C2F_cuint, 0x84B453_cuint, 0x8C994E_cuint, 0xCC2254_cuint,
+  0xDC552A_cuint, 0xD6C6C0_cuint, 0x96190B_cuint, 0xB8701A_cuint, 0x649569_cuint,
+  0x605A26_cuint, 0xEE523F_cuint, 0x0F117F_cuint, 0x11B5F4_cuint, 0xF5CBFC_cuint,
+  0x2DBC34_cuint, 0xEEBC34_cuint, 0xCC5DE8_cuint, 0x605EDD_cuint, 0x9B8E67_cuint,
+  0xEF3392_cuint, 0xB817C9_cuint, 0x9B5861_cuint, 0xBC57E1_cuint, 0xC68351_cuint,
+  0x103ED8_cuint, 0x4871DD_cuint, 0xDD1C2D_cuint, 0xA118AF_cuint, 0x462C21_cuint,
+  0xD7F359_cuint, 0x987AD9_cuint, 0xC0549E_cuint, 0xFA864F_cuint, 0xFC0656_cuint,
+  0xAE79E5_cuint, 0x362289_cuint, 0x22AD38_cuint, 0xDC9367_cuint, 0xAAE855_cuint,
+  0x382682_cuint, 0x9BE7CA_cuint, 0xA40D51_cuint, 0xB13399_cuint, 0x0ED7A9_cuint,
+  0x480569_cuint, 0xF0B265_cuint, 0xA7887F_cuint, 0x974C88_cuint, 0x36D1F9_cuint,
+  0xB39221_cuint, 0x4A827B_cuint, 0x21CF98_cuint, 0xDC9F40_cuint, 0x5547DC_cuint,
+  0x3A74E1_cuint, 0x42EB67_cuint, 0xDF9DFE_cuint, 0x5FD45E_cuint, 0xA4677B_cuint,
+  0x7AACBA_cuint, 0xA2F655_cuint, 0x23882B_cuint, 0x55BA41_cuint, 0x086E59_cuint,
+  0x862A21_cuint, 0x834739_cuint, 0xE6E389_cuint, 0xD49EE5_cuint, 0x40FB49_cuint,
+  0xE956FF_cuint, 0xCA0F1C_cuint, 0x8A59C5_cuint, 0x2BFA94_cuint, 0xC5C1D3_cuint,
+  0xCFC50F_cuint, 0xAE5ADB_cuint, 0x86C547_cuint, 0x624385_cuint, 0x3B8621_cuint,
+  0x94792C_cuint, 0x876110_cuint, 0x7B4C2A_cuint, 0x1A2C80_cuint, 0x12BF43_cuint,
+  0x902688_cuint, 0x893C78_cuint, 0xE4C4A8_cuint, 0x7BDBE5_cuint, 0xC23AC4_cuint,
+  0xEAF426_cuint, 0x8A67F7_cuint, 0xBF920D_cuint, 0x2BA365_cuint, 0xB1933D_cuint,
+  0x0B7CBD_cuint, 0xDC51A4_cuint, 0x63DD27_cuint, 0xDDE169_cuint, 0x19949A_cuint,
+  0x9529A8_cuint, 0x28CE68_cuint, 0xB4ED09_cuint, 0x209F44_cuint, 0xCA984E_cuint,
+  0x638270_cuint, 0x237C7E_cuint, 0x32B90F_cuint, 0x8EF5A7_cuint, 0xE75614_cuint,
+  0x08F121_cuint, 0x2A9DB5_cuint, 0x4D7E6F_cuint, 0x5119A5_cuint, 0xABF9B5_cuint,
+  0xD6DF82_cuint, 0x61DD96_cuint, 0x023616_cuint, 0x9F3AC4_cuint, 0xA1A283_cuint,
+  0x6DED72_cuint, 0x7A8D39_cuint, 0xA9B882_cuint, 0x5C326B_cuint, 0x5B2746_cuint,
+  0xED3400_cuint, 0x7700D2_cuint, 0x55F4FC_cuint, 0x4D5901_cuint, 0x8071E0_cuint,
+  0xE13F89_cuint, 0xB295F3_cuint, 0x64A8F1_cuint, 0xAEA74B_cuint, 0x38FC4C_cuint,
+  0xEAB2BB_cuint, 0x47270B_cuint, 0xABC3A7_cuint, 0x34BA60_cuint, 0x52DD34_cuint,
 }
 
 -- Lanczos rational coefficients adapted from musl tgamma.c (MIT; see THIRD_PARTY_NOTICES.md).
@@ -224,6 +355,9 @@ local function nelibc_log1pl_small_hw(value: clongdouble): clongdouble <cimport>
 local function nelibc_expl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_exp2l_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_expm1l_small_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_sincosl_hw(value: clongdouble, cosine_out: *[0]clongdouble): clongdouble <cimport> end
+local function nelibc_pio2l_hi_hw(): clongdouble <cimport> end
+local function nelibc_pio2l_lo_hw(): clongdouble <cimport> end
 local function nelibc_x87_rounding_mode(): cint <cimport> end
 local function nelibc_neg_one_up_hw(): clongdouble <cimport> end
 local function nelibc_frexpl_hw(value: clongdouble, exponent: *[0]cint): clongdouble <cimport> end
@@ -2240,6 +2374,13 @@ local function pio2_product_bit(product: *[0]cuint, bit_index: cint): cint <inli
   return (@cint)((product[limb] >> offset) & 1_cuint)
 end
 
+local function pio2_product_bit_long(product: *[0]cuint, bit_index: cint): cint <inline>
+  if bit_index < 0 or bit_index >= 16872_cint then return 0_cint end
+  local limb: cint = bit_index / 24_cint
+  local offset: cint = bit_index % 24_cint
+  return (@cint)((product[limb] >> offset) & 1_cuint)
+end
+
 -- Payne-Hanek reduction: multiply the 53-bit significand by 1200 fixed bits
 -- of 2/pi, then extract the nearest integer and two pieces of its fraction.
 -- The table leaves over 170 guard bits at the largest binary64 exponent.
@@ -2298,6 +2439,77 @@ local function reduce_pio2(value: cdouble, quadrant: *[0]cint,
   local pio2_lo: cdouble = 6.12323399573676603587e-17_cdouble
   local product_hi = fraction_hi * pio2_hi
   local split = 0x1.0000002p+27_cdouble
+  local ca = split * fraction_hi
+  local a_hi = ca - (ca - fraction_hi)
+  local a_lo = fraction_hi - a_hi
+  local cb = split * pio2_hi
+  local b_hi = cb - (cb - pio2_hi)
+  local b_lo = pio2_hi - b_hi
+  local product_error = ((a_hi * b_hi - product_hi) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo
+  head[0] = product_hi
+  tail[0] = product_error + fraction_hi * pio2_lo + fraction_lo * pio2_hi +
+    fraction_lo * pio2_lo
+end
+
+-- Binary80 Payne-Hanek reduction. The 700 limbs provide 16,800 bits of 2/pi,
+-- leaving more than 350 guard bits at the maximum binary80 exponent.
+local function reduce_pio2l(value: clongdouble, quadrant: *[0]cint,
+    head: *[0]clongdouble, tail: *[0]clongdouble): void
+  local absolute = fabsl(value)
+  local exponent: cint = 0_cint
+  local mantissa: clongdouble = frexpl(absolute, &exponent)
+  local significand: culonglong = (@culonglong)(ldexpl(mantissa, 64_cint))
+  local m: [3]cuint = {
+    (@cuint)(significand & 0xFFFFFF_culonglong),
+    (@cuint)((significand >> 24) & 0xFFFFFF_culonglong),
+    (@cuint)(significand >> 48),
+  }
+  local product: [703]cuint = {}
+  for i = 0, 2 do
+    local carry: culonglong = 0_culonglong
+    for j = 0, 699 do
+      local destination = i + j
+      local table_value = two_over_pi[699 - j]
+      local accum = (@culonglong)(product[destination]) +
+        (@culonglong)(m[i]) * (@culonglong)(table_value) + carry
+      product[destination] = (@cuint)(accum & 0xFFFFFF_culonglong)
+      carry = accum >> 24
+    end
+    product[i + 700] = (@cuint)(carry)
+  end
+
+  local shift: cint = 16864_cint - exponent
+  local q = pio2_product_bit_long(&product[0], shift) +
+    2_cint * pio2_product_bit_long(&product[0], shift + 1_cint)
+  local fractional_head: culonglong = 0_culonglong
+  local fractional_tail: culonglong = 0_culonglong
+  for i = 0, 63 do
+    fractional_head = (fractional_head << 1) |
+      (@culonglong)(pio2_product_bit_long(&product[0], shift - 1_cint - i))
+    fractional_tail = (fractional_tail << 1) |
+      (@culonglong)(pio2_product_bit_long(&product[0], shift - 65_cint - i))
+  end
+  local fraction_hi =
+    ldexpl((@clongdouble)(fractional_head >> 32), -32_cint) +
+    ldexpl((@clongdouble)(fractional_head & 0xffffffff_culonglong), -64_cint)
+  local fraction_lo =
+    ldexpl((@clongdouble)(fractional_tail >> 32), -96_cint) +
+    ldexpl((@clongdouble)(fractional_tail & 0xffffffff_culonglong), -128_cint)
+  if pio2_product_bit_long(&product[0], shift - 1_cint) ~= 0_cint then
+    q = (q + 1_cint) & 3_cint
+    fraction_hi = fraction_hi - 1_clongdouble
+  end
+  if value < 0_clongdouble then
+    q = (4_cint - q) & 3_cint
+    fraction_hi = -fraction_hi
+    fraction_lo = -fraction_lo
+  end
+  quadrant[0] = q
+
+  local pio2_hi = nelibc_pio2l_hi_hw()
+  local pio2_lo = nelibc_pio2l_lo_hw()
+  local product_hi = fraction_hi * pio2_hi
+  local split: clongdouble = 0x1.00000001p+32_clongdouble
   local ca = split * fraction_hi
   local a_hi = ca - (ca - fraction_hi)
   local a_lo = fraction_hi - a_hi
@@ -2423,6 +2635,57 @@ local function sincosf(value: cfloat, sine_out: *[0]cfloat, cosine_out: *[0]cflo
   sincos((@cdouble)(value), &sine_value, &cosine_value)
   sine_out[0] = (@cfloat)(sine_value)
   cosine_out[0] = (@cfloat)(cosine_value)
+end
+
+local function sincosl(value: clongdouble, sine_out: *[0]clongdouble,
+    cosine_out: *[0]clongdouble): void <cexport, codename 'sincosl'>
+  if is_nan80(value) then
+    local nan_value = value + value
+    sine_out[0], cosine_out[0] = nan_value, nan_value
+    return
+  end
+  if is_infinite80(value) then
+    math_domain_error()
+    local nan_value = value - value
+    sine_out[0], cosine_out[0] = nan_value, nan_value
+    return
+  end
+  if value == 0_clongdouble then
+    sine_out[0], cosine_out[0] = value, 1_clongdouble
+    return
+  end
+
+  local quadrant: cint = 0_cint
+  local x: clongdouble = value
+  local y: clongdouble = 0_clongdouble
+  if fabsl(value) > 0.7853981633974483096282022398515465511082_clongdouble then
+    reduce_pio2l(value, &quadrant, &x, &y)
+  end
+  local cosine: clongdouble = 0_clongdouble
+  local sine = nelibc_sincosl_hw(x + y, &cosine)
+  if quadrant == 0_cint then
+    sine_out[0], cosine_out[0] = sine, cosine
+  elseif quadrant == 1_cint then
+    sine_out[0], cosine_out[0] = cosine, -sine
+  elseif quadrant == 2_cint then
+    sine_out[0], cosine_out[0] = -sine, -cosine
+  else
+    sine_out[0], cosine_out[0] = -cosine, sine
+  end
+end
+
+local function sinl(value: clongdouble): clongdouble <cexport, codename 'sinl'>
+  local sine: clongdouble
+  local cosine: clongdouble
+  sincosl(value, &sine, &cosine)
+  return sine
+end
+
+local function cosl(value: clongdouble): clongdouble <cexport, codename 'cosl'>
+  local sine: clongdouble
+  local cosine: clongdouble
+  sincosl(value, &sine, &cosine)
+  return cosine
 end
 
 local function sinf(value: cfloat): cfloat <cexport, codename 'sinf'>

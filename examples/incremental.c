@@ -74,6 +74,8 @@ int main(void) {
   const long double exponential_long = expl(1.0L);
   const long double binary_exponential_long = exp2l(3.0L);
   const long double exponential_minus_one_long = expm1l(0x1p-60L);
+  const long double sine_long = sinl(1.0L);
+  const long double cosine_long = cosl(1.0L);
   const double sine = sin(1.0);
   const double cosine = cos(1.0);
   const float sine_float = sinf(1.0f);
@@ -141,6 +143,8 @@ int main(void) {
       !(exponential_long > 2.718L && exponential_long < 2.719L) ||
       binary_exponential_long != 8.0L ||
       !(exponential_minus_one_long > 0.0L) ||
+      !(sine_long > 0.8414709848L && sine_long < 0.8414709849L) ||
+      !(cosine_long > 0.5403023058L && cosine_long < 0.5403023059L) ||
       !(sine > 0.84147098480789 && sine < 0.84147098480790) ||
       !(cosine > 0.54030230586813 && cosine < 0.54030230586814) ||
       !(sine_float > 0.8414708f && sine_float < 0.8414712f) ||
