@@ -51,6 +51,8 @@ static pthread_rwlock_t static_rwlock = PTHREAD_RWLOCK_INITIALIZER;
 static _Atomic int rwlock_counter;
 static pthread_key_t value_key;
 static int value_destructor_calls;
+static pthread_key_t iteration_key;
+static int iteration_destructor_calls;
 static pthread_mutex_t cancel_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cancel_condition = PTHREAD_COND_INITIALIZER;
 static pthread_key_t cancel_exit_key;
@@ -577,6 +579,17 @@ static void *value_worker(void *argument) {
   if (pthread_setspecific(value_key, argument) != 0 ||
       pthread_getspecific(value_key) != argument)
     return (void *)1;
+  return 0;
+}
+
+static void iteration_destructor(void *value) {
+  if (value != (void *)(uintptr_t)0x77) return;
+  ++iteration_destructor_calls;
+  pthread_setspecific(iteration_key, value);
+}
+
+static void *iteration_value_worker(void *argument) {
+  if (pthread_setspecific(iteration_key, argument) != 0) return (void *)1;
   return 0;
 }
 
@@ -2613,6 +2626,14 @@ int main(void) {
       value_destructor_calls != 3 ||
       pthread_getspecific(value_key) != (void *)(uintptr_t)11)
     return 79;
+  iteration_destructor_calls = 0;
+  if (pthread_key_create(&iteration_key, iteration_destructor) != 0 ||
+      pthread_create(&thread, &attributes, iteration_value_worker,
+                     (void *)(uintptr_t)0x77) != 0 ||
+      pthread_join(thread, &result) != 0 || result != 0 ||
+      iteration_destructor_calls != PTHREAD_DESTRUCTOR_ITERATIONS ||
+      pthread_key_delete(iteration_key) != 0)
+    return 315;
   atomic_store_explicit(&deleted_value_ready, 0, memory_order_relaxed);
   atomic_store_explicit(&deleted_value_release, 0, memory_order_relaxed);
   atomic_store_explicit(&deleted_value_destructor_calls, 0, memory_order_relaxed);

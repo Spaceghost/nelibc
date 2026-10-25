@@ -318,7 +318,9 @@ musl export set.
   order. In deferred mode, ordinary CPU-bound code must call
   `pthread_testcancel`. Key deletion invalidates the generation, so another
   thread's stored value receives no destructor after deletion even when the
-  key slot is reused; the smoke verifies this behavior.
+  key slot is reused; the smoke verifies this behavior. A separate TSD test
+  re-registers its value on every destructor call and confirms exactly the
+  four `PTHREAD_DESTRUCTOR_ITERATIONS` passes run.
   Signal 32 is reserved internally and cannot be installed or blocked by
   applications. Asynchronous cancellation requires application code to stay
   within async-cancel-safe operations. The initial thread has its own pthread

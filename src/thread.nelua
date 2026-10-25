@@ -215,6 +215,7 @@ local default_thread_attr_initialized: cint
 local default_thread_attr: PthreadAttr
 local pthread_concurrency_level: cint
 local PTHREAD_KEY_COUNT: csize <comptime> = 128
+local PTHREAD_DESTRUCTOR_ITERATIONS: cint <comptime> = 4
 local PTHREAD_KEY_INDEX_MASK: cuint <comptime> = 255
 local pthread_key_lock: cint = 0
 local pthread_robust_slot_lock: cint = 0
@@ -422,7 +423,7 @@ local function pthread_key_run_destructors(): void
   local values: *[0]PthreadKeyValue = (@*[0]PthreadKeyValue)(nelibc_thread_current_key_values())
   if values == nilptr then return end
   local iteration: cint = 0
-  while iteration < 4 do
+  while iteration < PTHREAD_DESTRUCTOR_ITERATIONS do
     local called: boolean = false
     local index: csize = 0
     while index < PTHREAD_KEY_COUNT do
