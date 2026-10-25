@@ -215,6 +215,8 @@ local function nelibc_logbl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_ldexpl_hw(value: clongdouble, exponent: cint, range_error: *[0]cint): clongdouble <cimport> end
 local function nelibc_scalblnl_hw(value: clongdouble, exponent: clong, range_error: *[0]cint): clongdouble <cimport> end
 local function nelibc_roundl_hw(value: clongdouble, mode: cint): clongdouble <cimport> end
+local function nelibc_roundl_away_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_lrintl_hw(value: clongdouble): clonglong <cimport> end
 local function nelibc_fmodl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
 local function nelibc_remainderl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
 local function nelibc_fabsl_hw(value: clongdouble): clongdouble <cimport> end
@@ -365,6 +367,18 @@ end
 
 local function nearbyintl(value: clongdouble): clongdouble <cexport, codename 'nearbyintl'>
   return nelibc_roundl_hw(value, 4_cint)
+end
+
+local function roundl(value: clongdouble): clongdouble <cexport, codename 'roundl'>
+  return nelibc_roundl_away_hw(value)
+end
+
+local function lrintl(value: clongdouble): clong <cexport, codename 'lrintl'>
+  return (@clong)(nelibc_lrintl_hw(value))
+end
+
+local function llrintl(value: clongdouble): clonglong <cexport, codename 'llrintl'>
+  return nelibc_lrintl_hw(value)
 end
 
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>

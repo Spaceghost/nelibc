@@ -245,6 +245,47 @@ nelibc_roundl_hw:
   ret
 .size nelibc_roundl_hw, .-nelibc_roundl_hw
 
+/* roundl: nearest integral value, halfway cases away from zero. */
+.globl nelibc_roundl_away_hw
+.type nelibc_roundl_away_hw,@function
+nelibc_roundl_away_hw:
+  subq $48, %rsp
+  movzwl 64(%rsp), %eax
+  andl $0x8000, %eax
+  movw %ax, 4(%rsp)
+  fnstcw 0(%rsp)
+  movzwl 0(%rsp), %eax
+  andl $0xfffff0ff, %eax
+  orl $0x0f00, %eax
+  movw %ax, 2(%rsp)
+  fldcw 2(%rsp)
+  fldt 56(%rsp)
+  fabs
+  fldt .Lhalf80
+  faddp %st, %st(1)
+  frndint
+  cmpw $0, 4(%rsp)
+  je .Lroundl_away_done
+  fchs
+.Lroundl_away_done:
+  fldcw 0(%rsp)
+  addq $48, %rsp
+  ret
+.size nelibc_roundl_away_hw, .-nelibc_roundl_away_hw
+
+/* fistpll follows the active x87 rounding direction and raises FE_INVALID
+   when the result is outside the signed 64-bit range. */
+.globl nelibc_lrintl_hw
+.type nelibc_lrintl_hw,@function
+nelibc_lrintl_hw:
+  subq $16, %rsp
+  fldt 24(%rsp)
+  fistpll 0(%rsp)
+  movq 0(%rsp), %rax
+  addq $16, %rsp
+  ret
+.size nelibc_lrintl_hw, .-nelibc_lrintl_hw
+
 .globl nelibc_fmodl_hw
 .type nelibc_fmodl_hw,@function
 nelibc_fmodl_hw:
@@ -534,6 +575,10 @@ nelibc_log_pole_hw:
 .p2align 3
 .Lhalf:
   .double 0.5
+.p2align 4
+.Lhalf80:
+  .quad 0x8000000000000000
+  .word 0x3ffe
 .p2align 4
 .Ltwo:
   .quad 0x8000000000000000

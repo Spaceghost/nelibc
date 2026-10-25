@@ -60,12 +60,15 @@ The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 `logb`, `nextafter`, and `nexttoward`.
 On x86-64, `fabsl`, `copysignl`, `sqrtl`, `fmodl`, `remainderl`, `frexpl`,
 `modfl`, `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`,
-`floorl`, `ceill`, `rintl`, and `nearbyintl` operate directly on the extended precision
+`floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, and `llrintl`
+operate directly on the extended precision
 `long double` representation; the rest of the long-double math API is still
 incomplete.
 `rint` and `rintl` observe the active rounding direction and may raise
 `FE_INEXACT`; `nearbyint` and `nearbyintl` preserve the direction and suppress
-newly raised inexact exceptions. In
+newly raised inexact exceptions. `roundl` rounds halfway cases away from zero;
+`lrintl` and `llrintl` use the active rounding direction for integer
+conversion. In
 standalone builds, `include/math.h` also provides basic floating-point
 classification macros. Run
 `make math-core-diff-matrix` to compare the slice against host libm on four

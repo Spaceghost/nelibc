@@ -134,6 +134,9 @@ extern long double nelibc_floorl(long double);
 extern long double nelibc_ceill(long double);
 extern long double nelibc_rintl(long double);
 extern long double nelibc_nearbyintl(long double);
+extern long double nelibc_roundl(long double);
+extern long nelibc_lrintl(long double);
+extern long long nelibc_llrintl(long double);
 extern float nelibc_fmodf(float, float);
 extern double nelibc_fmod(double, double);
 extern float nelibc_remainderf(float, float);
@@ -1399,7 +1402,8 @@ int main(void) {
     return 1;
   }
   const long double rounding_values[] = {
-      0.0L, -0.0L, 0.25L, -0.25L, 1.5L, -1.5L,
+      0.0L, -0.0L, 0.25L, -0.25L, 0.499999999999L, -0.499999999999L,
+      0.5L, -0.5L, 1.5L, -1.5L,
       0x1p-16445L, LDBL_MAX, INFINITY, NAN};
   for (size_t i = 0; i < sizeof(rounding_values) / sizeof(rounding_values[0]); ++i) {
     const long double value = rounding_values[i];
@@ -1413,6 +1417,13 @@ int main(void) {
         return 1;
       }
     }
+    const long double rounded_expected = roundl(value);
+    const long double rounded_actual = nelibc_roundl(value);
+    if ((!isnan(value) && rounded_actual != rounded_expected) ||
+        (isnan(value) && !isnan(rounded_actual))) {
+      fprintf(stderr, "long-double round mismatch at %zu\n", i);
+      return 1;
+    }
   }
   int long_saved_rounding = fegetround();
   const int long_rounding_modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
@@ -1420,7 +1431,10 @@ int main(void) {
     if (fesetround(long_rounding_modes[i]) != 0) return 1;
     if (nelibc_rintl(2.5L) != rintl(2.5L) ||
         nelibc_rintl(-1.5L) != rintl(-1.5L) ||
-        nelibc_nearbyintl(2.5L) != nearbyintl(2.5L)) {
+        nelibc_nearbyintl(2.5L) != nearbyintl(2.5L) ||
+        nelibc_lrintl(2.5L) != lrintl(2.5L) ||
+        nelibc_llrintl(-1.5L) != llrintl(-1.5L) ||
+        nelibc_roundl(0.5L) != 1.0L || nelibc_roundl(-0.5L) != -1.0L) {
       fprintf(stderr, "long-double active-mode rounding mismatch\n");
       return 1;
     }
