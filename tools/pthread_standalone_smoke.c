@@ -26,6 +26,7 @@ static pthread_mutex_t condition_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t static_condition = PTHREAD_COND_INITIALIZER;
 static _Atomic int condition_waiting;
 static _Atomic int pi_cancel_acquired;
+static _Atomic int pi_async_cancel_waiting;
 static int condition_ready;
 static int condition_woken;
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
@@ -501,6 +502,18 @@ static void *pi_cancel_mutex_worker(void *argument) {
   if (result != 0) return (void *)(intptr_t)result;
   pthread_testcancel();
   return 0;
+}
+
+static void *pi_async_cancel_mutex_worker(void *argument) {
+  pthread_mutex_t *mutex = argument;
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0)
+    return (void *)1;
+  atomic_store_explicit(&pi_async_cancel_waiting, 1, memory_order_release);
+  int result = pthread_mutex_lock(mutex);
+  if (result != 0) return (void *)(intptr_t)result;
+  atomic_store_explicit(&pi_cancel_acquired, 1, memory_order_release);
+  result = pthread_mutex_unlock(mutex);
+  return (void *)(intptr_t)result;
 }
 
 static void *robust_owner_worker(void *argument) {
@@ -1587,6 +1600,28 @@ int main(void) {
       atomic_load_explicit(&pi_cancel_acquired, memory_order_acquire) != 1)
     return 270;
   if (pthread_mutex_lock(&pi_mutex) != 0) return 255;
+  atomic_store_explicit(&pi_cancel_acquired, 0, memory_order_relaxed);
+  atomic_store_explicit(&pi_async_cancel_waiting, 0, memory_order_relaxed);
+  if (pthread_create(&pi_waiter, 0, pi_async_cancel_mutex_worker, &pi_mutex) != 0)
+    return 272;
+  int pi_async_cancel_queued = 0;
+  for (int i = 0; i < 1000000; ++i) {
+    if (atomic_load_explicit(&pi_async_cancel_waiting, memory_order_acquire) &&
+        pi_mutex.__state < 0) {
+      pi_async_cancel_queued = 1;
+      break;
+    }
+    sched_yield();
+  }
+  if (!pi_async_cancel_queued || pthread_cancel(pi_waiter) != 0 ||
+      pthread_join(pi_waiter, &result) != 0 || result != PTHREAD_CANCELED ||
+      atomic_load_explicit(&pi_cancel_acquired, memory_order_acquire) != 0)
+    return 273;
+  if (pthread_mutex_unlock(&pi_mutex) != 0 ||
+      pthread_mutex_trylock(&pi_mutex) != 0 ||
+      pthread_mutex_unlock(&pi_mutex) != 0 ||
+      pthread_mutex_lock(&pi_mutex) != 0)
+    return 274;
   struct timespec invalid_pi_deadline = {0, -1};
   if (pthread_mutex_timedlock(&pi_mutex, &invalid_pi_deadline) != EINVAL)
     return 265;
