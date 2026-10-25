@@ -327,7 +327,10 @@ musl export set.
   `fegetexceptflag`, `feraiseexcept`, `fesetexceptflag`, `fetestexcept`,
   `fegetround`, `fesetround`, `fegetenv`, `feholdexcept`, `fesetenv`, and
   `feupdateenv` with x87/SSE state synchronization. Hybrid profiles retain the
-  host fenv ABI and implementation. Standalone smoke tests verify SIGFPE
+  host fenv ABI and implementation. Standalone smoke tests verify that
+  `feraiseexcept` sets only requested flags while preserving existing flags;
+  glibc, musl, and TinyCC-host probes show the same results. The smoke tests
+  also verify SIGFPE
   delivery for all five standard exceptions through x87-only and SSE-only trap
   paths, with only the selected exception unmasked in each unit;
   they also verify `feupdateenv` merges newly raised flags into the restored

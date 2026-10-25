@@ -91,6 +91,17 @@ int main(void) {
   const int trapped_exceptions[] = {
       FE_INVALID, FE_DIVBYZERO, FE_OVERFLOW, FE_UNDERFLOW, FE_INEXACT};
   for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
+    const int seed = trapped_exceptions[i] == FE_INVALID ? FE_DIVBYZERO : FE_INVALID;
+    const int expected_flags = seed | trapped_exceptions[i];
+    if (feclearexcept(FE_ALL_EXCEPT) != 0 ||
+        feraiseexcept(seed) != 0 ||
+        feraiseexcept(trapped_exceptions[i]) != 0 ||
+        fetestexcept(FE_ALL_EXCEPT) != expected_flags ||
+        feraiseexcept(0) != 0 ||
+        fetestexcept(FE_ALL_EXCEPT) != expected_flags) return 235;
+  }
+  if (feclearexcept(FE_ALL_EXCEPT) != 0) return 236;
+  for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
     pid_t child = fork();
     if (child == 0) {
       if (fesetenv(FE_NOMASK_ENV) != 0) _exit(201);
