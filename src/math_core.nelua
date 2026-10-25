@@ -193,9 +193,23 @@ local function check_remainder_domain(x: cdouble, y: cdouble): void <inline>
   end
 end
 
+local function is_infinite80(value: clongdouble): boolean <inline>
+  if value ~= value then return false end
+  local difference = value - value
+  return difference ~= difference
+end
+
+local function check_remainder_domain80(x: clongdouble, y: clongdouble): void <inline>
+  if x == x and y == y and (is_infinite80(x) or y == 0_clongdouble) then
+    math_domain_error()
+  end
+end
+
 local function nelibc_sqrt_hw(value: cdouble): cdouble <cimport> end
 local function nelibc_sqrtf_hw(value: cfloat): cfloat <cimport> end
 local function nelibc_sqrtl_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_fmodl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
+local function nelibc_remainderl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
 local function nelibc_fabsl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_copysignl_hw(magnitude: clongdouble, sign: clongdouble): clongdouble <cimport> end
 local function nelibc_rint_hw(value: cdouble): cdouble <cimport> end
@@ -645,6 +659,17 @@ local function remainderf(x: cfloat, y: cfloat): cfloat
     <cexport, codename 'remainderf'>
   check_remainder_domain((@cdouble)(x), (@cdouble)(y))
   return (@cfloat)(nelibc_remainder_hw((@cdouble)(x), (@cdouble)(y)))
+end
+
+local function fmodl(x: clongdouble, y: clongdouble): clongdouble <cexport, codename 'fmodl'>
+  check_remainder_domain80(x, y)
+  return nelibc_fmodl_hw(x, y)
+end
+
+local function remainderl(x: clongdouble, y: clongdouble): clongdouble
+    <cexport, codename 'remainderl'>
+  check_remainder_domain80(x, y)
+  return nelibc_remainderl_hw(x, y)
 end
 
 local function drem(x: cdouble, y: cdouble): cdouble <cexport, codename 'drem'>

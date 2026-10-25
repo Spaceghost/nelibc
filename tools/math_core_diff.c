@@ -120,6 +120,8 @@ extern double nelibc_hypot(double, double);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
 extern long double nelibc_sqrtl(long double);
+extern long double nelibc_fmodl(long double, long double);
+extern long double nelibc_remainderl(long double, long double);
 extern float nelibc_fmodf(float, float);
 extern double nelibc_fmod(double, double);
 extern float nelibc_remainderf(float, float);
@@ -1318,13 +1320,27 @@ static int check_erf(double x, float xf) {
 
 int main(void) {
 
-  /* Preserve precision beyond binary64 and the complete x87 sign behavior. */
-  long double extended = 1.0L + 0x1p-70L;
+  /* Preserve x87 precision beyond binary64 and the complete sign behavior. */
+  long double extended = 1.0L + 0x1p-60L;
   if (nelibc_fabsl(-extended) != extended ||
       nelibc_copysignl(extended, -1.0L) != -extended ||
       !signbit(nelibc_copysignl(0.0L, -1.0L)) ||
-      nelibc_sqrtl(extended) != sqrtl(extended)) {
-    fprintf(stderr, "long-double fabs/copysign/sqrt failed\n");
+      nelibc_sqrtl(extended) != sqrtl(extended) ||
+      nelibc_fmodl(extended, 1.0L) != 0x1p-60L ||
+      nelibc_remainderl(extended, 1.0L) != 0x1p-60L ||
+      nelibc_fmodl(5.5L, 2.0L) != 1.5L ||
+      nelibc_remainderl(5.5L, 2.0L) != -0.5L) {
+    fprintf(stderr, "long-double fabs/copysign/sqrt/remainder failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isnan(nelibc_fmodl(1.0L, 0.0L)) || errno != EDOM) {
+    fprintf(stderr, "long-double fmod domain handling failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isnan(nelibc_remainderl(1.0L, 0.0L)) || errno != EDOM) {
+    fprintf(stderr, "long-double remainder domain handling failed\n");
     return 1;
   }
 

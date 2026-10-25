@@ -12,6 +12,7 @@ SOURCE := src/string.nelua
 COLLATION_LOCALE ?= C
 MATH_CORE_RENAMES := --redefine-sym fabs=nelibc_fabs --redefine-sym fabsf=nelibc_fabsf \
 	--redefine-sym sqrtl=nelibc_sqrtl \
+	--redefine-sym fmodl=nelibc_fmodl --redefine-sym remainderl=nelibc_remainderl \
 	--redefine-sym fabsl=nelibc_fabsl --redefine-sym copysignl=nelibc_copysignl \
 	--redefine-sym copysign=nelibc_copysign --redefine-sym copysignf=nelibc_copysignf \
 	--redefine-sym trunc=nelibc_trunc --redefine-sym truncf=nelibc_truncf \

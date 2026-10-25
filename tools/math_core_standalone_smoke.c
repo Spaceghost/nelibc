@@ -31,6 +31,7 @@ static int same_float(float a, float b) {
 int main(void) {
   if (sqrtl(4.0L) != 2.0L || fabsl(-3.0L) != 3.0L ||
       copysignl(3.0L, -1.0L) != -3.0L) return 107;
+  if (fmodl(5.5L, 2.0L) != 1.5L || remainderl(5.5L, 2.0L) != -0.5L) return 108;
   if (exp2(0.5) < 1.4142135623730948 || exp2(0.5) > 1.4142135623730952 ||
       exp2f(0.5f) != 1.4142135381698608f) return 137;
   if (log2(8.0) != 3.0 || log2f(0.5f) != -1.0f) return 136;

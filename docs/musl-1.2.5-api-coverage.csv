@@ -379,7 +379,7 @@ fminf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fminl,math.h,,,not-declared
 fmod,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmodf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-fmodl,math.h,,,not-declared
+fmodl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmtmsg,fmtmsg.h,,,not-declared
 fnmatch,fnmatch.h,,,not-declared
 fopen,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1040,7 +1040,7 @@ regexec,regex.h,,,not-declared
 regfree,regex.h,,,not-declared
 remainder,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 remainderf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-remainderl,math.h,,,not-declared
+remainderl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 remap_file_pages,sys/mman.h,,,not-declared
 remove,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 removexattr,sys/xattr.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

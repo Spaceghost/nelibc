@@ -21,6 +21,34 @@ nelibc_sqrtl_hw:
   ret
 .size nelibc_sqrtl_hw, .-nelibc_sqrtl_hw
 
+.globl nelibc_fmodl_hw
+.type nelibc_fmodl_hw,@function
+nelibc_fmodl_hw:
+  fldt 24(%rsp)
+  fldt 8(%rsp)
+1:
+  fprem
+  fnstsw %ax
+  testw $0x0400, %ax
+  jne 1b
+  fstp %st(1)
+  ret
+.size nelibc_fmodl_hw, .-nelibc_fmodl_hw
+
+.globl nelibc_remainderl_hw
+.type nelibc_remainderl_hw,@function
+nelibc_remainderl_hw:
+  fldt 24(%rsp)
+  fldt 8(%rsp)
+1:
+  fprem1
+  fnstsw %ax
+  testw $0x0400, %ax
+  jne 1b
+  fstp %st(1)
+  ret
+.size nelibc_remainderl_hw, .-nelibc_remainderl_hw
+
 /* SysV x86-64 passes long double arguments in 16-byte stack slots. */
 .globl nelibc_fabsl_hw
 .type nelibc_fabsl_hw,@function
