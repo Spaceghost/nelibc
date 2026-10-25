@@ -1889,6 +1889,12 @@ end
 local function nanf(tag: *cchar <const>): cfloat <cexport, codename 'nanf'>
   return float_from_bits(0x7FC00000_cuint)
 end
+local function nanl(tag: *cchar <const>): clongdouble <cexport, codename 'nanl'>
+  local quiet_nan: LongDoubleBits = {
+    parts = {significand = 0xC000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+  }
+  return quiet_nan.value
+end
 
 -- Compute exp(value - ln(2)) without losing the low subtraction bits near the
 -- binary64 overflow boundary, where exp(value) itself no longer fits.

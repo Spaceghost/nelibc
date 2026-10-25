@@ -791,7 +791,7 @@ munmap,sys/mman.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implem
 name_to_handle_at,fcntl.h,,,not-declared
 nan,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nanf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-nanl,math.h,,,not-declared
+nanl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nanosleep,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nearbyint,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nearbyintf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

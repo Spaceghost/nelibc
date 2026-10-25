@@ -140,6 +140,7 @@ extern long double nelibc_asinhl(long double);
 extern long double nelibc_acoshl(long double);
 extern long double nelibc_atanhl(long double);
 extern long double nelibc_powl(long double, long double);
+extern long double nelibc_nanl(const char *);
 extern long double nelibc_fminl(long double, long double);
 extern long double nelibc_fmaxl(long double, long double);
 extern long double nelibc_fdiml(long double, long double);
@@ -1559,6 +1560,10 @@ int main(void) {
       !isnan(nelibc_cbrtl(signaling_nan.value)) ||
       !signbit(nelibc_cbrtl(-0.0L))) {
     fprintf(stderr, "cbrtl NaN/signed-zero handling failed\n");
+    return 1;
+  }
+  if (!isnan(nelibc_nanl("nelibc")) || signbit(nelibc_nanl(""))) {
+    fprintf(stderr, "nanl canonical quiet NaN handling failed\n");
     return 1;
   }
   errno = 0;

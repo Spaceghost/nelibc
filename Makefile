@@ -98,6 +98,7 @@ MATH_CORE_RENAMES := --redefine-sym fabs=nelibc_fabs --redefine-sym fabsf=nelibc
 	--redefine-sym fmax=nelibc_fmax --redefine-sym fmaxf=nelibc_fmaxf \
 	--redefine-sym finite=nelibc_finite --redefine-sym finitef=nelibc_finitef \
 	--redefine-sym nan=nelibc_nan --redefine-sym nanf=nelibc_nanf \
+	--redefine-sym nanl=nelibc_nanl \
 	--redefine-sym fdim=nelibc_fdim --redefine-sym fdimf=nelibc_fdimf \
 	--redefine-sym frexp=nelibc_frexp --redefine-sym frexpf=nelibc_frexpf \
 	--redefine-sym modf=nelibc_modf --redefine-sym modff=nelibc_modff \
@@ -191,6 +192,7 @@ math-core-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/math_core_stan
 	$(OUT)/math-core-standalone-tcc
 
 math-core-standalone-matrix: math-core-standalone-zig math-core-standalone-gcc math-core-standalone-tcc
+
 
 .PHONY: math-core-diff-zig math-core-diff-gcc math-core-diff-zig-musl math-core-diff-tcc math-core-diff-matrix math-core-standalone-zig math-core-standalone-gcc math-core-standalone-tcc math-core-standalone-matrix
 
@@ -307,6 +309,7 @@ float-diff-tcc: tcc
 	$(OUT)/float-diff-nelibc-tcc > $(OUT)/float-diff-nelibc-tcc.csv
 	cmp $(OUT)/float-diff-host-tcc.csv $(OUT)/float-diff-nelibc-tcc.csv && echo 'floating-point conversion cases passed (TinyCC/glibc)'
 
+
 .PHONY: float-diff-tcc
 float-diff-matrix: float-diff-zig float-diff-gcc float-diff-zig-musl float-diff-tcc float-divide-precheck-matrix float-radix-smoke-matrix
 
@@ -325,6 +328,7 @@ float-radix-smoke-zig-musl: zig-musl
 float-radix-smoke-tcc: tcc
 	$(TCC) -Iinclude -fno-builtin tools/float_radix_smoke.c $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/stdlib-float-tcc.o $(OUT)/errno-host-tcc.o -o $(OUT)/float-radix-smoke-tcc
 	$(OUT)/float-radix-smoke-tcc
+
 
 .PHONY: float-radix-smoke-zig float-radix-smoke-gcc float-radix-smoke-zig-musl float-radix-smoke-tcc float-radix-smoke-matrix
 float-radix-smoke-matrix: float-radix-smoke-zig float-radix-smoke-gcc float-radix-smoke-zig-musl float-radix-smoke-tcc
@@ -353,6 +357,7 @@ float-divide-precheck-tcc: tcc $(OUT)/stdlib_float_divide_test.nelua
 	$(OUT)/float-divide-precheck-tcc
 
 float-divide-precheck-matrix: float-divide-precheck-zig float-divide-precheck-gcc float-divide-precheck-zig-musl float-divide-precheck-tcc
+
 
 .PHONY: float-divide-precheck-zig float-divide-precheck-gcc float-divide-precheck-zig-musl float-divide-precheck-tcc float-divide-precheck-matrix
 
@@ -559,6 +564,7 @@ api-coverage: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-gcc.a \
 		--profile gcc_standalone=$(OUT)/libnelibc-standalone-gcc.a \
 		--profile tcc_standalone=$(OUT)/libnelibc-standalone-tcc.a
 
+
 .PHONY: lib-private-test-symbols
 lib-private-test-symbols: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-gcc.a $(OUT)/libnelibc-zig-musl.a
 	@for archive in $^; do \
@@ -583,6 +589,7 @@ api-coverage-hybrid: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-gcc.a \
 		--profile zig_musl=$(OUT)/libnelibc-zig-musl.a \
 		--profile tcc_glibc=$(OUT)/libnelibc-tcc.a
 
+
 .PHONY: lib-private-test-symbols-tcc
 lib-private-test-symbols-tcc: $(OUT)/libnelibc-tcc.a
 	@for symbol in __nelibc_tz_file_signature __nelibc_set_localtime_path; do \
@@ -590,6 +597,7 @@ lib-private-test-symbols-tcc: $(OUT)/libnelibc-tcc.a
 	    echo "$< exports test-only symbol $$symbol" >&2; exit 1; \
 	  fi; \
 	done
+
 
 .PHONY: lib-private-test-symbols-standalone
 lib-private-test-symbols-standalone: $(OUT)/libnelibc-standalone-zig.a $(OUT)/libnelibc-standalone-gcc.a $(OUT)/libnelibc-standalone-tcc.a
@@ -600,6 +608,7 @@ lib-private-test-symbols-standalone: $(OUT)/libnelibc-standalone-zig.a $(OUT)/li
 	    fi; \
 	  done; \
 	done
+
 
 .PHONY: lib-adapter-symbols
 lib-adapter-symbols: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-gcc.a $(OUT)/libnelibc-zig-musl.a $(OUT)/libnelibc-tcc.a
@@ -671,30 +680,32 @@ qsort-r-smoke-tcc: $(OUT)/libnelibc-tcc.a tools/qsort_r_smoke.c
 	@nm --defined-only $(OUT)/qsort-r-smoke-tcc | awk '{print $$3}' | grep -Fxq qsort_r
 
 qsort-r-smoke-matrix: qsort-r-smoke-zig qsort-r-smoke-gcc qsort-r-smoke-zig-musl qsort-r-smoke-tcc
+
 .PHONY: qsort-r-smoke-zig qsort-r-smoke-gcc qsort-r-smoke-zig-musl qsort-r-smoke-tcc qsort-r-smoke-matrix
 
 dogfood-zig: $(OUT)/libnelibc-zig.a examples/incremental.c
 	$(ZIG) cc $(ZIGFLAGS) -Wl,-u,memcpy -Iinclude -fno-builtin examples/incremental.c $(OUT)/libnelibc-zig.a -o $(OUT)/dogfood-zig
 	$(OUT)/dogfood-zig
-	@for symbol in memcpy strlen strchr strtol sincos sincosf sqrt hypotl nextafterl atanl atan2l asinl acosl logl log2l log10l log1pl expl exp2l expm1l sinl cosl sincosl tanl tanhl sinhl coshl asinhl acoshl atanhl powl fminl fmaxl fdiml cbrtl cbrt cbrtf fmod remainder remquo remquof drem dremf fmin fmax finite finitef nan nanf fdim fdimf fma fmaf erf erff erfc erfcf jn jnf yn ynf j0 j0f j1 j1f y0 y0f y1 y1f tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf ldexpl scalbnl scalblnl truncl floorl ceill rintl nearbyintl roundl lrintl llrintl lroundl llroundl rint rintf lrint lrintf llrint llrintf lround lroundf llround llroundf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f pow10 pow10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-zig | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
+	@for symbol in memcpy strlen strchr strtol sincos sincosf sqrt hypotl nextafterl atanl atan2l asinl acosl logl log2l log10l log1pl expl exp2l expm1l sinl cosl sincosl tanl tanhl sinhl coshl asinhl acoshl atanhl powl fminl fmaxl fdiml cbrtl cbrt cbrtf fmod remainder remquo remquof drem dremf fmin fmax finite finitef nan nanf nanl fdim fdimf fma fmaf erf erff erfc erfcf jn jnf yn ynf j0 j0f j1 j1f y0 y0f y1 y1f tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf ldexpl scalbnl scalblnl truncl floorl ceill rintl nearbyintl roundl lrintl llrintl lroundl llroundl rint rintf lrint lrintf llrint llrintf lround lroundf llround llroundf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f pow10 pow10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-zig | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
 
 dogfood-gcc: $(OUT)/libnelibc-gcc.a examples/incremental.c
 	gcc -Wl,-u,memcpy -Iinclude -fno-builtin examples/incremental.c $(OUT)/libnelibc-gcc.a -o $(OUT)/dogfood-gcc
 	$(OUT)/dogfood-gcc
-	@for symbol in memcpy strlen strchr strtol sincos sincosf sqrt hypotl nextafterl atanl atan2l asinl acosl logl log2l log10l log1pl expl exp2l expm1l sinl cosl sincosl tanl tanhl sinhl coshl asinhl acoshl atanhl powl fminl fmaxl fdiml cbrtl cbrt cbrtf fmod remainder remquo remquof drem dremf fmin fmax finite finitef nan nanf fdim fdimf fma fmaf erf erff erfc erfcf jn jnf yn ynf j0 j0f j1 j1f y0 y0f y1 y1f tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf ldexpl scalbnl scalblnl truncl floorl ceill rintl nearbyintl roundl lrintl llrintl lroundl llroundl rint rintf lrint lrintf llrint llrintf lround lroundf llround llroundf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f pow10 pow10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-gcc | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
+	@for symbol in memcpy strlen strchr strtol sincos sincosf sqrt hypotl nextafterl atanl atan2l asinl acosl logl log2l log10l log1pl expl exp2l expm1l sinl cosl sincosl tanl tanhl sinhl coshl asinhl acoshl atanhl powl fminl fmaxl fdiml cbrtl cbrt cbrtf fmod remainder remquo remquof drem dremf fmin fmax finite finitef nan nanf nanl fdim fdimf fma fmaf erf erff erfc erfcf jn jnf yn ynf j0 j0f j1 j1f y0 y0f y1 y1f tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf ldexpl scalbnl scalblnl truncl floorl ceill rintl nearbyintl roundl lrintl llrintl lroundl llroundl rint rintf lrint lrintf llrint llrintf lround lroundf llround llroundf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f pow10 pow10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-gcc | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
 
 dogfood-zig-musl: $(OUT)/libnelibc-zig-musl.a examples/incremental.c
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -Wl,-u,memcpy -Iinclude -fno-builtin $(MUSL_STDIO_WRAP_FLAGS) examples/incremental.c $(OUT)/libnelibc-zig-musl.a -o $(OUT)/dogfood-zig-musl
 	$(OUT)/dogfood-zig-musl
-	@for symbol in memcpy strlen strchr strtol sincos sincosf sqrt hypotl nextafterl atanl atan2l asinl acosl logl log2l log10l log1pl expl exp2l expm1l sinl cosl sincosl tanl tanhl sinhl coshl asinhl acoshl atanhl powl fminl fmaxl fdiml cbrtl cbrt cbrtf fmod remainder remquo remquof drem dremf fmin fmax finite finitef nan nanf fdim fdimf fma fmaf erf erff erfc erfcf jn jnf yn ynf j0 j0f j1 j1f y0 y0f y1 y1f tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf ldexpl scalbnl scalblnl truncl floorl ceill rintl nearbyintl roundl lrintl llrintl lroundl llroundl rint rintf lrint lrintf llrint llrintf lround lroundf llround llroundf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f pow10 pow10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-zig-musl | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
+	@for symbol in memcpy strlen strchr strtol sincos sincosf sqrt hypotl nextafterl atanl atan2l asinl acosl logl log2l log10l log1pl expl exp2l expm1l sinl cosl sincosl tanl tanhl sinhl coshl asinhl acoshl atanhl powl fminl fmaxl fdiml cbrtl cbrt cbrtf fmod remainder remquo remquof drem dremf fmin fmax finite finitef nan nanf nanl fdim fdimf fma fmaf erf erff erfc erfcf jn jnf yn ynf j0 j0f j1 j1f y0 y0f y1 y1f tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf ldexpl scalbnl scalblnl truncl floorl ceill rintl nearbyintl roundl lrintl llrintl lroundl llroundl rint rintf lrint lrintf llrint llrintf lround lroundf llround llroundf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f pow10 pow10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-zig-musl | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
 
 dogfood-tcc: $(OUT)/libnelibc-tcc.a examples/incremental.c
 	$(TCC) -Iinclude -fno-builtin -c examples/incremental.c -o $(OUT)/dogfood-tcc.o
 	$(ZIG) cc $(ZIGFLAGS) -fsanitize=undefined -Wl,-u,memcpy -Iinclude -fno-builtin $(OUT)/dogfood-tcc.o $(OUT)/libnelibc-tcc.a $(TCC_LIBTCC1) -o $(OUT)/dogfood-tcc
 	$(OUT)/dogfood-tcc
-	@for symbol in memcpy strlen strchr strtol sincos sincosf sqrt hypotl nextafterl atanl atan2l asinl acosl logl log2l log10l log1pl expl exp2l expm1l sinl cosl sincosl tanl tanhl sinhl coshl asinhl acoshl atanhl powl fminl fmaxl fdiml cbrtl cbrt cbrtf fmod remainder remquo remquof drem dremf fmin fmax finite finitef nan nanf fdim fdimf fma fmaf erf erff erfc erfcf jn jnf yn ynf j0 j0f j1 j1f y0 y0f y1 y1f tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf ldexpl scalbnl scalblnl truncl floorl ceill rintl nearbyintl roundl lrintl llrintl lroundl llroundl rint rintf lrint lrintf llrint llrintf lround lroundf llround llroundf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f pow10 pow10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-tcc | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
+	@for symbol in memcpy strlen strchr strtol sincos sincosf sqrt hypotl nextafterl atanl atan2l asinl acosl logl log2l log10l log1pl expl exp2l expm1l sinl cosl sincosl tanl tanhl sinhl coshl asinhl acoshl atanhl powl fminl fmaxl fdiml cbrtl cbrt cbrtf fmod remainder remquo remquof drem dremf fmin fmax finite finitef nan nanf nanl fdim fdimf fma fmaf erf erff erfc erfcf jn jnf yn ynf j0 j0f j1 j1f y0 y0f y1 y1f tgamma tgammaf lgamma lgammaf lgamma_r lgammaf_r tan tanf sinh sinhf cosh coshf tanh tanhf asinh asinhf acosh acoshf atanh atanhf atan atanf atan2 atan2f pow powf modf frexp ldexp ldexpf scalbn scalbnf scalbln scalblnf ldexpl scalbnl scalblnl truncl floorl ceill rintl nearbyintl roundl lrintl llrintl lroundl llroundl rint rintf lrint lrintf llrint llrintf lround lroundf llround llroundf nearbyint nearbyintf exp expf exp2 exp2f expm1 expm1f exp10 exp10f pow10 pow10f log logf log2 log2f log1p log1pf log10 log10f ilogb logb nextafter nextafterf nexttoward nexttowardf; do nm --defined-only $(OUT)/dogfood-tcc | awk '{print $$3}' | grep -Fxq "$$symbol" || { echo "dogfood binary did not link Nelibc $$symbol" >&2; exit 1; }; done
 
 dogfood-matrix: dogfood-zig dogfood-gcc dogfood-zig-musl dogfood-tcc
+
 
 .PHONY: dogfood-zig dogfood-gcc dogfood-zig-musl dogfood-tcc dogfood-matrix
 
@@ -808,6 +819,7 @@ strtok-diff-tcc: $(OUT)/libnelibc-tcc.a
 
 strtok-diff-matrix: strtok-diff-zig strtok-diff-gcc strtok-diff-zig-musl strtok-diff-tcc
 
+
 .PHONY: strtok-diff-zig strtok-diff-gcc strtok-diff-zig-musl strtok-diff-tcc strtok-diff-matrix
 
 strverscmp-diff-zig: $(OUT)/libnelibc-zig.a
@@ -840,6 +852,7 @@ strverscmp-diff-tcc: $(OUT)/libnelibc-tcc.a
 	cmp $(OUT)/strverscmp-diff-host-tcc.out $(OUT)/strverscmp-diff-nelibc-tcc.out && echo '16384 strverscmp cases matched (TinyCC/glibc)'
 
 strverscmp-diff-matrix: strverscmp-diff-zig strverscmp-diff-gcc strverscmp-diff-zig-musl strverscmp-diff-tcc
+
 
 .PHONY: strverscmp-diff-zig strverscmp-diff-gcc strverscmp-diff-zig-musl strverscmp-diff-tcc strverscmp-diff-matrix
 
@@ -1017,6 +1030,7 @@ stdio-shootout-available: stdio-shootout-zig stdio-shootout-gcc stdio-shootout-z
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/stdio-shootout-zig.csv $(OUT)/stdio-shootout-gcc.csv $(OUT)/stdio-shootout-zig-musl.csv > $(OUT)/stdio-shootout-available.csv
 	@cat $(OUT)/stdio-shootout-available.csv
 
+
 .PHONY: lib-stdio-smoke-available fmemopen-diff-zig fmemopen-diff-gcc fmemopen-diff-zig-musl fmemopen-diff-matrix lib-zig lib-gcc lib-zig-musl lib-tcc lib-smoke-zig lib-smoke-gcc lib-smoke-zig-musl lib-smoke-tcc lib-smoke-matrix lib-consumer-zig lib-consumer-gcc lib-consumer-zig-musl lib-consumer-tcc lib-consumer-matrix lib-stdio-smoke-zig lib-stdio-smoke-gcc lib-stdio-smoke-zig-musl lib-stdio-smoke-tcc lib-stdio-smoke-matrix atexit-hybrid-smoke-zig atexit-hybrid-smoke-gcc atexit-hybrid-smoke-zig-musl atexit-hybrid-smoke-tcc atexit-hybrid-smoke-matrix stdio-shootout-zig stdio-shootout-gcc stdio-shootout-zig-musl stdio-shootout-tcc stdio-shootout-matrix getopt-diff-zig getopt-long-diff-zig getsubopt-diff-zig strerror-r-diff-zig multibyte-diff-zig multibyte-diff-gcc multibyte-diff-zig-musl multibyte-diff-tcc multibyte-diff-matrix wide-int-diff-zig wide-int-diff-gcc wide-int-diff-zig-musl wide-int-diff-tcc wide-int-diff-matrix wide-string-diff-zig wide-string-diff-gcc wide-string-diff-zig-musl wide-string-diff-tcc wide-string-diff-matrix
 
 int-diff-zig: zig
@@ -1048,6 +1062,7 @@ int-diff-tcc: tcc
 	$(OUT)/int-diff-host-tcc > $(OUT)/int-diff-host-tcc.csv
 	$(OUT)/int-diff-nelibc-tcc > $(OUT)/int-diff-nelibc-tcc.csv
 	cmp $(OUT)/int-diff-host-tcc.csv $(OUT)/int-diff-nelibc-tcc.csv && echo '1209 integer conversion cases passed (TinyCC/glibc)'
+
 
 .PHONY: int-diff-tcc
 int-diff-matrix: int-diff-zig int-diff-gcc int-diff-zig-musl int-diff-tcc
@@ -1089,6 +1104,7 @@ qsort-diff-tcc: $(OUT)/libnelibc-tcc.a
 	cmp $(OUT)/qsort-diff-host-tcc.csv $(OUT)/qsort-diff-nelibc-tcc.csv && echo 'qsort/bsearch: boundary, patterned, and randomized arrays match (TinyCC/glibc)'
 
 qsort-diff-matrix: qsort-diff-zig qsort-diff-gcc qsort-diff-zig-musl qsort-diff-tcc
+
 .PHONY: qsort-diff-zig qsort-diff-gcc qsort-diff-zig-musl qsort-diff-tcc qsort-diff-matrix
 
 qsort-shootout-zig: $(OUT)/libnelibc-zig.a
@@ -1126,6 +1142,7 @@ qsort-shootout-tcc: $(OUT)/libnelibc-tcc.a
 qsort-shootout-matrix: qsort-shootout-zig qsort-shootout-gcc qsort-shootout-zig-musl qsort-shootout-tcc
 	awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/qsort-shootout-zig.csv $(OUT)/qsort-shootout-gcc.csv $(OUT)/qsort-shootout-zig-musl.csv $(OUT)/qsort-shootout-tcc.csv > $(OUT)/qsort-shootout-matrix.csv
 	cat $(OUT)/qsort-shootout-matrix.csv
+
 .PHONY: qsort-shootout-zig qsort-shootout-gcc qsort-shootout-zig-musl qsort-shootout-tcc qsort-shootout-matrix
 
 wide-int-diff-zig: zig
@@ -1267,6 +1284,7 @@ float-shootout-tcc: tcc
 	$(OUT)/float-shootout-tcc > $(OUT)/float-shootout-tcc.csv
 	cat $(OUT)/float-shootout-tcc.csv
 
+
 .PHONY: float-shootout-tcc
 float-shootout-matrix: float-shootout-zig float-shootout-gcc float-shootout-zig-musl float-shootout-tcc
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/float-shootout-zig.csv $(OUT)/float-shootout-gcc.csv $(OUT)/float-shootout-zig-musl.csv $(OUT)/float-shootout-tcc.csv > $(OUT)/float-shootout-matrix.csv
@@ -1311,6 +1329,7 @@ float-shootout-tcc-opt: tcc
 	done
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/float-shootout-opt-O0.csv $(OUT)/float-shootout-opt-O1.csv $(OUT)/float-shootout-opt-O2.csv $(OUT)/float-shootout-opt-O3.csv > $(OUT)/float-shootout-tcc-opt.csv
 	@cat $(OUT)/float-shootout-tcc-opt.csv
+
 
 .PHONY: float-shootout-tcc-opt
 
@@ -1409,7 +1428,9 @@ rand-r-diff-tcc: $(OUT)/libnelibc-tcc.a
 
 rand-r-diff-matrix: rand-r-diff-zig rand-r-diff-gcc rand-r-diff-zig-musl rand-r-diff-tcc
 
+
 .PHONY: rand-r-shootout-zig rand-r-shootout-gcc rand-r-shootout-zig-musl rand-r-shootout-tcc rand-r-shootout-matrix rand-r-diff-zig rand-r-diff-gcc rand-r-diff-zig-musl rand-r-diff-tcc rand-r-diff-matrix
+
 
 .PHONY: int-shootout-tcc
 
@@ -1490,6 +1511,7 @@ alloc-thread-shootout-matrix: alloc-thread-shootout-zig alloc-thread-shootout-gc
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/alloc-thread-shootout-zig.csv $(OUT)/alloc-thread-shootout-gcc.csv $(OUT)/alloc-thread-shootout-zig-musl.csv $(OUT)/alloc-thread-shootout-tcc.csv > $(OUT)/alloc-thread-shootout-matrix.csv
 	@cat $(OUT)/alloc-thread-shootout-matrix.csv
 
+
 .PHONY: alloc-thread-shootout-zig alloc-thread-shootout-gcc alloc-thread-shootout-zig-musl alloc-thread-shootout-tcc alloc-thread-shootout-matrix
 
 getentropy-shootout-zig: $(OUT)/libnelibc-zig.a
@@ -1527,6 +1549,7 @@ getentropy-shootout-tcc: $(OUT)/libnelibc-tcc.a
 getentropy-shootout-matrix: getentropy-shootout-zig getentropy-shootout-gcc getentropy-shootout-zig-musl getentropy-shootout-tcc
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/getentropy-shootout-zig.csv $(OUT)/getentropy-shootout-gcc.csv $(OUT)/getentropy-shootout-zig-musl.csv $(OUT)/getentropy-shootout-tcc.csv > $(OUT)/getentropy-shootout-matrix.csv
 	@cat $(OUT)/getentropy-shootout-matrix.csv
+
 
 .PHONY: getentropy-shootout-zig getentropy-shootout-gcc getentropy-shootout-zig-musl getentropy-shootout-tcc getentropy-shootout-matrix
 
@@ -1566,6 +1589,7 @@ process-id-shootout-matrix: process-id-shootout-zig process-id-shootout-gcc proc
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/process-id-shootout-zig.csv $(OUT)/process-id-shootout-gcc.csv $(OUT)/process-id-shootout-zig-musl.csv $(OUT)/process-id-shootout-tcc.csv > $(OUT)/process-id-shootout-matrix.csv
 	@cat $(OUT)/process-id-shootout-matrix.csv
 
+
 .PHONY: process-id-shootout-zig process-id-shootout-gcc process-id-shootout-zig-musl process-id-shootout-tcc process-id-shootout-matrix
 
 eventfd-shootout-zig: $(OUT)/libnelibc-zig.a
@@ -1603,6 +1627,7 @@ eventfd-shootout-tcc: $(OUT)/libnelibc-tcc.a
 eventfd-shootout-matrix: eventfd-shootout-zig eventfd-shootout-gcc eventfd-shootout-zig-musl eventfd-shootout-tcc
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/eventfd-shootout-zig.csv $(OUT)/eventfd-shootout-gcc.csv $(OUT)/eventfd-shootout-zig-musl.csv $(OUT)/eventfd-shootout-tcc.csv > $(OUT)/eventfd-shootout-matrix.csv
 	@cat $(OUT)/eventfd-shootout-matrix.csv
+
 
 .PHONY: eventfd-shootout-zig eventfd-shootout-gcc eventfd-shootout-zig-musl eventfd-shootout-tcc eventfd-shootout-matrix
 
@@ -1642,6 +1667,7 @@ dirent-shootout-matrix: dirent-shootout-zig dirent-shootout-gcc dirent-shootout-
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/dirent-shootout-zig.csv $(OUT)/dirent-shootout-gcc.csv $(OUT)/dirent-shootout-zig-musl.csv $(OUT)/dirent-shootout-tcc.csv > $(OUT)/dirent-shootout-matrix.csv
 	@cat $(OUT)/dirent-shootout-matrix.csv
 
+
 .PHONY: dirent-shootout-zig dirent-shootout-gcc dirent-shootout-zig-musl dirent-shootout-tcc dirent-shootout-matrix
 
 waitpid-shootout-zig: $(OUT)/libnelibc-zig.a
@@ -1679,6 +1705,7 @@ waitpid-shootout-tcc: $(OUT)/libnelibc-tcc.a
 waitpid-shootout-matrix: waitpid-shootout-zig waitpid-shootout-gcc waitpid-shootout-zig-musl waitpid-shootout-tcc
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/waitpid-shootout-zig.csv $(OUT)/waitpid-shootout-gcc.csv $(OUT)/waitpid-shootout-zig-musl.csv $(OUT)/waitpid-shootout-tcc.csv > $(OUT)/waitpid-shootout-matrix.csv
 	@cat $(OUT)/waitpid-shootout-matrix.csv
+
 
 .PHONY: waitpid-shootout-zig waitpid-shootout-gcc waitpid-shootout-zig-musl waitpid-shootout-tcc waitpid-shootout-matrix
 
@@ -1718,6 +1745,7 @@ io-shootout-matrix: io-shootout-zig io-shootout-gcc io-shootout-zig-musl io-shoo
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/io-shootout-zig.csv $(OUT)/io-shootout-gcc.csv $(OUT)/io-shootout-zig-musl.csv $(OUT)/io-shootout-tcc.csv > $(OUT)/io-shootout-matrix.csv
 	@cat $(OUT)/io-shootout-matrix.csv
 
+
 .PHONY: io-shootout-zig io-shootout-gcc io-shootout-zig-musl io-shootout-tcc io-shootout-matrix
 
 unistd-cancel-zig: $(OUT)/libnelibc-zig.a tools/unistd_cancel_smoke.c
@@ -1738,6 +1766,7 @@ unistd-cancel-tcc: $(OUT)/libnelibc-tcc.a tools/unistd_cancel_smoke.c
 	$(OUT)/unistd-cancel-tcc
 
 unistd-cancel-matrix: unistd-cancel-zig unistd-cancel-gcc unistd-cancel-zig-musl unistd-cancel-tcc
+
 
 .PHONY: unistd-cancel-zig unistd-cancel-gcc unistd-cancel-zig-musl unistd-cancel-tcc unistd-cancel-matrix
 
@@ -2167,6 +2196,7 @@ pathconf-shootout-matrix: pathconf-shootout-zig pathconf-shootout-gcc pathconf-s
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/pathconf-shootout-zig.csv $(OUT)/pathconf-shootout-gcc.csv $(OUT)/pathconf-shootout-zig-musl.csv $(OUT)/pathconf-shootout-tcc.csv > $(OUT)/pathconf-shootout-matrix.csv
 	@cat $(OUT)/pathconf-shootout-matrix.csv
 
+
 .PHONY: strcasecmp-shootout-zig strcasecmp-shootout-gcc strcasecmp-shootout-zig-musl strcasecmp-shootout-tcc strcasecmp-shootout-matrix strcasecmp-sse2-fallback strcasecmp-perf-matrix strverscmp-shootout-zig strverscmp-shootout-gcc strverscmp-shootout-zig-musl strverscmp-shootout-tcc strverscmp-shootout-matrix sysconf-shootout-zig sysconf-shootout-gcc sysconf-shootout-zig-musl sysconf-shootout-tcc sysconf-shootout-matrix confstr-shootout-zig confstr-shootout-gcc confstr-shootout-zig-musl confstr-shootout-tcc confstr-shootout-matrix pathconf-shootout-zig pathconf-shootout-gcc pathconf-shootout-zig-musl pathconf-shootout-tcc pathconf-shootout-matrix
 
 shootout-matrix: shootout-zig shootout-gcc shootout-zig-musl shootout-tcc strstr-shootout-matrix strcasecmp-shootout-matrix strverscmp-shootout-matrix sysconf-shootout-matrix confstr-shootout-matrix pathconf-shootout-matrix float-shootout-matrix int-shootout-matrix rand-r-shootout-matrix qsort-shootout-matrix stdio-shootout-matrix io-shootout-matrix
@@ -2552,16 +2582,19 @@ pthread-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/pthread_standalo
 	$(OUT)/pthread-smoke-standalone-tcc
 
 pthread-standalone-matrix: pthread-standalone-zig pthread-standalone-gcc pthread-standalone-tcc
+
 .PHONY: pthread-standalone-zig pthread-standalone-gcc pthread-standalone-tcc pthread-standalone-matrix
 
 sem-clockwait-musl-smoke: $(OUT)/libnelibc-zig-musl.a tools/sem_clockwait_musl_smoke.c
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -pthread -Iinclude -fno-builtin $(MUSL_STDIO_WRAP_FLAGS) tools/sem_clockwait_musl_smoke.c $(OUT)/libnelibc-zig-musl.a -o $(OUT)/sem-clockwait-musl-smoke
 	$(OUT)/sem-clockwait-musl-smoke
+
 .PHONY: sem-clockwait-musl-smoke
 
 sem-clockwait-shootout-zig: $(OUT)/libnelibc-zig.a tools/sem_clockwait_shootout.c
 	$(ZIG) cc $(ZIGFLAGS) -pthread -ldl -Iinclude -fno-builtin tools/sem_clockwait_shootout.c $(OUT)/libnelibc-zig.a -o $(OUT)/sem-clockwait-shootout-zig
 	$(OUT)/sem-clockwait-shootout-zig | tee $(OUT)/sem-clockwait-shootout-zig.csv
+
 .PHONY: sem-clockwait-shootout-zig
 
 rand-r-diff-standalone-zig: $(OUT)/libnelibc-standalone-zig.a
@@ -2632,6 +2665,7 @@ locale-format-hybrid-diff-tcc: $(OUT)/libnelibc-tcc.a
 	diff -u $(OUT)/locale-format-hybrid-host-tcc.txt $(OUT)/locale-format-hybrid-nelibc-tcc.txt
 
 locale-format-hybrid-diff-matrix: locale-format-hybrid-diff-zig locale-format-hybrid-diff-gcc locale-format-hybrid-diff-zig-musl locale-format-hybrid-diff-tcc
+
 
 .PHONY: lib-standalone-zig lib-standalone-gcc lib-standalone-tcc smoke-lib-standalone-zig smoke-lib-standalone-gcc smoke-lib-standalone-matrix lib-consumer-standalone-zig lib-consumer-standalone-gcc lib-consumer-link-standalone-tcc lib-consumer-standalone-matrix rand-r-diff-standalone-zig rand-r-diff-standalone-gcc rand-r-diff-standalone-matrix exit-smoke-standalone-zig exit-smoke-standalone-gcc exit-smoke-standalone-matrix abort-smoke-zig abort-smoke-gcc abort-smoke-zig-musl abort-smoke-tcc abort-smoke-standalone-zig abort-smoke-standalone-gcc abort-smoke-matrix locale-format-diff-zig locale-format-diff-gcc locale-format-diff-tcc locale-format-diff-matrix
 
