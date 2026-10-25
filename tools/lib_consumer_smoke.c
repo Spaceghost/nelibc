@@ -424,7 +424,9 @@ static int pthread_sigmask_probe(void) {
   sigset_t previous_set;
   sigset_t observed_set;
   clockid_t cpu_clock;
+  clockid_t process_cpu_clock;
   struct timespec cpu_time;
+  struct timespec process_cpu_time;
   if (sigemptyset(&signal_set) != 0 || sigaddset(&signal_set, SIGUSR1) != 0 ||
       pthread_sigmask(SIG_BLOCK, &signal_set, &previous_set) != 0 ||
       pthread_sigmask(0, NULL, &observed_set) != 0 ||
@@ -432,8 +434,19 @@ static int pthread_sigmask_probe(void) {
       pthread_sigmask(SIG_SETMASK, &previous_set, NULL) != 0 ||
       pthread_kill(pthread_self(), 0) != 0 ||
       pthread_getcpuclockid(pthread_self(), &cpu_clock) != 0 ||
-      clock_gettime(cpu_clock, &cpu_time) != 0)
+      clock_gettime(cpu_clock, &cpu_time) != 0 ||
+      clock_getcpuclockid(0, &process_cpu_clock) != 0 ||
+      clock_gettime(process_cpu_clock, &process_cpu_time) != 0 ||
+      process_cpu_time.tv_sec < 0 || process_cpu_time.tv_nsec < 0 ||
+      process_cpu_time.tv_nsec >= 1000000000L)
     return 1;
+  int previous_errno = errno;
+  errno = EOVERFLOW;
+  if (clock_getcpuclockid((pid_t)-1, &process_cpu_clock) != EINVAL ||
+      errno != EOVERFLOW || clock_getcpuclockid(0, NULL) != EINVAL ||
+      errno != EOVERFLOW)
+    return 1;
+  errno = previous_errno;
   return 0;
 }
 

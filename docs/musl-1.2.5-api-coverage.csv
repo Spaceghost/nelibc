@@ -156,7 +156,7 @@ clearerr,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,impleme
 clearerr_unlocked,stdio.h,,,not-declared
 clock,time.h,time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clock_adjtime,sys/timex.h,,,not-declared
-clock_getcpuclockid,time.h,,,not-declared
+clock_getcpuclockid,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clock_getres,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clock_gettime,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clock_nanosleep,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

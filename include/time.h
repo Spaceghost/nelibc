@@ -68,6 +68,7 @@ struct tm {
 #endif
 
 int clock_gettime(clockid_t clock_id, struct timespec *time_value);
+int clock_getcpuclockid(pid_t process_id, clockid_t *clock_id);
 int clock_settime(clockid_t clock_id, const struct timespec *time_value);
 int clock_getres(clockid_t clock_id, struct timespec *resolution);
 int nanosleep(const struct timespec *requested, struct timespec *remaining);

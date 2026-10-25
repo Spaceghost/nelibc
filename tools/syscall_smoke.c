@@ -1271,6 +1271,25 @@ int main(int argc, char **argv) {
   errno = 0;
   if (clock_settime((clockid_t)-1, &ignored_clock_value) != -1 || errno != EINVAL)
     return 394;
+  clockid_t process_cpu_clock = (clockid_t)-1;
+  struct timespec process_cpu_time;
+  if (clock_getcpuclockid(0, &process_cpu_clock) != 0 ||
+      clock_gettime(process_cpu_clock, &process_cpu_time) != 0 ||
+      process_cpu_time.tv_sec < 0 || process_cpu_time.tv_nsec < 0 ||
+      process_cpu_time.tv_nsec >= 1000000000L)
+    return 395;
+  clockid_t explicit_process_cpu_clock = (clockid_t)-1;
+  if (clock_getcpuclockid(getpid(), &explicit_process_cpu_clock) != 0 ||
+      explicit_process_cpu_clock != process_cpu_clock)
+    return 397;
+  errno = EOVERFLOW;
+  process_cpu_clock = 12345;
+  if (clock_getcpuclockid((pid_t)-1, &process_cpu_clock) != EINVAL ||
+      errno != EOVERFLOW || process_cpu_clock != 12345 ||
+      clock_getcpuclockid(0, NULL) != EINVAL ||
+      clock_getcpuclockid((pid_t)2147483647, &process_cpu_clock) != ESRCH ||
+      errno != EOVERFLOW || process_cpu_clock != 12345)
+    return 396;
   struct timespec utc_time = {.tv_sec = -1, .tv_nsec = -1};
   if (timespec_get(&utc_time, TIME_UTC) != TIME_UTC || utc_time.tv_sec < 0 ||
       utc_time.tv_nsec < 0 || utc_time.tv_nsec >= 1000000000L) return 389;

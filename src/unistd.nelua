@@ -893,6 +893,27 @@ local function clock_gettime(clock_id: cint, time_value: pointer): cint <cexport
   )))
 end
 
+-- Linux process CPU clocks encode the PID and CPUCLOCK_SCHED in clockid_t.
+-- Validate the encoded clock with the kernel; POSIX returns the error number
+-- directly instead of changing errno.
+local function clock_getcpuclockid(process_id: cint, clock_id: *[0]cint): cint
+    <cexport, codename 'clock_getcpuclockid'>
+  if clock_id == nilptr or process_id < 0_cint then return 22_cint end -- EINVAL
+  if process_id == 0_cint then
+    process_id = (@cint)(nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong))
+  end
+  local encoded_bits: cuint = ((~(@cuint)(process_id)) << 3) | 2_cuint
+  local decoded_process_id: cuint = (~(encoded_bits >> 3)) & 0x1fffffff_cuint
+  if decoded_process_id ~= (@cuint)(process_id) then return 3_cint end -- ESRCH
+  local encoded_clock: cint = (@cint)(encoded_bits)
+  local probe: Timespec = {tv_sec = 0_clong, tv_nsec = 0_clong}
+  local result = nelibc_raw_syscall3(228_culong,
+      (@culong)(encoded_clock), (@culong)((@usize)(&probe)), 0_culong)
+  if result < 0 and result >= -4095 then return (@cint)(-result) end
+  clock_id[0] = encoded_clock
+  return 0_cint
+end
+
 local function clock_settime(clock_id: cint, time_value: pointer <const>): cint
     <cexport, codename 'clock_settime'>
   return (@cint)(syscall_result(nelibc_raw_syscall3(
