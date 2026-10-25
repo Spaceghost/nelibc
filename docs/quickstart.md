@@ -97,8 +97,9 @@ zig cc -Iinclude -fno-builtin -pthread mq_example.c build/libnelibc-zig.a -o mq_
 ```
 
 The smoke test also covers timed waits, cancellation, queue attributes, and
-kernel notification registration. `SIGEV_THREAD` notification is not
-implemented yet.
+`SIGEV_NONE`, `SIGEV_SIGNAL`, and `SIGEV_THREAD` notifications. Thread
+notifications run the requested callback with the supplied `sigval` after a
+message arrives.
 
 The archive also provides the legacy aligned-allocation API through
 `<malloc.h>`. For example, `memalign(128, 257)` returns storage aligned to

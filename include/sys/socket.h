@@ -48,11 +48,13 @@ struct linger {
 #define AF_UNIX 1
 #define AF_LOCAL AF_UNIX
 #define AF_INET 2
+#define AF_NETLINK 16
 #define AF_INET6 10
 #define PF_UNSPEC AF_UNSPEC
 #define PF_UNIX AF_UNIX
 #define PF_LOCAL AF_LOCAL
 #define PF_INET AF_INET
+#define PF_NETLINK AF_NETLINK
 #define PF_INET6 AF_INET6
 
 #define SOCK_STREAM 1

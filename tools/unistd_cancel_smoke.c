@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <poll.h>
 #include <signal.h>
+#include <semaphore.h>
 #include <stdio.h>
 #include <stddef.h>
 #include <string.h>
@@ -63,6 +64,11 @@ static int mq_receive_started_flag;
 static int mq_timedreceive_started_flag;
 static int mq_send_started_flag;
 static int mq_timedsend_started_flag;
+static sem_t mq_thread_notification_sem;
+
+static void mq_thread_notification_callback(union sigval value) {
+  sem_post((sem_t *)value.sival_ptr);
+}
 static char fifo_path[128];
 static int open_started;
 static int sync_fd;
@@ -830,6 +836,26 @@ int main(void) {
   if (mq_receive(mq_descriptor, mq_buffer, sizeof(mq_buffer), &mq_priority) != 6 ||
       memcmp(mq_buffer, "notice", 6) != 0) return 180;
   if (pthread_sigmask(SIG_SETMASK, &old_signal_set, NULL) != 0) return 181;
+  if (sem_init(&mq_thread_notification_sem, 0, 0) != 0) return 182;
+  pthread_attr_t mq_thread_attributes;
+  if (pthread_attr_init(&mq_thread_attributes) != 0 ||
+      pthread_attr_setstacksize(&mq_thread_attributes, 1048576) != 0) return 183;
+  mq_notification.sigev_notify = SIGEV_THREAD;
+  mq_notification.sigev_notify_function = mq_thread_notification_callback;
+  mq_notification.sigev_notify_attributes = &mq_thread_attributes;
+  mq_notification.sigev_value.sival_ptr = &mq_thread_notification_sem;
+  if (mq_notify(mq_descriptor, &mq_notification) != 0) {
+    fprintf(stderr, "mq_notify SIGEV_THREAD failed: errno=%d\n", errno);
+    return 184;
+  }
+  if (pthread_attr_destroy(&mq_thread_attributes) != 0) return 185;
+  if (mq_send(mq_descriptor, "thread", 6, 0) != 0) return 186;
+  if (clock_gettime(CLOCK_REALTIME, &mq_deadline) != 0) return 187;
+  mq_deadline.tv_sec += 3;
+  if (sem_timedwait(&mq_thread_notification_sem, &mq_deadline) != 0) return 188;
+  if (mq_receive(mq_descriptor, mq_buffer, sizeof(mq_buffer), &mq_priority) != 6 ||
+      memcmp(mq_buffer, "thread", 6) != 0) return 189;
+  if (sem_destroy(&mq_thread_notification_sem) != 0) return 190;
   if (mq_send(mq_descriptor, "hello", 5, 7) != 0) return 149;
   if (mq_receive(mq_descriptor, mq_buffer, sizeof(mq_buffer), &mq_priority) != 5 ||
       memcmp(mq_buffer, "hello", 5) != 0 || mq_priority != 7) return 150;

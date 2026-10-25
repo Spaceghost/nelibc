@@ -338,8 +338,8 @@ local function mq_unlink(name: pointer <const>): cint <cexport, codename 'mq_unl
 end
 
 -- Linux mq_notify is a direct syscall; a null event removes this process's registration.
-local function mq_notify(mqdes: cint, notification: pointer <const>): cint
-    <cexport, codename 'mq_notify'>
+local function nelibc_mq_notify_syscall(mqdes: cint, notification: pointer <const>): cint
+    <cexport, codename '__nelibc_mq_notify_syscall'>
   return (@cint)(syscall_result(nelibc_raw_syscall3(
     244_culong, (@culong)(mqdes), (@culong)((@usize)(notification)), 0_culong
   )))

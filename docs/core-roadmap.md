@@ -80,14 +80,14 @@ The message-queue slice implements `mq_open`, `mq_close`, `mq_unlink`,
 `mq_getattr`, `mq_setattr`, `mq_send`, `mq_receive`, `mq_timedsend`, and
 `mq_timedreceive`, plus kernel-backed `mq_notify`; `mq_open`'s variadic
 argument handling is a small C ABI adapter, while the operations use Nelua
-Linux syscall wrappers. `SIGEV_THREAD` notification still needs libc-managed
-thread support. The smoke
-checks queue attributes, send/receive bytes and priority, an expired receive
-timeout, `SIGEV_NONE` registration/removal, `SIGEV_SIGNAL` delivery, and
-cancellation of blocked send and receive calls. The current run passes all
-seven profiles: Zig/glibc, GCC/glibc, Zig/musl, TinyCC/glibc, and standalone
-Zig, GCC, and TinyCC. The TinyCC compiler used for the shootout was version
-0.9.28rc (`e23dabe`). `SIGEV_THREAD` remains unimplemented.
+Linux syscall wrappers. `SIGEV_THREAD` notification starts a detached callback
+thread and services the Linux netlink notification. The smoke checks queue
+attributes, send/receive bytes and priority, an expired receive timeout,
+`SIGEV_NONE` registration/removal, `SIGEV_SIGNAL` delivery, a callback using
+caller-supplied thread attributes, and cancellation of blocked send and receive
+calls. The current run passes all seven profiles: Zig/glibc, GCC/glibc,
+Zig/musl, TinyCC/glibc, and standalone Zig, GCC, and TinyCC. The TinyCC
+compiler used for the shootout was version 0.9.28rc (`e23dabe`).
 The checks verify that deferred cancellation wakes each blocked thread and
 that `pthread_join` reports `PTHREAD_CANCELED`. This remains targeted behavior
 coverage, not a complete cancellation-point audit.
