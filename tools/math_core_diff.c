@@ -894,6 +894,140 @@ static int check_nextafter_signaling_nan(void) {
 
 #undef CHECK_NEXTAFTER_SNAN_CASE
 
+#define CHECK_NEXTAFTER_QNAN_CASE(label, type, reference, replacement, qnan, finite) \
+  do { \
+    feclearexcept(FE_ALL_EXCEPT); \
+    volatile type host_result = reference((qnan), (finite)); \
+    int host_flags = fetestexcept(FE_INVALID); \
+    feclearexcept(FE_ALL_EXCEPT); \
+    volatile type nelibc_result = replacement((qnan), (finite)); \
+    int nelibc_flags = fetestexcept(FE_INVALID); \
+    if (!isnan(host_result) || !isnan(nelibc_result) || nelibc_flags != host_flags) { \
+      fprintf(stderr, label " quiet-NaN x flags failed host=%x Nelibc=%x\n", \
+              host_flags, nelibc_flags); \
+      return 1; \
+    } \
+    feclearexcept(FE_ALL_EXCEPT); \
+    host_result = reference((finite), (qnan)); \
+    host_flags = fetestexcept(FE_INVALID); \
+    feclearexcept(FE_ALL_EXCEPT); \
+    nelibc_result = replacement((finite), (qnan)); \
+    nelibc_flags = fetestexcept(FE_INVALID); \
+    if (!isnan(host_result) || !isnan(nelibc_result) || nelibc_flags != host_flags) { \
+      fprintf(stderr, label " quiet-NaN y flags failed host=%x Nelibc=%x\n", \
+              host_flags, nelibc_flags); \
+      return 1; \
+    } \
+  } while (0)
+
+static int check_nextafter_quiet_nan_and_zero(void) {
+  double_bits double_qnan = {.bits = UINT64_C(0x7FF8000000000001)};
+  float_bits float_qnan = {.bits = UINT32_C(0x7FC00001)};
+  union long_double_bits long_double_qnan = {
+      .parts = {.significand = UINT64_C(0xC000000000000001),
+                .sign_exponent = UINT16_C(0x7FFF)}};
+  CHECK_NEXTAFTER_QNAN_CASE("nextafter", double, nextafter,
+                            nelibc_nextafter, double_qnan.value, 1.0);
+  CHECK_NEXTAFTER_QNAN_CASE("nextafterf", float, nextafterf,
+                            nelibc_nextafterf, float_qnan.value, 1.0f);
+  CHECK_NEXTAFTER_QNAN_CASE("nextafterl", long double, nextafterl,
+                            nelibc_nextafterl, long_double_qnan.value, 1.0L);
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile double host_double_zero = nextafter(-0.0, 0.0);
+  int host_double_zero_flags = fetestexcept(FE_ALL_EXCEPT);
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile double nelibc_double_zero = nelibc_nextafter(-0.0, 0.0);
+  int nelibc_double_zero_flags = fetestexcept(FE_ALL_EXCEPT);
+  if (host_double_zero != 0.0 || signbit(host_double_zero) ||
+      nelibc_double_zero != host_double_zero ||
+      signbit(nelibc_double_zero) != signbit(host_double_zero) ||
+      host_double_zero_flags != 0 || nelibc_double_zero_flags != host_double_zero_flags) {
+    fprintf(stderr, "nextafter signed-zero equality failed\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile float host_float_zero = nextafterf(0.0f, -0.0f);
+  int host_float_zero_flags = fetestexcept(FE_ALL_EXCEPT);
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile float nelibc_float_zero = nelibc_nextafterf(0.0f, -0.0f);
+  int nelibc_float_zero_flags = fetestexcept(FE_ALL_EXCEPT);
+  if (host_float_zero != 0.0f || !signbit(host_float_zero) ||
+      nelibc_float_zero != host_float_zero ||
+      signbit(nelibc_float_zero) != signbit(host_float_zero) ||
+      host_float_zero_flags != 0 || nelibc_float_zero_flags != host_float_zero_flags) {
+    fprintf(stderr, "nextafterf signed-zero equality failed\n");
+    return 1;
+  }
+  union long_double_bits long_double_least = {
+      .parts = {.significand = UINT64_C(1), .sign_exponent = UINT16_C(0)}};
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double host_long_double_zero = nextafterl(-0.0L, 0.0L);
+  int host_long_double_zero_flags = fetestexcept(FE_ALL_EXCEPT);
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double nelibc_long_double_zero = nelibc_nextafterl(-0.0L, 0.0L);
+  int nelibc_long_double_zero_flags = fetestexcept(FE_ALL_EXCEPT);
+  union long_double_bits host_long_double_zero_bits = {.value = host_long_double_zero};
+  union long_double_bits nelibc_long_double_zero_bits = {.value = nelibc_long_double_zero};
+  if (host_long_double_zero != 0.0L ||
+      (host_long_double_zero_bits.parts.sign_exponent & UINT16_C(0x8000)) != 0 ||
+      nelibc_long_double_zero != host_long_double_zero ||
+      (nelibc_long_double_zero_bits.parts.sign_exponent & UINT16_C(0x8000)) !=
+          (host_long_double_zero_bits.parts.sign_exponent & UINT16_C(0x8000)) ||
+      nelibc_long_double_zero_flags != host_long_double_zero_flags) {
+    fprintf(stderr, "nextafterl signed-zero equality failed host=%04x/%x Nelibc=%04x/%x\n",
+            host_long_double_zero_bits.parts.sign_exponent,
+            host_long_double_zero_flags,
+            nelibc_long_double_zero_bits.parts.sign_exponent,
+            nelibc_long_double_zero_flags);
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile double host_double_underflow = nextafter(0x1p-1074, 0.0);
+  int host_double_underflow_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile double nelibc_double_underflow = nelibc_nextafter(0x1p-1074, 0.0);
+  int nelibc_double_underflow_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  if (host_double_underflow != 0.0 || nelibc_double_underflow != 0.0 ||
+      host_double_underflow_flags != (FE_UNDERFLOW | FE_INEXACT) ||
+      nelibc_double_underflow_flags != host_double_underflow_flags) {
+    fprintf(stderr, "nextafter double subnormal-to-zero flags failed host=%x Nelibc=%x\n",
+            host_double_underflow_flags, nelibc_double_underflow_flags);
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile float host_float_underflow = nextafterf(0x1p-149f, 0.0f);
+  int host_float_underflow_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile float nelibc_float_underflow = nelibc_nextafterf(0x1p-149f, 0.0f);
+  int nelibc_float_underflow_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  if (host_float_underflow != 0.0f || nelibc_float_underflow != 0.0f ||
+      host_float_underflow_flags != (FE_UNDERFLOW | FE_INEXACT) ||
+      nelibc_float_underflow_flags != host_float_underflow_flags) {
+    fprintf(stderr, "nextafterf subnormal-to-zero flags failed host=%x Nelibc=%x\n",
+            host_float_underflow_flags, nelibc_float_underflow_flags);
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double host_long_double_underflow =
+      nextafterl(long_double_least.value, 0.0L);
+  int host_long_double_underflow_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double nelibc_long_double_underflow =
+      nelibc_nextafterl(long_double_least.value, 0.0L);
+  int nelibc_long_double_underflow_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  if (host_long_double_underflow != 0.0L || nelibc_long_double_underflow != 0.0L ||
+      host_long_double_underflow_flags != (FE_UNDERFLOW | FE_INEXACT) ||
+      nelibc_long_double_underflow_flags != host_long_double_underflow_flags) {
+    fprintf(stderr, "nextafterl subnormal-to-zero flags failed host=%x Nelibc=%x\n",
+            host_long_double_underflow_flags, nelibc_long_double_underflow_flags);
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  return 0;
+}
+
+#undef CHECK_NEXTAFTER_QNAN_CASE
+
 static int check_math_extensions(void) {
   const double values[] = {0.0, -0.0, 0x1p-1074, DBL_MIN, DBL_MAX, INFINITY, -INFINITY, NAN};
   const float valuesf[] = {0.0f, -0.0f, 0x1p-149f, FLT_MIN, FLT_MAX, INFINITY, -INFINITY, NAN};
@@ -1665,6 +1799,7 @@ static int long_double_tan_close(long double actual, long double expected) {
 int main(void) {
   if (check_classification()) return 1;
   if (check_nextafter_signaling_nan()) return 1;
+  if (check_nextafter_quiet_nan_and_zero()) return 1;
   if (check_long_double_erf()) return 1;
   if (check_long_double_gamma()) return 1;
   const long double hypot_values[] = {
