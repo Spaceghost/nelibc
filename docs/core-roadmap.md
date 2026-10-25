@@ -11,7 +11,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep the seven-profile `make smoke-matrix` and four-profile `make dogfood-matrix` green as the source changes |
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
-| P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification data; locale handles currently model only C and C.UTF-8 `LC_CTYPE`, while collation and broad numeric/time conventions remain limited | Extend thread locale handles to numeric, collation, monetary, and time categories; expand locale data |
+| P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification data and C/German numeric conventions; thread locale handles cover only `LC_CTYPE` and `LC_NUMERIC`, while collation and broad time conventions remain limited | Extend thread locale handles to collation, monetary, and time categories; expand locale data |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 555 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
@@ -234,12 +234,18 @@ musl export set.
   number, case, whitespace, and general-category data in `C.UTF-8`, with
   ASCII classifications in `C`. `wctype`/`iswctype`, all classifier `_l`
   forms, and `towupper_l`/`towlower_l` use locale handles. Standalone
-  `newlocale` and `duplocale` return static handles for `C` and `C.UTF-8`;
-  `freelocale` is a no-op for those handles. Other locale categories and
-  thread-local locale selection remain incomplete. Standalone `uselocale`
-  supports per-thread `LC_CTYPE` selection between `C`, `C.UTF-8`, and
-  `LC_GLOBAL_LOCALE`; numeric, monetary, time, and collation category state is
-  not yet carried by thread locale handles.
+  `newlocale` and `duplocale` return static handles for supported combinations
+  of `C`/`C.UTF-8` ctype and `C`/`de_DE.UTF-8` numeric state;
+  `freelocale` is a no-op for those handles. Standalone `uselocale` and locale
+  handles now carry per-thread `LC_CTYPE` and `LC_NUMERIC` state for `C`,
+  `C.UTF-8`, and `de_DE.UTF-8` numeric conventions. `strtod`, floating
+  formatting, grouping, and `localeconv` use the selected thread's numeric
+  state. The `localeconv` result itself is stored per thread. Collation,
+  monetary, and time category state is not yet carried by thread locale handles.
+  The standalone consumer matrix checks a worker switching between C and German
+  numeric conventions while the main thread keeps its global locale, including
+  `strtod`, `snprintf`, `localeconv`, locale composition, and global-locale
+  snapshots; Zig, GCC, and TinyCC pass.
 - `wcswidth` is implemented in Nelua and uses the selected host's `wcwidth` in
   hybrid mode. The standalone locale backend uses generated Unicode 16.0
   general-category, East Asian Width, and Default_Ignorable_Code_Point data

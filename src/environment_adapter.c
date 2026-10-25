@@ -100,7 +100,7 @@ static __thread int nelibc_state_cleanup_registered;
 static __thread int nelibc_state_cleanup_initializing;
 static __thread union {
   long double alignment;
-  unsigned char bytes[17][256];
+  unsigned char bytes[18][256];
 } nelibc_states;
 extern void nelibc_allocator_thread_cleanup(void *) __attribute__((weak));
 static void nelibc_destroy_state(void *state) {
@@ -596,6 +596,7 @@ void nelibc_thread_detached_exit(void) {
 static int nelibc_standalone_ctype_utf8;
 static int nelibc_standalone_numeric_de;
 static int nelibc_standalone_monetary_de;
+void *nelibc_thread_state(unsigned int slot, size_t size);
 static char nelibc_standalone_locale_c[] = "C";
 static char nelibc_standalone_locale_utf8[] = "C.UTF-8";
 static char nelibc_standalone_locale_de_numeric[] = "de_DE.UTF-8";
@@ -622,8 +623,19 @@ static const char nelibc_standalone_locale_all_utf8_de_mon[] =
     "LC_CTYPE=C.UTF-8;LC_NUMERIC=de_DE.UTF-8;LC_TIME=C;LC_COLLATE=C;"
     "LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C";
 
-int nelibc_standalone_numeric_is_de(void) {
+int nelibc_standalone_global_ctype_mode(void) {
+  return nelibc_standalone_ctype_utf8;
+}
+
+int nelibc_standalone_global_numeric_is_de(void) {
   return nelibc_standalone_numeric_de;
+}
+
+int nelibc_standalone_numeric_is_de(void) {
+  int *thread_locale = (int *)nelibc_thread_state(16, 2 * sizeof(int));
+  if (thread_locale != NULL && thread_locale[1] != 0)
+    return thread_locale[1] == 2;
+  return nelibc_standalone_global_numeric_is_de();
 }
 
 int nelibc_standalone_monetary_is_de(void) {
@@ -736,7 +748,7 @@ char *nelibc_standalone_setlocale(int category, const char *name) {
 
 int nelibc_radix_character(void) {
 #ifdef NELIBC_STANDALONE
-  return nelibc_standalone_numeric_de ? ',' : '.';
+  return nelibc_standalone_numeric_is_de() ? ',' : '.';
 #else
   struct lconv *data = localeconv();
   return data != NULL && data->decimal_point != NULL && data->decimal_point[0]
@@ -772,11 +784,9 @@ int nelibc_grouping_separator_byte(int index) {
       ? (unsigned char)data->thousands_sep[index] : 0;
 }
 
-void *nelibc_thread_state(unsigned int slot, size_t size);
-
 int nelibc_multibyte_mode(void) {
 #ifdef NELIBC_STANDALONE
-  int *thread_locale = (int *)nelibc_thread_state(16, sizeof(int));
+  int *thread_locale = (int *)nelibc_thread_state(16, 2 * sizeof(int));
   if (thread_locale != NULL && *thread_locale != 0) return *thread_locale - 1;
   return nelibc_standalone_ctype_utf8 ? 1 : 0;
 #else
@@ -794,7 +804,7 @@ int nelibc_multibyte_mode(void) {
 }
 
 void *nelibc_thread_state(unsigned int slot, size_t size) {
-  if (slot >= 17 || size > 256) return NULL;
+  if (slot >= 18 || size > 256) return NULL;
 #if defined(__TINYC__) && !defined(NELIBC_STANDALONE)
   if (slot >= 7 && !nelibc_state_cleanup_registered) {
     /* pthread key setup can allocate. If that reenters public malloc,
@@ -819,7 +829,7 @@ void *nelibc_thread_state(unsigned int slot, size_t size) {
   #endif
   static _Thread_local union {
     max_align_t alignment;
-    unsigned char bytes[17][256];
+    unsigned char bytes[18][256];
   } states NELIBC_TLS_MODEL;
 #ifndef NELIBC_STANDALONE
   if (slot >= 7 && !nelibc_state_cleanup_registered) {

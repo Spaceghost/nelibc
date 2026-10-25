@@ -45,6 +45,12 @@ static void system_signal_probe(int signal_number) {
 }
 
 #ifdef NELIBC_STANDALONE
+typedef struct {
+  locale_t locales[2];
+  struct lconv *main_locale_data;
+  int locale_data_isolated;
+} standalone_numeric_locale_args;
+
 static void *standalone_uselocale_worker(void *argument) {
   locale_t c_locale = (locale_t)argument;
   if (uselocale((locale_t)0) != LC_GLOBAL_LOCALE ||
@@ -55,6 +61,46 @@ static void *standalone_uselocale_worker(void *argument) {
       uselocale((locale_t)0) != c_locale ||
       uselocale(LC_GLOBAL_LOCALE) != c_locale || !iswalpha(0xe9))
     return (void *)2;
+  return 0;
+}
+
+static void *standalone_numeric_locale_worker(void *argument) {
+  standalone_numeric_locale_args *args =
+      (standalone_numeric_locale_args *)argument;
+  locale_t numeric_c = args->locales[0];
+  locale_t numeric_de = args->locales[1];
+  if (uselocale(numeric_c) != LC_GLOBAL_LOCALE ||
+      strcmp(localeconv()->decimal_point, ".") != 0 || !iswalpha(0xe9))
+    return (void *)1;
+  struct lconv *thread_locale_data = localeconv();
+  args->locale_data_isolated = thread_locale_data != args->main_locale_data &&
+      strcmp(thread_locale_data->decimal_point, ".") == 0;
+  locale_t global_copy = duplocale(LC_GLOBAL_LOCALE);
+  if (global_copy != numeric_de ||
+      newlocale(LC_NUMERIC_MASK, "C", global_copy) != numeric_c)
+    return (void *)5;
+  char *end = NULL;
+  if (strtod("12.5", &end) != 12.5 || end == NULL || *end != '\0')
+    return (void *)2;
+  char formatted[16];
+  if (snprintf(formatted, sizeof formatted, "%.1f", 12.5) != 4 ||
+      strcmp(formatted, "12.5") != 0 ||
+      snprintf(formatted, sizeof formatted, "%'.2f", 1234567.5) != 10 ||
+      strcmp(formatted, "1234567.50") != 0 ||
+      uselocale(numeric_de) != numeric_c ||
+      strcmp(localeconv()->decimal_point, ",") != 0)
+    return (void *)3;
+  end = NULL;
+  if (strtod("12,5", &end) != 12.5 || end == NULL || *end != '\0' ||
+      snprintf(formatted, sizeof formatted, "%.1f", 12.5) != 4 ||
+      strcmp(formatted, "12,5") != 0 ||
+      snprintf(formatted, sizeof formatted, "%'.2f", 1234567.5) != 12 ||
+      strcmp(formatted, "1.234.567,50") != 0 ||
+      uselocale(LC_GLOBAL_LOCALE) != numeric_de ||
+      strcmp(localeconv()->decimal_point, ",") != 0 || !iswalpha(0xe9))
+    return (void *)4;
+  if (strcmp(localeconv()->decimal_point, ",") != 0)
+    return (void *)6;
   return 0;
 }
 #endif
@@ -1142,6 +1188,24 @@ int main(int argc, char **argv) {
       towupper_l(0x3b1, ctype_utf8) != 0x391 ||
       iswalpha_l(0x391, ctype_current) == 0)
     return 80;
+  locale_t numeric_c = newlocale(LC_NUMERIC_MASK, "C", ctype_utf8);
+  locale_t numeric_de = newlocale(LC_NUMERIC_MASK, "de_DE.UTF-8", numeric_c);
+  if (numeric_c == (locale_t)0 || numeric_de == (locale_t)0 ||
+      setlocale(LC_NUMERIC, "de_DE.UTF-8") == NULL) return 86;
+  struct lconv *main_locale_data = localeconv();
+  if (strcmp(main_locale_data->decimal_point, ",") != 0) return 87;
+  standalone_numeric_locale_args numeric_locale_args = {
+      .locales = {numeric_c, numeric_de}, .main_locale_data = main_locale_data,
+      .locale_data_isolated = 0};
+  pthread_t numeric_worker;
+  void *numeric_worker_result = 0;
+  if (pthread_create(&numeric_worker, 0, standalone_numeric_locale_worker,
+          &numeric_locale_args) != 0 ||
+      pthread_join(numeric_worker, &numeric_worker_result) != 0 ||
+      numeric_worker_result != 0 || !numeric_locale_args.locale_data_isolated ||
+      strcmp(main_locale_data->decimal_point, ",") != 0 ||
+      strcmp(localeconv()->decimal_point, ",") != 0 ||
+      setlocale(LC_NUMERIC, "C") == NULL) return 88;
   pthread_t locale_worker;
   void *locale_worker_result = 0;
   if (pthread_create(&locale_worker, 0, standalone_uselocale_worker, ctype_c) != 0 ||

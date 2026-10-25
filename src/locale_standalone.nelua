@@ -4,22 +4,46 @@
 local function nelibc_multibyte_mode(): cint <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_thread_state(slot: cuint, size: csize): pointer <cimport> end
+local function nelibc_standalone_numeric_is_de(): cint <cimport> end
+local function nelibc_standalone_global_ctype_mode(): cint <cimport> end
+local function nelibc_standalone_global_numeric_is_de(): cint <cimport> end
 
--- Locale handles are opaque addresses of static records. This first locale
--- object slice carries LC_CTYPE state, which the wide-character `_l` APIs use.
-local locale_c_token: cuint = 0
-local locale_utf8_token: cuint = 1
+-- These static opaque handles combine the supported CTYPE and NUMERIC states.
+local LocaleToken: type = @record{ctype_mode: cint, numeric_mode: cint}
+local locale_c_token: LocaleToken = {ctype_mode = 0, numeric_mode = 0}
+local locale_utf8_token: LocaleToken = {ctype_mode = 1, numeric_mode = 0}
+local locale_de_numeric_token: LocaleToken = {ctype_mode = 0, numeric_mode = 1}
+local locale_utf8_de_numeric_token: LocaleToken = {ctype_mode = 1, numeric_mode = 1}
 
-local function nelibc_locale_token(mode: cint): pointer <inline>
-  if mode == 1 then return (@pointer)(&locale_utf8_token) end
+local function nelibc_locale_token(ctype_mode: cint, numeric_mode: cint): pointer <inline>
+  if ctype_mode == 1 then
+    if numeric_mode == 1 then return (@pointer)(&locale_utf8_de_numeric_token) end
+    return (@pointer)(&locale_utf8_token)
+  end
+  if numeric_mode == 1 then return (@pointer)(&locale_de_numeric_token) end
   return (@pointer)(&locale_c_token)
 end
 
 local function nelibc_locale_ctype_mode(locale: pointer): cint <inline>
   if locale == (@pointer)(&locale_c_token) then return 0 end
   if locale == (@pointer)(&locale_utf8_token) then return 1 end
-  if locale == nilptr or locale == (@pointer)(~0_usize) then
-    return nelibc_multibyte_mode()
+  if locale == (@pointer)(&locale_de_numeric_token) then return 0 end
+  if locale == (@pointer)(&locale_utf8_de_numeric_token) then return 1 end
+  if locale == nilptr then return nelibc_multibyte_mode() end
+  if locale == (@pointer)(~0_usize) then
+    return nelibc_standalone_global_ctype_mode()
+  end
+  return -1
+end
+
+local function nelibc_locale_numeric_mode(locale: pointer): cint <inline>
+  if locale == (@pointer)(&locale_c_token) or
+      locale == (@pointer)(&locale_utf8_token) then return 0 end
+  if locale == (@pointer)(&locale_de_numeric_token) or
+      locale == (@pointer)(&locale_utf8_de_numeric_token) then return 1 end
+  if locale == nilptr then return nelibc_standalone_numeric_is_de() end
+  if locale == (@pointer)(~0_usize) then
+    return nelibc_standalone_global_numeric_is_de()
   end
   return -1
 end
@@ -36,43 +60,62 @@ local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): po
     nelibc_errno_location()[0] = 22
     return nilptr
   end
-  local mode: cint = 0
+  if base == (@pointer)(~0_usize) then
+    nelibc_errno_location()[0] = 22
+    return nilptr
+  end
+  local ctype_mode: cint = 0
+  local numeric_mode: cint = 0
   if base ~= nilptr then
-    mode = nelibc_locale_ctype_mode(base)
-    if mode < 0 then
+    ctype_mode = nelibc_locale_ctype_mode(base)
+    numeric_mode = nelibc_locale_numeric_mode(base)
+    if ctype_mode < 0 or numeric_mode < 0 then
       nelibc_errno_location()[0] = 22
       return nilptr
     end
   end
+  local name_is_c = nelibc_locale_name_is(name, "C") or
+      nelibc_locale_name_is(name, "POSIX")
+  local name_is_utf8 = nelibc_locale_name_is(name, "C.UTF-8") or
+      nelibc_locale_name_is(name, "C.utf8") or
+      nelibc_locale_name_is(name, "C.UTF8")
+  local name_is_german = nelibc_locale_name_is(name, "de_DE.UTF-8") or
+      nelibc_locale_name_is(name, "de_DE.utf8") or
+      nelibc_locale_name_is(name, "de_DE")
+  if not name_is_c and not name_is_utf8 and not name_is_german then
+    nelibc_errno_location()[0] = 22
+    return nilptr
+  end
   if (mask & 1) ~= 0 then
-    if nelibc_locale_name_is(name, "C") or nelibc_locale_name_is(name, "POSIX") then
-      mode = 0
-    elseif nelibc_locale_name_is(name, "C.UTF-8") or
-        nelibc_locale_name_is(name, "C.utf8") or
-        nelibc_locale_name_is(name, "C.UTF8") then
-      mode = 1
+    if name_is_c then ctype_mode = 0
+    elseif name_is_utf8 then ctype_mode = 1
     else
       nelibc_errno_location()[0] = 22
       return nilptr
     end
-  elseif not (nelibc_locale_name_is(name, "C") or
-      nelibc_locale_name_is(name, "POSIX") or
-      nelibc_locale_name_is(name, "C.UTF-8") or
-      nelibc_locale_name_is(name, "C.utf8") or
-      nelibc_locale_name_is(name, "C.UTF8")) then
+  end
+  if (mask & 2) ~= 0 then
+    if name_is_c or name_is_utf8 then numeric_mode = 0
+    elseif name_is_german then numeric_mode = 1
+    else
+      nelibc_errno_location()[0] = 22
+      return nilptr
+    end
+  elseif name_is_german then
     nelibc_errno_location()[0] = 22
     return nilptr
   end
-  return nelibc_locale_token(mode)
+  return nelibc_locale_token(ctype_mode, numeric_mode)
 end
 
 local function duplocale(locale: pointer): pointer <cexport, codename 'duplocale'>
-  local mode = nelibc_locale_ctype_mode(locale)
-  if mode < 0 then
+  local ctype_mode = nelibc_locale_ctype_mode(locale)
+  local numeric_mode = nelibc_locale_numeric_mode(locale)
+  if ctype_mode < 0 or numeric_mode < 0 then
     nelibc_errno_location()[0] = 22
     return nilptr
   end
-  return nelibc_locale_token(mode)
+  return nelibc_locale_token(ctype_mode, numeric_mode)
 end
 
 local function freelocale(locale: pointer): void <cexport, codename 'freelocale'>
@@ -80,25 +123,33 @@ local function freelocale(locale: pointer): void <cexport, codename 'freelocale'
 end
 
 local function uselocale(locale: pointer): pointer <cexport, codename 'uselocale'>
-  local active = (@*[0]cint)(nelibc_thread_state(16, 4_csize))
+  local active = (@*[0]cint)(nelibc_thread_state(16, 8_csize))
   if active == nilptr then
     nelibc_errno_location()[0] = 12 -- ENOMEM
     return nilptr
   end
   local previous: pointer = (@pointer)(~0_usize)
-  if active[0] == 1 then previous = (@pointer)(&locale_c_token)
-  elseif active[0] == 2 then previous = (@pointer)(&locale_utf8_token) end
+  if active[0] ~= 0 or active[1] ~= 0 then
+    local ctype_mode = active[0] - 1
+    local numeric_mode = active[1] - 1
+    if active[0] == 0 then ctype_mode = nelibc_multibyte_mode() end
+    if active[1] == 0 then numeric_mode = nelibc_standalone_numeric_is_de() end
+    previous = nelibc_locale_token(ctype_mode, numeric_mode)
+  end
   if locale == nilptr then return previous end
   if locale == (@pointer)(~0_usize) then
     active[0] = 0
+    active[1] = 0
     return previous
   end
-  local mode = nelibc_locale_ctype_mode(locale)
-  if mode < 0 then
+  local ctype_mode = nelibc_locale_ctype_mode(locale)
+  local numeric_mode = nelibc_locale_numeric_mode(locale)
+  if ctype_mode < 0 or numeric_mode < 0 then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr
   end
-  active[0] = mode + 1
+  active[0] = ctype_mode + 1
+  active[1] = numeric_mode + 1
   return previous
 end
 
@@ -2049,7 +2100,6 @@ local LocaleConv: type = @record{
   int_n_sign_posn: cchar
 }
 
-local function nelibc_standalone_numeric_is_de(): cint <cimport> end
 local function nelibc_standalone_monetary_is_de(): cint <cimport> end
 
 local decimal_dot: [2]cchar = {46_cchar, 0_cchar}
@@ -2061,9 +2111,12 @@ local euro_code: [5]cchar = {69_cchar, 85_cchar, 82_cchar, 32_cchar, 0_cchar}
 local euro_symbol: [4]cchar = {-30_cchar, -126_cchar, -84_cchar, 0_cchar}
 local minus_sign: [2]cchar = {45_cchar, 0_cchar}
 
-local locale_data: LocaleConv = {}
-
 local function localeconv(): *LocaleConv <cexport, codename 'localeconv'>
+  local locale_data = (@*LocaleConv)(nelibc_thread_state(17, 256_csize))
+  if locale_data == nilptr then
+    nelibc_errno_location()[0] = 12 -- ENOMEM
+    return nilptr
+  end
   local numeric_de = nelibc_standalone_numeric_is_de() ~= 0
   local monetary_de = nelibc_standalone_monetary_is_de() ~= 0
   if numeric_de then
@@ -2120,7 +2173,7 @@ local function localeconv(): *LocaleConv <cexport, codename 'localeconv'>
     locale_data.int_p_sign_posn = 127_cchar
     locale_data.int_n_sign_posn = 127_cchar
   end
-  return &locale_data
+  return locale_data
 end
 
 local function nelibc_strerror_r(errnum: cint, buffer: *[0]cchar,
