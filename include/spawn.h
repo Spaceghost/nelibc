@@ -4,6 +4,8 @@
 #ifdef NELIBC_STANDALONE
 
 #include <sys/types.h>
+#include <signal.h>
+#include <sched.h>
 
 /* These handles are private to the standalone profile. */
 typedef struct { unsigned char __opaque[128]; } posix_spawnattr_t;
@@ -46,6 +48,29 @@ int posix_spawn_file_actions_adddup2(posix_spawn_file_actions_t *actions,
 int posix_spawn_file_actions_addopen(posix_spawn_file_actions_t *actions,
                                      int fd, const char *path,
                                      int oflag, mode_t mode);
+int posix_spawnattr_init(posix_spawnattr_t *attributes);
+int posix_spawnattr_destroy(posix_spawnattr_t *attributes);
+int posix_spawnattr_getflags(const posix_spawnattr_t *restrict attributes,
+                             short *restrict flags);
+int posix_spawnattr_setflags(posix_spawnattr_t *attributes, short flags);
+int posix_spawnattr_getpgroup(const posix_spawnattr_t *restrict attributes,
+                              pid_t *restrict pgroup);
+int posix_spawnattr_setpgroup(posix_spawnattr_t *attributes, pid_t pgroup);
+int posix_spawnattr_getsigdefault(const posix_spawnattr_t *restrict attributes,
+                                  sigset_t *restrict signals);
+int posix_spawnattr_setsigdefault(posix_spawnattr_t *restrict attributes,
+                                  const sigset_t *restrict signals);
+int posix_spawnattr_getsigmask(const posix_spawnattr_t *restrict attributes,
+                               sigset_t *restrict signals);
+int posix_spawnattr_setsigmask(posix_spawnattr_t *restrict attributes,
+                               const sigset_t *restrict signals);
+int posix_spawnattr_getschedpolicy(const posix_spawnattr_t *restrict attributes,
+                                   int *restrict policy);
+int posix_spawnattr_setschedpolicy(posix_spawnattr_t *attributes, int policy);
+int posix_spawnattr_getschedparam(const posix_spawnattr_t *restrict attributes,
+                                  struct sched_param *restrict parameter);
+int posix_spawnattr_setschedparam(posix_spawnattr_t *restrict attributes,
+                                  const struct sched_param *restrict parameter);
 #endif
 
 #endif

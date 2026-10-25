@@ -11,6 +11,25 @@ local function execve(pathname: *[0]cchar <const>, argv: *[0]*[0]cchar, envp: *[
 local function pipe2(pipefd: *[0]cint, flags: cint): cint <cimport> end
 local function nelibc_waitpid(pid: cint, status: pointer, options: cint): cint <cimport> end
 
+local SpawnSigSet: type = @record{ values: [16]culong }
+local SpawnSchedParam: type = @record{ sched_priority: cint }
+local SpawnAttributes: type = @record{
+  magic: cuint,
+  flags: cint,
+  pgroup: cint,
+  sigdefault: culong,
+  sigmask: culong,
+  schedpolicy: cint,
+  schedpriority: cint,
+  reserved: [88]cuchar
+}
+local SpawnKernelSigaction: type = @record{
+  handler: pointer,
+  flags: culong,
+  restorer: pointer,
+  mask: culong
+}
+
 local function syscall_result(result: clong): clong <inline>
   if result < 0 and result >= -4095 then
     nelibc_errno_location()[0] = (@cint)(-result)
@@ -35,6 +54,137 @@ local SpawnFileActions: type = @record{
   reserved: [44]cuchar
 }
 local spawn_actions_magic: cuint <comptime> = 0x4e535041_cuint
+local spawn_attributes_magic: cuint <comptime> = 0x4e535054_cuint
+
+local function spawn_attributes_valid(attributes: *SpawnAttributes): boolean <inline>
+  return attributes ~= nilptr and attributes.magic == spawn_attributes_magic
+end
+
+local function posix_spawnattr_init(attributes: *SpawnAttributes): cint
+    <cexport, codename 'posix_spawnattr_init'>
+  if attributes == nilptr then return 22_cint end
+  local bytes = (@*[0]cuchar)((@pointer)(attributes))
+  local index: csize = 0
+  while index < 128_csize do
+    bytes[index] = 0_cuchar
+    index = index + 1_csize
+  end
+  attributes.magic = spawn_attributes_magic
+  attributes.schedpolicy = 0_cint
+  return 0_cint
+end
+
+local function posix_spawnattr_destroy(attributes: *SpawnAttributes): cint
+    <cexport, codename 'posix_spawnattr_destroy'>
+  if not spawn_attributes_valid(attributes) then return 22_cint end
+  attributes.magic = 0_cuint
+  return 0_cint
+end
+
+local function posix_spawnattr_getflags(attributes: *SpawnAttributes,
+    flags: *[0]cshort): cint <cexport, codename 'posix_spawnattr_getflags'>
+  if not spawn_attributes_valid(attributes) or flags == nilptr then return 22_cint end
+  flags[0] = (@cshort)(attributes.flags)
+  return 0_cint
+end
+
+local function posix_spawnattr_setflags(attributes: *SpawnAttributes,
+    flags: cshort): cint <cexport, codename 'posix_spawnattr_setflags'>
+  if not spawn_attributes_valid(attributes) or flags < 0_cshort or flags > 0x3f_cshort then return 22_cint end
+  attributes.flags = (@cint)(flags)
+  return 0_cint
+end
+
+local function posix_spawnattr_getpgroup(attributes: *SpawnAttributes,
+    pgroup: *[0]cint): cint <cexport, codename 'posix_spawnattr_getpgroup'>
+  if not spawn_attributes_valid(attributes) or pgroup == nilptr then return 22_cint end
+  pgroup[0] = attributes.pgroup
+  return 0_cint
+end
+
+local function posix_spawnattr_setpgroup(attributes: *SpawnAttributes,
+    pgroup: cint): cint <cexport, codename 'posix_spawnattr_setpgroup'>
+  if not spawn_attributes_valid(attributes) or pgroup < 0_cint then return 22_cint end
+  attributes.pgroup = pgroup
+  return 0_cint
+end
+
+local function spawn_copy_sigset(destination: *[0]culong, source: *SpawnSigSet): void <inline>
+  destination[0] = source.values[0]
+end
+
+local function posix_spawnattr_getsigdefault(attributes: *SpawnAttributes,
+    signals: *SpawnSigSet): cint <cexport, codename 'posix_spawnattr_getsigdefault'>
+  if not spawn_attributes_valid(attributes) or signals == nilptr then return 22_cint end
+  local index: csize = 0
+  while index < 16_csize do
+    signals.values[index] = 0_culong
+    index = index + 1_csize
+  end
+  signals.values[0] = attributes.sigdefault
+  return 0_cint
+end
+
+local function posix_spawnattr_setsigdefault(attributes: *SpawnAttributes,
+    signals: *SpawnSigSet): cint <cexport, codename 'posix_spawnattr_setsigdefault'>
+  if not spawn_attributes_valid(attributes) or signals == nilptr then return 22_cint end
+  spawn_copy_sigset(&attributes.sigdefault, signals)
+  return 0_cint
+end
+
+local function posix_spawnattr_getsigmask(attributes: *SpawnAttributes,
+    signals: *SpawnSigSet): cint <cexport, codename 'posix_spawnattr_getsigmask'>
+  if not spawn_attributes_valid(attributes) or signals == nilptr then return 22_cint end
+  local index: csize = 0
+  while index < 16_csize do
+    signals.values[index] = 0_culong
+    index = index + 1_csize
+  end
+  signals.values[0] = attributes.sigmask
+  return 0_cint
+end
+
+local function posix_spawnattr_setsigmask(attributes: *SpawnAttributes,
+    signals: *SpawnSigSet): cint <cexport, codename 'posix_spawnattr_setsigmask'>
+  if not spawn_attributes_valid(attributes) or signals == nilptr then return 22_cint end
+  spawn_copy_sigset(&attributes.sigmask, signals)
+  return 0_cint
+end
+
+local function posix_spawnattr_getschedpolicy(attributes: *SpawnAttributes,
+    policy: *[0]cint): cint <cexport, codename 'posix_spawnattr_getschedpolicy'>
+  if not spawn_attributes_valid(attributes) or policy == nilptr then return 22_cint end
+  policy[0] = attributes.schedpolicy
+  return 0_cint
+end
+
+local function posix_spawnattr_setschedpolicy(attributes: *SpawnAttributes,
+    policy: cint): cint <cexport, codename 'posix_spawnattr_setschedpolicy'>
+  local base_policy = policy & 0x3f_cint
+  if not spawn_attributes_valid(attributes) or
+      (base_policy ~= 0_cint and base_policy ~= 1_cint and base_policy ~= 2_cint and
+       base_policy ~= 3_cint and base_policy ~= 5_cint) or
+      (policy ~= base_policy and policy ~= (base_policy | 0x40000000_cint)) then
+    return 22_cint
+  end
+  attributes.schedpolicy = policy
+  return 0_cint
+end
+
+local function posix_spawnattr_getschedparam(attributes: *SpawnAttributes,
+    param: *SpawnSchedParam): cint <cexport, codename 'posix_spawnattr_getschedparam'>
+  if not spawn_attributes_valid(attributes) or param == nilptr then return 22_cint end
+  param.sched_priority = attributes.schedpriority
+  return 0_cint
+end
+
+local function posix_spawnattr_setschedparam(attributes: *SpawnAttributes,
+    param: *SpawnSchedParam): cint <cexport, codename 'posix_spawnattr_setschedparam'>
+  if not spawn_attributes_valid(attributes) or param == nilptr or
+      param.sched_priority < 0_cint then return 22_cint end
+  attributes.schedpriority = param.sched_priority
+  return 0_cint
+end
 
 local function posix_spawn_file_actions_init(actions: *SpawnFileActions): cint
     <cexport, codename 'posix_spawn_file_actions_init'>
@@ -179,9 +329,68 @@ local function nelibc_spawn_apply_actions(actions: *SpawnFileActions,
   end
 end
 
--- Spawn without host libc by reporting the child's exec error through a
--- close-on-exec pipe.  The initial standalone slice accepts only null
--- spawn attributes; file actions are applied in registration order.
+local function nelibc_spawn_apply_attributes(attributes: *SpawnAttributes,
+    error_fd: cint): void
+  if attributes == nilptr then return end
+  local result: clong = 0_clong
+  if (attributes.flags & 0x02_cint) ~= 0_cint then -- POSIX_SPAWN_SETPGROUP
+    result = nelibc_raw_syscall3(109_culong, 0_culong,
+        (@culong)(attributes.pgroup), 0_culong)
+    if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
+  end
+  if (attributes.flags & 0x04_cint) ~= 0_cint then -- POSIX_SPAWN_SETSIGDEF
+    local signal_index: cint = 0
+    while signal_index < 64_cint do
+      local signal_bit = 1_culong << signal_index
+      local signal_number = signal_index + 1_cint
+      if (attributes.sigdefault & signal_bit) ~= 0_culong and
+          signal_number ~= 9_cint and signal_number ~= 19_cint then
+        local default_action: SpawnKernelSigaction
+        default_action.handler = nilptr
+        default_action.flags = 0_culong
+        default_action.restorer = nilptr
+        default_action.mask = 0_culong
+        result = nelibc_raw_syscall6(13_culong, (@culong)(signal_number),
+            (@culong)((@usize)(&default_action)), 0_culong, 8_culong,
+            0_culong, 0_culong)
+        if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
+      end
+      signal_index = signal_index + 1_cint
+    end
+  end
+  if (attributes.flags & 0x08_cint) ~= 0_cint then -- POSIX_SPAWN_SETSIGMASK
+    result = nelibc_raw_syscall6(14_culong, 2_culong,
+        (@culong)((@usize)(&attributes.sigmask)), 0_culong, 8_culong,
+        0_culong, 0_culong)
+    if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
+  end
+  if (attributes.flags & 0x01_cint) ~= 0_cint then -- POSIX_SPAWN_RESETIDS
+    local real_gid = nelibc_raw_syscall3(104_culong, 0_culong, 0_culong, 0_culong)
+    result = nelibc_raw_syscall6(119_culong, (@culong)(real_gid),
+        (@culong)(real_gid), 0xffffffffffffffff_culong, 0_culong, 0_culong, 0_culong)
+    if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
+    local real_uid = nelibc_raw_syscall3(102_culong, 0_culong, 0_culong, 0_culong)
+    result = nelibc_raw_syscall6(117_culong, (@culong)(real_uid),
+        (@culong)(real_uid), 0xffffffffffffffff_culong, 0_culong, 0_culong, 0_culong)
+    if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
+  end
+  if (attributes.flags & 0x20_cint) ~= 0_cint then -- POSIX_SPAWN_SETSCHEDULER
+    local parameter: SpawnSchedParam
+    parameter.sched_priority = attributes.schedpriority
+    result = nelibc_raw_syscall3(144_culong, 0_culong,
+        (@culong)(attributes.schedpolicy), (@culong)((@usize)(&parameter)))
+    if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
+  elseif (attributes.flags & 0x10_cint) ~= 0_cint then -- POSIX_SPAWN_SETSCHEDPARAM
+    local parameter: SpawnSchedParam
+    parameter.sched_priority = attributes.schedpriority
+    result = nelibc_raw_syscall3(142_culong, 0_culong,
+        (@culong)((@usize)(&parameter)), 0_culong)
+    if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
+  end
+end
+
+-- Spawn without host libc by reporting child setup and exec errors through a
+-- close-on-exec pipe. Spawn attributes run before ordered file actions.
 local function nelibc_spawn_resolve_path(file: *[0]cchar <const>): pointer
   local file_length: csize = 0
   local has_slash: boolean = false
@@ -248,7 +457,11 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
   if pid_output == nilptr or pathname == nilptr or argv == nilptr or envp == nilptr then
     return 22_cint -- EINVAL
   end
-  if attributes ~= nilptr then return 95_cint end -- ENOTSUP until spawn attrs are implemented
+  local attribute_state: *SpawnAttributes = nilptr
+  if attributes ~= nilptr then
+    attribute_state = (@*SpawnAttributes)(attributes)
+    if not spawn_attributes_valid(attribute_state) then return 22_cint end
+  end
   local action_state: *SpawnFileActions = nilptr
   if file_actions ~= nilptr then
     action_state = (@*SpawnFileActions)(file_actions)
@@ -322,6 +535,7 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
   end
   if child == 0_cint then
     nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_spawn_apply_attributes(attribute_state, error_pipe[1])
     nelibc_spawn_apply_actions(action_state, error_pipe[1])
     execve(executable, argv, envp)
     local child_error = nelibc_errno_location()[0]

@@ -79,6 +79,13 @@ registration order. Hybrid archives leave spawn APIs to the host libc,
 preserving glibc/musl's native spawn-attribute ABI; check the returned error
 number rather than assuming a particular `errno` behavior.
 
+Standalone `posix_spawnattr_t` supports flags, process groups, signal masks and
+defaults, scheduler policy/parameters, and the `RESETIDS` operation. Set the
+attribute flags to select which stored values apply to the child. Attribute
+setup failures are returned synchronously just like file-action and exec
+failures. GNU extensions such as `posix_spawn_file_actions_addchdir_np` are
+not implemented.
+
 ```c
 #include <spawn.h>
 #include <sys/wait.h>
@@ -96,10 +103,10 @@ int main(void) {
 }
 ```
 
-Standalone spawn attributes and GNU file actions such as `addchdir_np` are not
-implemented yet. The standalone smoke covers direct execution, PATH search,
-close/dup2/open actions, action ordering, and synchronous action/exec errors
-with Zig, GCC, and TinyCC builds.
+The standalone smoke covers direct execution, PATH search, close/dup2/open
+actions, action ordering, process-group and signal attributes, scheduler and
+reset-ID attributes, and synchronous setup/exec errors with Zig, GCC, and
+TinyCC builds.
 
 ### Use POSIX message queues
 

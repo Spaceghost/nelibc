@@ -29,6 +29,17 @@ int main(int argc, char **argv) {
       errno = 0;
       return fcntl(9, F_GETFD) == -1 && errno == EBADF ? 0 : 12;
     }
+    if (strcmp(argv[1], "--attr-state") == 0) {
+      sigset_t current_mask;
+      struct sigaction current_action;
+      if (getpgid(0) != getpid() ||
+          sigprocmask(SIG_SETMASK, 0, &current_mask) != 0 ||
+          sigismember(&current_mask, SIGUSR1) != 1 ||
+          sigaction(SIGUSR1, 0, &current_action) != 0 ||
+          current_action.sa_handler != SIG_DFL)
+        return 13;
+      return 0;
+    }
   }
   char *arguments[] = {(char *)"true", 0};
   char *environment[] = {0};
@@ -102,5 +113,53 @@ int main(int argc, char **argv) {
   if (result != ENOENT || errno != 42 ||
       posix_spawn_file_actions_destroy(&actions) != 0)
     return 18;
+
+  posix_spawnattr_t attributes;
+  short spawn_flags = 0;
+  int spawn_policy = -1;
+  struct sched_param spawn_parameter = {-1};
+  pid_t process_group = -1;
+  sigset_t signal_mask, signal_defaults;
+  if (posix_spawnattr_init(&attributes) != 0 ||
+      posix_spawnattr_setschedparam(&attributes, &spawn_parameter) != EINVAL)
+    return 19;
+  spawn_parameter.sched_priority = 0;
+  if (
+      posix_spawnattr_getflags(&attributes, &spawn_flags) != 0 || spawn_flags != 0 ||
+      posix_spawnattr_getpgroup(&attributes, &process_group) != 0 || process_group != 0 ||
+      sigemptyset(&signal_mask) != 0 || sigaddset(&signal_mask, SIGUSR1) != 0 ||
+      sigemptyset(&signal_defaults) != 0 || sigaddset(&signal_defaults, SIGUSR1) != 0 ||
+      posix_spawnattr_setsigmask(&attributes, &signal_mask) != 0 ||
+      posix_spawnattr_setsigdefault(&attributes, &signal_defaults) != 0 ||
+      posix_spawnattr_getsigmask(&attributes, &signal_mask) != 0 ||
+      sigismember(&signal_mask, SIGUSR1) != 1 ||
+      posix_spawnattr_getsigdefault(&attributes, &signal_defaults) != 0 ||
+      sigismember(&signal_defaults, SIGUSR1) != 1 ||
+      posix_spawnattr_setpgroup(&attributes, 0) != 0 ||
+      posix_spawnattr_setpgroup(&attributes, -1) != EINVAL ||
+      posix_spawnattr_setschedpolicy(&attributes, SCHED_OTHER) != 0 ||
+      posix_spawnattr_getschedpolicy(&attributes, &spawn_policy) != 0 ||
+      spawn_policy != SCHED_OTHER ||
+      posix_spawnattr_setschedparam(&attributes, &spawn_parameter) != 0 ||
+      posix_spawnattr_getschedparam(&attributes, &spawn_parameter) != 0 ||
+      spawn_parameter.sched_priority != 0 ||
+      posix_spawnattr_setflags(&attributes, POSIX_SPAWN_SETPGROUP |
+          POSIX_SPAWN_SETSIGMASK | POSIX_SPAWN_SETSIGDEF |
+          POSIX_SPAWN_SETSCHEDULER | POSIX_SPAWN_RESETIDS) != 0 ||
+      posix_spawnattr_setflags(&attributes, 0x40) != EINVAL)
+    return 22;
+  struct sigaction ignored_action = {0};
+  struct sigaction previous_action;
+  ignored_action.sa_handler = SIG_IGN;
+  if (sigaction(SIGUSR1, &ignored_action, &previous_action) != 0) return 20;
+  char *attribute_arguments[] = {(char *)"spawn-smoke", (char *)"--attr-state", 0};
+  errno = 42;
+  result = posix_spawn(&child, "/proc/self/exe", 0, &attributes,
+                       attribute_arguments, environment);
+  int restore_result = sigaction(SIGUSR1, &previous_action, 0);
+  if (result != 0 || errno != 42 || child <= 0 || restore_result != 0 ||
+      waitpid(child, &status, 0) != child || !WIFEXITED(status) ||
+      WEXITSTATUS(status) != 0 || posix_spawnattr_destroy(&attributes) != 0)
+    return 21;
   return 0;
 }

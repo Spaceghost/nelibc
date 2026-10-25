@@ -62,8 +62,8 @@ python3 tools/musl_api_audit.py \
 ```
 
 The current snapshot contains 1,472 APIs: 794 exported by Nelibc in at least
-one tested hybrid profile, 163 intentionally delegated to the host in hybrid
-profiles, and 515 not declared by Nelibc. Every declared API in this pinned
+one tested hybrid profile, 184 intentionally delegated to the host in hybrid
+profiles, and 494 not declared by Nelibc. Every declared API in this pinned
 baseline is either exported by at least one hybrid archive or intentionally
 delegated to its host. The separate seven-profile inventory tracks per-profile
 gaps. The audit removes preprocessor
