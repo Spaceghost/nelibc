@@ -1176,6 +1176,15 @@ local function memmem(haystack: pointer <const>, haystack_len: csize, needle: po
   if needle_len == 0 then return haystack end
   if needle_len > haystack_len then return nilptr end
 
+  -- A missing final needle byte rules out every candidate window. Search only
+  -- the legal candidate-ending positions; memrchr makes suffix hits cheap and
+  -- avoids building the Two-Way tables for common long negative searches.
+  if needle_len >= 4 then
+    local tail: pointer = memrchr(&h[needle_len - 1], (@cint)(n[needle_len - 1]),
+      haystack_len - needle_len + 1)
+    if tail == nilptr then return nilptr end
+  end
+
   if needle_len >= 8 then
     return memmem_twoway(haystack, haystack_len, needle, needle_len)
   end

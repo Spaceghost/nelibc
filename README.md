@@ -146,6 +146,13 @@ the current `rep movsb` comparison is in
 `benchmarks/results/2026-10-22-memory-shootout-repmovsb-matrix.csv`;
 the October 24 four-profile run with needle-length-labeled substring cases is
 `benchmarks/results/2026-10-24-memory-shootout-labelled-cases.csv`;
+the follow-up run after adding a legal-window tail-byte filter to `memmem` is
+`benchmarks/results/2026-10-24-memory-shootout-memmem-tail-filter.csv`. Across
+the four profiles, the filter makes the measured 64 KiB periodic-absent cases
+return in roughly 0.28–0.36 microseconds; the previous TinyCC Nelibc measurements
+were roughly 0.26–0.48 milliseconds. Tail-hit cases retain the existing Two-Way
+search and remain comparable to the prior run. The follow-up includes the
+benchmark's host and Nelibc rows for each compiler/libc profile.
 string, float, and integer CSVs are in
 `benchmarks/results/2026-10-22-{strstr,strcasecmp,float,int,stdio}-shootout.csv`.
 `make lib-zig`, `make lib-gcc`, `make lib-zig-musl`, and `make lib-tcc` build

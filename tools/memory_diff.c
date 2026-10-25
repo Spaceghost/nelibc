@@ -109,6 +109,26 @@ static int long_memmem_checks(void) {
     if (memmem(haystack, sizeof haystack, needle, n) !=
         ref_memmem(haystack, sizeof haystack, needle, n)) return fail("memmem long absent", k, n);
   }
+
+  /* Exercise the large-haystack missing-tail filter and a tail-only hit. */
+  static const size_t large_lengths[] = {4, 8, 16, 64, 256};
+  static unsigned char large_haystack[65536];
+  static unsigned char large_needle[256];
+  for (size_t k = 0; k < sizeof large_lengths / sizeof large_lengths[0]; ++k) {
+    size_t n = large_lengths[k];
+    memset(large_haystack, 'a', sizeof large_haystack);
+    memset(large_needle, 'a', n);
+    large_needle[n - 1] = 'b';
+    if (memmem(large_haystack, sizeof large_haystack, large_needle, n) != NULL)
+      return fail("memmem large missing tail", k, n);
+
+    memset(large_haystack, 0x11, sizeof large_haystack);
+    for (size_t i = 0; i < n; ++i) large_needle[i] = (unsigned char)(0x80u + i);
+    memcpy(large_haystack + sizeof large_haystack - n, large_needle, n);
+    if (memmem(large_haystack, sizeof large_haystack, large_needle, n) !=
+        large_haystack + sizeof large_haystack - n)
+      return fail("memmem large tail hit", k, n);
+  }
   return 0;
 }
 
