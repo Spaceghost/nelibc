@@ -39,6 +39,15 @@ local PthreadCleanupEntry: type = @record{
   routine: function(pointer): void,
   arg: pointer
 }
+local PthreadRwlockReadOwnerSlot: type = @record{
+  rwlock: pointer,
+  count: cint
+}
+local PthreadRwlockReadOwnerOverflow: type = @record{
+  rwlock: pointer,
+  count: cint,
+  next: pointer
+}
 local PthreadContext: type = @record{
   start: function(pointer): pointer,
   arg: pointer,
@@ -65,7 +74,9 @@ local PthreadContext: type = @record{
   protect_mutexes: pointer,
   protect_base_policy: cint,
   protect_base_priority: cint,
-  protect_lock: cint
+  protect_lock: cint,
+  rwlock_read_owners: [4]PthreadRwlockReadOwnerSlot,
+  rwlock_read_overflow: pointer
 }
 local PthreadJoinCleanup: type = @record{
   context: *PthreadContext,
@@ -392,6 +403,12 @@ local function pthread_current_context(): *PthreadContext <inline>
     initial_thread_tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
   end
   return context
+end
+
+local function pthread_rwlock_owner_context(): *PthreadContext <inline>
+  local context = nelibc_thread_current_pthread_context()
+  if context ~= nilptr then return context end
+  return &initial_thread_context
 end
 
 local function pthread_key_lock_acquire(): void <inline>
@@ -900,6 +917,115 @@ local function pthread_cleanup_run(context: *PthreadContext): void
   end
 end
 
+local function pthread_rwlock_read_owner_find(context: *PthreadContext,
+    rwlock: pointer): boolean
+  if context == nilptr or rwlock == nilptr then return false end
+  local index: csize = 0
+  while index < 4 do
+    if context.rwlock_read_owners[index].rwlock == rwlock then
+      return true
+    end
+    index = index + 1
+  end
+  local entry = context.rwlock_read_overflow
+  while entry ~= nilptr do
+    local owner = (@*PthreadRwlockReadOwnerOverflow)(entry)
+    if owner.rwlock == rwlock then
+      return true
+    end
+    entry = owner.next
+  end
+  return false
+end
+
+local function pthread_rwlock_read_owner_add(context: *PthreadContext,
+    rwlock: pointer): boolean
+  local index: csize = 0
+  while index < 4 do
+    local slot = &context.rwlock_read_owners[index]
+    if slot.rwlock == rwlock then
+      slot.count = slot.count + 1
+      return true
+    end
+    if slot.rwlock == nilptr then
+      slot.rwlock = rwlock
+      slot.count = 1
+      return true
+    end
+    index = index + 1
+  end
+  local entry = context.rwlock_read_overflow
+  while entry ~= nilptr do
+    local owner = (@*PthreadRwlockReadOwnerOverflow)(entry)
+    if owner.rwlock == rwlock then
+      owner.count = owner.count + 1
+      return true
+    end
+    entry = owner.next
+  end
+  local allocated = nelibc_malloc(24_csize) -- x86-64: two pointers and a count
+  if allocated == nilptr then return false end
+  local owner = (@*PthreadRwlockReadOwnerOverflow)(allocated)
+  owner.rwlock = rwlock
+  owner.count = 1
+  owner.next = context.rwlock_read_overflow
+  context.rwlock_read_overflow = allocated
+  return true
+end
+
+local function pthread_rwlock_read_owner_remove(context: *PthreadContext,
+    rwlock: pointer): boolean
+  if context == nilptr or rwlock == nilptr then return false end
+  local index: csize = 0
+  while index < 4 do
+    local slot = &context.rwlock_read_owners[index]
+    if slot.rwlock == rwlock then
+      slot.count = slot.count - 1
+      if slot.count == 0 then slot.rwlock = nilptr end
+      return true
+    end
+    index = index + 1
+  end
+  local previous: pointer = nilptr
+  local entry = context.rwlock_read_overflow
+  while entry ~= nilptr do
+    local owner = (@*PthreadRwlockReadOwnerOverflow)(entry)
+    if owner.rwlock == rwlock then
+      owner.count = owner.count - 1
+      if owner.count == 0 then
+        if previous == nilptr then
+          context.rwlock_read_overflow = owner.next
+        else
+          (@*PthreadRwlockReadOwnerOverflow)(previous).next = owner.next
+        end
+        nelibc_free(entry)
+      end
+      return true
+    end
+    previous = entry
+    entry = owner.next
+  end
+  return false
+end
+
+local function pthread_rwlock_read_owner_clear(context: *PthreadContext): void
+  if context == nilptr then return end
+  local entry = context.rwlock_read_overflow
+  while entry ~= nilptr do
+    local owner = (@*PthreadRwlockReadOwnerOverflow)(entry)
+    local next = owner.next
+    nelibc_free(entry)
+    entry = next
+  end
+  context.rwlock_read_overflow = nilptr
+  local index: csize = 0
+  while index < 4 do
+    context.rwlock_read_owners[index].rwlock = nilptr
+    context.rwlock_read_owners[index].count = 0
+    index = index + 1
+  end
+end
+
 local function pthread_context_exit(context: *PthreadContext, result: pointer): void
   if context ~= nilptr then
     if nelibc_atomic_exchange_int(&context.exiting, 1) ~= 0 then
@@ -914,6 +1040,7 @@ local function pthread_context_exit(context: *PthreadContext, result: pointer): 
   if context ~= nilptr then
     context.result = result
     pthread_key_run_destructors()
+    pthread_rwlock_read_owner_clear(context)
     pthread_finish(context)
   else
     pthread_key_run_destructors()
@@ -2656,6 +2783,7 @@ end
 local function pthread_rwlock_rdlock_internal(rwlock: *PthreadRwlock,
     abstime: *Timespec, clock_id: cint, nonblocking: boolean): cint
   if not pthread_rwlock_valid(rwlock) then return 22 end -- EINVAL
+  local context = pthread_rwlock_owner_context()
   local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
   if nelibc_atomic_load_int(&rwlock.state) < 0 and rwlock.writer == tid then
     if nonblocking then return 16 end -- EBUSY
@@ -2668,9 +2796,18 @@ local function pthread_rwlock_rdlock_internal(rwlock: *PthreadRwlock,
         nelibc_atomic_load_int(&rwlock.waiting_writers) ~= 0
     if state >= 2147483647 then return 11 end -- EAGAIN
     if state >= 0 and not writer_preferred then
+      pthread_cancel_defer_begin()
       if nelibc_atomic_cas_int(&rwlock.state, state, state + 1) == 0 then
+        if not pthread_rwlock_read_owner_add(context, (@pointer)(rwlock)) then
+          local previous = nelibc_atomic_fetch_add_int(&rwlock.state, -1)
+          if previous == 1 then pthread_rwlock_wake(rwlock) end
+          pthread_cancel_defer_end()
+          return 11 -- EAGAIN: no per-thread owner record available
+        end
+        pthread_cancel_defer_end()
         return 0
       end
+      pthread_cancel_defer_end()
       continue
     end
     if nonblocking then return 16 end -- EBUSY
@@ -2679,9 +2816,19 @@ local function pthread_rwlock_rdlock_internal(rwlock: *PthreadRwlock,
       state = nelibc_atomic_load_int(&rwlock.state)
       if state >= 0 and state < 2147483647 and
           (rwlock.kind ~= PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP or
-           nelibc_atomic_load_int(&rwlock.waiting_writers) == 0) and
-          nelibc_atomic_cas_int(&rwlock.state, state, state + 1) == 0 then
-        return 0
+           nelibc_atomic_load_int(&rwlock.waiting_writers) == 0) then
+        pthread_cancel_defer_begin()
+        if nelibc_atomic_cas_int(&rwlock.state, state, state + 1) == 0 then
+          if not pthread_rwlock_read_owner_add(context, (@pointer)(rwlock)) then
+            local previous = nelibc_atomic_fetch_add_int(&rwlock.state, -1)
+            if previous == 1 then pthread_rwlock_wake(rwlock) end
+            pthread_cancel_defer_end()
+            return 11 -- EAGAIN: no per-thread owner record available
+          end
+          pthread_cancel_defer_end()
+          return 0
+        end
+        pthread_cancel_defer_end()
       end
       return wait_error
     end
@@ -2785,6 +2932,7 @@ end
 local function pthread_rwlock_unlock(rwlock: *PthreadRwlock): cint
     <cexport, codename 'pthread_rwlock_unlock'>
   if not pthread_rwlock_valid(rwlock) then return 22 end -- EINVAL
+  local context = pthread_rwlock_owner_context()
   while true do
     local state = nelibc_atomic_load_int(&rwlock.state)
     if state < 0 then
@@ -2796,10 +2944,20 @@ local function pthread_rwlock_unlock(rwlock: *PthreadRwlock): cint
       return 0
     end
     if state == 0 then return 1 end -- EPERM
+    if not pthread_rwlock_read_owner_find(context, (@pointer)(rwlock)) then
+      return 1 -- EPERM
+    end
+    pthread_cancel_defer_begin()
     if nelibc_atomic_cas_int(&rwlock.state, state, state - 1) == 0 then
+      if not pthread_rwlock_read_owner_remove(context, (@pointer)(rwlock)) then
+        pthread_cancel_defer_end()
+        return 1 -- EPERM
+      end
       if state == 1 then pthread_rwlock_wake(rwlock) end
+      pthread_cancel_defer_end()
       return 0
     end
+    pthread_cancel_defer_end()
   end
 end
 
@@ -3263,6 +3421,13 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.protect_base_policy = 0
   state.context.protect_base_priority = 0
   state.context.protect_lock = 0
+  state.context.rwlock_read_overflow = nilptr
+  local rwlock_owner_index: csize = 0
+  while rwlock_owner_index < 4 do
+    state.context.rwlock_read_owners[rwlock_owner_index].rwlock = nilptr
+    state.context.rwlock_read_owners[rwlock_owner_index].count = 0
+    rwlock_owner_index = rwlock_owner_index + 1
+  end
   state.context.robust_pid = (@cint)(nelibc_raw_syscall3(39_culong,
       0_culong, 0_culong, 0_culong))
   if state.context.robust_slot == nilptr then

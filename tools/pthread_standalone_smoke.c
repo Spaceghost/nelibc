@@ -611,6 +611,19 @@ static void *value_worker(void *argument) {
   return 0;
 }
 
+struct rwlock_owner_probe {
+  pthread_rwlock_t *locks;
+  size_t count;
+};
+
+static void *rwlock_foreign_reader_unlock_worker(void *argument) {
+  struct rwlock_owner_probe *probe = argument;
+  for (size_t i = 0; i < probe->count; ++i)
+    if (pthread_rwlock_unlock(&probe->locks[i]) != EPERM)
+      return (void *)(uintptr_t)(i + 1);
+  return 0;
+}
+
 static void iteration_destructor(void *value) {
   if (value != (void *)(uintptr_t)0x77) return;
   ++iteration_destructor_calls;
@@ -2620,6 +2633,25 @@ int main(void) {
       pthread_rwlock_destroy(&kind_rwlock) != 0 ||
       pthread_rwlockattr_destroy(&kind_attributes) != 0)
     return 301;
+  pthread_rwlock_t owner_rwlocks[6];
+  for (size_t i = 0; i < sizeof owner_rwlocks / sizeof owner_rwlocks[0]; ++i)
+    if (pthread_rwlock_init(&owner_rwlocks[i], 0) != 0 ||
+        pthread_rwlock_rdlock(&owner_rwlocks[i]) != 0 ||
+        pthread_rwlock_rdlock(&owner_rwlocks[i]) != 0)
+      return 302;
+  struct rwlock_owner_probe owner_probe = {
+    .locks = owner_rwlocks,
+    .count = sizeof owner_rwlocks / sizeof owner_rwlocks[0],
+  };
+  if (pthread_create(&thread, &attributes,
+                     rwlock_foreign_reader_unlock_worker, &owner_probe) != 0 ||
+      pthread_join(thread, &result) != 0 || result != 0)
+    return 303;
+  for (size_t i = 0; i < sizeof owner_rwlocks / sizeof owner_rwlocks[0]; ++i)
+    if (pthread_rwlock_unlock(&owner_rwlocks[i]) != 0 ||
+        pthread_rwlock_unlock(&owner_rwlocks[i]) != 0 ||
+        pthread_rwlock_destroy(&owner_rwlocks[i]) != 0)
+      return 304;
   struct timespec invalid_rwlock_deadline = {0, 1000000000L};
   struct timespec expired_rwlock_deadline = {0, 0};
   if (pthread_rwlock_timedrdlock(&static_rwlock, &invalid_rwlock_deadline) != 0 ||
