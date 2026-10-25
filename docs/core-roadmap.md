@@ -342,8 +342,8 @@ musl export set.
   exercises cancellation, retry, and exactly-once completion. These checks run
   on Zig, GCC, and TinyCC. Blocking `pthread_join` and `pthread_timedjoin_np`
   check deferred cancellation while polling for target exit; cancellation
-  releases the join claim, and smoke coverage confirms another caller can
-  still join the target.
+  releases the join claim. Smoke coverage cancels both forms while waiting,
+  then confirms another caller can still join each target.
 - Standalone pthread attributes support configurable stack sizes, page-
   protected guard regions, and scheduler inheritance/policy/priority. Explicit
   scheduling is applied before a startup gate releases the worker; permission

@@ -338,6 +338,18 @@ static void *deferred_cancel_join_worker(void *argument) {
   return (void *)(intptr_t)pthread_join((pthread_t)argument, 0);
 }
 
+struct timed_cancel_join_request {
+  pthread_t target;
+  struct timespec deadline;
+};
+
+static void *deferred_cancel_timed_join_worker(void *argument) {
+  struct timed_cancel_join_request *request = argument;
+  atomic_store_explicit(&cancel_join_started, 1, memory_order_release);
+  return (void *)(intptr_t)pthread_timedjoin_np(request->target, 0,
+                                               &request->deadline);
+}
+
 static void *exit_with_value(void *argument) {
   pthread_exit(argument);
   return 0;
@@ -1309,6 +1321,31 @@ int main(void) {
   atomic_store_explicit(&join_release, 1, memory_order_release);
   if (pthread_join(cancel_join_target, &result) != 0 || result != exit_value)
     return 303;
+
+  atomic_store_explicit(&join_release, 0, memory_order_release);
+  atomic_store_explicit(&cancel_join_started, 0, memory_order_relaxed);
+  struct timed_cancel_join_request timed_cancel_join;
+  if (clock_gettime(CLOCK_REALTIME, &timed_cancel_join.deadline) != 0)
+    return 304;
+  timed_cancel_join.deadline.tv_sec += 30;
+  if (pthread_create(&timed_cancel_join.target, 0, gated_join_worker,
+                     exit_value) != 0 ||
+      pthread_create(&cancel_joiner, 0, deferred_cancel_timed_join_worker,
+                     &timed_cancel_join) != 0)
+    return 305;
+  for (unsigned int i = 0; i < 10000000U &&
+       !atomic_load_explicit(&cancel_join_started, memory_order_acquire); ++i) {
+  }
+  if (!atomic_load_explicit(&cancel_join_started, memory_order_acquire))
+    return 306;
+  if (nanosleep(&cancel_join_delay, 0) != 0 ||
+      pthread_cancel(cancel_joiner) != 0 ||
+      pthread_join(cancel_joiner, &result) != 0 || result != PTHREAD_CANCELED)
+    return 307;
+  atomic_store_explicit(&join_release, 1, memory_order_release);
+  if (pthread_join(timed_cancel_join.target, &result) != 0 ||
+      result != exit_value)
+    return 308;
 
   cancel_waiting = 0;
   cancel_cleanup_calls = 0;
