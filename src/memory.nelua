@@ -588,7 +588,7 @@ local function wcslen(text: *[0]cwchar_t <const>): csize <cexport, codename 'nel
 end
 
 local function wcsnlen(text: *[0]cwchar_t <const>, limit: csize): csize
-    <cexport, codename 'wcsnlen'>
+    <cexport, codename 'nelibc_wcsnlen_impl'>
   local length: csize = 0
   while length < limit and text[length] ~= 0 do
     length = length + 1
@@ -596,7 +596,7 @@ local function wcsnlen(text: *[0]cwchar_t <const>, limit: csize): csize
   return length
 end
 
-local function wcsdup(text: *[0]cwchar_t <const>): *cwchar_t <cexport, codename 'wcsdup'>
+local function wcsdup(text: *[0]cwchar_t <const>): *cwchar_t <cexport, codename 'nelibc_wcsdup_impl'>
   local length: csize = wcslen(text)
   local copy: *[0]cwchar_t = (@*[0]cwchar_t)(malloc((length + 1) * (@csize)(#cwchar_t)))
   if copy == nilptr then return nilptr end
@@ -630,7 +630,7 @@ local function wcsncmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>, 
 end
 
 local function wcscasecmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>): cint
-    <cexport, codename 'wcscasecmp'>
+    <cexport, codename 'nelibc_wcscasecmp_impl'>
   local index: csize = 0
   while true do
     local x = towlower(left[index])
@@ -642,7 +642,7 @@ local function wcscasecmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const
 end
 
 local function wcsncasecmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>, n: csize): cint
-    <cexport, codename 'wcsncasecmp'>
+    <cexport, codename 'nelibc_wcsncasecmp_impl'>
   local index: csize = 0
   while index < n do
     local x = towlower(left[index])
@@ -655,7 +655,7 @@ local function wcsncasecmp(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <cons
 end
 
 local function wcswidth(text: *[0]cwchar_t <const>, n: csize): cint
-    <cexport, codename 'wcswidth'>
+    <cexport, codename 'nelibc_wcswidth_impl'>
   local columns: cint = 0
   local index: csize = 0
   while index < n and text[index] ~= 0 do
@@ -676,7 +676,7 @@ local function wcschr(text: *[0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, 
   end
 end
 
-local function wcsrchr(text: *[0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'wcsrchr'>
+local function wcsrchr(text: *[0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'nelibc_wcsrchr_impl'>
   local found: *cwchar_t = nilptr
   local index: csize = 0
   while true do
@@ -687,7 +687,7 @@ local function wcsrchr(text: *[0]cwchar_t, value: cwchar_t): *cwchar_t <cexport,
 end
 
 local function wcscpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>): *[0]cwchar_t
-    <cexport, codename 'wcscpy'>
+    <cexport, codename 'nelibc_wcscpy_impl'>
   local index: csize = 0
   while true do
     dest[index] = src[index]
@@ -697,7 +697,7 @@ local function wcscpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>): *[0]cwchar
 end
 
 local function wcsncpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize): *[0]cwchar_t
-    <cexport, codename 'wcsncpy'>
+    <cexport, codename 'nelibc_wcsncpy_impl'>
   local index: csize = 0
   while index < n and src[index] ~= 0 do
     dest[index] = src[index]
@@ -711,7 +711,7 @@ local function wcsncpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize):
 end
 
 local function wcpcpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>): *cwchar_t
-    <cexport, codename 'wcpcpy'>
+    <cexport, codename 'nelibc_wcpcpy_impl'>
   local index: csize = 0
   while true do
     dest[index] = src[index]
@@ -721,7 +721,7 @@ local function wcpcpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>): *cwchar_t
 end
 
 local function wcpncpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize): *[0]cwchar_t
-    <cexport, codename 'wcpncpy'>
+    <cexport, codename 'nelibc_wcpncpy_impl'>
   local index: csize = 0
   while index < n and src[index] ~= 0 do
     dest[index] = src[index]
@@ -736,7 +736,7 @@ local function wcpncpy(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize):
 end
 
 local function wcscat(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>): *[0]cwchar_t
-    <cexport, codename 'wcscat'>
+    <cexport, codename 'nelibc_wcscat_impl'>
   local offset: csize = wcslen(dest)
   local index: csize = 0
   while true do
@@ -747,7 +747,7 @@ local function wcscat(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>): *[0]cwchar
 end
 
 local function wcsncat(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize): *[0]cwchar_t
-    <cexport, codename 'wcsncat'>
+    <cexport, codename 'nelibc_wcsncat_impl'>
   local offset: csize = wcslen(dest)
   local index: csize = 0
   while index < n and src[index] ~= 0 do
@@ -759,7 +759,7 @@ local function wcsncat(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, n: csize):
 end
 
 local function wcsspn(text: *[0]cwchar_t <const>, accept: *[0]cwchar_t <const>): csize
-    <cexport, codename 'wcsspn'>
+    <cexport, codename 'nelibc_wcsspn_impl'>
   local length: csize = 0
   while text[length] ~= 0 do
     local candidate: csize = 0
@@ -773,7 +773,7 @@ local function wcsspn(text: *[0]cwchar_t <const>, accept: *[0]cwchar_t <const>):
 end
 
 local function wcscspn(text: *[0]cwchar_t <const>, reject: *[0]cwchar_t <const>): csize
-    <cexport, codename 'wcscspn'>
+    <cexport, codename 'nelibc_wcscspn_impl'>
   local length: csize = 0
   while text[length] ~= 0 do
     local candidate: csize = 0
@@ -787,7 +787,7 @@ local function wcscspn(text: *[0]cwchar_t <const>, reject: *[0]cwchar_t <const>)
 end
 
 local function wcspbrk(text: *[0]cwchar_t, accept: *[0]cwchar_t <const>): *cwchar_t
-    <cexport, codename 'wcspbrk'>
+    <cexport, codename 'nelibc_wcspbrk_impl'>
   local index: csize = 0
   while text[index] ~= 0 do
     local candidate: csize = 0
@@ -801,7 +801,7 @@ local function wcspbrk(text: *[0]cwchar_t, accept: *[0]cwchar_t <const>): *cwcha
 end
 
 local function wcstok(text: *[0]cwchar_t, delimiters: *[0]cwchar_t <const>, saveptr: *[0]*[0]cwchar_t): *cwchar_t
-    <cexport, codename 'wcstok'>
+    <cexport, codename 'nelibc_wcstok_impl'>
   if text == nilptr then text = saveptr[0] end
   if text == nilptr then return nilptr end
 
@@ -837,7 +837,7 @@ local function wcstok(text: *[0]cwchar_t, delimiters: *[0]cwchar_t <const>, save
 end
 
 local function wcsstr(haystack: *[0]cwchar_t, needle: *[0]cwchar_t <const>): *cwchar_t
-    <cexport, codename 'wcsstr'>
+    <cexport, codename 'nelibc_wcsstr_impl'>
   if needle[0] == 0 then return haystack end
   local start: csize = 0
   while haystack[start] ~= 0 do
@@ -852,7 +852,7 @@ local function wcsstr(haystack: *[0]cwchar_t, needle: *[0]cwchar_t <const>): *cw
 end
 
 local function wcswcs(haystack: *[0]cwchar_t, needle: *[0]cwchar_t <const>): *cwchar_t
-    <cexport, codename 'wcswcs'>
+    <cexport, codename 'nelibc_wcswcs_impl'>
   return wcsstr(haystack, needle)
 end
 
@@ -1287,3 +1287,21 @@ end
 ## cemitdefn [[int wcscmp(const wchar_t *a, const wchar_t *b) { return nelibc_wcscmp_impl((wchar_t *)a, (wchar_t *)b); }]]
 ## cemitdefn [[int wcsncmp(const wchar_t *a, const wchar_t *b, size_t n) { return nelibc_wcsncmp_impl((wchar_t *)a, (wchar_t *)b, n); }]]
 ## cemitdefn [[wchar_t *wcschr(const wchar_t *s, wchar_t c) { return nelibc_wcschr_impl((wchar_t *)s, c); }]]
+## cemitdefn [[size_t wcsnlen(const wchar_t *s, size_t n) { return nelibc_wcsnlen_impl((wchar_t *)s, n); }]]
+## cemitdefn [[wchar_t *wcsdup(const wchar_t *s) { return nelibc_wcsdup_impl((wchar_t *)s); }]]
+## cemitdefn [[int wcscasecmp(const wchar_t *a, const wchar_t *b) { return nelibc_wcscasecmp_impl((wchar_t *)a, (wchar_t *)b); }]]
+## cemitdefn [[int wcsncasecmp(const wchar_t *a, const wchar_t *b, size_t n) { return nelibc_wcsncasecmp_impl((wchar_t *)a, (wchar_t *)b, n); }]]
+## cemitdefn [[int wcswidth(const wchar_t *s, size_t n) { return nelibc_wcswidth_impl((wchar_t *)s, n); }]]
+## cemitdefn [[wchar_t *wcsrchr(const wchar_t *s, wchar_t c) { return nelibc_wcsrchr_impl((wchar_t *)s, c); }]]
+## cemitdefn [[wchar_t *wcscpy(wchar_t *d, const wchar_t *s) { return nelibc_wcscpy_impl(d, (wchar_t *)s); }]]
+## cemitdefn [[wchar_t *wcsncpy(wchar_t *d, const wchar_t *s, size_t n) { return nelibc_wcsncpy_impl(d, (wchar_t *)s, n); }]]
+## cemitdefn [[wchar_t *wcpcpy(wchar_t *d, const wchar_t *s) { return nelibc_wcpcpy_impl(d, (wchar_t *)s); }]]
+## cemitdefn [[wchar_t *wcpncpy(wchar_t *d, const wchar_t *s, size_t n) { return nelibc_wcpncpy_impl(d, (wchar_t *)s, n); }]]
+## cemitdefn [[wchar_t *wcscat(wchar_t *d, const wchar_t *s) { return nelibc_wcscat_impl(d, (wchar_t *)s); }]]
+## cemitdefn [[wchar_t *wcsncat(wchar_t *d, const wchar_t *s, size_t n) { return nelibc_wcsncat_impl(d, (wchar_t *)s, n); }]]
+## cemitdefn [[size_t wcsspn(const wchar_t *s, const wchar_t *a) { return nelibc_wcsspn_impl((wchar_t *)s, (wchar_t *)a); }]]
+## cemitdefn [[size_t wcscspn(const wchar_t *s, const wchar_t *r) { return nelibc_wcscspn_impl((wchar_t *)s, (wchar_t *)r); }]]
+## cemitdefn [[wchar_t *wcspbrk(const wchar_t *s, const wchar_t *a) { return nelibc_wcspbrk_impl((wchar_t *)s, (wchar_t *)a); }]]
+## cemitdefn [[wchar_t *wcstok(wchar_t *s, const wchar_t *d, wchar_t **p) { return nelibc_wcstok_impl(s, (wchar_t *)d, p); }]]
+## cemitdefn [[wchar_t *wcsstr(const wchar_t *h, const wchar_t *n) { return nelibc_wcsstr_impl((wchar_t *)h, (wchar_t *)n); }]]
+## cemitdefn [[wchar_t *wcswcs(const wchar_t *h, const wchar_t *n) { return nelibc_wcswcs_impl((wchar_t *)h, (wchar_t *)n); }]]

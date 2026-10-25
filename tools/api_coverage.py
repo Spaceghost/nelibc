@@ -199,6 +199,15 @@ def implementation_sources(names: set[str]) -> dict[str, list[str]]:
                         rf"codename\s+['\"](?:{re.escape(name)}|__wrap_{re.escape(name)})['\"]",
                         text,
                     )
+                    if not present:
+                        # Some Nelua implementations keep their algorithm in
+                        # Nelua and emit the exact C ABI through cemitdefn.
+                        present = re.search(
+                            rf"cemitdefn\s+\[\[.*?\b{re.escape(name)}\s*"
+                            rf"\([^;{{}}]*\)\s*\{{",
+                            text,
+                            re.S,
+                        )
                 elif path.suffix == ".S":
                     present = re.search(rf"(?m)^\s*{re.escape(name)}:", text)
                 else:

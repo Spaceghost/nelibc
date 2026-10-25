@@ -34,7 +34,8 @@ allocations from both Nelibc and musl paths.
 The declaration scanner handles the C declaration forms currently used by
 these headers. Review new or unusual declaration syntax when extending the
 header set. The implementation scanner also recognizes public function names
-passed as the first argument to `DEFINE_*` wrapper macros in C adapters.
+passed as the first argument to `DEFINE_*` wrapper macros in C adapters and C
+entry points emitted through Nelua `cemitdefn` blocks.
 
 ## Pinned musl API comparison
 

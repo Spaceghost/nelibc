@@ -224,12 +224,12 @@ local function nelibc_wide_collate(left: *[0]cwchar_t <const>,
 end
 
 local function wcscoll(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>): cint
-    <cexport, codename 'wcscoll'>
+    <cexport, codename 'nelibc_wcscoll_impl'>
   return nelibc_wide_collate(left, right, nelibc_locale_collate_mode(nilptr))
 end
 
 local function wcscoll_l(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>,
-    locale: pointer): cint <cexport, codename 'wcscoll_l'>
+    locale: pointer): cint <cexport, codename 'nelibc_wcscoll_l_impl'>
   if nelibc_locale_collate_mode(locale) < 0 then return 0 end
   return nelibc_wide_collate(left, right, nelibc_locale_collate_mode(locale))
 end
@@ -284,14 +284,14 @@ local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
 end
 
 local function wcsxfrm(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, size: csize): csize
-    <cexport, codename 'wcsxfrm'>
+    <cexport, codename 'nelibc_wcsxfrm_impl'>
   local mode = nelibc_locale_collate_mode(nilptr)
   if mode == 1 then return nelibc_german_wide_transform(dest, src, size) end
   return nelibc_wide_transform(dest, src, size)
 end
 
 local function wcsxfrm_l(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>,
-    size: csize, locale: pointer): csize <cexport, codename 'wcsxfrm_l'>
+    size: csize, locale: pointer): csize <cexport, codename 'nelibc_wcsxfrm_l_impl'>
   if nelibc_locale_collate_mode(locale) < 0 then
     if size ~= 0 then dest[0] = 0 end
     return 0
@@ -2501,3 +2501,10 @@ local function standalone_strerror_r(errnum: cint, buffer: *[0]cchar,
     buffer_size: csize): cint <cexport, codename 'strerror_r'>
   return nelibc_strerror_r(errnum, buffer, buffer_size)
 end
+
+-- Keep the wide collation and transform algorithms in Nelua while exposing
+-- the standard const-qualified wide-string ABI from the standalone archive.
+## cemitdefn [[int wcscoll(const wchar_t *a, const wchar_t *b) { return nelibc_wcscoll_impl((wchar_t *)a, (wchar_t *)b); }]]
+## cemitdefn [[int wcscoll_l(const wchar_t *a, const wchar_t *b, void *l) { return nelibc_wcscoll_l_impl((wchar_t *)a, (wchar_t *)b, l); }]]
+## cemitdefn [[size_t wcsxfrm(wchar_t *d, const wchar_t *s, size_t n) { return nelibc_wcsxfrm_impl(d, (wchar_t *)s, n); }]]
+## cemitdefn [[size_t wcsxfrm_l(wchar_t *d, const wchar_t *s, size_t n, void *l) { return nelibc_wcsxfrm_l_impl(d, (wchar_t *)s, n, l); }]]
