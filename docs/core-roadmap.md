@@ -337,16 +337,15 @@ musl export set.
   Nearest-mode calls above magnitude 576 and directed-mode calls above 256 use
   a double-double atanh-series logarithm to retain the low component through
   the exponent product. This
-  path covers magnitudes through 32768 in round-to-nearest and directed
+  path covers magnitudes through 131072 in round-to-nearest and directed
   rounding modes; larger exponents still use `exp(y * log(x))` and need more
   accuracy work. Deterministic random comparisons cover arbitrary fractions
-  through 32768 on bases with binary exponents from -4 to 4 in round-to-nearest
+  through 131072 on bases with binary exponents from -4 to 4 in round-to-nearest
   and directed modes; regression cases check all four modes,
   and wide-base cases are also checked in
-  all four rounding modes. Musl's
-  `powl` reference differs by hundreds of ULP in
-  some wide-fraction cases, so its wide-range comparison allows up to 1024 ULP
-  there; glibc comparisons keep the tighter tolerance.
+  all four rounding modes. Musl's `powl` reference can diverge further as the
+  fractional exponent grows, so the extended-range musl comparison allows up
+  to 4096 ULP; glibc comparisons keep the tighter tolerance.
   It sets `EDOM` for negative square root and
   invalid remainder domains. Standalone x86-64 implements `feclearexcept`,
   `fegetexceptflag`, `feraiseexcept`, `fesetexceptflag`, `fetestexcept`,
