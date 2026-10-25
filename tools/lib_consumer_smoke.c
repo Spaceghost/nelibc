@@ -14,6 +14,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/timerfd.h>
+#include <sys/signalfd.h>
 #include <locale.h>
 #include <wchar.h>
 #include <wctype.h>
@@ -729,6 +730,24 @@ int main(int argc, char **argv) {
       observed_descriptor_timer.it_value.tv_sec != 0 ||
       observed_descriptor_timer.it_value.tv_nsec != 0) return 45;
   close(timer_descriptor);
+  sigset_t signalfd_mask, previous_signal_mask;
+  if (sigemptyset(&signalfd_mask) != 0 ||
+      sigaddset(&signalfd_mask, SIGUSR1) != 0 ||
+      sigprocmask(SIG_BLOCK, &signalfd_mask, &previous_signal_mask) != 0)
+    return 46;
+  int signal_descriptor = signalfd(-1, &signalfd_mask,
+                                   SFD_NONBLOCK | SFD_CLOEXEC);
+  if (signal_descriptor < 0 ||
+      (fcntl(signal_descriptor, F_GETFL) & O_NONBLOCK) == 0 ||
+      (fcntl(signal_descriptor, F_GETFD) & FD_CLOEXEC) == 0 ||
+      raise(SIGUSR1) != 0) return 47;
+  struct signalfd_siginfo received_signal;
+  ssize_t signal_bytes = read(signal_descriptor, &received_signal,
+                              sizeof received_signal);
+  close(signal_descriptor);
+  if (sigprocmask(SIG_SETMASK, &previous_signal_mask, NULL) != 0 ||
+      signal_bytes != sizeof received_signal ||
+      received_signal.ssi_signo != SIGUSR1) return 48;
   const unsigned char swab_source[] = {1, 2, 3, 4, 5};
   unsigned char swab_destination[] = {9, 9, 9, 9, 9};
   swab(swab_source, swab_destination, 5);

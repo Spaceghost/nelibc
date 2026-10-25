@@ -2925,6 +2925,14 @@ local function timerfd_gettime(fd: cint, current_value: pointer): cint <cexport,
   )))
 end
 
+local function signalfd(fd: cint, signal_mask: pointer <const>, flags: cint): cint <cexport, codename 'signalfd'>
+  local kernel_mask = ((@*Sigset)(signal_mask)).bits[0] & ~(1_culong << 31)
+  return (@cint)(syscall_result(nelibc_raw_syscall6(
+    289_culong, (@culong)(fd), (@culong)((@usize)(&kernel_mask)),
+    8_culong, (@culong)(flags), 0_culong, 0_culong
+  )))
+end
+
 -- Linux x86_64 memfd_create creates an anonymous, sealable file descriptor.
 local function memfd_create(name: *[0]cchar <const>, flags: cuint): cint
     <cexport, codename 'memfd_create'>

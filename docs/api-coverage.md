@@ -61,13 +61,13 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,471 APIs: 735 exported by Nelibc in at least
+The current snapshot contains 1,471 APIs: 736 exported by Nelibc in at least
 one tested hybrid profile, 162 intentionally delegated to the host in hybrid
-profiles, and 574 not declared by Nelibc. No declared API is missing from all
+profiles, and 573 not declared by Nelibc. No declared API is missing from all
 four hybrid archives. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 574 entries remain visible as unimplemented
+intentional omission; the 573 entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
 No real-valued `math.h` APIs in this pinned musl baseline remain undeclared.
 The largest remaining groups are wide characters (42), stdlib (33), network
@@ -125,6 +125,11 @@ Linux `timerfd_create`, `timerfd_settime`, and `timerfd_gettime` are implemented
 over the x86_64 timerfd syscalls. Standalone headers provide `itimerspec` and
 the timerfd flags. The consumer checks nonblocking and close-on-exec creation,
 arming, reading the remaining time, and disarming.
+
+Linux `signalfd` creates or updates a descriptor for blocked signals using the
+kernel's 8-byte signal-mask ABI. It filters Nelibc's reserved cancellation
+signal. The consumer blocks `SIGUSR1`, queues it on the calling thread, reads
+its `signalfd_siginfo` record, and restores the original signal mask.
 
 The temporary-file family (`mkstemp`, `mkstemps`, `mkostemp`, `mkostemps`, and
 `mkdtemp`) is implemented in Nelua for hybrid and standalone profiles. It uses

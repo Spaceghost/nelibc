@@ -1175,7 +1175,7 @@ siginterrupt,signal.h,,,not-declared
 sigisemptyset,signal.h,,,not-declared
 sigismember,signal.h,nelibc_syscall.h;signal.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 siglongjmp,setjmp.h,,,not-declared
-signalfd,sys/signalfd.h,,,not-declared
+signalfd,sys/signalfd.h,sys/signalfd.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 significand,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 significandf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 sigorset,signal.h,,,not-declared
