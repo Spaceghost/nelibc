@@ -2032,6 +2032,14 @@ int main(int argc, char **argv) {
       sigaction(SIGINT, NULL, &sigint_after) != 0 ||
       sigint_after.sa_handler != system_signal_probe ||
       sigaction(SIGINT, &sigint_before, NULL) != 0) return 18;
+  sigset_t inherited_mask, original_mask;
+  if (sigemptyset(&inherited_mask) != 0 ||
+      sigaddset(&inherited_mask, SIGUSR1) != 0 ||
+      sigprocmask(SIG_BLOCK, &inherited_mask, &original_mask) != 0) return 27;
+  shell_status = system("kill -USR1 $$; exit 0");
+  int child_mask_restored = sigprocmask(SIG_SETMASK, &original_mask, NULL) == 0;
+  if (!child_mask_restored || shell_status == -1 || !WIFEXITED(shell_status) ||
+      WEXITSTATUS(shell_status) != 0) return 28;
 #ifndef NELIBC_STANDALONE
   pthread_t system_threads[2];
   if (pthread_create(&system_threads[0], NULL, concurrent_system_worker, NULL) != 0 ||

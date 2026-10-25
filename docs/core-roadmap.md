@@ -46,6 +46,9 @@ shell. The standalone consumer cancels a thread blocked in `system("exec sleep 5
 verifies the child was reaped, and calls `system()` again to check the lock was
 released. Zig, GCC, and TinyCC standalone consumers pass; the hybrid consumer
 matrix also passes, retaining host pthread cleanup handlers.
+The same consumer blocks `SIGUSR1` before `system()` and has the shell signal
+itself; a normal exit verifies the child regained the caller's mask before
+`exec`, and the test restores the parent mask afterward.
 Standalone `POSIX_SPAWN_RESETIDS` is tested with distinct real and effective
 UIDs inside a rootless user namespace. A separate SCHED_FIFO spawn check
 verifies child policy/priority when allowed and verifies synchronous `EPERM`
