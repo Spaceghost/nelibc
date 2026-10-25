@@ -47,6 +47,7 @@ static pthread_mutex_t cancel_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cancel_condition = PTHREAD_COND_INITIALIZER;
 static int cancel_read_pipe[2];
 static volatile int cancel_waiting;
+static int cancel_cond_cleanup_unlock_result;
 static volatile int cancel_read_started;
 static volatile int cancel_sleep_started;
 static volatile int cancel_state_ready;
@@ -73,6 +74,12 @@ static struct {
 static void cancel_cleanup(void *argument) {
   ++cancel_cleanup_calls;
   if (argument != 0) pthread_mutex_unlock((pthread_mutex_t *)argument);
+}
+
+static void cancel_cond_cleanup(void *argument) {
+  ++cancel_cleanup_calls;
+  cancel_cond_cleanup_unlock_result =
+      pthread_mutex_unlock((pthread_mutex_t *)argument);
 }
 
 void nelibc_pthread_cancel_defer_begin(void);
@@ -162,6 +169,19 @@ static void *cancel_cond_worker(void *argument) {
   (void)argument;
   if (pthread_mutex_lock(&cancel_mutex) != 0) return (void *)1;
   pthread_cleanup_push(cancel_cleanup, &cancel_mutex);
+  cancel_waiting = 1;
+  (void)pthread_cond_wait(&cancel_condition, &cancel_mutex);
+  pthread_cleanup_pop(0);
+  pthread_mutex_unlock(&cancel_mutex);
+  return 0;
+}
+
+static void *cancel_async_cond_worker(void *argument) {
+  (void)argument;
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0 ||
+      pthread_mutex_lock(&cancel_mutex) != 0)
+    return (void *)1;
+  pthread_cleanup_push(cancel_cond_cleanup, &cancel_mutex);
   cancel_waiting = 1;
   (void)pthread_cond_wait(&cancel_condition, &cancel_mutex);
   pthread_cleanup_pop(0);
@@ -1219,6 +1239,29 @@ int main(void) {
   if (pthread_mutex_lock(&cancel_mutex) != 0 ||
       pthread_mutex_unlock(&cancel_mutex) != 0)
     return 133;
+
+  cancel_waiting = 0;
+  cancel_cleanup_calls = 0;
+  cancel_cond_cleanup_unlock_result = -1;
+  if (pthread_create(&thread, 0, cancel_async_cond_worker, 0) != 0) return 212;
+  for (unsigned int i = 0; i < 10000000U && !cancel_waiting; ++i) {
+  }
+  for (unsigned int i = 0; i < 10000000U &&
+       __atomic_load_n(&cancel_condition.__waiters, __ATOMIC_ACQUIRE) == 0; ++i) {
+  }
+  if (!cancel_waiting ||
+      __atomic_load_n(&cancel_condition.__waiters, __ATOMIC_ACQUIRE) == 0)
+    return 213;
+  struct timespec async_cond_delay = {0, 20000000};
+  if (nanosleep(&async_cond_delay, 0) != 0 || pthread_cancel(thread) != 0)
+    return 214;
+  result = 0;
+  if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      cancel_cleanup_calls != 1 || cancel_cond_cleanup_unlock_result != 0)
+    return 215;
+  if (pthread_mutex_lock(&cancel_mutex) != 0 ||
+      pthread_mutex_unlock(&cancel_mutex) != 0)
+    return 216;
 
   cancel_cleanup_calls = 0;
   cancel_read_started = 0;

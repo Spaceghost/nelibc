@@ -292,7 +292,9 @@ musl export set.
   requests, cancellation state enable/disable, `pthread_setcanceltype`,
   `pthread_testcancel`, cleanup-handler push/pop for
   created threads, and cancellation of a thread blocked in `pthread_cond_wait`
-  or `pthread_cond_timedwait`. Condition variables select realtime or monotonic
+  or `pthread_cond_timedwait`. Async cancellation during a condition wait is
+  deferred until after the mutex is reacquired, so cleanup handlers run with
+  the required mutex ownership. Condition variables select realtime or monotonic
   clocks through their attributes. Mutexes support absolute realtime timed locks,
   Linux priority-inheritance futexes, and robust owner-death recovery through
   Linux robust lists. The smoke covers robust PI recovery both with and without

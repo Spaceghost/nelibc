@@ -2262,10 +2262,14 @@ local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMut
   if mutex.kind == 1 and mutex.count ~= 1 then return 22 end -- EINVAL
   local sequence = nelibc_atomic_load_int(&cond.sequence)
   local context = pthread_current_context()
+  -- Cancellation must not run cleanup handlers until the mutex has been
+  -- reacquired, even when the thread uses asynchronous cancellation.
+  pthread_cancel_defer_begin()
   nelibc_atomic_fetch_add_int(&cond.waiters, 1)
   local unlock_result = pthread_mutex_unlock(mutex)
   if unlock_result ~= 0 then
     nelibc_atomic_fetch_add_int(&cond.waiters, -1)
+    pthread_cancel_defer_end()
     return unlock_result
   end
   local wait_operation: culong = 0_culong
@@ -2305,6 +2309,7 @@ local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMut
   if context ~= nilptr then nelibc_atomic_store_pointer(&context.cancel_wait_address, nilptr) end
   nelibc_atomic_fetch_add_int(&cond.waiters, -1)
   local lock_result = pthread_mutex_lock(mutex)
+  pthread_cancel_defer_end()
   if lock_result ~= 0 then return lock_result end
   pthread_testcancel()
   return wait_error
