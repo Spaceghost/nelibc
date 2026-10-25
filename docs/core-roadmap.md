@@ -20,10 +20,11 @@ archive; it does not certify every behavior required by C or POSIX.
 
 The four hybrid syscall smoke profiles pass with Zig/glibc, GCC/glibc,
 Zig/musl, and TinyCC/glibc. Hybrid spawn uses the host implementation and its
-native attributes ABI. The static musl profile keeps musl's `execvp` symbol
-visible because musl's `posix_spawnp` pulls its internal `__execvpe` from the
-same archive member; the corresponding Nelibc `execvp` object symbol is
-localized for that profile.
+native attributes ABI. In the static musl profile, Nelibc exports both
+`execvp` and `__execvpe`: musl's `posix_spawnp` resolves its internal
+`__execvpe` call to Nelibc's PATH-search implementation, preserving the shell
+fallback for executable text files without a shebang. This avoids pulling
+musl's public `execvp` archive member and colliding with Nelibc's replacement.
 
 ### Practical completeness estimate
 
@@ -226,8 +227,11 @@ musl export set.
   locale on all three standalone compiler profiles.
 - `make smoke-matrix` passed on 2026-10-25 across Zig/glibc, GCC/glibc,
   Zig/musl, TinyCC/glibc, and standalone Zig, GCC, and TinyCC. This runs the
-  ABI, libc-differential, syscall, thread, and math smoke suites; the binary
-  math comparison checks 116 functions against 100,000 generated inputs.
+  ABI, libc-differential, syscall, thread, spawn, and math smoke suites; the
+  binary math comparison checks 116 functions against 100,000 generated
+  inputs. The standalone timestamp smoke also checks that `lutimes` updates a
+  symlink's timestamps without changing its target, using a snapshot taken
+  immediately before the operation.
 - `make dogfood-matrix` passed on 2026-10-25 for all four hybrid profiles.
   Each incremental C consumer ran and the gate confirmed that the executable
   contains selected Nelibc symbols. The larger Spinel dogfood results below
