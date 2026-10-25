@@ -334,10 +334,13 @@ musl export set.
   More trap-mask and environment corruption cases still need validation. Bit-level
   `ilogb`/`logb` cover normal/subnormal decomposition;
   `nextafter` advances binary32/binary64 encodings directly and handles signed
-  zero and NaN values. `nexttoward` compares its long-double direction before
-  narrowing, including when the direction lies between adjacent float or
-  double values. Signaling-NaN and zero exception flags remain
-  incomplete. Its
+  zero and NaN values; `nextafter` and `nextafterf` explicitly raise
+  underflow/inexact for zero-to-subnormal and normal-to-subnormal steps, and
+  overflow/inexact when stepping from the largest finite value to infinity.
+  These cases are compared with the host across the four math profiles.
+  `nexttoward` compares its long-double direction before narrowing, including
+  when the direction lies between adjacent float or double values. Signaling-
+  NaN exception behavior and broader zero/NaN flag cases still need coverage. Its
   Nelua `exp`/`expf` and `log`/`logf` use a range-reduced degree-20 exponential
   polynomial and an atanh logarithm series with split ln(2) constants. The
   differential run over edge values and 100,000 generated inputs reports a

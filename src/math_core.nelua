@@ -1713,8 +1713,12 @@ local function nextafter(x: cdouble, y: cdouble): cdouble <cexport, codename 'ne
   local result_field = xbits.bits & 0x7FF0000000000000_culonglong
   if result_field == 0x7FF0000000000000_culonglong and not is_infinite64(x) then
     math_range_error()
-  elseif result_field == 0_culonglong and x ~= 0_cdouble then
-    math_range_error()
+    nelibc_math_raise_except(0x28_cint) -- FE_OVERFLOW | FE_INEXACT
+  elseif result_field == 0_culonglong then
+    -- nextafter raises underflow for every subnormal result, including zero to
+    -- the least subnormal. Preserve the host errno convention for zero input.
+    if x ~= 0_cdouble then math_range_error() end
+    nelibc_math_raise_except(0x30_cint) -- FE_UNDERFLOW | FE_INEXACT
   end
   return xbits.value
 end
@@ -1735,8 +1739,10 @@ local function nextafterf(x: cfloat, y: cfloat): cfloat <cexport, codename 'next
   local result_field = xbits.bits & 0x7F800000_cuint
   if result_field == 0x7F800000_cuint and not is_infinite32(x) then
     math_range_error()
-  elseif result_field == 0_cuint and x ~= 0_cfloat then
-    math_range_error()
+    nelibc_math_raise_except(0x28_cint) -- FE_OVERFLOW | FE_INEXACT
+  elseif result_field == 0_cuint then
+    if x ~= 0_cfloat then math_range_error() end
+    nelibc_math_raise_except(0x30_cint) -- FE_UNDERFLOW | FE_INEXACT
   end
   return xbits.value
 end
