@@ -626,6 +626,25 @@ static void *deferred_cancel_timed_join_worker(void *argument) {
                                                &request->deadline);
 }
 
+static int wait_for_join_claim(pthread_t target) {
+  for (unsigned int i = 0; i < 10000000U; ++i) {
+    int result = pthread_tryjoin_np(target, 0);
+    if (result == EINVAL) return 0;
+    if (result != EBUSY) return result == 0 ? EIO : result;
+    sched_yield();
+  }
+  return ETIMEDOUT;
+}
+
+static int wait_for_atomic_int(_Atomic int *value, int expected) {
+  struct timespec pause = {0, 1000000};
+  for (unsigned int i = 0; i < 5000U; ++i) {
+    if (atomic_load_explicit(value, memory_order_acquire) == expected) return 0;
+    if (nanosleep(&pause, 0) != 0 && errno != EINTR) return errno;
+  }
+  return ETIMEDOUT;
+}
+
 static void *exit_with_value(void *argument) {
   pthread_exit(argument);
   return 0;
@@ -2708,13 +2727,9 @@ int main(void) {
       pthread_create(&cancel_joiner, 0, deferred_cancel_join_worker,
                      (void *)cancel_join_target) != 0)
     return 300;
-  for (unsigned int i = 0; i < 10000000U &&
-       !atomic_load_explicit(&cancel_join_started, memory_order_acquire); ++i) {
-  }
-  if (!atomic_load_explicit(&cancel_join_started, memory_order_acquire))
+  if (wait_for_atomic_int(&cancel_join_started, 1) != 0)
     return 301;
-  struct timespec cancel_join_delay = {0, 20000000};
-  if (nanosleep(&cancel_join_delay, 0) != 0 ||
+  if (wait_for_join_claim(cancel_join_target) != 0 ||
       pthread_cancel(cancel_joiner) != 0 ||
       pthread_join(cancel_joiner, &result) != 0 || result != PTHREAD_CANCELED)
     return 302;
@@ -2733,12 +2748,9 @@ int main(void) {
       pthread_create(&cancel_joiner, 0, deferred_cancel_timed_join_worker,
                      &timed_cancel_join) != 0)
     return 305;
-  for (unsigned int i = 0; i < 10000000U &&
-       !atomic_load_explicit(&cancel_join_started, memory_order_acquire); ++i) {
-  }
-  if (!atomic_load_explicit(&cancel_join_started, memory_order_acquire))
+  if (wait_for_atomic_int(&cancel_join_started, 1) != 0)
     return 306;
-  if (nanosleep(&cancel_join_delay, 0) != 0 ||
+  if (wait_for_join_claim(timed_cancel_join.target) != 0 ||
       pthread_cancel(cancel_joiner) != 0 ||
       pthread_join(cancel_joiner, &result) != 0 || result != PTHREAD_CANCELED)
     return 307;
@@ -3500,10 +3512,7 @@ int main(void) {
   if (pthread_create(&first_waiter, &attributes, wait_for_condition, 0) != 0 ||
       pthread_create(&second_waiter, &attributes, wait_for_condition, 0) != 0)
     return 30;
-  for (unsigned int i = 0; i < 10000000U &&
-       atomic_load_explicit(&condition_waiting, memory_order_acquire) != 2; ++i) {
-  }
-  if (atomic_load_explicit(&condition_waiting, memory_order_acquire) != 2)
+  if (wait_for_atomic_int(&condition_waiting, 2) != 0)
     return 31;
   if (pthread_mutex_lock(&condition_mutex) != 0) return 32;
   if (pthread_cond_destroy(&static_condition) != EBUSY) return 33;
@@ -3523,10 +3532,7 @@ int main(void) {
   if (pthread_mutex_unlock(&condition_mutex) != 0) return 37;
   if (pthread_create(&first_waiter, &attributes, wait_for_condition, 0) != 0)
     return 38;
-  for (unsigned int i = 0; i < 10000000U &&
-       atomic_load_explicit(&condition_waiting, memory_order_acquire) != 1; ++i) {
-  }
-  if (atomic_load_explicit(&condition_waiting, memory_order_acquire) != 1)
+  if (wait_for_atomic_int(&condition_waiting, 1) != 0)
     return 39;
   if (pthread_mutex_lock(&condition_mutex) != 0) return 40;
   condition_ready = 1;
@@ -3543,11 +3549,7 @@ int main(void) {
   if (pthread_mutex_unlock(&condition_mutex) != 0) return 44;
   if (pthread_create(&first_waiter, &attributes, wait_for_condition_timed, 0) != 0)
     return 45;
-  for (unsigned int i = 0; i < 10000000U &&
-       atomic_load_explicit(&condition_waiting, memory_order_acquire) != 1; ++i) {
-  }
-  if (atomic_load_explicit(&condition_waiting, memory_order_acquire) != 1)
-    return 46;
+  if (wait_for_atomic_int(&condition_waiting, 1) != 0) return 46;
   if (pthread_mutex_lock(&condition_mutex) != 0) return 47;
   condition_ready = 1;
   if (pthread_cond_signal(&static_condition) != 0 ||
