@@ -472,6 +472,33 @@ static int futimes_probe(void) {
   return futimes(-1, NULL) == -1 && errno == EBADF ? 0 : 5;
 }
 
+static int futimesat_probe(void) {
+  char path[] = "/tmp/nelibc-futimesat-XXXXXX";
+  int descriptor = mkstemp(path);
+  if (descriptor < 0 || close(descriptor) != 0) return 1;
+  const char *name = strrchr(path, '/') + 1;
+  int directory = open("/tmp", O_RDONLY | O_DIRECTORY);
+  if (directory < 0) { unlink(path); return 2; }
+  struct timeval timestamps[2] = {
+      {.tv_sec = 1000000004, .tv_usec = 345678},
+      {.tv_sec = 1000000005, .tv_usec = 876543}};
+  struct stat status;
+  if (futimesat(directory, name, timestamps) != 0 || stat(path, &status) != 0 ||
+      status.st_atim.tv_sec != 1000000004 || status.st_atim.tv_nsec != 345678000 ||
+      status.st_mtim.tv_sec != 1000000005 || status.st_mtim.tv_nsec != 876543000) {
+    close(directory); unlink(path); return 3;
+  }
+  timestamps[0].tv_usec = 1000000;
+  errno = 0;
+  if (futimesat(directory, name, timestamps) != -1 || errno != EINVAL ||
+      futimesat(directory, name, NULL) != 0) {
+    close(directory); unlink(path); return 4;
+  }
+  if (close(directory) != 0 || unlink(path) != 0) return 5;
+  errno = 0;
+  return futimesat(-1, "missing-nelibc-futimesat-path", NULL) == -1 && errno == EBADF ? 0 : 6;
+}
+
 static int semaphore_clock_probe(void) {
   sem_t semaphore;
   if (sem_init(&semaphore, 0, 1) != 0) return 1;
@@ -937,6 +964,8 @@ int main(int argc, char **argv) {
   if (utimes_result != 0) return 590 + utimes_result;
   int futimes_result = futimes_probe();
   if (futimes_result != 0) return 600 + futimes_result;
+  int futimesat_result = futimesat_probe();
+  if (futimesat_result != 0) return 610 + futimesat_result;
   char cwd_buffer[4096];
   if (getcwd(cwd_buffer, sizeof cwd_buffer) == NULL) return 20;
   char *allocated_cwd = get_current_dir_name();

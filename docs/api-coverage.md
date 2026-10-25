@@ -141,6 +141,11 @@ across hybrid and standalone profiles.
 microseconds, `NULL`, and invalid descriptors across hybrid and standalone
 profiles.
 
+The legacy `futimesat` interface applies the same conversion through
+`utimensat`, preserving directory-relative paths and `NULL` semantics. Consumer
+checks cover relative lookup, stored precision, invalid microseconds, `NULL`,
+and invalid directory descriptors.
+
 POSIX `pselect` uses Linux `pselect6` with its kernel signal-mask descriptor.
 It applies the same reserved-signal filtering and timeout copy as `ppoll`.
 The consumer matrix checks readiness, signal-mask use, and unchanged timeout

@@ -4432,6 +4432,15 @@ local function utimes(pathname: *[0]cchar <const>, timestamps: *Timeval <const>)
   return utimensat(-100_cint, pathname, (@pointer)(&converted[0]), 0_cint)
 end
 
+-- Legacy timeval interface relative to a directory descriptor.
+local function futimesat(dirfd: cint, pathname: *[0]cchar <const>, timestamps: *Timeval <const>): cint
+    <cexport, codename 'futimesat'>
+  if timestamps == nilptr then return utimensat(dirfd, pathname, nilptr, 0_cint) end
+  local converted: [2]Timespec
+  if timeval_to_timespec(timestamps, &converted[0]) ~= 0_cint then return -1_cint end
+  return utimensat(dirfd, pathname, (@pointer)(&converted[0]), 0_cint)
+end
+
 -- POSIX futimens uses utimensat's Linux AT_EMPTY_PATH descriptor form.
 local function futimens(fd: cint, timestamps: pointer <const>): cint <cexport, codename 'futimens'>
   return (@cint)(syscall_result(nelibc_raw_syscall6(

@@ -2229,6 +2229,23 @@ int main(int argc, char **argv) {
   if (futimes(timestamp_fd_for_futimes, legacy_timestamps) != -1 || errno != EINVAL ||
       futimes(timestamp_fd_for_futimes, NULL) != 0 || close(timestamp_fd_for_futimes) != 0)
     return 407;
+  const char *timestamp_name = strrchr(timestamp_path, '/') + 1;
+  int timestamp_directory = open("/tmp", O_RDONLY | O_DIRECTORY);
+  if (timestamp_directory < 0) return 408;
+  legacy_timestamps[0].tv_usec = 345678;
+  legacy_timestamps[1].tv_usec = 876543;
+  if (futimesat(timestamp_directory, timestamp_name, legacy_timestamps) != 0 ||
+      stat(timestamp_path, &timestamp_status) != 0 ||
+      timestamp_status.st_atim.tv_sec != 1000000000 ||
+      timestamp_status.st_atim.tv_nsec != 345678000 ||
+      timestamp_status.st_mtim.tv_sec != 1000000001 ||
+      timestamp_status.st_mtim.tv_nsec != 876543000)
+    return 409;
+  legacy_timestamps[0].tv_usec = 1000000;
+  errno = 0;
+  if (futimesat(timestamp_directory, timestamp_name, legacy_timestamps) != -1 || errno != EINVAL ||
+      futimesat(timestamp_directory, timestamp_name, NULL) != 0 || close(timestamp_directory) != 0)
+    return 410;
   errno = 0;
   if (utimensat(AT_FDCWD, timestamp_path, NULL, 0x40000000) != -1 || errno != EINVAL) return 391;
   if (unlink(timestamp_path) != 0) return 392;

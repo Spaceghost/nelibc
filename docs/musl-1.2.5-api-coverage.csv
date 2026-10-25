@@ -427,7 +427,7 @@ ftw,ftw.h,,,not-declared
 funlockfile,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 futimens,sys/stat.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 futimes,sys/time.h,sys/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-futimesat,sys/time.h,,,not-declared
+futimesat,sys/time.h,sys/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fwide,wchar.h,,,not-declared
 fwprintf,wchar.h,,,not-declared
 fwrite,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
