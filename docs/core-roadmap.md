@@ -334,7 +334,11 @@ musl export set.
   verifies unlock and reacquisition. The robust PI variant also verifies the
   surviving owner does not receive `EOWNERDEAD` after canceling its waiter.
   Async-canceled rwlock writers leave `waiting_writers` clear and the lock
-  usable. These checks run on Zig, GCC, and TinyCC.
+  usable. If an async-canceled thread exits inside a `pthread_once` initializer,
+  cleanup resets the once control so a later caller can retry; a full cleanup
+  stack defers cancellation until the initializer completes. Smoke coverage
+  exercises cancellation, retry, and exactly-once completion. These checks run
+  on Zig, GCC, and TinyCC.
 - Standalone pthread attributes support configurable stack sizes, page-
   protected guard regions, and scheduler inheritance/policy/priority. Explicit
   scheduling is applied before a startup gate releases the worker; permission

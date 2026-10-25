@@ -31,6 +31,10 @@ static _Atomic int rwlock_async_wait_ready;
 static int condition_ready;
 static int condition_woken;
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
+static pthread_once_t async_once_control = PTHREAD_ONCE_INIT;
+static _Atomic int async_once_started;
+static _Atomic int async_once_release;
+static _Atomic int async_once_retry_runs;
 static _Atomic int once_callers;
 static _Atomic int once_go;
 static _Atomic int once_started;
@@ -413,6 +417,24 @@ static void *once_worker(void *argument) {
   while (!atomic_load_explicit(&once_go, memory_order_acquire)) {
   }
   return (void *)(uintptr_t)pthread_once(&once_control, once_initializer);
+}
+
+static void async_once_initializer(void) {
+  atomic_store_explicit(&async_once_started, 1, memory_order_release);
+  while (!atomic_load_explicit(&async_once_release, memory_order_acquire)) {
+  }
+}
+
+static void async_once_retry_initializer(void) {
+  atomic_fetch_add_explicit(&async_once_retry_runs, 1, memory_order_relaxed);
+}
+
+static void *async_once_cancel_worker(void *argument) {
+  (void)argument;
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0)
+    return (void *)1;
+  return (void *)(intptr_t)pthread_once(&async_once_control,
+                                       async_once_initializer);
 }
 
 static void *barrier_worker(void *argument) {
@@ -2160,6 +2182,22 @@ int main(void) {
   if (pthread_once(0, once_initializer) != EINVAL ||
       pthread_once(&once_control, 0) != EINVAL)
     return 73;
+  if (pthread_create(&thread, &attributes, async_once_cancel_worker, 0) != 0)
+    return 294;
+  for (unsigned int i = 0; i < 10000000U &&
+       !atomic_load_explicit(&async_once_started, memory_order_acquire); ++i) {
+  }
+  if (!atomic_load_explicit(&async_once_started, memory_order_acquire))
+    return 295;
+  struct timespec async_once_delay = {0, 20000000};
+  if (nanosleep(&async_once_delay, 0) != 0 || pthread_cancel(thread) != 0 ||
+      pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
+      __atomic_load_n(&async_once_control, __ATOMIC_ACQUIRE) != PTHREAD_ONCE_INIT ||
+      pthread_once(&async_once_control, async_once_retry_initializer) != 0 ||
+      atomic_load_explicit(&async_once_retry_runs, memory_order_relaxed) != 1 ||
+      pthread_once(&async_once_control, async_once_retry_initializer) != 0 ||
+      atomic_load_explicit(&async_once_retry_runs, memory_order_relaxed) != 1)
+    return 296;
   pthread_barrierattr_t barrier_attributes;
   int barrier_pshared = -1;
   if (pthread_barrierattr_init(&barrier_attributes) != 0 ||

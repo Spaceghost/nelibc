@@ -3039,20 +3039,57 @@ local function sem_unlink(name: *[0]cchar <const>): cint <cexport, codename 'sem
   return unlink(&path[0])
 end
 
+local function pthread_once_cancel_cleanup(argument: pointer): void
+  local control = (@*[0]cint)(argument)
+  nelibc_atomic_store_int(control, 0)
+  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(control)),
+                      129_culong, 2147483647_culong,
+                      0_culong, 0_culong, 0_culong)
+end
+
 local function pthread_once(control: *[0]cint, init_routine: function(): void): cint <cexport, codename 'pthread_once'>
   if control == nilptr or init_routine == nilptr then return 22 end -- EINVAL
   while true do
     local state = nelibc_atomic_load_int(control)
     if state == 2 then return 0 end
     if state == 0 then
-      if nelibc_atomic_cas_int(control, 0, 1) == 0 then
-        init_routine()
-        nelibc_atomic_store_int(control, 2)
-        nelibc_raw_syscall6(202_culong, (@culong)((@usize)(control)),
-                            129_culong, 2147483647_culong,
-                            0_culong, 0_culong, 0_culong)
-        return 0
+      -- Protect the transition and cleanup registration as one operation.
+      -- If async cancellation exits the initializer, cleanup resets the once
+      -- word so another caller can retry it.
+      pthread_cancel_defer_begin()
+      if nelibc_atomic_cas_int(control, 0, 1) ~= 0 then
+        pthread_cancel_defer_end()
+        continue
       end
+      local context = pthread_current_context()
+      local cleanup_registered = false
+      if context ~= nilptr and context.cleanup_count < 32 then
+        context.cleanup_entries[context.cleanup_count].routine = pthread_once_cancel_cleanup
+        context.cleanup_entries[context.cleanup_count].arg = (@pointer)(control)
+        context.cleanup_count = context.cleanup_count + 1
+        cleanup_registered = true
+        pthread_cancel_defer_end()
+      end
+      -- If the per-thread cleanup stack is full, retain deferral across the
+      -- initializer so cancellation cannot strand the once word.
+      init_routine()
+      pthread_cancel_defer_begin()
+      nelibc_atomic_store_int(control, 2)
+      if cleanup_registered and context.cleanup_count > 0 then
+        local cleanup_index = context.cleanup_count - 1
+        local cleanup = context.cleanup_entries[cleanup_index]
+        if cleanup.routine == pthread_once_cancel_cleanup and
+           cleanup.arg == (@pointer)(control) then
+          context.cleanup_count = cleanup_index
+          context.cleanup_entries[cleanup_index].routine = nilptr
+          context.cleanup_entries[cleanup_index].arg = nilptr
+        end
+      end
+      nelibc_raw_syscall6(202_culong, (@culong)((@usize)(control)),
+                          129_culong, 2147483647_culong,
+                          0_culong, 0_culong, 0_culong)
+      pthread_cancel_defer_end()
+      return 0
     elseif state == 1 then
       nelibc_raw_syscall6(202_culong, (@culong)((@usize)(control)),
                           128_culong, 1_culong, 0_culong, 0_culong, 0_culong)
