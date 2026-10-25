@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/epoll.h>
 #include <sys/stat.h>
 #include <sys/un.h>
 #include <sys/uio.h>
@@ -34,6 +35,10 @@ static int send_started;
 static int sendmsg_started;
 static int nanosleep_started;
 static int clock_nanosleep_started;
+static int epoll_fd;
+static int epoll_wait_started;
+static int epoll_pwait_started;
+static int epoll_pwait2_started;
 static int poll_fd;
 static int poll_started;
 static int ppoll_started;
@@ -160,6 +165,27 @@ static void *blocked_clock_nanosleep_worker(void *unused) {
   struct timespec request = {3600, 0};
   mark_started(&clock_nanosleep_started);
   return (void *)(long)clock_nanosleep(CLOCK_MONOTONIC, 0, &request, NULL);
+}
+
+static void *blocked_epoll_wait_worker(void *unused) {
+  (void)unused;
+  struct epoll_event event;
+  mark_started(&epoll_wait_started);
+  return (void *)(long)epoll_wait(epoll_fd, &event, 1, -1);
+}
+
+static void *blocked_epoll_pwait_worker(void *unused) {
+  (void)unused;
+  struct epoll_event event;
+  mark_started(&epoll_pwait_started);
+  return (void *)(long)epoll_pwait(epoll_fd, &event, 1, -1, NULL);
+}
+
+static void *blocked_epoll_pwait2_worker(void *unused) {
+  (void)unused;
+  struct epoll_event event;
+  mark_started(&epoll_pwait2_started);
+  return (void *)(long)epoll_pwait2(epoll_fd, &event, 1, NULL, NULL);
 }
 
 static int fill_socket_send_buffer(int fd) {
@@ -484,6 +510,39 @@ int main(void) {
   result = NULL;
   if (pthread_join(clock_sleeper, &result) != 0 || result != PTHREAD_CANCELED) return 92;
   alarm(0);
+
+  epoll_fd = epoll_create1(EPOLL_CLOEXEC);
+  if (epoll_fd < 0) return 93;
+  pthread_t epoller;
+  if (pthread_create(&epoller, NULL, blocked_epoll_wait_worker, NULL) != 0) return 94;
+  wait_started(&epoll_wait_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(epoller) != 0) return 95;
+  result = NULL;
+  if (pthread_join(epoller, &result) != 0 || result != PTHREAD_CANCELED) return 96;
+  alarm(0);
+
+  pthread_t epoll_pwaiter;
+  if (pthread_create(&epoll_pwaiter, NULL, blocked_epoll_pwait_worker, NULL) != 0) return 97;
+  wait_started(&epoll_pwait_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(epoll_pwaiter) != 0) return 98;
+  result = NULL;
+  if (pthread_join(epoll_pwaiter, &result) != 0 || result != PTHREAD_CANCELED) return 99;
+  alarm(0);
+
+  pthread_t epoll_pwait2er;
+  if (pthread_create(&epoll_pwait2er, NULL, blocked_epoll_pwait2_worker, NULL) != 0) return 100;
+  wait_started(&epoll_pwait2_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(epoll_pwait2er) != 0) return 101;
+  result = NULL;
+  if (pthread_join(epoll_pwait2er, &result) != 0 || result != PTHREAD_CANCELED) return 102;
+  alarm(0);
+  close(epoll_fd);
 
   wait_child = fork();
   if (wait_child < 0) return 28;

@@ -53,10 +53,12 @@ standalone implementation follows glibc's observable behavior, including
 The Unix cancellation smoke covers blocked `poll`, `ppoll`, `select`, and
 `pselect`, plus socket `send`, `sendmsg`, `recv`, `recvfrom`, and `recvmsg`, in
 addition to blocking scalar and vectored (`readv`, `writev`) I/O and process
-calls. Both `nanosleep` and `clock_nanosleep` are tested as well. These cases
-now run in the hybrid glibc, musl, and TinyCC-compiled
-profiles and the standalone Zig, GCC, and TinyCC profiles; `make smoke-matrix` includes the
-standalone group.
+calls. Both `nanosleep` and `clock_nanosleep`, plus the Linux `epoll_wait`,
+`epoll_pwait`, and `epoll_pwait2` extensions, are tested as well. These cases
+run in the hybrid glibc, musl, and TinyCC-compiled profiles and the standalone
+Zig, GCC, and TinyCC profiles; `make smoke-matrix` includes the standalone
+group. `getitimer` and `setitimer` use raw syscalls because POSIX does not list
+them as cancellation points; this avoids introducing cancellation there.
 The checks verify that deferred cancellation wakes each blocked thread and
 that `pthread_join` reports `PTHREAD_CANCELED`. This remains targeted behavior
 coverage, not a complete cancellation-point audit.

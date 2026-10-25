@@ -515,14 +515,15 @@ end
 local Timeval: type = @record{tv_sec: clong, tv_usec: clong}
 local Itimerval: type = @record{it_interval: Timeval, it_value: Timeval}
 
+-- Interval-timer queries and updates are not POSIX cancellation points.
 local function getitimer(which: cint, current: pointer): cint <cexport, codename 'getitimer'>
-  return (@cint)(syscall_result(nelibc_cancellable_syscall3(
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
     36_culong, (@culong)(which), (@culong)((@usize)(current)), 0_culong
   )))
 end
 
 local function setitimer(which: cint, new_value: pointer <const>, old_value: pointer): cint <cexport, codename 'setitimer'>
-  return (@cint)(syscall_result(nelibc_cancellable_syscall3(
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
     38_culong, (@culong)(which), (@culong)((@usize)(new_value)),
     (@culong)((@usize)(old_value))
   )))
