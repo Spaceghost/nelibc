@@ -203,6 +203,8 @@ int main(void) {
   if (powl(4.0L, -8222.5L) != 0x1p-16445L || errno != 0) return 223;
   errno = 0;
   if (powl(16.0L, -4111.25L) != 0x1p-16445L || errno != 0) return 224;
+  const long double wide_half_integer_base = 9.0L * 0x1p-2504L;
+  if (powl(wide_half_integer_base, 1.5L) != 0x1.bp-3752L) return 229;
   const int powl_boundary_modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
   const long double powl_boundary_exponents[] = {
       -8222.75L, -8222.25L,

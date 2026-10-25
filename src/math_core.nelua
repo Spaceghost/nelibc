@@ -1034,6 +1034,13 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   if exponent_magnitude == 0.5_clongdouble then
     result = sqrtl(absolute)
     if exponent < 0_clongdouble then result = 1_clongdouble / result end
+  elseif exponent_magnitude == 1.5_clongdouble then
+    local root = sqrtl(absolute)
+    if exponent < 0_clongdouble then
+      result = (1_clongdouble / root) / absolute
+    else
+      result = absolute * root
+    end
   elseif is_integer80(exponent) and exponent_magnitude <= 128_clongdouble then
     local power: cuint = (@cuint)(exponent_magnitude)
     local base = absolute

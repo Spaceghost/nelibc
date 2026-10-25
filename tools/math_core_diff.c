@@ -1854,6 +1854,23 @@ int main(void) {
       return 1;
     }
   }
+  static const long double wide_powl_exponents[] = {
+      -2.0L, -1.5L, -0.5L, 0.5L, 1.5L, 2.0L};
+  for (size_t i = 0; i < 1024; ++i) {
+    const long double mantissa = 1.0L +
+        (long double)(next_bits() >> 1) * 0x1p-63L;
+    const int binary_exponent = (int)(next_bits() % 12001) - 6000;
+    const long double base = ldexpl(mantissa, binary_exponent);
+    const long double exponent = wide_powl_exponents[next_bits() %
+        (sizeof wide_powl_exponents / sizeof wide_powl_exponents[0])];
+    const long double expected = powl(base, exponent);
+    const long double actual = nelibc_powl(base, exponent);
+    if (!long_double_math_close(actual, expected)) {
+      fprintf(stderr, "powl wide-exponent mismatch i=%zu base=%La exponent=%La actual=%La expected=%La\n",
+              i, base, exponent, actual, expected);
+      return 1;
+    }
+  }
   const long double exp10l_values[] = {
       -INFINITY, -5000.0L, -100.0L, -1.0L, -0.0L,
       0.0L, 1.0L, 10.0L, 100.0L, -4930.0L, -4940.0L,

@@ -309,7 +309,12 @@ musl export set.
   subnormals is recorded as a profile difference. Differential checks cover
   `powl(LDBL_MIN, 1)`, `powl(2, -16445)`, exact fractional cases, half-subnormal
   rounding, and values immediately around `LDBL_MIN`; standalone coverage runs
-  under Zig, GCC, and TinyCC. It sets `EDOM` for negative square root and
+  under Zig, GCC, and TinyCC. Wide-exponent random differential cases also
+  cover powers of arbitrary binary80 mantissas. Those checks exposed loss of
+  accuracy in large-base `powl(x, +/-1.5)`; a square-root decomposition now
+  keeps that path within the existing differential tolerance. Other general
+  noninteger exponents still use `exp(y * log(x))` and need broader accuracy
+  work. It sets `EDOM` for negative square root and
   invalid remainder domains. Standalone x86-64 implements `feclearexcept`,
   `fegetexceptflag`, `feraiseexcept`, `fesetexceptflag`, `fetestexcept`,
   `fegetround`, `fesetround`, `fegetenv`, `feholdexcept`, `fesetenv`, and
