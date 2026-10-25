@@ -313,6 +313,7 @@ static void *fork_from_worker(void *argument) {
   int previous_cancel_state = -1;
   if (pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &previous_cancel_state) != 0)
     return (void *)3;
+  errno = EDOM;
   int child_process = 0;
   int valid = 0;
   pid_t child = -1;
@@ -329,6 +330,7 @@ static void *fork_from_worker(void *argument) {
       cancel_state_error = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
     valid = pthread_equal(pthread_self(), self) &&
         pthread_getspecific(request->key) == (void *)(uintptr_t)0xabc &&
+        errno == EDOM &&
         join_error == ESRCH && cancel_error == ESRCH &&
         inherited_cancel_state == PTHREAD_CANCEL_DISABLE && cancel_state_error == 0;
   }
@@ -337,7 +339,7 @@ static void *fork_from_worker(void *argument) {
     _exit(valid && *request->cleanup_marker == 1 ? 0 : 299);
   if (pthread_setcancelstate(previous_cancel_state, NULL) != 0) return (void *)4;
   int status = -1;
-  if (child < 0 || waitpid(child, &status, 0) != child ||
+  if (errno != EDOM || child < 0 || waitpid(child, &status, 0) != child ||
       !WIFEXITED(status) || WEXITSTATUS(status) != 0 ||
       *request->cleanup_marker != 1)
     return (void *)1;
