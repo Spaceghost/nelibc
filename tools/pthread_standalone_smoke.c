@@ -35,6 +35,8 @@ static _Atomic int atfork_registration_stop;
 static _Atomic int atfork_registration_count;
 static _Atomic int fork_lock_ready;
 static _Atomic int fork_lock_release;
+static _Atomic int fork_sibling_ready;
+static _Atomic int fork_sibling_release;
 static volatile int detached_done;
 static _Atomic int join_release;
 static _Atomic int cancel_join_started;
@@ -285,6 +287,15 @@ static int fork_internal_lock_probe(int lock_kind) {
   if (pthread_join(holder, NULL) != 0 || pthread_join(releaser, NULL) != 0)
     failed = 1;
   return failed;
+}
+static void *fork_sibling_worker(void *unused) {
+  (void)unused;
+  atomic_store_explicit(&fork_sibling_ready, 1, memory_order_release);
+  while (!atomic_load_explicit(&fork_sibling_release, memory_order_acquire)) {
+    struct timespec pause = {.tv_sec = 0, .tv_nsec = 100000};
+    nanosleep(&pause, NULL);
+  }
+  return (void *)0x55;
 }
 
 static pthread_key_t initial_exit_key;
@@ -2038,6 +2049,57 @@ int main(void) {
     return 286;
   if (fork_internal_lock_probe(0) != 0 || fork_internal_lock_probe(1) != 0)
     return 287;
+
+  atomic_store_explicit(&fork_sibling_ready, 0, memory_order_relaxed);
+  atomic_store_explicit(&fork_sibling_release, 0, memory_order_relaxed);
+  pthread_t parent_only_thread;
+  if (pthread_create(&parent_only_thread, NULL, fork_sibling_worker, NULL) != 0)
+    return 289;
+  while (!atomic_load_explicit(&fork_sibling_ready, memory_order_acquire)) {
+    struct timespec pause = {.tv_sec = 0, .tv_nsec = 100000};
+    nanosleep(&pause, NULL);
+  }
+  pid_t stale_handle_child = fork();
+  if (stale_handle_child == 0) {
+    int join_error = pthread_join(parent_only_thread, NULL);
+    int cancel_error = pthread_cancel(parent_only_thread);
+    _exit(join_error == ESRCH && cancel_error == ESRCH ? 0 : 290);
+  }
+  int stale_handle_status = -1;
+  if (stale_handle_child < 0 ||
+      waitpid(stale_handle_child, &stale_handle_status, 0) != stale_handle_child ||
+      !WIFEXITED(stale_handle_status) || WEXITSTATUS(stale_handle_status) != 0)
+    return 291;
+  atomic_store_explicit(&fork_sibling_release, 1, memory_order_release);
+  void *parent_thread_result = NULL;
+  if (pthread_join(parent_only_thread, &parent_thread_result) != 0 ||
+      parent_thread_result != (void *)0x55)
+    return 292;
+
+  detached_done = 0;
+  detached_release = 0;
+  pthread_attr_t detached_attributes;
+  if (pthread_attr_init(&detached_attributes) != 0 ||
+      pthread_attr_setdetachstate(&detached_attributes, PTHREAD_CREATE_DETACHED) != 0)
+    return 293;
+  pthread_t parent_only_detached;
+  if (pthread_create(&parent_only_detached, &detached_attributes, return_detached, NULL) != 0)
+    return 294;
+  pid_t detached_handle_child = fork();
+  if (detached_handle_child == 0) {
+    int join_error = pthread_join(parent_only_detached, NULL);
+    int cancel_error = pthread_cancel(parent_only_detached);
+    _exit(join_error == ESRCH && cancel_error == ESRCH ? 0 : 295);
+  }
+  int detached_handle_status = -1;
+  if (detached_handle_child < 0 ||
+      waitpid(detached_handle_child, &detached_handle_status, 0) != detached_handle_child ||
+      !WIFEXITED(detached_handle_status) || WEXITSTATUS(detached_handle_status) != 0)
+    return 296;
+  detached_release = 1;
+  for (unsigned int spin = 0; spin < 10000000U && !detached_done; ++spin) {}
+  if (!detached_done) return 297;
+  if (pthread_attr_destroy(&detached_attributes) != 0) return 298;
 
   volatile int *initial_cancel_marker = mmap(0, sizeof(*initial_cancel_marker),
       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);

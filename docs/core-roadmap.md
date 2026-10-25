@@ -91,6 +91,11 @@ sets, reads, and deletes a pthread key. A worker concurrently registers
 atfork handlers and creates/deletes keys during 32 forks. The standalone
 pthread smoke and consumer pass with Zig, GCC, and TinyCC; the hybrid consumer
 passes with Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc.
+The standalone fork child also invalidates inherited joinable and detached
+handles for vanished sibling threads: `pthread_join` and `pthread_cancel`
+return `ESRCH`, while the parent retains its original joinable handle and can
+join normally. The child tid-slot table is cleared along with per-thread
+resources so stale sibling TIDs cannot be mistaken for live threads.
 
 ### Practical completeness estimate
 

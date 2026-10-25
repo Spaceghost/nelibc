@@ -185,7 +185,8 @@ local PthreadObject: type = @record{
   stack_addr: pointer,
   stack_size: csize,
   guard_size: csize,
-  context: PthreadContext
+  context: PthreadContext,
+  registry_next: *PthreadObject
 }
 local Timespec: type = @record{
   tv_sec: clong,
@@ -254,6 +255,8 @@ local initial_thread_identity: pointer = nilptr
 local initial_thread_tid: cint = 0
 local named_semaphore_handles: *NamedSemaphoreHandle = nilptr
 local named_semaphore_handles_lock: cint = 0
+local pthread_objects: *PthreadObject = nilptr
+local pthread_objects_lock: cint = 0
 local MAX_CSIZE: csize <comptime> = ~0_csize
 
 local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
@@ -322,6 +325,45 @@ end
 
 local function nelibc_pthread_cancel_defer_end(): void <cexport, codename 'nelibc_pthread_cancel_defer_end'>
   pthread_cancel_defer_end()
+end
+
+local function pthread_object_registry_lock(): void
+  pthread_cancel_defer_begin()
+  while nelibc_atomic_cas_int(&pthread_objects_lock, 0, 1) ~= 0 do
+    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&pthread_objects_lock)),
+                        128_culong, 1_culong, 0_culong, 0_culong, 0_culong)
+  end
+end
+
+local function pthread_object_registry_unlock(): void
+  nelibc_atomic_store_int(&pthread_objects_lock, 0)
+  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&pthread_objects_lock)),
+                      129_culong, 1_culong, 0_culong, 0_culong, 0_culong)
+  pthread_cancel_defer_end()
+end
+
+local function pthread_object_register(object: *PthreadObject): void
+  pthread_object_registry_lock()
+  object.registry_next = pthread_objects
+  pthread_objects = object
+  pthread_object_registry_unlock()
+end
+
+local function pthread_object_unregister(object: *PthreadObject): void
+  pthread_object_registry_lock()
+  local previous: *PthreadObject = nilptr
+  local cursor = pthread_objects
+  while cursor ~= nilptr do
+    if cursor == object then
+      if previous == nilptr then pthread_objects = cursor.registry_next
+      else previous.registry_next = cursor.registry_next end
+      break
+    end
+    previous = cursor
+    cursor = cursor.registry_next
+  end
+  object.registry_next = nilptr
+  pthread_object_registry_unlock()
 end
 
 local function pthread_robust_slot_lock_acquire(): void <inline>
@@ -598,6 +640,7 @@ local function pthread_detached_cleanup(context: *PthreadContext): void
   local cleanup_stack_size = handle.cleanup_stack_size
   local object = context.object
   local tid_word: *[0]cint = handle.tid_word
+  pthread_object_unregister((@*PthreadObject)(object))
   nelibc_credential_sync_end()
   nelibc_thread_tid_slot_release(tid_word)
   nelibc_free(object)
@@ -3425,9 +3468,11 @@ local function nelibc_thread_fork_prepare(): void <cexport, codename 'nelibc_thr
   pthread_fork_global_lock(&named_semaphore_handles_lock)
   local context = nelibc_thread_current_pthread_context()
   if context ~= nilptr then pthread_fork_global_lock(&context.protect_lock) end
+  pthread_fork_global_lock(&pthread_objects_lock)
 end
 
 local function nelibc_thread_fork_parent(): void <cexport, codename 'nelibc_thread_fork_parent'>
+  pthread_fork_global_unlock(&pthread_objects_lock)
   local context = nelibc_thread_current_pthread_context()
   if context ~= nilptr then pthread_fork_global_unlock(&context.protect_lock) end
   pthread_fork_global_unlock(&named_semaphore_handles_lock)
@@ -3438,11 +3483,55 @@ end
 
 local function nelibc_thread_fork_child(): void <cexport, codename 'nelibc_thread_fork_child'>
   local context = nelibc_thread_current_pthread_context()
+  local current_object: *PthreadObject = nilptr
+  if context ~= nilptr then current_object = (@*PthreadObject)(context.object) end
+  nelibc_atomic_store_int(&pthread_objects_lock, 0)
   if context ~= nilptr then nelibc_atomic_store_int(&context.protect_lock, 0) end
   nelibc_atomic_store_int(&named_semaphore_handles_lock, 0)
   nelibc_atomic_store_int(&default_thread_attr_lock, 0)
   nelibc_atomic_store_int(&pthread_key_lock, 0)
   nelibc_atomic_store_int(&pthread_robust_slot_lock, 0)
+
+  local previous: *PthreadObject = nilptr
+  local object = pthread_objects
+  while object ~= nilptr do
+    local next_object = object.registry_next
+    if object ~= current_object then
+      object.magic = 0
+      object.context.lifecycle = 5
+      object.handle.state = 2
+      if object.handle.tid_word ~= nilptr then object.handle.tid_word[0] = 0 end
+      if object.context.robust_slot ~= nilptr then
+        object.context.robust_slot.tid = 0
+        object.context.robust_slot.state = 0
+        object.context.robust_slot.head.list_next =
+            (@pointer)(&object.context.robust_slot.head.list_next)
+        object.context.robust_slot.head.list_op_pending = nilptr
+      end
+      object.context.robust_slot = nilptr
+      if object.handle.stack ~= nilptr and object.handle.stack_size ~= 0 then
+        unmap(object.handle.stack, object.handle.stack_size)
+      end
+      if object.handle.tls ~= nilptr and object.handle.tls_size ~= 0 then
+        unmap(object.handle.tls, object.handle.tls_size)
+      end
+      if object.handle.cleanup_stack ~= nilptr and
+          object.handle.cleanup_stack_size ~= 0 then
+        unmap(object.handle.cleanup_stack, object.handle.cleanup_stack_size)
+      end
+      object.handle.stack = nilptr
+      object.handle.tls = nilptr
+      object.handle.cleanup_stack = nilptr
+      object.handle.tid_word = nilptr
+      object.context.rwlock_read_overflow = nilptr
+      object.registry_next = nilptr
+      if previous == nilptr then pthread_objects = next_object
+      else previous.registry_next = next_object end
+    else
+      previous = object
+    end
+    object = next_object
+  end
 end
 
 local function named_sem_build_path(name: *[0]cchar <const>, path: *[0]cchar): cint
@@ -3807,6 +3896,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
     return scheduling_error
   end
   if attr ~= nilptr and attr.detachstate == 1 then state.context.lifecycle = 3 end
+  pthread_object_register(state)
   thread[0] = object
   nelibc_atomic_store_int(&state.context.startup_gate, 1)
   nelibc_raw_syscall6(202_culong,
@@ -3858,6 +3948,7 @@ local function pthread_join(thread: pointer, result: *[0]pointer): cint <cexport
   if result ~= nilptr then result[0] = state.context.result end
   pthread_robust_slot_release(state.context.robust_slot)
   nelibc_thread_tid_slot_release(tid_word)
+  pthread_object_unregister(state)
   state.magic = 0
   nelibc_free(thread)
   if not cleanup_registered then pthread_cancel_defer_end() end
@@ -3889,6 +3980,7 @@ local function pthread_tryjoin_np(thread: pointer, result: *[0]pointer): cint
   if result ~= nilptr then result[0] = state.context.result end
   pthread_robust_slot_release(state.context.robust_slot)
   nelibc_thread_tid_slot_release(tid_word)
+  pthread_object_unregister(state)
   state.magic = 0
   nelibc_free(thread)
   return 0
@@ -3940,6 +4032,7 @@ local function pthread_timedjoin_np(thread: pointer, result: *[0]pointer,
   if result ~= nilptr then result[0] = state.context.result end
   pthread_robust_slot_release(state.context.robust_slot)
   nelibc_thread_tid_slot_release(tid_word)
+  pthread_object_unregister(state)
   state.magic = 0
   nelibc_free(thread)
   if not cleanup_registered then pthread_cancel_defer_end() end
@@ -3961,6 +4054,7 @@ local function pthread_detach(thread: pointer): cint <cexport, codename 'pthread
         if thread_wait(&state.handle) ~= 0 then return nelibc_errno_location()[0] end
         pthread_robust_slot_release(state.context.robust_slot)
         nelibc_thread_tid_slot_release(tid_word)
+        pthread_object_unregister(state)
         state.magic = 0
         nelibc_free(thread)
         return 0

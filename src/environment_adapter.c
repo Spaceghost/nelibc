@@ -59,21 +59,27 @@ extern void nelibc_stdio_fork_child(void) __attribute__((weak));
 extern void nelibc_thread_fork_prepare(void) __attribute__((weak));
 extern void nelibc_thread_fork_parent(void) __attribute__((weak));
 extern void nelibc_thread_fork_child(void) __attribute__((weak));
+void nelibc_thread_slots_fork_prepare(void);
+void nelibc_thread_slots_fork_parent(void);
+void nelibc_thread_slots_fork_child(void);
 
 void nelibc_fork_prepare(void) {
   if (nelibc_stdio_fork_prepare != NULL) nelibc_stdio_fork_prepare();
   if (nelibc_thread_fork_prepare != NULL) nelibc_thread_fork_prepare();
+  nelibc_thread_slots_fork_prepare();
   if (nelibc_allocator_lock != NULL) nelibc_allocator_lock();
 }
 
 void nelibc_fork_parent(void) {
   if (nelibc_allocator_unlock != NULL) nelibc_allocator_unlock();
+  nelibc_thread_slots_fork_parent();
   if (nelibc_thread_fork_parent != NULL) nelibc_thread_fork_parent();
   if (nelibc_stdio_fork_parent != NULL) nelibc_stdio_fork_parent();
 }
 
 void nelibc_fork_child(void) {
   if (nelibc_allocator_unlock != NULL) nelibc_allocator_unlock();
+  nelibc_thread_slots_fork_child();
   if (nelibc_thread_fork_child != NULL) nelibc_thread_fork_child();
   if (nelibc_stdio_fork_child != NULL) nelibc_stdio_fork_child();
 }
@@ -842,6 +848,37 @@ char *nelibc_standalone_setlocale(int category, const char *name) {
   return NULL;
 }
 #endif
+
+void nelibc_thread_slots_fork_prepare(void) {
+#ifdef NELIBC_STANDALONE
+  nelibc_thread_tid_slots_acquire();
+#endif
+}
+
+void nelibc_thread_slots_fork_parent(void) {
+#ifdef NELIBC_STANDALONE
+  nelibc_thread_tid_slots_release();
+#endif
+}
+
+void nelibc_thread_slots_fork_child(void) {
+#ifdef NELIBC_STANDALONE
+  int current_tid = (int)nelibc_raw_syscall3(186, 0, 0, 0);
+  for (size_t i = 0; i < sizeof(nelibc_thread_tid_slots) /
+                          sizeof(nelibc_thread_tid_slots[0]); ++i) {
+    nelibc_thread_tid_slot *slot = &nelibc_thread_tid_slots[i];
+    if (slot->allocated &&
+        __atomic_load_n(&slot->tid, __ATOMIC_ACQUIRE) == current_tid) {
+      slot->released = 0;
+    } else {
+      __atomic_store_n(&slot->tid, 0, __ATOMIC_RELEASE);
+      slot->allocated = 0;
+      slot->released = 0;
+    }
+  }
+  __atomic_store_n(&nelibc_thread_tid_slots_lock, 0, __ATOMIC_RELEASE);
+#endif
+}
 
 int nelibc_time_locale_is_german(void) {
 #ifdef NELIBC_STANDALONE
