@@ -219,8 +219,8 @@ local function nelibc_spawn_append_action(actions: *SpawnFileActions, kind: cint
     fd: cint, newfd: cint, flags: cint, mode: cuint,
     pathname: *[0]cchar <const>): cint
   if actions == nilptr or actions.magic ~= spawn_actions_magic then return 22_cint end
-  if fd < 0_cint or (kind == 2_cint and newfd < 0_cint) or
-      ((kind == 3_cint or kind == 4_cint) and pathname == nilptr) then return 22_cint end
+  if fd < 0_cint or (kind == 2_cint and newfd < 0_cint) then return 9_cint end -- EBADF
+  if (kind == 3_cint or kind == 4_cint) and pathname == nilptr then return 22_cint end
   local saved_errno = nelibc_errno_location()[0]
   local action = (@*SpawnAction)(malloc(40_csize))
   if action == nilptr then

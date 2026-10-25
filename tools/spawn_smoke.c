@@ -428,8 +428,9 @@ int main(int argc, char **argv) {
   posix_spawn_file_actions_t actions;
   errno = 42;
   if (posix_spawn_file_actions_init(&actions) != 0 ||
-      posix_spawn_file_actions_addclose(&actions, -1) != EINVAL ||
-      posix_spawn_file_actions_adddup2(&actions, -1, 9) != EINVAL || errno != 42)
+      posix_spawn_file_actions_addclose(&actions, -1) != EBADF ||
+      posix_spawn_file_actions_adddup2(&actions, -1, 9) != EBADF ||
+      posix_spawn_file_actions_adddup2(&actions, 9, -1) != EBADF || errno != 42)
     return 4;
   int inherited_fd = open("/dev/null", O_RDONLY);
   if (inherited_fd < 0 || inherited_fd != 3 ||
@@ -468,7 +469,7 @@ int main(int argc, char **argv) {
   errno = 42;
   if (posix_spawn_file_actions_init(&actions) != 0 ||
       posix_spawn_file_actions_addchdir_np(&actions, 0) != EINVAL ||
-      posix_spawn_file_actions_addfchdir_np(&actions, -1) != EINVAL || errno != 42 ||
+      posix_spawn_file_actions_addfchdir_np(&actions, -1) != EBADF || errno != 42 ||
       posix_spawn_file_actions_addchdir_np(&actions, "/") != 0 ||
       posix_spawn_file_actions_addchdir_np(&actions, "tmp") != 0 ||
       run_action_case(&actions, "--cwd-tmp") != 0 ||
