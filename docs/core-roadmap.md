@@ -299,11 +299,12 @@ musl export set.
   beyond eight ULPs. Bit-level Nelua implementations also provide `frexp` and
   `modf`, including subnormal decomposition and signed-zero behavior. x86-64
   `FSCALE` primitives implement `ldexp`/`scalbn`; overflow and zero results
-  from underflow set `ERANGE`. Long-double `powl` preserves exact integer
-  powers of two through the binary80 subnormal range, avoiding false `ERANGE`
-  on exact results; differential checks cover `powl(LDBL_MIN, 1)` and
-  `powl(2, -16445)` under glibc and musl, with standalone coverage under Zig,
-  GCC, and TinyCC. It sets `EDOM` for negative square root and
+  from underflow set `ERANGE`. Long-double `powl` preserves exact powers of two
+  through the binary80 subnormal range, including fractional exponents whose
+  product with the base exponent is integral. This avoids false `ERANGE` on
+  exact results; differential checks cover `powl(LDBL_MIN, 1)`,
+  `powl(2, -16445)`, and fractional cases under glibc and musl, with standalone
+  coverage under Zig, GCC, and TinyCC. It sets `EDOM` for negative square root and
   invalid remainder domains. Standalone x86-64 implements `feclearexcept`,
   `fegetexceptflag`, `feraiseexcept`, `fesetexceptflag`, `fetestexcept`,
   `fegetround`, `fesetround`, `fegetenv`, `feholdexcept`, `fesetenv`, and

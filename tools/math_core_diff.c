@@ -1956,6 +1956,24 @@ int main(void) {
     fprintf(stderr, "powl exact negative subnormal result or errno mismatch\n");
     return 1;
   }
+  const long double fractional_powl_bases[] = {4.0L, 0.25L, 16.0L};
+  const long double fractional_powl_exponents[] = {-8222.5L, 8222.5L, -4111.25L};
+  for (size_t i = 0; i < sizeof fractional_powl_bases / sizeof fractional_powl_bases[0]; ++i) {
+    feclearexcept(FE_ALL_EXCEPT);
+    errno = 0;
+    volatile long double host_fractional_powl =
+        powl(fractional_powl_bases[i], fractional_powl_exponents[i]);
+    int host_fractional_powl_errno = errno;
+    feclearexcept(FE_ALL_EXCEPT);
+    errno = 0;
+    volatile long double nelibc_fractional_powl =
+        nelibc_powl(fractional_powl_bases[i], fractional_powl_exponents[i]);
+    if (nelibc_fractional_powl != host_fractional_powl ||
+        errno != host_fractional_powl_errno) {
+      fprintf(stderr, "powl exact fractional subnormal mismatch case=%zu\n", i);
+      return 1;
+    }
+  }
   feclearexcept(FE_ALL_EXCEPT);
   errno = 0;
   if (nelibc_powl(LDBL_MAX, -2.0L) != 0.0L || errno != ERANGE ||

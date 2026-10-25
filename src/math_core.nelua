@@ -914,6 +914,35 @@ local function atanhl(value: clongdouble): clongdouble <cexport, codename 'atanh
   return result
 end
 
+-- Whether exponent * multiplier is an exact integer for a binary80 exponent.
+local function powl_scaled_exponent_is_integer(exponent: clongdouble, multiplier: cint): boolean <inline>
+  if multiplier == 0_cint then return true end
+  local bits: LongDoubleBits = {value = exponent}
+  local exponent_field = bits.parts.sign_exponent & 0x7fff_cushort
+  local binary_shift: cint
+  if exponent_field == 0_cushort then
+    binary_shift = -16445_cint
+  else
+    binary_shift = (@cint)(exponent_field) - 16446_cint
+  end
+  if binary_shift >= 0_cint then return true end
+
+  local trailing_zeroes: cint = 0_cint
+  local significand = bits.parts.significand
+  while (significand & 1_culonglong) == 0_culonglong and trailing_zeroes < 64_cint do
+    significand = significand >> 1
+    trailing_zeroes = trailing_zeroes + 1_cint
+  end
+  local multiplier_magnitude = multiplier
+  if multiplier_magnitude < 0_cint then multiplier_magnitude = -multiplier_magnitude end
+  local multiplier_bits = (@cuint)(multiplier_magnitude)
+  while (multiplier_bits & 1_cuint) == 0_cuint do
+    multiplier_bits = multiplier_bits >> 1
+    trailing_zeroes = trailing_zeroes + 1_cint
+  end
+  return trailing_zeroes >= -binary_shift
+end
+
 local function powl(value: clongdouble, exponent: clongdouble): clongdouble
     <cexport, codename 'powl'>
   if exponent == 0_clongdouble or value == 1_clongdouble then return 1_clongdouble end
@@ -970,14 +999,16 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   local result: clongdouble
   local exponent_magnitude = exponent
   if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
-  -- Preserve exact integral powers of two, including representable subnormals.
-  -- The logarithm/exponential path turns those into ERANGE on an exact result.
-  if is_integer80(exponent) and exponent_magnitude <= 32768_clongdouble then
+  -- Preserve exact powers of two, including fractional exponents whose product
+  -- with the base's binary exponent is integral.
+  if exponent_magnitude <= 32768_clongdouble then
     local base_exponent = nelibc_ilogbl_hw(absolute)
     local ignored_range_error: cint = 0_cint
     local power_of_two = nelibc_ldexpl_hw(1_clongdouble, base_exponent, &ignored_range_error)
-    if power_of_two == absolute then
-      local result_exponent = (@clonglong)(base_exponent) * (@clonglong)(exponent)
+    if power_of_two == absolute and
+        powl_scaled_exponent_is_integer(exponent, base_exponent) then
+      local scaled_exponent = exponent * (@clongdouble)(base_exponent)
+      local result_exponent = (@clonglong)(scaled_exponent)
       if result_exponent >= -16445_clonglong and result_exponent <= 16383_clonglong then
         result = nelibc_ldexpl_hw(1_clongdouble, (@cint)(result_exponent), &ignored_range_error)
         if value < 0_clongdouble and odd then result = -result end

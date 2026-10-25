@@ -200,6 +200,10 @@ int main(void) {
   errno = 0;
   if (powl(-0.5L, 16445.0L) != -0x1p-16445L || errno != 0) return 222;
   errno = 0;
+  if (powl(4.0L, -8222.5L) != 0x1p-16445L || errno != 0) return 223;
+  errno = 0;
+  if (powl(16.0L, -4111.25L) != 0x1p-16445L || errno != 0) return 224;
+  errno = 0;
   if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;
 
   if (sqrtl(4.0L) != 2.0L || fabsl(-3.0L) != 3.0L ||
