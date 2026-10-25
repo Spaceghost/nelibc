@@ -296,11 +296,11 @@ exp2,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exp2f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 exp2l,math.h,,,not-declared
 expf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-expl,math.h,,,not-declared
+expl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 explicit_bzero,string.h,string.h;strings.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 expm1,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 expm1f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-expm1l,math.h,,,not-declared
+expm1l,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fabs,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fabsf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fabsl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

@@ -70,6 +70,86 @@ nelibc_log1pl_small_hw:
   ret
 .size nelibc_log1pl_small_hw, .-nelibc_log1pl_small_hw
 
+/* Compute exp(x): split x*log2(e) into an integer scale and an F2XM1
+   fraction, then apply the scale without rounding through binary64. */
+.globl nelibc_expl_hw
+.type nelibc_expl_hw,@function
+nelibc_expl_hw:
+  subq $16, %rsp
+  fldt 24(%rsp)
+  fldl2e
+  fmulp %st, %st(1)
+  fld %st(0)
+  frndint
+  fistpq (%rsp)
+  fstp %st(0)
+  fildq (%rsp)
+  fldl .Lnelibc_ln2_hi(%rip)
+  fmulp %st, %st(1)
+  fldt 24(%rsp)
+  fsub %st(1), %st(0)
+  fstp %st(1)
+  fildq (%rsp)
+  fldl .Lnelibc_ln2_lo(%rip)
+  fmulp %st, %st(1)
+  fsubrp %st, %st(1)
+  fldl2e
+  fmulp %st, %st(1)
+  f2xm1
+  fld1
+  faddp %st, %st(1)
+  fildq (%rsp)
+  fxch %st(1)
+  fscale
+  fstp %st(1)
+  addq $16, %rsp
+  ret
+.size nelibc_expl_hw, .-nelibc_expl_hw
+
+.section .rodata
+.p2align 4
+.Lnelibc_ln2_hi:
+  .double 0.693147180369123816490
+.Lnelibc_ln2_lo:
+  .double 1.90821492927058770002e-10
+.text
+
+/* Accurate cancellation-free expm1(x) for inputs scaled into [-1,1]. */
+.globl nelibc_expm1l_small_hw
+.type nelibc_expm1l_small_hw,@function
+nelibc_expm1l_small_hw:
+  fldl2e
+  fldt 8(%rsp)
+  fmulp %st, %st(1)
+  f2xm1
+  ret
+.size nelibc_expm1l_small_hw, .-nelibc_expm1l_small_hw
+
+.globl nelibc_x87_rounding_mode
+.type nelibc_x87_rounding_mode,@function
+nelibc_x87_rounding_mode:
+  subq $8, %rsp
+  fnstcw (%rsp)
+  movzwl (%rsp), %eax
+  andl $0x0c00, %eax
+  addq $8, %rsp
+  ret
+.size nelibc_x87_rounding_mode, .-nelibc_x87_rounding_mode
+
+.globl nelibc_neg_one_up_hw
+.type nelibc_neg_one_up_hw,@function
+nelibc_neg_one_up_hw:
+  fldt .Lnelibc_neg_one_up(%rip)
+  ret
+.size nelibc_neg_one_up_hw, .-nelibc_neg_one_up_hw
+
+.section .rodata
+.p2align 4
+.Lnelibc_neg_one_up:
+  .byte 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xbf
+.zero 6
+.text
+
 /* FXTRACT returns the significand in ST(0) and the exponent in ST(1). */
 .globl nelibc_frexpl_hw
 .type nelibc_frexpl_hw,@function

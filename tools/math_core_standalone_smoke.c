@@ -40,6 +40,8 @@ int main(void) {
       !(log2l(8.0L) > 2.999L && log2l(8.0L) < 3.001L) ||
       !(log10l(100.0L) > 1.999L && log10l(100.0L) < 2.001L)) return 176;
   if (!(log1pl(0x1p-60L) > 0.0L) || !(log1pl(-0.5L) < -0.69L)) return 177;
+  if (!(expl(1.0L) > 2.718L && expl(1.0L) < 2.719L) ||
+      !(expm1l(0x1p-60L) > 0.0L && expm1l(0x1p-60L) < 0x1p-59L)) return 178;
   errno = 0;
   if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;
 

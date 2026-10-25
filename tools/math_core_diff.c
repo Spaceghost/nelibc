@@ -127,6 +127,8 @@ extern long double nelibc_logl(long double);
 extern long double nelibc_log2l(long double);
 extern long double nelibc_log10l(long double);
 extern long double nelibc_log1pl(long double);
+extern long double nelibc_expl(long double);
+extern long double nelibc_expm1l(long double);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
 extern long double nelibc_sqrtl(long double);
@@ -1352,6 +1354,13 @@ static int long_double_close(long double actual, long double expected) {
   return fabsl(actual - expected) <= 8.0L * LDBL_EPSILON * fabsl(expected);
 }
 
+static int long_double_math_close(long double actual, long double expected) {
+  if (actual == expected) return 1;
+  if (isnan(expected)) return isnan(actual);
+  if (!isfinite(expected) || !isfinite(actual) || expected == 0.0L) return 0;
+  return fabsl(actual - expected) <= 128.0L * LDBL_EPSILON * fabsl(expected);
+}
+
 int main(void) {
 
   const long double hypot_values[] = {
@@ -1436,7 +1445,9 @@ int main(void) {
       !isnan(nelibc_logl(quiet_nan.value)) ||
       !isnan(nelibc_log2l(quiet_nan.value)) ||
       !isnan(nelibc_log10l(quiet_nan.value)) ||
-      !isnan(nelibc_log1pl(quiet_nan.value))) {
+      !isnan(nelibc_log1pl(quiet_nan.value)) ||
+      !isnan(nelibc_expl(quiet_nan.value)) ||
+      !isnan(nelibc_expm1l(quiet_nan.value))) {
     fprintf(stderr, "long-double arctangent NaN propagation failed\n");
     return 1;
   }
@@ -1544,6 +1555,63 @@ int main(void) {
     fprintf(stderr, "log1pl domain behavior failed\n");
     return 1;
   }
+  const long double exp_values[] = {
+      -INFINITY, -12000.0L, -1000.0L, -1.0L, -0.0L, 0.0L,
+      1.0L, 10.0L, 1000.0L, 11000.0L, 11350.0L, 12000.0L, INFINITY};
+  for (size_t i = 0; i < sizeof(exp_values) / sizeof(exp_values[0]); ++i) {
+    long double expected_expm1 = expm1l(exp_values[i]);
+    if (exp_values[i] > 48.0L) expected_expm1 = expl(exp_values[i]);
+    if (!long_double_close(nelibc_expl(exp_values[i]), expl(exp_values[i])) ||
+        !long_double_math_close(nelibc_expm1l(exp_values[i]), expected_expm1)) {
+      fprintf(stderr, "long-double exponential edge mismatch value=%zu input=%.6Lf expl=%.21Lg/%.21Lg expm1l=%.21Lg/%.21Lg\n",
+              i, exp_values[i], nelibc_expl(exp_values[i]), expl(exp_values[i]),
+              nelibc_expm1l(exp_values[i]), expm1l(exp_values[i]));
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 512; ++i) {
+    long double value = -11000.0L + (long double)i * 43.0L;
+    if (!long_double_close(nelibc_expl(value), expl(value))) {
+      fprintf(stderr, "expl generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 512; ++i) {
+    int exponent = -16000 + (int)i * 31;
+    long double small = ldexpl(1.25L, exponent);
+    if (!long_double_close(nelibc_expm1l(small), expm1l(small)) ||
+        !long_double_close(nelibc_expm1l(-small), expm1l(-small))) {
+      fprintf(stderr, "expm1l generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  if (!isinf(nelibc_expl(12000.0L)) || errno != ERANGE ||
+      fetestexcept(FE_OVERFLOW) == 0) {
+    fprintf(stderr, "expl overflow behavior failed\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  errno = 0;
+  if (nelibc_expl(-20000.0L) != 0.0L || errno != ERANGE ||
+      fetestexcept(FE_UNDERFLOW) == 0) {
+    fprintf(stderr, "expl underflow behavior failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (nelibc_expm1l(-1000.0L) != -1.0L || errno != 0) {
+    fprintf(stderr, "expm1l negative asymptote behavior failed\n");
+    return 1;
+  }
+  int saved_rounding_before_expm1l = fegetround();
+  if (fesetround(FE_UPWARD) != 0 ||
+      nelibc_expm1l(-1000.0L) != nextafterl(-1.0L, 0.0L)) {
+    fprintf(stderr, "expm1l upward rounding behavior failed actual=%.21La expected=%.21La\n",
+            nelibc_expm1l(-1000.0L), nextafterl(-1.0L, 0.0L));
+    return 1;
+  }
+  if (fesetround(saved_rounding_before_expm1l) != 0) return 1;
   const long double nextafter_minimum = nextafterl(0.0L, 1.0L);
   const long double nextafter_negative_minimum = nextafterl(0.0L, -1.0L);
   const long double nextafter_inputs[] = {
@@ -1748,7 +1816,7 @@ int main(void) {
     fprintf(stderr, "scalblnl underflow errno mismatch\n");
     return 1;
   }
-  int saved_rounding = fegetround();
+  int saved_rounding_before_modfl = fegetround();
   if (fesetround(FE_UPWARD) != 0) return 1;
   long double integral_part = 0.0L;
   if (nelibc_modfl(-12.75L, &integral_part) != -0.75L ||
@@ -1756,7 +1824,7 @@ int main(void) {
     fprintf(stderr, "modfl rounding-mode independence failed\n");
     return 1;
   }
-  if (fesetround(saved_rounding) != 0) return 1;
+  if (fesetround(saved_rounding_before_modfl) != 0) return 1;
   feclearexcept(FE_ALL_EXCEPT);
   (void)nelibc_modfl(12.75L, &integral_part);
   if (fetestexcept(FE_INEXACT) != 0) {

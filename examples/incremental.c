@@ -71,6 +71,8 @@ int main(void) {
   const long double arc_sine_long = asinl(0.5L);
   const long double logarithm_long = logl(2.0L);
   const long double logarithm_one_plus_long = log1pl(0x1p-60L);
+  const long double exponential_long = expl(1.0L);
+  const long double exponential_minus_one_long = expm1l(0x1p-60L);
   const double sine = sin(1.0);
   const double cosine = cos(1.0);
   const float sine_float = sinf(1.0f);
@@ -135,6 +137,8 @@ int main(void) {
       !(arc_sine_long > 0.523L && arc_sine_long < 0.524L) ||
       !(logarithm_long > 0.693L && logarithm_long < 0.694L) ||
       !(logarithm_one_plus_long > 0.0L) ||
+      !(exponential_long > 2.718L && exponential_long < 2.719L) ||
+      !(exponential_minus_one_long > 0.0L) ||
       !(sine > 0.84147098480789 && sine < 0.84147098480790) ||
       !(cosine > 0.54030230586813 && cosine < 0.54030230586814) ||
       !(sine_float > 0.8414708f && sine_float < 0.8414712f) ||

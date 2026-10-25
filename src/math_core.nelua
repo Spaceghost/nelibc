@@ -221,6 +221,10 @@ local function nelibc_logl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_log2l_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_log10l_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_log1pl_small_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_expl_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_expm1l_small_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_x87_rounding_mode(): cint <cimport> end
+local function nelibc_neg_one_up_hw(): clongdouble <cimport> end
 local function nelibc_frexpl_hw(value: clongdouble, exponent: *[0]cint): clongdouble <cimport> end
 local function nelibc_modfl_hw(value: clongdouble, integral: *[0]clongdouble): clongdouble <cimport> end
 local function nelibc_ilogbl_hw(value: clongdouble): cint <cimport> end
@@ -466,6 +470,45 @@ local function log1pl(value: clongdouble): clongdouble <cexport, codename 'log1p
     return nelibc_log1pl_small_hw(value)
   end
   return logl(1_clongdouble + value)
+end
+
+local function expl(value: clongdouble): clongdouble <cexport, codename 'expl'>
+  if is_nan80(value) then return value + value end
+  if is_infinite80(value) then
+    if value < 0_clongdouble then return 0_clongdouble end
+    return value
+  end
+  local result = nelibc_expl_hw(value)
+  if value < -11400_clongdouble then
+    math_range_error()
+    return 0_clongdouble
+  end
+  local result_bits: LongDoubleBits = {value = result}
+  if is_infinite80(result) or
+      ((result_bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort and
+       result_bits.parts.significand ~= 0_culonglong) or
+      (result == 0_clongdouble and value ~= 0_clongdouble) then
+    math_range_error()
+  end
+  return result
+end
+
+local function expm1l(value: clongdouble): clongdouble <cexport, codename 'expm1l'>
+  if is_nan80(value) then return value + value end
+  if is_infinite80(value) then
+    if value < 0_clongdouble then return -1_clongdouble end
+    return value
+  end
+  if value < -48_clongdouble then
+    if nelibc_x87_rounding_mode() == 0x0800_cint then
+      return nelibc_neg_one_up_hw()
+    end
+    return -1_clongdouble
+  end
+  if value > -0.69_clongdouble and value < 0.69_clongdouble then
+    return nelibc_expm1l_small_hw(value)
+  end
+  return expl(value) - 1_clongdouble
 end
 
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>
