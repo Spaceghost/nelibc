@@ -263,9 +263,11 @@ musl export set.
   four hybrid profiles and standalone archives. The `nextafterl` edge checks
   now verify `FE_UNDERFLOW | FE_INEXACT` when stepping
   from zero to the least subnormal and `FE_OVERFLOW | FE_INEXACT` when stepping
-  from the largest finite value to infinity. The zero-to-subnormal path leaves
-  `errno` unchanged; overflow `errno` differs between the tested glibc and musl
-  hosts, so the differential test compares exception flags for that case.
+  from the largest finite value to infinity. Crossing from the least normal to
+  its subnormal predecessor raises underflow/inexact; stepping back to the
+  least normal does not. The zero-to-subnormal path leaves `errno` unchanged;
+  overflow `errno` differs between the tested glibc and musl hosts, so the
+  differential test compares exception flags for that case.
   The standalone behavior is covered under Zig, GCC, and TinyCC. Complex-math
   coverage now includes `cabs*`, `creal*`, `cimag*`, `conj*`,
   `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, `ccos*`, `csinh*`,

@@ -2382,6 +2382,35 @@ int main(void) {
             host_nextafter_overflow_flags, nelibc_nextafter_overflow_flags);
     return 1;
   }
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double host_nextafter_min_normal = nextafterl(LDBL_MIN, 0.0L);
+  int host_nextafter_min_normal_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double nelibc_nextafter_min_normal = nelibc_nextafterl(LDBL_MIN, 0.0L);
+  int nelibc_nextafter_min_normal_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  if (host_nextafter_min_normal != nelibc_nextafter_min_normal ||
+      host_nextafter_min_normal_flags != (FE_UNDERFLOW | FE_INEXACT) ||
+      nelibc_nextafter_min_normal_flags != host_nextafter_min_normal_flags) {
+    fprintf(stderr, "nextafterl normal-to-subnormal flags failed host=%x Nelibc=%x\n",
+            host_nextafter_min_normal_flags, nelibc_nextafter_min_normal_flags);
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double host_nextafter_min_normal_up =
+      nextafterl(host_nextafter_min_normal, LDBL_MIN);
+  int host_nextafter_min_normal_up_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double nelibc_nextafter_min_normal_up =
+      nelibc_nextafterl(host_nextafter_min_normal, LDBL_MIN);
+  int nelibc_nextafter_min_normal_up_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  if (host_nextafter_min_normal_up != LDBL_MIN ||
+      nelibc_nextafter_min_normal_up != host_nextafter_min_normal_up ||
+      host_nextafter_min_normal_up_flags != 0 ||
+      nelibc_nextafter_min_normal_up_flags != host_nextafter_min_normal_up_flags) {
+    fprintf(stderr, "nextafterl subnormal-to-normal flags failed host=%x Nelibc=%x\n",
+            host_nextafter_min_normal_up_flags, nelibc_nextafter_min_normal_up_flags);
+    return 1;
+  }
   errno = 0;
   if (!isinf(nelibc_hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) {
     fprintf(stderr, "hypotl overflow handling failed\n");

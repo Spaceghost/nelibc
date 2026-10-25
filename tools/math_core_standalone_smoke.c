@@ -77,6 +77,17 @@ int main(void) {
   if (feclearexcept(FE_ALL_EXCEPT) != 0 ||
       !isinf(nextafterl(LDBL_MAX, nextafter_infinity)) || errno != ERANGE ||
       fetestexcept(FE_OVERFLOW | FE_INEXACT) != (FE_OVERFLOW | FE_INEXACT)) return 211;
+  volatile long double largest_subnormal = nextafterl(LDBL_MIN, 0.0L);
+  errno = 0;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0 ||
+      nextafterl(LDBL_MIN, 0.0L) != largest_subnormal ||
+      errno != ERANGE ||
+      fetestexcept(FE_UNDERFLOW | FE_INEXACT) != (FE_UNDERFLOW | FE_INEXACT)) return 212;
+  errno = 0;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0 ||
+      nextafterl(largest_subnormal, LDBL_MIN) != LDBL_MIN ||
+      errno != 0 ||
+      fetestexcept(FE_OVERFLOW | FE_UNDERFLOW | FE_INEXACT) != 0) return 213;
   const int trapped_exceptions[] = {
       FE_INVALID, FE_DIVBYZERO, FE_OVERFLOW, FE_UNDERFLOW, FE_INEXACT};
   for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
