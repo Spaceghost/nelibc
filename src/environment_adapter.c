@@ -56,19 +56,25 @@ extern void nelibc_allocator_unlock(void) __attribute__((weak));
 extern void nelibc_stdio_fork_prepare(void) __attribute__((weak));
 extern void nelibc_stdio_fork_parent(void) __attribute__((weak));
 extern void nelibc_stdio_fork_child(void) __attribute__((weak));
+extern void nelibc_thread_fork_prepare(void) __attribute__((weak));
+extern void nelibc_thread_fork_parent(void) __attribute__((weak));
+extern void nelibc_thread_fork_child(void) __attribute__((weak));
 
 void nelibc_fork_prepare(void) {
   if (nelibc_stdio_fork_prepare != NULL) nelibc_stdio_fork_prepare();
+  if (nelibc_thread_fork_prepare != NULL) nelibc_thread_fork_prepare();
   if (nelibc_allocator_lock != NULL) nelibc_allocator_lock();
 }
 
 void nelibc_fork_parent(void) {
   if (nelibc_allocator_unlock != NULL) nelibc_allocator_unlock();
+  if (nelibc_thread_fork_parent != NULL) nelibc_thread_fork_parent();
   if (nelibc_stdio_fork_parent != NULL) nelibc_stdio_fork_parent();
 }
 
 void nelibc_fork_child(void) {
   if (nelibc_allocator_unlock != NULL) nelibc_allocator_unlock();
+  if (nelibc_thread_fork_child != NULL) nelibc_thread_fork_child();
   if (nelibc_stdio_fork_child != NULL) nelibc_stdio_fork_child();
 }
 

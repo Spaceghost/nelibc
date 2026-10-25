@@ -3406,6 +3406,45 @@ local function named_sem_registry_unlock(): void
   pthread_cancel_defer_end()
 end
 
+local function pthread_fork_global_lock(lock: *[0]cint): void <inline>
+  while nelibc_atomic_cas_int(lock, 0, 1) ~= 0 do
+    nelibc_raw_syscall3(24_culong, 0_culong, 0_culong, 0_culong)
+  end
+end
+
+local function pthread_fork_global_unlock(lock: *[0]cint): void <inline>
+  nelibc_atomic_store_int(lock, 0)
+  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(lock)), 129_culong,
+                      1_culong, 0_culong, 0_culong, 0_culong)
+end
+
+local function nelibc_thread_fork_prepare(): void <cexport, codename 'nelibc_thread_fork_prepare'>
+  pthread_fork_global_lock(&pthread_robust_slot_lock)
+  pthread_fork_global_lock(&pthread_key_lock)
+  pthread_fork_global_lock(&default_thread_attr_lock)
+  pthread_fork_global_lock(&named_semaphore_handles_lock)
+  local context = nelibc_thread_current_pthread_context()
+  if context ~= nilptr then pthread_fork_global_lock(&context.protect_lock) end
+end
+
+local function nelibc_thread_fork_parent(): void <cexport, codename 'nelibc_thread_fork_parent'>
+  local context = nelibc_thread_current_pthread_context()
+  if context ~= nilptr then pthread_fork_global_unlock(&context.protect_lock) end
+  pthread_fork_global_unlock(&named_semaphore_handles_lock)
+  pthread_fork_global_unlock(&default_thread_attr_lock)
+  pthread_fork_global_unlock(&pthread_key_lock)
+  pthread_fork_global_unlock(&pthread_robust_slot_lock)
+end
+
+local function nelibc_thread_fork_child(): void <cexport, codename 'nelibc_thread_fork_child'>
+  local context = nelibc_thread_current_pthread_context()
+  if context ~= nilptr then nelibc_atomic_store_int(&context.protect_lock, 0) end
+  nelibc_atomic_store_int(&named_semaphore_handles_lock, 0)
+  nelibc_atomic_store_int(&default_thread_attr_lock, 0)
+  nelibc_atomic_store_int(&pthread_key_lock, 0)
+  nelibc_atomic_store_int(&pthread_robust_slot_lock, 0)
+end
+
 local function named_sem_build_path(name: *[0]cchar <const>, path: *[0]cchar): cint
   if name == nilptr or name[0] ~= 47_cchar then return -1 end
   local name_length = strlen(name)

@@ -205,12 +205,22 @@ static void atfork_child_a(void) {
   else free(allocation);
   if (ftrylockfile(stdout) != 0) atfork_child_lock_failure = 1;
   else funlockfile(stdout);
+  pthread_key_t key;
+  if (pthread_key_create(&key, NULL) != 0) atfork_child_lock_failure = 1;
+  else {
+    if (pthread_setspecific(key, (void *)1) != 0 ||
+        pthread_getspecific(key) != (void *)1 || pthread_key_delete(key) != 0)
+      atfork_child_lock_failure = 1;
+  }
 }
 static void atfork_child_b(void) { atfork_order_add(6); }
 static void *atfork_registration_worker(void *unused) {
   (void)unused;
   while (!atomic_load_explicit(&atfork_registration_stop, memory_order_acquire)) {
     if (pthread_atfork(NULL, NULL, NULL) != 0) return (void *)1;
+    pthread_key_t key;
+    if (pthread_key_create(&key, NULL) != 0 || pthread_key_delete(key) != 0)
+      return (void *)2;
     atomic_fetch_add_explicit(&atfork_registration_count, 1, memory_order_relaxed);
     struct timespec pause = {.tv_sec = 0, .tv_nsec = 100000};
     nanosleep(&pause, NULL);
