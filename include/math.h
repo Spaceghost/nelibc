@@ -176,6 +176,7 @@ double remainder(double x, double y);
 long double remainderl(long double x, long double y);
 float remquof(float x, float y, int *quotient);
 double remquo(double x, double y, int *quotient);
+long double remquol(long double x, long double y, int *quotient);
 float fminf(float x, float y);
 double fmin(double x, double y);
 long double fminl(long double x, long double y);

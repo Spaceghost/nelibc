@@ -964,4 +964,38 @@ nelibc_remquo_hw:
   ret
 .size nelibc_remquo_hw, .-nelibc_remquo_hw
 
+/* FPREM1 returns the low quotient bits in C0/C3/C1 (Q2/Q1/Q0). */
+.globl nelibc_remquol_hw
+.type nelibc_remquol_hw,@function
+nelibc_remquol_hw:
+  fldt 24(%rsp)
+  fldt 8(%rsp)
+3:
+  fprem1
+  fnstsw %ax
+  testw $0x0400, %ax
+  jne 3b
+  movzwl %ax, %eax
+  movl %eax, %ecx
+  shrl $6, %ecx
+  andl $4, %ecx
+  movl %eax, %edx
+  shrl $13, %edx
+  andl $2, %edx
+  orl %edx, %ecx
+  movl %eax, %edx
+  shrl $9, %edx
+  andl $1, %edx
+  orl %edx, %ecx
+  movzwl 16(%rsp), %r8d
+  xorw 32(%rsp), %r8w
+  testw $0x8000, %r8w
+  jz 4f
+  negl %ecx
+4:
+  movl %ecx, (%rdi)
+  fstp %st(1)
+  ret
+.size nelibc_remquol_hw, .-nelibc_remquol_hw
+
 .section .note.GNU-stack,"",@progbits

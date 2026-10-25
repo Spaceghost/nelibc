@@ -412,6 +412,7 @@ local function nelibc_lrintl_hw(value: clongdouble): clonglong <cimport> end
 local function nelibc_lroundl_hw(value: clongdouble): clonglong <cimport> end
 local function nelibc_fmodl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
 local function nelibc_remainderl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
+local function nelibc_remquol_hw(x: clongdouble, y: clongdouble, quotient: *[0]cint): clongdouble <cimport> end
 local function nelibc_fabsl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_copysignl_hw(magnitude: clongdouble, sign: clongdouble): clongdouble <cimport> end
 local function nelibc_rint_hw(value: cdouble): cdouble <cimport> end
@@ -1291,6 +1292,16 @@ local function remquof(x: cfloat, y: cfloat, quotient: *[0]cint): cfloat
   local value = remquo((@cdouble)(x), (@cdouble)(y), &result)
   quotient[0] = result
   return (@cfloat)(value)
+end
+
+local function remquol(x: clongdouble, y: clongdouble, quotient: *[0]cint): clongdouble
+    <cexport, codename 'remquol'>
+  check_remainder_domain80(x, y)
+  if is_nan80(x) or is_nan80(y) or is_infinite80(x) or y == 0_clongdouble then
+    quotient[0] = 0_cint
+    return nelibc_remainderl_hw(x, y)
+  end
+  return nelibc_remquol_hw(x, y, quotient)
 end
 
 local function fmin(x: cdouble, y: cdouble): cdouble <cexport, codename 'fmin'>

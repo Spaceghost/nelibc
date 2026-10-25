@@ -175,6 +175,7 @@ extern float nelibc_remainderf(float, float);
 extern double nelibc_remainder(double, double);
 extern float nelibc_remquof(float, float, int *);
 extern double nelibc_remquo(double, double, int *);
+extern long double nelibc_remquol(long double, long double, int *);
 extern float nelibc_fminf(float, float);
 extern double nelibc_fmin(double, double);
 extern float nelibc_fmaxf(float, float);
@@ -2161,6 +2162,24 @@ int main(void) {
   if (!isnan(nelibc_remainderl(1.0L, 0.0L)) || errno != EDOM) {
     fprintf(stderr, "long-double remainder domain handling failed\n");
     return 1;
+  }
+  const long double remquol_inputs[][2] = {
+      {7.0L, 2.0L}, {-7.0L, 2.0L}, {7.0L, -2.0L}, {-7.0L, -2.0L},
+      {5.5L, 2.0L}, {-0.0L, 1.0L}, {LDBL_MIN, LDBL_MIN},
+      {extended, INFINITY}, {extended, 0.75L}, {-extended, 0.75L},
+      {0x1.0000000000000001p+70L, 3.0L}, {LDBL_MAX, 0x1p-1000L}};
+  for (size_t i = 0; i < sizeof remquol_inputs / sizeof remquol_inputs[0]; ++i) {
+    int expected_quotient = 0, actual_quotient = 0;
+    long double expected = remquol(remquol_inputs[i][0], remquol_inputs[i][1],
+                                   &expected_quotient);
+    long double actual = nelibc_remquol(remquol_inputs[i][0], remquol_inputs[i][1],
+                                        &actual_quotient);
+    if (actual != expected || (actual == 0.0L && signbit(actual) != signbit(expected)) ||
+        expected_quotient % 8 != actual_quotient % 8) {
+      fprintf(stderr, "remquol mismatch case=%zu remainder=%.21La/%.21La quotient=%d/%d\n",
+              i, expected, actual, expected_quotient, actual_quotient);
+      return 1;
+    }
   }
   const long double extended_values[] = {
       0.0L, -0.0L, 0.75L, -12.75L, extended, -extended,

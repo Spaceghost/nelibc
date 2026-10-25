@@ -162,7 +162,9 @@ int main(void) {
   if (remquo(7.0, 2.0, &quotient) != -1.0 || quotient != 4 ||
       remquo(-7.0, 2.0, &quotient) != 1.0 || quotient != -4 ||
       remquof(7.0f, 2.0f, &quotient) != -1.0f || quotient != 4 ||
-      remquof(-7.0f, 2.0f, &quotient) != 1.0f || quotient != -4) return 167;
+      remquof(-7.0f, 2.0f, &quotient) != 1.0f || quotient != -4 ||
+      remquol(7.0L, 2.0L, &quotient) != -1.0L || quotient != 4 ||
+      remquol(-7.0L, 2.0L, &quotient) != 1.0L || quotient != -4) return 167;
   double_bits extension_infinity = {.bits = UINT64_C(0x7FF0000000000000)};
   double_bits extension_nan = {.bits = UINT64_C(0x7FF8000000000000)};
   float_bits extension_infinityf = {.bits = UINT32_C(0x7F800000)};

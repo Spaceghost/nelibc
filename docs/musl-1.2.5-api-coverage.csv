@@ -1047,7 +1047,7 @@ removexattr,sys/xattr.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,
 remque,search.h,,,not-declared
 remquo,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 remquof,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-remquol,math.h,,,not-declared
+remquol,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 rename,stdio.h,nelibc_stdio_standalone.h;nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 renameat,stdio.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 res_init,resolv.h,,,not-declared
