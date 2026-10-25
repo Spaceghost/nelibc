@@ -196,6 +196,55 @@ nelibc_scalblnl_hw:
   ret
 .size nelibc_scalblnl_hw, .-nelibc_scalblnl_hw
 
+/* mode: 0 trunc, 1 floor, 2 ceil, 3 rint, 4 nearbyint. */
+.globl nelibc_roundl_hw
+.type nelibc_roundl_hw,@function
+nelibc_roundl_hw:
+  subq $48, %rsp
+  movl %edi, 4(%rsp)
+  fnstsw %ax
+  andw $0x0020, %ax
+  movw %ax, 6(%rsp)
+  fnstcw 0(%rsp)
+  movzwl 0(%rsp), %eax
+  cmpl $0, %edi
+  je .Lroundl_trunc
+  cmpl $1, %edi
+  je .Lroundl_floor
+  cmpl $2, %edi
+  je .Lroundl_ceil
+  jmp .Lroundl_apply
+.Lroundl_trunc:
+  andl $0xfffff3ff, %eax
+  orl $0x0c00, %eax
+  jmp .Lroundl_setcw
+.Lroundl_floor:
+  andl $0xfffff3ff, %eax
+  orl $0x0400, %eax
+  jmp .Lroundl_setcw
+.Lroundl_ceil:
+  andl $0xfffff3ff, %eax
+  orl $0x0800, %eax
+.Lroundl_setcw:
+  movw %ax, 2(%rsp)
+  fldcw 2(%rsp)
+.Lroundl_apply:
+  fldt 56(%rsp)
+  frndint
+  fldcw 0(%rsp)
+  cmpl $4, 4(%rsp)
+  jne .Lroundl_return
+  fnstenv 16(%rsp)
+  testw $0x0020, 6(%rsp)
+  jne .Lroundl_restore_env
+  andw $0xffdf, 20(%rsp)
+.Lroundl_restore_env:
+  fldenv 16(%rsp)
+.Lroundl_return:
+  addq $48, %rsp
+  ret
+.size nelibc_roundl_hw, .-nelibc_roundl_hw
+
 .globl nelibc_fmodl_hw
 .type nelibc_fmodl_hw,@function
 nelibc_fmodl_hw:

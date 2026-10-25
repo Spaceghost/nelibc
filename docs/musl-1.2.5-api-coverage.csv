@@ -134,7 +134,7 @@ ccoshl,complex.h,,,not-declared
 ccosl,complex.h,,,not-declared
 ceil,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ceilf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-ceill,math.h,,,not-declared
+ceill,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 cexp,complex.h,,,not-declared
 cexpf,complex.h,,,not-declared
 cexpl,complex.h,,,not-declared
@@ -366,7 +366,7 @@ flock,sys/file.h,,,not-declared
 flockfile,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 floor,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 floorf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-floorl,math.h,,,not-declared
+floorl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fma,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmaf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmal,math.h,,,not-declared
@@ -795,7 +795,7 @@ nanl,math.h,,,not-declared
 nanosleep,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nearbyint,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nearbyintf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-nearbyintl,math.h,,,not-declared
+nearbyintl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 newlocale,locale.h,,,not-declared
 nextafter,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 nextafterf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1061,7 +1061,7 @@ rewinddir,dirent.h,dirent.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 rindex,strings.h,strings.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 rint,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 rintf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-rintl,math.h,,,not-declared
+rintl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 rmdir,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 round,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 roundf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1342,7 +1342,7 @@ towupper_l,wctype.h,,,not-declared
 trunc,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 truncate,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 truncf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-truncl,math.h,,,not-declared
+truncl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 tsearch,search.h,,,not-declared
 ttyname,unistd.h,,,not-declared
 ttyname_r,unistd.h,,,not-declared

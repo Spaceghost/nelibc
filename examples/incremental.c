@@ -94,6 +94,11 @@ int main(void) {
   const long double long_double_scaled = ldexpl(1.5L, 4);
   const long double long_double_binary = scalbnl(-0.75L, -2);
   const long double long_double_long = scalblnl(0.5L, 4L);
+  const long double long_double_truncated = truncl(-1.75L);
+  const long double long_double_floor = floorl(-0.25L);
+  const long double long_double_ceiling = ceill(-0.25L);
+  const long double long_double_rounded = rintl(2.5L);
+  const long double long_double_nearby = nearbyintl(-1.5L);
   if (!(inverse_hyperbolic_sine > 0.881373587019542 && inverse_hyperbolic_sine < 0.881373587019544)) return 10;
   if (!(inverse_hyperbolic_sine_float > 0.8813735f && inverse_hyperbolic_sine_float < 0.8813737f)) return 11;
   if (!(inverse_hyperbolic_cosine > 1.316957896924816 && inverse_hyperbolic_cosine < 1.316957896924818)) return 12;
@@ -145,7 +150,9 @@ int main(void) {
       exponential_base_ten != 100.0 ||
       long_scaled != 12.0 || long_scaled_float != -12.0f ||
       long_double_scaled != 24.0L || long_double_binary != -0.1875L ||
-      long_double_long != 8.0L) {
+      long_double_long != 8.0L || long_double_truncated != -1.0L ||
+      long_double_floor != -1.0L || long_double_ceiling != -0.0L ||
+      long_double_rounded != 2.0L || long_double_nearby != -2.0L) {
     nelibc_free(copy);
     return 4;
   }

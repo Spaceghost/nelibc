@@ -129,6 +129,11 @@ extern long double nelibc_logbl(long double);
 extern long double nelibc_ldexpl(long double, int);
 extern long double nelibc_scalbnl(long double, int);
 extern long double nelibc_scalblnl(long double, long);
+extern long double nelibc_truncl(long double);
+extern long double nelibc_floorl(long double);
+extern long double nelibc_ceill(long double);
+extern long double nelibc_rintl(long double);
+extern long double nelibc_nearbyintl(long double);
 extern float nelibc_fmodf(float, float);
 extern double nelibc_fmod(double, double);
 extern float nelibc_remainderf(float, float);
@@ -1393,6 +1398,47 @@ int main(void) {
     fprintf(stderr, "long-double scaling mismatch\n");
     return 1;
   }
+  const long double rounding_values[] = {
+      0.0L, -0.0L, 0.25L, -0.25L, 1.5L, -1.5L,
+      0x1p-16445L, LDBL_MAX, INFINITY, NAN};
+  for (size_t i = 0; i < sizeof(rounding_values) / sizeof(rounding_values[0]); ++i) {
+    const long double value = rounding_values[i];
+    const long double expected[] = {truncl(value), floorl(value), ceill(value)};
+    const long double actual[] = {
+        nelibc_truncl(value), nelibc_floorl(value), nelibc_ceill(value)};
+    for (size_t j = 0; j < 3; ++j) {
+      if ((!isnan(value) && actual[j] != expected[j]) ||
+          (isnan(value) && !isnan(actual[j]))) {
+        fprintf(stderr, "long-double directed rounding mismatch at %zu/%zu\n", i, j);
+        return 1;
+      }
+    }
+  }
+  int long_saved_rounding = fegetround();
+  const int long_rounding_modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+  for (size_t i = 0; i < sizeof(long_rounding_modes) / sizeof(long_rounding_modes[0]); ++i) {
+    if (fesetround(long_rounding_modes[i]) != 0) return 1;
+    if (nelibc_rintl(2.5L) != rintl(2.5L) ||
+        nelibc_rintl(-1.5L) != rintl(-1.5L) ||
+        nelibc_nearbyintl(2.5L) != nearbyintl(2.5L)) {
+      fprintf(stderr, "long-double active-mode rounding mismatch\n");
+      return 1;
+    }
+  }
+  if (fesetround(long_saved_rounding) != 0) return 1;
+  feclearexcept(FE_ALL_EXCEPT);
+  (void)nelibc_nearbyintl(2.25L);
+  if (fetestexcept(FE_INEXACT) != 0) {
+    fprintf(stderr, "nearbyintl unexpectedly raised FE_INEXACT\n");
+    return 1;
+  }
+  feraiseexcept(FE_INEXACT);
+  (void)nelibc_nearbyintl(2.25L);
+  if (fetestexcept(FE_INEXACT) == 0) {
+    fprintf(stderr, "nearbyintl cleared pre-existing FE_INEXACT\n");
+    return 1;
+  }
+  feclearexcept(FE_ALL_EXCEPT);
   errno = 0;
   if (!isinf(nelibc_ldexpl(1.0L, LDBL_MAX_EXP)) || errno != ERANGE) {
     fprintf(stderr, "ldexpl overflow errno mismatch\n");
