@@ -3,6 +3,10 @@
 
 #include <stddef.h>
 
+#if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
+#include <locale.h>
+#endif
+
 void exit(int status);
 void _Exit(int status);
 int atexit(void (*function)(void));
@@ -37,6 +41,11 @@ char *realpath(const char *restrict path, char *restrict resolved_path);
 float strtof(const char *restrict text, char **restrict end_text);
 double strtod(const char *restrict text, char **restrict end_text);
 long double strtold(const char *restrict text, char **restrict end_text);
+#if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
+float strtof_l(const char *restrict text, char **restrict end_text, locale_t locale);
+double strtod_l(const char *restrict text, char **restrict end_text, locale_t locale);
+long double strtold_l(const char *restrict text, char **restrict end_text, locale_t locale);
+#endif
 long strtol(const char *restrict text, char **restrict end_text, int base);
 unsigned long strtoul(const char *restrict text, char **restrict end_text, int base);
 long long strtoll(const char *restrict text, char **restrict end_text, int base);

@@ -2,12 +2,15 @@
 ## pragmas.noentrypoint = true
 
 require 'C'
+## cinclude '<locale.h>'
 
 global C.LDBL_MAX: clongdouble <const,cimport,cinclude'<float.h>'>
 global C.LDBL_MIN: clongdouble <const,cimport,cinclude'<float.h>'>
+global C.locale_t: type <cimport,nodecl> = pointer
 
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_radix_character(): cint <cimport> end
+local function uselocale(locale: C.locale_t): C.locale_t <cimport,nodecl> end
 local function malloc(size: csize): pointer <cimport> end
 local function free(value: pointer): void <cimport> end
 
@@ -1990,7 +1993,7 @@ local function strtod(text: *[0]cchar <const>, end_text: **cchar): cdouble <cexp
   return (@cdouble)(strtod_impl(text, end_text, 53))
 end
 
-local function strtof(text: *[0]cchar <const>, end_text: **cchar): cfloat <cexport, codename 'strtof'>
+local function strtof_impl(text: *[0]cchar <const>, end_text: **cchar): cfloat <inline>
   local widened: cdouble = (@cdouble)(strtod_impl(text, end_text, 24))
   local result: cfloat = (@cfloat)(widened)
   if (widened > 3.4028234663852886e38_cdouble and widened <= 1.7976931348623157e308_cdouble) or
@@ -2004,6 +2007,49 @@ local function strtof(text: *[0]cchar <const>, end_text: **cchar): cfloat <cexpo
   return result
 end
 
+local function strtof(text: *[0]cchar <const>, end_text: **cchar): cfloat <cexport, codename 'strtof'>
+  return strtof_impl(text, end_text)
+end
+
 local function strtold(text: *[0]cchar <const>, end_text: **cchar): clongdouble <cexport, codename 'strtold'>
   return strtod_impl(text, end_text, 64)
+end
+
+local function strtof_l(text: *[0]cchar <const>, end_text: **cchar, locale: C.locale_t): cfloat
+    <cexport, codename 'strtof_l'>
+  local previous: C.locale_t = uselocale(locale)
+  if previous == (@C.locale_t)(0) then
+    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = text end
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return 0.0_cfloat
+  end
+  local result: cfloat = strtof_impl(text, end_text)
+  uselocale(previous)
+  return result
+end
+
+local function strtod_l(text: *[0]cchar <const>, end_text: **cchar, locale: C.locale_t): cdouble
+    <cexport, codename 'strtod_l'>
+  local previous: C.locale_t = uselocale(locale)
+  if previous == (@C.locale_t)(0) then
+    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = text end
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return 0.0_cdouble
+  end
+  local result: cdouble = (@cdouble)(strtod_impl(text, end_text, 53))
+  uselocale(previous)
+  return result
+end
+
+local function strtold_l(text: *[0]cchar <const>, end_text: **cchar, locale: C.locale_t): clongdouble
+    <cexport, codename 'strtold_l'>
+  local previous: C.locale_t = uselocale(locale)
+  if previous == (@C.locale_t)(0) then
+    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = text end
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return 0.0_clongdouble
+  end
+  local result: clongdouble = strtod_impl(text, end_text, 64)
+  uselocale(previous)
+  return result
 end

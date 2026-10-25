@@ -12,7 +12,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread locale handles carry ctype, numeric, monetary, collation, and time state, while non-C collation and additional time locales remain limited | Add locale-sensitive non-C collation and time locales; expand locale data |
-| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 532 undeclared candidates and record explicit intentional omissions |
+| P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 529 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
 ## Current evidence
@@ -183,9 +183,9 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 1,002 declared names. All four hybrid
-  archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 830;
-  all three standalone archives export 1,003 including one implementation-only
+- The regenerated API inventory has 1,005 declared names. All four hybrid
+  archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 833;
+  all three standalone archives export 1,006 including one implementation-only
   entry. There are 162 host-delegated APIs and 10 declared-but-unexported
   Zig/musl archive gaps.
   `pthread_mutex_clocklock` is provided by the glibc host in hybrid mode and
@@ -193,11 +193,11 @@ musl export set.
   a completeness percentage. See `build/api-coverage.csv` after
   `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,472 declarations
-  that are also exported by the pinned release archives: Nelibc exports 777
+  that are also exported by the pinned release archives: Nelibc exports 780
   in at least one tested hybrid profile, delegates 163 to a hybrid host, and does not
-  yet declare 532. No declared API is missing from the tested hybrid archives.
-  The largest undeclared groups are wide characters (42), stdlib (33), network
-  database APIs (32), and unistd (29). These
+  yet declare 529. No declared API is missing from the tested hybrid archives.
+  The largest undeclared groups are wide characters (42), network database
+  APIs (32), stdlib (30), and unistd (29). These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
   command.
@@ -205,6 +205,11 @@ musl export set.
   helpers, plus glibc's four C23 parser aliases. Consumer checks pass under
   Zig/glibc, GCC/glibc, Zig/musl, TinyCC/glibc, and standalone Zig, GCC, and
   TinyCC; the C23 cases check `0b` parsing and the signed/unsigned limits.
+- `strtof_l`, `strtod_l`, and `strtold_l` reuse the exact Nelua conversion
+  path under the requested thread locale and restore the prior locale before
+  returning. Consumer checks cover C and German decimal separators where the
+  selected libc provides German locale data, plus Nelibc's standalone German
+  locale on all three standalone compiler profiles.
 - `make smoke-matrix` passed on 2026-10-25 across Zig/glibc, GCC/glibc,
   Zig/musl, TinyCC/glibc, and standalone Zig, GCC, and TinyCC. This runs the
   ABI, libc-differential, syscall, thread, and math smoke suites; the binary

@@ -46,6 +46,48 @@ static void system_signal_probe(int signal_number) {
   (void)signal_number;
 }
 
+static int locale_float_parser_probe(void) {
+  locale_t c_locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+  if (c_locale == (locale_t)0) return 1;
+  locale_t original_locale = uselocale((locale_t)0);
+  char *end = NULL;
+  errno = 0;
+  if (strtof_l("12.5tail", &end, c_locale) != 12.5f ||
+      end == NULL || strcmp(end, "tail") != 0 || errno != 0) return 2;
+  end = NULL;
+  if (strtod_l("12.5tail", &end, c_locale) != 12.5 ||
+      end == NULL || strcmp(end, "tail") != 0 || errno != 0) return 3;
+  end = NULL;
+  if (strtold_l("12.5tail", &end, c_locale) != 12.5L ||
+      end == NULL || strcmp(end, "tail") != 0 || errno != 0) return 4;
+  if (uselocale((locale_t)0) != original_locale) return 5;
+  locale_t german_locale = newlocale(LC_NUMERIC_MASK, "de_DE.UTF-8", (locale_t)0);
+  if (german_locale != (locale_t)0) {
+    locale_t saved_locale = uselocale(german_locale);
+    int german_radix_available =
+        strcmp(localeconv()->decimal_point, ",") == 0;
+    uselocale(saved_locale);
+    if (!german_radix_available) {
+      freelocale(german_locale);
+      freelocale(c_locale);
+      return 0;
+    }
+    end = NULL;
+    if (strtof_l("12,5tail", &end, german_locale) != 12.5f ||
+        end == NULL || strcmp(end, "tail") != 0) return 6;
+    end = NULL;
+    if (strtod_l("12,5tail", &end, german_locale) != 12.5 ||
+        end == NULL || strcmp(end, "tail") != 0) return 7;
+    end = NULL;
+    if (strtold_l("12,5tail", &end, german_locale) != 12.5L ||
+        end == NULL || strcmp(end, "tail") != 0) return 8;
+    if (uselocale((locale_t)0) != original_locale) return 9;
+    freelocale(german_locale);
+  }
+  freelocale(c_locale);
+  return 0;
+}
+
 #ifdef NELIBC_STANDALONE
 typedef struct {
   locale_t locales[7];
@@ -79,6 +121,17 @@ static void *standalone_numeric_locale_worker(void *argument) {
   if (uselocale(numeric_c) != LC_GLOBAL_LOCALE ||
       strcmp(localeconv()->decimal_point, ".") != 0 || !iswalpha(0xe9))
     return (void *)1;
+  char *parse_end = NULL;
+  if (strtof_l("12,5tail", &parse_end, numeric_de) != 12.5f ||
+      parse_end == NULL || strcmp(parse_end, "tail") != 0) return (void *)21;
+  parse_end = NULL;
+  if (strtod_l("12,5tail", &parse_end, numeric_de) != 12.5 ||
+      parse_end == NULL || strcmp(parse_end, "tail") != 0) return (void *)22;
+  parse_end = NULL;
+  if (strtold_l("12,5tail", &parse_end, numeric_de) != 12.5L ||
+      parse_end == NULL || strcmp(parse_end, "tail") != 0) return (void *)23;
+  if (strcmp(localeconv()->decimal_point, ".") != 0) return (void *)24;
+  if (uselocale((locale_t)0) != numeric_c) return (void *)25;
   struct lconv *thread_locale_data = localeconv();
   args->locale_data_isolated = thread_locale_data != args->main_locale_data &&
       strcmp(thread_locale_data->decimal_point, ".") == 0;
@@ -106,6 +159,17 @@ static void *standalone_numeric_locale_worker(void *argument) {
       uselocale(LC_GLOBAL_LOCALE) != numeric_de ||
       strcmp(localeconv()->decimal_point, ",") != 0 || !iswalpha(0xe9))
     return (void *)4;
+  end = NULL;
+  if (strtof_l("12.5tail", &end, numeric_c) != 12.5f ||
+      end == NULL || strcmp(end, "tail") != 0) return (void *)31;
+  end = NULL;
+  if (strtod_l("12.5tail", &end, numeric_c) != 12.5 ||
+      end == NULL || strcmp(end, "tail") != 0) return (void *)32;
+  end = NULL;
+  if (strtold_l("12.5tail", &end, numeric_c) != 12.5L ||
+      end == NULL || strcmp(end, "tail") != 0) return (void *)33;
+  if (strcmp(localeconv()->decimal_point, ",") != 0) return (void *)34;
+  if (uselocale((locale_t)0) != LC_GLOBAL_LOCALE) return (void *)35;
   if (strcmp(localeconv()->decimal_point, ",") != 0)
     return (void *)6;
   if (uselocale(monetary_de) != LC_GLOBAL_LOCALE ||
@@ -998,6 +1062,8 @@ done:
 }
 
 int main(int argc, char **argv) {
+  int locale_float_parser_result = locale_float_parser_probe();
+  if (locale_float_parser_result != 0) return 89 + locale_float_parser_result;
   void *minimal_aligned = memalign(1, 17);
   if (minimal_aligned == NULL || (uintptr_t)minimal_aligned % sizeof(void *) != 0)
     return 82;
@@ -1537,7 +1603,8 @@ int main(int argc, char **argv) {
       duplocale(LC_GLOBAL_LOCALE) != numeric_de_monetary_de ||
       newlocale(LC_MONETARY_MASK, "C", numeric_de_monetary_de) != numeric_de ||
       setlocale(LC_MONETARY, "C") == NULL ||
-      setlocale(LC_NUMERIC, "C") == NULL) return 88;
+      setlocale(LC_NUMERIC, "C") == NULL)
+    return 88 + (int)(uintptr_t)numeric_worker_result;
   pthread_t locale_worker;
   void *locale_worker_result = 0;
   if (pthread_create(&locale_worker, 0, standalone_uselocale_worker, ctype_c) != 0 ||
