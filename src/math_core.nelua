@@ -3477,9 +3477,14 @@ local function nextafterl(x: clongdouble, y: clongdouble): clongdouble
   end
 
   local result = current.value
-  if is_infinite80(result) or
-      ((current.parts.sign_exponent & 0x7fff_cushort) == 0_cushort) then
+  local result_exponent = current.parts.sign_exponent & 0x7fff_cushort
+  if is_infinite80(result) then
     math_range_error()
+    nelibc_math_raise_except(0x28_cint) -- FE_OVERFLOW | FE_INEXACT
+  elseif result_exponent == 0_cushort then
+    -- Both glibc and musl leave errno unchanged for zero -> minimum subnormal.
+    if x ~= 0_clongdouble then math_range_error() end
+    nelibc_math_raise_except(0x30_cint) -- FE_UNDERFLOW | FE_INEXACT
   end
   return result
 end

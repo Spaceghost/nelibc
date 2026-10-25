@@ -2349,13 +2349,37 @@ int main(void) {
     }
   }
   errno = 0;
-  if (nelibc_nextafterl(0.0L, 1.0L) != nextafter_minimum || errno != ERANGE) {
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double host_nextafter_zero = nextafterl(0.0L, 1.0L);
+  int host_nextafter_zero_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  int host_nextafter_zero_errno = errno;
+  errno = 0;
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double nelibc_nextafter_zero = nelibc_nextafterl(0.0L, 1.0L);
+  int nelibc_nextafter_zero_flags = fetestexcept(FE_UNDERFLOW | FE_INEXACT);
+  if (nelibc_nextafter_zero != nextafter_minimum ||
+      host_nextafter_zero != nelibc_nextafter_zero ||
+      host_nextafter_zero_flags != (FE_UNDERFLOW | FE_INEXACT) ||
+      nelibc_nextafter_zero_flags != host_nextafter_zero_flags ||
+      errno != host_nextafter_zero_errno) {
     fprintf(stderr, "nextafterl zero/subnormal handling failed\n");
     return 1;
   }
   errno = 0;
-  if (!isinf(nelibc_nextafterl(LDBL_MAX, INFINITY)) || errno != ERANGE) {
-    fprintf(stderr, "nextafterl overflow handling failed\n");
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double host_nextafter_overflow = nextafterl(LDBL_MAX, INFINITY);
+  int host_nextafter_overflow_flags = fetestexcept(FE_OVERFLOW | FE_INEXACT);
+  errno = 0;
+  feclearexcept(FE_ALL_EXCEPT);
+  volatile long double nelibc_nextafter_overflow = nelibc_nextafterl(LDBL_MAX, INFINITY);
+  int nelibc_nextafter_overflow_flags = fetestexcept(FE_OVERFLOW | FE_INEXACT);
+  /* musl and glibc differ on ERANGE here; compare their required flags. */
+  if (!isinf(nelibc_nextafter_overflow) ||
+      host_nextafter_overflow != nelibc_nextafter_overflow ||
+      host_nextafter_overflow_flags != (FE_OVERFLOW | FE_INEXACT) ||
+      nelibc_nextafter_overflow_flags != host_nextafter_overflow_flags) {
+    fprintf(stderr, "nextafterl overflow flags failed host=%x Nelibc=%x\n",
+            host_nextafter_overflow_flags, nelibc_nextafter_overflow_flags);
     return 1;
   }
   errno = 0;

@@ -260,8 +260,14 @@ musl export set.
   `truncl`, `floorl`, `ceill`, `rintl`, and
   `nearbyintl`, `roundl`, `lrintl`, `llrintl`, `lroundl`, and `llroundl`, plus
   binary32/64/80 internal classification and sign-bit functions, through all
-  four hybrid profiles and standalone archives. Its
-  complex-math coverage now includes `cabs*`, `creal*`, `cimag*`, `conj*`,
+  four hybrid profiles and standalone archives. The `nextafterl` edge checks
+  now verify `FE_UNDERFLOW | FE_INEXACT` when stepping
+  from zero to the least subnormal and `FE_OVERFLOW | FE_INEXACT` when stepping
+  from the largest finite value to infinity. The zero-to-subnormal path leaves
+  `errno` unchanged; overflow `errno` differs between the tested glibc and musl
+  hosts, so the differential test compares exception flags for that case.
+  The standalone behavior is covered under Zig, GCC, and TinyCC. Complex-math
+  coverage now includes `cabs*`, `creal*`, `cimag*`, `conj*`,
   `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, `ccos*`, `csinh*`,
   `ccosh*`, `ctan*`, `ctanh*`, `catan*`, `catanh*`, `casin*`, `cacos*`,
   `casinh*`, `cacosh*`, and `cpow*`: a small C ABI shim extracts components and

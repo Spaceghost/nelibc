@@ -68,6 +68,15 @@ int main(void) {
       fetestexcept(FE_INEXACT) != 0) return 197;
   if (fesetenv(FE_DFL_ENV) != 0 || fegetround() != FE_TONEAREST ||
       fetestexcept(FE_ALL_EXCEPT) != 0 || fesetround(FE_TONEAREST) != 0) return 194;
+  volatile long double nextafter_infinity = LDBL_MAX * 2.0L;
+  errno = 0;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0 ||
+      nextafterl(0.0L, 1.0L) != 0x1p-16445L || errno != 0 ||
+      fetestexcept(FE_UNDERFLOW | FE_INEXACT) != (FE_UNDERFLOW | FE_INEXACT)) return 210;
+  errno = 0;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0 ||
+      !isinf(nextafterl(LDBL_MAX, nextafter_infinity)) || errno != ERANGE ||
+      fetestexcept(FE_OVERFLOW | FE_INEXACT) != (FE_OVERFLOW | FE_INEXACT)) return 211;
   const int trapped_exceptions[] = {
       FE_INVALID, FE_DIVBYZERO, FE_OVERFLOW, FE_UNDERFLOW, FE_INEXACT};
   for (unsigned i = 0; i < sizeof(trapped_exceptions) / sizeof(trapped_exceptions[0]); ++i) {
