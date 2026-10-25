@@ -1449,6 +1449,68 @@ local function fmal(x: clongdouble, y: clongdouble, z: clongdouble): clongdouble
   return nelibc_fmal(x, y, z)
 end
 
+local PowlDD: type = @record{hi: clongdouble, lo: clongdouble}
+
+local function powl_dd_normalize(hi: clongdouble, lo: clongdouble): PowlDD
+  local sum = hi + lo
+  return {hi = sum, lo = lo - (sum - hi)}
+end
+
+local function powl_dd_add(a: PowlDD, b: PowlDD): PowlDD
+  local sum = a.hi + b.hi
+  local split = sum - a.hi
+  local error = (a.hi - (sum - split)) + (b.hi - split) + a.lo + b.lo
+  return powl_dd_normalize(sum, error)
+end
+
+local function powl_dd_mul(a: PowlDD, b: PowlDD): PowlDD
+  local product = a.hi * b.hi
+  local error = nelibc_fmal(a.hi, b.hi, -product) + a.hi * b.lo + a.lo * b.hi
+  return powl_dd_normalize(product, error)
+end
+
+local function powl_dd_div(a: PowlDD, b: PowlDD): PowlDD
+  local quotient = a.hi / b.hi
+  local product = powl_dd_mul({hi = quotient, lo = 0_clongdouble}, b)
+  local remainder = powl_dd_add(a, {hi = -product.hi, lo = -product.lo})
+  local correction = (remainder.hi + remainder.lo) / b.hi
+  return powl_dd_normalize(quotient, correction)
+end
+
+-- Double-double log2(1+x), using the rapidly convergent atanh series.
+local function powl_log2p1_dd(value: clongdouble): PowlDD
+  local numerator: PowlDD = {hi = value, lo = 0_clongdouble}
+  local denominator = powl_dd_add(
+    {hi = 2_clongdouble, lo = 0_clongdouble}, numerator
+  )
+  local z = powl_dd_div(numerator, denominator)
+  local z_squared = powl_dd_mul(z, z)
+  local term = z
+  local sum = z
+  for index = 1, 47 do
+    term = powl_dd_mul(term, z_squared)
+    local odd = (@clongdouble)(2 * index + 1)
+    local contribution = powl_dd_div(term, {hi = odd, lo = 0_clongdouble})
+    sum = powl_dd_add(sum, contribution)
+  end
+  return powl_dd_normalize(2_clongdouble * sum.hi, 2_clongdouble * sum.lo)
+end
+
+local function powl_mantissa_log2_dd(mantissa: clongdouble): PowlDD
+  local input: clongdouble
+  local integer_part = 0_clongdouble
+  if mantissa <= sqrtl(2_clongdouble) then
+    input = mantissa - 1_clongdouble
+  else
+    input = 0.5_clongdouble * mantissa - 1_clongdouble
+    integer_part = 1_clongdouble
+  end
+  local logarithm = powl_log2p1_dd(input)
+  local log_two = powl_log2p1_dd(1_clongdouble)
+  local result = powl_dd_div(logarithm, log_two)
+  return powl_dd_add(result, {hi = integer_part, lo = 0_clongdouble})
+end
+
 local function powl_scaled_exponent_is_integer(exponent: clongdouble, multiplier: cint): boolean <inline>
   if multiplier == 0_cint then return true end
   local bits: LongDoubleBits = {value = exponent}
@@ -1536,7 +1598,7 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
   local fractional_exponent_limit = 256_clongdouble
   if nelibc_x87_rounding_mode() == 0_cint then
-    fractional_exponent_limit = 576_clongdouble
+    fractional_exponent_limit = 4096_clongdouble
   end
   -- Preserve exact powers of two, including fractional exponents whose product
   -- with the base's binary exponent is integral.
@@ -1591,18 +1653,24 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
       local scaled_error = nelibc_fmal(exponent, (@clongdouble)(base_exponent), -scaled_exponent)
       local integral_exponent = truncl(scaled_exponent)
       local fractional_exponent = scaled_exponent - integral_exponent + scaled_error
-      local mantissa_log2: clongdouble
-      if mantissa <= sqrtl(2_clongdouble) then
-        mantissa_log2 = nelibc_log2p1l_small_hw(mantissa - 1_clongdouble)
+      local mantissa_log2: PowlDD
+      if exponent_magnitude <= 576_clongdouble then
+        local logarithm: clongdouble
+        if mantissa <= sqrtl(2_clongdouble) then
+          logarithm = nelibc_log2p1l_small_hw(mantissa - 1_clongdouble)
+        else
+          logarithm = 1_clongdouble +
+              nelibc_log2p1l_small_hw(0.5_clongdouble * mantissa - 1_clongdouble)
+        end
+        mantissa_log2 = {hi = logarithm, lo = 0_clongdouble}
       else
-        mantissa_log2 = 1_clongdouble +
-            nelibc_log2p1l_small_hw(0.5_clongdouble * mantissa - 1_clongdouble)
+        mantissa_log2 = powl_mantissa_log2_dd(mantissa)
       end
-      local mantissa_scaled_exponent = exponent * mantissa_log2
-      local mantissa_scaled_error = nelibc_fmal(
-        exponent, mantissa_log2, -mantissa_scaled_exponent
+      local mantissa_scaled_exponent = powl_dd_mul(
+        mantissa_log2, {hi = exponent, lo = 0_clongdouble}
       )
-      local mantissa_power = exp2l(mantissa_scaled_exponent) * exp2l(mantissa_scaled_error)
+      local mantissa_power = exp2l(mantissa_scaled_exponent.hi) *
+          exp2l(mantissa_scaled_exponent.lo)
       local fractional_power = exp2l(fractional_exponent)
       result = ldexpl(mantissa_power * fractional_power, (@cint)(integral_exponent))
       if value < 0_clongdouble and odd then result = -result end

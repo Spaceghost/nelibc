@@ -2080,10 +2080,10 @@ int main(void) {
   for (size_t i = 0; i < 512; ++i) {
     const long double mantissa = 1.0L +
         (long double)(next_bits() >> 1) * 0x1p-63L;
-    const int binary_exponent = (int)(next_bits() % 129) - 64;
+    const int binary_exponent = (int)(next_bits() % 9) - 4;
     const long double base = ldexpl(mantissa, binary_exponent);
     long double exponent = 0.25L +
-        (long double)(next_bits() >> 1) * 0x1p-63L * 575.75L;
+        (long double)(next_bits() >> 1) * 0x1p-63L * 4095.75L;
     if (next_bits() & 1) exponent = -exponent;
     const long double expected = powl(base, exponent);
     const long double actual = nelibc_powl(base, exponent);
