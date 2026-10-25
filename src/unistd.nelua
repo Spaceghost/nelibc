@@ -444,6 +444,18 @@ local function clock_nanosleep(clock_id: cint, flags: cint, requested: pointer <
 end
 
 local Timespec: type = @record{tv_sec: clong, tv_nsec: clong}
+local function usleep(microseconds: cuint): cint <cexport, codename 'usleep'>
+  if microseconds >= 1000000_cuint then
+    nelibc_errno_location()[0] = 22_cint -- EINVAL
+    return -1_cint
+  end
+  local requested: Timespec = {
+    tv_sec = 0_clong,
+    tv_nsec = (@clong)(microseconds) * 1000_clong
+  }
+  return nanosleep((@pointer)(&requested), nilptr)
+end
+
 local Tm: type = @record{
   tm_sec: cint, tm_min: cint, tm_hour: cint, tm_mday: cint, tm_mon: cint,
   tm_year: cint, tm_wday: cint, tm_yday: cint, tm_isdst: cint,

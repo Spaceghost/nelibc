@@ -320,6 +320,9 @@ int getdomainname(char *name, size_t length);
 int getpid(void);
 int getdtablesize(void);
 pid_t fork(void);
+#if defined(_DEFAULT_SOURCE) || defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
+int usleep(unsigned int usec);
+#endif
 int execve(const char *pathname, char *const argv[], char *const envp[]);
 int fexecve(int fd, char *const argv[], char *const envp[]);
 int execv(const char *pathname, char *const argv[]);

@@ -1365,7 +1365,7 @@ unshare,sched.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemen
 updwtmp,utmp.h,,,not-declared
 updwtmpx,utmpx.h,,,not-declared
 uselocale,locale.h,,,not-declared
-usleep,unistd.h,,,not-declared
+usleep,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 utime,utime.h,,,not-declared
 utimensat,sys/stat.h,sys/stat.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 utimes,sys/time.h,,,not-declared

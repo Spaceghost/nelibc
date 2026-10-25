@@ -672,6 +672,9 @@ int main(int argc, char **argv) {
   struct rlimit descriptor_limit;
   if (getrlimit(RLIMIT_NOFILE, &descriptor_limit) != 0 ||
       getdtablesize() != (int)descriptor_limit.rlim_cur) return 30;
+  if (usleep(1000) != 0) return 31;
+  errno = 0;
+  if (usleep(1000000) != -1 || errno != EINVAL) return 32;
   const unsigned char swab_source[] = {1, 2, 3, 4, 5};
   unsigned char swab_destination[] = {9, 9, 9, 9, 9};
   swab(swab_source, swab_destination, 5);
