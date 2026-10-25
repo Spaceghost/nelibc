@@ -4553,3 +4553,101 @@ local function nelibc_cexpl_parts(x: clongdouble, y: clongdouble,
   real_out[0] = scale * cosl(y)
   imaginary_out[0] = scale * sinl(y)
 end
+
+-- Compute log(|x+iy|) without forming hypot(x,y): hypot can overflow when
+-- both components are near the format maximum even though the logarithm fits.
+local function nelibc_clogf_parts(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_clogf_parts'>
+  if is_infinite32(x) or is_infinite32(y) then
+    real_out[0] = float_from_bits(0x7F800000_cuint)
+    imaginary_out[0] = atan2f(y, x)
+    return
+  end
+  if is_nan32(x) or is_nan32(y) then
+    local nan_value = x + y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  local ax = fabsf(x)
+  local ay = fabsf(y)
+  local maximum = ax
+  local minimum = ay
+  if maximum < minimum then
+    maximum = ay
+    minimum = ax
+  end
+  if maximum == 0_cfloat then
+    real_out[0] = logf(maximum)
+  else
+    local ratio = minimum / maximum
+    real_out[0] = logf(maximum) + 0.5_cfloat * log1pf(ratio * ratio)
+  end
+  imaginary_out[0] = atan2f(y, x)
+end
+
+local function nelibc_clog_parts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_clog_parts'>
+  if is_infinite64(x) or is_infinite64(y) then
+    real_out[0] = double_from_bits(0x7ff0000000000000_culonglong)
+    imaginary_out[0] = atan2(y, x)
+    return
+  end
+  if is_nan64(x) or is_nan64(y) then
+    local nan_value = x + y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  local ax = fabs(x)
+  local ay = fabs(y)
+  local maximum = ax
+  local minimum = ay
+  if maximum < minimum then
+    maximum = ay
+    minimum = ax
+  end
+  if maximum == 0_cdouble then
+    real_out[0] = log(maximum)
+  else
+    local ratio = minimum / maximum
+    real_out[0] = log(maximum) + 0.5_cdouble * log1p(ratio * ratio)
+  end
+  imaginary_out[0] = atan2(y, x)
+end
+
+local function nelibc_clogl_parts(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_clogl_parts'>
+  if is_infinite80(x) or is_infinite80(y) then
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    real_out[0] = infinity.value
+    imaginary_out[0] = atan2l(y, x)
+    return
+  end
+  if is_nan80(x) or is_nan80(y) then
+    local nan_value = x + y
+    real_out[0] = nan_value
+    imaginary_out[0] = nan_value
+    return
+  end
+  local ax = fabsl(x)
+  local ay = fabsl(y)
+  local maximum = ax
+  local minimum = ay
+  if maximum < minimum then
+    maximum = ay
+    minimum = ax
+  end
+  if maximum == 0_clongdouble then
+    real_out[0] = logl(maximum)
+  else
+    local ratio = minimum / maximum
+    real_out[0] = logl(maximum) + 0.5_clongdouble * log1pl(ratio * ratio)
+  end
+  imaginary_out[0] = atan2l(y, x)
+end

@@ -161,9 +161,9 @@ clock_getres,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_gli
 clock_gettime,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clock_nanosleep,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clock_settime,time.h,,,not-declared
-clog,complex.h,,,not-declared
-clogf,complex.h,,,not-declared
-clogl,complex.h,,,not-declared
+clog,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+clogf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
+clogl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clone,sched.h,,,not-declared
 close,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 closedir,dirent.h,dirent.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

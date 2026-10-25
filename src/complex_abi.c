@@ -22,6 +22,9 @@ extern void nelibc_csqrtl_parts(long double real, long double imaginary, long do
 extern void nelibc_cexpf_parts(float real, float imaginary, float *out_real, float *out_imaginary);
 extern void nelibc_cexp_parts(double real, double imaginary, double *out_real, double *out_imaginary);
 extern void nelibc_cexpl_parts(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
+extern void nelibc_clogf_parts(float real, float imaginary, float *out_real, float *out_imaginary);
+extern void nelibc_clog_parts(double real, double imaginary, double *out_real, double *out_imaginary);
+extern void nelibc_clogl_parts(long double real, long double imaginary, long double *out_real, long double *out_imaginary);
 
 float cabsf(float _Complex value) {
   return nelibc_cabsf_parts(__real__ value, __imag__ value);
@@ -137,5 +140,23 @@ double _Complex cexp(double _Complex value) {
 long double _Complex cexpl(long double _Complex value) {
   long double real, imaginary;
   nelibc_cexpl_parts(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+float _Complex clogf(float _Complex value) {
+  float real, imaginary;
+  nelibc_clogf_parts(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+double _Complex clog(double _Complex value) {
+  double real, imaginary;
+  nelibc_clog_parts(__real__ value, __imag__ value, &real, &imaginary);
+  return __builtin_complex(real, imaginary);
+}
+
+long double _Complex clogl(long double _Complex value) {
+  long double real, imaginary;
+  nelibc_clogl_parts(__real__ value, __imag__ value, &real, &imaginary);
   return __builtin_complex(real, imaginary);
 }

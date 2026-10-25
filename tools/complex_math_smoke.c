@@ -27,6 +27,9 @@ int main(void) {
   float _Complex (*volatile call_cexpf)(float _Complex) = cexpf;
   double _Complex (*volatile call_cexp)(double _Complex) = cexp;
   long double _Complex (*volatile call_cexpl)(long double _Complex) = cexpl;
+  float _Complex (*volatile call_clogf)(float _Complex) = clogf;
+  double _Complex (*volatile call_clog)(double _Complex) = clog;
+  long double _Complex (*volatile call_clogl)(long double _Complex) = clogl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -154,5 +157,34 @@ int main(void) {
       call_creall(expl_infinity) != 0.0L || signbit(call_creall(expl_infinity)) ||
       call_cimagl(expl_infinity) != 0.0L || !signbit(call_cimagl(expl_infinity)) ||
       !isnan(call_creal(exp_nan)) || !isnan(call_cimag(exp_nan))) return 8;
+  float _Complex logf_value = call_clogf(__builtin_complex(3.0f, 4.0f));
+  double _Complex log_value = call_clog(__builtin_complex(3.0, 4.0));
+  long double _Complex logl_value = call_clogl(__builtin_complex(3.0L, 4.0L));
+  float _Complex logf_cut = call_clogf(__builtin_complex(-4.0f, -0.0f));
+  double _Complex log_cut = call_clog(__builtin_complex(-4.0, -0.0));
+  long double _Complex logl_cut = call_clogl(__builtin_complex(-4.0L, -0.0L));
+  float _Complex logf_large = call_clogf(__builtin_complex(FLT_MAX, FLT_MAX));
+  double _Complex log_large = call_clog(__builtin_complex(DBL_MAX, DBL_MAX));
+  long double _Complex logl_large = call_clogl(__builtin_complex(LDBL_MAX, LDBL_MAX));
+  double _Complex log_infinity = call_clog(__builtin_complex((double)INFINITY, (double)NAN));
+  double _Complex log_zero = call_clog(__builtin_complex(-0.0, -0.0));
+  if (fabsf(call_crealf(logf_value) - logf(5.0f)) > 2e-6f ||
+      fabsf(call_cimagf(logf_value) - atan2f(4.0f, 3.0f)) > 2e-6f ||
+      fabs(call_creal(log_value) - log(5.0)) > 2e-15 ||
+      fabs(call_cimag(log_value) - atan2(4.0, 3.0)) > 2e-15 ||
+      fabsl(call_creall(logl_value) - logl(5.0L)) > 2e-18L ||
+      fabsl(call_cimagl(logl_value) - atan2l(4.0L, 3.0L)) > 2e-18L ||
+      fabsf(call_crealf(logf_cut) - logf(4.0f)) > 2e-6f ||
+      fabsf(call_cimagf(logf_cut) + acosf(-1.0f)) > 2e-6f ||
+      fabs(call_creal(log_cut) - log(4.0)) > 2e-15 ||
+      fabs(call_cimag(log_cut) + acos(-1.0)) > 2e-15 ||
+      fabsl(call_creall(logl_cut) - logl(4.0L)) > 2e-18L ||
+      fabsl(call_cimagl(logl_cut) + acosl(-1.0L)) > 2e-18L ||
+      !isfinite(call_crealf(logf_large)) || !isfinite(call_cimagf(logf_large)) ||
+      !isfinite(call_creal(log_large)) || !isfinite(call_cimag(log_large)) ||
+      !isfinite(call_creall(logl_large)) || !isfinite(call_cimagl(logl_large)) ||
+      !isinf(call_creal(log_infinity)) || !isnan(call_cimag(log_infinity)) ||
+      !isinf(call_creal(log_zero)) || !signbit(call_creal(log_zero)) ||
+      fabs(call_cimag(log_zero) + acos(-1.0)) > 1e-15) return 9;
   return 0;
 }

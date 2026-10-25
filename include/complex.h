@@ -31,6 +31,9 @@ long double complex csqrtl(long double complex value);
 float complex cexpf(float complex value);
 double complex cexp(double complex value);
 long double complex cexpl(long double complex value);
+float complex clogf(float complex value);
+double complex clog(double complex value);
+long double complex clogl(long double complex value);
 
 #else
 
