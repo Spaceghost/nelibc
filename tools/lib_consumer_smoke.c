@@ -1649,6 +1649,8 @@ int main(int argc, char **argv) {
   locale_t numeric_de = newlocale(LC_NUMERIC_MASK, "de_DE.UTF-8", numeric_c);
   locale_t monetary_c = newlocale(LC_MONETARY_MASK, "C", numeric_c);
   locale_t monetary_de = newlocale(LC_MONETARY_MASK, "de_DE.UTF-8", monetary_c);
+  locale_t german_collate = newlocale(LC_COLLATE_MASK, "de_DE.UTF-8", ctype_utf8);
+  locale_t german_collate_c = newlocale(LC_COLLATE_MASK, "de_DE.UTF-8", ctype_c);
   locale_t numeric_de_monetary_de =
       newlocale(LC_MONETARY_MASK, "de_DE.UTF-8", numeric_de);
   locale_t collate_c = newlocale(LC_COLLATE_MASK, "C", numeric_de);
@@ -1656,13 +1658,54 @@ int main(int argc, char **argv) {
   locale_t time_de = newlocale(LC_TIME_MASK, "de_DE.UTF-8", time_c);
   if (numeric_c == (locale_t)0 || numeric_de == (locale_t)0 ||
       monetary_c == (locale_t)0 || monetary_de == (locale_t)0 ||
+      german_collate == (locale_t)0 || german_collate_c == (locale_t)0 ||
       numeric_de_monetary_de == (locale_t)0 || collate_c != numeric_de ||
       time_c != numeric_de || time_de == (locale_t)0)
     return 86;
   errno = 0;
-  if (newlocale(LC_COLLATE_MASK, "de_DE.UTF-8", numeric_de) != (locale_t)0 ||
+  if (newlocale(LC_CTYPE_MASK, "de_DE.UTF-8", numeric_de) != (locale_t)0 ||
       errno != EINVAL || setlocale(LC_NUMERIC, "de_DE.UTF-8") == NULL)
     return 89;
+  if (wcscoll_l(L"a", L"ä", german_collate) >= 0 ||
+      wcscoll_l(L"ä", L"aa", german_collate) >= 0 ||
+      wcscoll_l(L"ss", L"ß", german_collate) >= 0 ||
+      wcscoll_l(L"ß", L"st", german_collate) >= 0 ||
+      wcscoll_l(L"a", L"A", german_collate) >= 0)
+    return 90;
+  const wchar_t *german_words[] = {
+      L"a", L"ä", L"aa", L"ab", L"ac", L"ad", L"ae", L"af", L"az",
+      L"b", L"o", L"ö", L"oa", L"oe", L"p", L"ss", L"ß", L"ssa", L"st", L"t"};
+  for (size_t i = 0; i < sizeof german_words / sizeof german_words[0]; ++i) {
+    for (size_t j = i + 1; j < sizeof german_words / sizeof german_words[0]; ++j) {
+      wchar_t left_key[64], right_key[64];
+      size_t left_length = wcsxfrm_l(left_key, german_words[i], 64, german_collate);
+      size_t right_length = wcsxfrm_l(right_key, german_words[j], 64, german_collate);
+      if (wcscoll_l(german_words[i], german_words[j], german_collate) >= 0 ||
+          left_length >= 64 || right_length >= 64 || wcscmp(left_key, right_key) >= 0)
+        return 94;
+    }
+  }
+  wchar_t german_ss_key[32], german_sharp_s_key[32];
+  size_t german_ss_length = wcsxfrm_l(german_ss_key, L"ss", 32, german_collate);
+  size_t german_sharp_s_length = wcsxfrm_l(german_sharp_s_key, L"ß", 32, german_collate);
+  if (german_ss_length >= 32 || german_sharp_s_length >= 32 ||
+      wcscmp(german_ss_key, german_sharp_s_key) >= 0 ||
+      wcscmp(L"ss", L"ß") >= 0)
+    return 91;
+  locale_t old_collate_locale = uselocale(german_collate);
+  char german_a_key[128], german_umlaut_key[128];
+  size_t german_a_key_length = strxfrm(german_a_key, "a", sizeof german_a_key);
+  size_t german_umlaut_key_length = strxfrm(german_umlaut_key, "ä", sizeof german_umlaut_key);
+  if (old_collate_locale == (locale_t)0 || wcscoll(L"ä", L"aa") >= 0 ||
+      strcoll("a", "ä") >= 0 || german_a_key_length >= sizeof german_a_key ||
+      german_umlaut_key_length >= sizeof german_umlaut_key ||
+      strcmp(german_a_key, german_umlaut_key) >= 0 ||
+      uselocale(old_collate_locale) != german_collate)
+    return 92;
+  old_collate_locale = uselocale(german_collate_c);
+  if (old_collate_locale == (locale_t)0 || strcoll("a", "ä") >= 0 ||
+      uselocale(old_collate_locale) != german_collate_c)
+    return 93;
   struct lconv *main_locale_data = localeconv();
   if (strcmp(main_locale_data->decimal_point, ",") != 0) return 87;
   standalone_numeric_locale_args numeric_locale_args = {

@@ -689,6 +689,17 @@ int nelibc_standalone_global_time_is_de(void) {
   return nelibc_standalone_time_de;
 }
 
+int nelibc_standalone_global_collate_mode(void) {
+  return 0;
+}
+
+int nelibc_standalone_collate_mode(void) {
+  int *thread_locale = (int *)nelibc_thread_state(16, 5 * sizeof(int));
+  if (thread_locale != NULL && thread_locale[3] != 0)
+    return thread_locale[3] - 1;
+  return nelibc_standalone_global_collate_mode();
+}
+
 int nelibc_standalone_numeric_is_de(void) {
   int *thread_locale = (int *)nelibc_thread_state(16, 2 * sizeof(int));
   if (thread_locale != NULL && thread_locale[1] != 0)

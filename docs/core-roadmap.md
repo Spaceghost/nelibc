@@ -11,7 +11,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep the seven-profile `make smoke-matrix` and four-profile `make dogfood-matrix` green as the source changes |
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
-| P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread locale handles carry ctype, numeric, monetary, collation, and time state, while non-C collation and additional time locales remain limited | Add locale-sensitive non-C collation and time locales; expand locale data |
+| P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, a limited German UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread locale handles carry ctype, numeric, monetary, collation, and time state | Expand Unicode collation weights and global `LC_COLLATE`; add more locale datasets |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 515 undeclared candidates and record explicit intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
@@ -257,12 +257,12 @@ musl export set.
   of `C`/`C.UTF-8` ctype, `C`/`de_DE.UTF-8` numeric/monetary/time state;
   `freelocale` is a no-op for those handles. Standalone `uselocale` and locale
   handles now carry per-thread `LC_CTYPE`, `LC_NUMERIC`, `LC_MONETARY`,
-  C-style `LC_COLLATE`, and `LC_TIME` state for `C`, `C.UTF-8`, and
-  `de_DE.UTF-8` numeric, monetary, and time conventions. Standalone collation
-  supports byte and wide code-point ordering for `C` and `C.UTF-8`; standalone
-  `wcscoll`, `wcscoll_l`, `wcsxfrm`, and `wcsxfrm_l` use identity transform
-  keys in those locales. Hybrid profiles continue to use their host's wide
-  collation. German collation data is not implemented. German time data covers localized weekday/month names and
+  `LC_COLLATE`, and `LC_TIME` state. C and C.UTF-8 use code-point ordering;
+  `de_DE.UTF-8` collation handles add a limited German ordering for ASCII
+  letters, `ä`/`ö`/`ü`, and `ß`, with case and accent levels. Wide and narrow
+  comparisons and transform keys share those weights. Global `setlocale` still
+  supports only C collation, and broader Unicode collation data is missing.
+  Hybrid profiles continue to use their host's wide collation. German time data covers localized weekday/month names and
   `%c`/`%x` formats. Global `setlocale` selects C or German `LC_TIME`,
   reports/accepts its supported `LC_ALL` composites, and `duplocale` snapshots
   the global time category. `strtod`, floating formatting, grouping, `strcoll`,

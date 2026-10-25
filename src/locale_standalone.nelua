@@ -9,34 +9,54 @@ local function nelibc_standalone_global_ctype_mode(): cint <cimport> end
 local function nelibc_standalone_global_numeric_is_de(): cint <cimport> end
 local function nelibc_standalone_global_monetary_is_de(): cint <cimport> end
 local function nelibc_standalone_global_time_is_de(): cint <cimport> end
+local function nelibc_standalone_global_collate_mode(): cint <cimport> end
+local function nelibc_standalone_collate_mode(): cint <cimport> end
 local function nelibc_standalone_monetary_is_de(): cint <cimport> end
 local function nelibc_time_locale_is_german(): cint <cimport> end
 
--- Static handles combine CTYPE, NUMERIC, MONETARY, and TIME state. Collation
--- is the C byte-ordering mode for every supported handle.
-local LocaleToken: type = @record{ctype_mode: cint, numeric_mode: cint, monetary_mode: cint, time_mode: cint}
+-- Static handles combine CTYPE, NUMERIC, MONETARY, TIME, and COLLATE state.
+local LocaleToken: type = @record{ctype_mode: cint, numeric_mode: cint, monetary_mode: cint, time_mode: cint, collate_mode: cint}
 local locale_tokens: [16]LocaleToken = {
-  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 0, time_mode = 0},
-  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 0, time_mode = 0},
-  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 0, time_mode = 0},
-  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 0, time_mode = 0},
-  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 1, time_mode = 0},
-  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 1, time_mode = 0},
-  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 1, time_mode = 0},
-  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 1, time_mode = 0},
-  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 0, time_mode = 1},
-  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 0, time_mode = 1},
-  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 0, time_mode = 1},
-  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 0, time_mode = 1},
-  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 1, time_mode = 1},
-  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 1, time_mode = 1},
-  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 1, time_mode = 1},
-  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 1, time_mode = 1}
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 0, time_mode = 0, collate_mode = 0},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 0, time_mode = 0, collate_mode = 0},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 0, time_mode = 0, collate_mode = 0},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 0, time_mode = 0, collate_mode = 0},
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 1, time_mode = 0, collate_mode = 0},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 1, time_mode = 0, collate_mode = 0},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 1, time_mode = 0, collate_mode = 0},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 1, time_mode = 0, collate_mode = 0},
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 0, time_mode = 1, collate_mode = 0},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 0, time_mode = 1, collate_mode = 0},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 0, time_mode = 1, collate_mode = 0},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 0, time_mode = 1, collate_mode = 0},
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 1, time_mode = 1, collate_mode = 0},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 1, time_mode = 1, collate_mode = 0},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 1, time_mode = 1, collate_mode = 0},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 1, time_mode = 1, collate_mode = 0}
+}
+local german_locale_tokens: [16]LocaleToken = {
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 0, time_mode = 0, collate_mode = 1},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 0, time_mode = 0, collate_mode = 1},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 0, time_mode = 0, collate_mode = 1},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 0, time_mode = 0, collate_mode = 1},
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 1, time_mode = 0, collate_mode = 1},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 1, time_mode = 0, collate_mode = 1},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 1, time_mode = 0, collate_mode = 1},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 1, time_mode = 0, collate_mode = 1},
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 0, time_mode = 1, collate_mode = 1},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 0, time_mode = 1, collate_mode = 1},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 0, time_mode = 1, collate_mode = 1},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 0, time_mode = 1, collate_mode = 1},
+  {ctype_mode = 0, numeric_mode = 0, monetary_mode = 1, time_mode = 1, collate_mode = 1},
+  {ctype_mode = 1, numeric_mode = 0, monetary_mode = 1, time_mode = 1, collate_mode = 1},
+  {ctype_mode = 0, numeric_mode = 1, monetary_mode = 1, time_mode = 1, collate_mode = 1},
+  {ctype_mode = 1, numeric_mode = 1, monetary_mode = 1, time_mode = 1, collate_mode = 1}
 }
 
 local function nelibc_locale_token(ctype_mode: cint, numeric_mode: cint,
-    monetary_mode: cint, time_mode: cint): pointer <inline>
+    monetary_mode: cint, time_mode: cint, collate_mode: cint): pointer <inline>
   local index = ctype_mode + numeric_mode * 2 + monetary_mode * 4 + time_mode * 8
+  if collate_mode ~= 0 then return (@pointer)(&german_locale_tokens[index]) end
   return (@pointer)(&locale_tokens[index])
 end
 
@@ -46,7 +66,8 @@ local function nelibc_locale_ctype_mode(locale: pointer): cint <inline>
     return nelibc_standalone_global_ctype_mode()
   end
   for index: cint = 0, 15 do
-    if locale == (@pointer)(&locale_tokens[index]) then
+    if locale == (@pointer)(&locale_tokens[index]) or
+        locale == (@pointer)(&german_locale_tokens[index]) then
       return locale_tokens[index].ctype_mode
     end
   end
@@ -59,7 +80,8 @@ local function nelibc_locale_numeric_mode(locale: pointer): cint <inline>
     return nelibc_standalone_global_numeric_is_de()
   end
   for index: cint = 0, 15 do
-    if locale == (@pointer)(&locale_tokens[index]) then
+    if locale == (@pointer)(&locale_tokens[index]) or
+        locale == (@pointer)(&german_locale_tokens[index]) then
       return locale_tokens[index].numeric_mode
     end
   end
@@ -72,7 +94,8 @@ local function nelibc_locale_monetary_mode(locale: pointer): cint <inline>
     return nelibc_standalone_global_monetary_is_de()
   end
   for index: cint = 0, 15 do
-    if locale == (@pointer)(&locale_tokens[index]) then
+    if locale == (@pointer)(&locale_tokens[index]) or
+        locale == (@pointer)(&german_locale_tokens[index]) then
       return locale_tokens[index].monetary_mode
     end
   end
@@ -80,17 +103,119 @@ local function nelibc_locale_monetary_mode(locale: pointer): cint <inline>
 end
 
 local function nelibc_locale_collate_mode(locale: pointer): cint <inline>
-  if locale == nilptr or locale == (@pointer)(~0_usize) then return 0 end
+  if locale == nilptr then return nelibc_standalone_collate_mode() end
+  if locale == (@pointer)(~0_usize) then return nelibc_standalone_global_collate_mode() end
   for index: cint = 0, 15 do
     if locale == (@pointer)(&locale_tokens[index]) then return 0 end
+    if locale == (@pointer)(&german_locale_tokens[index]) then return 1 end
   end
   return -1
 end
 
--- Standalone currently supports C-style wide collation for C and C.UTF-8.
--- Unicode scalar values compare in code-point order, which UTF-8 preserves.
-local function nelibc_wide_collate(left: *[0]cwchar_t <const>,
+local CollationWeights: type = @record{first: cuint, second: cuint, secondary: cuint, case_weight: cuint}
+local PrimaryIter: type = @record{text: pointer, index: csize, pending: cuint}
+
+local function nelibc_german_weights(value: cwchar_t): CollationWeights <inline>
+  local folded = value
+  local case_weight: cuint = 0x20_cuint
+  if value >= 65 and value <= 90 then
+    folded = value + 32
+    case_weight = 0x21_cuint
+  end
+  if value == 0xdf or value == 0x1e9e then
+    if value == 0x1e9e then case_weight = 0x21_cuint end
+    return {first = 0x112_cuint, second = 0x112_cuint, secondary = 0x21_cuint,
+      case_weight = case_weight}
+  end
+  if folded == 0xe4 or folded == 0xc4 then
+    if folded == 0xc4 then case_weight = 0x21_cuint end
+    return {first = 0x100_cuint, second = 0, secondary = 0x21_cuint, case_weight = case_weight}
+  elseif folded == 0xf6 or folded == 0xd6 then
+    if folded == 0xd6 then case_weight = 0x21_cuint end
+    return {first = 0x100_cuint + 14_cuint, second = 0, secondary = 0x21_cuint, case_weight = case_weight}
+  elseif folded == 0xfc or folded == 0xdc then
+    if folded == 0xdc then case_weight = 0x21_cuint end
+    return {first = 0x100_cuint + 20_cuint, second = 0, secondary = 0x21_cuint, case_weight = case_weight}
+  elseif folded >= 97 and folded <= 122 then
+    return {first = 0x100_cuint + (@cuint)(folded - 97), second = 0,
+      secondary = 0x20_cuint, case_weight = case_weight}
+  elseif folded >= 48 and folded <= 57 then
+    return {first = 0x80_cuint + (@cuint)(folded - 48), second = 0,
+      secondary = 0x20_cuint, case_weight = 0x20_cuint}
+  elseif folded >= 0 and folded < 128 then
+    return {first = 0x20_cuint + (@cuint)(folded), second = 0,
+      secondary = 0x20_cuint, case_weight = 0x20_cuint}
+  end
+  return {first = 0x10000_cuint + (@cuint)(folded), second = 0,
+    secondary = 0x20_cuint, case_weight = case_weight}
+end
+
+local function nelibc_german_primary_next(iter: *PrimaryIter): cuint <inline>
+  if iter.pending ~= 0 then
+    local value = iter.pending
+    iter.pending = 0
+    return value
+  end
+  local text = (@*[0]cwchar_t)(iter.text)
+  if text[iter.index] == 0 then return 0 end
+  local weights = nelibc_german_weights(text[iter.index])
+  iter.index = iter.index + 1
+  iter.pending = weights.second
+  return weights.first
+end
+
+local function nelibc_compare_primary(left: *[0]cwchar_t <const>,
     right: *[0]cwchar_t <const>): cint <inline>
+  local left_iter: PrimaryIter = {text = left, index = 0, pending = 0}
+  local right_iter: PrimaryIter = {text = right, index = 0, pending = 0}
+  while true do
+    local a = nelibc_german_primary_next(&left_iter)
+    local b = nelibc_german_primary_next(&right_iter)
+    if a < b then return -1 end
+    if a > b then return 1 end
+    if a == 0 then return 0 end
+  end
+end
+
+local function nelibc_compare_secondary(left: *[0]cwchar_t <const>,
+    right: *[0]cwchar_t <const>): cint <inline>
+  local index: csize = 0
+  while left[index] ~= 0 and right[index] ~= 0 do
+    local a = nelibc_german_weights(left[index]).secondary
+    local b = nelibc_german_weights(right[index]).secondary
+    if a < b then return -1 end
+    if a > b then return 1 end
+    index = index + 1
+  end
+  if left[index] == 0 and right[index] ~= 0 then return -1 end
+  if right[index] == 0 and left[index] ~= 0 then return 1 end
+  return 0
+end
+
+local function nelibc_compare_case(left: *[0]cwchar_t <const>,
+    right: *[0]cwchar_t <const>): cint <inline>
+  local index: csize = 0
+  while left[index] ~= 0 and right[index] ~= 0 do
+    local a = nelibc_german_weights(left[index]).case_weight
+    local b = nelibc_german_weights(right[index]).case_weight
+    if a < b then return -1 end
+    if a > b then return 1 end
+    index = index + 1
+  end
+  if left[index] == 0 and right[index] ~= 0 then return -1 end
+  if right[index] == 0 and left[index] ~= 0 then return 1 end
+  return 0
+end
+
+local function nelibc_wide_collate(left: *[0]cwchar_t <const>,
+    right: *[0]cwchar_t <const>, collate_mode: cint): cint <inline>
+  if collate_mode == 1 then
+    local primary = nelibc_compare_primary(left, right)
+    if primary ~= 0 then return primary end
+    local secondary = nelibc_compare_secondary(left, right)
+    if secondary ~= 0 then return secondary end
+    return nelibc_compare_case(left, right)
+  end
   local index: csize = 0
   while left[index] ~= 0 and left[index] == right[index] do index = index + 1 end
   if left[index] < right[index] then return -1 end
@@ -100,13 +225,13 @@ end
 
 local function wcscoll(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>): cint
     <cexport, codename 'wcscoll'>
-  return nelibc_wide_collate(left, right)
+  return nelibc_wide_collate(left, right, nelibc_locale_collate_mode(nilptr))
 end
 
 local function wcscoll_l(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>,
     locale: pointer): cint <cexport, codename 'wcscoll_l'>
   if nelibc_locale_collate_mode(locale) < 0 then return 0 end
-  return nelibc_wide_collate(left, right)
+  return nelibc_wide_collate(left, right, nelibc_locale_collate_mode(locale))
 end
 
 local function nelibc_wide_transform(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>,
@@ -124,8 +249,44 @@ local function nelibc_wide_transform(dest: *[0]cwchar_t, src: *[0]cwchar_t <cons
   return length
 end
 
+local function nelibc_german_emit(dest: *[0]cwchar_t, size: csize,
+    length: csize, weight: cuint): csize <inline>
+  if length < size then dest[length] = (@cwchar_t)(weight) end
+  return length + 1
+end
+
+local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
+    src: *[0]cwchar_t <const>, size: csize): csize <inline>
+  local length: csize = 0
+  local primary_iter: PrimaryIter = {text = src, index = 0, pending = 0}
+  while true do
+    local weight = nelibc_german_primary_next(&primary_iter)
+    if weight == 0 then break end
+    length = nelibc_german_emit(dest, size, length, weight)
+  end
+  length = nelibc_german_emit(dest, size, length, 1_cuint)
+  local index: csize = 0
+  while src[index] ~= 0 do
+    length = nelibc_german_emit(dest, size, length,
+      nelibc_german_weights(src[index]).secondary)
+    index = index + 1
+  end
+  length = nelibc_german_emit(dest, size, length, 1_cuint)
+  index = 0
+  while src[index] ~= 0 do
+    length = nelibc_german_emit(dest, size, length,
+      nelibc_german_weights(src[index]).case_weight)
+    index = index + 1
+  end
+  length = nelibc_german_emit(dest, size, length, 1_cuint)
+  if length < size then dest[length] = 0 end
+  return length
+end
+
 local function wcsxfrm(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, size: csize): csize
     <cexport, codename 'wcsxfrm'>
+  local mode = nelibc_locale_collate_mode(nilptr)
+  if mode == 1 then return nelibc_german_wide_transform(dest, src, size) end
   return nelibc_wide_transform(dest, src, size)
 end
 
@@ -134,6 +295,9 @@ local function wcsxfrm_l(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>,
   if nelibc_locale_collate_mode(locale) < 0 then
     if size ~= 0 then dest[0] = 0 end
     return 0
+  end
+  if nelibc_locale_collate_mode(locale) == 1 then
+    return nelibc_german_wide_transform(dest, src, size)
   end
   return nelibc_wide_transform(dest, src, size)
 end
@@ -144,7 +308,8 @@ local function nelibc_locale_time_mode(locale: pointer): cint <inline>
     return nelibc_standalone_global_time_is_de()
   end
   for index: cint = 0, 15 do
-    if locale == (@pointer)(&locale_tokens[index]) then
+    if locale == (@pointer)(&locale_tokens[index]) or
+        locale == (@pointer)(&german_locale_tokens[index]) then
       return locale_tokens[index].time_mode
     end
   end
@@ -171,12 +336,15 @@ local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): po
   local numeric_mode: cint = 0
   local monetary_mode: cint = 0
   local time_mode: cint = 0
+  local collate_mode: cint = 0
   if base ~= nilptr then
     ctype_mode = nelibc_locale_ctype_mode(base)
     numeric_mode = nelibc_locale_numeric_mode(base)
     monetary_mode = nelibc_locale_monetary_mode(base)
     time_mode = nelibc_locale_time_mode(base)
-    if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 or time_mode < 0 then
+    collate_mode = nelibc_locale_collate_mode(base)
+    if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 or
+        time_mode < 0 or collate_mode < 0 then
       nelibc_errno_location()[0] = 22
       return nilptr
     end
@@ -190,10 +358,6 @@ local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): po
       nelibc_locale_name_is(name, "de_DE.utf8") or
       nelibc_locale_name_is(name, "de_DE")
   if not name_is_c and not name_is_utf8 and not name_is_german then
-    nelibc_errno_location()[0] = 22
-    return nilptr
-  end
-  if (mask & 8) ~= 0 and not name_is_c and not name_is_utf8 then
     nelibc_errno_location()[0] = 22
     return nilptr
   end
@@ -212,7 +376,7 @@ local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): po
       nelibc_errno_location()[0] = 22
       return nilptr
     end
-  elseif name_is_german and (mask & 22) == 0 then
+  elseif name_is_german and (mask & 30) == 0 then
     nelibc_errno_location()[0] = 22
     return nilptr
   end
@@ -232,7 +396,15 @@ local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): po
       return nilptr
     end
   end
-  return nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode, time_mode)
+  if (mask & 8) ~= 0 then
+    if name_is_c or name_is_utf8 then collate_mode = 0
+    elseif name_is_german then collate_mode = 1
+    else
+      nelibc_errno_location()[0] = 22
+      return nilptr
+    end
+  end
+  return nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode, time_mode, collate_mode)
 end
 
 local function duplocale(locale: pointer): pointer <cexport, codename 'duplocale'>
@@ -240,15 +412,17 @@ local function duplocale(locale: pointer): pointer <cexport, codename 'duplocale
   local numeric_mode = nelibc_locale_numeric_mode(locale)
   local monetary_mode = nelibc_locale_monetary_mode(locale)
   local time_mode = nelibc_locale_time_mode(locale)
-  if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 or time_mode < 0 then
+  local collate_mode = nelibc_locale_collate_mode(locale)
+  if ctype_mode < 0 or numeric_mode < 0 or monetary_mode < 0 or
+      time_mode < 0 or collate_mode < 0 then
     nelibc_errno_location()[0] = 22
     return nilptr
   end
-  return nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode, time_mode)
+  return nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode, time_mode, collate_mode)
 end
 
 local function freelocale(locale: pointer): void <cexport, codename 'freelocale'>
-  -- Handles point to static C and C.UTF-8 locale records.
+  -- Handles point to static C, C.UTF-8, and German-collation records.
 end
 
 local function uselocale(locale: pointer): pointer <cexport, codename 'uselocale'>
@@ -265,9 +439,11 @@ local function uselocale(locale: pointer): pointer <cexport, codename 'uselocale
     if active[1] == 0 then numeric_mode = nelibc_standalone_numeric_is_de() end
     local monetary_mode = active[2] - 1
     if active[2] == 0 then monetary_mode = nelibc_standalone_monetary_is_de() end
+    local collate_mode = active[3] - 1
+    if active[3] == 0 then collate_mode = nelibc_standalone_global_collate_mode() end
     local time_mode = active[4] - 1
     if active[4] == 0 then time_mode = nelibc_time_locale_is_german() end
-    previous = nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode, time_mode)
+    previous = nelibc_locale_token(ctype_mode, numeric_mode, monetary_mode, time_mode, collate_mode)
   end
   if locale == nilptr then return previous end
   if locale == (@pointer)(~0_usize) then
