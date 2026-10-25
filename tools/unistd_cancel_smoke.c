@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -24,6 +24,9 @@ static int recv_fd;
 static int recv_started;
 static int poll_fd;
 static int poll_started;
+static int ppoll_started;
+static int select_started;
+static int pselect_started;
 static pid_t wait_child;
 static int wait_started_flag;
 static char fifo_path[128];
@@ -86,6 +89,31 @@ static void *blocked_poller(void *unused) {
   struct pollfd descriptor = {poll_fd, POLLIN, 0};
   mark_started(&poll_started);
   return (void *)(long)poll(&descriptor, 1, -1);
+}
+
+static void *blocked_ppoller(void *unused) {
+  (void)unused;
+  struct pollfd descriptor = {poll_fd, POLLIN, 0};
+  mark_started(&ppoll_started);
+  return (void *)(long)ppoll(&descriptor, 1, NULL, NULL);
+}
+
+static void *blocked_selector(void *unused) {
+  (void)unused;
+  fd_set read_set;
+  FD_ZERO(&read_set);
+  FD_SET(poll_fd, &read_set);
+  mark_started(&select_started);
+  return (void *)(long)select(poll_fd + 1, &read_set, NULL, NULL, NULL);
+}
+
+static void *blocked_pselector(void *unused) {
+  (void)unused;
+  fd_set read_set;
+  FD_ZERO(&read_set);
+  FD_SET(poll_fd, &read_set);
+  mark_started(&pselect_started);
+  return (void *)(long)pselect(poll_fd + 1, &read_set, NULL, NULL, NULL, NULL);
 }
 
 static void *blocked_waiter(void *unused) {
@@ -204,6 +232,48 @@ int main(void) {
   if (pthread_cancel(poller) != 0) return 26;
   result = NULL;
   if (pthread_join(poller, &result) != 0 || result != PTHREAD_CANCELED) return 27;
+  alarm(0);
+  close(sockets[0]);
+  close(sockets[1]);
+
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) return 46;
+  poll_fd = sockets[0];
+  pthread_t ppoller;
+  if (pthread_create(&ppoller, NULL, blocked_ppoller, NULL) != 0) return 47;
+  wait_started(&ppoll_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(ppoller) != 0) return 48;
+  result = NULL;
+  if (pthread_join(ppoller, &result) != 0 || result != PTHREAD_CANCELED) return 49;
+  alarm(0);
+  close(sockets[0]);
+  close(sockets[1]);
+
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) return 50;
+  poll_fd = sockets[0];
+  pthread_t selector;
+  if (pthread_create(&selector, NULL, blocked_selector, NULL) != 0) return 51;
+  wait_started(&select_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(selector) != 0) return 52;
+  result = NULL;
+  if (pthread_join(selector, &result) != 0 || result != PTHREAD_CANCELED) return 53;
+  alarm(0);
+  close(sockets[0]);
+  close(sockets[1]);
+
+  if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) return 54;
+  poll_fd = sockets[0];
+  pthread_t pselector;
+  if (pthread_create(&pselector, NULL, blocked_pselector, NULL) != 0) return 55;
+  wait_started(&pselect_started);
+  nanosleep(&delay, NULL);
+  alarm(5);
+  if (pthread_cancel(pselector) != 0) return 56;
+  result = NULL;
+  if (pthread_join(pselector, &result) != 0 || result != PTHREAD_CANCELED) return 57;
   alarm(0);
   close(sockets[0]);
   close(sockets[1]);

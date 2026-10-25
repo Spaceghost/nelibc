@@ -50,6 +50,14 @@ positive values, so hybrid builds intentionally retain host behavior. The
 standalone implementation follows glibc's observable behavior, including
 `EINVAL` for negative levels:
 
+The Unix cancellation smoke covers blocked `poll`, `ppoll`, `select`, and
+`pselect` in addition to blocking I/O and process calls. These cases now run in
+the hybrid glibc, musl, and TinyCC-compiled profiles and the standalone Zig,
+GCC, and TinyCC profiles; `make smoke-matrix` includes the standalone group.
+The checks verify that deferred cancellation wakes each blocked thread and
+that `pthread_join` reports `PTHREAD_CANCELED`. This remains targeted behavior
+coverage, not a complete cancellation-point audit.
+
 | Priority | Missing APIs | Why they matter | Scope |
 |---|---|---|---|
 | Complete | `pthread_getconcurrency`, `pthread_setconcurrency` | Statefully stores the requested concurrency hint; it does not alter scheduling | GNU extension; hybrid mode delegates |

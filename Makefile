@@ -1854,6 +1854,23 @@ unistd-cancel-tcc: $(OUT)/libnelibc-tcc.a tools/unistd_cancel_smoke.c
 
 unistd-cancel-matrix: unistd-cancel-zig unistd-cancel-gcc unistd-cancel-zig-musl unistd-cancel-tcc
 
+.PHONY: unistd-cancel-standalone-zig unistd-cancel-standalone-gcc unistd-cancel-standalone-tcc unistd-cancel-standalone-matrix
+
+unistd-cancel-standalone-zig: $(OUT)/libnelibc-standalone-zig.a tools/unistd_cancel_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/unistd_cancel_smoke.c -o $(OUT)/unistd-cancel-standalone-zig
+	$(OUT)/unistd-cancel-standalone-zig
+
+unistd-cancel-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a tools/unistd_cancel_smoke.c
+	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-gcc.a -Wl,--no-whole-archive -Iinclude tools/unistd_cancel_smoke.c -o $(OUT)/unistd-cancel-standalone-gcc
+	$(OUT)/unistd-cancel-standalone-gcc
+
+unistd-cancel-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/unistd_cancel_smoke.c
+	$(TCC) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -Iinclude -c tools/unistd_cancel_smoke.c -o $(OUT)/unistd-cancel-standalone-tcc.o
+	$(ZIG) cc $(ZIGFLAGS) -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-tcc.a -Wl,--no-whole-archive $(OUT)/unistd-cancel-standalone-tcc.o -o $(OUT)/unistd-cancel-standalone-tcc
+	$(OUT)/unistd-cancel-standalone-tcc
+
+unistd-cancel-standalone-matrix: unistd-cancel-standalone-zig unistd-cancel-standalone-gcc unistd-cancel-standalone-tcc
+
 
 .PHONY: unistd-cancel-zig unistd-cancel-gcc unistd-cancel-zig-musl unistd-cancel-tcc unistd-cancel-matrix
 
@@ -2410,7 +2427,7 @@ smoke-syscall-tls-gcc: syscall-tls-gcc
 	NELIBC_GETENV_PROBE=visible $(OUT)/syscall-smoke-tls-gcc
 	$(OUT)/errno-tls-smoke-gcc
 
-smoke-matrix: unistd-header-smoke smoke-zig smoke-gcc smoke-zig-musl smoke-tcc float-diff-matrix int-diff-matrix collation-diff-matrix smoke-syscall-zig smoke-syscall-gcc smoke-syscall-zig-musl smoke-syscall-tcc smoke-syscall-tls-gcc smoke-freestanding-zig smoke-freestanding-gcc smoke-standalone-zig smoke-standalone-gcc smoke-standalone-tcc exit-smoke-standalone-matrix abort-smoke-matrix lib-smoke-matrix smoke-lib-standalone-matrix lib-consumer-matrix lib-stdio-smoke-matrix atexit-hybrid-smoke-matrix stdio-format-diff-matrix unistd-cancel-matrix lib-consumer-standalone-matrix math-core-diff-matrix math-core-standalone-matrix complex-math-smoke-matrix
+smoke-matrix: unistd-header-smoke smoke-zig smoke-gcc smoke-zig-musl smoke-tcc float-diff-matrix int-diff-matrix collation-diff-matrix smoke-syscall-zig smoke-syscall-gcc smoke-syscall-zig-musl smoke-syscall-tcc smoke-syscall-tls-gcc smoke-freestanding-zig smoke-freestanding-gcc smoke-standalone-zig smoke-standalone-gcc smoke-standalone-tcc exit-smoke-standalone-matrix abort-smoke-matrix lib-smoke-matrix smoke-lib-standalone-matrix lib-consumer-matrix lib-stdio-smoke-matrix atexit-hybrid-smoke-matrix stdio-format-diff-matrix unistd-cancel-matrix unistd-cancel-standalone-matrix lib-consumer-standalone-matrix math-core-diff-matrix math-core-standalone-matrix complex-math-smoke-matrix
 
 errno-tls-zig-musl: $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-target=x86_64-linux-musl --cflags=-fno-builtin --cflags=-ftls-model=initial-exec -o $(OUT)/errno-tls-zig-musl.o src/errno/standalone.nelua
