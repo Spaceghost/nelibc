@@ -189,12 +189,23 @@ int pthread_getschedparam(pthread_t thread, int *policy,
 int pthread_setschedparam(pthread_t thread, int policy,
                           const struct sched_param *param);
 int pthread_setschedprio(pthread_t thread, int priority);
-void __nelibc_pthread_cleanup_push(void (*routine)(void *), void *arg);
-void __nelibc_pthread_cleanup_pop(int execute);
+typedef struct __nelibc_pthread_cleanup_frame {
+  void (*routine)(void *);
+  void *arg;
+  struct __nelibc_pthread_cleanup_frame *previous;
+} __nelibc_pthread_cleanup_frame;
+void __nelibc_pthread_cleanup_push(void *frame, void (*routine)(void *),
+                                   void *arg);
+void __nelibc_pthread_cleanup_pop(void *frame, int execute);
 #define pthread_cleanup_push(routine, arg) \
-  do { __nelibc_pthread_cleanup_push((routine), (arg)); {
+  do { \
+    __nelibc_pthread_cleanup_frame __nelibc_cleanup_frame_instance; \
+    __nelibc_pthread_cleanup_push(&__nelibc_cleanup_frame_instance, \
+                                  (routine), (arg)); {
 #define pthread_cleanup_pop(execute) \
-  } __nelibc_pthread_cleanup_pop((execute)); } while (0)
+  } __nelibc_pthread_cleanup_pop(&__nelibc_cleanup_frame_instance, \
+                                 (execute)); \
+  } while (0)
 int pthread_once(pthread_once_t *once_control, void (*init_routine)(void));
 int pthread_key_create(pthread_key_t *key, void (*destructor)(void *));
 int pthread_key_delete(pthread_key_t key);

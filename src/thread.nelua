@@ -37,7 +37,8 @@ local PthreadRobustSlot: type = @record{
 }
 local PthreadCleanupEntry: type = @record{
   routine: function(pointer): void,
-  arg: pointer
+  arg: pointer,
+  previous: *PthreadCleanupEntry
 }
 local PthreadRwlockReadOwnerSlot: type = @record{
   rwlock: pointer,
@@ -66,8 +67,7 @@ local PthreadContext: type = @record{
   startup_gate: cint,
   cancel_wait_address: pointer,
   cancel_wait_wake_operation: cint,
-  cleanup_count: cint,
-  cleanup_entries: [32]PthreadCleanupEntry,
+  cleanup_top: *PthreadCleanupEntry,
   robust_slot: *PthreadRobustSlot,
   robust_registered: cint,
   robust_pid: cint,
@@ -454,6 +454,31 @@ local function pthread_current_context(): *PthreadContext <inline>
     initial_thread_tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
   end
   return context
+end
+
+local function pthread_cleanup_push_frame(context: *PthreadContext,
+    frame: *PthreadCleanupEntry, routine: function(pointer): void,
+    arg: pointer): boolean
+  if context == nilptr or frame == nilptr or routine == nilptr then return false end
+  pthread_cancel_defer_begin()
+  frame.routine = routine
+  frame.arg = arg
+  frame.previous = context.cleanup_top
+  context.cleanup_top = frame
+  pthread_cancel_defer_end()
+  return true
+end
+
+local function pthread_cleanup_pop_frame(context: *PthreadContext,
+    frame: *PthreadCleanupEntry, execute: cint): boolean
+  if context == nilptr or frame == nilptr then return false end
+  if context.cleanup_top ~= frame then return false end
+  context.cleanup_top = frame.previous
+  frame.previous = nilptr
+  if execute ~= 0 and frame.routine ~= nilptr then frame.routine(frame.arg) end
+  frame.routine = nilptr
+  frame.arg = nilptr
+  return true
 end
 
 local function pthread_rwlock_owner_context(): *PthreadContext <inline>
@@ -930,16 +955,10 @@ local function pthread_join_cancel_cleanup(argument: pointer): void
 end
 
 local function pthread_join_cleanup_pop(cleanup_context: *PthreadContext,
-    cleanup: *PthreadJoinCleanup): boolean
-  if cleanup_context == nilptr or cleanup_context.cleanup_count <= 0 then return false end
-  local index = cleanup_context.cleanup_count - 1
-  local entry = cleanup_context.cleanup_entries[index]
-  if entry.routine ~= pthread_join_cancel_cleanup or
-     entry.arg ~= (@pointer)(cleanup) then return false end
-  cleanup_context.cleanup_count = index
-  cleanup_context.cleanup_entries[index].routine = nilptr
-  cleanup_context.cleanup_entries[index].arg = nilptr
-  return true
+    cleanup: *PthreadJoinCleanup, frame: *PthreadCleanupEntry): boolean
+  if frame.routine ~= pthread_join_cancel_cleanup or
+     frame.arg ~= (@pointer)(cleanup) then return false end
+  return pthread_cleanup_pop_frame(cleanup_context, frame, 0)
 end
 
 local function pthread_finish(context: *PthreadContext): void
@@ -962,10 +981,9 @@ end
 
 local function pthread_cleanup_run(context: *PthreadContext): void
   if context == nilptr then return end
-  while context.cleanup_count > 0 do
-    context.cleanup_count = context.cleanup_count - 1
-    local entry = context.cleanup_entries[context.cleanup_count]
-    if entry.routine ~= nilptr then entry.routine(entry.arg) end
+  while context.cleanup_top ~= nilptr do
+    local entry = context.cleanup_top
+    if not pthread_cleanup_pop_frame(context, entry, 1) then return end
   end
 end
 
@@ -3784,28 +3802,15 @@ local function pthread_once(control: *[0]cint, init_routine: function(): void): 
         continue
       end
       local context = pthread_current_context()
-      local cleanup_registered = false
-      if context ~= nilptr and context.cleanup_count < 32 then
-        context.cleanup_entries[context.cleanup_count].routine = pthread_once_cancel_cleanup
-        context.cleanup_entries[context.cleanup_count].arg = (@pointer)(control)
-        context.cleanup_count = context.cleanup_count + 1
-        cleanup_registered = true
-        pthread_cancel_defer_end()
-      end
-      -- If the per-thread cleanup stack is full, retain deferral across the
-      -- initializer so cancellation cannot strand the once word.
+      local cleanup_frame: PthreadCleanupEntry
+      local cleanup_registered = pthread_cleanup_push_frame(context,
+        &cleanup_frame, pthread_once_cancel_cleanup, (@pointer)(control))
+      if cleanup_registered then pthread_cancel_defer_end() end
       init_routine()
       pthread_cancel_defer_begin()
       nelibc_atomic_store_int(control, 2)
-      if cleanup_registered and context.cleanup_count > 0 then
-        local cleanup_index = context.cleanup_count - 1
-        local cleanup = context.cleanup_entries[cleanup_index]
-        if cleanup.routine == pthread_once_cancel_cleanup and
-           cleanup.arg == (@pointer)(control) then
-          context.cleanup_count = cleanup_index
-          context.cleanup_entries[cleanup_index].routine = nilptr
-          context.cleanup_entries[cleanup_index].arg = nilptr
-        end
+      if cleanup_registered then
+        pthread_cleanup_pop_frame(context, &cleanup_frame, 0)
       end
       nelibc_raw_syscall6(202_culong, (@culong)((@usize)(control)),
                           129_culong, 2147483647_culong,
@@ -3883,7 +3888,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.startup_gate = 0
   state.context.cancel_wait_address = nilptr
   state.context.cancel_wait_wake_operation = 0
-  state.context.cleanup_count = 0
+  state.context.cleanup_top = nilptr
   state.context.lifecycle = 0
   state.context.robust_slot = pthread_robust_slot_alloc()
   state.context.robust_registered = 0
@@ -3983,34 +3988,36 @@ local function pthread_join(thread: pointer, result: *[0]pointer): cint <cexport
   end
   local cleanup_context = pthread_current_context()
   local cleanup: PthreadJoinCleanup
+  local cleanup_frame: PthreadCleanupEntry
   cleanup.context = &state.context
   cleanup.lifecycle = lifecycle
-  local cleanup_registered = cleanup_context ~= nilptr and
-      cleanup_context.cleanup_count < 32
+  local cleanup_registered = pthread_cleanup_push_frame(cleanup_context,
+      &cleanup_frame, pthread_join_cancel_cleanup, (@pointer)(&cleanup))
   if cleanup_registered then
-    cleanup_context.cleanup_entries[cleanup_context.cleanup_count].routine = pthread_join_cancel_cleanup
-    cleanup_context.cleanup_entries[cleanup_context.cleanup_count].arg = (@pointer)(&cleanup)
-    cleanup_context.cleanup_count = cleanup_context.cleanup_count + 1
     pthread_cancel_defer_end()
   end
   local tid_word: *[0]cint = state.handle.tid_word
   if thread_wait_until(&state.handle, nilptr, cleanup_registered) ~= 0 then
     local wait_error = nelibc_errno_location()[0]
+    pthread_cancel_defer_begin()
     if cleanup_registered then
-      pthread_join_cleanup_pop(cleanup_context, &cleanup)
+      pthread_join_cleanup_pop(cleanup_context, &cleanup, &cleanup_frame)
     end
     pthread_join_release_claim(&state.context, lifecycle)
+    pthread_cancel_defer_end()
     if not cleanup_registered then pthread_cancel_defer_end() end
     pthread_testcancel()
     return wait_error
   end
-  if cleanup_registered then pthread_join_cleanup_pop(cleanup_context, &cleanup) end
+  pthread_cancel_defer_begin()
+  if cleanup_registered then pthread_join_cleanup_pop(cleanup_context, &cleanup, &cleanup_frame) end
   if result ~= nilptr then result[0] = state.context.result end
   pthread_robust_slot_release(state.context.robust_slot)
   nelibc_thread_tid_slot_release(tid_word)
   pthread_object_unregister(state)
   state.magic = 0
   nelibc_free(thread)
+  pthread_cancel_defer_end()
   if not cleanup_registered then pthread_cancel_defer_end() end
   pthread_testcancel()
   return 0
@@ -4067,34 +4074,36 @@ local function pthread_timedjoin_np(thread: pointer, result: *[0]pointer,
   end
   local cleanup_context = pthread_current_context()
   local cleanup: PthreadJoinCleanup
+  local cleanup_frame: PthreadCleanupEntry
   cleanup.context = &state.context
   cleanup.lifecycle = lifecycle
-  local cleanup_registered = cleanup_context ~= nilptr and
-      cleanup_context.cleanup_count < 32
+  local cleanup_registered = pthread_cleanup_push_frame(cleanup_context,
+      &cleanup_frame, pthread_join_cancel_cleanup, (@pointer)(&cleanup))
   if cleanup_registered then
-    cleanup_context.cleanup_entries[cleanup_context.cleanup_count].routine = pthread_join_cancel_cleanup
-    cleanup_context.cleanup_entries[cleanup_context.cleanup_count].arg = (@pointer)(&cleanup)
-    cleanup_context.cleanup_count = cleanup_context.cleanup_count + 1
     pthread_cancel_defer_end()
   end
   local tid_word: *[0]cint = state.handle.tid_word
   if thread_wait_until(&state.handle, abstime, cleanup_registered) ~= 0 then
     local wait_error = nelibc_errno_location()[0]
+    pthread_cancel_defer_begin()
     if cleanup_registered then
-      pthread_join_cleanup_pop(cleanup_context, &cleanup)
+      pthread_join_cleanup_pop(cleanup_context, &cleanup, &cleanup_frame)
     end
     pthread_join_release_claim(&state.context, lifecycle)
+    pthread_cancel_defer_end()
     if not cleanup_registered then pthread_cancel_defer_end() end
     pthread_testcancel()
     return wait_error
   end
-  if cleanup_registered then pthread_join_cleanup_pop(cleanup_context, &cleanup) end
+  pthread_cancel_defer_begin()
+  if cleanup_registered then pthread_join_cleanup_pop(cleanup_context, &cleanup, &cleanup_frame) end
   if result ~= nilptr then result[0] = state.context.result end
   pthread_robust_slot_release(state.context.robust_slot)
   nelibc_thread_tid_slot_release(tid_word)
   pthread_object_unregister(state)
   state.magic = 0
   nelibc_free(thread)
+  pthread_cancel_defer_end()
   if not cleanup_registered then pthread_cancel_defer_end() end
   pthread_testcancel()
   return 0
@@ -4527,18 +4536,17 @@ local function pthread_exit(result: pointer): void <cexport, codename 'pthread_e
   pthread_context_exit(context, result)
 end
 
-local function pthread_cleanup_push(routine: function(pointer): void, arg: pointer): void <cexport, codename '__nelibc_pthread_cleanup_push'>
+local function pthread_cleanup_push(frame: pointer,
+    routine: function(pointer): void, arg: pointer): void
+    <cexport, codename '__nelibc_pthread_cleanup_push'>
   local context = pthread_current_context()
-  if context == nilptr or routine == nilptr or context.cleanup_count >= 32 then return end
-  context.cleanup_entries[context.cleanup_count].routine = routine
-  context.cleanup_entries[context.cleanup_count].arg = arg
-  context.cleanup_count = context.cleanup_count + 1
+  pthread_cleanup_push_frame(context, (@*PthreadCleanupEntry)(frame), routine, arg)
 end
 
-local function pthread_cleanup_pop(execute: cint): void <cexport, codename '__nelibc_pthread_cleanup_pop'>
+local function pthread_cleanup_pop(frame: pointer, execute: cint): void
+    <cexport, codename '__nelibc_pthread_cleanup_pop'>
   local context = pthread_current_context()
-  if context == nilptr or context.cleanup_count <= 0 then return end
-  context.cleanup_count = context.cleanup_count - 1
-  local entry = context.cleanup_entries[context.cleanup_count]
-  if execute ~= 0 and entry.routine ~= nilptr then entry.routine(entry.arg) end
+  pthread_cancel_defer_begin()
+  pthread_cleanup_pop_frame(context, (@*PthreadCleanupEntry)(frame), execute)
+  pthread_cancel_defer_end()
 end

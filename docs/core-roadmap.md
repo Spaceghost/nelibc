@@ -661,8 +661,11 @@ including APIs absent from the pinned musl export set.
   cancellation point inside a destructor cannot recursively restart thread
   exit. `pthread-exit-standalone-matrix` covers a canceled request during a
   blocked TSD destructor and checks the original thread result and one destructor
-  call under Zig, GCC, and TinyCC. The cleanup stack
-  is bounded to 32 entries per thread. Internal allocator critical sections,
+  call under Zig, GCC, and TinyCC. The pthread smoke exits a worker with 49
+  nested cleanup frames and checks LIFO handler order. Cleanup handlers use
+  caller-stack frames, so nesting is limited by the thread stack rather than a
+  fixed runtime array.
+  Internal allocator critical sections,
   the pthread-key and default-attribute locks, robust-list slot allocation,
   priority-protection bookkeeping, and the named-semaphore registry defer
   asynchronous cancellation until after releasing their locks, then retrigger

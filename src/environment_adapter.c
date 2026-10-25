@@ -1072,14 +1072,21 @@ void nelibc_system_unlock(void) {
 }
 
 extern int waitpid(pid_t pid, int *status, int options);
-extern void __nelibc_pthread_cleanup_push(void (*routine)(void *), void *arg);
-extern void __nelibc_pthread_cleanup_pop(int execute);
+typedef struct __nelibc_pthread_cleanup_frame {
+  void (*routine)(void *);
+  void *arg;
+  struct __nelibc_pthread_cleanup_frame *previous;
+} __nelibc_pthread_cleanup_frame;
+extern void __nelibc_pthread_cleanup_push(
+    void *frame, void (*routine)(void *), void *arg);
+extern void __nelibc_pthread_cleanup_pop(void *frame, int execute);
 int nelibc_system_waitpid(pid_t pid, int *status, int options,
                           void (*cleanup)(void *), void *context) {
+  __nelibc_pthread_cleanup_frame frame;
   int result;
-  __nelibc_pthread_cleanup_push(cleanup, context);
+  __nelibc_pthread_cleanup_push(&frame, cleanup, context);
   result = waitpid(pid, status, options);
-  __nelibc_pthread_cleanup_pop(0);
+  __nelibc_pthread_cleanup_pop(&frame, 0);
   return result;
 }
 #endif

@@ -106,6 +106,8 @@ static _Atomic int cancel_futex_wait_ready;
 static volatile int cancel_type_ready;
 static volatile int cancel_type_release;
 static _Atomic int cancel_cleanup_calls;
+static int cleanup_frame_order;
+static int cleanup_frame_order_bad;
 static sem_t cancel_semaphore;
 static volatile int cancel_sem_started;
 static _Atomic int cancel_async_sem_ready;
@@ -139,6 +141,27 @@ static void cancel_exit_destructor(void *value) {
   if (value != (void *)(uintptr_t)0x44) return;
   ++cancel_exit_destructor_calls;
   cancel_exit_order = cancel_exit_order == 1 ? 2 : -1;
+}
+
+static void cleanup_frame_record(void *argument) {
+  int value = (int)(intptr_t)argument;
+  if (value != cleanup_frame_order) cleanup_frame_order_bad = 1;
+  ++cleanup_frame_order;
+}
+
+static void cleanup_frame_recurse(int depth) {
+  pthread_cleanup_push(cleanup_frame_record, (void *)(intptr_t)depth);
+  if (depth == 0) pthread_exit((void *)(uintptr_t)0x66);
+  cleanup_frame_recurse(depth - 1);
+  pthread_cleanup_pop(0);
+}
+
+static void *cleanup_frame_depth_worker(void *argument) {
+  (void)argument;
+  cleanup_frame_order = 0;
+  cleanup_frame_order_bad = 0;
+  cleanup_frame_recurse(48);
+  return (void *)1;
 }
 
 static void deleted_value_destructor(void *value) {
@@ -1951,6 +1974,11 @@ typedef struct {
 int main(void) {
   void *tls_result = 0;
   pthread_t tls_worker;
+  if (pthread_create(&tls_worker, 0, cleanup_frame_depth_worker, 0) != 0 ||
+      pthread_join(tls_worker, &tls_result) != 0 ||
+      tls_result != (void *)(uintptr_t)0x66 || cleanup_frame_order_bad ||
+      cleanup_frame_order != 49)
+    return 319;
   if (!nelibc_tls_fixture_check() || !nelibc_tls_alignment_check())
     return 318;
   errno = EDOM;
