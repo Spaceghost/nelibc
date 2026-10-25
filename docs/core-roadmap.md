@@ -96,6 +96,10 @@ handles for vanished sibling threads: `pthread_join` and `pthread_cancel`
 return `ESRCH`, while the parent retains its original joinable handle and can
 join normally. The child tid-slot table is cleared along with per-thread
 resources so stale sibling TIDs cannot be mistaken for live threads.
+Forking from a Nelibc-created worker is also covered: the calling worker's
+`pthread_self()` identity survives in the child, while another worker's
+inherited handle is invalidated. The test passed under Zig, GCC, and TinyCC;
+the Zig smoke also passed ten consecutive reruns.
 
 ### Practical completeness estimate
 

@@ -297,6 +297,25 @@ static void *fork_sibling_worker(void *unused) {
   }
   return (void *)0x55;
 }
+typedef struct {
+  pthread_t sibling;
+} fork_from_worker_request;
+static void *fork_from_worker(void *argument) {
+  fork_from_worker_request *request = argument;
+  pthread_t self = pthread_self();
+  pid_t child = fork();
+  if (child == 0) {
+    int join_error = pthread_join(request->sibling, NULL);
+    int cancel_error = pthread_cancel(request->sibling);
+    _exit(pthread_equal(pthread_self(), self) && join_error == ESRCH &&
+          cancel_error == ESRCH ? 0 : 299);
+  }
+  int status = -1;
+  if (child < 0 || waitpid(child, &status, 0) != child ||
+      !WIFEXITED(status) || WEXITSTATUS(status) != 0)
+    return (void *)1;
+  return NULL;
+}
 
 static pthread_key_t initial_exit_key;
 
@@ -2100,6 +2119,26 @@ int main(void) {
   for (unsigned int spin = 0; spin < 10000000U && !detached_done; ++spin) {}
   if (!detached_done) return 297;
   if (pthread_attr_destroy(&detached_attributes) != 0) return 298;
+
+  atomic_store_explicit(&fork_sibling_ready, 0, memory_order_relaxed);
+  atomic_store_explicit(&fork_sibling_release, 0, memory_order_relaxed);
+  pthread_t worker_sibling;
+  if (pthread_create(&worker_sibling, NULL, fork_sibling_worker, NULL) != 0)
+    return 300;
+  while (!atomic_load_explicit(&fork_sibling_ready, memory_order_acquire)) {
+    struct timespec pause = {.tv_sec = 0, .tv_nsec = 100000};
+    nanosleep(&pause, NULL);
+  }
+  fork_from_worker_request fork_request = {.sibling = worker_sibling};
+  pthread_t forking_worker;
+  if (pthread_create(&forking_worker, NULL, fork_from_worker, &fork_request) != 0)
+    return 301;
+  void *fork_worker_result = NULL;
+  if (pthread_join(forking_worker, &fork_worker_result) != 0 ||
+      fork_worker_result != NULL)
+    return 302;
+  atomic_store_explicit(&fork_sibling_release, 1, memory_order_release);
+  if (pthread_join(worker_sibling, NULL) != 0) return 303;
 
   volatile int *initial_cancel_marker = mmap(0, sizeof(*initial_cancel_marker),
       PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
