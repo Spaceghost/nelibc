@@ -19,7 +19,7 @@ typedef struct siginfo siginfo_t;
 #endif
 
 /* Linux pidfd interfaces are exposed by glibc under _GNU_SOURCE. */
-#if defined(_GNU_SOURCE) && !defined(__GLIBC__)
+#if defined(_GNU_SOURCE) && (!defined(__GLIBC__) || defined(NELIBC_STANDALONE))
 int pidfd_open(pid_t pid, unsigned int flags);
 int pidfd_send_signal(int pidfd, int signal, siginfo_t *info,
                       unsigned int flags);

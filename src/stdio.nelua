@@ -1,5 +1,10 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
+-- Standalone stdio uses Nelibc's FILE type; its replacements intentionally
+-- do not include the host's stdio declarations.
+## cinclude [[#if defined(__clang__)]]
+## cinclude [[#pragma clang diagnostic ignored "-Wbuiltin-requires-header"]]
+## cinclude [[#endif]]
 
 require 'C.stdarg'
 
@@ -570,7 +575,8 @@ local function fputc_unlocked(character: cint, stream: *FILE): cint <inline>
   return (@cint)(value)
 end
 
-local function fputs(string: *[0]cchar <const>, stream: *FILE): cint <cexport, codename 'fputs'>
+local function fputs(string: cstring <const>, stream: *FILE): cint <cexport, codename 'fputs'>
+  local string: *[0]cchar = (@*[0]cchar)(string)
   local bytes: *[0]byte = (@*[0]byte)(string)
   local length: csize = 0
   while bytes[length] ~= 0 do length = length + 1 end
@@ -597,7 +603,8 @@ local function putchar_unlocked(character: cint): cint <cexport, codename 'putch
   return fputc_unlocked(character, &stdout_FILE)
 end
 
-local function puts(string: *[0]cchar <const>): cint <cexport, codename 'puts'>
+local function puts(string: cstring <const>): cint <cexport, codename 'puts'>
+  local string: *[0]cchar = (@*[0]cchar)(string)
   stream_lock(&stdout_FILE)
   if fputs(string, &stdout_FILE) == -1 or fputc(10, &stdout_FILE) == -1 then stream_unlock(&stdout_FILE); return -1 end
   stream_unlock(&stdout_FILE)
@@ -636,7 +643,8 @@ local function funlockfile(stream: *FILE): void <cexport, codename 'funlockfile'
   stream_unlock(stream)
 end
 
-local function remove(pathname: *[0]cchar <const>): cint <cexport, codename 'remove'>
+local function remove(pathname: cstring <const>): cint <cexport, codename 'remove'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   if pathname == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -648,7 +656,9 @@ local function remove(pathname: *[0]cchar <const>): cint <cexport, codename 'rem
   return -1
 end
 
-local function fopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>): *FILE <cexport, codename 'fopen'>
+local function fopen(pathname: cstring <const>, mode: cstring <const>): *FILE <cexport, codename 'fopen'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
+  local mode: *[0]cchar = (@*[0]cchar)(mode)
   if pathname == nilptr or mode == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr
@@ -725,7 +735,8 @@ local function fopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>): *FIL
   return stream
 end
 
-local function fmemopen(buffer: pointer, size: csize, mode: *[0]cchar <const>): *FILE <cexport, codename 'fmemopen'>
+local function fmemopen(buffer: pointer, size: csize, mode: cstring <const>): *FILE <cexport, codename 'fmemopen'>
+  local mode: *[0]cchar = (@*[0]cchar)(mode)
   if size == 0 or mode == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr
@@ -819,7 +830,8 @@ local function open_memstream(buffer: **byte, size: *csize): *FILE <cexport, cod
   return stream
 end
 
-local function fdopen(fd: cint, mode: *[0]cchar <const>): *FILE <cexport, codename 'fdopen'>
+local function fdopen(fd: cint, mode: cstring <const>): *FILE <cexport, codename 'fdopen'>
+  local mode: *[0]cchar = (@*[0]cchar)(mode)
   if mode == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr
@@ -1035,7 +1047,9 @@ local function fclose(stream: *FILE): cint <cexport, codename 'fclose'>
   return close_stream(stream, true)
 end
 
-local function freopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>, stream: *FILE): *FILE <cexport, codename 'freopen'>
+local function freopen(pathname: cstring <const>, mode: cstring <const>, stream: *FILE): *FILE <cexport, codename 'freopen'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
+  local mode: *[0]cchar = (@*[0]cchar)(mode)
   if stream == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr
@@ -1185,7 +1199,8 @@ local function grouping_separator_count(digit_count: csize): csize <inline>
   return separators
 end
 
-local function vfprintf(stream: *FILE, format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vfprintf'>
+local function vfprintf(stream: *FILE, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vfprintf'>
+  local format: *[0]cchar = (@*[0]cchar)(format)
   if stream == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -2056,40 +2071,46 @@ local function nelibc_vfprintf_host(host_stream: pointer,
   return vfprintf(&stream, format, arguments)
 end
 
-local function fprintf(stream: *FILE, format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'fprintf'>
+local function fprintf(stream: *FILE, format: cstring <const>, ...: cvarargs): cint <cexport, codename 'fprintf'>
+  local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
-  local result: cint = vfprintf(stream, format, arguments)
+  local result: cint = vfprintf(stream, format_array, arguments)
   C.va_end(arguments)
   return result
 end
 
-local function printf(format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'printf'>
+local function printf(format: cstring <const>, ...: cvarargs): cint <cexport, codename 'printf'>
+  local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
-  local result: cint = vfprintf(&stdout_FILE, format, arguments)
+  local result: cint = vfprintf(&stdout_FILE, format_array, arguments)
   C.va_end(arguments)
   return result
 end
 
-local function vprintf(format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vprintf'>
+local function vprintf(format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vprintf'>
+  local format: *[0]cchar = (@*[0]cchar)(format)
   return vfprintf(&stdout_FILE, format, arguments)
 end
 
-local function vdprintf(fd: cint, format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vdprintf'>
+local function vdprintf(fd: cint, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vdprintf'>
+  local format: *[0]cchar = (@*[0]cchar)(format)
   local stream: FILE = {fd = -3, flags = WRITABLE, read_position = (@csize)(fd)}
   return vfprintf(&stream, format, arguments)
 end
 
-local function dprintf(fd: cint, format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'dprintf'>
+local function dprintf(fd: cint, format: cstring <const>, ...: cvarargs): cint <cexport, codename 'dprintf'>
+  local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
-  local result: cint = vdprintf(fd, format, arguments)
+  local result: cint = vdprintf(fd, format_array, arguments)
   C.va_end(arguments)
   return result
 end
 
-local function vsnprintf(buffer: *[0]cchar, size: csize, format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vsnprintf'>
+local function vsnprintf(buffer: *[0]cchar, size: csize, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vsnprintf'>
+  local format: *[0]cchar = (@*[0]cchar)(format)
   if size ~= 0 and buffer == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -2104,15 +2125,17 @@ local function vsnprintf(buffer: *[0]cchar, size: csize, format: *[0]cchar <cons
   return result
 end
 
-local function snprintf(buffer: *[0]cchar, size: csize, format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'snprintf'>
+local function snprintf(buffer: *[0]cchar, size: csize, format: cstring <const>, ...: cvarargs): cint <cexport, codename 'snprintf'>
+  local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
-  local result: cint = vsnprintf(buffer, size, format, arguments)
+  local result: cint = vsnprintf(buffer, size, format_array, arguments)
   C.va_end(arguments)
   return result
 end
 
-local function vasprintf(output: *[0]*[0]cchar, format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vasprintf'>
+local function vasprintf(output: *[0]*[0]cchar, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vasprintf'>
+  local format: *[0]cchar = (@*[0]cchar)(format)
   if output == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -2138,22 +2161,25 @@ local function vasprintf(output: *[0]*[0]cchar, format: *[0]cchar <const>, argum
   return result
 end
 
-local function asprintf(output: *[0]*[0]cchar, format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'asprintf'>
+local function asprintf(output: *[0]*[0]cchar, format: cstring <const>, ...: cvarargs): cint <cexport, codename 'asprintf'>
+  local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
-  local result: cint = vasprintf(output, format, arguments)
+  local result: cint = vasprintf(output, format_array, arguments)
   C.va_end(arguments)
   return result
 end
 
-local function vsprintf(buffer: *[0]cchar, format: *[0]cchar <const>, arguments: cvalist): cint <cexport, codename 'vsprintf'>
+local function vsprintf(buffer: *[0]cchar, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vsprintf'>
+  local format: *[0]cchar = (@*[0]cchar)(format)
   return vsnprintf(buffer, MAX_CSIZE, format, arguments)
 end
 
-local function sprintf(buffer: *[0]cchar, format: *[0]cchar <const>, ...: cvarargs): cint <cexport, codename 'sprintf'>
+local function sprintf(buffer: *[0]cchar, format: cstring <const>, ...: cvarargs): cint <cexport, codename 'sprintf'>
+  local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
-  local result: cint = vsprintf(buffer, format, arguments)
+  local result: cint = vsprintf(buffer, format_array, arguments)
   C.va_end(arguments)
   return result
 end
@@ -2341,7 +2367,8 @@ end
 
 local function nelibc_strerror(errnum: cint): *[0]cchar <cimport> end
 
-local function perror(prefix: *[0]cchar <const>): void <cexport, codename 'perror'>
+local function perror(prefix: cstring <const>): void <cexport, codename 'perror'>
+  local prefix: *[0]cchar = (@*[0]cchar)(prefix)
   local errno_slot: *[0]cint = nelibc_errno_location()
   local saved_errno: cint = errno_slot[0]
   if prefix ~= nilptr and prefix[0] ~= 0 then

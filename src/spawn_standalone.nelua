@@ -655,17 +655,19 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
 end
 
 local function posix_spawn(pid_output: *[0]cint,
-    pathname: *[0]cchar <const>, file_actions: pointer <const>,
+    pathname: cstring <const>, file_actions: pointer <const>,
     attributes: pointer <const>, argv: *[0]*[0]cchar,
     envp: *[0]*[0]cchar): cint <cexport, codename 'posix_spawn'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   return nelibc_posix_spawn_common(pid_output, pathname,
       (@pointer)(file_actions), (@pointer)(attributes), argv, envp, false)
 end
 
 local function posix_spawnp(pid_output: *[0]cint,
-    file: *[0]cchar <const>, file_actions: pointer <const>,
+    file: cstring <const>, file_actions: pointer <const>,
     attributes: pointer <const>, argv: *[0]*[0]cchar,
     envp: *[0]*[0]cchar): cint <cexport, codename 'posix_spawnp'>
+  local file: *[0]cchar = (@*[0]cchar)(file)
   return nelibc_posix_spawn_common(pid_output, file,
       (@pointer)(file_actions), (@pointer)(attributes), argv, envp, true)
 end

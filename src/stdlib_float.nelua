@@ -1989,7 +1989,8 @@ local function strtod_impl(text: *[0]cchar <const>, end_text: **cchar, precision
   return result
 end
 
-local function strtod(text: *[0]cchar <const>, end_text: **cchar): cdouble <cexport, codename 'strtod'>
+local function strtod(text: cstring <const>, end_text: **cchar): cdouble <cexport, codename 'strtod'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@cdouble)(strtod_impl(text, end_text, 53))
 end
 
@@ -2007,11 +2008,13 @@ local function strtof_impl(text: *[0]cchar <const>, end_text: **cchar): cfloat <
   return result
 end
 
-local function strtof(text: *[0]cchar <const>, end_text: **cchar): cfloat <cexport, codename 'strtof'>
+local function strtof(text: cstring <const>, end_text: **cchar): cfloat <cexport, codename 'strtof'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return strtof_impl(text, end_text)
 end
 
-local function strtold(text: *[0]cchar <const>, end_text: **cchar): clongdouble <cexport, codename 'strtold'>
+local function strtold(text: cstring <const>, end_text: **cchar): clongdouble <cexport, codename 'strtold'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return strtod_impl(text, end_text, 64)
 end
 

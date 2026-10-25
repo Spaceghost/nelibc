@@ -64,7 +64,8 @@ local function putchar(character: cint): cint <cexport, codename 'putchar'>
   return result
 end
 
-local function puts(string: *[0]cchar <const>): cint <cexport, codename 'puts'>
+local function puts(string: cstring <const>): cint <cexport, codename 'puts'>
+  local string: *[0]cchar = (@*[0]cchar)(string)
   local stream = nelibc_host_stdout()
   local length: csize = 0
   while string[length] ~= 0 do length = length + 1 end
@@ -114,8 +115,10 @@ local function ungetc(character: cint, stream: pointer): cint <cexport, codename
   return nelibc_host_ungetc(character, stream)
 end
 
-local function freopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>,
+local function freopen(pathname: cstring <const>, mode: cstring <const>,
     stream: pointer): pointer <cexport, codename '__wrap_freopen'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
+  local mode: *[0]cchar = (@*[0]cchar)(mode)
   return nelibc_host_freopen(pathname, mode, stream)
 end
 
@@ -315,7 +318,8 @@ local function putchar_unlocked(character: cint): cint <cexport, codename 'putch
   return fputc_unlocked((@cint)((@byte)(character)), nelibc_host_stdout())
 end
 
-local function nelibc_host_fputs(string: *[0]cchar <const>, stream: pointer): cint <cexport, codename 'nelibc_host_fputs'>
+local function nelibc_host_fputs(string: cstring <const>, stream: pointer): cint <cexport, codename 'nelibc_host_fputs'>
+  local string: *[0]cchar = (@*[0]cchar)(string)
   local length: csize = 0
   while string[length] ~= 0 do length = length + 1 end
   local stream_lock_token: cint = nelibc_host_stream_lock(stream)
@@ -326,11 +330,13 @@ local function nelibc_host_fputs(string: *[0]cchar <const>, stream: pointer): ci
   return result
 end
 
-local function fputs(string: *[0]cchar <const>, stream: pointer): cint <cexport, codename 'fputs'>
+local function fputs(string: cstring <const>, stream: pointer): cint <cexport, codename 'fputs'>
+  local string: *[0]cchar = (@*[0]cchar)(string)
   return nelibc_host_fputs(string, stream)
 end
 
-local function fputs_unlocked(string: *[0]cchar <const>, stream: pointer): cint <cexport, codename 'fputs_unlocked'>
+local function fputs_unlocked(string: cstring <const>, stream: pointer): cint <cexport, codename 'fputs_unlocked'>
+  local string: *[0]cchar = (@*[0]cchar)(string)
   if string == nilptr or stream == nilptr then return -1 end
   local length: csize = 0
   while string[length] ~= 0 do length = length + 1 end
@@ -338,7 +344,8 @@ local function fputs_unlocked(string: *[0]cchar <const>, stream: pointer): cint 
   return -1
 end
 
-local function perror(prefix: *[0]cchar <const>): void <cexport, codename 'perror'>
+local function perror(prefix: cstring <const>): void <cexport, codename 'perror'>
+  local prefix: *[0]cchar = (@*[0]cchar)(prefix)
   local error_number: cint = nelibc_errno_location()[0]
   local stream = nelibc_host_stderr()
   local message = strerror(error_number)
@@ -358,7 +365,8 @@ local function perror(prefix: *[0]cchar <const>): void <cexport, codename 'perro
   nelibc_errno_location()[0] = error_number
 end
 
-local function remove(pathname: *[0]cchar <const>): cint <cexport, codename 'remove'>
+local function remove(pathname: cstring <const>): cint <cexport, codename 'remove'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   if pathname == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1

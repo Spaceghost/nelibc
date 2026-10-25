@@ -90,7 +90,9 @@ local function cached_global_collate_locale(name: *[0]cchar <const>): LocaleSele
   return {locale = newlocale(1_cint << C.LC_COLLATE, name, (@C.locale_t)(0)), owned = true}
 end
 
-local function nelibc_locale_strcoll(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <cexport, codename 'nelibc_locale_strcoll'>
+local function nelibc_locale_strcoll(left: cstring <const>, right: cstring <const>): cint <cexport, codename 'nelibc_locale_strcoll'>
+  local left: *[0]cchar = (@*[0]cchar)(left)
+  local right: *[0]cchar = (@*[0]cchar)(right)
   local current = uselocale((@C.locale_t)(0))
   if current ~= LC_GLOBAL_LOCALE then return strcoll_l(left, right, current) end
   if current_global_is_c_locale() then return c_locale_strcoll(left, right) end
@@ -102,7 +104,8 @@ local function nelibc_locale_strcoll(left: *[0]cchar <const>, right: *[0]cchar <
   return result
 end
 
-local function nelibc_locale_strxfrm(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <cexport, codename 'nelibc_locale_strxfrm'>
+local function nelibc_locale_strxfrm(dest: *[0]cchar, src: cstring <const>, size: csize): csize <cexport, codename 'nelibc_locale_strxfrm'>
+  local src: *[0]cchar = (@*[0]cchar)(src)
   local current = uselocale((@C.locale_t)(0))
   if current ~= LC_GLOBAL_LOCALE then return strxfrm_l(dest, src, size, current) end
   if current_global_is_c_locale() then return c_locale_strxfrm(dest, src, size) end

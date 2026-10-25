@@ -6,12 +6,13 @@ require 'C.stdarg'
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_va_copy(destination: cvalist, source: cvalist): void <cimport> end
 local function vsnprintf(buffer: *[0]cchar, size: csize,
-    format: *[0]cchar <const>, arguments: cvalist): cint <cimport> end
+    format: cstring <const>, arguments: cvalist): cint <cimport> end
 local function malloc(size: csize): pointer <cimport> end
 local function free(memory: pointer): void <cimport> end
 
-local function vasprintf(output: *[0]*[0]cchar, format: *[0]cchar <const>,
+local function vasprintf(output: *[0]*[0]cchar, format: cstring <const>,
     arguments: cvalist): cint <cexport, codename 'vasprintf'>
+  local format: *[0]cchar = (@*[0]cchar)(format)
   if output == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -42,11 +43,12 @@ local function vasprintf(output: *[0]*[0]cchar, format: *[0]cchar <const>,
   return result
 end
 
-local function asprintf(output: *[0]*[0]cchar, format: *[0]cchar <const>,
+local function asprintf(output: *[0]*[0]cchar, format: cstring <const>,
     ...: cvarargs): cint <cexport, codename 'asprintf'>
+  local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
-  local result: cint = vasprintf(output, format, arguments)
+  local result: cint = vasprintf(output, format_array, arguments)
   C.va_end(arguments)
   return result
 end

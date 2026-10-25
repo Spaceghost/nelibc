@@ -1,8 +1,10 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
 
-local function nelibc_locale_strcoll(left: *[0]cchar <const>,
-    right: *[0]cchar <const>): cint <cexport, codename 'nelibc_locale_strcoll'>
+local function nelibc_locale_strcoll(left: cstring <const>,
+    right: cstring <const>): cint <cexport, codename 'nelibc_locale_strcoll'>
+  local left: *[0]cchar = (@*[0]cchar)(left)
+  local right: *[0]cchar = (@*[0]cchar)(right)
   local index: csize = 0
   while left[index] ~= 0 and left[index] == right[index] do
     index = index + 1_csize

@@ -101,7 +101,8 @@ local function nelibc_fmemopen_close(cookie: pointer): cint <cexport, codename '
 end
 
 local function fmemopen(buffer: pointer, size: csize,
-    mode: *[0]cchar <const>): pointer <cexport, codename 'fmemopen'>
+    mode: cstring <const>): pointer <cexport, codename 'fmemopen'>
+  local mode: *[0]cchar = (@*[0]cchar)(mode)
   if mode == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr

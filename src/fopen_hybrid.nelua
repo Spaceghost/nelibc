@@ -6,7 +6,9 @@ local function close(fd: cint): cint <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_host_fdopen(fd: cint, mode: *[0]cchar <const>): pointer <cimport> end
 
-local function fopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>): pointer <cexport, codename 'fopen'>
+local function fopen(pathname: cstring <const>, mode: cstring <const>): pointer <cexport, codename 'fopen'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
+  local mode: *[0]cchar = (@*[0]cchar)(mode)
   if pathname == nilptr or mode == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr

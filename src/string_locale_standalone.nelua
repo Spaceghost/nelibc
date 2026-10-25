@@ -37,7 +37,9 @@ local function multibyte_to_wide(text: *[0]cchar <const>, length: *[0]csize): *[
   return wide
 end
 
-local function nelibc_locale_strcoll(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <cexport, codename 'nelibc_locale_strcoll'>
+local function nelibc_locale_strcoll(left: cstring <const>, right: cstring <const>): cint <cexport, codename 'nelibc_locale_strcoll'>
+  local left: *[0]cchar = (@*[0]cchar)(left)
+  local right: *[0]cchar = (@*[0]cchar)(right)
   if nelibc_standalone_collate_mode() == 1 then
     local previous_locale = enter_german_utf8_locale()
     if previous_locale == nilptr then return byte_collate(left, right) end
@@ -59,7 +61,8 @@ local function nelibc_locale_strcoll(left: *[0]cchar <const>, right: *[0]cchar <
   return byte_collate(left, right)
 end
 
-local function nelibc_locale_strxfrm(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <cexport, codename 'nelibc_locale_strxfrm'>
+local function nelibc_locale_strxfrm(dest: *[0]cchar, src: cstring <const>, size: csize): csize <cexport, codename 'nelibc_locale_strxfrm'>
+  local src: *[0]cchar = (@*[0]cchar)(src)
   if nelibc_standalone_collate_mode() == 1 then
     local previous_locale = enter_german_utf8_locale()
     if previous_locale == nilptr then

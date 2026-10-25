@@ -15,7 +15,7 @@ local function realloc(ptr: pointer, size: csize): pointer <cimport> end
 local function memcpy(dest: pointer, src: pointer <const>, size: csize): pointer <cimport> end
 local function memset(dest: pointer, value: cint, size: csize): pointer <cimport> end
 local function getenv(name: *[0]cchar <const>): *[0]cchar <cimport> end
-local function fopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>): pointer <cimport> end
+local function fopen(pathname: cstring <const>, mode: cstring <const>): pointer <cimport> end
 local function fclose(stream: pointer): cint <cimport> end
 local function fileno(stream: pointer): cint <cimport> end
 local function getline(line: **cchar, capacity: *csize, stream: pointer): clong <cimport> end
@@ -759,7 +759,8 @@ local function fork(): cint <cexport, codename 'fork'>
   return (@cint)(syscall_result(result))
 end
 
-local function execve(pathname: *[0]cchar <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <cexport, codename 'execve'>
+local function execve(pathname: cstring <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <cexport, codename 'execve'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   return (@cint)(syscall_result(nelibc_raw_syscall3(
     59_culong,
     (@culong)((@usize)(pathname)),
@@ -868,29 +869,34 @@ local function exec_search_path(file: *[0]cchar <const>, argv: *[0]*[0]cchar,
   return -1_cint
 end
 
-local function execv(pathname: *[0]cchar <const>, argv: *[0]*[0]cchar): cint <cexport, codename 'execv'>
+local function execv(pathname: cstring <const>, argv: *[0]*[0]cchar): cint <cexport, codename 'execv'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   return execve(pathname, argv, (@*[0]*[0]cchar)(nelibc_environment_vector()))
 end
 
-local function execvp(file: *[0]cchar <const>, argv: *[0]*[0]cchar): cint <cexport, codename 'execvp'>
+local function execvp(file: cstring <const>, argv: *[0]*[0]cchar): cint <cexport, codename 'execvp'>
+  local file: *[0]cchar = (@*[0]cchar)(file)
   return exec_search_path(file, argv, (@*[0]*[0]cchar)(nelibc_environment_vector()))
 end
 
-local function execvpe(file: *[0]cchar <const>, argv: *[0]*[0]cchar,
+local function execvpe(file: cstring <const>, argv: *[0]*[0]cchar,
     envp: *[0]*[0]cchar): cint <cexport, codename 'execvpe'>
+  local file: *[0]cchar = (@*[0]cchar)(file)
   return exec_search_path(file, argv, envp)
 end
 
 -- musl's static posix_spawnp calls this internal entry point. Providing it
 -- here lets hybrid musl builds keep Nelibc's execvp shell fallback without
 -- pulling musl's execvp object, which also defines the public execvp symbol.
-local function __execvpe(file: *[0]cchar <const>, argv: *[0]*[0]cchar,
+local function __execvpe(file: cstring <const>, argv: *[0]*[0]cchar,
     envp: *[0]*[0]cchar): cint <cexport, codename '__execvpe'>
+  local file: *[0]cchar = (@*[0]cchar)(file)
   return exec_search_path(file, argv, envp)
 end
 
 -- Linux execveat resolves pathname relative to dirfd, with AT_EMPTY_PATH support.
-local function execveat(dirfd: cint, pathname: *[0]cchar <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar, flags: cint): cint <cexport, codename 'execveat'>
+local function execveat(dirfd: cint, pathname: cstring <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar, flags: cint): cint <cexport, codename 'execveat'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   return (@cint)(syscall_result(nelibc_raw_syscall6(
     322_culong,
     (@culong)(dirfd),
@@ -1128,8 +1134,9 @@ end
 
 ## if NELIBC_TESTING then
 -- Test-only ABI hooks; normal libc archives do not export them.
-local function nelibc_tz_file_signature(path: *[0]cchar <const>,
+local function nelibc_tz_file_signature(path: cstring <const>,
     signature: *[56]cchar): cint <cexport, codename '__nelibc_tz_file_signature'>
+  local path: *[0]cchar = (@*[0]cchar)(path)
   if path == nilptr or signature == nilptr then return -1_cint end
   if not tz_read_file_signature(path, signature) then return -1_cint end
   return 0_cint
@@ -2156,8 +2163,10 @@ local function strptime_word(input: *[0]cchar <const>, position: *[0]csize,
 end
 
 -- C-locale strptime parser for the standard calendar and clock directives.
-local function strptime(input: *[0]cchar <const>, format: *[0]cchar <const>,
+local function strptime(input: cstring <const>, format: cstring <const>,
     time_value: *Tm): *[0]cchar <cexport, codename 'strptime'>
+  local input: *[0]cchar = (@*[0]cchar)(input)
+  local format: *[0]cchar = (@*[0]cchar)(format)
   if input == nilptr or format == nilptr or time_value == nilptr then return nilptr end
   local german_time = nelibc_time_locale_is_german() ~= 0
   local input_position: csize = 0
@@ -2558,7 +2567,8 @@ local function getdate_fail(stream: pointer, line: *[0]cchar, error: cint): *Tm 
 end
 
 -- XSI getdate reads strptime formats from the file named by DATEMSK.
-local function getdate(input: *[0]cchar <const>): *Tm <cexport, codename 'getdate'>
+local function getdate(input: cstring <const>): *Tm <cexport, codename 'getdate'>
+  local input: *[0]cchar = (@*[0]cchar)(input)
   local error_location = nelibc_getdate_err_location()
   if input == nilptr then error_location[0] = 8_cint; return nilptr end
   local template_path = getenv("DATEMSK")
@@ -5081,7 +5091,8 @@ local function fdopendir(fd: cint): pointer <cexport, codename 'fdopendir'>
   return nelibc_dir_stream_create(fd)
 end
 
-local function opendir(pathname: *[0]cchar <const>): pointer <cexport, codename 'opendir'>
+local function opendir(pathname: cstring <const>): pointer <cexport, codename 'opendir'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   local fd = open((@pointer)(pathname), 0x90000_cint, 0_cuint) -- O_DIRECTORY|O_CLOEXEC
   if fd < 0 then return nilptr end
   -- open's O_DIRECTORY|O_RDONLY flags already validate this descriptor.
@@ -5285,9 +5296,10 @@ local function nelibc_scandir_stream(directory: pointer, namelist: *[0]pointer,
   return (@cint)(count)
 end
 
-local function scandir(pathname: *[0]cchar <const>, namelist: *[0]pointer,
+local function scandir(pathname: cstring <const>, namelist: *[0]pointer,
     selector: function(pointer): cint,
     compare: function(pointer, pointer): cint): cint <cexport, codename 'scandir'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   if pathname == nilptr or namelist == nilptr then
     nelibc_errno_location()[0] = 22_cint -- EINVAL
     return -1
@@ -5298,9 +5310,10 @@ local function scandir(pathname: *[0]cchar <const>, namelist: *[0]pointer,
   return nelibc_scandir_stream(directory, namelist, selector, compare)
 end
 
-local function scandirat(dirfd: cint, pathname: *[0]cchar <const>, namelist: *[0]pointer,
+local function scandirat(dirfd: cint, pathname: cstring <const>, namelist: *[0]pointer,
     selector: function(pointer): cint,
     compare: function(pointer, pointer): cint): cint <cexport, codename 'scandirat'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   if pathname == nilptr or namelist == nilptr then
     nelibc_errno_location()[0] = 22_cint -- EINVAL
     return -1
@@ -5319,7 +5332,8 @@ local function scandirat(dirfd: cint, pathname: *[0]cchar <const>, namelist: *[0
 end
 
 -- realpath resolves dot components and symlinks using only Nelibc path calls.
-local function realpath(pathname: *[0]cchar <const>, resolved_path: *[0]cchar): *[0]cchar <cexport, codename 'realpath'>
+local function realpath(pathname: cstring <const>, resolved_path: *[0]cchar): *[0]cchar <cexport, codename 'realpath'>
+  local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   if pathname == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr

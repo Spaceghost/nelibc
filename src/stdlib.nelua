@@ -14,7 +14,7 @@ local function nelibc_environment_pointer_size(): csize <cimport> end
 local function malloc(size: csize): pointer <cimport> end
 local function free(ptr: pointer): void <cimport> end
 local function realloc(ptr: pointer, size: csize): pointer <cimport> end
-local function strtod(text: *[0]cchar <const>, end_text: **cchar): cdouble <cimport> end
+local function strtod(text: cstring <const>, end_text: **cchar): cdouble <cimport> end
 local function raise(signal: cint): cint <cimport> end
 local function _Exit(status: cint): void <cimport> end
 local function fork(): cint <cimport> end
@@ -131,7 +131,8 @@ local function getopt_report(program: *[0]cchar <const>, option: cint,
 end
 
 local function getopt(argc: cint, argv: *[0]*[0]cchar,
-    option_string: *[0]cchar <const>): cint <cexport, codename 'getopt'>
+    option_string: cstring <const>): cint <cexport, codename 'getopt'>
+  local option_string: *[0]cchar = (@*[0]cchar)(option_string)
   optarg = nilptr
   if argc <= 0 or argv == nilptr or option_string == nilptr then return -1 end
   local effective_option_string: *[0]cchar = (@*[0]cchar)(option_string)
@@ -474,14 +475,16 @@ local function getopt_long_impl(argc: cint, argv: *[0]*[0]cchar,
 end
 
 local function getopt_long(argc: cint, argv: *[0]*[0]cchar,
-    option_string: *[0]cchar <const>, long_options: *[0]GetoptLongOption,
+    option_string: cstring <const>, long_options: *[0]GetoptLongOption,
     long_index: *[0]cint): cint <cexport, codename 'getopt_long'>
+  local option_string: *[0]cchar = (@*[0]cchar)(option_string)
   return getopt_long_impl(argc, argv, option_string, long_options, long_index, false)
 end
 
 local function getopt_long_only(argc: cint, argv: *[0]*[0]cchar,
-    option_string: *[0]cchar <const>, long_options: *[0]GetoptLongOption,
+    option_string: cstring <const>, long_options: *[0]GetoptLongOption,
     long_index: *[0]cint): cint <cexport, codename 'getopt_long_only'>
+  local option_string: *[0]cchar = (@*[0]cchar)(option_string)
   return getopt_long_impl(argc, argv, option_string, long_options, long_index, true)
 end
 
@@ -623,7 +626,8 @@ local function encode_multibyte(state: pointer, output: *[0]cchar, wide: cint): 
   return 4
 end
 
-local function mblen(text: *[0]cchar <const>, size: csize): cint <cexport, codename 'mblen'>
+local function mblen(text: cstring <const>, size: csize): cint <cexport, codename 'mblen'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   if text == nilptr then
     nelibc_multibyte_state_reset((@pointer)(&mblen_state[0]))
     return 0
@@ -636,8 +640,9 @@ local function mblen(text: *[0]cchar <const>, size: csize): cint <cexport, coden
   return (@cint)(converted)
 end
 
-local function mbtowc(wide: *[0]cint, text: *[0]cchar <const>,
+local function mbtowc(wide: *[0]cint, text: cstring <const>,
     size: csize): cint <cexport, codename 'mbtowc'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   if text == nilptr then
     nelibc_multibyte_state_reset((@pointer)(&mbtowc_state[0]))
     return 0
@@ -650,8 +655,9 @@ local function mbtowc(wide: *[0]cint, text: *[0]cchar <const>,
   return (@cint)(converted)
 end
 
-local function mbrtowc(wide: *[0]cint, text: *[0]cchar <const>, size: csize,
+local function mbrtowc(wide: *[0]cint, text: cstring <const>, size: csize,
     state: pointer): csize <cexport, codename 'mbrtowc'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   local mode: cint = nelibc_multibyte_mode()
   local active_state: pointer = state
   if active_state == nilptr then active_state = nelibc_thread_state(0, 256) end
@@ -830,8 +836,9 @@ local function wctob(wide: cuint): cint <cexport, codename 'wctob'>
   return (@cint)((@cuint)((@byte)(output[0])))
 end
 
-local function mbstowcs(output: *[0]cint, text: *[0]cchar <const>,
+local function mbstowcs(output: *[0]cint, text: cstring <const>,
     limit: csize): csize <cexport, codename 'mbstowcs'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   local state: [16]culong = {}
   local text_length: csize = 0
   while text[text_length] ~= 0 do text_length = text_length + 1 end
@@ -1142,7 +1149,8 @@ local function nelibc_system_cancel_cleanup(context: pointer): void <cexport, co
   nelibc_system_unlock()
 end
 
-local function system(command: *[0]cchar <const>): cint <cexport, codename 'system'>
+local function system(command: cstring <const>): cint <cexport, codename 'system'>
+  local command: *[0]cchar = (@*[0]cchar)(command)
   local shell: *[0]cchar = '/bin/sh'
   if command == nilptr then
     if access(shell, 1) == 0 then return 1 end
@@ -1237,7 +1245,8 @@ local function system(command: *[0]cchar <const>): cint <cexport, codename 'syst
   end
 end
 
-local function getenv(name: *[0]cchar <const>): *[0]cchar <cexport, codename 'getenv'>
+local function getenv(name: cstring <const>): *[0]cchar <cexport, codename 'getenv'>
+  local name: *[0]cchar = (@*[0]cchar)(name)
   if name == nilptr or name[0] == 0 then return nilptr end
   local name_length: csize = 0
   while name[name_length] ~= 0 do
@@ -1313,7 +1322,9 @@ local function install_environment(replacement: *[0]*[0]cchar,
   end
 end
 
-local function setenv(name: *[0]cchar <const>, value: *[0]cchar <const>, overwrite: cint): cint <cexport, codename 'setenv'>
+local function setenv(name: cstring <const>, value: cstring <const>, overwrite: cint): cint <cexport, codename 'setenv'>
+  local name: *[0]cchar = (@*[0]cchar)(name)
+  local value: *[0]cchar = (@*[0]cchar)(value)
   if name == nilptr or value == nilptr or name[0] == 0 then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -1408,7 +1419,8 @@ local function setenv(name: *[0]cchar <const>, value: *[0]cchar <const>, overwri
   return 0
 end
 
-local function unsetenv(name: *[0]cchar <const>): cint <cexport, codename 'unsetenv'>
+local function unsetenv(name: cstring <const>): cint <cexport, codename 'unsetenv'>
+  local name: *[0]cchar = (@*[0]cchar)(name)
   if name == nilptr or name[0] == 0 then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -1470,7 +1482,7 @@ local function unsetenv(name: *[0]cchar <const>): cint <cexport, codename 'unset
   return 0
 end
 
-local function putenv(string: *[0]cchar <const>): cint <cexport, codename 'putenv'>
+local function putenv(string: *[0]cchar): cint <cexport, codename 'putenv'>
   if string == nilptr or string[0] == 0 then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -1842,41 +1854,50 @@ local function parse_wide_ulong(text: *[0]cint <const>, end_text: **cint, base: 
   return magnitude
 end
 
-local function strtol(text: *[0]cchar <const>, end_text: **cchar, base: cint): clong <cexport, codename 'strtol'>
+local function strtol(text: cstring <const>, end_text: **cchar, base: cint): clong <cexport, codename 'strtol'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@clong)(parse_long(text, end_text, base, false))
 end
 
-local function isoc23_strtol(text: *[0]cchar <const>, end_text: **cchar, base: cint): clong <cexport, codename '__isoc23_strtol'>
+local function isoc23_strtol(text: cstring <const>, end_text: **cchar, base: cint): clong <cexport, codename '__isoc23_strtol'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@clong)(parse_long(text, end_text, base, true))
 end
 
-local function strtoll(text: *[0]cchar <const>, end_text: **cchar, base: cint): clonglong <cexport, codename 'strtoll'>
+local function strtoll(text: cstring <const>, end_text: **cchar, base: cint): clonglong <cexport, codename 'strtoll'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return parse_long(text, end_text, base, false)
 end
 
-local function isoc23_strtoll(text: *[0]cchar <const>, end_text: **cchar, base: cint): clonglong <cexport, codename '__isoc23_strtoll'>
+local function isoc23_strtoll(text: cstring <const>, end_text: **cchar, base: cint): clonglong <cexport, codename '__isoc23_strtoll'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return parse_long(text, end_text, base, true)
 end
 
-local function strtoul(text: *[0]cchar <const>, end_text: **cchar, base: cint): culong <cexport, codename 'strtoul'>
+local function strtoul(text: cstring <const>, end_text: **cchar, base: cint): culong <cexport, codename 'strtoul'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@culong)(parse_ulong(text, end_text, base, false))
 end
 
-local function isoc23_strtoul(text: *[0]cchar <const>, end_text: **cchar, base: cint): culong <cexport, codename '__isoc23_strtoul'>
+local function isoc23_strtoul(text: cstring <const>, end_text: **cchar, base: cint): culong <cexport, codename '__isoc23_strtoul'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@culong)(parse_ulong(text, end_text, base, true))
 end
 
-local function strtoull(text: *[0]cchar <const>, end_text: **cchar, base: cint): culonglong <cexport, codename 'strtoull'>
+local function strtoull(text: cstring <const>, end_text: **cchar, base: cint): culonglong <cexport, codename 'strtoull'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return parse_ulong(text, end_text, base, false)
 end
 
 -- intmax_t is long on the supported x86-64 Linux ABI. Keep these aliases in
 -- Nelua so inttypes consumers can replace the host conversion symbols too.
-local function strtoimax(text: *[0]cchar <const>, end_text: **cchar, base: cint): clong <cexport, codename 'strtoimax'>
+local function strtoimax(text: cstring <const>, end_text: **cchar, base: cint): clong <cexport, codename 'strtoimax'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@clong)(parse_long(text, end_text, base, false))
 end
 
-local function strtoumax(text: *[0]cchar <const>, end_text: **cchar, base: cint): culong <cexport, codename 'strtoumax'>
+local function strtoumax(text: cstring <const>, end_text: **cchar, base: cint): culong <cexport, codename 'strtoumax'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@culong)(parse_ulong(text, end_text, base, false))
 end
 
@@ -1960,43 +1981,51 @@ local function parse_wide_ulong_locale(text: *[0]cint <const>, end_text: **cint,
   return result
 end
 
-local function strtol_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+local function strtol_l(text: cstring <const>, end_text: **cchar, base: cint,
     locale: C.locale_t): clong <cexport, codename 'strtol_l'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@clong)(parse_long_locale(text, end_text, base, false, locale))
 end
 
-local function strtoul_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+local function strtoul_l(text: cstring <const>, end_text: **cchar, base: cint,
     locale: C.locale_t): culong <cexport, codename 'strtoul_l'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@culong)(parse_ulong_locale(text, end_text, base, false, locale))
 end
 
-local function strtoll_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+local function strtoll_l(text: cstring <const>, end_text: **cchar, base: cint,
     locale: C.locale_t): clonglong <cexport, codename 'strtoll_l'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return parse_long_locale(text, end_text, base, false, locale)
 end
 
-local function strtoull_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+local function strtoull_l(text: cstring <const>, end_text: **cchar, base: cint,
     locale: C.locale_t): culonglong <cexport, codename 'strtoull_l'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return parse_ulong_locale(text, end_text, base, false, locale)
 end
 
-local function isoc23_strtol_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+local function isoc23_strtol_l(text: cstring <const>, end_text: **cchar, base: cint,
     locale: C.locale_t): clong <cexport, codename '__isoc23_strtol_l'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@clong)(parse_long_locale(text, end_text, base, true, locale))
 end
 
-local function isoc23_strtoul_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+local function isoc23_strtoul_l(text: cstring <const>, end_text: **cchar, base: cint,
     locale: C.locale_t): culong <cexport, codename '__isoc23_strtoul_l'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@culong)(parse_ulong_locale(text, end_text, base, true, locale))
 end
 
-local function isoc23_strtoll_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+local function isoc23_strtoll_l(text: cstring <const>, end_text: **cchar, base: cint,
     locale: C.locale_t): clonglong <cexport, codename '__isoc23_strtoll_l'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return parse_long_locale(text, end_text, base, true, locale)
 end
 
-local function isoc23_strtoull_l(text: *[0]cchar <const>, end_text: **cchar, base: cint,
+local function isoc23_strtoull_l(text: cstring <const>, end_text: **cchar, base: cint,
     locale: C.locale_t): culonglong <cexport, codename '__isoc23_strtoull_l'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return parse_ulong_locale(text, end_text, base, true, locale)
 end
 
@@ -2080,23 +2109,28 @@ local function isoc23_wcstoull(text: *[0]cint <const>, end_text: **cint, base: c
   return parse_wide_ulong(text, end_text, base, true)
 end
 
-local function isoc23_strtoull(text: *[0]cchar <const>, end_text: **cchar, base: cint): culonglong <cexport, codename '__isoc23_strtoull'>
+local function isoc23_strtoull(text: cstring <const>, end_text: **cchar, base: cint): culonglong <cexport, codename '__isoc23_strtoull'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return parse_ulong(text, end_text, base, true)
 end
 
-local function atoi(text: *[0]cchar <const>): cint <cexport, codename 'atoi'>
+local function atoi(text: cstring <const>): cint <cexport, codename 'atoi'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@cint)(parse_long(text, nilptr, 10, false))
 end
 
-local function atol(text: *[0]cchar <const>): clong <cexport, codename 'atol'>
+local function atol(text: cstring <const>): clong <cexport, codename 'atol'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return (@clong)(parse_long(text, nilptr, 10, false))
 end
 
-local function atoll(text: *[0]cchar <const>): clonglong <cexport, codename 'atoll'>
+local function atoll(text: cstring <const>): clonglong <cexport, codename 'atoll'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return parse_long(text, nilptr, 10, false)
 end
 
-local function atof(text: *[0]cchar <const>): cdouble <cexport, codename 'atof'>
+local function atof(text: cstring <const>): cdouble <cexport, codename 'atof'>
+  local text: *[0]cchar = (@*[0]cchar)(text)
   return strtod(text, nilptr)
 end
 

@@ -2327,7 +2327,8 @@ local function wctype_descriptor(name: *[0]cchar <const>): culong <inline>
   return 0
 end
 
-local function wctype(name: *[0]cchar <const>): culong <cexport, codename 'wctype'>
+local function wctype(name: cstring <const>): culong <cexport, codename 'wctype'>
+  local name: *[0]cchar = (@*[0]cchar)(name)
   return wctype_descriptor(name)
 end
 local function wctype_l(name: *[0]cchar <const>, locale: pointer): culong
