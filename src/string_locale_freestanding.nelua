@@ -1,0 +1,27 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_locale_strcoll(left: *[0]cchar <const>,
+    right: *[0]cchar <const>): cint <cexport, codename 'nelibc_locale_strcoll'>
+  local index: csize = 0
+  while left[index] ~= 0 and left[index] == right[index] do
+    index = index + 1_csize
+  end
+  return (@cint)((@byte)(left[index])) - (@cint)((@byte)(right[index]))
+end
+
+local function nelibc_locale_strxfrm(dest: *[0]cchar,
+    source: *[0]cchar <const>, size: csize): csize
+    <cexport, codename 'nelibc_locale_strxfrm'>
+  local length: csize = 0
+  while source[length] ~= 0 do length = length + 1_csize end
+  if size ~= 0_csize then
+    local copied: csize = 0
+    while copied < length and copied + 1_csize < size do
+      dest[copied] = source[copied]
+      copied = copied + 1_csize
+    end
+    dest[copied] = 0_cchar
+  end
+  return length
+end

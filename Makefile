@@ -2455,7 +2455,7 @@ errno-tls-zig-musl: $(OUT)
 
 freestanding-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-DNELIBC_STANDALONE -o $(OUT)/string-freestanding-zig.o src/string.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/string-locale-freestanding-zig.o src/string_locale_standalone.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/string-locale-freestanding-zig.o src/string_locale_freestanding.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector -o $(OUT)/memory-freestanding-zig.o src/memory.nelua
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_FREESTANDING -ffreestanding -fno-builtin -fno-stack-protector -c src/string_locale_lock.c -o $(OUT)/string-tls-freestanding-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/start_linux_x86_64.S -o $(OUT)/start-linux-x86_64-zig.o
@@ -2467,7 +2467,7 @@ smoke-freestanding-zig: freestanding-zig
 
 freestanding-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns --cflags=-DNELIBC_STANDALONE -o $(OUT)/string-freestanding-gcc.o src/string.nelua
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/string-locale-freestanding-gcc.o src/string_locale_standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/string-locale-freestanding-gcc.o src/string_locale_freestanding.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin --cflags=-ffreestanding --cflags=-fno-stack-protector --cflags=-fno-tree-loop-distribute-patterns -o $(OUT)/memory-freestanding-gcc.o src/memory.nelua
 	gcc -DNELIBC_FREESTANDING -ffreestanding -fno-builtin -fno-stack-protector -fno-tree-loop-distribute-patterns -c src/string_locale_lock.c -o $(OUT)/string-tls-freestanding-gcc.o
 	gcc -c src/sys/start_linux_x86_64.S -o $(OUT)/start-linux-x86_64-gcc.o
