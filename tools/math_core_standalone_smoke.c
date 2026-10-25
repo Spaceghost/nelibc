@@ -47,6 +47,14 @@ int main(void) {
       fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | FE_INEXACT)) return 192;
   if (feupdateenv(&saved_environment) != 0 ||
       fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | FE_INEXACT)) return 193;
+  volatile double fenv_input = 1.25;
+  volatile long double fenv_input_long = 1.25L;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0 || rint(fenv_input) != 2.0 ||
+      fetestexcept(FE_INEXACT) == 0) return 195;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0 || rintl(fenv_input_long) != 2.0L ||
+      fetestexcept(FE_INEXACT) == 0) return 196;
+  if (feclearexcept(FE_ALL_EXCEPT) != 0 || nearbyint(fenv_input) != 2.0 ||
+      fetestexcept(FE_INEXACT) != 0) return 197;
   if (fesetenv(FE_DFL_ENV) != 0 || fegetround() != FE_TONEAREST ||
       fetestexcept(FE_ALL_EXCEPT) != 0 || fesetround(FE_TONEAREST) != 0) return 194;
 
