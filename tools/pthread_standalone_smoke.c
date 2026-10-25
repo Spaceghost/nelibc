@@ -1986,6 +1986,30 @@ int main(void) {
       pthread_mutex_destroy(&pi_mutex) != 0)
     return 268;
 
+  pthread_mutexattr_t robust_pi_clock_attributes;
+  pthread_mutex_t robust_pi_clock_mutex;
+  if (pthread_mutexattr_init(&robust_pi_clock_attributes) != 0 ||
+      pthread_mutexattr_setrobust(&robust_pi_clock_attributes,
+                                  PTHREAD_MUTEX_ROBUST) != 0 ||
+      pthread_mutexattr_setprotocol(&robust_pi_clock_attributes,
+                                    PTHREAD_PRIO_INHERIT) != 0 ||
+      pthread_mutex_init(&robust_pi_clock_mutex,
+                         &robust_pi_clock_attributes) != 0 ||
+      pthread_mutexattr_destroy(&robust_pi_clock_attributes) != 0 ||
+      pthread_mutex_lock(&robust_pi_clock_mutex) != 0)
+    return 303;
+  pi_timed_mutex_request robust_pi_clock_request = {
+      .mutex = &robust_pi_clock_mutex,
+      .clock_id = CLOCK_MONOTONIC,
+      .deadline = {0, 0}};
+  if (pthread_create(&pi_waiter, 0, pi_timed_mutex_worker,
+                     &robust_pi_clock_request) != 0 ||
+      pthread_join(pi_waiter, &result) != 0 ||
+      result != (void *)(intptr_t)ETIMEDOUT ||
+      pthread_mutex_unlock(&robust_pi_clock_mutex) != 0 ||
+      pthread_mutex_destroy(&robust_pi_clock_mutex) != 0)
+    return 304;
+
   if (pthread_mutex_init(&robust_mutex, &mutex_attributes) != 0 ||
       pthread_mutexattr_destroy(&mutex_attributes) != 0)
     return 238;
