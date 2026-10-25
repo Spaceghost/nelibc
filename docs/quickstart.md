@@ -56,6 +56,22 @@ library symbols being evaluated. `nelibc_malloc` and related prefixed calls
 are declared in `include/nelibc_alloc.h` and avoid changing the host allocator
 for unrelated host-owned objects.
 
+The archive also provides the legacy aligned-allocation API through
+`<malloc.h>`. For example, `memalign(128, 257)` returns storage aligned to
+128 bytes; release it with `free`. Alignments must be powers of two. Values
+smaller than pointer alignment are rounded up:
+
+```c
+#include <malloc.h>
+#include <stdlib.h>
+
+void *buffer = memalign(128, 257);
+if (buffer == NULL) {
+  /* handle allocation failure */
+}
+free(buffer);
+```
+
 ### Try an existing application
 
 For a larger check, the Spinel C compiler can itself link against Nelibc, then
