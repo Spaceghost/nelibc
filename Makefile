@@ -789,7 +789,12 @@ dogfood-spinel-tcc: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-tcc.a
 	ZIG='$(ZIG)' TCC='$(TCC)' TCC_LIBTCC1='$(TCC_LIBTCC1)' \
 		tools/dogfood_spinel_tcc.sh '$(SPINEL_DIR)'
 
-.PHONY: dogfood-zig dogfood-gcc dogfood-zig-musl dogfood-tcc dogfood-matrix
+.PHONY: dogfood-spinel-matrix
+dogfood-spinel-matrix:
+	$(MAKE) dogfood-spinel-musl
+	$(MAKE) dogfood-spinel-tcc
+
+.PHONY: dogfood-zig dogfood-gcc dogfood-zig-musl dogfood-tcc dogfood-matrix dogfood-spinel-musl dogfood-spinel-tcc dogfood-spinel-matrix
 
 getopt-diff-zig: $(OUT)/libnelibc-zig.a
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude tools/getopt_diff.c -o $(OUT)/getopt-diff-host
