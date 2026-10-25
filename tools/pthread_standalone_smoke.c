@@ -109,7 +109,7 @@ static _Atomic int cancel_cleanup_calls;
 static int cleanup_frame_order;
 static int cleanup_frame_order_bad;
 static sem_t cancel_semaphore;
-static volatile int cancel_sem_started;
+static _Atomic int cancel_sem_started;
 static _Atomic int cancel_async_sem_ready;
 enum { NAMED_SEMAPHORE_RACE_WORKERS = 8 };
 static char named_semaphore_path[64];
@@ -563,7 +563,7 @@ static void *cancel_sleep_worker(void *argument) {
 static void *cancel_sem_worker(void *argument) {
   (void)argument;
   pthread_cleanup_push(cancel_cleanup, 0);
-  cancel_sem_started = 1;
+  atomic_store_explicit(&cancel_sem_started, 1, memory_order_release);
   (void)sem_wait(&cancel_semaphore);
   pthread_cleanup_pop(0);
   return (void *)5;
@@ -584,7 +584,7 @@ static void *cancel_disabled_sem_worker(void *argument) {
   (void)argument;
   pthread_cleanup_push(cancel_cleanup, 0);
   if (pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, 0) != 0) return (void *)6;
-  cancel_sem_started = 1;
+  atomic_store_explicit(&cancel_sem_started, 1, memory_order_release);
   if (sem_wait(&cancel_semaphore) != 0) return (void *)7;
   if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0) != 0) return (void *)8;
   pthread_cleanup_pop(0);
@@ -675,6 +675,15 @@ static int wait_for_condition_block(pthread_cond_t *condition,
     result = ETIMEDOUT;
   int unlock_result = pthread_mutex_unlock(mutex);
   return result != 0 ? result : unlock_result;
+}
+
+static int wait_for_semaphore_registration(sem_t *semaphore) {
+  struct timespec pause = {0, 1000000};
+  for (unsigned int attempt = 0; attempt < 5000U; ++attempt) {
+    if (__atomic_load_n(&semaphore->__waiters, __ATOMIC_ACQUIRE) != 0) return 0;
+    if (nanosleep(&pause, 0) != 0 && errno != EINTR) return errno;
+  }
+  return ETIMEDOUT;
 }
 
 static void *exit_with_value(void *argument) {
@@ -2911,23 +2920,21 @@ int main(void) {
   struct timespec expired = {0, 0};
   if (sem_timedwait(&cancel_semaphore, &expired) != -1 || errno != ETIMEDOUT)
     return 150;
-  cancel_sem_started = 0;
+  atomic_store_explicit(&cancel_sem_started, 0, memory_order_relaxed);
   if (pthread_create(&thread, 0, cancel_sem_worker, 0) != 0) return 151;
-  for (unsigned int i = 0; i < 10000000U && !cancel_sem_started; ++i) {
-  }
-  for (volatile unsigned int i = 0; i < 10000000U; ++i) {
-  }
-  if (!cancel_sem_started || sem_post(&cancel_semaphore) != 0) return 152;
+  if (wait_for_atomic_int(&cancel_sem_started, 1) != 0 ||
+      wait_for_semaphore_registration(&cancel_semaphore) != 0 ||
+      sem_post(&cancel_semaphore) != 0)
+    return 152;
   result = 0;
   if (pthread_join(thread, &result) != 0 || result != (void *)5) return 153;
   cancel_cleanup_calls = 0;
-  cancel_sem_started = 0;
+  atomic_store_explicit(&cancel_sem_started, 0, memory_order_relaxed);
   if (pthread_create(&thread, 0, cancel_sem_worker, 0) != 0) return 154;
-  for (unsigned int i = 0; i < 10000000U && !cancel_sem_started; ++i) {
-  }
-  for (volatile unsigned int i = 0; i < 10000000U; ++i) {
-  }
-  if (!cancel_sem_started || pthread_cancel(thread) != 0) return 155;
+  if (wait_for_atomic_int(&cancel_sem_started, 1) != 0 ||
+      wait_for_semaphore_registration(&cancel_semaphore) != 0 ||
+      pthread_cancel(thread) != 0)
+    return 155;
   result = 0;
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
       cancel_cleanup_calls != 1)
@@ -2935,17 +2942,10 @@ int main(void) {
   cancel_cleanup_calls = 0;
   atomic_store_explicit(&cancel_async_sem_ready, 0, memory_order_relaxed);
   if (pthread_create(&thread, 0, cancel_async_sem_worker, 0) != 0) return 217;
-  for (unsigned int i = 0; i < 10000000U &&
-       !atomic_load_explicit(&cancel_async_sem_ready, memory_order_acquire); ++i) {
-  }
-  for (unsigned int i = 0; i < 10000000U &&
-       __atomic_load_n(&cancel_semaphore.__waiters, __ATOMIC_ACQUIRE) == 0; ++i) {
-  }
-  if (!atomic_load_explicit(&cancel_async_sem_ready, memory_order_acquire) ||
-      __atomic_load_n(&cancel_semaphore.__waiters, __ATOMIC_ACQUIRE) == 0)
+  if (wait_for_atomic_int(&cancel_async_sem_ready, 1) != 0 ||
+      wait_for_semaphore_registration(&cancel_semaphore) != 0)
     return 218;
-  struct timespec async_sem_delay = {0, 20000000};
-  if (nanosleep(&async_sem_delay, 0) != 0 || pthread_cancel(thread) != 0)
+  if (pthread_cancel(thread) != 0)
     return 219;
   result = 0;
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
@@ -2955,13 +2955,12 @@ int main(void) {
       sem_init(&cancel_semaphore, 0, 0) != 0)
     return 220;
   cancel_cleanup_calls = 0;
-  cancel_sem_started = 0;
+  atomic_store_explicit(&cancel_sem_started, 0, memory_order_relaxed);
   if (pthread_create(&thread, 0, cancel_disabled_sem_worker, 0) != 0) return 166;
-  for (unsigned int i = 0; i < 10000000U && !cancel_sem_started; ++i) {
-  }
-  for (volatile unsigned int i = 0; i < 10000000U; ++i) {
-  }
-  if (!cancel_sem_started || pthread_cancel(thread) != 0) return 167;
+  if (wait_for_atomic_int(&cancel_sem_started, 1) != 0 ||
+      wait_for_semaphore_registration(&cancel_semaphore) != 0 ||
+      pthread_cancel(thread) != 0)
+    return 167;
   if (sem_post(&cancel_semaphore) != 0) return 168;
   result = 0;
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||

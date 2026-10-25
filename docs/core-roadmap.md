@@ -644,9 +644,11 @@ including APIs absent from the pinned musl export set.
   data destructors. Semaphore wait retries check for deferred cancellation
   after waiter registration races; without that check, a cancellation wake
   could repeatedly change the sequence and spin instead of exiting. The
-  semaphore smoke cancels a blocked waiter and verifies the semaphore remains
-  destroyable. It also checks cancellation cleanup with a TSD value and verifies
-  handler-before-destructor order. In deferred mode, ordinary CPU-bound code
+  semaphore smoke cancels a registered waiter, including immediately after
+  waiter registration, and verifies the waiter count returns to zero and the
+  semaphore remains destroyable. It also checks cancellation cleanup with a
+  TSD value and verifies handler-before-destructor order. In deferred mode,
+  ordinary CPU-bound code
   must call `pthread_testcancel`. Key deletion invalidates the generation, so
   another
   thread's stored value receives no destructor after deletion even when the
