@@ -118,6 +118,10 @@ GNU `ppoll` is implemented over the Linux x86_64 syscall with the kernel's
 copies the timeout so the caller's timespec remains unchanged. The consumer
 matrix checks readiness on a pipe and timeout preservation.
 
+`clock_settime` is exported from Nelua through the Linux x86_64 syscall. The
+syscall smoke check uses an invalid clock ID and verifies the kernel reports
+`EINVAL`, avoiding any change to the system clock.
+
 POSIX `pselect` uses Linux `pselect6` with its kernel signal-mask descriptor.
 It applies the same reserved-signal filtering and timeout copy as `ppoll`.
 The consumer matrix checks readiness, signal-mask use, and unchanged timeout

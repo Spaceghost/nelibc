@@ -893,6 +893,13 @@ local function clock_gettime(clock_id: cint, time_value: pointer): cint <cexport
   )))
 end
 
+local function clock_settime(clock_id: cint, time_value: pointer <const>): cint
+    <cexport, codename 'clock_settime'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    227_culong, (@culong)(clock_id), (@culong)((@usize)(time_value)), 0_culong
+  )))
+end
+
 local function clock_getres(clock_id: cint, resolution: pointer): cint <cexport, codename 'clock_getres'>
   return (@cint)(syscall_result(nelibc_raw_syscall3(
     229_culong, (@culong)(clock_id), (@culong)((@usize)(resolution)), 0_culong

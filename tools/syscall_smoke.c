@@ -1267,6 +1267,10 @@ int main(int argc, char **argv) {
   if (clock_getres(CLOCK_MONOTONIC, &clock_resolution) != 0 ||
       clock_resolution.tv_sec < 0 || clock_resolution.tv_nsec < 0 ||
       clock_resolution.tv_nsec >= 1000000000L) return 164;
+  struct timespec ignored_clock_value = {.tv_sec = 0, .tv_nsec = 0};
+  errno = 0;
+  if (clock_settime((clockid_t)-1, &ignored_clock_value) != -1 || errno != EINVAL)
+    return 394;
   struct timespec utc_time = {.tv_sec = -1, .tv_nsec = -1};
   if (timespec_get(&utc_time, TIME_UTC) != TIME_UTC || utc_time.tv_sec < 0 ||
       utc_time.tv_nsec < 0 || utc_time.tv_nsec >= 1000000000L) return 389;

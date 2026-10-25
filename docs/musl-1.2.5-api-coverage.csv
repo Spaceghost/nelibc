@@ -160,7 +160,7 @@ clock_getcpuclockid,time.h,,,not-declared
 clock_getres,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clock_gettime,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clock_nanosleep,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-clock_settime,time.h,,,not-declared
+clock_settime,time.h,nelibc_syscall.h;time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clog,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clogf,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 clogl,complex.h,complex.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
