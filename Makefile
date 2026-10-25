@@ -784,6 +784,11 @@ dogfood-spinel-musl: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-zig-musl.a
 	ZIG='$(ZIG)' MUSL_STDIO_WRAP_FLAGS='$(MUSL_STDIO_WRAP_FLAGS)' \
 		tools/dogfood_spinel_musl.sh '$(SPINEL_DIR)'
 
+.PHONY: dogfood-spinel-tcc
+dogfood-spinel-tcc: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-tcc.a
+	ZIG='$(ZIG)' TCC='$(TCC)' TCC_LIBTCC1='$(TCC_LIBTCC1)' \
+		tools/dogfood_spinel_tcc.sh '$(SPINEL_DIR)'
+
 .PHONY: dogfood-zig dogfood-gcc dogfood-zig-musl dogfood-tcc dogfood-matrix
 
 getopt-diff-zig: $(OUT)/libnelibc-zig.a

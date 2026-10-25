@@ -122,8 +122,9 @@ musl export set.
   rebuilt with Zig cc and the glibc hybrid archive, then compiled and ran a
   Ruby client linked against that archive. The same client also ran as a static
   x86-64 musl executable linked against the Zig/musl hybrid archive. Both
-  executables contain Nelibc's `memcpy`, `strlen`, and `strtol`. Reproduction
-  steps are in `docs/quickstart.md`.
+  executables contain Nelibc's `memcpy`, `strlen`, and `strtol`. TinyCC also
+  compiled the generated client, which Zig linked with Nelibc's TinyCC/glibc
+  archive and TinyCC runtime. Reproduction steps are in `docs/quickstart.md`.
 - Differential tests cover meaningful memory, string, integer, floating
   conversion, wide-string, tokenizer, collation, and syscall behavior across
   glibc, musl, GCC, Zig cc, and TinyCC profiles.

@@ -92,6 +92,20 @@ client against Nelibc's Zig/musl archive. The temporary runtime supplies
 musl-compatible replacements for Spinel's optional backtrace hooks. It refreshes
 Spinel's normal build outputs but does not change its tracked source files.
 
+Compile the generated client with TinyCC and link it with Nelibc's TinyCC
+archive using Zig cc:
+
+```sh
+make dogfood-spinel-tcc \
+  SPINEL_DIR=/path/to/spinel-checkout \
+  TCC=/path/to/tcc \
+  TCC_LIBTCC1=/path/to/libtcc1.a
+```
+
+TinyCC compiles the generated C and Zig cc links its object with the TinyCC
+runtime archive, Spinel runtime, and Nelibc hybrid archive. The target checks
+that the executable runs and contains Nelibc's `memcpy`, `strlen`, and `strtol`.
+
 The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `finite`, `finitef`, `nan`, `nanf`, `lrint`, `lrintf`, `llrint`, `llrintf`, `lround`, `lroundf`, `llround`, `llroundf`, `nearbyint`, `exp`,
 `log`, `log1p`, `log2`, `log10`, `exp2`, `exp10`, `pow10`, `pow10f`, `expm1`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `hypot`, `sqrt`, `fmod`,
