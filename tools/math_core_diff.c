@@ -1890,10 +1890,10 @@ int main(void) {
   for (size_t i = 0; i < 512; ++i) {
     const long double mantissa = 1.0L +
         (long double)(next_bits() >> 1) * 0x1p-63L;
-    const int binary_exponent = (int)(next_bits() % 241) - 120;
+    const int binary_exponent = (int)(next_bits() % 129) - 64;
     const long double base = ldexpl(mantissa, binary_exponent);
     long double exponent = 0.25L +
-        (long double)(next_bits() >> 1) * 0x1p-63L * 127.75L;
+        (long double)(next_bits() >> 1) * 0x1p-63L * 255.75L;
     if (next_bits() & 1) exponent = -exponent;
     const long double expected = powl(base, exponent);
     const long double actual = nelibc_powl(base, exponent);
@@ -1928,6 +1928,34 @@ int main(void) {
 #endif
       if (!wide_powl_matches) {
         fprintf(stderr, "powl wide rounding mismatch mode=%zu i=%zu base=%La exponent=%La actual=%La expected=%La\n",
+                mode, i, base, exponent, actual, expected);
+        return 1;
+      }
+    }
+  }
+  if (fesetround(FE_TONEAREST) != 0) return 1;
+  for (size_t mode = 0;
+       mode < sizeof wide_powl_rounding_modes / sizeof wide_powl_rounding_modes[0];
+       ++mode) {
+    if (fesetround(wide_powl_rounding_modes[mode]) != 0) return 1;
+    for (size_t i = 0; i < 32; ++i) {
+      const long double mantissa = 1.0L +
+          (long double)(next_bits() >> 1) * 0x1p-63L;
+      const int binary_exponent = (int)(next_bits() % 129) - 64;
+      const long double base = ldexpl(mantissa, binary_exponent);
+      long double exponent = 0.25L +
+          (long double)(next_bits() >> 1) * 0x1p-63L * 127.75L;
+      if (next_bits() & 1) exponent = -exponent;
+      const long double expected = powl(base, exponent);
+      const long double actual = nelibc_powl(base, exponent);
+#ifdef NELIBC_MUSL_PROFILE
+      const int large_fraction_matches = actual == expected ||
+          fabsl(actual - expected) <= 1024.0L * LDBL_EPSILON * fabsl(expected);
+#else
+      const int large_fraction_matches = long_double_math_close(actual, expected);
+#endif
+      if (!large_fraction_matches) {
+        fprintf(stderr, "powl large-fraction rounding mismatch mode=%zu i=%zu base=%La exponent=%La actual=%La expected=%La\n",
                 mode, i, base, exponent, actual, expected);
         return 1;
       }

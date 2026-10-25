@@ -136,6 +136,16 @@ nelibc_log2l_hw:
   ret
 .size nelibc_log2l_hw, .-nelibc_log2l_hw
 
+/* Accurate log2(1+x) for the range-reduced mantissa used by powl. */
+.globl nelibc_log2p1l_small_hw
+.type nelibc_log2p1l_small_hw,@function
+nelibc_log2p1l_small_hw:
+  fld1
+  fldt 8(%rsp)
+  fyl2xp1
+  ret
+.size nelibc_log2p1l_small_hw, .-nelibc_log2p1l_small_hw
+
 .globl nelibc_log10l_hw
 .type nelibc_log10l_hw,@function
 nelibc_log10l_hw:

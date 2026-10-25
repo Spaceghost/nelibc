@@ -393,6 +393,7 @@ local function nelibc_sqrtl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_atan2l_hw(y: clongdouble, x: clongdouble): clongdouble <cimport> end
 local function nelibc_logl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_log2l_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_log2p1l_small_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_log10l_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_log1pl_small_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_expl_hw(value: clongdouble): clongdouble <cimport> end
@@ -1533,6 +1534,10 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   local result: clongdouble
   local exponent_magnitude = exponent
   if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
+  local fractional_exponent_limit = 128_clongdouble
+  if nelibc_x87_rounding_mode() == 0_cint then
+    fractional_exponent_limit = 256_clongdouble
+  end
   -- Preserve exact powers of two, including fractional exponents whose product
   -- with the base's binary exponent is integral.
   if exponent_magnitude <= 32768_clongdouble then
@@ -1574,7 +1579,7 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
     else
       result = absolute * root
     end
-  elseif exponent_magnitude <= 128_clongdouble and not is_integer80(exponent) then
+  elseif exponent_magnitude <= fractional_exponent_limit and not is_integer80(exponent) then
     -- Split the base into a binary exponent and a [1, 2) mantissa. Keeping
     -- the mantissa logarithm small avoids magnifying logl's absolute error
     -- when the original base is near the ends of the binary80 range.
@@ -1586,7 +1591,14 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
       local scaled_error = nelibc_fmal(exponent, (@clongdouble)(base_exponent), -scaled_exponent)
       local integral_exponent = truncl(scaled_exponent)
       local fractional_exponent = scaled_exponent - integral_exponent + scaled_error
-      local mantissa_power = exp2l(exponent * log2l(mantissa))
+      local mantissa_log2: clongdouble
+      if mantissa <= sqrtl(2_clongdouble) then
+        mantissa_log2 = nelibc_log2p1l_small_hw(mantissa - 1_clongdouble)
+      else
+        mantissa_log2 = 1_clongdouble +
+            nelibc_log2p1l_small_hw(0.5_clongdouble * mantissa - 1_clongdouble)
+      end
+      local mantissa_power = exp2l(exponent * mantissa_log2)
       local fractional_power = exp2l(fractional_exponent)
       result = ldexpl(mantissa_power * fractional_power, (@cint)(integral_exponent))
       if value < 0_clongdouble and odd then result = -result end
