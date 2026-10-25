@@ -3909,8 +3909,9 @@ local function sysconf(name: cint): clong <cexport, codename 'sysconf'>
   if name == 5 then return 16_clong end -- _SC_STREAM_MAX
   if name == 6 then return -1_clong end -- _SC_TZNAME_MAX is indeterminate
   if name == 7 or name == 8 then return 1_clong end -- JOB_CONTROL, SAVED_IDS
-  if name == 9 or name == 10 or name == 11 or name == 12 or
+  if name == 9 or name == 11 or name == 12 or
       (name >= 15 and name <= 22) then return 200809_clong end
+  if name == 10 then return -1_clong end -- POSIX process priority scheduling is incomplete
   if name == 13 or name == 14 or name == 23 or name == 24 or
       name == 27 or name == 32 or name == 35 then return -1_clong end
   if name == 25 then return 0_clong end -- _SC_AIO_PRIO_DELTA_MAX
@@ -3936,9 +3937,10 @@ local function sysconf(name: cint): clong <cexport, codename 'sysconf'>
   if name == 73 then return 4_clong end -- _SC_THREAD_DESTRUCTOR_ITERATIONS
   if name == 74 then return 1024_clong end -- _SC_THREAD_KEYS_MAX
   if name == 75 then return 16384_clong end -- _SC_THREAD_STACK_MIN
-  if name == 77 or name == 78 or name == 79 or name == 82 then
+  if name == 77 or name == 78 or name == 82 then
     return 200809_clong
   end
+  if name == 79 then return -1_clong end -- POSIX thread priority scheduling is incomplete
   if name == 80 or name == 81 then return -1_clong end
   if name == 87 or name == 88 then return -1_clong end
   if name == 89 or name == 90 then return 700_clong end -- XSI version

@@ -63,6 +63,10 @@ the requested clock if realtime changes while a wait is active.
 POSIX.1-2024 `pthread_rwlock_clockrdlock` and `pthread_rwlock_clockwrlock` are
 also implemented in standalone mode. They choose the futex clock per call and
 preserve the existing realtime semantics of `pthread_rwlock_timed*lock`.
+Standalone rwlocks use reader preference: new readers may acquire while writers
+are queued. Nelibc reports `_SC_PRIORITY_SCHEDULING` and
+`_SC_THREAD_PRIORITY_SCHEDULING` as unsupported because it does not implement
+the full POSIX scheduling options, including priority-aware rwlock admission.
 The standalone priority-ceiling attributes and mutex get/set operations are
 implemented. `PTHREAD_PRIO_PROTECT` raises and restores scheduler priority for
 held protected mutexes; on Linux, a `SCHED_OTHER` thread cannot acquire a

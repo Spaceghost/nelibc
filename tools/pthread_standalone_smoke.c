@@ -588,6 +588,11 @@ typedef struct {
 } shared_spin_state;
 
 int main(void) {
+  errno = 0;
+  if (sysconf(_SC_PRIORITY_SCHEDULING) != -1 || errno != 0 ||
+      sysconf(_SC_THREAD_PRIORITY_SCHEDULING) != -1 || errno != 0)
+    return 286;
+
   sigset_t cancellation_mask;
   struct sigaction cancellation_action = {0};
   cancellation_action.sa_handler = SIG_IGN;
@@ -1921,6 +1926,7 @@ int main(void) {
   for (unsigned int i = 0; i < 10000000U &&
        __atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0; ++i) {
   }
+  /* Reader preference is the documented policy when priority scheduling is unavailable. */
   if (__atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0 ||
       pthread_rwlock_rdlock(&static_rwlock) != 0 ||
       pthread_rwlock_unlock(&static_rwlock) != 0 ||
