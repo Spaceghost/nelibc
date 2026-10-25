@@ -60,6 +60,12 @@ int main(void) {
   float _Complex (*volatile call_cacosf)(float _Complex) = cacosf;
   double _Complex (*volatile call_cacos)(double _Complex) = cacos;
   long double _Complex (*volatile call_cacosl)(long double _Complex) = cacosl;
+  float _Complex (*volatile call_casinhf)(float _Complex) = casinhf;
+  double _Complex (*volatile call_casinh)(double _Complex) = casinh;
+  long double _Complex (*volatile call_casinhl)(long double _Complex) = casinhl;
+  float _Complex (*volatile call_cacoshf)(float _Complex) = cacoshf;
+  double _Complex (*volatile call_cacosh)(double _Complex) = cacosh;
+  long double _Complex (*volatile call_cacoshl)(long double _Complex) = cacoshl;
   float _Complex zf = __builtin_complex(3.0f, 4.0f);
   double _Complex z = __builtin_complex(-3.0, 4.0);
   long double _Complex zl = __builtin_complex(3.0L, -4.0L);
@@ -400,5 +406,69 @@ int main(void) {
       fabs(call_cimag(asin_branch_tiny) - sqrt(1e-30)) > 1e-22 ||
       call_cimagf(acos_axisf) >= 0.0f || call_cimag(acos_axis) >= 0.0 ||
       call_cimagl(acos_axisl) >= 0.0L) return 19;
+  float _Complex asinhf_value = call_casinhf(__builtin_complex(0.5f, 0.25f));
+  double _Complex asinh_value = call_casinh(__builtin_complex(0.5, 0.25));
+  long double _Complex asinhl_value = call_casinhl(__builtin_complex(0.5L, 0.25L));
+  float _Complex cacoshf_value = call_cacoshf(__builtin_complex(0.5f, 0.25f));
+  double _Complex cacosh_value = call_cacosh(__builtin_complex(0.5, 0.25));
+  long double _Complex cacoshl_value = call_cacoshl(__builtin_complex(0.5L, 0.25L));
+  float _Complex asinhf_axis = call_casinhf(__builtin_complex(0.5f, -0.0f));
+  double _Complex asinh_axis = call_casinh(__builtin_complex(0.5, -0.0));
+  long double _Complex asinhl_axis = call_casinhl(__builtin_complex(0.5L, -0.0L));
+  float _Complex cacoshf_axis = call_cacoshf(__builtin_complex(2.0f, 0.0f));
+  double _Complex cacosh_axis = call_cacosh(__builtin_complex(2.0, 0.0));
+  long double _Complex cacoshl_axis = call_cacoshl(__builtin_complex(2.0L, 0.0L));
+  float _Complex asinh_largef = call_casinhf(__builtin_complex(FLT_MAX, FLT_MAX));
+  double _Complex asinh_large = call_casinh(__builtin_complex(DBL_MAX, DBL_MAX));
+  long double _Complex asinhl_large = call_casinhl(__builtin_complex(LDBL_MAX, LDBL_MAX));
+  float _Complex cacosh_largef = call_cacoshf(__builtin_complex(FLT_MAX, FLT_MAX));
+  double _Complex cacosh_large = call_cacosh(__builtin_complex(DBL_MAX, DBL_MAX));
+  long double _Complex cacoshl_large = call_cacoshl(__builtin_complex(LDBL_MAX, LDBL_MAX));
+  float _Complex asinh_nan_inff = call_casinhf(__builtin_complex(NAN, INFINITY));
+  double _Complex asinh_nan_inf = call_casinh(__builtin_complex(NAN, INFINITY));
+  long double _Complex asinhl_nan_inf = call_casinhl(__builtin_complex(NAN, INFINITY));
+  float _Complex acosh_inf_nanf = call_cacoshf(__builtin_complex(INFINITY, NAN));
+  double _Complex acosh_inf_nan = call_cacosh(__builtin_complex(INFINITY, NAN));
+  long double _Complex cacoshl_inf_nan = call_cacoshl(__builtin_complex(INFINITY, NAN));
+  float _Complex casin_rotatedf = call_casinf(__builtin_complex(-0.25f, 0.5f));
+  double _Complex casin_rotated = call_casin(__builtin_complex(-0.25, 0.5));
+  long double _Complex casin_rotatedl = call_casinl(__builtin_complex(-0.25L, 0.5L));
+  float _Complex cacos_rotatedf = call_cacosf(__builtin_complex(0.5f, 0.25f));
+  double _Complex cacos_rotated = call_cacos(__builtin_complex(0.5, 0.25));
+  long double _Complex cacos_rotatedl = call_cacosl(__builtin_complex(0.5L, 0.25L));
+  if (fabsf(call_crealf(asinhf_value) - call_cimagf(casin_rotatedf)) > 2e-6f ||
+      fabsf(call_cimagf(asinhf_value) + call_crealf(casin_rotatedf)) > 2e-6f ||
+      fabs(call_creal(asinh_value) - call_cimag(casin_rotated)) > 2e-15 ||
+      fabs(call_cimag(asinh_value) + call_creal(casin_rotated)) > 2e-15 ||
+      fabsl(call_creall(asinhl_value) - call_cimagl(casin_rotatedl)) > 2e-18L ||
+      fabsl(call_cimagl(asinhl_value) + call_creall(casin_rotatedl)) > 2e-18L ||
+      fabsf(call_crealf(cacoshf_value) + call_cimagf(cacos_rotatedf)) > 2e-6f ||
+      fabsf(call_cimagf(cacoshf_value) - call_crealf(cacos_rotatedf)) > 2e-6f ||
+      fabs(call_creal(cacosh_value) + call_cimag(cacos_rotated)) > 2e-15 ||
+      fabs(call_cimag(cacosh_value) - call_creal(cacos_rotated)) > 2e-15 ||
+      fabsl(call_creall(cacoshl_value) + call_cimagl(cacos_rotatedl)) > 2e-18L ||
+      fabsl(call_cimagl(cacoshl_value) - call_creall(cacos_rotatedl)) > 2e-18L ||
+      fabsf(call_crealf(asinhf_axis) - asinhf(0.5f)) > 2e-6f ||
+      fabs(call_creal(asinh_axis) - asinh(0.5)) > 2e-15 ||
+      fabsl(call_creall(asinhl_axis) - asinhl(0.5L)) > 2e-18L ||
+      !signbit(call_cimagf(asinhf_axis)) || !signbit(call_cimag(asinh_axis)) ||
+      !signbit(call_cimagl(asinhl_axis)) ||
+      fabsf(call_crealf(cacoshf_axis) - acoshf(2.0f)) > 2e-6f ||
+      fabs(call_creal(cacosh_axis) - acosh(2.0)) > 2e-15 ||
+      fabsl(call_creall(cacoshl_axis) - acoshl(2.0L)) > 2e-18L ||
+      call_cimagf(cacoshf_axis) != 0.0f || call_cimag(cacosh_axis) != 0.0 ||
+      call_cimagl(cacoshl_axis) != 0.0L ||
+      !isfinite(call_crealf(asinh_largef)) || !isfinite(call_cimagf(asinh_largef)) ||
+      !isfinite(call_creal(asinh_large)) || !isfinite(call_cimag(asinh_large)) ||
+      !isfinite(call_creall(asinhl_large)) || !isfinite(call_cimagl(asinhl_large)) ||
+      !isfinite(call_crealf(cacosh_largef)) || !isfinite(call_cimagf(cacosh_largef)) ||
+      !isfinite(call_creal(cacosh_large)) || !isfinite(call_cimag(cacosh_large)) ||
+      !isfinite(call_creall(cacoshl_large)) || !isfinite(call_cimagl(cacoshl_large))) return 20;
+  if (!isinf(call_crealf(asinh_nan_inff)) || !isnan(call_cimagf(asinh_nan_inff)) ||
+      !isinf(call_creal(asinh_nan_inf)) || !isnan(call_cimag(asinh_nan_inf)) ||
+      !isinf(call_creall(asinhl_nan_inf)) || !isnan(call_cimagl(asinhl_nan_inf)) ||
+      !isinf(call_crealf(acosh_inf_nanf)) || !isnan(call_cimagf(acosh_inf_nanf)) ||
+      !isinf(call_creal(acosh_inf_nan)) || !isnan(call_cimag(acosh_inf_nan)) ||
+      !isinf(call_creall(cacoshl_inf_nan)) || !isnan(call_cimagl(cacoshl_inf_nan))) return 21;
   return 0;
 }

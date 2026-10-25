@@ -5237,3 +5237,99 @@ local function nelibc_cacosparts_l(x: clongdouble, y: clongdouble,
   real_out[0] = 0.5_clongdouble * acosl(-1_clongdouble) - asin_real
   imaginary_out[0] = -asin_imaginary
 end
+
+local function nelibc_casinhparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_casinhparts_f'>
+  if is_nan32(x) and is_infinite32(y) then
+    real_out[0] = float_from_bits(0x7F800000_cuint)
+    imaginary_out[0] = x + y
+    return
+  end
+  local asin_real: cfloat
+  local asin_imaginary: cfloat
+  nelibc_casinparts_f(-y, x, &asin_real, &asin_imaginary)
+  real_out[0] = asin_imaginary
+  imaginary_out[0] = -asin_real
+end
+
+local function nelibc_casinhparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_casinhparts'>
+  if is_nan64(x) and is_infinite64(y) then
+    real_out[0] = double_from_bits(0x7ff0000000000000_culonglong)
+    imaginary_out[0] = x + y
+    return
+  end
+  local asin_real: cdouble
+  local asin_imaginary: cdouble
+  nelibc_casinparts(-y, x, &asin_real, &asin_imaginary)
+  real_out[0] = asin_imaginary
+  imaginary_out[0] = -asin_real
+end
+
+local function nelibc_casinhparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_casinhparts_l'>
+  if is_nan80(x) and is_infinite80(y) then
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    real_out[0] = infinity.value
+    imaginary_out[0] = x + y
+    return
+  end
+  local asin_real: clongdouble
+  local asin_imaginary: clongdouble
+  nelibc_casinparts_l(-y, x, &asin_real, &asin_imaginary)
+  real_out[0] = asin_imaginary
+  imaginary_out[0] = -asin_real
+end
+
+local function nelibc_cacoshparts_f(x: cfloat, y: cfloat,
+    real_out: *[0]cfloat, imaginary_out: *[0]cfloat): void
+    <cexport, codename 'nelibc_cacoshparts_f'>
+  if is_infinite32(x) and is_nan32(y) then
+    real_out[0] = float_from_bits(0x7F800000_cuint)
+    imaginary_out[0] = x + y
+    return
+  end
+  local acos_real: cfloat
+  local acos_imaginary: cfloat
+  nelibc_cacosparts_f(x, y, &acos_real, &acos_imaginary)
+  real_out[0] = -acos_imaginary
+  imaginary_out[0] = acos_real
+end
+
+local function nelibc_cacoshparts(x: cdouble, y: cdouble,
+    real_out: *[0]cdouble, imaginary_out: *[0]cdouble): void
+    <cexport, codename 'nelibc_cacoshparts'>
+  if is_infinite64(x) and is_nan64(y) then
+    real_out[0] = double_from_bits(0x7ff0000000000000_culonglong)
+    imaginary_out[0] = x + y
+    return
+  end
+  local acos_real: cdouble
+  local acos_imaginary: cdouble
+  nelibc_cacosparts(x, y, &acos_real, &acos_imaginary)
+  real_out[0] = -acos_imaginary
+  imaginary_out[0] = acos_real
+end
+
+local function nelibc_cacoshparts_l(x: clongdouble, y: clongdouble,
+    real_out: *[0]clongdouble, imaginary_out: *[0]clongdouble): void
+    <cexport, codename 'nelibc_cacoshparts_l'>
+  if is_infinite80(x) and is_nan80(y) then
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+    }
+    real_out[0] = infinity.value
+    imaginary_out[0] = x + y
+    return
+  end
+  local acos_real: clongdouble
+  local acos_imaginary: clongdouble
+  nelibc_cacosparts_l(x, y, &acos_real, &acos_imaginary)
+  real_out[0] = -acos_imaginary
+  imaginary_out[0] = acos_real
+end

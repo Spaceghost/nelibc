@@ -64,6 +64,12 @@ long double complex casinl(long double complex value);
 float complex cacosf(float complex value);
 double complex cacos(double complex value);
 long double complex cacosl(long double complex value);
+float complex casinhf(float complex value);
+double complex casinh(double complex value);
+long double complex casinhl(long double complex value);
+float complex cacoshf(float complex value);
+double complex cacosh(double complex value);
+long double complex cacoshl(long double complex value);
 
 #else
 
