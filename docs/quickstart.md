@@ -98,9 +98,12 @@ float/double forms, including very large finite inputs.
 The math instruction backend targets x86-64, matching the current Linux
 platform. Negative `sqrt` and invalid `fmod`/`remainder` domains set `EDOM`;
 `exp` overflow/underflow, `log` domain/pole, and infinite `sin`/`cos` inputs
-set the expected `errno`;
-`ldexp`/`scalbn` overflow and underflow to zero set `ERANGE`. Floating-point
-exception reporting and most of the C math API remain incomplete.
+set the expected `errno`; `ldexp`/`scalbn` overflow and underflow to zero set
+`ERANGE`. Standalone builds provide all standard `fenv.h` functions and
+synchronize x87 and SSE exception flags and rounding modes. Hybrid builds keep
+the host `fenv_t` ABI and use the host fenv implementation. Trap delivery is
+not yet covered by the standalone fenv smoke test, and most of the C math API
+remains incomplete.
 
 ## Compare supported build profiles
 

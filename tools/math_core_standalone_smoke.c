@@ -1,4 +1,5 @@
 #include <math.h>
+#include <fenv.h>
 #include <errno.h>
 #include <float.h>
 #include <stdint.h>
@@ -30,6 +31,25 @@ static int same_float(float a, float b) {
 }
 
 int main(void) {
+  fenv_t saved_environment;
+  fexcept_t saved_flags = 0;
+  if (fegetenv(&saved_environment) != 0 || fesetround(FE_UPWARD) != 0 ||
+      fegetround() != FE_UPWARD) return 189;
+  if (feraiseexcept(FE_INVALID | FE_INEXACT) != 0 ||
+      fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | FE_INEXACT) ||
+      fegetexceptflag(&saved_flags, FE_INVALID) != 0 || saved_flags != FE_INVALID) return 190;
+  if (feclearexcept(FE_INVALID) != 0 ||
+      fetestexcept(FE_ALL_EXCEPT) != FE_INEXACT ||
+      fesetexceptflag(&saved_flags, FE_INVALID) != 0 ||
+      fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | FE_INEXACT)) return 191;
+  if (feholdexcept(&saved_environment) != 0 || fetestexcept(FE_ALL_EXCEPT) != 0 ||
+      fesetenv(&saved_environment) != 0 || fegetround() != FE_UPWARD ||
+      fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | FE_INEXACT)) return 192;
+  if (feupdateenv(&saved_environment) != 0 ||
+      fetestexcept(FE_ALL_EXCEPT) != (FE_INVALID | FE_INEXACT)) return 193;
+  if (fesetenv(FE_DFL_ENV) != 0 || fegetround() != FE_TONEAREST ||
+      fetestexcept(FE_ALL_EXCEPT) != 0 || fesetround(FE_TONEAREST) != 0) return 194;
+
   const long double fma_x = 1.0L + 0x1p-63L;
   const long double fma_y = 1.0L - 0x1p-63L;
   if (fmal(fma_x, fma_y, -1.0L) != -0x1p-126L ||

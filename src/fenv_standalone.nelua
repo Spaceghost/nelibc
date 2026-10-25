@@ -1,0 +1,148 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- Standalone x86-64 floating-point environment API. The caller-visible
+-- fenv_t layout is defined in include/fenv.h and matches FXSAVE.
+local function nelibc_fenv_fxsave(state: *[0]cuchar): void <cimport> end
+local function nelibc_fenv_fxrstor(state: *[0]cuchar): void <cimport> end
+
+local function aligned_scratch(raw: *[528]cuchar): *[0]cuchar <inline>
+  local address = (@usize)(&raw[0])
+  return (@*[0]cuchar)((address + 15_usize) & ~15_usize)
+end
+
+local function save_current(raw: *[528]cuchar): *[0]cuchar <inline>
+  local state = aligned_scratch(raw)
+  nelibc_fenv_fxsave(state)
+  return state
+end
+
+local function requested(exceptions: cint): cushort <inline>
+  return (@cushort)(exceptions & 0x3d_cint)
+end
+
+local function current_flags(state: *[0]cuchar): cushort <inline>
+  local words = (@*[0]cushort)(state)
+  local mxcsr = (@*[0]cuint)(&state[24])
+  return ((words[1] | (@cushort)(mxcsr[0])) & 0x3d_cushort)
+end
+
+local function set_flags(state: *[0]cuchar, flags: cushort): void <inline>
+  local words = (@*[0]cushort)(state)
+  local mxcsr = (@*[0]cuint)(&state[24])
+  words[1] = (words[1] & ~0x3d_cushort) | flags
+  mxcsr[0] = (mxcsr[0] & ~0x3d_cuint) | (@cuint)(flags)
+end
+
+local function feclearexcept(exceptions: cint): cint <cexport, codename 'feclearexcept'>
+  local raw: [528]cuchar
+  local state = save_current(&raw)
+  local flags = requested(exceptions)
+  local words = (@*[0]cushort)(state)
+  local mxcsr = (@*[0]cuint)(&state[24])
+  words[1] = words[1] & ~flags
+  mxcsr[0] = mxcsr[0] & ~(@cuint)(flags)
+  nelibc_fenv_fxrstor(state)
+  return 0_cint
+end
+
+local function fegetexceptflag(flag: *[0]cushort, exceptions: cint): cint <cexport, codename 'fegetexceptflag'>
+  if flag == nilptr then return 1_cint end
+  local raw: [528]cuchar
+  flag[0] = current_flags(save_current(&raw)) & requested(exceptions)
+  return 0_cint
+end
+
+local function feraiseexcept(exceptions: cint): cint <cexport, codename 'feraiseexcept'>
+  local raw: [528]cuchar
+  local state = save_current(&raw)
+  set_flags(state, current_flags(state) | requested(exceptions))
+  nelibc_fenv_fxrstor(state)
+  return 0_cint
+end
+
+local function fesetexceptflag(flag: *[0]cushort, exceptions: cint): cint <cexport, codename 'fesetexceptflag'>
+  if flag == nilptr then return 1_cint end
+  local raw: [528]cuchar
+  local state = save_current(&raw)
+  local mask = requested(exceptions)
+  set_flags(state, (current_flags(state) & ~mask) | (flag[0] & mask))
+  nelibc_fenv_fxrstor(state)
+  return 0_cint
+end
+
+local function fetestexcept(exceptions: cint): cint <cexport, codename 'fetestexcept'>
+  local raw: [528]cuchar
+  return (@cint)(current_flags(save_current(&raw)) & requested(exceptions))
+end
+
+local function fegetround(): cint <cexport, codename 'fegetround'>
+  local raw: [528]cuchar
+  local state = save_current(&raw)
+  local control = (@*[0]cushort)(state)
+  return (@cint)(control[0] & 0x0c00_cushort)
+end
+
+local function fesetround(rounding: cint): cint <cexport, codename 'fesetround'>
+  if rounding ~= 0_cint and rounding ~= 0x0400_cint and
+      rounding ~= 0x0800_cint and rounding ~= 0x0c00_cint then
+    return 1_cint
+  end
+  local raw: [528]cuchar
+  local state = save_current(&raw)
+  local control = (@*[0]cushort)(state)
+  local mxcsr = (@*[0]cuint)(&state[24])
+  control[0] = (control[0] & ~0x0c00_cushort) | (@cushort)(rounding)
+  mxcsr[0] = (mxcsr[0] & ~0x6000_cuint) | ((@cuint)(rounding) << 3)
+  nelibc_fenv_fxrstor(state)
+  return 0_cint
+end
+
+local function fegetenv(environment: *[0]cuchar): cint <cexport, codename 'fegetenv'>
+  if environment == nilptr then return 1_cint end
+  nelibc_fenv_fxsave(environment)
+  return 0_cint
+end
+
+local function feholdexcept(environment: *[0]cuchar): cint <cexport, codename 'feholdexcept'>
+  if environment == nilptr then return 1_cint end
+  local raw: [528]cuchar
+  local state = save_current(&raw)
+  nelibc_fenv_fxsave(environment)
+  local control = (@*[0]cushort)(state)
+  local mxcsr = (@*[0]cuint)(&state[24])
+  control[0] = control[0] | 0x003f_cushort
+  mxcsr[0] = mxcsr[0] | 0x1f80_cuint
+  set_flags(state, 0_cushort)
+  nelibc_fenv_fxrstor(state)
+  return 0_cint
+end
+
+local function fesetenv(environment: *[0]cuchar <const>): cint <cexport, codename 'fesetenv'>
+  if environment == nilptr then return 1_cint end
+  if (@usize)(environment) == 0xffffffffffffffff_usize then
+    local raw: [528]cuchar
+    local state = aligned_scratch(&raw)
+    local bytes = state
+    local i = 0_cint
+    while i < 512_cint do
+      bytes[i] = 0_cuchar
+      i = i + 1_cint
+    end
+    local control = (@*[0]cushort)(state)
+    local mxcsr = (@*[0]cuint)(&state[24])
+    control[0] = 0x037f_cushort
+    mxcsr[0] = 0x1f80_cuint
+    nelibc_fenv_fxrstor(state)
+  else
+    nelibc_fenv_fxrstor((@*[0]cuchar)(environment))
+  end
+  return 0_cint
+end
+
+local function feupdateenv(environment: *[0]cuchar <const>): cint <cexport, codename 'feupdateenv'>
+  if environment == nilptr then return 1_cint end
+  local flags = fetestexcept(0x3d_cint)
+  if fesetenv(environment) ~= 0_cint then return 1_cint end
+  return feraiseexcept(flags)
+end

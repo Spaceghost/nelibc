@@ -62,11 +62,11 @@ python3 tools/musl_api_audit.py \
 ```
 
 The current snapshot contains 1,471 APIs: 641 exported by Nelibc in at least
-one tested hybrid profile, 115 intentionally delegated to the host in hybrid
-profiles, and 715 not declared by Nelibc. The audit removes preprocessor
+one tested hybrid profile, 126 intentionally delegated to the host in hybrid
+profiles, and 704 not declared by Nelibc. The audit removes preprocessor
 directives and C++ linkage wrappers before parsing prototypes, while retaining
 inline-function closing braces. No baseline API is currently marked as an
-intentional omission; the 715 entries remain visible as unimplemented
+intentional omission; the 704 entries remain visible as unimplemented
 scope candidates until an explicit policy records why an API is excluded.
 No math APIs in this pinned musl baseline remain undeclared. The largest
 remaining groups are complex math (66), wide characters (65), unistd (42), stdlib (41), and name service/network database

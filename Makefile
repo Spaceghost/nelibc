@@ -154,6 +154,15 @@ $(OUT)/math-core-tcc.o: src/math_core.nelua | $(OUT)
 $(OUT)/math-core-x86_64.o: src/math_core_x86_64.S | $(OUT)
 	$(ZIG) cc $(ZIGFLAGS) -c $< -o $@
 
+$(OUT)/fenv-standalone-zig.o: src/fenv_standalone.nelua | $(OUT)
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $@ $<
+
+$(OUT)/fenv-standalone-gcc.o: src/fenv_standalone.nelua | $(OUT)
+	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $@ $<
+
+$(OUT)/fenv-standalone-tcc.o: src/fenv_standalone.nelua | $(OUT)
+	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $@ $<
+
 $(OUT)/libnelibc-zig.a: $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o
 $(OUT)/libnelibc-gcc.a: $(OUT)/math-core-gcc.o $(OUT)/math-core-x86_64.o
 $(OUT)/libnelibc-zig-musl.a: $(OUT)/math-core-zig-musl.o $(OUT)/math-core-x86_64.o
@@ -2515,7 +2524,7 @@ abort-smoke-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a tools/abort_smoke.
 
 abort-smoke-matrix: abort-smoke-zig abort-smoke-gcc abort-smoke-zig-musl abort-smoke-tcc abort-smoke-standalone-zig abort-smoke-standalone-gcc
 
-$(OUT)/libnelibc-standalone-zig.a: standalone-zig src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c src/stdio_startup_stub.c src/environment_adapter.c src/semaphore_adapter.c
+$(OUT)/libnelibc-standalone-zig.a: standalone-zig src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c src/stdio_startup_stub.c src/environment_adapter.c src/semaphore_adapter.c src/fenv_standalone.nelua include/fenv.h $(OUT)/fenv-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/fcntl_adapter.c -o $(OUT)/fcntl-adapter-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/credential_adapter.c -o $(OUT)/credential-adapter-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/stdio_lock_standalone.c -o $(OUT)/stdio-lock-standalone-zig.o
@@ -2524,10 +2533,10 @@ $(OUT)/libnelibc-standalone-zig.a: standalone-zig src/fcntl_adapter.c src/creden
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -Iinclude -c src/semaphore_adapter.c -o $(OUT)/semaphore-adapter-standalone-zig.o
 	rm -f $@
 	$(AR) rcs $@ $(OUT)/string-locale-standalone-zig.o $(OUT)/string-standalone-zig.o $(OUT)/memory-standalone-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-zig.o $(OUT)/stdlib-standalone-zig.o $(OUT)/locale-standalone-zig.o $(OUT)/stdlib-exit-standalone-zig.o $(OUT)/stdlib-float-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o $(OUT)/start-linux-x86_64-standalone-zig.o $(OUT)/errno-standalone-zig.o $(OUT)/thread-standalone-zig.o $(OUT)/alloc-standalone-zig.o $(OUT)/alloc-exports-standalone-zig.o $(OUT)/unistd-standalone-zig.o $(OUT)/stdio-standalone-zig.o $(OUT)/stdio-varargs-standalone-zig.o $(OUT)/fcntl-adapter-standalone-zig.o $(OUT)/credential-adapter-standalone-zig.o $(OUT)/stdio-lock-standalone-zig.o $(OUT)/stdio-startup-stub-standalone-zig.o $(OUT)/environment-adapter-standalone-zig.o $(OUT)/semaphore-adapter-standalone-zig.o
-	$(AR) rcs $@ $(OUT)/math-core-zig.o
+	$(AR) rcs $@ $(OUT)/math-core-zig.o $(OUT)/fenv-standalone-zig.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
 
-$(OUT)/libnelibc-standalone-gcc.a: standalone-gcc src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c src/stdio_startup_stub.c src/environment_adapter.c src/semaphore_adapter.c
+$(OUT)/libnelibc-standalone-gcc.a: standalone-gcc src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c src/stdio_startup_stub.c src/environment_adapter.c src/semaphore_adapter.c src/fenv_standalone.nelua include/fenv.h $(OUT)/fenv-standalone-gcc.o
 	gcc -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -fno-tree-loop-distribute-patterns -c src/fcntl_adapter.c -o $(OUT)/fcntl-adapter-standalone-gcc.o
 	gcc -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -fno-tree-loop-distribute-patterns -c src/credential_adapter.c -o $(OUT)/credential-adapter-standalone-gcc.o
 	gcc -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -fno-tree-loop-distribute-patterns -c src/stdio_lock_standalone.c -o $(OUT)/stdio-lock-standalone-gcc.o
@@ -2536,18 +2545,18 @@ $(OUT)/libnelibc-standalone-gcc.a: standalone-gcc src/fcntl_adapter.c src/creden
 	gcc -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -fno-tree-loop-distribute-patterns -Iinclude -c src/semaphore_adapter.c -o $(OUT)/semaphore-adapter-standalone-gcc.o
 	rm -f $@
 	$(AR) rcs $@ $(OUT)/string-locale-standalone-gcc.o $(OUT)/string-standalone-gcc.o $(OUT)/memory-standalone-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-gcc.o $(OUT)/stdlib-standalone-gcc.o $(OUT)/locale-standalone-gcc.o $(OUT)/stdlib-exit-standalone-gcc.o $(OUT)/stdlib-float-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o $(OUT)/start-linux-x86_64-standalone-gcc.o $(OUT)/errno-standalone-gcc.o $(OUT)/thread-standalone-gcc.o $(OUT)/alloc-standalone-gcc.o $(OUT)/alloc-exports-standalone-gcc.o $(OUT)/unistd-standalone-gcc.o $(OUT)/stdio-standalone-gcc.o $(OUT)/stdio-varargs-standalone-gcc.o $(OUT)/fcntl-adapter-standalone-gcc.o $(OUT)/credential-adapter-standalone-gcc.o $(OUT)/stdio-lock-standalone-gcc.o $(OUT)/stdio-startup-stub-standalone-gcc.o $(OUT)/environment-adapter-standalone-gcc.o $(OUT)/semaphore-adapter-standalone-gcc.o
-	$(AR) rcs $@ $(OUT)/math-core-gcc.o
+	$(AR) rcs $@ $(OUT)/math-core-gcc.o $(OUT)/fenv-standalone-gcc.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
 
 $(OUT)/tcc-runtime-standalone: $(TCC_LIBTCC1)
 	mkdir -p $@
 	cd $@ && $(AR) x $(abspath $(TCC_LIBTCC1)) libtcc1.o va_list.o
 
-$(OUT)/libnelibc-standalone-tcc.a: standalone-tcc $(OUT)/tcc-runtime-standalone src/semaphore_adapter.c
+$(OUT)/libnelibc-standalone-tcc.a: standalone-tcc $(OUT)/tcc-runtime-standalone src/semaphore_adapter.c src/fenv_standalone.nelua include/fenv.h $(OUT)/fenv-standalone-tcc.o
 	rm -f $@
 	$(TCC) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -Iinclude -c src/semaphore_adapter.c -o $(OUT)/semaphore-adapter-standalone-tcc.o
 	$(AR) rcs $@ $(OUT)/string-locale-standalone-tcc.o $(OUT)/string-standalone-tcc.o $(OUT)/memory-standalone-tcc.o $(OUT)/memory-tcc-standalone-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/ctype-standalone-tcc.o $(OUT)/stdlib-standalone-tcc.o $(OUT)/locale-standalone-tcc.o $(OUT)/stdlib-exit-standalone-tcc.o $(OUT)/stdlib-float-standalone-tcc.o $(OUT)/sys-linux-x86_64-standalone-tcc.o $(OUT)/sys-linux-x86_64-standalone-tcc-asm.o $(OUT)/start-linux-x86_64-standalone-tcc.o $(OUT)/errno-standalone-tcc.o $(OUT)/thread-standalone-tcc.o $(OUT)/alloc-standalone-tcc.o $(OUT)/alloc-exports-standalone-tcc.o $(OUT)/unistd-standalone-tcc.o $(OUT)/stdio-standalone-tcc.o $(OUT)/stdio-varargs-standalone-tcc.o $(OUT)/fcntl-adapter-standalone-tcc.o $(OUT)/credential-adapter-standalone-tcc.o $(OUT)/stdio-lock-standalone-tcc.o $(OUT)/stdio-startup-stub-standalone-tcc.o $(OUT)/environment-adapter-standalone-tcc.o $(OUT)/semaphore-adapter-standalone-tcc.o $(OUT)/tcc-runtime-standalone/libtcc1.o $(OUT)/tcc-runtime-standalone/va_list.o
-	$(AR) rcs $@ $(OUT)/math-core-tcc.o
+	$(AR) rcs $@ $(OUT)/math-core-tcc.o $(OUT)/fenv-standalone-tcc.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
 
 lib-standalone-zig: $(OUT)/libnelibc-standalone-zig.a

@@ -1,4 +1,18 @@
 .text
+.globl nelibc_fenv_fxsave
+.type nelibc_fenv_fxsave,@function
+nelibc_fenv_fxsave:
+  fxsave64 (%rdi)
+  ret
+.size nelibc_fenv_fxsave, .-nelibc_fenv_fxsave
+
+.globl nelibc_fenv_fxrstor
+.type nelibc_fenv_fxrstor,@function
+nelibc_fenv_fxrstor:
+  fxrstor64 (%rdi)
+  ret
+.size nelibc_fenv_fxrstor, .-nelibc_fenv_fxrstor
+
 .globl nelibc_sqrt_hw
 .type nelibc_sqrt_hw,@function
 nelibc_sqrt_hw:
