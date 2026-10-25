@@ -58,7 +58,7 @@ The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 `scalbln`, `pow`, `atan`, `atan2`, `asinh`, `acosh`, `atanh`, `ilogb`,
 `logb`, `nextafter`, and `nexttoward`.
 On x86-64, `fabsl`, `copysignl`, `sqrtl`, `fmodl`, `remainderl`, `frexpl`,
-`modfl`, `ilogbl`, and `logbl` operate directly on the extended precision
+`modfl`, `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, and `scalblnl` operate directly on the extended precision
 `long double` representation; the rest of the long-double math API is still
 incomplete.
 `rint` observes the active rounding direction and may raise `FE_INEXACT`;

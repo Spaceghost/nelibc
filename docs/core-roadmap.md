@@ -9,7 +9,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | Priority | Gap | Why it blocks a compelling libc | Next milestone |
 |---|---|---|---|
 | P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep `make smoke-matrix` green; run `make dogfood-matrix` for an application link and verify selected Nelibc symbols are in each executable |
-| P1 | C math library | The Nelua slice includes binary32/binary64 `sqrt`, `cbrt`, `fmod`, `remainder`, `remquo`, `remquof`, `drem`, `dremf`, `fmin`, `fmax`, `fdim`, `frexp`, `modf`, `ldexp`, `scalbn`, `scalbln`, `ilogb`, `logb`, `nextafter`, `nexttoward`, `fabs`, `copysign`, `trunc`, `floor`, `ceil`, `round`, `rint`, `lrint`, `lrintf`, `llrint`, `llrintf`, `lround`, `lroundf`, `llround`, `llroundf`, `nearbyint`, `finite`, `finitef`, `nan`, `nanf`, `exp`, `exp10`, `pow10`, `pow10f`, `log`, `pow`, `hypot`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `asinh`, `acosh`, `atanh`, `atan`, `atan2`, `asin`, `acos`, binary32/binary64 `fma`/`fmaf`, `erf`/`erff`, `erfc`/`erfcf`, `tgamma`/`tgammaf`, and `lgamma`/`lgammaf` plus reentrant variants, and binary32/binary64 `jn`, `yn`, `j0`, `j1`, `y0`, `y1`, `sincos`, and `sincosf`; x86-64 long-double `sqrtl`, `fabsl`, `copysignl`, `fmodl`, `remainderl`, `frexpl`, `modfl`, `ilogbl`, and `logbl` are also implemented; the arithmetic backend is x86-64-specific, and 62 musl math APIs remain undeclared | Add high-use long-double math, then complete fenv semantics and math quality/performance work |
+| P1 | C math library | The Nelua slice includes binary32/binary64 math, plus x86-64 long-double `sqrtl`, `fabsl`, `copysignl`, `fmodl`, `remainderl`, `frexpl`, `modfl`, `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, and `scalblnl`; the arithmetic backend is x86-64-specific, fenv reporting remains incomplete, and 59 musl math APIs remain undeclared | Expand long-double coverage, then improve fenv semantics and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P2 | Locale and character data | Standalone locale data is small (C plus selected test locales), while case folding is ASCII-only; hybrid mode often uses host locale data | Define supported locale data sources and implement locale-aware ctype, collation, numeric, monetary, and time behavior consistently |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the 786 undeclared candidates and record explicit intentional omissions |
@@ -94,9 +94,9 @@ musl export set.
   not. There is also one implementation-only entry. This is an
   inventory signal, not a completeness percentage.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 579
+  that are also exported by the pinned release archives: Nelibc exports 582
   in at least one hybrid profile, delegates 115 to a hybrid host, and does not
-  yet declare 777. The largest undeclared groups are math (62), complex math
+  yet declare 774. The largest undeclared groups are math (59), complex math
   (66), wide characters (65), stdlib, unistd, and network database APIs. These
   are gap counts, not completion percentages; no API has yet been declared intentionally out
   of scope. See `docs/api-coverage.md` for the pinned source and regeneration
@@ -112,7 +112,8 @@ musl export set.
   locale-specific time names and cross-libc differential coverage remain open.
 - The current math slice in `src/math_core.nelua` exports 134 float and double
   functions plus x86-64 extended-precision `sqrtl`, `fabsl`, `copysignl`,
-  `fmodl`, `remainderl`, `frexpl`, `modfl`, `ilogbl`, and `logbl` through all
+  `fmodl`, `remainderl`, `frexpl`, `modfl`, `ilogbl`, `logbl`, `ldexpl`,
+  `scalbnl`, and `scalblnl` through all
   four hybrid profiles and standalone archives. Its
   Nelua functions implement `fmin`/`fmax` NaN behavior and rounding rules;
   x86-64 hardware instructions implement correctly rounded square root and

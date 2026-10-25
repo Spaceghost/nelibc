@@ -135,6 +135,67 @@ nelibc_logbl_hw:
   ret
 .size nelibc_logbl_hw, .-nelibc_logbl_hw
 
+/* Scale x87 long double by an integer power of two and report ERANGE cases. */
+.globl nelibc_ldexpl_hw
+.type nelibc_ldexpl_hw,@function
+nelibc_ldexpl_hw:
+  subq $16, %rsp
+  movq %rsi, %r8
+  movl $0, (%r8)
+  movl %edi, 0(%rsp)
+  fildl 0(%rsp)
+  fldt 24(%rsp)
+  fscale
+  fstp %st(1)
+  fstpt 0(%rsp)
+  jmp .Lscale_check
+.size nelibc_ldexpl_hw, .-nelibc_ldexpl_hw
+
+.globl nelibc_scalblnl_hw
+.type nelibc_scalblnl_hw,@function
+nelibc_scalblnl_hw:
+  subq $16, %rsp
+  movq %rsi, %r8
+  movl $0, (%r8)
+  movq %rdi, 0(%rsp)
+  fildq 0(%rsp)
+  fldt 24(%rsp)
+  fscale
+  fstp %st(1)
+  fstpt 0(%rsp)
+.Lscale_check:
+  movq 24(%rsp), %rax
+  movzwl 32(%rsp), %ecx
+  andl $0x7fff, %ecx
+  cmpl $0x7fff, %ecx
+  je .Lscale_return
+  testq %rax, %rax
+  jne .Lscale_result
+  testl %ecx, %ecx
+  je .Lscale_return
+.Lscale_result:
+  movq 0(%rsp), %rax
+  movzwl 8(%rsp), %ecx
+  andl $0x7fff, %ecx
+  testq %rax, %rax
+  jne .Lscale_inf
+  testl %ecx, %ecx
+  jne .Lscale_return
+  movl $1, (%r8)
+  jmp .Lscale_return
+.Lscale_inf:
+  cmpl $0x7fff, %ecx
+  jne .Lscale_return
+  movabsq $0x8000000000000000, %rdx
+  cmpq %rdx, %rax
+  jne .Lscale_return
+  movl $1, (%r8)
+.Lscale_return:
+  fldt 0(%rsp)
+  addq $16, %rsp
+  ret
+.size nelibc_scalblnl_hw, .-nelibc_scalblnl_hw
+
 .globl nelibc_fmodl_hw
 .type nelibc_fmodl_hw,@function
 nelibc_fmodl_hw:

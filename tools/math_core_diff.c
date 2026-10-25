@@ -126,6 +126,9 @@ extern long double nelibc_frexpl(long double, int *);
 extern long double nelibc_modfl(long double, long double *);
 extern int nelibc_ilogbl(long double);
 extern long double nelibc_logbl(long double);
+extern long double nelibc_ldexpl(long double, int);
+extern long double nelibc_scalbnl(long double, int);
+extern long double nelibc_scalblnl(long double, long);
 extern float nelibc_fmodf(float, float);
 extern double nelibc_fmod(double, double);
 extern float nelibc_remainderf(float, float);
@@ -1382,6 +1385,23 @@ int main(void) {
               i, actual_ilogb, actual_logb, expected_ilogb, expected_logb);
       return 1;
     }
+  }
+  if (nelibc_ldexpl(1.5L, 4) != ldexpl(1.5L, 4) ||
+      nelibc_scalbnl(-0.75L, -2) != scalbnl(-0.75L, -2) ||
+      nelibc_scalblnl(0.5L, 4) != scalblnl(0.5L, 4) ||
+      nelibc_ldexpl(1.0L, LDBL_MIN_EXP - LDBL_MANT_DIG) != 0x1p-16445L) {
+    fprintf(stderr, "long-double scaling mismatch\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isinf(nelibc_ldexpl(1.0L, LDBL_MAX_EXP)) || errno != ERANGE) {
+    fprintf(stderr, "ldexpl overflow errno mismatch\n");
+    return 1;
+  }
+  errno = 0;
+  if (nelibc_scalblnl(0.5L, LONG_MIN) != 0.0L || errno != ERANGE) {
+    fprintf(stderr, "scalblnl underflow errno mismatch\n");
+    return 1;
   }
   int saved_rounding = fegetround();
   if (fesetround(FE_UPWARD) != 0) return 1;

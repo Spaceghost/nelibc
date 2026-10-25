@@ -212,6 +212,8 @@ local function nelibc_frexpl_hw(value: clongdouble, exponent: *[0]cint): clongdo
 local function nelibc_modfl_hw(value: clongdouble, integral: *[0]clongdouble): clongdouble <cimport> end
 local function nelibc_ilogbl_hw(value: clongdouble): cint <cimport> end
 local function nelibc_logbl_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_ldexpl_hw(value: clongdouble, exponent: cint, range_error: *[0]cint): clongdouble <cimport> end
+local function nelibc_scalblnl_hw(value: clongdouble, exponent: clong, range_error: *[0]cint): clongdouble <cimport> end
 local function nelibc_fmodl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
 local function nelibc_remainderl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
 local function nelibc_fabsl_hw(value: clongdouble): clongdouble <cimport> end
@@ -324,6 +326,24 @@ end
 
 local function logbl(value: clongdouble): clongdouble <cexport, codename 'logbl'>
   return nelibc_logbl_hw(value)
+end
+
+local function ldexpl(value: clongdouble, exponent: cint): clongdouble <cexport, codename 'ldexpl'>
+  local range_error: cint = 0_cint
+  local result = nelibc_ldexpl_hw(value, exponent, &range_error)
+  if range_error ~= 0_cint then math_range_error() end
+  return result
+end
+
+local function scalbnl(value: clongdouble, exponent: cint): clongdouble <cexport, codename 'scalbnl'>
+  return ldexpl(value, exponent)
+end
+
+local function scalblnl(value: clongdouble, exponent: clong): clongdouble <cexport, codename 'scalblnl'>
+  local range_error: cint = 0_cint
+  local result = nelibc_scalblnl_hw(value, exponent, &range_error)
+  if range_error ~= 0_cint then math_range_error() end
+  return result
 end
 
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>

@@ -38,6 +38,8 @@ int main(void) {
       modfl(-12.75L, &long_integral) != -0.75L || long_integral != -12.0L) return 109;
   if (ilogbl(12.0L) != 3 || logbl(12.0L) != 3.0L ||
       ilogbl(0x1p-16445L) != -16445 || logbl(0x1p-16445L) != -16445.0L) return 110;
+  if (ldexpl(1.5L, 4) != 24.0L || scalbnl(-0.75L, -2) != -0.1875L ||
+      scalblnl(0.5L, 4) != 8.0L) return 111;
   if (exp2(0.5) < 1.4142135623730948 || exp2(0.5) > 1.4142135623730952 ||
       exp2f(0.5f) != 1.4142135381698608f) return 137;
   if (log2(8.0) != 3.0 || log2f(0.5f) != -1.0f) return 136;

@@ -662,7 +662,7 @@ lckpwdf,shadow.h,,,not-declared
 lcong48,stdlib.h,,,not-declared
 ldexp,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ldexpf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-ldexpl,math.h,,,not-declared
+ldexpl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 ldiv,stdlib.h,stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 lfind,search.h,,,not-declared
 lgamma,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1071,10 +1071,10 @@ scalb,math.h,,,not-declared
 scalbf,math.h,,,not-declared
 scalbln,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 scalblnf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-scalblnl,math.h,,,not-declared
+scalblnl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 scalbn,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 scalbnf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-scalbnl,math.h,,,not-declared
+scalbnl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 scandir,dirent.h,dirent.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 scanf,stdio.h,,,not-declared
 sched_get_priority_max,sched.h,,,not-declared
