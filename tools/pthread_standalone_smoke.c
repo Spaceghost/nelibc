@@ -600,6 +600,16 @@ static void *rwlock_async_cancel_worker(void *argument) {
   return (void *)(intptr_t)result;
 }
 
+static void *rwlock_async_reader_cancel_worker(void *argument) {
+  pthread_rwlock_t *rwlock = argument;
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0)
+    return (void *)1;
+  atomic_store_explicit(&rwlock_async_wait_ready, 1, memory_order_release);
+  int result = pthread_rwlock_rdlock(rwlock);
+  if (result == 0) pthread_rwlock_unlock(rwlock);
+  return (void *)(intptr_t)result;
+}
+
 static void value_destructor(void *value) {
   if (value != (void *)(uintptr_t)22) return;
   ++value_destructor_calls;
@@ -794,6 +804,144 @@ static void *rwlock_priority_worker(void *argument) {
                         memory_order_release);
   error = pthread_rwlock_unlock(worker->rwlock);
   return error == 0 ? 0 : (void *)(uintptr_t)error;
+}
+
+static void *rwlock_priority_reader_worker(void *argument) {
+  struct rwlock_priority_worker_arg *worker = argument;
+  int error = pthread_rwlock_rdlock(worker->rwlock);
+  if (error != 0) return (void *)(uintptr_t)error;
+  int order = atomic_fetch_add_explicit(&rwlock_priority_order_next, 1,
+                                        memory_order_relaxed) + 1;
+  atomic_store_explicit(&rwlock_priority_order[worker->slot], order,
+                        memory_order_release);
+  error = pthread_rwlock_unlock(worker->rwlock);
+  return error == 0 ? 0 : (void *)(uintptr_t)error;
+}
+
+static int rwlock_priority_reader_precedes_writer_case(int policy) {
+  pthread_rwlock_t rwlock;
+  pthread_attr_t reader_attributes;
+  pthread_attr_t writer_attributes;
+  pthread_t reader;
+  pthread_t writer;
+  struct rwlock_priority_worker_arg reader_worker = {&rwlock, 0};
+  struct rwlock_priority_worker_arg writer_worker = {&rwlock, 1};
+  struct sched_param reader_param = {2};
+  struct sched_param writer_param = {1};
+  int reader_created = 0;
+  int writer_created = 0;
+  int lock_held = 0;
+  int reader_attr_initialized = 0;
+  int writer_attr_initialized = 0;
+  int result = 0;
+  if (pthread_rwlock_init(&rwlock, 0) != 0) return 1;
+  if (pthread_rwlock_wrlock(&rwlock) != 0) {
+    pthread_rwlock_destroy(&rwlock);
+    return 1;
+  }
+  lock_held = 1;
+  if (pthread_attr_init(&reader_attributes) != 0) {
+    result = 2;
+    goto cleanup;
+  }
+  reader_attr_initialized = 1;
+  if (pthread_attr_init(&writer_attributes) != 0) {
+    result = 2;
+    goto cleanup;
+  }
+  writer_attr_initialized = 1;
+  if (pthread_attr_setinheritsched(&reader_attributes, PTHREAD_EXPLICIT_SCHED) != 0 ||
+      pthread_attr_setschedpolicy(&reader_attributes, policy) != 0 ||
+      pthread_attr_setschedparam(&reader_attributes, &reader_param) != 0 ||
+      pthread_attr_setinheritsched(&writer_attributes, PTHREAD_EXPLICIT_SCHED) != 0 ||
+      pthread_attr_setschedpolicy(&writer_attributes, policy) != 0 ||
+      pthread_attr_setschedparam(&writer_attributes, &writer_param) != 0) {
+    result = 3;
+    goto cleanup;
+  }
+  atomic_store_explicit(&rwlock_priority_order_next, 0, memory_order_relaxed);
+  atomic_store_explicit(&rwlock_priority_order[0], 0, memory_order_relaxed);
+  atomic_store_explicit(&rwlock_priority_order[1], 0, memory_order_relaxed);
+  int error = pthread_create(&reader, &reader_attributes,
+                             rwlock_priority_reader_worker, &reader_worker);
+  if (error == EPERM || error == EACCES || error == ENOTSUP) goto cleanup;
+  if (error != 0) {
+    result = 4;
+    goto cleanup;
+  }
+  reader_created = 1;
+  for (int i = 0; i < 2000 &&
+       __atomic_load_n(&rwlock.__waiting_readers, __ATOMIC_ACQUIRE) != 1; ++i) {
+    struct timespec delay = {0, 1000000};
+    nanosleep(&delay, 0);
+  }
+  if (__atomic_load_n(&rwlock.__waiting_readers, __ATOMIC_ACQUIRE) != 1) {
+    result = 5;
+    goto cleanup;
+  }
+  error = pthread_create(&writer, &writer_attributes, rwlock_priority_worker,
+                         &writer_worker);
+  if (error == EPERM || error == EACCES || error == ENOTSUP) goto cleanup;
+  if (error != 0) {
+    result = 6;
+    goto cleanup;
+  }
+  writer_created = 1;
+  for (int i = 0; i < 2000 &&
+       __atomic_load_n(&rwlock.__waiting_writers, __ATOMIC_ACQUIRE) != 1; ++i) {
+    struct timespec delay = {0, 1000000};
+    nanosleep(&delay, 0);
+  }
+  if (__atomic_load_n(&rwlock.__waiting_readers, __ATOMIC_ACQUIRE) != 1 ||
+      __atomic_load_n(&rwlock.__waiting_writers, __ATOMIC_ACQUIRE) != 1 ||
+      __atomic_load_n(&rwlock.__waiting_reader_priority_counts[1],
+                      __ATOMIC_ACQUIRE) != 1) {
+    result = 7;
+    goto cleanup;
+  }
+  reader_param.sched_priority = 1;
+  if (pthread_setschedparam(reader, policy, &reader_param) != 0 ||
+      __atomic_load_n(&rwlock.__waiting_reader_priority_counts[1],
+                      __ATOMIC_ACQUIRE) != 0 ||
+      __atomic_load_n(&rwlock.__waiting_reader_priority_counts[0],
+                      __ATOMIC_ACQUIRE) != 1) {
+    result = 8;
+    goto cleanup;
+  }
+  reader_param.sched_priority = 2;
+  if (pthread_setschedparam(reader, policy, &reader_param) != 0 ||
+      __atomic_load_n(&rwlock.__waiting_reader_priority_counts[0],
+                      __ATOMIC_ACQUIRE) != 0 ||
+      __atomic_load_n(&rwlock.__waiting_reader_priority_counts[1],
+                      __ATOMIC_ACQUIRE) != 1) {
+    result = 9;
+    goto cleanup;
+  }
+  if (pthread_rwlock_unlock(&rwlock) != 0) {
+    result = 10;
+    goto cleanup;
+  }
+  lock_held = 0;
+  void *thread_result = 0;
+  if (pthread_join(reader, &thread_result) != 0 || thread_result != 0)
+    result = 11;
+  reader_created = 0;
+  if (pthread_join(writer, &thread_result) != 0 || thread_result != 0)
+    result = 12;
+  writer_created = 0;
+  if (result == 0 &&
+      (atomic_load_explicit(&rwlock_priority_order[0], memory_order_acquire) != 1 ||
+       atomic_load_explicit(&rwlock_priority_order[1], memory_order_acquire) != 2))
+    result = 13;
+
+cleanup:
+  if (lock_held) pthread_rwlock_unlock(&rwlock);
+  if (reader_created) pthread_join(reader, 0);
+  if (writer_created) pthread_join(writer, 0);
+  if (reader_attr_initialized) pthread_attr_destroy(&reader_attributes);
+  if (writer_attr_initialized) pthread_attr_destroy(&writer_attributes);
+  pthread_rwlock_destroy(&rwlock);
+  return result;
 }
 
 static int rwlock_priority_order_case(int first_priority, int changed_priority,
@@ -1310,6 +1458,63 @@ static int rwlock_priority_cancel_smoke(void) {
        __atomic_load_n(&rwlock.__rt_waiting_writers, __ATOMIC_ACQUIRE) != 0))
     result = 8;
 
+  if (result == 0) {
+    if (pthread_rwlock_unlock(&rwlock) != 0) {
+      result = 9;
+      goto cleanup;
+    }
+    reader_held = 0;
+    if (pthread_rwlock_wrlock(&rwlock) != 0) {
+      result = 9;
+      goto cleanup;
+    }
+    reader_held = 1;
+    atomic_store_explicit(&rwlock_async_wait_ready, 0, memory_order_relaxed);
+    error = pthread_create(&thread, &attributes,
+                           rwlock_async_reader_cancel_worker, &rwlock);
+    if (error == EPERM || error == EACCES || error == ENOTSUP) {
+      pthread_rwlock_unlock(&rwlock);
+      reader_held = 0;
+      goto cleanup;
+    }
+    if (error != 0) {
+      result = 10;
+      goto cleanup;
+    }
+    thread_created = 1;
+    for (int i = 0; i < 5000 &&
+         (!atomic_load_explicit(&rwlock_async_wait_ready, memory_order_acquire) ||
+          __atomic_load_n(&rwlock.__waiting_readers, __ATOMIC_ACQUIRE) != 1); ++i) {
+      struct timespec delay = {0, 1000000};
+      nanosleep(&delay, 0);
+    }
+    if (__atomic_load_n(&rwlock.__waiting_readers, __ATOMIC_ACQUIRE) != 1 ||
+        __atomic_load_n(&rwlock.__waiting_reader_priority_counts[0],
+                        __ATOMIC_ACQUIRE) != 1) {
+      result = 11;
+      goto cleanup;
+    }
+    if (pthread_cancel(thread) != 0) {
+      result = 12;
+      goto cleanup;
+    }
+    void *reader_result = 0;
+    if (pthread_join(thread, &reader_result) != 0 ||
+        reader_result != PTHREAD_CANCELED) {
+      result = 13;
+      thread_created = 0;
+      goto cleanup;
+    }
+    thread_created = 0;
+    if (__atomic_load_n(&rwlock.__waiting_readers, __ATOMIC_ACQUIRE) != 0 ||
+        __atomic_load_n(&rwlock.__waiting_reader_priority_counts[0],
+                        __ATOMIC_ACQUIRE) != 0 ||
+        __atomic_load_n(&rwlock.__rt_waiting_readers, __ATOMIC_ACQUIRE) != 0)
+      result = 14;
+    if (pthread_rwlock_unlock(&rwlock) != 0) result = 15;
+    reader_held = 0;
+  }
+
 cleanup:
   if (reader_held) pthread_rwlock_unlock(&rwlock);
   if (thread_created) pthread_join(thread, 0);
@@ -1331,14 +1536,18 @@ static int rwlock_priority_order_smoke(void) {
   if (result != 0) return 80 + result;
   result = rwlock_priority_reader_tie_smoke(SCHED_RR);
   if (result != 0) return 100 + result;
-  result = rwlock_equal_writer_order_case(SCHED_FIFO);
+  result = rwlock_priority_reader_precedes_writer_case(SCHED_FIFO);
+  if (result != 0) return 110 + result;
+  result = rwlock_priority_reader_precedes_writer_case(SCHED_RR);
   if (result != 0) return 120 + result;
-  result = rwlock_equal_writer_order_case(SCHED_RR);
+  result = rwlock_equal_writer_order_case(SCHED_FIFO);
   if (result != 0) return 140 + result;
-  result = rwlock_pshared_priority_smoke();
+  result = rwlock_equal_writer_order_case(SCHED_RR);
   if (result != 0) return 160 + result;
-  result = rwlock_priority_cancel_smoke();
+  result = rwlock_pshared_priority_smoke();
   if (result != 0) return 180 + result;
+  result = rwlock_priority_cancel_smoke();
+  if (result != 0) return 200 + result;
   return 0;
 }
 
@@ -1534,7 +1743,7 @@ int main(void) {
   if (scheduling_syscall_smoke() != 0) return 287;
   errno = 0;
   if (sysconf(_SC_PRIORITY_SCHEDULING) != 200809 || errno != 0 ||
-      sysconf(_SC_THREAD_PRIORITY_SCHEDULING) != -1 || errno != 0)
+      sysconf(_SC_THREAD_PRIORITY_SCHEDULING) != 200809 || errno != 0)
     return 286;
 
   sigset_t cancellation_mask;

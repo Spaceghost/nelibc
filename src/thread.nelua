@@ -79,7 +79,8 @@ local PthreadContext: type = @record{
   rwlock_read_overflow: pointer,
   rwlock_waiting_on: pointer,
   rwlock_waiting_priority: cint,
-  rwlock_waiting_policy: cint
+  rwlock_waiting_policy: cint,
+  rwlock_waiting_kind: cint
 }
 local PthreadJoinCleanup: type = @record{
   context: *PthreadContext,
@@ -158,7 +159,10 @@ local PthreadRwlock: type = @record{
   pshared: cint,
   kind: cint,
   rt_waiting_writers: cint,
-  waiting_writer_priority_counts: [99]cint
+  waiting_writer_priority_counts: [99]cint,
+  waiting_readers: cint,
+  rt_waiting_readers: cint,
+  waiting_reader_priority_counts: [99]cint
 }
 local Semaphore: type = @record{
   magic: culong,
@@ -1672,13 +1676,21 @@ local function pthread_rwlock_waiter_priority(policy: cint,
 end
 
 local function pthread_rwlock_recompute_max_priority(
-    rwlock: *PthreadRwlock): cint
-  if nelibc_atomic_load_int(&rwlock.rt_waiting_writers) == 0 then return 0 end
+    rwlock: *PthreadRwlock, kind: cint): cint
+  local rt_waiting: cint
+  if kind == 1 then rt_waiting = nelibc_atomic_load_int(&rwlock.rt_waiting_readers)
+  else rt_waiting = nelibc_atomic_load_int(&rwlock.rt_waiting_writers) end
+  if rt_waiting == 0 then return 0 end
   local maximum: cint = 0
   local priority: cint = 99
   while priority > 0 do
-    if nelibc_atomic_load_int(
-        &rwlock.waiting_writer_priority_counts[priority - 1]) > 0 then
+    local count: cint
+    if kind == 1 then
+      count = nelibc_atomic_load_int(&rwlock.waiting_reader_priority_counts[priority - 1])
+    else
+      count = nelibc_atomic_load_int(&rwlock.waiting_writer_priority_counts[priority - 1])
+    end
+    if count > 0 then
       maximum = priority
       break
     end
@@ -1688,7 +1700,7 @@ local function pthread_rwlock_recompute_max_priority(
 end
 
 local function pthread_rwlock_waiter_register(context: *PthreadContext,
-    rwlock: *PthreadRwlock): boolean
+    rwlock: *PthreadRwlock, kind: cint): boolean
   if context == nilptr then return false end
   pthread_priority_context_lock(context)
   if nelibc_atomic_load_pointer(&context.rwlock_waiting_on) ~= nilptr then
@@ -1700,12 +1712,18 @@ local function pthread_rwlock_waiter_register(context: *PthreadContext,
   local priority = pthread_rwlock_waiter_priority(context.sched_policy,
                                                    context.sched_priority)
   nelibc_atomic_store_int(&context.rwlock_waiting_priority, priority)
+  context.rwlock_waiting_kind = kind
   if priority > 0 then
-    nelibc_atomic_fetch_add_int(
-        &rwlock.waiting_writer_priority_counts[priority - 1], 1)
-    nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, 1)
+    if kind == 1 then
+      nelibc_atomic_fetch_add_int(&rwlock.waiting_reader_priority_counts[priority - 1], 1)
+      nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_readers, 1)
+    else
+      nelibc_atomic_fetch_add_int(&rwlock.waiting_writer_priority_counts[priority - 1], 1)
+      nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, 1)
+    end
   end
-  nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, 1)
+  if kind == 1 then nelibc_atomic_fetch_add_int(&rwlock.waiting_readers, 1)
+  else nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, 1) end
   pthread_priority_context_unlock(context)
   return true
 end
@@ -1716,15 +1734,22 @@ local function pthread_rwlock_waiter_unregister(context: *PthreadContext,
   if nelibc_atomic_load_pointer(&context.rwlock_waiting_on) ==
       (@pointer)(rwlock) then
     local priority = nelibc_atomic_load_int(&context.rwlock_waiting_priority)
+    local kind = context.rwlock_waiting_kind
     if priority > 0 then
-      nelibc_atomic_fetch_add_int(
-          &rwlock.waiting_writer_priority_counts[priority - 1], -1)
-      nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, -1)
+      if kind == 1 then
+        nelibc_atomic_fetch_add_int(&rwlock.waiting_reader_priority_counts[priority - 1], -1)
+        nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_readers, -1)
+      else
+        nelibc_atomic_fetch_add_int(&rwlock.waiting_writer_priority_counts[priority - 1], -1)
+        nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, -1)
+      end
     end
     nelibc_atomic_store_pointer(&context.rwlock_waiting_on, nilptr)
     nelibc_atomic_store_int(&context.rwlock_waiting_priority, 0)
     context.rwlock_waiting_policy = SCHED_OTHER
-    nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, -1)
+    context.rwlock_waiting_kind = 0
+    if kind == 1 then nelibc_atomic_fetch_add_int(&rwlock.waiting_readers, -1)
+    else nelibc_atomic_fetch_add_int(&rwlock.waiting_writers, -1) end
   end
   pthread_priority_context_unlock(context)
 end
@@ -1739,21 +1764,30 @@ local function pthread_rwlock_waiter_priority_update(context: *PthreadContext,
     end
     local old_priority = nelibc_atomic_load_int(
         &context.rwlock_waiting_priority)
+    local kind = context.rwlock_waiting_kind
     local next_priority = pthread_rwlock_waiter_priority(policy, priority)
     -- Add the new bucket before dropping the old one. A concurrent admission
     -- check can temporarily see both priorities, but never miss this waiter.
     if next_priority > 0 then
-      nelibc_atomic_fetch_add_int(
-          &rwlock.waiting_writer_priority_counts[next_priority - 1], 1)
+      if kind == 1 then
+        nelibc_atomic_fetch_add_int(&rwlock.waiting_reader_priority_counts[next_priority - 1], 1)
+      else
+        nelibc_atomic_fetch_add_int(&rwlock.waiting_writer_priority_counts[next_priority - 1], 1)
+      end
     end
     if old_priority > 0 then
-      nelibc_atomic_fetch_add_int(
-          &rwlock.waiting_writer_priority_counts[old_priority - 1], -1)
+      if kind == 1 then
+        nelibc_atomic_fetch_add_int(&rwlock.waiting_reader_priority_counts[old_priority - 1], -1)
+      else
+        nelibc_atomic_fetch_add_int(&rwlock.waiting_writer_priority_counts[old_priority - 1], -1)
+      end
     end
     if old_priority == 0 and next_priority > 0 then
-      nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, 1)
+      if kind == 1 then nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_readers, 1)
+      else nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, 1) end
     elseif old_priority > 0 and next_priority == 0 then
-      nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, -1)
+      if kind == 1 then nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_readers, -1)
+      else nelibc_atomic_fetch_add_int(&rwlock.rt_waiting_writers, -1) end
     end
     context.rwlock_waiting_policy = policy
     nelibc_atomic_store_int(&context.rwlock_waiting_priority, next_priority)
@@ -1768,8 +1802,8 @@ local function pthread_rwlock_waiter_priority_update(context: *PthreadContext,
 end
 
 local function pthread_rwlock_max_waiting_priority(
-    rwlock: *PthreadRwlock): cint <inline>
-  return pthread_rwlock_recompute_max_priority(rwlock)
+    rwlock: *PthreadRwlock, kind: cint): cint <inline>
+  return pthread_rwlock_recompute_max_priority(rwlock, kind)
 end
 
 local function pthread_rwlock_writer_can_acquire(context: *PthreadContext,
@@ -1780,7 +1814,8 @@ local function pthread_rwlock_writer_can_acquire(context: *PthreadContext,
       (@pointer)(rwlock) then
     priority = nelibc_atomic_load_int(&context.rwlock_waiting_priority)
   end
-  return pthread_rwlock_max_waiting_priority(rwlock) <= priority
+  return pthread_rwlock_max_waiting_priority(rwlock, 2) <= priority and
+      pthread_rwlock_max_waiting_priority(rwlock, 1) <= priority
 end
 
 local function pthread_rwlock_reader_priority_blocked(context: *PthreadContext,
@@ -1789,7 +1824,7 @@ local function pthread_rwlock_reader_priority_blocked(context: *PthreadContext,
       pthread_rwlock_read_owner_find(context, (@pointer)(rwlock)) then
     return false
   end
-  local maximum = pthread_rwlock_max_waiting_priority(rwlock)
+  local maximum = pthread_rwlock_max_waiting_priority(rwlock, 2)
   if maximum == 0 then return false end
   return maximum >= pthread_rwlock_waiter_priority(context.sched_policy,
                                                    context.sched_priority)
@@ -2801,6 +2836,14 @@ local function pthread_rwlock_wake(rwlock: *PthreadRwlock): void
     2147483647_culong, 0_culong, 0_culong, 0_culong)
 end
 
+local function pthread_rwlock_reader_wait_cleanup(context: *PthreadContext,
+    rwlock: *PthreadRwlock): void
+  nelibc_atomic_store_pointer(&context.cancel_wait_address, nilptr)
+  pthread_rwlock_waiter_unregister(context, rwlock)
+  pthread_rwlock_wake(rwlock)
+  pthread_cancel_defer_end()
+end
+
 local function pthread_rwlock_wait(rwlock: *PthreadRwlock, sequence: cint,
     abstime: *Timespec, clock_id: cint): cint
   if abstime ~= nilptr and
@@ -2899,13 +2942,16 @@ local function pthread_rwlock_init(rwlock: *PthreadRwlock,
   rwlock.state = 0
   rwlock.writer = 0
   rwlock.waiting_writers = 0
+  rwlock.waiting_readers = 0
   rwlock.sequence = 0
   rwlock.pshared = pshared
   rwlock.kind = kind
   rwlock.rt_waiting_writers = 0
+  rwlock.rt_waiting_readers = 0
   local priority_index: csize = 0
   while priority_index < 99 do
     rwlock.waiting_writer_priority_counts[priority_index] = 0
+    rwlock.waiting_reader_priority_counts[priority_index] = 0
     priority_index = priority_index + 1
   end
   rwlock.magic = PTHREAD_RWLOCK_MAGIC
@@ -2916,7 +2962,8 @@ local function pthread_rwlock_destroy(rwlock: *PthreadRwlock): cint
     <cexport, codename 'pthread_rwlock_destroy'>
   if not pthread_rwlock_valid(rwlock) then return 22 end -- EINVAL
   if nelibc_atomic_load_int(&rwlock.state) ~= 0 or
-      nelibc_atomic_load_int(&rwlock.waiting_writers) ~= 0 then
+      nelibc_atomic_load_int(&rwlock.waiting_writers) ~= 0 or
+      nelibc_atomic_load_int(&rwlock.waiting_readers) ~= 0 then
     return 16 -- EBUSY
   end
   rwlock.magic = 0
@@ -2932,13 +2979,19 @@ local function pthread_rwlock_rdlock_internal(rwlock: *PthreadRwlock,
     if nonblocking then return 16 end -- EBUSY
     return 35 -- EDEADLK
   end
+  local registered_waiter = false
   while true do
     local sequence = nelibc_atomic_load_int(&rwlock.sequence)
     local state = nelibc_atomic_load_int(&rwlock.state)
     local writer_preferred = rwlock.kind == PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP and
         nelibc_atomic_load_int(&rwlock.waiting_writers) ~= 0
     local priority_blocked = pthread_rwlock_reader_priority_blocked(context, rwlock)
-    if state >= 2147483647 then return 11 end -- EAGAIN
+    if state >= 2147483647 then
+      if registered_waiter then
+        pthread_rwlock_reader_wait_cleanup(context, rwlock)
+      end
+      return 11 -- EAGAIN
+    end
     if state >= 0 and not writer_preferred and not priority_blocked then
       pthread_cancel_defer_begin()
       if nelibc_atomic_cas_int(&rwlock.state, state, state + 1) == 0 then
@@ -2946,16 +2999,50 @@ local function pthread_rwlock_rdlock_internal(rwlock: *PthreadRwlock,
           local previous = nelibc_atomic_fetch_add_int(&rwlock.state, -1)
           if previous == 1 then pthread_rwlock_wake(rwlock) end
           pthread_cancel_defer_end()
+          if registered_waiter then
+            pthread_rwlock_reader_wait_cleanup(context, rwlock)
+          end
           return 11 -- EAGAIN: no per-thread owner record available
         end
         pthread_cancel_defer_end()
+        if registered_waiter then
+          pthread_rwlock_reader_wait_cleanup(context, rwlock)
+        end
         return 0
       end
       pthread_cancel_defer_end()
       continue
     end
     if nonblocking then return 16 end -- EBUSY
+    if not registered_waiter and context ~= nilptr then
+      pthread_cancel_defer_begin()
+      if not pthread_rwlock_waiter_register(context, rwlock, 1) then
+        pthread_cancel_defer_end()
+        return 11 -- EAGAIN
+      end
+      if rwlock.pshared == 0 then context.cancel_wait_wake_operation = 129
+      else context.cancel_wait_wake_operation = 1 end
+      nelibc_atomic_store_pointer(&context.cancel_wait_address,
+          (@pointer)(&rwlock.sequence))
+      if context.cancel_state == PTHREAD_CANCEL_ENABLE and
+          nelibc_atomic_load_int(&context.cancel_pending) ~= 0 then
+        pthread_cancel_wake(context)
+      end
+      registered_waiter = true
+    end
+    if registered_waiter and context.cancel_state == PTHREAD_CANCEL_ENABLE and
+        context.cancel_type == PTHREAD_CANCEL_ASYNCHRONOUS and
+        nelibc_atomic_load_int(&context.cancel_pending) ~= 0 then
+      pthread_rwlock_reader_wait_cleanup(context, rwlock)
+      return 4 -- EINTR if asynchronous cancellation did not terminate the thread
+    end
     local wait_error = pthread_rwlock_wait(rwlock, sequence, abstime, clock_id)
+    if registered_waiter and context.cancel_state == PTHREAD_CANCEL_ENABLE and
+        context.cancel_type == PTHREAD_CANCEL_ASYNCHRONOUS and
+        nelibc_atomic_load_int(&context.cancel_pending) ~= 0 then
+      pthread_rwlock_reader_wait_cleanup(context, rwlock)
+      return 4 -- EINTR if asynchronous cancellation did not terminate the thread
+    end
     if wait_error == 110 then -- ETIMEDOUT: take any lock available at the deadline
       state = nelibc_atomic_load_int(&rwlock.state)
       if state >= 0 and state < 2147483647 and
@@ -2968,16 +3055,30 @@ local function pthread_rwlock_rdlock_internal(rwlock: *PthreadRwlock,
             local previous = nelibc_atomic_fetch_add_int(&rwlock.state, -1)
             if previous == 1 then pthread_rwlock_wake(rwlock) end
             pthread_cancel_defer_end()
+            if registered_waiter then
+              pthread_rwlock_reader_wait_cleanup(context, rwlock)
+            end
             return 11 -- EAGAIN: no per-thread owner record available
           end
           pthread_cancel_defer_end()
+          if registered_waiter then
+            pthread_rwlock_reader_wait_cleanup(context, rwlock)
+          end
           return 0
         end
         pthread_cancel_defer_end()
       end
+      if registered_waiter then
+        pthread_rwlock_reader_wait_cleanup(context, rwlock)
+      end
       return wait_error
     end
-    if wait_error ~= 0 then return wait_error end
+    if wait_error ~= 0 then
+      if registered_waiter then
+        pthread_rwlock_reader_wait_cleanup(context, rwlock)
+      end
+      return wait_error
+    end
   end
 end
 
@@ -3025,7 +3126,7 @@ local function pthread_rwlock_wrlock_internal(rwlock: *PthreadRwlock,
   local context = pthread_current_context()
   if context == nilptr then return 12 end -- ENOMEM
   pthread_cancel_defer_begin()
-  if not pthread_rwlock_waiter_register(context, rwlock) then
+  if not pthread_rwlock_waiter_register(context, rwlock, 2) then
     pthread_cancel_defer_end()
     return 11 -- EAGAIN
   end
@@ -3606,6 +3707,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   state.context.rwlock_waiting_on = nilptr
   state.context.rwlock_waiting_priority = 0
   state.context.rwlock_waiting_policy = SCHED_OTHER
+  state.context.rwlock_waiting_kind = 0
   local rwlock_owner_index: csize = 0
   while rwlock_owner_index < 4 do
     state.context.rwlock_read_owners[rwlock_owner_index].rwlock = nilptr

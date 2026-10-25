@@ -126,23 +126,20 @@ Process priority scheduling is now exposed: `_SC_PRIORITY_SCHEDULING` returns
 priority ranges, and the round-robin interval query. The standalone smoke
 checks the wrappers and their error paths.
 
-`_SC_THREAD_PRIORITY_SCHEDULING` remains unsupported. Per-priority atomic
-writer counts and per-thread wait records let `pthread_setschedparam` and
-`pthread_setschedprio` reprioritize queued writers. An aggregate real-time
-waiter count avoids scanning the buckets on ordinary lock operations. Counts
-live in the rwlock itself, so process-shared locks do not depend on pointers to
-another process's thread context. Timeout and asynchronous-cancellation paths
-remove waiter counts. The real-time-gated smoke covers FIFO and RR writer
-priority increases/decreases, equal-priority reader/writer precedence,
-process-shared writer ordering across a fork, and timeout/cancellation cleanup.
-It passed on Bak for Zig and GCC, with 10 repeat runs per compiler.
-
-The thread option stays off because blocked readers are not yet represented in
-the priority admission state. After unlock, a higher-priority reader can race
-a lower-priority writer; mixed scheduling policies among current readers also
-need to be reflected in admission. Add reader wait records and cover those
-cases before advertising the thread option. The GNU nonrecursive
-writer-preference attribute remains a separate policy.
+`_SC_THREAD_PRIORITY_SCHEDULING` now returns 200809. Per-priority atomic
+reader and writer counts live in each rwlock; per-thread wait records let
+`pthread_setschedparam` and `pthread_setschedprio` reprioritize queued waiters.
+When a lock becomes available, a higher-priority blocked reader prevents a
+lower-priority writer from overtaking it, while equal-priority writer/read
+ties favor the writer. An aggregate real-time waiter count avoids scanning
+priority buckets on ordinary lock operations. Shared rwlock state supports
+process-shared locks without pointers to another process's thread context.
+Timeout and asynchronous-cancellation paths remove reader and writer counts.
+The real-time-gated smoke covers FIFO and RR priority changes, higher-priority
+reader versus lower-priority writer admission, equal-priority reader/writer
+precedence, process-shared writer ordering across a fork, and timeout and
+cancellation cleanup. Zig and GCC passed 10 repeat runs each on Bak. The GNU
+nonrecursive writer-preference attribute remains a separate policy.
 
 Per-thread read ownership is tracked in standalone mode using four inline lock
 slots plus dynamically allocated overflow entries. Recursive reads are

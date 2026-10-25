@@ -35,6 +35,9 @@ extern char **environ;
 #ifndef _POSIX_PRIORITY_SCHEDULING
 #define _POSIX_PRIORITY_SCHEDULING 200809L
 #endif
+#ifndef _POSIX_THREAD_PRIORITY_SCHEDULING
+#define _POSIX_THREAD_PRIORITY_SCHEDULING 200809L
+#endif
 #ifndef _CS_PATH
 #define _CS_PATH 0
 #endif

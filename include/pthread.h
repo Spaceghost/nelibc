@@ -90,6 +90,9 @@ typedef struct {
   int __kind;
   int __rt_waiting_writers;
   int __waiting_writer_priority_counts[99];
+  int __waiting_readers;
+  int __rt_waiting_readers;
+  int __waiting_reader_priority_counts[99];
 } pthread_rwlock_t;
 
 #define PTHREAD_CREATE_JOINABLE 0

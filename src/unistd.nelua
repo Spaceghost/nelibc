@@ -4538,7 +4538,7 @@ local function sysconf(name: cint): clong <cexport, codename 'sysconf'>
   if name == 77 or name == 78 or name == 82 then
     return 200809_clong
   end
-  if name == 79 then return -1_clong end -- POSIX thread priority scheduling is incomplete
+  if name == 79 then return 200809_clong end -- POSIX thread priority scheduling
   if name == 80 or name == 81 then return -1_clong end
   if name == 87 or name == 88 then return -1_clong end
   if name == 89 or name == 90 then return 700_clong end -- XSI version
