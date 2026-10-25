@@ -132,7 +132,8 @@ local PthreadBarrier: type = @record{
 }
 local PthreadRwlockAttr: type = @record{
   magic: culong,
-  pshared: cint
+  pshared: cint,
+  kind: cint
 }
 local PthreadRwlock: type = @record{
   magic: culong,
@@ -140,7 +141,8 @@ local PthreadRwlock: type = @record{
   writer: cint,
   waiting_writers: cint,
   sequence: cint,
-  pshared: cint
+  pshared: cint,
+  kind: cint
 }
 local Semaphore: type = @record{
   magic: culong,
@@ -198,6 +200,9 @@ local PTHREAD_BARRIER_ATTR_MAGIC: culong <comptime> = 0x4E424154545231
 local PTHREAD_BARRIER_MAGIC: culong <comptime> = 0x4E42415252
 local PTHREAD_RWLOCK_ATTR_MAGIC: culong <comptime> = 0x4E525741545452
 local PTHREAD_RWLOCK_MAGIC: culong <comptime> = 0x4E52574C4F434B
+local PTHREAD_RWLOCK_PREFER_READER_NP: cint <comptime> = 0
+local PTHREAD_RWLOCK_PREFER_WRITER_NP: cint <comptime> = 1
+local PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP: cint <comptime> = 2
 local SEMAPHORE_MAGIC: culong <comptime> = 0x4E454C53454D31
 local PTHREAD_CANCELED: pointer <comptime> = (@pointer)(~0_csize)
 local PTHREAD_CANCEL_ENABLE: cint <comptime> = 0
@@ -2518,7 +2523,9 @@ end
 
 local function pthread_rwlock_valid(rwlock: *PthreadRwlock): boolean <inline>
   return rwlock ~= nilptr and rwlock.magic == PTHREAD_RWLOCK_MAGIC and
-         (rwlock.pshared == 0 or rwlock.pshared == 1)
+         (rwlock.pshared == 0 or rwlock.pshared == 1) and
+         rwlock.kind >= PTHREAD_RWLOCK_PREFER_READER_NP and
+         rwlock.kind <= PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP
 end
 
 local function pthread_rwlock_wake(rwlock: *PthreadRwlock): void
@@ -2565,6 +2572,7 @@ local function pthread_rwlockattr_init(attr: *PthreadRwlockAttr): cint
   if attr == nilptr then return 22 end -- EINVAL
   attr.magic = PTHREAD_RWLOCK_ATTR_MAGIC
   attr.pshared = 0
+  attr.kind = PTHREAD_RWLOCK_PREFER_READER_NP
   return 0
 end
 
@@ -2591,19 +2599,45 @@ local function pthread_rwlockattr_getpshared(attr: *PthreadRwlockAttr,
   return 0
 end
 
+local function pthread_rwlockattr_setkind_np(attr: *PthreadRwlockAttr,
+    kind: cint): cint <cexport, codename 'pthread_rwlockattr_setkind_np'>
+  if not pthread_rwlockattr_valid(attr) or
+     (kind ~= PTHREAD_RWLOCK_PREFER_READER_NP and
+      kind ~= PTHREAD_RWLOCK_PREFER_WRITER_NP and
+      kind ~= PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP) then
+    return 22 -- EINVAL
+  end
+  attr.kind = kind
+  return 0
+end
+
+local function pthread_rwlockattr_getkind_np(attr: *PthreadRwlockAttr,
+    kind: *[0]cint): cint <cexport, codename 'pthread_rwlockattr_getkind_np'>
+  if not pthread_rwlockattr_valid(attr) or kind == nilptr then return 22 end
+  kind[0] = attr.kind
+  return 0
+end
+
 local function pthread_rwlock_init(rwlock: *PthreadRwlock,
     attr: *PthreadRwlockAttr): cint <cexport, codename 'pthread_rwlock_init'>
   if rwlock == nilptr then return 22 end -- EINVAL
   local pshared: cint = 0
+  local kind: cint = PTHREAD_RWLOCK_PREFER_READER_NP
   if attr ~= nilptr then
     if not pthread_rwlockattr_valid(attr) then return 22 end
+    if attr.kind < PTHREAD_RWLOCK_PREFER_READER_NP or
+       attr.kind > PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP then
+      return 22 -- EINVAL
+    end
     pshared = attr.pshared
+    kind = attr.kind
   end
   rwlock.state = 0
   rwlock.writer = 0
   rwlock.waiting_writers = 0
   rwlock.sequence = 0
   rwlock.pshared = pshared
+  rwlock.kind = kind
   rwlock.magic = PTHREAD_RWLOCK_MAGIC
   return 0
 end
@@ -2630,8 +2664,10 @@ local function pthread_rwlock_rdlock_internal(rwlock: *PthreadRwlock,
   while true do
     local sequence = nelibc_atomic_load_int(&rwlock.sequence)
     local state = nelibc_atomic_load_int(&rwlock.state)
+    local writer_preferred = rwlock.kind == PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP and
+        nelibc_atomic_load_int(&rwlock.waiting_writers) ~= 0
     if state >= 2147483647 then return 11 end -- EAGAIN
-    if state >= 0 then
+    if state >= 0 and not writer_preferred then
       if nelibc_atomic_cas_int(&rwlock.state, state, state + 1) == 0 then
         return 0
       end
@@ -2642,6 +2678,8 @@ local function pthread_rwlock_rdlock_internal(rwlock: *PthreadRwlock,
     if wait_error == 110 then -- ETIMEDOUT: take any lock available at the deadline
       state = nelibc_atomic_load_int(&rwlock.state)
       if state >= 0 and state < 2147483647 and
+          (rwlock.kind ~= PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP or
+           nelibc_atomic_load_int(&rwlock.waiting_writers) == 0) and
           nelibc_atomic_cas_int(&rwlock.state, state, state + 1) == 0 then
         return 0
       end

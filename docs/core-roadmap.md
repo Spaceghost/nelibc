@@ -38,8 +38,8 @@ matter more for completeness than for the initial common-program target.
 
 ### Standalone pthread gap audit
 
-The generated API inventory currently records 113 pthread declarations, and
-all 113 export from the Zig, GCC, and TinyCC standalone archives. The pthread
+The generated API inventory currently records 115 pthread declarations, and
+all 115 export from the Zig, GCC, and TinyCC standalone archives. The pthread
 smoke passed with all three compilers; the Zig run passed 20 consecutive times.
 This verifies symbol presence and the tested behavior, not full POSIX
 conformance. The pinned musl 1.2.5 public-symbol baseline
@@ -115,7 +115,13 @@ expired monotonic waits for normal, robust, PI, and combined robust+PI mutexes,
 plus invalid clock and timespec inputs. All three standalone compiler profiles
 passed on 2026-10-25; the Zig smoke passed 20 consecutive runs.
 Standalone rwlocks use reader preference: new readers may acquire while writers
-are queued. Nelibc reports `_SC_PRIORITY_SCHEDULING` and
+are queued by default. The GNU `pthread_rwlockattr_setkind_np` extension now
+supports reader preference, the glibc-compatible ignored writer-preference
+setting, and nonrecursive writer preference; the latter blocks new readers
+while a writer is queued. The smoke verifies both writer-preference modes
+against the default. This extension follows the behavior documented by the
+[Linux pthread rwlock attribute manual](https://man7.org/linux/man-pages/man3/pthread_rwlockattr_setkind_np.3.html).
+Nelibc reports `_SC_PRIORITY_SCHEDULING` and
 `_SC_THREAD_PRIORITY_SCHEDULING` as unsupported because it does not implement
 the full POSIX scheduling options, including priority-aware rwlock admission.
 The standalone priority-ceiling attributes and mutex get/set operations are
@@ -155,10 +161,10 @@ alongside Nelibc's `fork()` path in hybrid and standalone archives. Also audit
 against the current POSIX pthread index, including APIs absent from the pinned
 musl export set.
 
-- The regenerated API inventory has 972 declared names. All four hybrid
+- The regenerated API inventory has 974 declared names. All four hybrid
   archives (Zig/glibc, GCC/glibc, Zig/musl, and TinyCC/glibc) export 803;
-  all three standalone archives export 973 including one implementation-only
-  entry. There are 161 host-delegated APIs and 8 declared-but-unexported
+  all three standalone archives export 975 including one implementation-only
+  entry. There are 161 host-delegated APIs and 10 declared-but-unexported
   Zig/musl archive gaps.
   `pthread_mutex_clocklock` is provided by the glibc host in hybrid mode and
   exported by all three standalone archives. This is an inventory signal, not

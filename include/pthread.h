@@ -78,6 +78,7 @@ typedef struct {
 typedef struct {
   uintptr_t __magic;
   int __pshared;
+  int __kind;
 } pthread_rwlockattr_t;
 typedef struct {
   uintptr_t __magic;
@@ -86,6 +87,7 @@ typedef struct {
   int __waiting_writers;
   int __sequence;
   int __pshared;
+  int __kind;
 } pthread_rwlock_t;
 
 #define PTHREAD_CREATE_JOINABLE 0
@@ -117,8 +119,12 @@ typedef struct {
 #define PTHREAD_PROCESS_SHARED 1
 #define PTHREAD_COND_INITIALIZER {0x4E434F4E44u, 0, 0, PTHREAD_PROCESS_PRIVATE, CLOCK_REALTIME}
 #define PTHREAD_BARRIER_SERIAL_THREAD (-1)
+#define PTHREAD_RWLOCK_PREFER_READER_NP 0
+#define PTHREAD_RWLOCK_PREFER_WRITER_NP 1
+#define PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP 2
+#define PTHREAD_RWLOCK_DEFAULT_NP PTHREAD_RWLOCK_PREFER_READER_NP
 #define PTHREAD_RWLOCK_INITIALIZER \
-  {0x4E52574C4F434Bu, 0, 0, 0, 0, PTHREAD_PROCESS_PRIVATE}
+  {0x4E52574C4F434Bu, 0, 0, 0, 0, PTHREAD_PROCESS_PRIVATE, PTHREAD_RWLOCK_PREFER_READER_NP}
 
 int pthread_attr_init(pthread_attr_t *attr);
 int pthread_attr_destroy(pthread_attr_t *attr);
@@ -239,6 +245,8 @@ int pthread_rwlockattr_init(pthread_rwlockattr_t *attr);
 int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attr);
 int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attr, int pshared);
 int pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *attr, int *pshared);
+int pthread_rwlockattr_setkind_np(pthread_rwlockattr_t *attr, int pref);
+int pthread_rwlockattr_getkind_np(const pthread_rwlockattr_t *attr, int *pref);
 int pthread_rwlock_init(pthread_rwlock_t *rwlock,
                         const pthread_rwlockattr_t *attr);
 int pthread_rwlock_destroy(pthread_rwlock_t *rwlock);

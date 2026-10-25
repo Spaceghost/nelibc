@@ -87,6 +87,7 @@ for name in (
     "pthread_cond_clockwait",
     "pthread_mutex_clocklock",
     "pthread_rwlock_clockrdlock", "pthread_rwlock_clockwrlock",
+    "pthread_rwlockattr_setkind_np", "pthread_rwlockattr_getkind_np",
     "pthread_mutexattr_getprioceiling", "pthread_mutexattr_setprioceiling",
     "pthread_mutex_getprioceiling", "pthread_mutex_setprioceiling",
 ):

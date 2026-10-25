@@ -580,6 +580,14 @@ static void *rwlock_stress_worker(void *argument) {
   return 0;
 }
 
+static void *rwlock_kind_writer(void *argument) {
+  pthread_rwlock_t *rwlock = argument;
+  int error = pthread_rwlock_wrlock(rwlock);
+  if (error != 0) return (void *)(uintptr_t)error;
+  error = pthread_rwlock_unlock(rwlock);
+  return error == 0 ? 0 : (void *)(uintptr_t)error;
+}
+
 static void *rwlock_async_cancel_worker(void *argument) {
   pthread_rwlock_t *rwlock = argument;
   if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0) != 0)
@@ -2568,6 +2576,50 @@ int main(void) {
       pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
       pthread_barrier_destroy(&async_cancel_barrier) != 0)
     return 293;
+  pthread_rwlockattr_t kind_attributes;
+  int rwlock_kind = -1;
+  if (pthread_rwlockattr_init(&kind_attributes) != 0 ||
+      pthread_rwlockattr_getkind_np(&kind_attributes, &rwlock_kind) != 0 ||
+      rwlock_kind != PTHREAD_RWLOCK_PREFER_READER_NP ||
+      pthread_rwlockattr_getkind_np(&kind_attributes, 0) != EINVAL ||
+      pthread_rwlockattr_setkind_np(&kind_attributes, -1) != EINVAL ||
+      pthread_rwlockattr_setkind_np(&kind_attributes, 3) != EINVAL)
+    return 297;
+  pthread_rwlock_t kind_rwlock;
+  if (pthread_rwlockattr_setkind_np(&kind_attributes,
+                                    PTHREAD_RWLOCK_PREFER_WRITER_NP) != 0 ||
+      pthread_rwlockattr_getkind_np(&kind_attributes, &rwlock_kind) != 0 ||
+      rwlock_kind != PTHREAD_RWLOCK_PREFER_WRITER_NP ||
+      pthread_rwlock_init(&kind_rwlock, &kind_attributes) != 0 ||
+      pthread_rwlock_rdlock(&kind_rwlock) != 0 ||
+      pthread_create(&thread, &attributes, rwlock_kind_writer, &kind_rwlock) != 0)
+    return 298;
+  for (unsigned int i = 0; i < 10000000U &&
+       __atomic_load_n(&kind_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0; ++i) {
+  }
+  if (__atomic_load_n(&kind_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0 ||
+      pthread_rwlock_tryrdlock(&kind_rwlock) != 0 ||
+      pthread_rwlock_unlock(&kind_rwlock) != 0 ||
+      pthread_rwlock_unlock(&kind_rwlock) != 0 ||
+      pthread_join(thread, &result) != 0 || result != 0 ||
+      pthread_rwlock_destroy(&kind_rwlock) != 0)
+    return 299;
+  if (pthread_rwlockattr_setkind_np(&kind_attributes,
+                                    PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP) != 0 ||
+      pthread_rwlock_init(&kind_rwlock, &kind_attributes) != 0 ||
+      pthread_rwlock_rdlock(&kind_rwlock) != 0 ||
+      pthread_create(&thread, &attributes, rwlock_kind_writer, &kind_rwlock) != 0)
+    return 300;
+  for (unsigned int i = 0; i < 10000000U &&
+       __atomic_load_n(&kind_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0; ++i) {
+  }
+  if (__atomic_load_n(&kind_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0 ||
+      pthread_rwlock_tryrdlock(&kind_rwlock) != EBUSY ||
+      pthread_rwlock_unlock(&kind_rwlock) != 0 ||
+      pthread_join(thread, &result) != 0 || result != 0 ||
+      pthread_rwlock_destroy(&kind_rwlock) != 0 ||
+      pthread_rwlockattr_destroy(&kind_attributes) != 0)
+    return 301;
   struct timespec invalid_rwlock_deadline = {0, 1000000000L};
   struct timespec expired_rwlock_deadline = {0, 0};
   if (pthread_rwlock_timedrdlock(&static_rwlock, &invalid_rwlock_deadline) != 0 ||
