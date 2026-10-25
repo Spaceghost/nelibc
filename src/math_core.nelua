@@ -408,6 +408,24 @@ local function atan2l(y: clongdouble, x: clongdouble): clongdouble
   return nelibc_atan2l_hw(y, x)
 end
 
+local function asinl(value: clongdouble): clongdouble <cexport, codename 'asinl'>
+  if is_nan80(value) then return value + value end
+  if value < -1_clongdouble or value > 1_clongdouble then
+    return sqrtl(-1_clongdouble)
+  end
+  local complement = sqrtl((1_clongdouble - value) * (1_clongdouble + value))
+  return atan2l(value, complement)
+end
+
+local function acosl(value: clongdouble): clongdouble <cexport, codename 'acosl'>
+  if is_nan80(value) then return value + value end
+  if value < -1_clongdouble or value > 1_clongdouble then
+    return sqrtl(-1_clongdouble)
+  end
+  local complement = sqrtl((1_clongdouble - value) * (1_clongdouble + value))
+  return atan2l(complement, value)
+end
+
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>
   local result = nelibc_ldexp_hw(value, exponent)
   local input_bits: DoubleBits = {value = value}

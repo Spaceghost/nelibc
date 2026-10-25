@@ -45,7 +45,7 @@ acosf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 acosh,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 acoshf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 acoshl,math.h,,,not-declared
-acosl,math.h,,,not-declared
+acosl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 addmntent,mntent.h,,,not-declared
 adjtime,sys/time.h,,,not-declared
 adjtimex,sys/timex.h,,,not-declared
@@ -66,7 +66,7 @@ asinf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 asinh,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 asinhf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 asinhl,math.h,,,not-declared
-asinl,math.h,,,not-declared
+asinl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 asprintf,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 at_quick_exit,stdlib.h,,,not-declared
 atan,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

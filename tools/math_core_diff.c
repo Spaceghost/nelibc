@@ -121,6 +121,8 @@ extern long double nelibc_hypotl(long double, long double);
 extern long double nelibc_nextafterl(long double, long double);
 extern long double nelibc_atanl(long double);
 extern long double nelibc_atan2l(long double, long double);
+extern long double nelibc_asinl(long double);
+extern long double nelibc_acosl(long double);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
 extern long double nelibc_sqrtl(long double);
@@ -1424,8 +1426,40 @@ int main(void) {
     }
   }
   if (!isnan(nelibc_atanl(quiet_nan.value)) ||
-      !isnan(nelibc_atan2l(quiet_nan.value, 1.0L))) {
+      !isnan(nelibc_atan2l(quiet_nan.value, 1.0L)) ||
+      !isnan(nelibc_asinl(quiet_nan.value)) ||
+      !isnan(nelibc_acosl(quiet_nan.value))) {
     fprintf(stderr, "long-double arctangent NaN propagation failed\n");
+    return 1;
+  }
+  for (size_t i = 0; i < sizeof(atan_values) / sizeof(atan_values[0]); ++i) {
+    long double expected_asin = asinl(atan_values[i]);
+    long double actual_asin = nelibc_asinl(atan_values[i]);
+    long double expected_acos = acosl(atan_values[i]);
+    long double actual_acos = nelibc_acosl(atan_values[i]);
+    if (!long_double_close(actual_asin, expected_asin) ||
+        !long_double_close(actual_acos, expected_acos) ||
+        (expected_asin == 0.0L && signbit(expected_asin) != signbit(actual_asin))) {
+      fprintf(stderr, "asinl/acosl edge mismatch value=%zu\n", i);
+      return 1;
+    }
+  }
+  for (size_t i = 0; i < 4096; ++i) {
+    long double value = (long double)((long long)((i * 71) % 2001) - 1000) / 1000.0L;
+    if (!long_double_close(nelibc_asinl(value), asinl(value)) ||
+        !long_double_close(nelibc_acosl(value), acosl(value))) {
+      fprintf(stderr, "asinl/acosl generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  errno = 0;
+  if (!isnan(nelibc_asinl(2.0L)) || errno != EDOM) {
+    fprintf(stderr, "asinl domain handling failed\n");
+    return 1;
+  }
+  errno = 0;
+  if (!isnan(nelibc_acosl(-2.0L)) || errno != EDOM) {
+    fprintf(stderr, "acosl domain handling failed\n");
     return 1;
   }
   const long double nextafter_minimum = nextafterl(0.0L, 1.0L);

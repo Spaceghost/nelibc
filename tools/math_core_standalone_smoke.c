@@ -34,6 +34,8 @@ int main(void) {
       !signbit(nextafterl(0.0L, -1.0L))) return 173;
   if (!(atanl(1.0L) > 0.785L && atanl(1.0L) < 0.786L) ||
       !(atan2l(1.0L, -1.0L) > 2.35L && atan2l(1.0L, -1.0L) < 2.36L)) return 174;
+  if (!(asinl(0.5L) > 0.523L && asinl(0.5L) < 0.524L) ||
+      !(acosl(-1.0L) > 3.14L && acosl(-1.0L) < 3.15L)) return 175;
   errno = 0;
   if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;
 
