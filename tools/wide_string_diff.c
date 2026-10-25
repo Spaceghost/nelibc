@@ -63,6 +63,13 @@ int main(void) {
         pointer_offset(left, wcschr(left, probe)), pointer_offset(left, wcsrchr(left, probe)),
         pointer_offset(left, wcspbrk(left, reject)), pointer_offset(left, wcsstr(left, needle)),
         pointer_offset(left, wcswcs(left, needle)));
+    wchar_t folded[WIDTH];
+    for (size_t i = 0; i <= left_length; ++i) {
+      wchar_t c = left[i];
+      folded[i] = c >= L'A' && c <= L'Z' ? c + (L'a' - L'A') : c;
+    }
+    printf("%d,%d,%d,", signum(wcscasecmp(left, right)),
+        signum(wcsncasecmp(left, right, bound)), signum(wcscasecmp(left, folded)));
 
     printf("%d,%td,", signum(wmemcmp(left, right, left_length < right_length ? left_length + 1 : right_length + 1)),
         pointer_offset(left, wmemchr(left, probe, left_length + 1)));

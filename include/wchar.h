@@ -24,6 +24,8 @@ size_t wcsnlen(const wchar_t *, size_t);
 wchar_t *wcsdup(const wchar_t *);
 int wcscmp(const wchar_t *, const wchar_t *);
 int wcsncmp(const wchar_t *, const wchar_t *, size_t);
+int wcscasecmp(const wchar_t *, const wchar_t *);
+int wcsncasecmp(const wchar_t *, const wchar_t *, size_t);
 wchar_t *wcschr(const wchar_t *, wchar_t);
 wchar_t *wcsrchr(const wchar_t *, wchar_t);
 wchar_t *wcscpy(wchar_t *restrict, const wchar_t *restrict);

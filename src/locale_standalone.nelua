@@ -1,6 +1,14 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
 
+-- The standalone locale backend currently supports the C locale and a small
+-- explicit locale set. Keep wide case conversion consistent with its C
+-- locale until Unicode locale tables are available.
+local function towlower(value: cwchar_t): cwchar_t <cexport, codename 'towlower'>
+  if value >= 65 and value <= 90 then return value + 32 end
+  return value
+end
+
 local function nelibc_standalone_setlocale(category: cint,
     name: *[0]cchar <const>): *[0]cchar <cimport> end
 

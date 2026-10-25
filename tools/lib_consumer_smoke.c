@@ -852,7 +852,10 @@ int main(int argc, char **argv) {
   if (wide_copy_end != wide_copy_endbuf + 4 || wcscmp(wide_copy_endbuf, L"copy") != 0 ||
       bounded_wide_end != bounded_wide_copy + 1 || bounded_wide_copy[0] != L'X' ||
       bounded_wide_copy[1] != 0 || bounded_wide_copy[2] != 0 ||
-      bounded_wide_copy[3] != 0 || wcswcs(wide_search, L"string") != wide_search + 5)
+      bounded_wide_copy[3] != 0 || wcswcs(wide_search, L"string") != wide_search + 5 ||
+      wcscasecmp(L"AbC", L"aBc") != 0 ||
+      wcsncasecmp(L"AbD", L"aBc", 2) != 0 ||
+      wcsncasecmp(L"AbD", L"aBc", 3) <= 0)
     return 76;
 #ifndef NELIBC_STANDALONE
   if (mbrlen_thread_isolation()) return 82;

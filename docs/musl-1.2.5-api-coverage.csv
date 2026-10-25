@@ -1406,7 +1406,7 @@ warnx,err.h,,,not-declared
 wcpcpy,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcpncpy,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcrtomb,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-wcscasecmp,wchar.h,,,not-declared
+wcscasecmp,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcscasecmp_l,wchar.h,,,not-declared
 wcscat,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcschr,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -1419,7 +1419,7 @@ wcsdup,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcsftime,wchar.h,,,not-declared
 wcsftime_l,wchar.h,,,not-declared
 wcslen,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-wcsncasecmp,wchar.h,,,not-declared
+wcsncasecmp,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcsncasecmp_l,wchar.h,,,not-declared
 wcsncat,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 wcsncmp,wchar.h,wchar.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
