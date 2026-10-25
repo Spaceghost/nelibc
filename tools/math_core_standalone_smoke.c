@@ -205,6 +205,10 @@ int main(void) {
   if (powl(16.0L, -4111.25L) != 0x1p-16445L || errno != 0) return 224;
   const long double wide_half_integer_base = 9.0L * 0x1p-2504L;
   if (powl(wide_half_integer_base, 1.5L) != 0x1.bp-3752L) return 229;
+  const long double arbitrary_fraction = powl(81.0L * 0x1p-2504L, 0.25L);
+  const long double arbitrary_fraction_expected = 3.0L * 0x1p-626L;
+  if (fabsl(arbitrary_fraction - arbitrary_fraction_expected) >
+      8.0L * LDBL_EPSILON * arbitrary_fraction_expected) return 230;
   const int powl_boundary_modes[] = {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
   const long double powl_boundary_exponents[] = {
       -8222.75L, -8222.25L,

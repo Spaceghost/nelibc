@@ -70,7 +70,7 @@ MATH_CORE_RENAMES := --redefine-sym fabs=nelibc_fabs --redefine-sym fabsf=nelibc
 	--redefine-sym asin=nelibc_asin --redefine-sym asinf=nelibc_asinf \
 	--redefine-sym acos=nelibc_acos --redefine-sym acosf=nelibc_acosf \
 	--redefine-sym fma=nelibc_fma --redefine-sym fmaf=nelibc_fmaf \
-	--redefine-sym fmal=nelibc_fmal \
+	--redefine-sym fmal=nelibc_fmal_public \
 	--redefine-sym erfl=nelibc_erfl --redefine-sym erfcl=nelibc_erfcl \
 	--redefine-sym exp10l=nelibc_exp10l --redefine-sym pow10l=nelibc_pow10l \
 	--redefine-sym __fpclassify=nelibc___fpclassify \

@@ -915,167 +915,6 @@ local function atanhl(value: clongdouble): clongdouble <cexport, codename 'atanh
 end
 
 -- Whether exponent * multiplier is an exact integer for a binary80 exponent.
-local function powl_scaled_exponent_is_integer(exponent: clongdouble, multiplier: cint): boolean <inline>
-  if multiplier == 0_cint then return true end
-  local bits: LongDoubleBits = {value = exponent}
-  local exponent_field = bits.parts.sign_exponent & 0x7fff_cushort
-  local binary_shift: cint
-  if exponent_field == 0_cushort then
-    binary_shift = -16445_cint
-  else
-    binary_shift = (@cint)(exponent_field) - 16446_cint
-  end
-  if binary_shift >= 0_cint then return true end
-
-  local trailing_zeroes: cint = 0_cint
-  local significand = bits.parts.significand
-  while (significand & 1_culonglong) == 0_culonglong and trailing_zeroes < 64_cint do
-    significand = significand >> 1
-    trailing_zeroes = trailing_zeroes + 1_cint
-  end
-  local multiplier_magnitude = multiplier
-  if multiplier_magnitude < 0_cint then multiplier_magnitude = -multiplier_magnitude end
-  local multiplier_bits = (@cuint)(multiplier_magnitude)
-  while (multiplier_bits & 1_cuint) == 0_cuint do
-    multiplier_bits = multiplier_bits >> 1
-    trailing_zeroes = trailing_zeroes + 1_cint
-  end
-  return trailing_zeroes >= -binary_shift
-end
-
-local function powl(value: clongdouble, exponent: clongdouble): clongdouble
-    <cexport, codename 'powl'>
-  if exponent == 0_clongdouble or value == 1_clongdouble then return 1_clongdouble end
-  if is_nan80(value) or is_nan80(exponent) then return value + exponent end
-  if exponent == 1_clongdouble then return value end
-  local absolute = value
-  if absolute < 0_clongdouble then absolute = -absolute end
-  local odd = is_odd_integer80(exponent)
-  if is_infinite80(exponent) then
-    if absolute == 1_clongdouble then return 1_clongdouble end
-    if (absolute > 1_clongdouble) == (exponent > 0_clongdouble) then
-      local infinity: LongDoubleBits = {
-        parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
-      }
-      return infinity.value
-    end
-    return 0_clongdouble
-  end
-  if is_infinite80(value) then
-    if exponent > 0_clongdouble then
-      local sign_exponent: cushort = 0x7fff_cushort
-      if value < 0_clongdouble and odd then sign_exponent = 0xffff_cushort end
-      local infinity: LongDoubleBits = {
-        parts = {significand = 0x8000000000000000_culonglong, sign_exponent = sign_exponent}
-      }
-      return infinity.value
-    end
-    if value < 0_clongdouble and odd then
-      local negative_zero: LongDoubleBits = {
-        parts = {significand = 0_culonglong, sign_exponent = 0x8000_cushort}
-      }
-      return negative_zero.value
-    end
-    return 0_clongdouble
-  end
-  if value == 0_clongdouble then
-    if exponent > 0_clongdouble then
-      if is_negative_zero80(value) and odd then return value end
-      return 0_clongdouble
-    end
-    math_range_error()
-    local sign_exponent: cushort = 0x7fff_cushort
-    if is_negative_zero80(value) and odd then sign_exponent = 0xffff_cushort end
-    local infinity: LongDoubleBits = {
-      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = sign_exponent}
-    }
-    return infinity.value
-  end
-  if value < 0_clongdouble and not is_integer80(exponent) then
-    math_domain_error()
-    return sqrtl(-1_clongdouble)
-  end
-
-  local saved_errno = nelibc_errno_location()[0]
-  local result: clongdouble
-  local exponent_magnitude = exponent
-  if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
-  -- Preserve exact powers of two, including fractional exponents whose product
-  -- with the base's binary exponent is integral.
-  if exponent_magnitude <= 32768_clongdouble then
-    local base_exponent = nelibc_ilogbl_hw(absolute)
-    local ignored_range_error: cint = 0_cint
-    local power_of_two = nelibc_ldexpl_hw(1_clongdouble, base_exponent, &ignored_range_error)
-    if power_of_two == absolute then
-      local scaled_exponent = exponent * (@clongdouble)(base_exponent)
-      if powl_scaled_exponent_is_integer(exponent, base_exponent) then
-        local result_exponent = (@clonglong)(scaled_exponent)
-        if result_exponent >= -16445_clonglong and result_exponent <= 16383_clonglong then
-          result = nelibc_ldexpl_hw(1_clongdouble, (@cint)(result_exponent), &ignored_range_error)
-          if value < 0_clongdouble and odd then result = -result end
-          return result
-        end
-      end
-      result = nelibc_exp2l_hw(scaled_exponent)
-      if value < 0_clongdouble and odd then result = -result end
-      local result_bits: LongDoubleBits = {value = result}
-      if is_infinite80(result) or scaled_exponent >= 16384_clongdouble then
-        math_range_error()
-        nelibc_math_raise_except(0x28_cint) -- FE_OVERFLOW | FE_INEXACT
-      elseif result == 0_clongdouble then
-        math_range_error()
-        nelibc_math_raise_except(0x30_cint) -- FE_UNDERFLOW | FE_INEXACT
-      elseif (result_bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort then
-        nelibc_math_raise_except(0x30_cint) -- FE_UNDERFLOW | FE_INEXACT
-      end
-      return result
-    end
-  end
-  if exponent_magnitude == 0.5_clongdouble then
-    result = sqrtl(absolute)
-    if exponent < 0_clongdouble then result = 1_clongdouble / result end
-  elseif exponent_magnitude == 1.5_clongdouble then
-    local root = sqrtl(absolute)
-    if exponent < 0_clongdouble then
-      result = (1_clongdouble / root) / absolute
-    else
-      result = absolute * root
-    end
-  elseif is_integer80(exponent) and exponent_magnitude <= 128_clongdouble then
-    local power: cuint = (@cuint)(exponent_magnitude)
-    local base = absolute
-    if exponent < 0_clongdouble then base = 1_clongdouble / base end
-    result = 1_clongdouble
-    while power ~= 0_cuint do
-      if (power & 1_cuint) ~= 0_cuint then result = result * base end
-      power = power >> 1
-      if power ~= 0_cuint then base = base * base end
-    end
-    if value < 0_clongdouble and odd then result = -result end
-  else
-    local logarithm = logl(absolute)
-    local scaled_exponent = exponent * logarithm
-    if is_infinite80(scaled_exponent) and
-        not is_infinite80(exponent) and not is_infinite80(logarithm) then
-      math_range_error()
-    end
-    result = expl(scaled_exponent)
-    if value < 0_clongdouble and odd then result = -result end
-  end
-
-  local result_bits: LongDoubleBits = {value = result}
-  if is_infinite80(result) and not is_infinite80(value) then
-    math_range_error()
-  elseif result == 0_clongdouble and value ~= 0_clongdouble then
-    math_range_error()
-  elseif (result_bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort and
-      result_bits.parts.significand ~= 0_culonglong then
-    -- Underflow to a nonzero subnormal does not set errno in glibc or musl.
-    nelibc_errno_location()[0] = saved_errno
-  end
-  return result
-end
-
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>
   local result = nelibc_ldexp_hw(value, exponent)
   local input_bits: DoubleBits = {value = value}
@@ -1463,8 +1302,8 @@ local function fma(x: cdouble, y: cdouble, z: cdouble): cdouble
   return scalbn(result, exponent)
 end
 
-local function fmal(x: clongdouble, y: clongdouble, z: clongdouble): clongdouble
-    <cexport, codename 'fmal'>
+local function nelibc_fmal(x: clongdouble, y: clongdouble, z: clongdouble): clongdouble
+    <cexport, codename 'nelibc_fmal'>
   local nx = fmal_normalize(x)
   local ny = fmal_normalize(y)
   local nz = fmal_normalize(z)
@@ -1604,6 +1443,193 @@ local function fmal(x: clongdouble, y: clongdouble, z: clongdouble): clongdouble
   return result.value
 end
 
+local function fmal(x: clongdouble, y: clongdouble, z: clongdouble): clongdouble
+    <cexport, codename 'fmal'>
+  return nelibc_fmal(x, y, z)
+end
+
+local function powl_scaled_exponent_is_integer(exponent: clongdouble, multiplier: cint): boolean <inline>
+  if multiplier == 0_cint then return true end
+  local bits: LongDoubleBits = {value = exponent}
+  local exponent_field = bits.parts.sign_exponent & 0x7fff_cushort
+  local binary_shift: cint
+  if exponent_field == 0_cushort then
+    binary_shift = -16445_cint
+  else
+    binary_shift = (@cint)(exponent_field) - 16446_cint
+  end
+  if binary_shift >= 0_cint then return true end
+
+  local trailing_zeroes: cint = 0_cint
+  local significand = bits.parts.significand
+  while (significand & 1_culonglong) == 0_culonglong and trailing_zeroes < 64_cint do
+    significand = significand >> 1
+    trailing_zeroes = trailing_zeroes + 1_cint
+  end
+  local multiplier_magnitude = multiplier
+  if multiplier_magnitude < 0_cint then multiplier_magnitude = -multiplier_magnitude end
+  local multiplier_bits = (@cuint)(multiplier_magnitude)
+  while (multiplier_bits & 1_cuint) == 0_cuint do
+    multiplier_bits = multiplier_bits >> 1
+    trailing_zeroes = trailing_zeroes + 1_cint
+  end
+  return trailing_zeroes >= -binary_shift
+end
+
+local function powl(value: clongdouble, exponent: clongdouble): clongdouble
+    <cexport, codename 'powl'>
+  if exponent == 0_clongdouble or value == 1_clongdouble then return 1_clongdouble end
+  if is_nan80(value) or is_nan80(exponent) then return value + exponent end
+  if exponent == 1_clongdouble then return value end
+  local absolute = value
+  if absolute < 0_clongdouble then absolute = -absolute end
+  local odd = is_odd_integer80(exponent)
+  if is_infinite80(exponent) then
+    if absolute == 1_clongdouble then return 1_clongdouble end
+    if (absolute > 1_clongdouble) == (exponent > 0_clongdouble) then
+      local infinity: LongDoubleBits = {
+        parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
+      }
+      return infinity.value
+    end
+    return 0_clongdouble
+  end
+  if is_infinite80(value) then
+    if exponent > 0_clongdouble then
+      local sign_exponent: cushort = 0x7fff_cushort
+      if value < 0_clongdouble and odd then sign_exponent = 0xffff_cushort end
+      local infinity: LongDoubleBits = {
+        parts = {significand = 0x8000000000000000_culonglong, sign_exponent = sign_exponent}
+      }
+      return infinity.value
+    end
+    if value < 0_clongdouble and odd then
+      local negative_zero: LongDoubleBits = {
+        parts = {significand = 0_culonglong, sign_exponent = 0x8000_cushort}
+      }
+      return negative_zero.value
+    end
+    return 0_clongdouble
+  end
+  if value == 0_clongdouble then
+    if exponent > 0_clongdouble then
+      if is_negative_zero80(value) and odd then return value end
+      return 0_clongdouble
+    end
+    math_range_error()
+    local sign_exponent: cushort = 0x7fff_cushort
+    if is_negative_zero80(value) and odd then sign_exponent = 0xffff_cushort end
+    local infinity: LongDoubleBits = {
+      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = sign_exponent}
+    }
+    return infinity.value
+  end
+  if value < 0_clongdouble and not is_integer80(exponent) then
+    math_domain_error()
+    return sqrtl(-1_clongdouble)
+  end
+
+  local saved_errno = nelibc_errno_location()[0]
+  local result: clongdouble
+  local exponent_magnitude = exponent
+  if exponent_magnitude < 0_clongdouble then exponent_magnitude = -exponent_magnitude end
+  -- Preserve exact powers of two, including fractional exponents whose product
+  -- with the base's binary exponent is integral.
+  if exponent_magnitude <= 32768_clongdouble then
+    local base_exponent = nelibc_ilogbl_hw(absolute)
+    local ignored_range_error: cint = 0_cint
+    local power_of_two = nelibc_ldexpl_hw(1_clongdouble, base_exponent, &ignored_range_error)
+    if power_of_two == absolute then
+      local scaled_exponent = exponent * (@clongdouble)(base_exponent)
+      if powl_scaled_exponent_is_integer(exponent, base_exponent) then
+        local result_exponent = (@clonglong)(scaled_exponent)
+        if result_exponent >= -16445_clonglong and result_exponent <= 16383_clonglong then
+          result = nelibc_ldexpl_hw(1_clongdouble, (@cint)(result_exponent), &ignored_range_error)
+          if value < 0_clongdouble and odd then result = -result end
+          return result
+        end
+      end
+      result = nelibc_exp2l_hw(scaled_exponent)
+      if value < 0_clongdouble and odd then result = -result end
+      local result_bits: LongDoubleBits = {value = result}
+      if is_infinite80(result) or scaled_exponent >= 16384_clongdouble then
+        math_range_error()
+        nelibc_math_raise_except(0x28_cint) -- FE_OVERFLOW | FE_INEXACT
+      elseif result == 0_clongdouble then
+        math_range_error()
+        nelibc_math_raise_except(0x30_cint) -- FE_UNDERFLOW | FE_INEXACT
+      elseif (result_bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort then
+        nelibc_math_raise_except(0x30_cint) -- FE_UNDERFLOW | FE_INEXACT
+      end
+      return result
+    end
+  end
+  if exponent_magnitude == 0.5_clongdouble then
+    result = sqrtl(absolute)
+    if exponent < 0_clongdouble then result = 1_clongdouble / result end
+  elseif exponent_magnitude == 1.5_clongdouble then
+    local root = sqrtl(absolute)
+    if exponent < 0_clongdouble then
+      result = (1_clongdouble / root) / absolute
+    else
+      result = absolute * root
+    end
+  elseif exponent_magnitude <= 16_clongdouble and not is_integer80(exponent) then
+    -- Split the base into a binary exponent and a [1, 2) mantissa. Keeping
+    -- the mantissa logarithm small avoids magnifying logl's absolute error
+    -- when the original base is near the ends of the binary80 range.
+    local base_exponent: cint = 0_cint
+    local mantissa = nelibc_frexpl_hw(absolute, &base_exponent) * 2_clongdouble
+    base_exponent = base_exponent - 1_cint
+    local scaled_exponent = exponent * (@clongdouble)(base_exponent)
+    if scaled_exponent >= -20000_clongdouble and scaled_exponent <= 20000_clongdouble then
+      local scaled_error = nelibc_fmal(exponent, (@clongdouble)(base_exponent), -scaled_exponent)
+      local integral_exponent = truncl(scaled_exponent)
+      local fractional_exponent = scaled_exponent - integral_exponent + scaled_error
+      local mantissa_power = exp2l(exponent * log2l(mantissa))
+      local fractional_power = exp2l(fractional_exponent)
+      result = ldexpl(mantissa_power * fractional_power, (@cint)(integral_exponent))
+      if value < 0_clongdouble and odd then result = -result end
+    else
+      local logarithm = logl(absolute)
+      result = expl(exponent * logarithm)
+      if value < 0_clongdouble and odd then result = -result end
+    end
+  elseif is_integer80(exponent) and exponent_magnitude <= 128_clongdouble then
+    local power: cuint = (@cuint)(exponent_magnitude)
+    local base = absolute
+    if exponent < 0_clongdouble then base = 1_clongdouble / base end
+    result = 1_clongdouble
+    while power ~= 0_cuint do
+      if (power & 1_cuint) ~= 0_cuint then result = result * base end
+      power = power >> 1
+      if power ~= 0_cuint then base = base * base end
+    end
+    if value < 0_clongdouble and odd then result = -result end
+  else
+    local logarithm = logl(absolute)
+    local scaled_exponent = exponent * logarithm
+    if is_infinite80(scaled_exponent) and
+        not is_infinite80(exponent) and not is_infinite80(logarithm) then
+      math_range_error()
+    end
+    result = expl(scaled_exponent)
+    if value < 0_clongdouble and odd then result = -result end
+  end
+
+  local result_bits: LongDoubleBits = {value = result}
+  if is_infinite80(result) and not is_infinite80(value) then
+    math_range_error()
+  elseif result == 0_clongdouble and value ~= 0_clongdouble then
+    math_range_error()
+  elseif (result_bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort and
+      result_bits.parts.significand ~= 0_culonglong then
+    -- Underflow to a nonzero subnormal does not set errno in glibc or musl.
+    nelibc_errno_location()[0] = saved_errno
+  end
+  return result
+end
+
 local function exp10l(value: clongdouble): clongdouble <cexport, codename 'exp10l'>
   -- Near the binary80 underflow boundary, powl's log/exp path loses too much
   -- accuracy in the exponent. Use a split log2(10) and exp2l's exact binary
@@ -1620,8 +1646,8 @@ local function exp10l(value: clongdouble): clongdouble <cexport, codename 'exp10
     local log2_10_high = log2_10_high_bits.value
     local log2_10_low = log2_10_low_bits.value
     local product_high = value * log2_10_high
-    local product_error = fmal(value, log2_10_high, -product_high)
-    local low_correction = fmal(value, log2_10_low, product_error)
+    local product_error = nelibc_fmal(value, log2_10_high, -product_high)
+    local low_correction = nelibc_fmal(value, log2_10_low, product_error)
     local scale = truncl(product_high)
     local fraction = (product_high - scale) + low_correction
     return ldexpl(exp2l(fraction), (@cint)(scale))

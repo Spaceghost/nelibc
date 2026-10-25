@@ -311,10 +311,15 @@ musl export set.
   rounding, and values immediately around `LDBL_MIN`; standalone coverage runs
   under Zig, GCC, and TinyCC. Wide-exponent random differential cases also
   cover powers of arbitrary binary80 mantissas. Those checks exposed loss of
-  accuracy in large-base `powl(x, +/-1.5)`; a square-root decomposition now
-  keeps that path within the existing differential tolerance. Other general
-  noninteger exponents still use `exp(y * log(x))` and need broader accuracy
-  work. It sets `EDOM` for negative square root and
+  accuracy for large binary exponents. Half-integer powers use a square-root
+  decomposition; other noninteger exponents up to magnitude 16 split the base
+  into a small mantissa logarithm and a compensated binary exponent before
+  scaling. Wider exponents still use `exp(y * log(x))` and need more accuracy
+  work. The glibc differential profile checks wide fractional powers under all
+  four rounding modes. Musl's `powl` reference differs by hundreds of ULP in
+  some directed-rounding cases, so its wide-range comparison allows up to 1024
+  ULP there; ordinary and nearest-mode comparisons keep the tighter tolerance.
+  It sets `EDOM` for negative square root and
   invalid remainder domains. Standalone x86-64 implements `feclearexcept`,
   `fegetexceptflag`, `feraiseexcept`, `fesetexceptflag`, `fetestexcept`,
   `fegetround`, `fesetround`, `fegetenv`, `feholdexcept`, `fesetenv`, and

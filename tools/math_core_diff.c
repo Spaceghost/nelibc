@@ -1871,6 +1871,53 @@ int main(void) {
       return 1;
     }
   }
+  for (size_t i = 0; i < 1024; ++i) {
+    const long double mantissa = 1.0L +
+        (long double)(next_bits() >> 1) * 0x1p-63L;
+    const int binary_exponent = (int)(next_bits() % 12001) - 6000;
+    const long double base = ldexpl(mantissa, binary_exponent);
+    long double exponent = 0.25L +
+        (long double)(next_bits() >> 1) * 0x1p-63L * 1.25L;
+    if (next_bits() & 1) exponent = -exponent;
+    const long double expected = powl(base, exponent);
+    const long double actual = nelibc_powl(base, exponent);
+    if (!long_double_math_close(actual, expected)) {
+      fprintf(stderr, "powl arbitrary-fraction mismatch i=%zu base=%La exponent=%La actual=%La expected=%La\n",
+              i, base, exponent, actual, expected);
+      return 1;
+    }
+  }
+  const int wide_powl_rounding_modes[] = {
+      FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO};
+  for (size_t mode = 0;
+       mode < sizeof wide_powl_rounding_modes / sizeof wide_powl_rounding_modes[0];
+       ++mode) {
+    if (fesetround(wide_powl_rounding_modes[mode]) != 0) return 1;
+    for (size_t i = 0; i < 64; ++i) {
+      const long double mantissa = 1.0L +
+          (long double)(next_bits() >> 1) * 0x1p-63L;
+      const int binary_exponent = (int)(next_bits() % 12001) - 6000;
+      const long double base = ldexpl(mantissa, binary_exponent);
+      long double exponent = 0.25L +
+          (long double)(next_bits() >> 1) * 0x1p-63L * 1.25L;
+      if (next_bits() & 1) exponent = -exponent;
+      const long double expected = powl(base, exponent);
+      const long double actual = nelibc_powl(base, exponent);
+#ifdef NELIBC_MUSL_PROFILE
+      /* musl powl can differ from glibc by hundreds of ULP in this range. */
+      const int wide_powl_matches =
+          fabsl(actual - expected) <= 1024.0L * LDBL_EPSILON * fabsl(expected);
+#else
+      const int wide_powl_matches = long_double_math_close(actual, expected);
+#endif
+      if (!wide_powl_matches) {
+        fprintf(stderr, "powl wide rounding mismatch mode=%zu i=%zu base=%La exponent=%La actual=%La expected=%La\n",
+                mode, i, base, exponent, actual, expected);
+        return 1;
+      }
+    }
+  }
+  if (fesetround(FE_TONEAREST) != 0) return 1;
   const long double exp10l_values[] = {
       -INFINITY, -5000.0L, -100.0L, -1.0L, -0.0L,
       0.0L, 1.0L, 10.0L, 100.0L, -4930.0L, -4940.0L,
