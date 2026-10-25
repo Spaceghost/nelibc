@@ -1,10 +1,10 @@
 # Third party notices
 
-## Unicode Character Database width properties
+## Unicode Character Database width and case properties
 
-`src/locale_standalone.nelua` contains generated character-width ranges derived
-from Unicode Character Database 16.0.0, including Python's Unicode properties
-and `DerivedCoreProperties-16.0.0.txt`. The generator is
+`src/locale_standalone.nelua` contains generated character-width ranges and
+simple case mappings derived from Unicode Character Database 16.0.0, including
+Python's Unicode properties and `DerivedCoreProperties-16.0.0.txt`. The generator is
 `tools/gen_wcwidth_data.py`. Unicode UCD 16 files are Copyright © 2024 Unicode,
 Inc. Unicode License V3 is Copyright © 1991-2026 Unicode, Inc.; the applicable
 permission notice is:

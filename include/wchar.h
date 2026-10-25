@@ -54,6 +54,8 @@ int mbsinit(const mbstate_t *);
 size_t wcrtomb(char *restrict, wchar_t, mbstate_t *restrict);
 wint_t btowc(int);
 int wctob(wint_t);
+wint_t towlower(wint_t);
+wint_t towupper(wint_t);
 size_t mbstowcs(wchar_t *restrict, const char *restrict, size_t);
 size_t wcstombs(char *restrict, const wchar_t *restrict, size_t);
 size_t mbsrtowcs(wchar_t *restrict, const char **restrict, size_t,

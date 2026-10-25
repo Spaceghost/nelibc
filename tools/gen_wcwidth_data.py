@@ -59,6 +59,42 @@ def nelua_array(name: str, ranges: list[tuple[int, int]]) -> str:
     return f"local {name}: [{len(ranges) * 2}]cuint = {{\n{values}\n}}\n"
 
 
+def simple_case_pairs(method: str) -> list[tuple[int, int]]:
+    pairs = []
+    for codepoint in range(0x110000):
+        mapped = getattr(chr(codepoint), method)()
+        if len(mapped) == 1 and ord(mapped) != codepoint:
+            pairs.append((codepoint, ord(mapped)))
+    # Python exposes full casing. These entries preserve UnicodeData.txt's
+    # simple mappings where full casing expands to multiple codepoints.
+    overrides = {
+        "lower": {0x0130: 0x0069},
+        "upper": {
+            0x1F80: 0x1F88, 0x1F81: 0x1F89, 0x1F82: 0x1F8A,
+            0x1F83: 0x1F8B, 0x1F84: 0x1F8C, 0x1F85: 0x1F8D,
+            0x1F86: 0x1F8E, 0x1F87: 0x1F8F, 0x1F90: 0x1F98,
+            0x1F91: 0x1F99, 0x1F92: 0x1F9A, 0x1F93: 0x1F9B,
+            0x1F94: 0x1F9C, 0x1F95: 0x1F9D, 0x1F96: 0x1F9E,
+            0x1F97: 0x1F9F, 0x1FA0: 0x1FA8, 0x1FA1: 0x1FA9,
+            0x1FA2: 0x1FAA, 0x1FA3: 0x1FAB, 0x1FA4: 0x1FAC,
+            0x1FA5: 0x1FAD, 0x1FA6: 0x1FAE, 0x1FA7: 0x1FAF,
+            0x1FB3: 0x1FBC, 0x1FC3: 0x1FCC, 0x1FF3: 0x1FFC,
+        },
+    }[method]
+    pairs = [(key, value) for key, value in pairs if key not in overrides]
+    pairs.extend(overrides.items())
+    pairs.sort()
+    return pairs
+
+
+def nelua_pairs(name: str, pairs: list[tuple[int, int]]) -> str:
+    values = [f"0x{part:x}" for pair in pairs for part in pair]
+    lines = []
+    for offset in range(0, len(values), 8):
+        lines.append("  " + ", ".join(values[offset:offset + 8]) + ",")
+    return f"local {name}: [{len(pairs) * 2}]cuint = {{\n" + "\n".join(lines) + "\n}\n"
+
+
 def render() -> str:
     if unicodedata.unidata_version != VERSION:
         raise SystemExit(
@@ -87,12 +123,16 @@ def render() -> str:
         lambda cp: unicodedata.east_asian_width(chr(cp)) in ("W", "F")
         and unicodedata.category(chr(cp)) not in ("Cc", "Cs", "Cn", "Zl", "Zp")
     )
+    lower_pairs = simple_case_pairs("lower")
+    upper_pairs = simple_case_pairs("upper")
 
     body = [
         f"-- Generated from Unicode Character Database {VERSION}; see THIRD_PARTY_NOTICES.md.",
         nelua_array("wcwidth_zero_ranges", zero_ranges),
         nelua_array("wcwidth_wide_ranges", wide_ranges),
         nelua_array("wcwidth_nonprint_ranges", nonprint_ranges),
+        nelua_pairs("wcase_lower_pairs", lower_pairs),
+        nelua_pairs("wcase_upper_pairs", upper_pairs),
         """local function wcwidth_in_ranges(value: cuint, ranges: *[0]cuint,
     count: csize): boolean <inline>
   local low: csize = 0
@@ -112,7 +152,47 @@ def render() -> str:
   return false
 end
 
-local function wcwidth(value: cwchar_t): cint <cexport, codename 'wcwidth'>
+local function wcase_map(value: cwchar_t, pairs: *[0]cuint,
+    count: csize): cwchar_t <inline>
+  local low: csize = 0
+  local high: csize = count
+  local codepoint = (@cuint)(value)
+  while low < high do
+    local middle: csize = low + (high - low) // 2
+    local key = pairs[middle * 2]
+    if codepoint < key then
+      high = middle
+    elseif codepoint > key then
+      low = middle + 1
+    else
+      return (@cwchar_t)(pairs[middle * 2 + 1])
+    end
+  end
+  return value
+end
+
+local function towlower(value: cwchar_t): cwchar_t <cexport, codename 'towlower'>
+  if value < 0 or value > 0x10ffff or (value >= 0xd800 and value <= 0xdfff) then
+    return value
+  end
+  if nelibc_multibyte_mode() == 0 then
+    if value >= 65 and value <= 90 then return value + 32 end
+    return value
+  end
+  return wcase_map(value, &wcase_lower_pairs[0], #wcase_lower_pairs // 2)
+end
+
+local function towupper(value: cwchar_t): cwchar_t <cexport, codename 'towupper'>
+  if value < 0 or value > 0x10ffff or (value >= 0xd800 and value <= 0xdfff) then
+    return value
+  end
+  if nelibc_multibyte_mode() == 0 then
+    if value >= 97 and value <= 122 then return value - 32 end
+    return value
+  end
+  return wcase_map(value, &wcase_upper_pairs[0], #wcase_upper_pairs // 2)
+end""",
+        """local function wcwidth(value: cwchar_t): cint <cexport, codename 'wcwidth'>
   if value == 0 then return 0 end
   if value < 0 or value > 0x10ffff or (value >= 0xd800 and value <= 0xdfff) then
     return -1

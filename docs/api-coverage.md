@@ -74,10 +74,12 @@ APIs (32). The pthread rows without Nelibc declarations are two private musl
 cleanup helper symbols. This is a breadth comparison, not a behavioral
 conformance score.
 
-Standalone `wcwidth` uses Unicode 16.0.0 data for the supported `C` and
-`C.UTF-8` locales. Run `make check-wcwidth-data` to verify the generated
-Nelua tables; `python3 tools/gen_wcwidth_data.py` regenerates them when Python
-provides the matching Unicode database version.
+Standalone `wcwidth`, `towlower`, and `towupper` use generated Unicode 16.0.0
+data for the supported `C` and `C.UTF-8` locales. Run
+`make check-wcwidth-data` to verify the generated Nelua tables and case maps;
+`python3 tools/gen_wcwidth_data.py` regenerates them when Python provides the
+matching Unicode database version. Case conversion uses simple one-codepoint
+mappings; locale-specific tailoring and wide classification APIs remain gaps.
 
 `scalb` and `scalbf` scale by integral exponents and report invalid fractional
 exponents; `significand` and `significandf` normalize finite nonzero inputs so

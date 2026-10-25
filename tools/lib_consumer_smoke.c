@@ -866,6 +866,12 @@ int main(int argc, char **argv) {
   if (locale_smoke_result != 0) return 84 + locale_smoke_result;
   if (setlocale(LC_CTYPE, "C.UTF-8") == NULL) return 34;
   if (btowc(0xc3) != WEOF || wctob(0xe9) != -1) return 76;
+  if (towlower(0x391) != 0x3b1 || towupper(0x3b1) != 0x391 ||
+      towlower(0x410) != 0x430 || towupper(0x430) != 0x410 ||
+      towlower(0x10400) != 0x10428 || towupper(0x10428) != 0x10400 ||
+      towlower(0x1f80) != 0x1f80 || towupper(0x1f80) != 0x1f88 ||
+      towlower(WEOF) != WEOF || towupper(WEOF) != WEOF)
+    return 78;
   const wchar_t width_text[] = {L'A', 0x301, 0x4e00, 0};
   if (wcwidth(L'A') != 1 || wcwidth(0x301) != 0 || wcwidth(0x4e00) != 2 ||
       wcswidth(width_text, 3) != 3 || wcswidth(width_text, 2) != 1 ||
@@ -960,7 +966,9 @@ int main(int argc, char **argv) {
     return 73;
   if (setlocale(LC_CTYPE, "C") == NULL || mbtowc(&unicode_character, utf8_text, 2) != -1 ||
       wcwidth(0x4e00) != -1 || wcwidth(L'A') != 1 ||
-      wcswidth(width_text, 3) != -1)
+      wcswidth(width_text, 3) != -1 || towlower(L'A') != L'a' ||
+      towupper(L'a') != L'A' || towlower(0x391) != 0x391 ||
+      towupper(0x3b1) != 0x3b1)
     return 35;
 #endif
   if (system(NULL) == 0) return 10;
