@@ -3150,6 +3150,21 @@ local function nelibc_cabsl_parts(x: clongdouble, y: clongdouble): clongdouble
   return hypotl(x, y)
 end
 
+local function nelibc_conjf_imaginary(value: cfloat): cfloat
+    <cexport, codename 'nelibc_conjf_imaginary'>
+  return -value
+end
+
+local function nelibc_conj_imaginary(value: cdouble): cdouble
+    <cexport, codename 'nelibc_conj_imaginary'>
+  return -value
+end
+
+local function nelibc_conjl_imaginary(value: clongdouble): clongdouble
+    <cexport, codename 'nelibc_conjl_imaginary'>
+  return -value
+end
+
 -- Advance one encoding in the 80-bit extended-precision value ordering.
 local function nextafterl(x: clongdouble, y: clongdouble): clongdouble
     <cexport, codename 'nextafterl'>
