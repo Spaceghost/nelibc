@@ -216,6 +216,7 @@ end
 local function nelibc_sqrt_hw(value: cdouble): cdouble <cimport> end
 local function nelibc_sqrtf_hw(value: cfloat): cfloat <cimport> end
 local function nelibc_sqrtl_hw(value: clongdouble): clongdouble <cimport> end
+local function nelibc_atan2l_hw(y: clongdouble, x: clongdouble): clongdouble <cimport> end
 local function nelibc_frexpl_hw(value: clongdouble, exponent: *[0]cint): clongdouble <cimport> end
 local function nelibc_modfl_hw(value: clongdouble, integral: *[0]clongdouble): clongdouble <cimport> end
 local function nelibc_ilogbl_hw(value: clongdouble): cint <cimport> end
@@ -396,6 +397,15 @@ end
 
 local function llroundl(value: clongdouble): clonglong <cexport, codename 'llroundl'>
   return nelibc_lroundl_hw(value)
+end
+
+local function atanl(value: clongdouble): clongdouble <cexport, codename 'atanl'>
+  return nelibc_atan2l_hw(value, 1_clongdouble)
+end
+
+local function atan2l(y: clongdouble, x: clongdouble): clongdouble
+    <cexport, codename 'atan2l'>
+  return nelibc_atan2l_hw(y, x)
 end
 
 local function ldexp(value: cdouble, exponent: cint): cdouble <cexport, codename 'ldexp'>

@@ -119,6 +119,8 @@ extern float nelibc_hypotf(float, float);
 extern double nelibc_hypot(double, double);
 extern long double nelibc_hypotl(long double, long double);
 extern long double nelibc_nextafterl(long double, long double);
+extern long double nelibc_atanl(long double);
+extern long double nelibc_atan2l(long double, long double);
 extern float nelibc_sqrtf(float);
 extern double nelibc_sqrt(double);
 extern long double nelibc_sqrtl(long double);
@@ -1337,6 +1339,13 @@ static int check_erf(double x, float xf) {
   return 0;
 }
 
+static int long_double_close(long double actual, long double expected) {
+  if (actual == expected) return 1;
+  if (isnan(expected)) return isnan(actual);
+  if (!isfinite(expected) || !isfinite(actual) || expected == 0.0L) return 0;
+  return fabsl(actual - expected) <= 8.0L * LDBL_EPSILON * fabsl(expected);
+}
+
 int main(void) {
 
   const long double hypot_values[] = {
@@ -1381,6 +1390,42 @@ int main(void) {
   long double signaling_hypot = nelibc_hypotl(signaling_nan.value, 1.0L);
   if (!isnan(signaling_hypot)) {
     fprintf(stderr, "hypotl signaling NaN propagation failed\n");
+    return 1;
+  }
+  const long double atan_values[] = {
+      -INFINITY, -LDBL_MAX, -1.0L, -LDBL_MIN, -0.0L,
+      0.0L, LDBL_MIN, 1.0L, LDBL_MAX, INFINITY};
+  for (size_t i = 0; i < sizeof(atan_values) / sizeof(atan_values[0]); ++i) {
+    long double expected_atan = atanl(atan_values[i]);
+    long double actual_atan = nelibc_atanl(atan_values[i]);
+    if (!long_double_close(actual_atan, expected_atan) ||
+        (expected_atan == 0.0L && signbit(expected_atan) != signbit(actual_atan))) {
+      fprintf(stderr, "atanl mismatch value=%zu: %.21La != %.21La\n",
+        i, actual_atan, expected_atan);
+      return 1;
+    }
+    for (size_t j = 0; j < sizeof(atan_values) / sizeof(atan_values[0]); ++j) {
+      long double expected_atan2 = atan2l(atan_values[i], atan_values[j]);
+      long double actual_atan2 = nelibc_atan2l(atan_values[i], atan_values[j]);
+      if (!long_double_close(actual_atan2, expected_atan2) ||
+          (expected_atan2 == 0.0L && signbit(expected_atan2) != signbit(actual_atan2))) {
+        fprintf(stderr, "atan2l mismatch values=%zu/%zu\n", i, j);
+        return 1;
+      }
+    }
+  }
+  for (size_t i = 0; i < 4096; ++i) {
+    long double y = (long double)((long long)((i * 97) % 2001) - 1000) / 37.0L;
+    long double x = (long double)((long long)((i * 53) % 2003) - 1001) / 43.0L;
+    if (!long_double_close(nelibc_atanl(y), atanl(y)) ||
+        !long_double_close(nelibc_atan2l(y, x), atan2l(y, x))) {
+      fprintf(stderr, "long-double arctangent generated-input mismatch i=%zu\n", i);
+      return 1;
+    }
+  }
+  if (!isnan(nelibc_atanl(quiet_nan.value)) ||
+      !isnan(nelibc_atan2l(quiet_nan.value, 1.0L))) {
+    fprintf(stderr, "long-double arctangent NaN propagation failed\n");
     return 1;
   }
   const long double nextafter_minimum = nextafterl(0.0L, 1.0L);

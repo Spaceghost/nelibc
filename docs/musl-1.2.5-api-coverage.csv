@@ -72,12 +72,12 @@ at_quick_exit,stdlib.h,,,not-declared
 atan,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 atan2,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 atan2f,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-atan2l,math.h,,,not-declared
+atan2l,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 atanf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 atanh,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 atanhf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 atanhl,math.h,,,not-declared
-atanl,math.h,,,not-declared
+atanl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 atexit,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;tcc_glibc,implemented
 atof,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 atoi,stdlib.h,nelibc_stdlib.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

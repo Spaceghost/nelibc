@@ -138,6 +138,8 @@ float hypotf(float x, float y);
 double hypot(double x, double y);
 long double hypotl(long double x, long double y);
 long double nextafterl(long double x, long double y);
+long double atanl(long double value);
+long double atan2l(long double y, long double x);
 float sqrtf(float value);
 double sqrt(double value);
 long double sqrtl(long double value);

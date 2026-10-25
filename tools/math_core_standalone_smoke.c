@@ -32,6 +32,8 @@ int main(void) {
   if (hypotl(3.0L, 4.0L) != 5.0L || hypotl(0.0L, -0.0L) != 0.0L) return 171;
   if (!(nextafterl(1.0L, 2.0L) > 1.0L) ||
       !signbit(nextafterl(0.0L, -1.0L))) return 173;
+  if (!(atanl(1.0L) > 0.785L && atanl(1.0L) < 0.786L) ||
+      !(atan2l(1.0L, -1.0L) > 2.35L && atan2l(1.0L, -1.0L) < 2.36L)) return 174;
   errno = 0;
   if (!isinf(hypotl(LDBL_MAX, LDBL_MAX)) || errno != ERANGE) return 172;
 

@@ -21,6 +21,17 @@ nelibc_sqrtl_hw:
   ret
 .size nelibc_sqrtl_hw, .-nelibc_sqrtl_hw
 
+/* SysV x86-64 long-double arguments are stack-passed: y at +8, x at +24.
+   FPATAN computes atan2(y, x), including signed-zero and infinity quadrants. */
+.globl nelibc_atan2l_hw
+.type nelibc_atan2l_hw,@function
+nelibc_atan2l_hw:
+  fldt 8(%rsp)
+  fldt 24(%rsp)
+  fpatan
+  ret
+.size nelibc_atan2l_hw, .-nelibc_atan2l_hw
+
 /* FXTRACT returns the significand in ST(0) and the exponent in ST(1). */
 .globl nelibc_frexpl_hw
 .type nelibc_frexpl_hw,@function

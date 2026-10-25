@@ -60,7 +60,7 @@ The current Nelua math slice exports binary32 and binary64 forms of `fabs`,
 `scalbln`, `pow`, `atan`, `atan2`, `asinh`, `acosh`, `atanh`, `ilogb`,
 `logb`, `nextafter`, and `nexttoward`.
 On x86-64, `fabsl`, `copysignl`, `sqrtl`, `fmodl`, `remainderl`, `frexpl`,
-`modfl`, `hypotl`, `nextafterl`, `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`,
+`modfl`, `hypotl`, `nextafterl`, `atanl`, `atan2l`, `ilogbl`, `logbl`, `ldexpl`, `scalbnl`, `scalblnl`, `truncl`,
 `floorl`, `ceill`, `rintl`, `nearbyintl`, `roundl`, `lrintl`, `llrintl`,
 `lroundl`, and `llroundl`
 operate directly on the extended precision
