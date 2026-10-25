@@ -124,6 +124,16 @@ against the default. This extension follows the behavior documented by the
 Nelibc reports `_SC_PRIORITY_SCHEDULING` and
 `_SC_THREAD_PRIORITY_SCHEDULING` as unsupported because it does not implement
 the full POSIX scheduling options, including priority-aware rwlock admission.
+The rwlock currently stores only a count of waiting writers; it does not retain
+waiter policies or priorities. POSIX requires `SCHED_FIFO`, `SCHED_RR`, and
+`SCHED_SPORADIC` waiters to acquire in priority order, with writers taking
+precedence over readers at equal priority. Implementing this correctly needs
+priority-aware admission for readers, priority ordering when writers compete,
+and removal of timed-out or canceled waiters without leaving stale priority
+state. The GNU nonrecursive writer-preference attribute is a separate policy
+and does not provide these scheduling guarantees. Keep the sysconf options
+unsupported until these behaviors and their cancellation, timeout, and
+process-shared cases have dedicated tests.
 The standalone priority-ceiling attributes and mutex get/set operations are
 implemented. `PTHREAD_PRIO_PROTECT` raises and restores scheduler priority for
 held protected mutexes; on Linux, a `SCHED_OTHER` thread cannot acquire a
