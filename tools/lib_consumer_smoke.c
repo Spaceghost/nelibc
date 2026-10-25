@@ -21,6 +21,7 @@
 #include <wctype.h>
 #include <semaphore.h>
 #include <sys/stat.h>
+#include <utime.h>
 #include "nelibc_alloc.h"
 #ifdef NELIBC_STANDALONE
 #include <pthread.h>
@@ -535,6 +536,26 @@ static int lutimes_probe(void) {
   return unlink(linkpath) == 0 && unlink(target) == 0 ? 0 : 5;
 }
 
+static int utime_probe(void) {
+  char path[] = "/tmp/nelibc-utime-XXXXXX";
+  int descriptor = mkstemp(path);
+  if (descriptor < 0 || close(descriptor) != 0) return 1;
+  struct utimbuf timestamps = {.actime = 1000000010, .modtime = 1000000011};
+  struct stat status;
+  if (utime(path, &timestamps) != 0 || stat(path, &status) != 0 ||
+      status.st_atim.tv_sec != 1000000010 || status.st_atim.tv_nsec != 0 ||
+      status.st_mtim.tv_sec != 1000000011 || status.st_mtim.tv_nsec != 0) {
+    unlink(path);
+    return 2;
+  }
+  if (utime(path, NULL) != 0 || stat(path, &status) != 0 ||
+      status.st_atim.tv_sec <= 0 || status.st_mtim.tv_sec <= 0) {
+    unlink(path);
+    return 3;
+  }
+  return unlink(path) == 0 ? 0 : 4;
+}
+
 static int semaphore_clock_probe(void) {
   sem_t semaphore;
   if (sem_init(&semaphore, 0, 1) != 0) return 1;
@@ -1004,6 +1025,8 @@ int main(int argc, char **argv) {
   if (futimesat_result != 0) return 610 + futimesat_result;
   int lutimes_result = lutimes_probe();
   if (lutimes_result != 0) return 620 + lutimes_result;
+  int utime_result = utime_probe();
+  if (utime_result != 0) return 630 + utime_result;
   char cwd_buffer[4096];
   if (getcwd(cwd_buffer, sizeof cwd_buffer) == NULL) return 20;
   char *allocated_cwd = get_current_dir_name();

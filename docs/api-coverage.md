@@ -150,6 +150,11 @@ and invalid directory descriptors.
 Consumer checks compare link and target timestamps to ensure the target remains
 unchanged, and cover invalid microseconds and `NULL`.
 
+`utime` provides the seconds-resolution `struct utimbuf` interface through
+`utimensat`, preserving exact seconds and zero nanoseconds. Consumer checks
+cover supplied timestamps and `NULL` for current time in hybrid and standalone
+profiles.
+
 POSIX `pselect` uses Linux `pselect6` with its kernel signal-mask descriptor.
 It applies the same reserved-signal filtering and timeout copy as `ppoll`.
 The consumer matrix checks readiness, signal-mask use, and unchanged timeout

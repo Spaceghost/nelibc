@@ -1367,7 +1367,7 @@ updwtmp,utmp.h,,,not-declared
 updwtmpx,utmpx.h,,,not-declared
 uselocale,locale.h,locale.h,,host-delegated
 usleep,unistd.h,nelibc_syscall.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-utime,utime.h,,,not-declared
+utime,utime.h,utime.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 utimensat,sys/stat.h,sys/stat.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 utimes,sys/time.h,sys/time.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 utmpname,utmp.h,,,not-declared

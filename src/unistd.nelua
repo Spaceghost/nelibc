@@ -528,6 +528,7 @@ end
 
 local Timespec: type = @record{tv_sec: clong, tv_nsec: clong}
 local Timeval: type = @record{tv_sec: clong, tv_usec: clong}
+local Utimbuf: type = @record{actime: clong, modtime: clong}
 local Sigset: type = @record{bits: [16]culong}
 local PselectSigmask: type = @record{mask: pointer, size: csize}
 
@@ -4421,6 +4422,18 @@ local function timeval_to_timespec(timestamps: *Timeval <const>, converted: *[2]
     converted[index].tv_sec = timeval_array[index].tv_sec
   end
   return 0_cint
+end
+
+-- POSIX seconds-resolution timestamp update.
+local function utime(pathname: *[0]cchar <const>, timestamps: *Utimbuf <const>): cint
+    <cexport, codename 'utime'>
+  if timestamps == nilptr then return utimensat(-100_cint, pathname, nilptr, 0_cint) end
+  local utimbuf = (@*Utimbuf)(timestamps)
+  local converted: [2]Timespec = {
+    {tv_sec = utimbuf.actime, tv_nsec = 0_clong},
+    {tv_sec = utimbuf.modtime, tv_nsec = 0_clong}
+  }
+  return utimensat(-100_cint, pathname, (@pointer)(&converted[0]), 0_cint)
 end
 
 -- Legacy microsecond timestamp interface converted to the nanosecond syscall ABI.

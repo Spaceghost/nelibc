@@ -11,6 +11,7 @@
 #include <stddef.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <utime.h>
 #include <sys/mman.h>
 #include <sys/random.h>
 #include <sys/utsname.h>
@@ -2266,6 +2267,12 @@ int main(int argc, char **argv) {
   if (lutimes(timestamp_link_path, link_times) != -1 || errno != EINVAL ||
       lutimes(timestamp_link_path, NULL) != 0 || unlink(timestamp_link_path) != 0)
     return 413;
+  struct utimbuf seconds_timestamps = {.actime = 1000000010, .modtime = 1000000011};
+  if (utime(timestamp_path, &seconds_timestamps) != 0 || stat(timestamp_path, &timestamp_status) != 0 ||
+      timestamp_status.st_atim.tv_sec != 1000000010 || timestamp_status.st_atim.tv_nsec != 0 ||
+      timestamp_status.st_mtim.tv_sec != 1000000011 || timestamp_status.st_mtim.tv_nsec != 0 ||
+      utime(timestamp_path, NULL) != 0)
+    return 414;
   errno = 0;
   if (utimensat(AT_FDCWD, timestamp_path, NULL, 0x40000000) != -1 || errno != EINVAL) return 391;
   if (unlink(timestamp_path) != 0) return 392;
