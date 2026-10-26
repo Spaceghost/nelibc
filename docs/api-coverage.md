@@ -291,11 +291,13 @@ secondary weights to Latin-1 and precomposed, canonically decomposable Latin
 Extended-A letters, alongside the existing ASCII, umlaut, and sharp-s behavior.
 The Extended-A table is generated from Unicode 16.0.0 by
 `tools/gen_german_collation_data.py`. The supported combining marks are ordered
-by canonical combining class, with input order preserved within a class.
-Supported decomposed sequences compare like their precomposed forms, including
-when a precomposed character has additional combining marks. Other combining
-marks and the broader Unicode Collation Algorithm remain unsupported. This is
-a project-specific subset, not full Unicode or glibc/musl locale-data parity.
+by canonical combining class, with input order preserved within a class. The
+generated table covers 110 Unicode 16.0 marks in U+0300–U+036F that have a
+single-codepoint canonical decomposition. Supported decomposed sequences
+compare like their precomposed forms, including when a precomposed character
+has additional combining marks. Marks outside this table and the broader
+Unicode Collation Algorithm remain unsupported. This is a project-specific
+subset, not full Unicode or glibc/musl locale-data parity.
 Non-C collation and additional time locales remain incomplete.
 
 `scalb` and `scalbf` scale by integral exponents and report invalid fractional

@@ -11,6 +11,8 @@ SOURCE = ROOT / "src/locale_standalone.nelua"
 VERSION = "16.0.0"
 START = "-- BEGIN GENERATED GERMAN LATIN EXTENDED-A WEIGHTS"
 END = "-- END GENERATED GERMAN LATIN EXTENDED-A WEIGHTS"
+MARKS_START = "-- BEGIN GENERATED GERMAN COMBINING MARK WEIGHTS"
+MARKS_END = "-- END GENERATED GERMAN COMBINING MARK WEIGHTS"
 
 ACCENTS = {
     0x0300: 0x22,  # grave
@@ -29,6 +31,20 @@ ACCENTS = {
 }
 
 
+def canonical_mark(codepoint: int) -> int:
+    decomposition = unicodedata.normalize("NFD", chr(codepoint))
+    if len(decomposition) != 1:
+        return 0
+    return ord(decomposition)
+
+
+def accent_weight(codepoint: int) -> int:
+    canonical = canonical_mark(codepoint)
+    if canonical == 0:
+        return 0
+    return ACCENTS.get(canonical, 0x40 + canonical - 0x0300)
+
+
 def generate() -> str:
     if unicodedata.unidata_version != VERSION:
         raise SystemExit(
@@ -42,11 +58,12 @@ def generate() -> str:
         base, mark = map(ord, decomposition)
         if not (0x41 <= base <= 0x5A or 0x61 <= base <= 0x7A):
             continue
-        if mark not in ACCENTS:
+        weight = accent_weight(mark)
+        if weight == 0:
             continue
         uppercase = chr(codepoint).isupper()
         base |= 0x20 if uppercase else 0
-        rows.append((codepoint, base, ACCENTS[mark], 0x21 if uppercase else 0x20))
+        rows.append((codepoint, base, weight, 0x21 if uppercase else 0x20))
 
     lines = [START, f"-- Generated from Unicode {VERSION}; do not edit by hand."]
     lines.append(f"local german_extended_a_weight_count: csize = {len(rows)}_csize")
@@ -58,14 +75,39 @@ def generate() -> str:
     return "\n".join(lines)
 
 
+def generate_marks() -> str:
+    rows = []
+    for codepoint in range(0x0300, 0x0370):
+        canonical = canonical_mark(codepoint)
+        if canonical == 0:
+            continue
+        combining_class = unicodedata.combining(chr(canonical))
+        if combining_class == 0:
+            continue
+        rows.append((codepoint, accent_weight(canonical), combining_class))
+
+    lines = [MARKS_START, f"-- Generated from Unicode {VERSION}; do not edit by hand."]
+    lines.append(f"local german_combining_info_count: csize = {len(rows)}_csize")
+    lines.append(f"local german_combining_infos: [{3 * len(rows)}]cuint = {{")
+    values = [part for row in rows for part in row]
+    for offset in range(0, len(values), 8):
+        lines.append("  " + ", ".join(f"0x{x:x}_cuint" for x in values[offset:offset + 8]) + ",")
+    lines.extend(["}", MARKS_END])
+    return "\n".join(lines)
+
+
 def main() -> None:
     text = SOURCE.read_text()
-    generated = generate()
-    if START not in text or END not in text:
-        raise SystemExit("generated collation markers missing from locale source")
-    before, remainder = text.split(START, 1)
-    _, after = remainder.split(END, 1)
-    SOURCE.write_text(before + generated + after)
+    for start, end, generated in (
+        (START, END, generate()),
+        (MARKS_START, MARKS_END, generate_marks()),
+    ):
+        if start not in text or end not in text:
+            raise SystemExit("generated collation markers missing from locale source")
+        before, remainder = text.split(start, 1)
+        _, after = remainder.split(end, 1)
+        text = before + generated + after
+    SOURCE.write_text(text)
 
 
 if __name__ == "__main__":
