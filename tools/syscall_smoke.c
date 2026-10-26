@@ -8,6 +8,7 @@
 #include "nelibc_stdio.h"
 #include <errno.h>
 #include <ctype.h>
+#include <fnmatch.h>
 #include <stddef.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -712,6 +713,18 @@ static int positioned_io_smoke(void) {
 }
 
 int main(int argc, char **argv) {
+  if (fnmatch("*.c", "main.c", 0) != 0 ||
+      fnmatch("a/*.c", "a/b/main.c", FNM_PATHNAME) != FNM_NOMATCH ||
+      fnmatch("a/*.c", "a/b/main.c", 0) != 0 ||
+      fnmatch("*", ".hidden", FNM_PERIOD) != FNM_NOMATCH ||
+      fnmatch(".*", ".hidden", FNM_PERIOD) != 0 ||
+      fnmatch("[a-c]at", "bat", 0) != 0 ||
+      fnmatch("[!a-c]at", "zat", 0) != 0 ||
+      fnmatch("foo\\*", "foo*", 0) != 0 ||
+      fnmatch("foo\\*", "foo\\bar", FNM_NOESCAPE) != 0 ||
+      fnmatch("*.C", "main.c", FNM_CASEFOLD) != 0 ||
+      fnmatch("*.c", "main.c/child", FNM_LEADING_DIR) != 0)
+    return 339;
   if (argc == 2 && strcmp(argv[1], "--execveat-child") == 0) return 42;
   char executable_path[128];
   size_t executable_path_size = confstr(_CS_PATH, executable_path, sizeof executable_path);

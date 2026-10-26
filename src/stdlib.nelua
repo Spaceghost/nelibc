@@ -17,6 +17,7 @@ local function realloc(ptr: pointer, size: csize): pointer <cimport> end
 local function strtod(text: cstring <const>, end_text: **cchar): cdouble <cimport> end
 local function strtof(text: cstring <const>, end_text: **cchar): cfloat <cimport> end
 local function strtold(text: cstring <const>, end_text: **cchar): clongdouble <cimport> end
+local function tolower(character: cint): cint <cimport> end
 local function raise(signal: cint): cint <cimport> end
 local function _Exit(status: cint): void <cimport> end
 local function fork(): cint <cimport> end
@@ -130,6 +131,143 @@ local function getopt_report(program: *[0]cchar <const>, option: cint,
   write(2, (@pointer)(message), message_length)
   local suffix: [3]byte = {(@byte)(option), 10, 0}
   write(2, (@pointer)(&suffix[0]), 2)
+end
+
+local function fnmatch_fold(character: cint): cint <inline>
+  return tolower((@cint)((@cuint)(character) & 255_cuint))
+end
+
+local function fnmatch_bracket(pattern: *[0]cchar <const>, start: csize,
+    character: cint, flags: cint, end_index: *[0]csize): boolean <inline>
+  local index = start
+  local invert = false
+  if pattern[index] == 33 or pattern[index] == 94 then
+    invert = true
+    index = index + 1
+  end
+  local matched = false
+  local have_item = false
+  local first_item = true
+  while pattern[index] ~= 0 do
+    if pattern[index] == 93 and not first_item then
+      end_index[0] = index + 1
+      return matched ~= invert and have_item
+    end
+    local first = (@cint)(pattern[index])
+    if pattern[index] == 92 and (flags & 2) == 0 and pattern[index + 1] ~= 0 then
+      index = index + 1
+      first = (@cint)(pattern[index])
+    end
+    index = index + 1
+    if pattern[index] == 45 and pattern[index + 1] ~= 0 and pattern[index + 1] ~= 93 then
+      index = index + 1
+      local last = (@cint)(pattern[index])
+      if pattern[index] == 92 and (flags & 2) == 0 and pattern[index + 1] ~= 0 then
+        index = index + 1
+        last = (@cint)(pattern[index])
+      end
+      index = index + 1
+      if (flags & 16) ~= 0 then
+        first = fnmatch_fold(first)
+        last = fnmatch_fold(last)
+      end
+      local candidate = character
+      if (flags & 16) ~= 0 then candidate = fnmatch_fold(candidate) end
+      if first <= candidate and candidate <= last then matched = true end
+    else
+      local candidate = character
+      if (flags & 16) ~= 0 then
+        first = fnmatch_fold(first)
+        candidate = fnmatch_fold(candidate)
+      end
+      if first == candidate then matched = true end
+    end
+    have_item = true
+    first_item = false
+  end
+  return false
+end
+
+local function fnmatch(pattern: cstring <const>, text: cstring <const>, flags: cint): cint
+    <cexport, codename 'fnmatch'>
+  if pattern == nilptr or text == nilptr then return 1 end -- FNM_NOMATCH
+  local p = (@*[0]cchar)(pattern)
+  local s = (@*[0]cchar)(text)
+  local pattern_index: csize = 0
+  local string_index: csize = 0
+  local star_pattern: csize = ~0_csize
+  local star_string: csize = 0
+  while true do
+    local pattern_byte = p[pattern_index]
+    local string_byte = s[string_index]
+    if pattern_byte == 0 then
+      if string_byte == 0 or ((flags & 8) ~= 0 and string_byte == 47) then return 0 end
+    elseif pattern_byte == 42 then
+      while p[pattern_index] == 42 do pattern_index = pattern_index + 1 end
+      star_pattern = pattern_index
+      star_string = string_index
+      if p[pattern_index] == 0 then
+        while s[string_index] ~= 0 do
+          local next_byte = s[string_index]
+          local component_start = string_index == 0 or ((flags & 1) ~= 0 and s[string_index - 1] == 47)
+          if ((flags & 1) ~= 0 and next_byte == 47) or
+              ((flags & 4) ~= 0 and component_start and next_byte == 46) then break end
+          string_index = string_index + 1
+        end
+        if s[string_index] == 0 or ((flags & 8) ~= 0 and s[string_index] == 47) then return 0 end
+        return 1 -- FNM_NOMATCH
+      end
+      continue
+    elseif pattern_byte == 63 then
+      local component_start = string_index == 0 or ((flags & 1) ~= 0 and s[string_index - 1] == 47)
+      if string_byte ~= 0 and ((flags & 1) == 0 or string_byte ~= 47) and
+          not ((flags & 4) ~= 0 and component_start and string_byte == 46) then
+        pattern_index = pattern_index + 1
+        string_index = string_index + 1
+        continue
+      end
+    elseif pattern_byte == 91 then
+      local component_start = string_index == 0 or ((flags & 1) ~= 0 and s[string_index - 1] == 47)
+      if string_byte ~= 0 and ((flags & 1) == 0 or string_byte ~= 47) and
+          not ((flags & 4) ~= 0 and component_start and string_byte == 46) then
+        local after_bracket: csize = pattern_index
+        if fnmatch_bracket(p, pattern_index + 1, (@cint)(string_byte), flags,
+            &after_bracket) then
+          pattern_index = after_bracket
+          string_index = string_index + 1
+          continue
+        end
+      end
+    else
+      local expected = (@cint)(pattern_byte)
+      local actual = (@cint)(string_byte)
+      if pattern_byte == 92 and (flags & 2) == 0 and p[pattern_index + 1] ~= 0 then
+        pattern_index = pattern_index + 1
+        expected = (@cint)(p[pattern_index])
+      end
+      if (flags & 16) ~= 0 then
+        expected = fnmatch_fold(expected)
+        actual = fnmatch_fold(actual)
+      end
+      if string_byte ~= 0 and expected == actual then
+        pattern_index = pattern_index + 1
+        string_index = string_index + 1
+        continue
+      end
+    end
+    if star_pattern ~= ~0_csize then
+      local next_byte = s[star_string]
+      local component_start = star_string == 0 or ((flags & 1) ~= 0 and s[star_string - 1] == 47)
+      if next_byte ~= 0 and ((flags & 1) == 0 or next_byte ~= 47) and
+          not ((flags & 4) ~= 0 and component_start and next_byte == 46) then
+        star_string = star_string + 1
+        string_index = star_string
+        pattern_index = star_pattern
+        continue
+      end
+    end
+    return 1 -- FNM_NOMATCH
+  end
 end
 
 local function getopt(argc: cint, argv: *[0]*[0]cchar,

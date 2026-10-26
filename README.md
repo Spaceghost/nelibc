@@ -1,19 +1,17 @@
 # nelibc
 
-### A libc, rebuilt piece by piece in [Nelua](https://nelua.io).
+### A libc rebuilt piece by piece in [Nelua](https://nelua.io)
 
-Nelibc lets C programs use Nelua implementations for the functions that are
-ready, while glibc or musl supplies the rest. The goal is a libc that can
-eventually run on its own.
+Nelibc lets C programs use Nelua implementations for selected libc functions.
+The host libc fills the gaps while the project grows toward a standalone
+runtime.
 
-**Status:** experimental · Linux x86-64 · hybrid use works today · standalone
-runtime is incomplete
+> **Status:** experimental · Linux x86-64 · hybrid builds are usable ·
+> standalone runtime is incomplete
 
----
+## Get started
 
-## Try it
-
-Install [Nelua](https://nelua.io) and [Zig](https://ziglang.org/), then:
+Requirements: [Nelua](https://nelua.io) and [Zig](https://ziglang.org/).
 
 ```sh
 git clone https://github.com/Spaceghost/nelibc.git
@@ -21,50 +19,50 @@ cd nelibc
 make dogfood-zig
 ```
 
-That builds Nelibc, links a C program against it, runs the program, and checks
-that Nelibc's symbols made it into the executable.
+This builds Nelibc, links and runs a C consumer, and checks that Nelibc's
+symbols are present in the executable.
 
-To link your own C program:
+Link your own program:
 
 ```sh
 make lib-zig
 zig cc -Iinclude -fno-builtin app.c build/libnelibc-zig.a -o app
 ```
 
-`-fno-builtin` makes sure the compiler calls the library functions being
-tested. See the [quickstart](docs/quickstart.md) for GCC, musl, and TinyCC.
+`-fno-builtin` makes calls go through the library. See the
+[quickstart](docs/quickstart.md) for GCC, musl, and TinyCC instructions.
 
-## What works
+## What works today
 
-| Area | Snapshot |
+| Area | Status |
 | --- | --- |
-| Memory, strings, conversions | Broad implementation; differential checks across build profiles |
-| Math | Wide real and complex coverage; numerical edge cases remain |
-| Stdio | Hybrid stdio plus a growing standalone implementation |
+| Memory, strings, conversions | Broad implementation; differential checks across profiles |
+| Math | Broad real and complex coverage; numerical edge cases remain |
+| Stdio | Hybrid support plus a growing standalone implementation |
 | Files, processes, threads | Linux x86-64 base; standalone POSIX coverage is partial |
 | Locale, wide chars, networking | Partial locale and Unicode support; resolver APIs remain |
 
-Hybrid builds can replace selected functions and leave the rest to the host
-libc. Standalone builds use Nelibc's own runtime and syscall layer, and are
-still under development.
+Hybrid builds replace selected functions and use glibc or musl for the rest.
+Standalone builds use Nelibc's runtime and syscall layer; they are still under
+development.
 
-## Track completeness
+## Completeness
 
 The API tracker compares declarations, archive exports, and host delegation
-across compiler and libc profiles. It is the source of truth for symbol-level
-progress; symbol counts do not measure behavioral completeness.
+across compiler and libc profiles. Symbol presence is tracked separately from
+behavioral completeness.
 
-- [Function and symbol audit](docs/musl-1.2.5-api-coverage.csv)
-- [How coverage is measured](docs/api-coverage.md)
+- [Function and symbol coverage](docs/musl-1.2.5-api-coverage.csv)
+- [Coverage methodology](docs/api-coverage.md)
 - [Prioritized core roadmap](docs/core-roadmap.md)
-- [Builds, implementations, and test catalog](docs/implementation-catalog.md)
+- [Implementation and test catalog](docs/implementation-catalog.md)
 
 Refresh the local report with `make api-coverage`.
 
-## Build profiles
+## Build and compare
 
-Zig cc is the default. GCC and TinyCC are used for comparison; hybrid builds
-cover glibc and musl.
+Zig cc is the default toolchain. GCC and TinyCC provide comparison builds;
+hybrid profiles cover glibc and musl.
 
 ```sh
 make dogfood-matrix
@@ -72,12 +70,12 @@ make smoke-matrix
 ```
 
 TinyCC is optional. See the [quickstart](docs/quickstart.md) for setup and
-individual build commands.
+individual commands.
 
 ## Contributing
 
-Pick a small API slice, implement it in Nelua, expose its C ABI, and add a C
-consumer check. Keep host delegation explicit and update the coverage tracker.
+Choose a small API slice, implement it in Nelua, expose its C ABI, and add a C
+consumer check. Record host delegation in the coverage tracker.
 
 ## License
 

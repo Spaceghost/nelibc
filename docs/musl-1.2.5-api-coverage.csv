@@ -381,7 +381,7 @@ fmod,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmodf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmodl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fmtmsg,fmtmsg.h,,,not-declared
-fnmatch,fnmatch.h,,,not-declared
+fnmatch,fnmatch.h,fnmatch.h,,host-delegated
 fopen,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 fopencookie,stdio.h,,,not-declared
 fork,unistd.h,nelibc_syscall.h,,host-delegated
