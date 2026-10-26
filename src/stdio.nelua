@@ -862,7 +862,8 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
     if conversion == 0 then break end
     format_index = format_index + 1
 
-    if allocate_assignment and (suppress or length_modifier ~= 1 or
+    if allocate_assignment and (suppress or
+        (length_modifier ~= 0 and length_modifier ~= 1) or
         (conversion ~= 99 and conversion ~= 115 and conversion ~= 91)) then
       nelibc_errno_location()[0] = 22 -- EINVAL
       stream_unlock(stream)
@@ -1247,11 +1248,17 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
     local wide_output: *[0]cint = (@*[0]cint)(destination)
     local byte_output: *[0]cchar = (@*[0]cchar)(destination)
     local allocated_output: *[0]cint = nilptr
+    local allocated_byte_output: *[0]cchar = nilptr
     local output_capacity: csize = 0
     if allocate_assignment then
       output_capacity = 64
-      allocated_output = (@*[0]cint)(nelibc_malloc(output_capacity * (@csize)(#cint)))
-      if allocated_output == nilptr then
+      if length_modifier == 1 then
+        allocated_output = (@*[0]cint)(nelibc_malloc(output_capacity * (@csize)(#cint)))
+      else
+        allocated_byte_output = (@*[0]cchar)(nelibc_malloc(output_capacity))
+      end
+      if (length_modifier == 1 and allocated_output == nilptr) or
+          (length_modifier == 0 and allocated_byte_output == nilptr) then
         stream_unlock(stream)
         nelibc_errno_location()[0] = 12 -- ENOMEM
         return -1
@@ -1326,11 +1333,40 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
           local encoded_count: csize = wcrtomb(&encoded[0], (@cint)(current),
               (@pointer)(&conversion_state[0]))
           if encoded_count == ~0_csize then
-            input_failure = true
-            stop = true
-            break
+            if allocate_assignment then nelibc_free((@pointer)(allocated_byte_output)) end
+            stream_unlock(stream)
+            if assignments == 0 then return -1 end
+            return assignments
           end
-          memcpy((@pointer)((@usize)(byte_output) + output_index),
+          if allocate_assignment and output_index > MAX_CSIZE - encoded_count - 1 then
+            nelibc_free((@pointer)(allocated_byte_output))
+            stream_unlock(stream)
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            return assignments
+          end
+          if allocate_assignment and output_index + encoded_count >= output_capacity then
+            while output_index + encoded_count >= output_capacity do
+              if output_capacity > MAX_CSIZE // 2 then
+                nelibc_free((@pointer)(allocated_byte_output))
+                stream_unlock(stream)
+                nelibc_errno_location()[0] = 75 -- EOVERFLOW
+                return assignments
+              end
+              output_capacity = output_capacity * 2
+            end
+            local grown: pointer = nelibc_realloc((@pointer)(allocated_byte_output),
+                output_capacity)
+            if grown == nilptr then
+              nelibc_free((@pointer)(allocated_byte_output))
+              stream_unlock(stream)
+              nelibc_errno_location()[0] = 12 -- ENOMEM
+              return -1
+            end
+            allocated_byte_output = (@*[0]cchar)(grown)
+          end
+          local byte_destination: *[0]cchar = byte_output
+          if allocate_assignment then byte_destination = allocated_byte_output end
+          memcpy((@pointer)((@usize)(byte_destination) + output_index),
               (@pointer)(&encoded[0]), encoded_count)
           output_index = output_index + encoded_count
         end
@@ -1339,10 +1375,12 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
     end
     if conversion == 99 and matched_count ~= width then
       if allocate_assignment then nelibc_free((@pointer)(allocated_output)) end
+      if allocate_assignment then nelibc_free((@pointer)(allocated_byte_output)) end
       break
     end
     if matched_count == 0 then
       if allocate_assignment then nelibc_free((@pointer)(allocated_output)) end
+      if allocate_assignment then nelibc_free((@pointer)(allocated_byte_output)) end
       break
     end
     if not suppress then
@@ -1350,15 +1388,22 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
         if length_modifier == 1 then
           if allocate_assignment then allocated_output[output_index] = 0
           else wide_output[output_index] = 0 end
+        elseif allocate_assignment then allocated_byte_output[output_index] = 0
         else byte_output[output_index] = 0 end
       end
       if allocate_assignment then
-        local allocated_destination: *[0]*[0]cint = (@*[0]*[0]cint)(destination)
-        allocated_destination[0] = allocated_output
+        if length_modifier == 1 then
+          local allocated_destination: *[0]*[0]cint = (@*[0]*[0]cint)(destination)
+          allocated_destination[0] = allocated_output
+        else
+          local allocated_destination: *[0]*[0]cchar = (@*[0]*[0]cchar)(destination)
+          allocated_destination[0] = allocated_byte_output
+        end
       end
       assignments = assignments + 1
     elseif allocate_assignment then
       nelibc_free((@pointer)(allocated_output))
+      nelibc_free((@pointer)(allocated_byte_output))
     end
   end
   stream_unlock(stream)

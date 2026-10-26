@@ -2144,6 +2144,21 @@ int main(int argc, char **argv) {
       allocated_wide_word[3] != L'e')
     return 333;
   free(allocated_wide_word);
+  char *allocated_byte_word = NULL;
+  if (swscanf(L"caf\u00e9 tail", L"%ms", &allocated_byte_word) != 1 ||
+      allocated_byte_word == NULL || strcmp(allocated_byte_word, "caf\303\251") != 0)
+    return 334;
+  free(allocated_byte_word);
+  allocated_byte_word = NULL;
+  if (swscanf(L"wide123", L"%m[a-z]", &allocated_byte_word) != 1 ||
+      allocated_byte_word == NULL || strcmp(allocated_byte_word, "wide") != 0)
+    return 335;
+  free(allocated_byte_word);
+  allocated_byte_word = NULL;
+  if (swscanf(L"wide", L"%4mc", &allocated_byte_word) != 1 ||
+      allocated_byte_word == NULL || memcmp(allocated_byte_word, "wide", 4) != 0)
+    return 336;
+  free(allocated_byte_word);
   if (swscanf(L"", L"%d", &wide_string_integer) != EOF ||
       swscanf(L"", L"") != 0)
     return 300;

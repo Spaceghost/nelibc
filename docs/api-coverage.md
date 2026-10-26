@@ -105,10 +105,10 @@ literals and ranges work with multibyte format strings, and the stream restores
 the exact input bytes after a wide conversion stops. Narrow `%mc`, `%ms`, and
 `%m[` allocate their result with Nelibc's allocator. Fully positional narrow
 and wide formats can reorder pointer arguments; mixing positional with
-sequential arguments is unspecified. Wide `%mls`, `%ml[`, and `%mlc` allocate
-wide-character results with Nelibc's allocator; other wide allocation forms
-remain incomplete. The C consumer smoke covers allocated strings, scansets
-and character fields,
+sequential arguments is unspecified. Wide `%ms`, `%m[`, and `%mc` allocate
+multibyte results; `%mls`, `%ml[`, and `%mlc` allocate wide-character results
+with Nelibc's allocator. The C consumer smoke covers allocated strings,
+scansets and character fields,
 narrow and wide positional reordering, ordinary string and stream input,
 ASCII and Unicode scansets, multi-byte whitespace pushback, integer base
 detection, decimal/hexadecimal floats, `%n`, and UTF-8 `%lc`/`%ls`. Hybrid
