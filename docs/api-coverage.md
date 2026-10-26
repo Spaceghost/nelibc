@@ -62,8 +62,8 @@ python3 tools/musl_api_audit.py \
   --output docs/musl-1.2.5-api-coverage.csv
 ```
 
-The current snapshot contains 1,471 APIs: 803 exported by Nelibc in at least
-one tested hybrid profile, 223 intentionally delegated to the host in hybrid
+The current snapshot contains 1,471 APIs: 804 exported by Nelibc in at least
+one tested hybrid profile, 222 intentionally delegated to the host in hybrid
 profiles, and 445 not declared by Nelibc. Every declared API in this pinned
 baseline is either exported by at least one hybrid archive or intentionally
 delegated to its host. The separate seven-profile inventory tracks per-profile
