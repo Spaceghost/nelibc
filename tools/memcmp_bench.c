@@ -55,7 +55,7 @@ static double median_compare(compare_fn fn, size_t size, size_t iterations) {
 }
 
 int main(void) {
-  static const size_t sizes[] = {64, 4096, 65536};
+  static const size_t sizes[] = {36, 64, 132, 4096, 4100, 65536};
   static const char *const cases[] = {
       "memcmp", "memcmp-first-diff", "memcmp-middle-diff", "memcmp-last-diff"};
   for (size_t i = 0; i < sizeof left; ++i) left[i] = (unsigned char)(i * 37u + 11u);

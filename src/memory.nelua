@@ -893,7 +893,7 @@ local function memcmp(a: pointer <const>, b: pointer <const>, n: csize): cint <c
   return nelibc_tcc_sse_memcmp(a, b, n)
   ## else
   ## if ccinfo.is_clang and ccinfo.is_x86_64 then
-  if n >= 128 then return nelibc_x86_64_sse_memcmp(a, b, n) end
+  if n >= 32 then return nelibc_x86_64_sse_memcmp(a, b, n) end
   ## end
   -- Scan 32 byte-safe differences per branch; inspect bytes only in a differing block.
   local x: *[0]byte = (@*[0]byte)(a)

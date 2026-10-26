@@ -159,7 +159,9 @@ static void report(const char *name, double ns_per_call, size_t size, size_t rep
 }
 
 int main(void) {
-  static const size_t sizes[] = {64, 4096, MAX_SIZE};
+  /* Include Alpaquita's short/medium/long string lengths (36, 132, 4100)
+     alongside cache-line, page, and large-buffer cases. */
+  static const size_t sizes[] = {36, 64, 132, 4096, 4100, MAX_SIZE};
   for (size_t i = 0; i < MAX_SIZE; ++i) {
     source[i] = (unsigned char)(i * 37u + 11u);
     haystack[i] = 0x11;

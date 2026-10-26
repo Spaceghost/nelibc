@@ -1049,13 +1049,19 @@ nelibc_tcc_sse_memcmp:
 nelibc_x86_64_sse_memcmp:
   xorl %r8d, %r8d
 #ifndef NELIBC_DISABLE_AVX2
-  cmpq $4096, %rdx
+  cmpq $32, %rdx
   jb .Lmemcmp_vector128
   cmpb $0, .Lmemcmp_avx2_state(%rip)
   je .Lmemcmp_detect_avx2
   cmpb $2, .Lmemcmp_avx2_state(%rip)
-  je .Lmemcmp_avx2_start
+  je .Lmemcmp_avx2_cached
   jmp .Lmemcmp_vector128
+.Lmemcmp_avx2_cached:
+  cmpq $64, %rdx
+  jb .Lmemcmp_avx2_short
+  cmpq $256, %rdx
+  jb .Lmemcmp_vector128
+  jmp .Lmemcmp_avx2_start
 .Lmemcmp_detect_avx2:
   pushq %rbx
   pushq %rdx
@@ -1083,6 +1089,10 @@ nelibc_x86_64_sse_memcmp:
   movb $2, .Lmemcmp_avx2_state(%rip)
   popq %rdx
   popq %rbx
+  cmpq $64, %rdx
+  jb .Lmemcmp_avx2_short
+  cmpq $256, %rdx
+  jb .Lmemcmp_vector128
   jmp .Lmemcmp_avx2_start
 .Lmemcmp_avx2_unavailable:
   movb $1, .Lmemcmp_avx2_state(%rip)
@@ -1263,6 +1273,16 @@ nelibc_x86_64_sse_memcmp:
 .size nelibc_tcc_sse_memcmp, .-nelibc_tcc_sse_memcmp
 .size nelibc_x86_64_sse_memcmp, .-nelibc_x86_64_sse_memcmp
 #else
+.Lmemcmp_avx2_short:
+  vmovdqu (%rdi,%r8), %ymm1
+  vpcmpeqb (%rsi,%r8), %ymm1, %ymm1
+  vpmovmskb %ymm1, %eax
+  cmpl $-1, %eax
+  jne .Lmemcmp_avx2_diff
+  addq $32, %r8
+  subq $32, %rdx
+  vzeroupper
+  jmp .Lmemcmp_vector128
 .Lmemcmp_avx2_start:
   cmpq $32768, %rdx
   jae .Lmemcmp_avx2_loop128

@@ -1999,6 +1999,12 @@ shootout-zig-musl: bench-zig-musl
 	@{ cat $(OUT)/mem-shootout-zig-musl-libc.csv; tail -n +2 $(OUT)/mem-shootout-zig-musl-nelibc.csv; } > $(OUT)/mem-shootout-zig-musl.csv
 	@cat $(OUT)/mem-shootout-zig-musl.csv
 
+memory-size-shootout-matrix: bench-zig bench-zig-musl
+	python3 tools/mem_shootout_pairs.py --pairs 7 --output $(OUT)/memory-size-shootout-matrix.csv \
+		--profile zig-glibc $(OUT)/mem-bench-zig-libc $(OUT)/mem-bench-zig-nelibc \
+		--profile zig-musl $(OUT)/mem-bench-zig-musl-libc $(OUT)/mem-bench-zig-musl-nelibc
+	@cat $(OUT)/memory-size-shootout-matrix.csv
+
 bench-musl-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
 	@$(NELUA) -B -r --cc musl-gcc --cflags='-O2 -fno-builtin' -o $(OUT)/memory-bench-musl-gcc.o src/memory.nelua
 	@musl-gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC via musl-gcc"' -DBENCH_LIBC='"musl"' -DBENCH_IMPLEMENTATION='"libc"' tools/mem_bench.c -o $(OUT)/mem-bench-musl-gcc-libc
@@ -2077,6 +2083,12 @@ memcmp-shootout-tcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/memory-x86_64-sse
 memcmp-shootout-matrix: memcmp-shootout-zig memcmp-shootout-gcc memcmp-shootout-zig-musl memcmp-shootout-tcc
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/memcmp-shootout-zig.csv $(OUT)/memcmp-shootout-gcc.csv $(OUT)/memcmp-shootout-zig-musl.csv $(OUT)/memcmp-shootout-tcc.csv > $(OUT)/memcmp-shootout-matrix.csv
 	@cat $(OUT)/memcmp-shootout-matrix.csv
+
+memcmp-size-shootout-matrix: memcmp-shootout-zig memcmp-shootout-zig-musl
+	python3 tools/mem_shootout_pairs.py --pairs 7 --output $(OUT)/memcmp-size-shootout-matrix.csv \
+		--profile zig-glibc $(OUT)/memcmp-bench-zig-libc $(OUT)/memcmp-bench-zig-nelibc \
+		--profile zig-musl $(OUT)/memcmp-bench-zig-musl-libc $(OUT)/memcmp-bench-zig-musl-nelibc
+	@cat $(OUT)/memcmp-size-shootout-matrix.csv
 
 strstr-shootout-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
 	@$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/string-strstr-zig.o src/string.nelua
@@ -2902,3 +2914,5 @@ spawn-hybrid-smoke-matrix: spawn-hybrid-smoke-zig spawn-hybrid-smoke-gcc spawn-h
 
 clean:
 	rm -rf $(OUT)
+
+.PHONY: memory-size-shootout-matrix memcmp-size-shootout-matrix

@@ -54,7 +54,32 @@ the same C benchmark, including the scan routines and four `memmove` placement
 cases. Both runs use `-O2 -fno-builtin`; output is CSV with
 compiler, libc, implementation, function, size, iteration count, and median
 nanoseconds per call. Each row is measured over seven samples. Results are
-microbenchmarks, so compare repeated runs on the same machine. Optional
+microbenchmarks, so compare repeated runs on the same machine. The memory
+sizes include 36, 132, and 4,100 bytes, matching the short, medium, and long
+string lengths in [BellSoft's Alpaquita study](https://bell-sw.com/blog/alpaquita-linux-performance-the-race-is-on/),
+plus 64-byte, 4-KiB, and 64-KiB cases. This isolates the selected libc calls;
+it does not reproduce the study's distro startup, Nginx throughput, or Java
+workloads. `make memory-size-shootout-matrix` runs seven process pairs per
+profile and alternates host/Nelibc launch order to reduce order bias. Use
+`taskset -c N make memory-size-shootout-matrix` to pin both builds and runs to
+one CPU; the output records the profile, pair, and launch order in
+`build/memory-size-shootout-matrix.csv`. This is a local libc shootout, not an
+Alpaquita system comparison. The 2026-10-25 pinned baseline is archived as
+`benchmarks/results/2026-10-25-memory-size-shootout-baseline-paired.csv`.
+
+`make memcmp-size-shootout-matrix` isolates `memcmp` and its first, middle, and
+last-byte mismatch cases at 36, 64, 132, 4,096, 4,100, and 65,536 bytes. It
+uses the same seven-pair alternating order and writes
+`build/memcmp-size-shootout-matrix.csv`; the current candidate is archived in
+`benchmarks/results/2026-10-25-memcmp-size-shootout-paired.csv`. On Bazzite 44
+with kernel 7.2.7 and an Intel i7-11700F pinned to CPU 2 (Zig 0.17.0, Nelua
+0.2.0-dev), equal-input Nelibc `memcmp` latency divided by host latency is
+1.94x at 36 bytes and 0.92x at 4,100 bytes with Zig/glibc; it is 0.26x and
+0.03x with Zig/musl. Ratios below 1 mean Nelibc was faster. The AVX2 path is
+runtime-gated, and the memory differential smoke passed with Zig/glibc,
+GCC/glibc, and Zig/musl; standalone Zig and GCC consumers also passed. This
+one-machine snapshot points to short-input glibc parity as the next `memcmp`
+optimization target; it is not a cross-distro performance claim. Optional
 `make smoke-tcc` runs the Nelua memory API against bytewise references and
 guard pages, including 64-byte copies at all 16 source and destination
 alignments near both page edges. It also checks the TCC SSE2 helpers against
