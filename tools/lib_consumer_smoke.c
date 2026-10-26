@@ -1886,6 +1886,18 @@ int main(int argc, char **argv) {
       wcscoll_l(L"č", L"d", german_collate) >= 0 ||
       wcscoll_l(L"Č", L"č", german_collate) <= 0)
     return 90;
+  if (wcscoll_l(L"\u0ccb", L"\u0cc6\u0cc2\u0cd5", german_collate) != 0)
+    return 102;
+  if (wcscoll_l(L"\u09cb", L"\u09c7\u09be", german_collate) != 0)
+    return 103;
+  wchar_t bengali_mark_key[16], bengali_parts_key[16];
+  size_t bengali_mark_length =
+      wcsxfrm_l(bengali_mark_key, L"\u09cb", 16, german_collate);
+  size_t bengali_parts_length =
+      wcsxfrm_l(bengali_parts_key, L"\u09c7\u09be", 16, german_collate);
+  if (bengali_mark_length != bengali_parts_length ||
+      wcscmp(bengali_mark_key, bengali_parts_key) != 0)
+    return 104;
   const wchar_t *german_words[] = {
       L"a", L"ä", L"aa", L"ab", L"ac", L"ad", L"ae", L"af", L"az",
       L"b", L"c", L"cafe", L"cafè", L"café", L"caff", L"cc", L"cč",
@@ -1959,6 +1971,12 @@ int main(int argc, char **argv) {
           sizeof german_expanded_mark_first);
   strxfrm(german_expanded_mark_second, "a\xcc\x88\xcc\x81",
           sizeof german_expanded_mark_second);
+  char german_bengali_mark_key[128], german_bengali_parts_key[128];
+  size_t german_bengali_mark_length =
+      strxfrm(german_bengali_mark_key, "\xe0\xa7\x8b", sizeof german_bengali_mark_key);
+  size_t german_bengali_parts_length =
+      strxfrm(german_bengali_parts_key, "\xe0\xa7\x87\xe0\xa6\xbe",
+              sizeof german_bengali_parts_key);
   if (old_collate_locale == (locale_t)0 || wcscoll(L"ä", L"aa") >= 0 ||
       strcoll("a", "ä") >= 0 || german_a_key_length >= sizeof german_a_key ||
       german_umlaut_key_length >= sizeof german_umlaut_key ||
@@ -1968,6 +1986,7 @@ int main(int argc, char **argv) {
       strcoll("a\xcc\x95\xcc\xa7", "a\xcc\xa7\xcc\x95") != 0 ||
       strcoll("a\xd6\xb0\xcc\xa7", "a\xcc\xa7\xd6\xb0") != 0 ||
       strcoll("a\xcd\x84", "a\xcc\x88\xcc\x81") != 0 ||
+      strcoll("\xe0\xa7\x8b", "\xe0\xa7\x87\xe0\xa6\xbe") != 0 ||
       strcoll("á\xcc\xa7", "a\xcc\xa7\xcc\x81") != 0 ||
       german_precomposed_key_length >= sizeof german_precomposed_key ||
       german_decomposed_key_length >= sizeof german_decomposed_key ||
@@ -1977,6 +1996,8 @@ int main(int argc, char **argv) {
       strcmp(german_extended_marks_first, german_extended_marks_second) != 0 ||
       strcmp(german_hebrew_marks_first, german_hebrew_marks_second) != 0 ||
       strcmp(german_expanded_mark_first, german_expanded_mark_second) != 0 ||
+      german_bengali_mark_length != german_bengali_parts_length ||
+      strcmp(german_bengali_mark_key, german_bengali_parts_key) != 0 ||
       uselocale(old_collate_locale) != german_collate)
     return 92;
   old_collate_locale = uselocale(german_collate_c);

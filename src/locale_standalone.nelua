@@ -112,12 +112,14 @@ local function nelibc_locale_collate_mode(locale: pointer): cint <inline>
   return -1
 end
 
-local CollationWeights: type = @record{first: cuint, second: cuint, secondary: cuint, case_weight: cuint}
-local PrimaryIter: type = @record{text: pointer, index: csize, pending: cuint}
+local CollationWeights: type = @record{first: cuint, second: cuint, third: cuint,
+  secondary: cuint, case_weight: cuint}
+local PrimaryIter: type = @record{text: pointer, index: csize, pending: cuint,
+  pending2: cuint}
 local LevelIter: type = @record{text: pointer, index: csize, cluster_start: csize,
   cluster_end: csize, cluster_scan: csize, cluster_class: cuint,
   cluster_virtual: cuint, cluster_pending_weight: cuint,
-  cluster_pending_class: cuint}
+  cluster_pending_class: cuint, repeat_weight: cuint, repeat_count: cuint}
 
 -- BEGIN GENERATED GERMAN LATIN EXTENDED-A WEIGHTS
 -- Generated from Unicode 16.0.0; do not edit by hand.
@@ -182,6 +184,8 @@ local german_extended_a_weights: [432]cuint = {
 
 local GermanCombiningInfo: type = @record{weight1: cuint, class1: cuint,
   weight2: cuint, class2: cuint}
+local GermanMarkExpansionInfo: type = @record{count: cuint, part1: cuint,
+  part2: cuint, part3: cuint}
 -- BEGIN GENERATED GERMAN COMBINING MARK WEIGHTS
 -- Generated from Unicode 16.0.0; do not edit by hand.
 local german_combining_info_count: csize = 934_csize
@@ -1122,6 +1126,83 @@ local german_combining_infos: [4670]cuint = {
   0x1e94a_cuint, 0x1e68a_cuint, 0x7_cuint, 0x0_cuint, 0x0_cuint,
 }
 -- END GENERATED GERMAN COMBINING MARK WEIGHTS
+-- BEGIN GENERATED GERMAN CCC-0 MARK EXPANSIONS
+-- Generated from Unicode 16.0.0; do not edit by hand.
+local german_mark_expansion_count: csize = 50_csize
+local german_mark_expansions: [250]cuint = {
+  0x9cb_cuint, 0x2_cuint, 0x9c7_cuint, 0x9be_cuint, 0x0_cuint,
+  0x9cc_cuint, 0x2_cuint, 0x9c7_cuint, 0x9d7_cuint, 0x0_cuint,
+  0xb48_cuint, 0x2_cuint, 0xb47_cuint, 0xb56_cuint, 0x0_cuint,
+  0xb4b_cuint, 0x2_cuint, 0xb47_cuint, 0xb3e_cuint, 0x0_cuint,
+  0xb4c_cuint, 0x2_cuint, 0xb47_cuint, 0xb57_cuint, 0x0_cuint,
+  0xbca_cuint, 0x2_cuint, 0xbc6_cuint, 0xbbe_cuint, 0x0_cuint,
+  0xbcb_cuint, 0x2_cuint, 0xbc7_cuint, 0xbbe_cuint, 0x0_cuint,
+  0xbcc_cuint, 0x2_cuint, 0xbc6_cuint, 0xbd7_cuint, 0x0_cuint,
+  0xcc0_cuint, 0x2_cuint, 0xcbf_cuint, 0xcd5_cuint, 0x0_cuint,
+  0xcc7_cuint, 0x2_cuint, 0xcc6_cuint, 0xcd5_cuint, 0x0_cuint,
+  0xcc8_cuint, 0x2_cuint, 0xcc6_cuint, 0xcd6_cuint, 0x0_cuint,
+  0xcca_cuint, 0x2_cuint, 0xcc6_cuint, 0xcc2_cuint, 0x0_cuint,
+  0xccb_cuint, 0x3_cuint, 0xcc6_cuint, 0xcc2_cuint, 0xcd5_cuint,
+  0xd4a_cuint, 0x2_cuint, 0xd46_cuint, 0xd3e_cuint, 0x0_cuint,
+  0xd4b_cuint, 0x2_cuint, 0xd47_cuint, 0xd3e_cuint, 0x0_cuint,
+  0xd4c_cuint, 0x2_cuint, 0xd46_cuint, 0xd57_cuint, 0x0_cuint,
+  0xddc_cuint, 0x2_cuint, 0xdd9_cuint, 0xdcf_cuint, 0x0_cuint,
+  0xdde_cuint, 0x2_cuint, 0xdd9_cuint, 0xddf_cuint, 0x0_cuint,
+  0xf93_cuint, 0x2_cuint, 0xf92_cuint, 0xfb7_cuint, 0x0_cuint,
+  0xf9d_cuint, 0x2_cuint, 0xf9c_cuint, 0xfb7_cuint, 0x0_cuint,
+  0xfa2_cuint, 0x2_cuint, 0xfa1_cuint, 0xfb7_cuint, 0x0_cuint,
+  0xfa7_cuint, 0x2_cuint, 0xfa6_cuint, 0xfb7_cuint, 0x0_cuint,
+  0xfac_cuint, 0x2_cuint, 0xfab_cuint, 0xfb7_cuint, 0x0_cuint,
+  0xfb9_cuint, 0x2_cuint, 0xf90_cuint, 0xfb5_cuint, 0x0_cuint,
+  0x1b3b_cuint, 0x2_cuint, 0x1b3a_cuint, 0x1b35_cuint, 0x0_cuint,
+  0x1b3d_cuint, 0x2_cuint, 0x1b3c_cuint, 0x1b35_cuint, 0x0_cuint,
+  0x1b40_cuint, 0x2_cuint, 0x1b3e_cuint, 0x1b35_cuint, 0x0_cuint,
+  0x1b41_cuint, 0x2_cuint, 0x1b3f_cuint, 0x1b35_cuint, 0x0_cuint,
+  0x1b43_cuint, 0x2_cuint, 0x1b42_cuint, 0x1b35_cuint, 0x0_cuint,
+  0x1112e_cuint, 0x2_cuint, 0x11131_cuint, 0x11127_cuint, 0x0_cuint,
+  0x1112f_cuint, 0x2_cuint, 0x11132_cuint, 0x11127_cuint, 0x0_cuint,
+  0x1134b_cuint, 0x2_cuint, 0x11347_cuint, 0x1133e_cuint, 0x0_cuint,
+  0x1134c_cuint, 0x2_cuint, 0x11347_cuint, 0x11357_cuint, 0x0_cuint,
+  0x113c5_cuint, 0x2_cuint, 0x113c2_cuint, 0x113c2_cuint, 0x0_cuint,
+  0x113c7_cuint, 0x2_cuint, 0x113c2_cuint, 0x113b8_cuint, 0x0_cuint,
+  0x113c8_cuint, 0x2_cuint, 0x113c2_cuint, 0x113c9_cuint, 0x0_cuint,
+  0x114bb_cuint, 0x2_cuint, 0x114b9_cuint, 0x114ba_cuint, 0x0_cuint,
+  0x114bc_cuint, 0x2_cuint, 0x114b9_cuint, 0x114b0_cuint, 0x0_cuint,
+  0x114be_cuint, 0x2_cuint, 0x114b9_cuint, 0x114bd_cuint, 0x0_cuint,
+  0x115ba_cuint, 0x2_cuint, 0x115b8_cuint, 0x115af_cuint, 0x0_cuint,
+  0x115bb_cuint, 0x2_cuint, 0x115b9_cuint, 0x115af_cuint, 0x0_cuint,
+  0x11938_cuint, 0x2_cuint, 0x11935_cuint, 0x11930_cuint, 0x0_cuint,
+  0x16121_cuint, 0x2_cuint, 0x1611e_cuint, 0x1611e_cuint, 0x0_cuint,
+  0x16122_cuint, 0x2_cuint, 0x1611e_cuint, 0x16129_cuint, 0x0_cuint,
+  0x16123_cuint, 0x2_cuint, 0x1611e_cuint, 0x1611f_cuint, 0x0_cuint,
+  0x16124_cuint, 0x2_cuint, 0x16129_cuint, 0x1611f_cuint, 0x0_cuint,
+  0x16125_cuint, 0x2_cuint, 0x1611e_cuint, 0x16120_cuint, 0x0_cuint,
+  0x16126_cuint, 0x3_cuint, 0x1611e_cuint, 0x1611e_cuint, 0x1611f_cuint,
+  0x16127_cuint, 0x3_cuint, 0x1611e_cuint, 0x16129_cuint, 0x1611f_cuint,
+  0x16128_cuint, 0x3_cuint, 0x1611e_cuint, 0x1611e_cuint, 0x16120_cuint,
+}
+-- END GENERATED GERMAN CCC-0 MARK EXPANSIONS
+
+local function nelibc_german_mark_expansion(value: cwchar_t): GermanMarkExpansionInfo <inline>
+  local low: csize = 0
+  local high: csize = german_mark_expansion_count
+  while low < high do
+    local middle: csize = low + (high - low) // 2
+    local offset = middle * 5
+    local codepoint = german_mark_expansions[offset]
+    if value < codepoint then
+      high = middle
+    elseif value > codepoint then
+      low = middle + 1
+    else
+      return {count = german_mark_expansions[offset + 1],
+        part1 = german_mark_expansions[offset + 2],
+        part2 = german_mark_expansions[offset + 3],
+        part3 = german_mark_expansions[offset + 4]}
+    end
+  end
+  return {count = 0, part1 = 0, part2 = 0, part3 = 0}
+end
 
 local function nelibc_german_extended_a_weight(value: cwchar_t): CollationWeights <inline>
   local low: csize = 0
@@ -1177,6 +1258,15 @@ local function nelibc_german_weights(value: cwchar_t): CollationWeights <inline>
   local combining = nelibc_german_combining_weight(value)
   if combining ~= 0 then
     return {first = 0, second = 0, secondary = combining, case_weight = 0x20_cuint}
+  end
+  local expansion = nelibc_german_mark_expansion(value)
+  if expansion.count ~= 0 then
+    local third: cuint = 0
+    if expansion.count > 2 then third = 0x10000_cuint + expansion.part3 end
+    return {first = 0x10000_cuint + expansion.part1,
+      second = 0x10000_cuint + expansion.part2,
+      third = third,
+      secondary = 0x20_cuint, case_weight = 0x20_cuint}
   end
   local folded = value
   local case_weight: cuint = 0x20_cuint
@@ -1263,7 +1353,8 @@ end
 local function nelibc_german_primary_next(iter: *PrimaryIter): cuint <inline>
   if iter.pending ~= 0 then
     local value = iter.pending
-    iter.pending = 0
+    iter.pending = iter.pending2
+    iter.pending2 = 0
     return value
   end
   local text = (@*[0]cwchar_t)(iter.text)
@@ -1272,6 +1363,7 @@ local function nelibc_german_primary_next(iter: *PrimaryIter): cuint <inline>
     iter.index = iter.index + 1
     if weights.first ~= 0 then
       iter.pending = weights.second
+      iter.pending2 = weights.third
       return weights.first
     end
   end
@@ -1280,6 +1372,10 @@ end
 
 local function nelibc_german_secondary_next(iter: *LevelIter): cuint <inline>
   local text = (@*[0]cwchar_t)(iter.text)
+  if iter.repeat_count ~= 0 then
+    iter.repeat_count = iter.repeat_count - 1
+    return iter.repeat_weight
+  end
   while true do
     if iter.cluster_class ~= 0 then
       if iter.cluster_class == 230_cuint and iter.cluster_virtual ~= 0 then
@@ -1316,6 +1412,13 @@ local function nelibc_german_secondary_next(iter: *LevelIter): cuint <inline>
     else
       if text[iter.index] == 0 then return 0 end
       local value = text[iter.index]
+      local expansion = nelibc_german_mark_expansion(value)
+      if expansion.count ~= 0 then
+        iter.index = iter.index + 1
+        iter.repeat_weight = 0x20_cuint
+        iter.repeat_count = expansion.count - 1
+        return 0x20_cuint
+      end
       local weights = nelibc_german_weights(value)
       local current_class = nelibc_german_combining_class(value)
       if current_class ~= 0 then
@@ -1358,10 +1461,20 @@ end
 
 local function nelibc_german_case_next(iter: *LevelIter): cuint <inline>
   local text = (@*[0]cwchar_t)(iter.text)
+  if iter.repeat_count ~= 0 then
+    iter.repeat_count = iter.repeat_count - 1
+    return iter.repeat_weight
+  end
   while text[iter.index] ~= 0 do
     local value = text[iter.index]
     iter.index = iter.index + 1
     if nelibc_german_combining_weight(value) == 0 then
+      local expansion = nelibc_german_mark_expansion(value)
+      if expansion.count ~= 0 then
+        iter.repeat_weight = 0x20_cuint
+        iter.repeat_count = expansion.count - 1
+        return 0x20_cuint
+      end
       return nelibc_german_weights(value).case_weight
     end
   end
@@ -1370,8 +1483,8 @@ end
 
 local function nelibc_compare_primary(left: *[0]cwchar_t <const>,
     right: *[0]cwchar_t <const>): cint <inline>
-  local left_iter: PrimaryIter = {text = left, index = 0, pending = 0}
-  local right_iter: PrimaryIter = {text = right, index = 0, pending = 0}
+  local left_iter: PrimaryIter = {text = left, index = 0, pending = 0, pending2 = 0}
+  local right_iter: PrimaryIter = {text = right, index = 0, pending = 0, pending2 = 0}
   while true do
     local a = nelibc_german_primary_next(&left_iter)
     local b = nelibc_german_primary_next(&right_iter)
@@ -1385,10 +1498,12 @@ local function nelibc_compare_secondary(left: *[0]cwchar_t <const>,
     right: *[0]cwchar_t <const>): cint <inline>
   local left_iter: LevelIter = {text = left, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
-    cluster_pending_weight = 0, cluster_pending_class = 0}
+    cluster_pending_weight = 0, cluster_pending_class = 0,
+    repeat_weight = 0, repeat_count = 0}
   local right_iter: LevelIter = {text = right, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
-    cluster_pending_weight = 0, cluster_pending_class = 0}
+    cluster_pending_weight = 0, cluster_pending_class = 0,
+    repeat_weight = 0, repeat_count = 0}
   while true do
     local a = nelibc_german_secondary_next(&left_iter)
     local b = nelibc_german_secondary_next(&right_iter)
@@ -1402,10 +1517,12 @@ local function nelibc_compare_case(left: *[0]cwchar_t <const>,
     right: *[0]cwchar_t <const>): cint <inline>
   local left_iter: LevelIter = {text = left, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
-    cluster_pending_weight = 0, cluster_pending_class = 0}
+    cluster_pending_weight = 0, cluster_pending_class = 0,
+    repeat_weight = 0, repeat_count = 0}
   local right_iter: LevelIter = {text = right, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
-    cluster_pending_weight = 0, cluster_pending_class = 0}
+    cluster_pending_weight = 0, cluster_pending_class = 0,
+    repeat_weight = 0, repeat_count = 0}
   while true do
     local a = nelibc_german_case_next(&left_iter)
     local b = nelibc_german_case_next(&right_iter)
@@ -1466,7 +1583,7 @@ end
 local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
     src: *[0]cwchar_t <const>, size: csize): csize <inline>
   local length: csize = 0
-  local primary_iter: PrimaryIter = {text = src, index = 0, pending = 0}
+  local primary_iter: PrimaryIter = {text = src, index = 0, pending = 0, pending2 = 0}
   while true do
     local weight = nelibc_german_primary_next(&primary_iter)
     if weight == 0 then break end
@@ -1475,7 +1592,8 @@ local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
   length = nelibc_german_emit(dest, size, length, 1_cuint)
   local secondary_iter: LevelIter = {text = src, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
-    cluster_pending_weight = 0, cluster_pending_class = 0}
+    cluster_pending_weight = 0, cluster_pending_class = 0,
+    repeat_weight = 0, repeat_count = 0}
   while true do
     local weight = nelibc_german_secondary_next(&secondary_iter)
     if weight == 0 then break end
@@ -1484,7 +1602,8 @@ local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
   length = nelibc_german_emit(dest, size, length, 1_cuint)
   local case_iter: LevelIter = {text = src, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
-    cluster_pending_weight = 0, cluster_pending_class = 0}
+    cluster_pending_weight = 0, cluster_pending_class = 0,
+    repeat_weight = 0, repeat_count = 0}
   while true do
     local weight = nelibc_german_case_next(&case_iter)
     if weight == 0 then break end

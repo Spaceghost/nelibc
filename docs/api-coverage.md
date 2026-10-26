@@ -293,12 +293,15 @@ The Extended-A table is generated from Unicode 16.0.0 by
 `tools/gen_german_collation_data.py`. The supported combining marks are ordered
 by canonical combining class, with input order preserved within a class. The
 generated table covers 934 Unicode 16.0 marks across all code points that have
-one or two canonical combining components with nonzero combining classes.
-Supported decomposed sequences compare like their precomposed forms, including
-when a precomposed character has additional combining marks. Decompositions
-with more than two components and the broader Unicode Collation Algorithm
-remain unsupported. This is a small project-specific subset, not full Unicode or
-glibc/musl locale-data parity.
+one or two canonical components with nonzero combining classes. A second table
+covers 50 category-M spacing marks whose canonical decompositions contain two
+or three components, all with combining class zero. Supported decomposed
+sequences compare like their precomposed forms, including when a precomposed
+character has additional combining marks. Consumer checks cover representative
+two- and three-component spacing-mark expansions. Mixed-class spacing-mark
+decompositions and the broader Unicode Collation Algorithm remain unsupported.
+This is a small project-specific subset, not full Unicode or glibc/musl
+locale-data parity.
 Non-C collation and additional time locales remain incomplete.
 
 `scalb` and `scalbf` scale by integral exponents and report invalid fractional

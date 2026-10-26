@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Unicode weights for standalone German collation."""
+"""Generate Unicode data for standalone German collation."""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ START = "-- BEGIN GENERATED GERMAN LATIN EXTENDED-A WEIGHTS"
 END = "-- END GENERATED GERMAN LATIN EXTENDED-A WEIGHTS"
 MARKS_START = "-- BEGIN GENERATED GERMAN COMBINING MARK WEIGHTS"
 MARKS_END = "-- END GENERATED GERMAN COMBINING MARK WEIGHTS"
+EXPANSIONS_START = "-- BEGIN GENERATED GERMAN CCC-0 MARK EXPANSIONS"
+EXPANSIONS_END = "-- END GENERATED GERMAN CCC-0 MARK EXPANSIONS"
 
 ACCENTS = {
     0x0300: 0x22,  # grave
@@ -100,11 +102,32 @@ def generate_marks() -> str:
     return "\n".join(lines)
 
 
+def generate_mark_expansions() -> str:
+    rows = []
+    for codepoint in range(0x110000):
+        char = chr(codepoint)
+        if not unicodedata.category(char).startswith("M") or unicodedata.combining(char) != 0:
+            continue
+        parts = [ord(part) for part in unicodedata.normalize("NFD", char)]
+        if not 1 < len(parts) <= 3 or any(unicodedata.combining(chr(part)) != 0 for part in parts):
+            continue
+        rows.append((codepoint, len(parts), *parts, *([0] * (3 - len(parts)))))
+
+    lines = [EXPANSIONS_START, f"-- Generated from Unicode {VERSION}; do not edit by hand."]
+    lines.append(f"local german_mark_expansion_count: csize = {len(rows)}_csize")
+    lines.append(f"local german_mark_expansions: [{5 * len(rows)}]cuint = {{")
+    for row in rows:
+        lines.append("  " + ", ".join(f"0x{x:x}_cuint" for x in row) + ",")
+    lines.extend(["}", EXPANSIONS_END])
+    return "\n".join(lines)
+
+
 def main() -> None:
     text = SOURCE.read_text()
     for start, end, generated in (
         (START, END, generate()),
         (MARKS_START, MARKS_END, generate_marks()),
+        (EXPANSIONS_START, EXPANSIONS_END, generate_mark_expansions()),
     ):
         if start not in text or end not in text:
             raise SystemExit("generated collation markers missing from locale source")

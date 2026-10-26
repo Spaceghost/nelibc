@@ -2,14 +2,15 @@
 
 # nelibc
 
-### A C library, rebuilt piece by piece in [Nelua](https://nelua.io)
+**A C library, rebuilt piece by piece in [Nelua](https://nelua.io).**
 
-Replace selected libc functions with Nelua implementations. Keep using glibc or
-musl for the rest, while Nelibc grows toward a standalone runtime.
+Replace the functions you need. Keep the rest from glibc or musl.
+Grow the replacement toward a standalone runtime.
 
-[Quickstart](docs/quickstart.md) · [API coverage](docs/musl-1.2.5-api-coverage.csv) · [Roadmap](docs/core-roadmap.md) · [Contribute](#contribute)
+[Quickstart](docs/quickstart.md) · [Coverage](docs/musl-1.2.5-api-coverage.csv)
+· [Roadmap](docs/core-roadmap.md) · [Contributing](#contribute)
 
-**Experimental** · Linux x86-64 · Hybrid builds usable · Standalone runtime in progress
+Experimental · Linux x86-64 · Hybrid usable · Standalone in progress
 
 </div>
 
@@ -36,27 +37,33 @@ zig cc -Iinclude -fno-builtin app.c build/libnelibc-zig.a -o app
 `-fno-builtin` keeps compiler builtins from bypassing the library. See the
 [quickstart](docs/quickstart.md) for GCC, musl, and TinyCC commands.
 
-## What works
+## Project status
 
-| Area | Current state |
+The pinned musl 1.2.5 comparison tracks **1,471 APIs**:
+
+- **804** exported by Nelibc in at least one tested hybrid profile
+- **222** provided by the host libc in hybrid profiles
+- **445** not yet declared by Nelibc
+
+These are symbol-surface counts, not conformance scores. The standalone
+runtime is a separate, incomplete profile.
+
+| Area | Status |
 | --- | --- |
-| Memory, strings, conversions | Broad implementation; checked across build profiles |
+| Memory, strings, conversions | Broad implementation; hybrid and standalone |
 | Math | Broad real and complex coverage; edge cases remain |
-| Stdio | Hybrid support; standalone support growing |
-| Files, processes, threads | Linux x86-64 base; standalone POSIX coverage is partial |
-| Locale, wide chars, networking | Partial locale and Unicode support; resolver APIs remain |
+| Stdio | Hybrid support; standalone coverage growing |
+| Files, processes, threads | Linux x86-64 base; standalone coverage partial |
+| Locale, wide chars, networking | Partial locale and Unicode; resolver APIs remain |
 
-**Hybrid builds** replace selected functions and use glibc or musl for the rest.
-**Standalone builds** use Nelibc's runtime and syscall layer; they are incomplete.
+## Coverage details
 
-## Track completeness
+The API audit tracks declarations, archive exports, and host delegation.
+Symbol presence and behavioral coverage are reported separately.
 
-Symbol presence and behavioral coverage are tracked separately. The API audit
-compares declarations, archive exports, and host delegation.
-
-- [Function and symbol inventory](docs/musl-1.2.5-api-coverage.csv)
-- [Coverage methodology](docs/api-coverage.md)
-- [Prioritized core roadmap](docs/core-roadmap.md)
+- [Full function and symbol inventory](docs/musl-1.2.5-api-coverage.csv)
+- [How coverage is measured](docs/api-coverage.md)
+- [Core roadmap](docs/core-roadmap.md)
 - [Implementation and smoke catalog](docs/implementation-catalog.md)
 
 Refresh the local, per-profile report with `make api-coverage`.
