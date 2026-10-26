@@ -100,11 +100,13 @@ This is a tested conversion slice, not a complete scanf conformance claim.
 Standalone narrow `fscanf`, `vfscanf`, `scanf`, `vscanf`, `sscanf`, and
 `vsscanf` support literals and whitespace, suppression, field widths, `%n`,
 `%c`/`%s`/scansets, integer bases, and decimal/hexadecimal floating input.
-`%lc` and `%ls` decode through the active multibyte state; wide scansets,
-positional arguments, POSIX `%m`, and multi-byte whitespace pushback remain
-incomplete. The C consumer smoke covers string and stream input, scansets,
-integer base detection, floats, `%n`, and UTF-8 `%lc`/`%ls`. Hybrid builds leave
-the narrow family to host libc.
+`%lc`, `%ls`, and `%l[` decode through the active multibyte state. Wide scanset
+literals and ranges work with multibyte format strings, and the stream restores
+the exact input bytes after a wide conversion stops. Positional arguments and
+POSIX `%m` remain incomplete. The C consumer smoke covers string and stream
+input, ASCII and Unicode scansets, multi-byte whitespace pushback, integer base
+detection, decimal/hexadecimal floats, `%n`, and UTF-8 `%lc`/`%ls`. Hybrid
+builds leave the narrow family to host libc.
 
 Standalone `swprintf` and `vswprintf` now reuse the Nelua narrow formatter,
 transcoding wide literals and strings through the active multibyte locale.

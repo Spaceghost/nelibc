@@ -149,7 +149,7 @@ static int call_vfwprintf(FILE *stream, const wchar_t *format, ...) {
 #endif
 
 #ifdef NELIBC_STANDALONE
-_Static_assert(sizeof(FILE) == 4464, "standalone FILE ABI size");
+_Static_assert(sizeof(FILE) == 4480, "standalone FILE ABI size");
 _Static_assert(offsetof(FILE, pushback_value) == 8, "standalone FILE pushback offset");
 _Static_assert(offsetof(FILE, read_position) == 16, "standalone FILE read offset");
 _Static_assert(offsetof(FILE, buffer_size) == 56, "standalone FILE capacity offset");
@@ -1977,6 +1977,51 @@ int main(int argc, char **argv) {
   if (narrow_scan_wide_word[0] != 0xE9) return 308;
   if (narrow_scan_wide_word[1] != L'x') return 309;
   if (narrow_scan_wide_word[2] != 0) return 310;
+  char wide_scanset_bytes[] = "a\303\251Z";
+  FILE *wide_scanset_stream = fmemopen(wide_scanset_bytes,
+                                       sizeof wide_scanset_bytes - 1, "r");
+  wchar_t wide_scanset_output[8] = {0};
+  if (wide_scanset_stream == NULL ||
+      fscanf(wide_scanset_stream, "%l[a-z]", wide_scanset_output) != 1 ||
+      wide_scanset_output[0] != L'a' || wide_scanset_output[1] != 0 ||
+      fgetc(wide_scanset_stream) != 0xC3 || fgetc(wide_scanset_stream) != 0xA9 ||
+      fgetc(wide_scanset_stream) != 'Z' || fclose(wide_scanset_stream) != 0)
+    return 314;
+  char unicode_scanset_bytes[] = "\303\251Z";
+  wide_scanset_stream = fmemopen(unicode_scanset_bytes,
+                                  sizeof unicode_scanset_bytes - 1, "r");
+  memset(wide_scanset_output, 0, sizeof wide_scanset_output);
+  if (wide_scanset_stream == NULL ||
+      fscanf(wide_scanset_stream, "%l[\303\251]", wide_scanset_output) != 1 ||
+      wide_scanset_output[0] != 0xE9 || wide_scanset_output[1] != 0 ||
+      fgetc(wide_scanset_stream) != 'Z' || fclose(wide_scanset_stream) != 0)
+    return 315;
+  char unicode_range_bytes[] = "\303\251\303\252Z";
+  wide_scanset_stream = fmemopen(unicode_range_bytes,
+                                  sizeof unicode_range_bytes - 1, "r");
+  memset(wide_scanset_output, 0, sizeof wide_scanset_output);
+  if (wide_scanset_stream == NULL ||
+      fscanf(wide_scanset_stream, "%l[\303\251-\303\252]", wide_scanset_output) != 1 ||
+      wide_scanset_output[0] != 0xE9 || wide_scanset_output[1] != 0xEA ||
+      wide_scanset_output[2] != 0 || fgetc(wide_scanset_stream) != 'Z' ||
+      fclose(wide_scanset_stream) != 0)
+    return 317;
+  char wide_space_bytes[] = "\303\251\343\200\200x";
+  FILE *wide_space_stream = fmemopen(wide_space_bytes,
+                                      sizeof wide_space_bytes - 1, "r");
+  memset(wide_scanset_output, 0, sizeof wide_scanset_output);
+  if (wide_space_stream == NULL) return 216;
+  if (fscanf(wide_space_stream, "%ls", wide_scanset_output) != 1 ||
+      wide_scanset_output[0] != 0xE9 || wide_scanset_output[1] != 0)
+    return 217;
+  if (ftell(wide_space_stream) != 2) return 218;
+  if (fseek(wide_space_stream, 0, SEEK_CUR) != 0) return 219;
+  if (fgetc(wide_space_stream) != 0xE3) return 221;
+  if (fgetc(wide_space_stream) != 0x80) return 222;
+  if (fgetc(wide_space_stream) != 0x80) return 223;
+  int wide_space_next = fgetc(wide_space_stream);
+  if (wide_space_next != 'x') return 226;
+  if (fclose(wide_space_stream) != 0) return 225;
   char scan_bytes[] = "alpha \303\251Zrest";
   FILE *scan_stream = fmemopen(scan_bytes, sizeof scan_bytes - 1, "r");
   char narrow_word[8] = {0};
@@ -2252,8 +2297,10 @@ int main(int argc, char **argv) {
   if (fflush(file) != 0 || fseek(file, 0, SEEK_SET) != 0) return 228;
   char formatted_contents[128] = {0};
   if (fread(formatted_contents, 1, 92, file) != 92 ||
-      memcmp(formatted_contents, "0x00002a ok ! % -12\n1.26 -2.3 1.25e+01 1.23e+04 0x1p+2 0X1.8P+0 0x0.0000000000001p-1022-7:42", 92) != 0 ||
-      fclose(file) != 0 || unlinkat(AT_FDCWD, stdio_path, 0) != 0) return 226;
+      memcmp(formatted_contents, "0x00002a ok ! % -12\n1.26 -2.3 1.25e+01 1.23e+04 0x1p+2 0X1.8P+0 0x0.0000000000001p-1022-7:42", 92) != 0)
+    return 230;
+  if (fclose(file) != 0) return 231;
+  if (unlinkat(AT_FDCWD, stdio_path, 0) != 0) return 232;
   char truncated_format[5] = {'X', 'X', 'X', 'X', 'X'};
   char variadic_format[8] = {0};
   char zero_size_format[1] = {'X'};

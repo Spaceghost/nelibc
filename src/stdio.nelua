@@ -103,7 +103,9 @@ local FILE: type = @record{
   wide_read_state: [16]culong,
   wide_write_state: [16]culong,
   has_wide_pushback: cint,
-  wide_pushback_value: cint
+  wide_pushback_value: cint,
+  scan_pushback: [8]byte,
+  scan_pushback_length: cint
 }
 
 local stderr_FILE: FILE <cexport, codename 'nelibc_stderr_FILE'> = {
@@ -257,10 +259,19 @@ local function read_bytes(stream: *FILE, buffer: pointer, count: csize): csize <
   stream.flags = (stream.flags & ~LAST_WRITE) | LAST_READ
   local destination: *[0]byte = (@*[0]byte)(buffer)
   local offset: csize = 0
-  if count ~= 0 and stream.has_pushback ~= 0 then
-    destination[0] = (@byte)(stream.pushback_value)
+  while count ~= 0 and stream.scan_pushback_length > 0 and offset < count do
+    destination[offset] = stream.scan_pushback[0]
+    stream.scan_pushback_length = stream.scan_pushback_length - 1
+    if stream.scan_pushback_length > 0 then
+      memmove((@pointer)(&stream.scan_pushback[0]),
+          (@pointer)(&stream.scan_pushback[1]), (@csize)(stream.scan_pushback_length))
+    end
+    offset = offset + 1
+  end
+  if offset < count and stream.has_pushback ~= 0 then
+    destination[offset] = (@byte)(stream.pushback_value)
     stream.has_pushback = 0
-    offset = 1
+    offset = offset + 1
   end
   if stream.fd == -4 or stream.fd == -5 then
     local memory: *[0]byte = (@*[0]byte)(stream.user_buffer)
@@ -400,6 +411,7 @@ local function write_bytes(stream: *FILE, buffer: pointer <const>, count: csize)
   if (stream.flags & LAST_READ) ~= 0 then
     unread = stream.read_length - stream.read_position
     if stream.has_pushback ~= 0 then unread = unread + 1 end
+    unread = unread + (@csize)(stream.scan_pushback_length)
   end
   if unread ~= 0 then
     if lseek(stream.fd, -(@clong)(unread), 1) < 0 then
@@ -409,6 +421,7 @@ local function write_bytes(stream: *FILE, buffer: pointer <const>, count: csize)
     stream.read_position = 0
     stream.read_length = 0
     stream.has_pushback = 0
+    stream.scan_pushback_length = 0
   end
   stream.flags = (stream.flags & ~LAST_READ) | LAST_WRITE
   local offset: csize = 0
@@ -474,10 +487,15 @@ local function fgetc_unlocked(stream: *FILE): cint <inline>
 end
 
 local function scan_read_wide_unlocked(stream: *FILE, state: pointer,
-    wide: *[0]cint, byte_count: *[0]csize): cint <inline>
+    wide: *[0]cint, bytes: *[0]byte, byte_count: *[0]csize): cint <inline>
   while true do
     local character: cint = fgetc_unlocked(stream)
     if character == -1 then return 0 end
+    if byte_count[0] >= 4 then
+      nelibc_errno_location()[0] = 84 -- EILSEQ
+      return -1
+    end
+    bytes[byte_count[0]] = (@byte)(character)
     byte_count[0] = byte_count[0] + 1
     local byte: cchar = (@cchar)(character)
     local converted: csize = mbrtowc(wide, &byte, 1, state)
@@ -490,9 +508,41 @@ local function scan_read_wide_unlocked(stream: *FILE, state: pointer,
   end
 end
 
+local function scan_unread_wide_bytes_unlocked(stream: *FILE,
+    bytes: *[0]byte, byte_count: csize): boolean <inline>
+  if byte_count == 0 or byte_count > 4 or stream.has_pushback ~= 0 or
+      stream.scan_pushback_length + (@cint)(byte_count) > 8 then return false end
+  local index: cint = stream.scan_pushback_length
+  while index > 0 do
+    stream.scan_pushback[index - 1 + (@cint)(byte_count)] = stream.scan_pushback[index - 1]
+    index = index - 1
+  end
+  index = 0
+  while index < (@cint)(byte_count) do
+    stream.scan_pushback[index] = bytes[index]
+    index = index + 1
+  end
+  stream.scan_pushback_length = stream.scan_pushback_length + (@cint)(byte_count)
+  stream.flags = stream.flags & ~STREAM_EOF
+  return true
+end
+
 local function ungetc_unlocked(character: cint, stream: *FILE): cint <inline>
   stream_orient(stream, -1)
-  if character == -1 or stream.has_pushback ~= 0 or (stream.flags & READABLE) == 0 then return -1 end
+  if character == -1 or (stream.flags & READABLE) == 0 then return -1 end
+  if stream.scan_pushback_length > 0 then
+    if stream.scan_pushback_length >= 8 then return -1 end
+    local index: cint = stream.scan_pushback_length
+    while index > 0 do
+      stream.scan_pushback[index] = stream.scan_pushback[index - 1]
+      index = index - 1
+    end
+    stream.scan_pushback[0] = (@byte)(character & 255)
+    stream.scan_pushback_length = stream.scan_pushback_length + 1
+    stream.flags = stream.flags & ~STREAM_EOF
+    return (@cint)(character & 255)
+  end
+  if stream.has_pushback ~= 0 then return -1 end
   stream.pushback_value = character & 255
   stream.has_pushback = 1
   stream.flags = stream.flags | LAST_READ
@@ -1233,6 +1283,46 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
 end
 
 
+local function scan_wide_set_contains(format: *[0]cchar <const>, start: csize,
+    finish: csize, invert: boolean, character: cint): boolean <inline>
+  local in_set: boolean = false
+  local index: csize = start
+  if index < finish and format[index] == 93 then
+    if character == 93 then in_set = true end
+    index = index + 1
+  end
+  while index < finish do
+    local first: cint = 0
+    local next_index: csize = index
+    local state: [16]culong = {}
+    local converted: csize = mbrtowc(&first, &format[index], finish - index,
+        (@pointer)(&state[0]))
+    if converted == 0 or converted == ~0_csize or converted == ~1_csize then
+      first = (@cint)(format[index])
+      converted = 1
+    end
+    next_index = index + converted
+    if next_index < finish and format[next_index] == 45 and next_index + 1 < finish then
+      local last: cint = 0
+      local after_last: csize = next_index + 1
+      local end_state: [16]culong = {}
+      local end_converted: csize = mbrtowc(&last, &format[after_last],
+          finish - after_last, (@pointer)(&end_state[0]))
+      if end_converted ~= 0 and end_converted ~= ~0_csize and end_converted ~= ~1_csize then
+        if first <= character and character <= last then in_set = true end
+        index = after_last + end_converted
+      else
+        if character == first then in_set = true end
+        index = next_index
+      end
+    else
+      if character == first then in_set = true end
+      index = next_index
+    end
+  end
+  return in_set ~= invert
+end
+
 local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
     arguments: cvalist): cint <cexport, codename 'vfscanf'>
   if stream == nilptr or format == nilptr then
@@ -1682,27 +1772,23 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
       local wide_output: *[0]cint = (@*[0]cint)(destination)
       local conversion_state: [16]culong = {}
       local matched_count: csize = 0
-      local unsupported_delimiter: boolean = false
       while matched_count < width do
         local wide: cint = 0
         local byte_count: csize = 0
+        local encoded: [4]byte = {}
         local conversion_result: cint = scan_read_wide_unlocked(stream,
-            (@pointer)(&conversion_state[0]), &wide, &byte_count)
+            (@pointer)(&conversion_state[0]), &wide, &encoded[0], &byte_count)
         input_count = input_count + byte_count
         if conversion_result == 0 then input_failure = true; break end
         if conversion_result < 0 then input_failure = true; break end
         if iswspace(wide) ~= 0 then
           if matched_count == 0 then continue end
-          if byte_count == 1 then
-            ungetc_unlocked(wide, stream)
-            input_count = input_count - 1
-          else
-            -- This stream currently guarantees one-byte pushback. Keep the
-            -- decoded field intact and report that this delimiter cannot be
-            -- restored yet.
-            nelibc_errno_location()[0] = 38 -- ENOSYS
-            unsupported_delimiter = true
+          if not scan_unread_wide_bytes_unlocked(stream, &encoded[0], byte_count) then
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            stream_unlock(stream)
+            return assignments
           end
+          input_count = input_count - byte_count
           break
         end
         if not suppress then wide_output[matched_count] = wide end
@@ -1712,20 +1798,52 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
         wide_output[matched_count] = 0
         assignments = assignments + 1
       end
-      if unsupported_delimiter then
-        stream_unlock(stream)
-        return assignments
-      end
       if input_failure then break end
       if matched_count == 0 then break end
       continue
     end
     if length_modifier == 1 and conversion == 91 then
-      -- Wide scanset decoding also needs multi-byte pushback for its first
-      -- nonmatching wide character; return an explicit unsupported status.
-      stream_unlock(stream)
-      nelibc_errno_location()[0] = 38 -- ENOSYS
-      return assignments
+      if width == 0 then width = MAX_CSIZE end
+      local destination: pointer = nilptr
+      if not suppress then destination = nelibc_va_arg_pointer(arguments) end
+      local wide_output: *[0]cint = (@*[0]cint)(destination)
+      local conversion_state: [16]culong = {}
+      local matched_count: csize = 0
+      local stop: boolean = false
+      while matched_count < width and not stop do
+        local wide: cint = 0
+        local byte_count: csize = 0
+        local encoded: [4]byte = {}
+        local conversion_result: cint = scan_read_wide_unlocked(stream,
+            (@pointer)(&conversion_state[0]), &wide, &encoded[0], &byte_count)
+        input_count = input_count + byte_count
+        if conversion_result == 0 then input_failure = true; stop = true; break end
+        if conversion_result < 0 then input_failure = true; stop = true; break end
+        if not scan_wide_set_contains(format, scanset_start, scanset_end,
+            scanset_invert, wide) then
+          if not scan_unread_wide_bytes_unlocked(stream, &encoded[0], byte_count) then
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            stream_unlock(stream)
+            return assignments
+          end
+          input_count = input_count - byte_count
+          stop = true
+          break
+        end
+        if not suppress then wide_output[matched_count] = wide end
+        matched_count = matched_count + 1
+      end
+      if matched_count == 0 then
+        if input_failure and assignments == 0 then stream_unlock(stream); return -1 end
+        stream_unlock(stream)
+        return assignments
+      end
+      if not suppress then
+        wide_output[matched_count] = 0
+        assignments = assignments + 1
+      end
+      if input_failure then break end
+      continue
     end
     if conversion == 99 and length_modifier == 1 then
       if width == 0 then width = 1 end
@@ -1737,8 +1855,9 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
       while converted_count < width do
         local wide: cint = 0
         local byte_count: csize = 0
+        local encoded: [4]byte = {}
         local conversion_result: cint = scan_read_wide_unlocked(stream,
-            (@pointer)(&conversion_state[0]), &wide, &byte_count)
+            (@pointer)(&conversion_state[0]), &wide, &encoded[0], &byte_count)
         input_count = input_count + byte_count
         if conversion_result ~= 1 then
           input_failure = true
@@ -2002,14 +2121,9 @@ end
 
 local function ungetc(character: cint, stream: *FILE): cint <cexport, codename 'ungetc'>
   stream_lock(stream)
-  stream_orient(stream, -1)
-  if character == -1 or stream.has_pushback ~= 0 or (stream.flags & READABLE) == 0 then stream_unlock(stream); return -1 end
-  stream.pushback_value = character & 255
-  stream.has_pushback = 1
-  stream.flags = stream.flags | LAST_READ
-  stream.flags = stream.flags & 0xFFFFFFFE_cuint
+  local result: cint = ungetc_unlocked(character, stream)
   stream_unlock(stream)
-  return character & 255
+  return result
 end
 
 local function fread(buffer: pointer, size: csize, count: csize, stream: *FILE): csize <cexport, codename 'fread'>
@@ -2535,6 +2649,7 @@ local function close_stream(stream: *FILE, release_stream: boolean): cint
   stream.flags = 0
   stream.pushback_value = 0
   stream.has_pushback = 0
+  stream.scan_pushback_length = 0
   stream.read_position = 0
   stream.read_length = 0
   stream.write_length = 0
@@ -2714,12 +2829,14 @@ end
 local function discard_read_buffer(stream: *FILE): cint <inline>
   if stream.fd == -4 or stream.fd == -5 or stream.fd == -7 then
     stream.has_pushback = 0
+    stream.scan_pushback_length = 0
     reset_wide_stream_state(stream)
     stream.flags = stream.flags & ~LAST_READ
     return 0
   end
   local unread: csize = stream.read_length - stream.read_position
   if stream.has_pushback ~= 0 then unread = unread + 1 end
+  unread = unread + (@csize)(stream.scan_pushback_length)
   if unread ~= 0 and lseek(stream.fd, -(@clong)(unread), 1) < 0 then
     stream.flags = stream.flags | STREAM_ERROR
     return -1
@@ -2727,6 +2844,7 @@ local function discard_read_buffer(stream: *FILE): cint <inline>
   stream.read_position = 0
   stream.read_length = 0
   stream.has_pushback = 0
+  stream.scan_pushback_length = 0
   reset_wide_stream_state(stream)
   stream.flags = stream.flags & ~LAST_READ
   return 0
@@ -2744,6 +2862,7 @@ local function setvbuf(stream: *FILE, buffer: pointer, mode: cint, size: csize):
   if (stream.flags & LAST_WRITE) ~= 0 then
     if flush_write_buffer(stream) < 0 then stream_unlock(stream); return 1 end
   elseif (stream.flags & LAST_READ) ~= 0 or stream.has_pushback ~= 0 or
+      stream.scan_pushback_length ~= 0 or
       stream.has_wide_pushback ~= 0 then
     if discard_read_buffer(stream) < 0 then stream_unlock(stream); return 1 end
   end
@@ -4171,6 +4290,7 @@ local function fflush(stream: *FILE): cint <cexport, codename 'fflush'>
       if cursor.fd == -5 or cursor.fd == -7 or (cursor.flags & LAST_WRITE) ~= 0 then
         if flush_write_buffer(cursor) < 0 then status = -1 end
       elseif (cursor.flags & LAST_READ) ~= 0 or cursor.has_pushback ~= 0 or
+          cursor.scan_pushback_length ~= 0 or
           cursor.has_wide_pushback ~= 0 then
         if discard_read_buffer(cursor) < 0 then status = -1 end
       end
@@ -4190,6 +4310,7 @@ local function fflush(stream: *FILE): cint <cexport, codename 'fflush'>
   if stream.fd == -5 or stream.fd == -7 or (stream.flags & LAST_WRITE) ~= 0 then
     result = flush_write_buffer(stream)
   elseif (stream.flags & LAST_READ) ~= 0 or stream.has_pushback ~= 0 or
+      stream.scan_pushback_length ~= 0 or
       stream.has_wide_pushback ~= 0 then
     result = discard_read_buffer(stream)
   end
@@ -4214,7 +4335,8 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
   end
   if stream.fd == -4 then
     local base: clong = 0
-    if whence == 1 then base = (@clong)(stream.read_position)
+    if whence == 1 then base = (@clong)(stream.read_position) -
+        (@clong)(stream.scan_pushback_length) - (@clong)(stream.has_pushback)
     elseif whence == 2 then base = (@clong)(stream.read_length)
     elseif whence ~= 0 then nelibc_errno_location()[0] = 22; stream_unlock(stream); return -1 end
     if (offset > 0 and base > 0x7FFFFFFFFFFFFFFF_clong - offset) or
@@ -4231,6 +4353,7 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
     end
     stream.read_position = (@csize)(target)
     stream.has_pushback = 0
+    stream.scan_pushback_length = 0
     reset_wide_stream_state(stream)
     stream.flags = stream.flags & 0xFFFFFFFE_cuint
     stream_unlock(stream)
@@ -4238,7 +4361,8 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
   end
   if stream.fd == -5 or stream.fd == -7 then
     local base: clong = 0
-    if whence == 1 then base = (@clong)(stream.read_position)
+    if whence == 1 then base = (@clong)(stream.read_position) -
+        (@clong)(stream.scan_pushback_length) - (@clong)(stream.has_pushback)
     elseif whence == 2 then base = (@clong)(stream.read_length)
     elseif whence ~= 0 then nelibc_errno_location()[0] = 22; stream_unlock(stream); return -1 end
     if (offset > 0 and base > 0x7FFFFFFFFFFFFFFF_clong - offset) or
@@ -4251,6 +4375,7 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
     if target < 0 then nelibc_errno_location()[0] = 22; stream_unlock(stream); return -1 end
     stream.read_position = (@csize)(target)
     stream.has_pushback = 0
+    stream.scan_pushback_length = 0
     reset_wide_stream_state(stream)
     stream.flags = stream.flags & 0xFFFFFFFE_cuint
     stream_unlock(stream)
@@ -4258,6 +4383,7 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
   end
   local unread: csize = stream.read_length - stream.read_position
   if stream.has_pushback ~= 0 then unread = unread + 1 end
+  unread = unread + (@csize)(stream.scan_pushback_length)
   local result: clong
   if whence == 1 and unread ~= 0 then
     if lseek(stream.fd, -(@clong)(unread), 1) < 0 then
@@ -4276,6 +4402,7 @@ local function fseek(stream: *FILE, offset: clong, whence: cint): cint <cexport,
   stream.read_position = 0
   stream.read_length = 0
   stream.has_pushback = 0
+  stream.scan_pushback_length = 0
   reset_wide_stream_state(stream)
   stream.flags = stream.flags & 0xFFFFFFFE_cuint
   stream_unlock(stream)
@@ -4298,12 +4425,14 @@ local function ftell(stream: *FILE): clong <cexport, codename 'ftell'>
     return -1
   end
   if stream.fd == -4 then
-    local position: clong = (@clong)(stream.read_position)
+    local position: clong = (@clong)(stream.read_position) -
+        (@clong)(stream.scan_pushback_length) - (@clong)(stream.has_pushback)
     stream_unlock(stream)
     return position
   end
   if stream.fd == -5 or stream.fd == -7 then
-    local position: clong = (@clong)(stream.read_position)
+    local position: clong = (@clong)(stream.read_position) -
+        (@clong)(stream.scan_pushback_length) - (@clong)(stream.has_pushback)
     stream_unlock(stream)
     return position
   end
@@ -4314,6 +4443,7 @@ local function ftell(stream: *FILE): clong <cexport, codename 'ftell'>
   end
   local unread: csize = stream.read_length - stream.read_position
   if stream.has_pushback ~= 0 then unread = unread + 1 end
+  unread = unread + (@csize)(stream.scan_pushback_length)
   position = position - (@clong)(unread) + (@clong)(stream.write_length)
   stream_unlock(stream)
   return position

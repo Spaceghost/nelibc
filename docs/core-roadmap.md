@@ -352,8 +352,10 @@ including APIs absent from the pinned musl export set.
 - The standalone narrow scanf family now parses C strings and byte streams with
   literals/whitespace, suppression, widths, `%n`, `%c`/`%s`/scansets, integer
   bases, and decimal/hexadecimal floats. `%lc`/`%ls` use multibyte decoding;
-  wide scansets and multi-byte delimiter pushback remain gaps. Hybrid builds
-  delegate the six narrow scanner APIs to the selected host libc.
+  `%l[` matches multibyte set members and ranges, and wide conversions restore
+  the original input bytes when they stop. Positional arguments and POSIX `%m`
+  remain gaps. Hybrid builds delegate the six narrow scanner APIs to the
+  selected host libc.
 - Standalone `swprintf`/`vswprintf` format wide literals and strings through
   Nelibc's multibyte and narrow-formatting paths. Integer/double, wide `%s` and
   `%c`, `%n`, and truncation cases pass; `%L` formats are explicitly rejected

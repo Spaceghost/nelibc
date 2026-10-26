@@ -33,6 +33,8 @@ typedef struct nelibc_FILE {
   unsigned long wide_write_state[16];
   int has_wide_pushback;
   int wide_pushback_value;
+  unsigned char scan_pushback[8];
+  int scan_pushback_length;
 } FILE;
 
 typedef long fpos_t;
