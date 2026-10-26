@@ -1368,6 +1368,28 @@ collation-shootout-matrix: collation-shootout-zig collation-shootout-gcc collati
 	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/collation-shootout-zig.csv $(OUT)/collation-shootout-gcc.csv $(OUT)/collation-shootout-zig-musl.csv $(OUT)/collation-shootout-tcc.csv > $(OUT)/collation-shootout-matrix.csv
 	@cat $(OUT)/collation-shootout-matrix.csv
 
+collation-shootout-standalone-zig: $(OUT)/libnelibc-standalone-zig.a tools/collation_standalone_bench.c
+	$(ZIG) cc $(ZIGFLAGS) -O2 -DBENCH_COMPILER='"Zig cc"' -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/collation_standalone_bench.c -o $(OUT)/collation-shootout-standalone-zig
+	@test -z "$$($(NM) -u $(OUT)/collation-shootout-standalone-zig)"
+	$(OUT)/collation-shootout-standalone-zig > $(OUT)/collation-shootout-standalone-zig.csv
+	cat $(OUT)/collation-shootout-standalone-zig.csv
+
+collation-shootout-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a tools/collation_standalone_bench.c
+	gcc -O2 -DBENCH_COMPILER='"GCC"' -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-gcc.a -Wl,--no-whole-archive -Iinclude tools/collation_standalone_bench.c -o $(OUT)/collation-shootout-standalone-gcc
+	@test -z "$$($(NM) -u $(OUT)/collation-shootout-standalone-gcc)"
+	$(OUT)/collation-shootout-standalone-gcc > $(OUT)/collation-shootout-standalone-gcc.csv
+	cat $(OUT)/collation-shootout-standalone-gcc.csv
+
+collation-shootout-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/collation_standalone_bench.c
+	$(TCC) -O2 -DBENCH_COMPILER='"TinyCC"' -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-tcc.a -Wl,--no-whole-archive -Iinclude tools/collation_standalone_bench.c -o $(OUT)/collation-shootout-standalone-tcc
+	@test -z "$$($(NM) -u $(OUT)/collation-shootout-standalone-tcc)"
+	$(OUT)/collation-shootout-standalone-tcc > $(OUT)/collation-shootout-standalone-tcc.csv
+	cat $(OUT)/collation-shootout-standalone-tcc.csv
+
+collation-shootout-standalone-matrix: collation-shootout-standalone-zig collation-shootout-standalone-gcc collation-shootout-standalone-tcc
+	@awk 'FNR == 1 && NR > 1 { next } { print }' $(OUT)/collation-shootout-standalone-zig.csv $(OUT)/collation-shootout-standalone-gcc.csv $(OUT)/collation-shootout-standalone-tcc.csv > $(OUT)/collation-shootout-standalone-matrix.csv
+	@cat $(OUT)/collation-shootout-standalone-matrix.csv
+
 float-shootout-zig: zig
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-zig.o src/stdlib_float.nelua
 	$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -fno-sanitize=undefined -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' tools/float_bench.c $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-bench-zig.o $(OUT)/errno-host-zig.o -o $(OUT)/float-shootout-zig

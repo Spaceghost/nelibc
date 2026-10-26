@@ -1,0 +1,7 @@
+profile,function,marks,iterations,median_ns_per_call
+GCC,strcoll,55,100,224227.24
+GCC,strxfrm,55,100,195134.10
+GCC,strcoll,220,25,891625.36
+GCC,strxfrm,220,25,778369.96
+GCC,strcoll,880,6,3468459.17
+GCC,strxfrm,880,6,3064741.67

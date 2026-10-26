@@ -1,0 +1,7 @@
+profile,function,marks,iterations,median_ns_per_call
+Zig cc,strcoll,55,100,147295.81
+Zig cc,strxfrm,55,100,147347.14
+Zig cc,strcoll,220,25,578382.24
+Zig cc,strxfrm,220,25,583909.72
+Zig cc,strcoll,880,6,2298513.17
+Zig cc,strxfrm,880,6,2323010.17

@@ -20,6 +20,9 @@ SMOKE_END = "/* END GENERATED GERMAN CCC-0 SOURCE MARK EXPANSION SMOKE */"
 SMOKE_SOURCE = ROOT / "tools/lib_consumer_smoke.c"
 CLASS_SMOKE_START = "/* BEGIN GENERATED GERMAN COMBINING CLASS SMOKE */"
 CLASS_SMOKE_END = "/* END GENERATED GERMAN COMBINING CLASS SMOKE */"
+BENCH_CLASS_START = "/* BEGIN GENERATED GERMAN COMBINING CLASS BENCHMARK */"
+BENCH_CLASS_END = "/* END GENERATED GERMAN COMBINING CLASS BENCHMARK */"
+STANDALONE_BENCH_SOURCE = ROOT / "tools/collation_standalone_bench.c"
 
 ACCENTS = {
     0x0300: 0x22,  # grave
@@ -176,18 +179,8 @@ def generate_mark_expansion_smoke() -> str:
 
 
 def generate_combining_class_smoke() -> str:
-    if unicodedata.unidata_version != VERSION:
-        raise SystemExit(
-            f"need Python Unicode {VERSION}; found {unicodedata.unidata_version}"
-        )
-    representatives = {}
-    for codepoint in range(0x110000):
-        char = chr(codepoint)
-        combining_class = unicodedata.combining(char)
-        if combining_class and len(unicodedata.normalize("NFD", char)) == 1:
-            representatives.setdefault(combining_class, codepoint)
     rows = []
-    for combining_class, codepoint in sorted(representatives.items()):
+    for combining_class, codepoint in combining_class_representatives():
         char = chr(codepoint)
         rows.append(
             "  {\n"
@@ -208,6 +201,34 @@ def generate_combining_class_smoke() -> str:
         "};",
         CLASS_SMOKE_END,
     ]
+    return "\n".join(lines)
+
+
+def combining_class_representatives() -> list[tuple[int, int]]:
+    if unicodedata.unidata_version != VERSION:
+        raise SystemExit(
+            f"need Python Unicode {VERSION}; found {unicodedata.unidata_version}"
+        )
+    representatives = {}
+    for codepoint in range(0x110000):
+        char = chr(codepoint)
+        combining_class = unicodedata.combining(char)
+        if combining_class and len(unicodedata.normalize("NFD", char)) == 1:
+            representatives.setdefault(combining_class, codepoint)
+    return sorted((combining_class, codepoint)
+                  for combining_class, codepoint in representatives.items())
+
+
+def generate_combining_class_benchmark() -> str:
+    rows = combining_class_representatives()
+    lines = [
+        BENCH_CLASS_START,
+        "typedef struct { unsigned int combining_class; const char *utf8; } combining_class_mark;",
+        "static const combining_class_mark combining_class_marks[] = {",
+    ]
+    lines.extend(f"  {{{combining_class}, {c_utf8_literal(chr(codepoint))}}},"
+                 for combining_class, codepoint in rows)
+    lines.extend(["};", BENCH_CLASS_END])
     return "\n".join(lines)
 
 
@@ -236,6 +257,13 @@ def main() -> None:
     before, remainder = smoke.split(CLASS_SMOKE_START, 1)
     _, after = remainder.split(CLASS_SMOKE_END, 1)
     SMOKE_SOURCE.write_text(before + generate_combining_class_smoke() + after)
+
+    bench = STANDALONE_BENCH_SOURCE.read_text()
+    if BENCH_CLASS_START not in bench or BENCH_CLASS_END not in bench:
+        raise SystemExit("standalone combining-class benchmark markers missing")
+    before, remainder = bench.split(BENCH_CLASS_START, 1)
+    _, after = remainder.split(BENCH_CLASS_END, 1)
+    STANDALONE_BENCH_SOURCE.write_text(before + generate_combining_class_benchmark() + after)
 
 
 if __name__ == "__main__":

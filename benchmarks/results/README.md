@@ -1,5 +1,21 @@
 # Memory shootout record — 2026-10-21
 
+## Standalone collation stress — 2026-10-25
+
+`2026-10-25-collation-standalone-{zig,gcc}.csv` times Nelibc `strcoll` and
+`strxfrm` on one deliberately adversarial cluster containing representatives
+from all 55 Unicode 16.0 nonzero combining classes, repeated to 55, 220, and
+880 marks. Each row is the median of five samples. The C harness is built with
+`-O2`; Nelua objects use the normal standalone profile build flags. On Fedora
+44 / Linux 7.2.7 with an Intel Core i7-11700F, Zig cc measured 147 us at 55
+marks and 2.30 ms at 880 marks for both functions. GCC measured 223 us and
+3.60 ms for `strcoll`; `strxfrm` measured 201 us and 3.12 ms on the repeat run.
+The near-linear scaling is expected from the bounded combining-class scan,
+though the absolute cost is high for unusually long clusters. TinyCC was not
+installed on this machine, so its standalone result is not available.
+Reproduce with `make collation-shootout-standalone-matrix` where TinyCC is
+installed, or run the Zig and GCC targets individually.
+
 The complete four-profile `make shootout-matrix` run from 2026-10-22 is
 preserved in `2026-10-22-full-shootout-matrix/`. It contains thirteen CSVs,
 including syscall-heavy pathconf and vectored-I/O comparisons; the command
