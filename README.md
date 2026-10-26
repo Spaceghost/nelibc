@@ -4,19 +4,19 @@
 
 **A C library, rebuilt piece by piece in [Nelua](https://nelua.io).**
 
-Replace the functions you need. Keep the rest from glibc or musl.
-Grow the replacement toward a standalone runtime.
+Replace selected functions with Nelua implementations. Keep uncovered calls on
+glibc or musl. Grow the replacement toward a standalone runtime.
 
-[Quickstart](docs/quickstart.md) · [Coverage](docs/musl-1.2.5-api-coverage.csv)
-· [Roadmap](docs/core-roadmap.md) · [Contributing](#contribute)
+[Quickstart](docs/quickstart.md) · [API coverage](docs/musl-1.2.5-api-coverage.csv)
+· [Roadmap](docs/core-roadmap.md) · [Contributing](#contributing)
 
-Experimental · Linux x86-64 · Hybrid usable · Standalone in progress
+**Experimental** · Linux x86-64 · Hybrid builds usable · Standalone in progress
 
 </div>
 
 ## Try it
 
-Needs [Nelua](https://nelua.io) and [Zig](https://ziglang.org/).
+Requirements: [Nelua](https://nelua.io) and [Zig](https://ziglang.org/).
 
 ```sh
 git clone https://github.com/Spaceghost/nelibc.git
@@ -24,66 +24,72 @@ cd nelibc
 make dogfood-zig
 ```
 
-This builds Nelibc, links a C program against it, runs the program, and checks
-that Nelibc's symbols made it into the executable.
+This builds Nelibc, links a C consumer, runs it, and verifies that Nelibc's
+symbols are present in the executable.
 
-Use Nelibc in your own C program:
+To link your own program:
 
 ```sh
 make lib-zig
 zig cc -Iinclude -fno-builtin app.c build/libnelibc-zig.a -o app
 ```
 
-`-fno-builtin` keeps compiler builtins from bypassing the library. See the
-[quickstart](docs/quickstart.md) for GCC, musl, and TinyCC commands.
+`-fno-builtin` ensures calls reach the library symbols. The
+[quickstart](docs/quickstart.md) has GCC, musl, and TinyCC commands.
 
-## Project status
+## Where it stands
 
-The pinned musl 1.2.5 comparison tracks **1,471 APIs**:
+The pinned musl 1.2.5 inventory tracks **1,471 API symbols**. This measures
+symbol coverage, not behavioral conformance.
 
-- **804** exported by Nelibc in at least one tested hybrid profile
-- **222** provided by the host libc in hybrid profiles
-- **445** not yet declared by Nelibc
-
-These are symbol-surface counts, not conformance scores. The standalone
-runtime is a separate, incomplete profile.
+| Hybrid coverage | Count |
+| --- | ---: |
+| Exported by Nelibc in at least one tested profile | 804 |
+| Deliberately supplied by host libc | 222 |
+| Not yet declared by Nelibc | 445 |
 
 | Area | Status |
 | --- | --- |
-| Memory, strings, conversions | Broad implementation; hybrid and standalone |
+| Memory, strings, conversions | Broad; hybrid and standalone |
 | Math | Broad real and complex coverage; edge cases remain |
 | Stdio | Hybrid support; standalone coverage growing |
-| Files, processes, threads | Linux x86-64 base; standalone coverage partial |
-| Locale, wide chars, networking | Partial locale and Unicode; resolver APIs remain |
+| Files, processes, threads | Linux x86-64 base; standalone partial |
+| Locale, wide chars, networking | Partial; resolver APIs remain |
 
-## Coverage details
+The standalone runtime has its own coverage profile and is still incomplete.
+See the [full inventory](docs/musl-1.2.5-api-coverage.csv) and
+[coverage method](docs/api-coverage.md) for per-profile detail.
 
-The API audit tracks declarations, archive exports, and host delegation.
-Symbol presence and behavioral coverage are reported separately.
+## Build profiles
 
-- [Full function and symbol inventory](docs/musl-1.2.5-api-coverage.csv)
-- [How coverage is measured](docs/api-coverage.md)
-- [Core roadmap](docs/core-roadmap.md)
-- [Implementation and smoke catalog](docs/implementation-catalog.md)
-
-Refresh the local, per-profile report with `make api-coverage`.
-
-## Compare builds
-
-Zig cc is the default. GCC and TinyCC are comparison toolchains; hybrid builds
-also cover glibc and musl.
+Zig cc is the default toolchain. GCC and TinyCC provide comparisons; hybrid
+archives can target glibc or musl.
 
 ```sh
 make dogfood-matrix
 make smoke-matrix
 ```
 
-TinyCC is optional. See the [quickstart](docs/quickstart.md) for setup details.
+TinyCC is optional. See [quickstart](docs/quickstart.md) for requirements and
+profile-specific commands.
 
-## Contribute
+## Project guide
 
-Pick a small API slice, implement it in Nelua, expose its C ABI, and add a C
-consumer check. Record host delegation in the coverage tracker.
+| Read this | For |
+| --- | --- |
+| [Quickstart](docs/quickstart.md) | Build and link a C program |
+| [API inventory](docs/musl-1.2.5-api-coverage.csv) | Function and symbol coverage |
+| [Coverage notes](docs/api-coverage.md) | How coverage is measured |
+| [Core roadmap](docs/core-roadmap.md) | Priorities and missing core pieces |
+| [Implementation catalog](docs/implementation-catalog.md) | Implementations and smoke tests |
+
+Refresh local per-profile coverage with `make api-coverage`.
+
+## Contributing
+
+Choose a small API slice, implement it in Nelua, expose its C ABI, and add a C
+consumer check. Record host delegation in the coverage tracker. See the
+[implementation catalog](docs/implementation-catalog.md) for existing patterns.
 
 ## License
 
