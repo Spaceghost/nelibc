@@ -1868,11 +1868,16 @@ int main(int argc, char **argv) {
       wcscoll_l(L"ä", L"aa", german_collate) >= 0 ||
       wcscoll_l(L"ss", L"ß", german_collate) >= 0 ||
       wcscoll_l(L"ß", L"st", german_collate) >= 0 ||
-      wcscoll_l(L"a", L"A", german_collate) >= 0)
+      wcscoll_l(L"a", L"A", german_collate) >= 0 ||
+      wcscoll_l(L"café", L"cafe", german_collate) <= 0 ||
+      wcscoll_l(L"café", L"cafè", german_collate) <= 0 ||
+      wcscoll_l(L"café", L"caff", german_collate) >= 0 ||
+      wcscoll_l(L"É", L"é", german_collate) <= 0)
     return 90;
   const wchar_t *german_words[] = {
       L"a", L"ä", L"aa", L"ab", L"ac", L"ad", L"ae", L"af", L"az",
-      L"b", L"o", L"ö", L"oa", L"oe", L"p", L"ss", L"ß", L"ssa", L"st", L"t"};
+      L"b", L"cafe", L"cafè", L"café", L"caff", L"o", L"ö", L"oa", L"oe",
+      L"p", L"ss", L"ß", L"ssa", L"st", L"t"};
   for (size_t i = 0; i < sizeof german_words / sizeof german_words[0]; ++i) {
     for (size_t j = i + 1; j < sizeof german_words / sizeof german_words[0]; ++j) {
       wchar_t left_key[64], right_key[64];

@@ -286,7 +286,11 @@ selected locale; the `_l` forms temporarily switch only the calling thread
 and restore its prior locale before returning. `localeconv` results are kept
 in per-thread storage.
 German time data currently covers localized weekday/month names and `%c`/`%x`
-formats. Non-C collation and additional time locales remain incomplete.
+formats. German collation assigns base-letter primary weights and accent
+secondary weights to common Latin-1 accented letters, alongside the existing
+ASCII, umlaut, and sharp-s behavior. This is a small project-specific subset,
+not full Unicode or glibc/musl locale-data parity. Non-C collation and
+additional time locales remain incomplete.
 
 `scalb` and `scalbf` scale by integral exponents and report invalid fractional
 exponents; `significand` and `significandf` normalize finite nonzero inputs so

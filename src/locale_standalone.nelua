@@ -121,24 +121,69 @@ local function nelibc_german_weights(value: cwchar_t): CollationWeights <inline>
   if value >= 65 and value <= 90 then
     folded = value + 32
     case_weight = 0x21_cuint
+  elseif value >= 0xc0 and value <= 0xd6 then
+    folded = value + 32
+    case_weight = 0x21_cuint
+  elseif value >= 0xd8 and value <= 0xde then
+    folded = value + 32
+    case_weight = 0x21_cuint
+  elseif value == 0x1e9e then
+    folded = 0xdf
+    case_weight = 0x21_cuint
+  elseif value == 0x178 then
+    folded = 0xff
+    case_weight = 0x21_cuint
   end
-  if value == 0xdf or value == 0x1e9e then
-    if value == 0x1e9e then case_weight = 0x21_cuint end
+  if folded == 0xdf then
     return {first = 0x112_cuint, second = 0x112_cuint, secondary = 0x21_cuint,
       case_weight = case_weight}
   end
-  if folded == 0xe4 or folded == 0xc4 then
-    if folded == 0xc4 then case_weight = 0x21_cuint end
-    return {first = 0x100_cuint, second = 0, secondary = 0x21_cuint, case_weight = case_weight}
-  elseif folded == 0xf6 or folded == 0xd6 then
-    if folded == 0xd6 then case_weight = 0x21_cuint end
-    return {first = 0x100_cuint + 14_cuint, second = 0, secondary = 0x21_cuint, case_weight = case_weight}
-  elseif folded == 0xfc or folded == 0xdc then
-    if folded == 0xdc then case_weight = 0x21_cuint end
-    return {first = 0x100_cuint + 20_cuint, second = 0, secondary = 0x21_cuint, case_weight = case_weight}
-  elseif folded >= 97 and folded <= 122 then
-    return {first = 0x100_cuint + (@cuint)(folded - 97), second = 0,
-      secondary = 0x20_cuint, case_weight = case_weight}
+  if folded == 0xf8 then
+    return {first = 0x10e_cuint, second = 0, secondary = 0x26_cuint,
+      case_weight = case_weight}
+  elseif folded == 0xf0 then
+    return {first = 0x103_cuint, second = 0, secondary = 0x22_cuint,
+      case_weight = case_weight}
+  elseif folded == 0xfd or folded == 0xff then
+    local accent: cuint = 0x22_cuint
+    if folded == 0xff then accent = 0x23_cuint end
+    return {first = 0x118_cuint, second = 0, secondary = accent,
+      case_weight = case_weight}
+  end
+  local base = folded
+  local accent: cuint = 0x20_cuint
+  if folded >= 0xe0 and folded <= 0xe5 then
+    base = 97
+    if folded == 0xe0 then accent = 0x22_cuint
+    elseif folded == 0xe1 then accent = 0x23_cuint
+    elseif folded == 0xe2 then accent = 0x24_cuint
+    elseif folded == 0xe3 then accent = 0x25_cuint
+    elseif folded == 0xe4 then accent = 0x21_cuint
+    else accent = 0x26_cuint end
+  elseif folded >= 0xe8 and folded <= 0xeb then
+    base = 101
+    accent = 0x22_cuint + (@cuint)(folded - 0xe8)
+  elseif folded >= 0xec and folded <= 0xef then
+    base = 105
+    accent = 0x22_cuint + (@cuint)(folded - 0xec)
+  elseif folded == 0xf1 then
+    base = 110
+    accent = 0x22_cuint
+  elseif folded >= 0xf2 and folded <= 0xf6 then
+    base = 111
+    if folded == 0xf2 then accent = 0x22_cuint
+    elseif folded == 0xf3 then accent = 0x23_cuint
+    elseif folded == 0xf4 then accent = 0x24_cuint
+    elseif folded == 0xf5 then accent = 0x25_cuint
+    else accent = 0x21_cuint end
+  elseif folded >= 0xf9 and folded <= 0xfc then
+    base = 117
+    if folded == 0xfc then accent = 0x21_cuint
+    else accent = 0x22_cuint + (@cuint)(folded - 0xf9) end
+  end
+  if base >= 97 and base <= 122 then
+    return {first = 0x100_cuint + (@cuint)(base - 97), second = 0,
+      secondary = accent, case_weight = case_weight}
   elseif folded >= 48 and folded <= 57 then
     return {first = 0x80_cuint + (@cuint)(folded - 48), second = 0,
       secondary = 0x20_cuint, case_weight = 0x20_cuint}
