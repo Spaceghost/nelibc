@@ -439,10 +439,11 @@ including APIs absent from the pinned musl export set.
   `freelocale` is a no-op for those handles. Standalone `uselocale` and locale
   handles now carry per-thread `LC_CTYPE`, `LC_NUMERIC`, `LC_MONETARY`,
   `LC_COLLATE`, and `LC_TIME` state. C and C.UTF-8 use code-point ordering;
-  `de_DE.UTF-8` collation handles add a limited German ordering for ASCII
-  letters and common Latin-1 accents, including `ä`/`ö`/`ü` and `ß`, with
-  primary, accent, and case levels. Wide and narrow comparisons and transform
-  keys share those weights. This subset is not full Unicode locale data.
+  `de_DE.UTF-8` collation handles add a limited German ordering for ASCII,
+  Latin-1, and precomposed Latin Extended-A accents, including `ä`/`ö`/`ü`
+  and `ß`, with primary, accent, and case levels. Wide and narrow comparisons
+  and transform keys share those weights. Decomposed combining sequences and
+  full Unicode collation remain unsupported.
   Global `setlocale` now selects German collation and preserves it in `LC_ALL`
   category composites;
   broader Unicode collation data is missing.

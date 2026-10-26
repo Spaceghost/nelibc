@@ -55,11 +55,12 @@ locale data, byte results are shared by `C` and `C.UTF-8`; locale-sensitive
 wide-character operations use the selected locale's Unicode data in standalone
 mode. Standalone archives provide `wcscoll`, `wcscoll_l`, `wcsxfrm`, and
 `wcsxfrm_l` with code-point ordering in `C`/`C.UTF-8` and limited German
-ordering in `de_DE.UTF-8` locale handles. German weights cover ASCII and common
-Latin-1 accents, including umlauts and sharp-s, using base-letter, accent, and
-case levels. This is a subset, not full Unicode collation data. The same
-weights apply to narrow `strcoll`/`strxfrm` when that thread locale is selected.
-Hybrid links use the host libc implementations.
+ordering in `de_DE.UTF-8` locale handles. German weights cover ASCII, Latin-1,
+and precomposed Latin Extended-A accents, including umlauts and sharp-s, using
+base-letter, accent, and case levels. Decomposed combining-mark sequences and
+full Unicode collation are not implemented. The same weights apply to narrow
+`strcoll`/`strxfrm` when that thread locale is selected. Hybrid links use the
+host libc implementations.
 
 Standalone stdio also provides `fwide`, `fgetwc`, `fputwc`, `fgetws`, `fputws`,
 their unlocked variants, `getwc`/`putwc` aliases, and `ungetwc`. Streams track
