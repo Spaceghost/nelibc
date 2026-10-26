@@ -225,10 +225,6 @@ local function flush_write_buffer(stream: *FILE): cint <inline>
     return 0
   end
   if stream.fd == -4 then
-    local memory: *[0]byte = (@*[0]byte)(stream.user_buffer)
-    if stream.read_position < stream.buffer_size then
-      memory[stream.read_position] = 0
-    end
     stream.write_length = 0
     return 0
   end

@@ -317,6 +317,48 @@ static void make_seek_path(char path[64]) {
   path[length] = 0;
 }
 
+static int wide_scanset_smoke(void) {
+  char ascii_range_bytes[] = "a\303\251Z";
+  FILE *stream = fmemopen(ascii_range_bytes, sizeof ascii_range_bytes - 1, "r");
+  wchar_t output[8] = {0};
+  if (stream == NULL || fscanf(stream, "%l[a-z]", output) != 1 ||
+      output[0] != L'a' || output[1] != 0 || fgetc(stream) != 0xC3 ||
+      fgetc(stream) != 0xA9 || fgetc(stream) != 'Z' || fclose(stream) != 0)
+    return 1;
+
+  char unicode_literal_bytes[] = "\303\251Z";
+  stream = fmemopen(unicode_literal_bytes, sizeof unicode_literal_bytes - 1, "r");
+  memset(output, 0, sizeof output);
+  if (stream == NULL || fscanf(stream, "%l[\303\251]", output) != 1 ||
+      output[0] != 0xE9 || output[1] != 0 || fgetc(stream) != 'Z' ||
+      fclose(stream) != 0)
+    return 2;
+
+  char unicode_range_bytes[] = "\303\251\303\252Z";
+  stream = fmemopen(unicode_range_bytes, sizeof unicode_range_bytes - 1, "r");
+  memset(output, 0, sizeof output);
+  if (stream == NULL ||
+      fscanf(stream, "%l[\303\251-\303\252]", output) != 1 ||
+      output[0] != 0xE9 || output[1] != 0xEA || output[2] != 0 ||
+      fgetc(stream) != 'Z' || fclose(stream) != 0)
+    return 3;
+
+  char whitespace_bytes[] = "\303\251\343\200\200x";
+  stream = fmemopen(whitespace_bytes, sizeof whitespace_bytes - 1, "r");
+  memset(output, 0, sizeof output);
+  if (stream == NULL) return 4;
+  if (fscanf(stream, "%ls", output) != 1 || output[0] != 0xE9 || output[1] != 0) return 5;
+  if (ftell(stream) != 2) return 6;
+  if (fseek(stream, 0, SEEK_CUR) != 0) return 7;
+  if (fgetc(stream) != 0xE3) return 8;
+  if (fgetc(stream) != 0x80) return 9;
+  if (fgetc(stream) != 0x80) return 10;
+  int next = fgetc(stream);
+  if (next != 'x') return 11;
+  if (fclose(stream) != 0) return 12;
+  return 0;
+}
+
 #ifdef NELIBC_TESTING
 static int copy_path_to_fd(int destination_fd, const char *source_path) {
   int source_fd = openat(AT_FDCWD, source_path, O_RDONLY);
@@ -1977,51 +2019,8 @@ int main(int argc, char **argv) {
   if (narrow_scan_wide_word[0] != 0xE9) return 308;
   if (narrow_scan_wide_word[1] != L'x') return 309;
   if (narrow_scan_wide_word[2] != 0) return 310;
-  char wide_scanset_bytes[] = "a\303\251Z";
-  FILE *wide_scanset_stream = fmemopen(wide_scanset_bytes,
-                                       sizeof wide_scanset_bytes - 1, "r");
-  wchar_t wide_scanset_output[8] = {0};
-  if (wide_scanset_stream == NULL ||
-      fscanf(wide_scanset_stream, "%l[a-z]", wide_scanset_output) != 1 ||
-      wide_scanset_output[0] != L'a' || wide_scanset_output[1] != 0 ||
-      fgetc(wide_scanset_stream) != 0xC3 || fgetc(wide_scanset_stream) != 0xA9 ||
-      fgetc(wide_scanset_stream) != 'Z' || fclose(wide_scanset_stream) != 0)
-    return 314;
-  char unicode_scanset_bytes[] = "\303\251Z";
-  wide_scanset_stream = fmemopen(unicode_scanset_bytes,
-                                  sizeof unicode_scanset_bytes - 1, "r");
-  memset(wide_scanset_output, 0, sizeof wide_scanset_output);
-  if (wide_scanset_stream == NULL ||
-      fscanf(wide_scanset_stream, "%l[\303\251]", wide_scanset_output) != 1 ||
-      wide_scanset_output[0] != 0xE9 || wide_scanset_output[1] != 0 ||
-      fgetc(wide_scanset_stream) != 'Z' || fclose(wide_scanset_stream) != 0)
-    return 315;
-  char unicode_range_bytes[] = "\303\251\303\252Z";
-  wide_scanset_stream = fmemopen(unicode_range_bytes,
-                                  sizeof unicode_range_bytes - 1, "r");
-  memset(wide_scanset_output, 0, sizeof wide_scanset_output);
-  if (wide_scanset_stream == NULL ||
-      fscanf(wide_scanset_stream, "%l[\303\251-\303\252]", wide_scanset_output) != 1 ||
-      wide_scanset_output[0] != 0xE9 || wide_scanset_output[1] != 0xEA ||
-      wide_scanset_output[2] != 0 || fgetc(wide_scanset_stream) != 'Z' ||
-      fclose(wide_scanset_stream) != 0)
-    return 317;
-  char wide_space_bytes[] = "\303\251\343\200\200x";
-  FILE *wide_space_stream = fmemopen(wide_space_bytes,
-                                      sizeof wide_space_bytes - 1, "r");
-  memset(wide_scanset_output, 0, sizeof wide_scanset_output);
-  if (wide_space_stream == NULL) return 216;
-  if (fscanf(wide_space_stream, "%ls", wide_scanset_output) != 1 ||
-      wide_scanset_output[0] != 0xE9 || wide_scanset_output[1] != 0)
-    return 217;
-  if (ftell(wide_space_stream) != 2) return 218;
-  if (fseek(wide_space_stream, 0, SEEK_CUR) != 0) return 219;
-  if (fgetc(wide_space_stream) != 0xE3) return 221;
-  if (fgetc(wide_space_stream) != 0x80) return 222;
-  if (fgetc(wide_space_stream) != 0x80) return 223;
-  int wide_space_next = fgetc(wide_space_stream);
-  if (wide_space_next != 'x') return 226;
-  if (fclose(wide_space_stream) != 0) return 225;
+  int wide_scanset_result = wide_scanset_smoke();
+  if (wide_scanset_result != 0) return 314 + wide_scanset_result;
   char scan_bytes[] = "alpha \303\251Zrest";
   FILE *scan_stream = fmemopen(scan_bytes, sizeof scan_bytes - 1, "r");
   char narrow_word[8] = {0};
