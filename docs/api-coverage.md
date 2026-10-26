@@ -297,8 +297,9 @@ one or two canonical components with nonzero combining classes. A second table
 covers 50 category-M spacing marks whose canonical decompositions contain two
 or three components, all with combining class zero. Supported decomposed
 sequences compare like their precomposed forms, including when a precomposed
-character has additional combining marks. Consumer checks cover representative
-two- and three-component spacing-mark expansions. Mixed-class spacing-mark
+character has additional combining marks. Consumer checks cover wide and
+narrow comparisons and transform keys for all 50 spacing-mark expansions.
+Mixed-class spacing-mark
 decompositions and the broader Unicode Collation Algorithm remain unsupported.
 This is a small project-specific subset, not full Unicode or glibc/musl
 locale-data parity.

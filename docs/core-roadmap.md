@@ -446,9 +446,9 @@ including APIs absent from the pinned musl export set.
   934 nonzero-class combining marks with one or two canonical components,
   plus 50 spacing marks that decompose into two or three class-zero components.
   Combining marks sort by canonical combining class, preserving input order
-  within each class. Consumer checks cover representative two- and
-  three-component spacing-mark expansions. Mixed-class decompositions and full
-  Unicode collation remain unsupported.
+  within each class. Consumer checks cover wide and narrow comparisons and
+  transform keys for all 50 spacing-mark expansions. Mixed-class
+  decompositions and full Unicode collation remain unsupported.
   Global `setlocale` now selects German collation and preserves it in `LC_ALL`
   category composites. Hybrid profiles continue to use their host's wide
   collation. German time data covers localized weekday/month names and

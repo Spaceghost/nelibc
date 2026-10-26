@@ -61,8 +61,8 @@ base-letter, accent, and case levels. Generated Unicode 16.0 data covers 934
 nonzero-class combining marks with one or two canonical components, plus 50
 spacing marks that decompose into two or three class-zero components. Combining
 marks are ordered by canonical combining class, preserving input order within
-each class. Supported decomposed sequences compare like their precomposed
-forms for representative two- and three-component spacing marks. Mixed-class
+each class. Consumer checks cover wide and narrow comparisons and transform
+keys for all 50 supported spacing-mark decompositions. Mixed-class
 spacing-mark decompositions and full Unicode collation remain unsupported.
 These weights also apply to narrow `strcoll`/`strxfrm` when that thread locale
 is selected.

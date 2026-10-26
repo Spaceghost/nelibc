@@ -34,6 +34,217 @@
 #endif
 
 extern char **environ;
+/* BEGIN GENERATED GERMAN CCC-0 MARK EXPANSION SMOKE */
+typedef struct {
+  const wchar_t *composed_wide;
+  const wchar_t *decomposed_wide;
+  const char *composed_utf8;
+  const char *decomposed_utf8;
+} german_mark_expansion_case;
+
+static const german_mark_expansion_case german_mark_expansion_cases[] = {
+  {
+    L"\U000009cb", L"\U000009c7\U000009be",
+    "\xe0\xa7\x8b", "\xe0\xa7\x87\xe0\xa6\xbe"
+  },
+  {
+    L"\U000009cc", L"\U000009c7\U000009d7",
+    "\xe0\xa7\x8c", "\xe0\xa7\x87\xe0\xa7\x97"
+  },
+  {
+    L"\U00000b48", L"\U00000b47\U00000b56",
+    "\xe0\xad\x88", "\xe0\xad\x87\xe0\xad\x96"
+  },
+  {
+    L"\U00000b4b", L"\U00000b47\U00000b3e",
+    "\xe0\xad\x8b", "\xe0\xad\x87\xe0\xac\xbe"
+  },
+  {
+    L"\U00000b4c", L"\U00000b47\U00000b57",
+    "\xe0\xad\x8c", "\xe0\xad\x87\xe0\xad\x97"
+  },
+  {
+    L"\U00000bca", L"\U00000bc6\U00000bbe",
+    "\xe0\xaf\x8a", "\xe0\xaf\x86\xe0\xae\xbe"
+  },
+  {
+    L"\U00000bcb", L"\U00000bc7\U00000bbe",
+    "\xe0\xaf\x8b", "\xe0\xaf\x87\xe0\xae\xbe"
+  },
+  {
+    L"\U00000bcc", L"\U00000bc6\U00000bd7",
+    "\xe0\xaf\x8c", "\xe0\xaf\x86\xe0\xaf\x97"
+  },
+  {
+    L"\U00000cc0", L"\U00000cbf\U00000cd5",
+    "\xe0\xb3\x80", "\xe0\xb2\xbf\xe0\xb3\x95"
+  },
+  {
+    L"\U00000cc7", L"\U00000cc6\U00000cd5",
+    "\xe0\xb3\x87", "\xe0\xb3\x86\xe0\xb3\x95"
+  },
+  {
+    L"\U00000cc8", L"\U00000cc6\U00000cd6",
+    "\xe0\xb3\x88", "\xe0\xb3\x86\xe0\xb3\x96"
+  },
+  {
+    L"\U00000cca", L"\U00000cc6\U00000cc2",
+    "\xe0\xb3\x8a", "\xe0\xb3\x86\xe0\xb3\x82"
+  },
+  {
+    L"\U00000ccb", L"\U00000cc6\U00000cc2\U00000cd5",
+    "\xe0\xb3\x8b", "\xe0\xb3\x86\xe0\xb3\x82\xe0\xb3\x95"
+  },
+  {
+    L"\U00000d4a", L"\U00000d46\U00000d3e",
+    "\xe0\xb5\x8a", "\xe0\xb5\x86\xe0\xb4\xbe"
+  },
+  {
+    L"\U00000d4b", L"\U00000d47\U00000d3e",
+    "\xe0\xb5\x8b", "\xe0\xb5\x87\xe0\xb4\xbe"
+  },
+  {
+    L"\U00000d4c", L"\U00000d46\U00000d57",
+    "\xe0\xb5\x8c", "\xe0\xb5\x86\xe0\xb5\x97"
+  },
+  {
+    L"\U00000ddc", L"\U00000dd9\U00000dcf",
+    "\xe0\xb7\x9c", "\xe0\xb7\x99\xe0\xb7\x8f"
+  },
+  {
+    L"\U00000dde", L"\U00000dd9\U00000ddf",
+    "\xe0\xb7\x9e", "\xe0\xb7\x99\xe0\xb7\x9f"
+  },
+  {
+    L"\U00000f93", L"\U00000f92\U00000fb7",
+    "\xe0\xbe\x93", "\xe0\xbe\x92\xe0\xbe\xb7"
+  },
+  {
+    L"\U00000f9d", L"\U00000f9c\U00000fb7",
+    "\xe0\xbe\x9d", "\xe0\xbe\x9c\xe0\xbe\xb7"
+  },
+  {
+    L"\U00000fa2", L"\U00000fa1\U00000fb7",
+    "\xe0\xbe\xa2", "\xe0\xbe\xa1\xe0\xbe\xb7"
+  },
+  {
+    L"\U00000fa7", L"\U00000fa6\U00000fb7",
+    "\xe0\xbe\xa7", "\xe0\xbe\xa6\xe0\xbe\xb7"
+  },
+  {
+    L"\U00000fac", L"\U00000fab\U00000fb7",
+    "\xe0\xbe\xac", "\xe0\xbe\xab\xe0\xbe\xb7"
+  },
+  {
+    L"\U00000fb9", L"\U00000f90\U00000fb5",
+    "\xe0\xbe\xb9", "\xe0\xbe\x90\xe0\xbe\xb5"
+  },
+  {
+    L"\U00001b3b", L"\U00001b3a\U00001b35",
+    "\xe1\xac\xbb", "\xe1\xac\xba\xe1\xac\xb5"
+  },
+  {
+    L"\U00001b3d", L"\U00001b3c\U00001b35",
+    "\xe1\xac\xbd", "\xe1\xac\xbc\xe1\xac\xb5"
+  },
+  {
+    L"\U00001b40", L"\U00001b3e\U00001b35",
+    "\xe1\xad\x80", "\xe1\xac\xbe\xe1\xac\xb5"
+  },
+  {
+    L"\U00001b41", L"\U00001b3f\U00001b35",
+    "\xe1\xad\x81", "\xe1\xac\xbf\xe1\xac\xb5"
+  },
+  {
+    L"\U00001b43", L"\U00001b42\U00001b35",
+    "\xe1\xad\x83", "\xe1\xad\x82\xe1\xac\xb5"
+  },
+  {
+    L"\U0001112e", L"\U00011131\U00011127",
+    "\xf0\x91\x84\xae", "\xf0\x91\x84\xb1\xf0\x91\x84\xa7"
+  },
+  {
+    L"\U0001112f", L"\U00011132\U00011127",
+    "\xf0\x91\x84\xaf", "\xf0\x91\x84\xb2\xf0\x91\x84\xa7"
+  },
+  {
+    L"\U0001134b", L"\U00011347\U0001133e",
+    "\xf0\x91\x8d\x8b", "\xf0\x91\x8d\x87\xf0\x91\x8c\xbe"
+  },
+  {
+    L"\U0001134c", L"\U00011347\U00011357",
+    "\xf0\x91\x8d\x8c", "\xf0\x91\x8d\x87\xf0\x91\x8d\x97"
+  },
+  {
+    L"\U000113c5", L"\U000113c2\U000113c2",
+    "\xf0\x91\x8f\x85", "\xf0\x91\x8f\x82\xf0\x91\x8f\x82"
+  },
+  {
+    L"\U000113c7", L"\U000113c2\U000113b8",
+    "\xf0\x91\x8f\x87", "\xf0\x91\x8f\x82\xf0\x91\x8e\xb8"
+  },
+  {
+    L"\U000113c8", L"\U000113c2\U000113c9",
+    "\xf0\x91\x8f\x88", "\xf0\x91\x8f\x82\xf0\x91\x8f\x89"
+  },
+  {
+    L"\U000114bb", L"\U000114b9\U000114ba",
+    "\xf0\x91\x92\xbb", "\xf0\x91\x92\xb9\xf0\x91\x92\xba"
+  },
+  {
+    L"\U000114bc", L"\U000114b9\U000114b0",
+    "\xf0\x91\x92\xbc", "\xf0\x91\x92\xb9\xf0\x91\x92\xb0"
+  },
+  {
+    L"\U000114be", L"\U000114b9\U000114bd",
+    "\xf0\x91\x92\xbe", "\xf0\x91\x92\xb9\xf0\x91\x92\xbd"
+  },
+  {
+    L"\U000115ba", L"\U000115b8\U000115af",
+    "\xf0\x91\x96\xba", "\xf0\x91\x96\xb8\xf0\x91\x96\xaf"
+  },
+  {
+    L"\U000115bb", L"\U000115b9\U000115af",
+    "\xf0\x91\x96\xbb", "\xf0\x91\x96\xb9\xf0\x91\x96\xaf"
+  },
+  {
+    L"\U00011938", L"\U00011935\U00011930",
+    "\xf0\x91\xa4\xb8", "\xf0\x91\xa4\xb5\xf0\x91\xa4\xb0"
+  },
+  {
+    L"\U00016121", L"\U0001611e\U0001611e",
+    "\xf0\x96\x84\xa1", "\xf0\x96\x84\x9e\xf0\x96\x84\x9e"
+  },
+  {
+    L"\U00016122", L"\U0001611e\U00016129",
+    "\xf0\x96\x84\xa2", "\xf0\x96\x84\x9e\xf0\x96\x84\xa9"
+  },
+  {
+    L"\U00016123", L"\U0001611e\U0001611f",
+    "\xf0\x96\x84\xa3", "\xf0\x96\x84\x9e\xf0\x96\x84\x9f"
+  },
+  {
+    L"\U00016124", L"\U00016129\U0001611f",
+    "\xf0\x96\x84\xa4", "\xf0\x96\x84\xa9\xf0\x96\x84\x9f"
+  },
+  {
+    L"\U00016125", L"\U0001611e\U00016120",
+    "\xf0\x96\x84\xa5", "\xf0\x96\x84\x9e\xf0\x96\x84\xa0"
+  },
+  {
+    L"\U00016126", L"\U0001611e\U0001611e\U0001611f",
+    "\xf0\x96\x84\xa6", "\xf0\x96\x84\x9e\xf0\x96\x84\x9e\xf0\x96\x84\x9f"
+  },
+  {
+    L"\U00016127", L"\U0001611e\U00016129\U0001611f",
+    "\xf0\x96\x84\xa7", "\xf0\x96\x84\x9e\xf0\x96\x84\xa9\xf0\x96\x84\x9f"
+  },
+  {
+    L"\U00016128", L"\U0001611e\U0001611e\U00016120",
+    "\xf0\x96\x84\xa8", "\xf0\x96\x84\x9e\xf0\x96\x84\x9e\xf0\x96\x84\xa0"
+  },
+};
+/* END GENERATED GERMAN CCC-0 MARK EXPANSION SMOKE */
 extern long nelibc_test_legacy_strtol(const char *, char **, int)
     __asm__("strtol");
 extern long nelibc_test_legacy_wcstol(const wchar_t *, wchar_t **, int)
@@ -1886,18 +2097,20 @@ int main(int argc, char **argv) {
       wcscoll_l(L"č", L"d", german_collate) >= 0 ||
       wcscoll_l(L"Č", L"č", german_collate) <= 0)
     return 90;
-  if (wcscoll_l(L"\u0ccb", L"\u0cc6\u0cc2\u0cd5", german_collate) != 0)
-    return 102;
-  if (wcscoll_l(L"\u09cb", L"\u09c7\u09be", german_collate) != 0)
-    return 103;
-  wchar_t bengali_mark_key[16], bengali_parts_key[16];
-  size_t bengali_mark_length =
-      wcsxfrm_l(bengali_mark_key, L"\u09cb", 16, german_collate);
-  size_t bengali_parts_length =
-      wcsxfrm_l(bengali_parts_key, L"\u09c7\u09be", 16, german_collate);
-  if (bengali_mark_length != bengali_parts_length ||
-      wcscmp(bengali_mark_key, bengali_parts_key) != 0)
-    return 104;
+  for (size_t i = 0;
+       i < sizeof german_mark_expansion_cases / sizeof german_mark_expansion_cases[0];
+       ++i) {
+    const german_mark_expansion_case *test = &german_mark_expansion_cases[i];
+    wchar_t composed_key[32], decomposed_key[32];
+    size_t composed_length =
+        wcsxfrm_l(composed_key, test->composed_wide, 32, german_collate);
+    size_t decomposed_length =
+        wcsxfrm_l(decomposed_key, test->decomposed_wide, 32, german_collate);
+    if (wcscoll_l(test->composed_wide, test->decomposed_wide, german_collate) != 0 ||
+        composed_length != decomposed_length ||
+        wcscmp(composed_key, decomposed_key) != 0)
+      return 105;
+  }
   const wchar_t *german_words[] = {
       L"a", L"ä", L"aa", L"ab", L"ac", L"ad", L"ae", L"af", L"az",
       L"b", L"c", L"cafe", L"cafè", L"café", L"caff", L"cc", L"cč",
@@ -1971,12 +2184,6 @@ int main(int argc, char **argv) {
           sizeof german_expanded_mark_first);
   strxfrm(german_expanded_mark_second, "a\xcc\x88\xcc\x81",
           sizeof german_expanded_mark_second);
-  char german_bengali_mark_key[128], german_bengali_parts_key[128];
-  size_t german_bengali_mark_length =
-      strxfrm(german_bengali_mark_key, "\xe0\xa7\x8b", sizeof german_bengali_mark_key);
-  size_t german_bengali_parts_length =
-      strxfrm(german_bengali_parts_key, "\xe0\xa7\x87\xe0\xa6\xbe",
-              sizeof german_bengali_parts_key);
   if (old_collate_locale == (locale_t)0 || wcscoll(L"ä", L"aa") >= 0 ||
       strcoll("a", "ä") >= 0 || german_a_key_length >= sizeof german_a_key ||
       german_umlaut_key_length >= sizeof german_umlaut_key ||
@@ -1986,7 +2193,6 @@ int main(int argc, char **argv) {
       strcoll("a\xcc\x95\xcc\xa7", "a\xcc\xa7\xcc\x95") != 0 ||
       strcoll("a\xd6\xb0\xcc\xa7", "a\xcc\xa7\xd6\xb0") != 0 ||
       strcoll("a\xcd\x84", "a\xcc\x88\xcc\x81") != 0 ||
-      strcoll("\xe0\xa7\x8b", "\xe0\xa7\x87\xe0\xa6\xbe") != 0 ||
       strcoll("á\xcc\xa7", "a\xcc\xa7\xcc\x81") != 0 ||
       german_precomposed_key_length >= sizeof german_precomposed_key ||
       german_decomposed_key_length >= sizeof german_decomposed_key ||
@@ -1996,10 +2202,26 @@ int main(int argc, char **argv) {
       strcmp(german_extended_marks_first, german_extended_marks_second) != 0 ||
       strcmp(german_hebrew_marks_first, german_hebrew_marks_second) != 0 ||
       strcmp(german_expanded_mark_first, german_expanded_mark_second) != 0 ||
-      german_bengali_mark_length != german_bengali_parts_length ||
-      strcmp(german_bengali_mark_key, german_bengali_parts_key) != 0 ||
       uselocale(old_collate_locale) != german_collate)
     return 92;
+  old_collate_locale = uselocale(german_collate);
+  if (old_collate_locale == (locale_t)0) return 107;
+  for (size_t i = 0;
+       i < sizeof german_mark_expansion_cases / sizeof german_mark_expansion_cases[0];
+       ++i) {
+    const german_mark_expansion_case *test = &german_mark_expansion_cases[i];
+    char composed_key[128], decomposed_key[128];
+    size_t composed_length =
+        strxfrm(composed_key, test->composed_utf8, sizeof composed_key);
+    size_t decomposed_length =
+        strxfrm(decomposed_key, test->decomposed_utf8, sizeof decomposed_key);
+    if (strcoll(test->composed_utf8, test->decomposed_utf8) != 0)
+      return 106;
+    if (composed_length != decomposed_length ||
+        strcmp(composed_key, decomposed_key) != 0)
+      return 106;
+  }
+  if (uselocale(old_collate_locale) != german_collate) return 108;
   old_collate_locale = uselocale(german_collate_c);
   if (old_collate_locale == (locale_t)0 || strcoll("a", "ä") >= 0 ||
       uselocale(old_collate_locale) != german_collate_c)

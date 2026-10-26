@@ -15,6 +15,9 @@ MARKS_START = "-- BEGIN GENERATED GERMAN COMBINING MARK WEIGHTS"
 MARKS_END = "-- END GENERATED GERMAN COMBINING MARK WEIGHTS"
 EXPANSIONS_START = "-- BEGIN GENERATED GERMAN CCC-0 MARK EXPANSIONS"
 EXPANSIONS_END = "-- END GENERATED GERMAN CCC-0 MARK EXPANSIONS"
+SMOKE_START = "/* BEGIN GENERATED GERMAN CCC-0 MARK EXPANSION SMOKE */"
+SMOKE_END = "/* END GENERATED GERMAN CCC-0 MARK EXPANSION SMOKE */"
+SMOKE_SOURCE = ROOT / "tools/lib_consumer_smoke.c"
 
 ACCENTS = {
     0x0300: 0x22,  # grave
@@ -122,6 +125,49 @@ def generate_mark_expansions() -> str:
     return "\n".join(lines)
 
 
+def c_utf8_literal(value: str) -> str:
+    return '"' + "".join(f"\\x{byte:02x}" for byte in value.encode("utf-8")) + '"'
+
+
+def generate_mark_expansion_smoke() -> str:
+    if unicodedata.unidata_version != VERSION:
+        raise SystemExit(
+            f"need Python Unicode {VERSION}; found {unicodedata.unidata_version}"
+        )
+    rows = []
+    for codepoint in range(0x110000):
+        char = chr(codepoint)
+        if not unicodedata.category(char).startswith("M") or unicodedata.combining(char) != 0:
+            continue
+        decomposition = unicodedata.normalize("NFD", char)
+        parts = [ord(part) for part in decomposition]
+        if not 1 < len(parts) <= 3 or any(unicodedata.combining(chr(part)) != 0 for part in parts):
+            continue
+        composed_wide = f'L"\\U{codepoint:08x}"'
+        decomposed_wide = 'L"' + "".join(f"\\U{part:08x}" for part in parts) + '"'
+        rows.append(
+            "  {\n"
+            f"    {composed_wide}, {decomposed_wide},\n"
+            f"    {c_utf8_literal(char)}, {c_utf8_literal(decomposition)}\n"
+            "  },"
+        )
+    lines = [
+        SMOKE_START,
+        "typedef struct {",
+        "  const wchar_t *composed_wide;",
+        "  const wchar_t *decomposed_wide;",
+        "  const char *composed_utf8;",
+        "  const char *decomposed_utf8;",
+        "} german_mark_expansion_case;",
+        "",
+        "static const german_mark_expansion_case german_mark_expansion_cases[] = {",
+        *rows,
+        "};",
+        SMOKE_END,
+    ]
+    return "\n".join(lines)
+
+
 def main() -> None:
     text = SOURCE.read_text()
     for start, end, generated in (
@@ -135,6 +181,13 @@ def main() -> None:
         _, after = remainder.split(end, 1)
         text = before + generated + after
     SOURCE.write_text(text)
+
+    smoke = SMOKE_SOURCE.read_text()
+    if SMOKE_START not in smoke or SMOKE_END not in smoke:
+        raise SystemExit("generated collation smoke markers missing from consumer")
+    before, remainder = smoke.split(SMOKE_START, 1)
+    _, after = remainder.split(SMOKE_END, 1)
+    SMOKE_SOURCE.write_text(before + generate_mark_expansion_smoke() + after)
 
 
 if __name__ == "__main__":
