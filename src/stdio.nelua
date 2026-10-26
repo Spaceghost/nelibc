@@ -18,6 +18,7 @@ local function nelibc_va_arg_unsigned_long_long(arguments: cvalist): culonglong 
 local function nelibc_va_arg_size(arguments: cvalist): csize <cimport> end
 local function nelibc_va_arg_unsigned_int(arguments: cvalist): cuint <cimport> end
 local function nelibc_va_arg_double(arguments: cvalist): cdouble <cimport> end
+local function nelibc_va_arg_pointer_at(arguments: cvalist, position: csize): pointer <cimport> end
 local function isspace(character: cint): cint <cimport> end
 local function nelibc_scan_strtoll(text: *[0]cchar <const>, end_text: **cchar,
     base: cint): clonglong <cimport> end
@@ -28,6 +29,11 @@ local function nelibc_scan_strtod(text: *[0]cchar <const>, end_text: **cchar): c
 local function nelibc_scan_strtold(text: *[0]cchar <const>, end_text: **cchar): clongdouble <cimport> end
 local function nelibc_va_copy(destination: cvalist, source: cvalist): void <cimport> end
 local function nelibc_store_format_count(pointer: pointer, length: cint, count: csize): void <cimport> end
+
+local function scan_argument_pointer(arguments: cvalist, position: csize): pointer <inline>
+  if position == 0 then return nelibc_va_arg_pointer(arguments) end
+  return nelibc_va_arg_pointer_at(arguments, position)
+end
 
 local DoubleBits: type = @union{bits: culonglong, value: cdouble}
 local function nelibc_double_bits(value: cdouble): culonglong <inline>
@@ -1271,7 +1277,6 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
       end
       assignments = assignments + 1
     end
-    if stop then break end
   end
   stream_unlock(stream)
   if input_failure and assignments == 0 then return -1 end
@@ -1375,6 +1380,32 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
       continue
     end
 
+    local argument_position: csize = 0
+    local argument_probe: csize = format_index
+    local argument_digits: csize = 0
+    while format[argument_probe] >= 48 and format[argument_probe] <= 57 do
+      local argument_digit: csize = (@csize)(format[argument_probe] - 48)
+      if argument_position > MAX_CSIZE // 10 or
+          (argument_position == MAX_CSIZE // 10 and argument_digit > MAX_CSIZE % 10) then
+        nelibc_errno_location()[0] = 75 -- EOVERFLOW
+        stream_unlock(stream)
+        return assignments
+      end
+      argument_position = argument_position * 10 +
+          argument_digit
+      argument_digits = argument_digits + 1
+      argument_probe = argument_probe + 1
+    end
+    if argument_digits ~= 0 and format[argument_probe] == 36 then
+      if argument_position == 0 then
+        nelibc_errno_location()[0] = 22 -- EINVAL
+        stream_unlock(stream)
+        return assignments
+      end
+      format_index = argument_probe + 1
+    else
+      argument_position = 0
+    end
     local suppress: boolean = false
     if format[format_index] == 42 then suppress = true; format_index = format_index + 1 end
     local width: csize = 0
@@ -1421,7 +1452,7 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
 
     if conversion == 110 then
       if not suppress then
-        local destination: pointer = nelibc_va_arg_pointer(arguments)
+        local destination: pointer = scan_argument_pointer(arguments, argument_position)
         if length_modifier == 4 then
           local count_destination: *[0]cchar = (@*[0]cchar)(destination)
           count_destination[0] = (@cchar)(input_count)
@@ -1547,7 +1578,7 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
       nelibc_free((@pointer)(token))
       if not converted then break end
       if not suppress then
-        local destination: pointer = nelibc_va_arg_pointer(arguments)
+        local destination: pointer = scan_argument_pointer(arguments, argument_position)
         if conversion == 112 then
           local pointer_destination: *[0]*byte = (@*[0]*byte)(destination)
           pointer_destination[0] = (@*byte)((@usize)(unsigned_value))
@@ -1732,7 +1763,7 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
       nelibc_free((@pointer)(token))
       if not converted then break end
       if not suppress then
-        local destination: pointer = nelibc_va_arg_pointer(arguments)
+        local destination: pointer = scan_argument_pointer(arguments, argument_position)
         if length_modifier == 6 then
           local output: *[0]clongdouble = (@*[0]clongdouble)(destination)
           output[0] = long_double_value
@@ -1777,7 +1808,7 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
     if conversion == 115 and length_modifier == 1 then
       if width == 0 then width = MAX_CSIZE end
       local destination: pointer = nilptr
-      if not suppress then destination = nelibc_va_arg_pointer(arguments) end
+      if not suppress then destination = scan_argument_pointer(arguments, argument_position) end
       local wide_output: *[0]cint = (@*[0]cint)(destination)
       local conversion_state: [16]culong = {}
       local matched_count: csize = 0
@@ -1814,7 +1845,7 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
     if length_modifier == 1 and conversion == 91 then
       if width == 0 then width = MAX_CSIZE end
       local destination: pointer = nilptr
-      if not suppress then destination = nelibc_va_arg_pointer(arguments) end
+      if not suppress then destination = scan_argument_pointer(arguments, argument_position) end
       local wide_output: *[0]cint = (@*[0]cint)(destination)
       local conversion_state: [16]culong = {}
       local matched_count: csize = 0
@@ -1857,7 +1888,7 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
     if conversion == 99 and length_modifier == 1 then
       if width == 0 then width = 1 end
       local destination: pointer = nilptr
-      if not suppress then destination = nelibc_va_arg_pointer(arguments) end
+      if not suppress then destination = scan_argument_pointer(arguments, argument_position) end
       local wide_output: *[0]cint = (@*[0]cint)(destination)
       local conversion_state: [16]culong = {}
       local converted_count: csize = 0
@@ -1898,7 +1929,7 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
     end
 
     local destination: pointer = nilptr
-    if not suppress then destination = nelibc_va_arg_pointer(arguments) end
+    if not suppress then destination = scan_argument_pointer(arguments, argument_position) end
     local wide_output: *[0]cint = (@*[0]cint)(destination)
     local byte_output: *[0]cchar = (@*[0]cchar)(destination)
     local allocated_output: *[0]cchar = nilptr
@@ -1999,7 +2030,6 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
       end
       assignments = assignments + 1
     end
-    if stop then break end
   end
   stream_unlock(stream)
   if input_failure and assignments == 0 then return -1 end

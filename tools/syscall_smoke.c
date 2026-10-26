@@ -2015,10 +2015,30 @@ int main(int argc, char **argv) {
     return 321;
   free(allocated_scan_word);
   allocated_scan_word = NULL;
+  int allocated_scan_number = 0;
+  if (sscanf("word 41", "%m[a-z] %d", &allocated_scan_word,
+             &allocated_scan_number) != 2 || allocated_scan_word == NULL ||
+      strcmp(allocated_scan_word, "word") != 0 || allocated_scan_number != 41)
+    return 325;
+  free(allocated_scan_word);
+  allocated_scan_word = NULL;
   if (sscanf("UTF8", "%3mc", &allocated_scan_word) != 1 ||
       allocated_scan_word == NULL || memcmp(allocated_scan_word, "UTF", 3) != 0)
     return 322;
   free(allocated_scan_word);
+  int positional_scan_number = 0;
+  char positional_scan_word[16] = {0};
+  if (sscanf("41", "%1$d", &positional_scan_number,
+             positional_scan_word) != 1 || positional_scan_number != 41)
+    return 223;
+  positional_scan_number = 0;
+  memset(positional_scan_word, 0, sizeof positional_scan_word);
+  int positional_scan_result =
+      sscanf("word 41", "%2$s %1$d", &positional_scan_number,
+             positional_scan_word);
+  if (positional_scan_result != 2) return 220;
+  if (positional_scan_number != 41) return 221;
+  if (strcmp(positional_scan_word, "word") != 0) return 222;
   float narrow_scan_float = 0.0f;
   double narrow_scan_double = 0.0;
   if (sscanf("12.5 -2.25", "%f %lf", &narrow_scan_float,

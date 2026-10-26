@@ -7,6 +7,16 @@
  * implementations. Consume it in C so Nelua never takes its address. */
 int nelibc_va_arg_int(va_list arguments) { return va_arg(arguments, int); }
 void *nelibc_va_arg_pointer(va_list arguments) { return va_arg(arguments, void *); }
+__attribute__((no_stack_protector))
+void *nelibc_va_arg_pointer_at(va_list arguments, size_t position) {
+  va_list copy;
+  va_copy(copy, arguments);
+  void *value = NULL;
+  for (size_t index = 0; index < position; ++index)
+    value = va_arg(copy, void *);
+  va_end(copy);
+  return value;
+}
 long nelibc_va_arg_long(va_list arguments) { return va_arg(arguments, long); }
 long long nelibc_va_arg_long_long(va_list arguments) { return va_arg(arguments, long long); }
 unsigned long nelibc_va_arg_unsigned_long(va_list arguments) { return va_arg(arguments, unsigned long); }
