@@ -2123,6 +2123,27 @@ int main(int argc, char **argv) {
               wide_string_word) != 2 || wide_string_integer != 27 ||
       wcscmp(wide_string_word, L"sample") != 0)
     return 326;
+  wchar_t *allocated_wide_word = NULL;
+  int allocated_wide_result = swscanf(L"allocated tail", L"%mls",
+                                      &allocated_wide_word);
+  if (allocated_wide_result != 1) return 327;
+  if (allocated_wide_word == NULL) return 329;
+  if (wcscmp(allocated_wide_word, L"allocated") != 0) return 330;
+  free(allocated_wide_word);
+  allocated_wide_word = NULL;
+  int allocated_wide_scanset_result = swscanf(L"wide123", L"%ml[a-z]",
+                                                &allocated_wide_word);
+  if (allocated_wide_scanset_result != 1) return 328;
+  if (allocated_wide_word == NULL) return 331;
+  if (wcscmp(allocated_wide_word, L"wide") != 0) return 332;
+  free(allocated_wide_word);
+  allocated_wide_word = NULL;
+  if (swscanf(L"wide", L"%4mlc", &allocated_wide_word) != 1 ||
+      allocated_wide_word == NULL || allocated_wide_word[0] != L'w' ||
+      allocated_wide_word[1] != L'i' || allocated_wide_word[2] != L'd' ||
+      allocated_wide_word[3] != L'e')
+    return 333;
+  free(allocated_wide_word);
   if (swscanf(L"", L"%d", &wide_string_integer) != EOF ||
       swscanf(L"", L"") != 0)
     return 300;

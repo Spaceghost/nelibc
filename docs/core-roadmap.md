@@ -356,8 +356,9 @@ including APIs absent from the pinned musl export set.
   members and ranges, and wide conversions restore original input bytes when
   they stop. Fully positional narrow and wide formats select pointer
   arguments from a copied `va_list`; mixing positional and sequential argument
-  forms remains unspecified. Wide `%m` remains a gap. Hybrid builds delegate
-  the six narrow scanner APIs to their
+  forms remains unspecified. Wide `%mls`, `%ml[`, and `%mlc` allocate
+  wide-character results through Nelibc's allocator; other wide `%m` forms
+  remain gaps. Hybrid builds delegate the six narrow scanner APIs to their
   selected host libc.
 - Standalone `swprintf`/`vswprintf` format wide literals and strings through
   Nelibc's multibyte and narrow-formatting paths. Integer/double, wide `%s` and
