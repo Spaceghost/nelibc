@@ -2144,6 +2144,14 @@ int main(int argc, char **argv) {
       allocated_wide_word[3] != L'e')
     return 333;
   free(allocated_wide_word);
+  wchar_t long_wide_scan_input[97];
+  for (size_t i = 0; i < 96; ++i) long_wide_scan_input[i] = L'q';
+  long_wide_scan_input[96] = L'\0';
+  allocated_wide_word = NULL;
+  if (swscanf(long_wide_scan_input, L"%mls", &allocated_wide_word) != 1 ||
+      allocated_wide_word == NULL || wcslen(allocated_wide_word) != 96)
+    return 337;
+  free(allocated_wide_word);
   char *allocated_byte_word = NULL;
   if (swscanf(L"caf\u00e9 tail", L"%ms", &allocated_byte_word) != 1 ||
       allocated_byte_word == NULL || strcmp(allocated_byte_word, "caf\303\251") != 0)
@@ -2158,6 +2166,14 @@ int main(int argc, char **argv) {
   if (swscanf(L"wide", L"%4mc", &allocated_byte_word) != 1 ||
       allocated_byte_word == NULL || memcmp(allocated_byte_word, "wide", 4) != 0)
     return 336;
+  free(allocated_byte_word);
+  wchar_t long_multibyte_scan_input[41];
+  for (size_t i = 0; i < 40; ++i) long_multibyte_scan_input[i] = 0xE9;
+  long_multibyte_scan_input[40] = L'\0';
+  allocated_byte_word = NULL;
+  if (swscanf(long_multibyte_scan_input, L"%ms", &allocated_byte_word) != 1 ||
+      allocated_byte_word == NULL || strlen(allocated_byte_word) != 80)
+    return 338;
   free(allocated_byte_word);
   if (swscanf(L"", L"%d", &wide_string_integer) != EOF ||
       swscanf(L"", L"") != 0)
