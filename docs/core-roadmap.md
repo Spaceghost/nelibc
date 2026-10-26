@@ -12,7 +12,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P1 | Process creation APIs | Standalone `posix_spawn`/`posix_spawnp` handles direct execution, PATH lookup, synchronous setup/exec-error reporting, ordered close/dup2/open/chdir/fchdir file actions, and standard spawn attributes; negative file-action descriptors return `EBADF` | Broaden process/signal/fork interaction audit and successful real-time scheduling coverage where permitted; hybrid profiles continue to use host spawn implementations |
-| P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, a limited German UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread locale handles carry ctype, numeric, monetary, collation, and time state | Expand Unicode collation weights and global `LC_COLLATE`; add more locale datasets |
+| P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, a limited German UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread and global locale state carry ctype, numeric, monetary, collation, and time categories | Expand Unicode collation weights and add more locale datasets |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the remaining undeclared candidates by program impact and record intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
@@ -441,8 +441,9 @@ including APIs absent from the pinned musl export set.
   `LC_COLLATE`, and `LC_TIME` state. C and C.UTF-8 use code-point ordering;
   `de_DE.UTF-8` collation handles add a limited German ordering for ASCII
   letters, `ä`/`ö`/`ü`, and `ß`, with case and accent levels. Wide and narrow
-  comparisons and transform keys share those weights. Global `setlocale` still
-  supports only C collation, and broader Unicode collation data is missing.
+  comparisons and transform keys share those weights. Global `setlocale` now
+  selects German collation and preserves it in `LC_ALL` category composites;
+  broader Unicode collation data is missing.
   Hybrid profiles continue to use their host's wide collation. German time data covers localized weekday/month names and
   `%c`/`%x` formats. Global `setlocale` selects C or German `LC_TIME`,
   reports/accepts its supported `LC_ALL` composites, and `duplocale` snapshots

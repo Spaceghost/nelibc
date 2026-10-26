@@ -2348,6 +2348,36 @@ int main(int argc, char **argv) {
       fnmatch("?", "\303\251", FNM_PATHNAME) != 0)
     return 340;
   if (setlocale(LC_CTYPE, "C") == NULL) return 270;
+#ifdef NELIBC_STANDALONE
+extern int nelibc_standalone_global_collate_mode(void);
+  static const char german_collate_composite[] =
+      "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C;LC_COLLATE=de_DE.UTF-8;"
+      "LC_MONETARY=C;LC_MESSAGES=C";
+  static const char german_collate_numeric_composite[] =
+      "LC_CTYPE=C.UTF-8;LC_NUMERIC=de_DE.UTF-8;LC_TIME=C;"
+      "LC_COLLATE=de_DE.UTF-8;LC_MONETARY=C;LC_MESSAGES=C";
+  char german_collate_key_a[32];
+  char german_collate_key_umlaut[32];
+  if (setlocale(LC_CTYPE, "C.UTF-8") == NULL ||
+      setlocale(LC_COLLATE, "de_DE.UTF-8") == NULL) return 341;
+  if (strcmp(setlocale(LC_COLLATE, NULL), "de_DE.UTF-8") != 0 ||
+      strcmp(setlocale(LC_ALL, NULL), german_collate_composite) != 0) return 342;
+  if (nelibc_standalone_global_collate_mode() != 1) return 350;
+  if (strcoll("ä", "aa") >= 0) return 343;
+  if (strxfrm(german_collate_key_a, "a", sizeof german_collate_key_a) >=
+          sizeof german_collate_key_a ||
+      strxfrm(german_collate_key_umlaut, "ä", sizeof german_collate_key_umlaut) >=
+          sizeof german_collate_key_umlaut ||
+      strcmp(german_collate_key_a, german_collate_key_umlaut) >= 0) return 344;
+  if (setlocale(LC_ALL, german_collate_composite) == NULL ||
+      strcoll("ä", "aa") >= 0) return 345;
+  if (setlocale(LC_NUMERIC, "de_DE.UTF-8") == NULL ||
+      strcmp(setlocale(LC_ALL, NULL), german_collate_numeric_composite) != 0 ||
+      setlocale(LC_ALL, german_collate_numeric_composite) == NULL ||
+      setlocale(LC_NUMERIC, "C") == NULL) return 347;
+  if (setlocale(LC_COLLATE, "C") == NULL || strcoll("ä", "aa") <= 0 ||
+      setlocale(LC_CTYPE, "C") == NULL) return 346;
+#endif
   int input_pipe[2];
   if (pipe(input_pipe) != 0 || write(input_pipe[1], "wxyz", 4) != 4 || close(input_pipe[1]) != 0) return 189;
   int saved_stdin = dup(0);

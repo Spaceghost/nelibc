@@ -275,12 +275,12 @@ whitespace, and printability properties, with ASCII-only classes in `C`;
 `towlower_l`/`towupper_l` use explicit locale handles. Standalone `newlocale`
 constructs static handles for supported combinations of `C`/`C.UTF-8`
 `LC_CTYPE`, `C`/`de_DE.UTF-8` `LC_NUMERIC` and `LC_MONETARY`, plus
-`C`/`C.UTF-8` `LC_COLLATE` and `C`/`de_DE.UTF-8` `LC_TIME`. Standalone
-`uselocale` switches the calling thread's ctype, numeric, monetary, C-style
-collation, and time state. Process-global `setlocale` also supports `C` and
-`de_DE.UTF-8` for `LC_TIME`; `LC_ALL` reports and accepts the matching
-category composites. `duplocale(LC_GLOBAL_LOCALE)` snapshots the selected
-time category. Floating parsing/formatting, grouping, `strcoll`,
+`C`/`C.UTF-8`/`de_DE.UTF-8` `LC_COLLATE` and `C`/`de_DE.UTF-8` `LC_TIME`. Standalone
+`uselocale` switches the calling thread's ctype, numeric, monetary, collation,
+and time state. Process-global `setlocale` supports German collation and time
+alongside C and C.UTF-8; `LC_ALL` reports and accepts the supported category
+combinations. `duplocale(LC_GLOBAL_LOCALE)` snapshots the selected global
+collation and time categories. Floating parsing/formatting, grouping, `strcoll`,
 `strxfrm`, `strftime`/`strptime`, and their POSIX `_l` forms accept the
 selected locale; the `_l` forms temporarily switch only the calling thread
 and restore its prior locale before returning. `localeconv` results are kept

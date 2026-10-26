@@ -10,11 +10,17 @@ local function wcsxfrm(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, size: csiz
 local function nelibc_standalone_collate_mode(): cint <cimport> end
 local function uselocale(locale: pointer): pointer <cimport> end
 local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): pointer <cimport> end
+local function duplocale(locale: pointer): pointer <cimport> end
 
 local function enter_german_utf8_locale(): pointer <inline>
-  local current = uselocale(nilptr)
-  if current == nilptr then return nilptr end
-  local utf8_locale = newlocale(1, "C.UTF-8", current)
+  local previous = uselocale(nilptr)
+  if previous == nilptr then return nilptr end
+  local base = previous
+  if previous == (@pointer)(~0_usize) then
+    base = duplocale(previous)
+    if base == nilptr then return nilptr end
+  end
+  local utf8_locale = newlocale(1, "C.UTF-8", base)
   if utf8_locale == nilptr then return nilptr end
   return uselocale(utf8_locale)
 end

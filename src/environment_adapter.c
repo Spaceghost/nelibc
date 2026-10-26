@@ -637,12 +637,14 @@ static int nelibc_standalone_ctype_utf8;
 static int nelibc_standalone_numeric_de;
 static int nelibc_standalone_monetary_de;
 static int nelibc_standalone_time_de;
+static int nelibc_standalone_collate_de;
 void *nelibc_thread_state(unsigned int slot, size_t size);
 static char nelibc_standalone_locale_c[] = "C";
 static char nelibc_standalone_locale_utf8[] = "C.UTF-8";
 static char nelibc_standalone_locale_de_numeric[] = "de_DE.UTF-8";
 static char nelibc_standalone_locale_de_monetary[] = "de_DE.UTF-8";
 static char nelibc_standalone_locale_de_time[] = "de_DE.UTF-8";
+static char nelibc_standalone_locale_de_collate[] = "de_DE.UTF-8";
 static const char nelibc_standalone_locale_all_utf8[] =
     "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C;LC_COLLATE=C;"
     "LC_MONETARY=C;LC_MESSAGES=C";
@@ -688,7 +690,25 @@ static const char nelibc_standalone_locale_all_de_mon_time[] =
 static const char nelibc_standalone_locale_all_utf8_de_mon_time[] =
     "LC_CTYPE=C.UTF-8;LC_NUMERIC=de_DE.UTF-8;LC_TIME=de_DE.UTF-8;LC_COLLATE=C;"
     "LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C";
-static const char *const nelibc_standalone_locale_all_composites[16] = {
+static const char *const nelibc_standalone_locale_all_de_collate[16] = {
+  "LC_CTYPE=C;LC_NUMERIC=C;LC_TIME=C;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=C;LC_MESSAGES=C",
+  "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=C;LC_MESSAGES=C",
+  "LC_CTYPE=C;LC_NUMERIC=de_DE.UTF-8;LC_TIME=C;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=C;LC_MESSAGES=C",
+  "LC_CTYPE=C.UTF-8;LC_NUMERIC=de_DE.UTF-8;LC_TIME=C;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=C;LC_MESSAGES=C",
+  "LC_CTYPE=C;LC_NUMERIC=C;LC_TIME=C;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C",
+  "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=C;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C",
+  "LC_CTYPE=C;LC_NUMERIC=de_DE.UTF-8;LC_TIME=C;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C",
+  "LC_CTYPE=C.UTF-8;LC_NUMERIC=de_DE.UTF-8;LC_TIME=C;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C",
+  "LC_CTYPE=C;LC_NUMERIC=C;LC_TIME=de_DE.UTF-8;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=C;LC_MESSAGES=C",
+  "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=de_DE.UTF-8;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=C;LC_MESSAGES=C",
+  "LC_CTYPE=C;LC_NUMERIC=de_DE.UTF-8;LC_TIME=de_DE.UTF-8;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=C;LC_MESSAGES=C",
+  "LC_CTYPE=C.UTF-8;LC_NUMERIC=de_DE.UTF-8;LC_TIME=de_DE.UTF-8;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=C;LC_MESSAGES=C",
+  "LC_CTYPE=C;LC_NUMERIC=C;LC_TIME=de_DE.UTF-8;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C",
+  "LC_CTYPE=C.UTF-8;LC_NUMERIC=C;LC_TIME=de_DE.UTF-8;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C",
+  "LC_CTYPE=C;LC_NUMERIC=de_DE.UTF-8;LC_TIME=de_DE.UTF-8;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C",
+  "LC_CTYPE=C.UTF-8;LC_NUMERIC=de_DE.UTF-8;LC_TIME=de_DE.UTF-8;LC_COLLATE=de_DE.UTF-8;LC_MONETARY=de_DE.UTF-8;LC_MESSAGES=C",
+};
+static const char *const nelibc_standalone_locale_all_composites[32] = {
   nelibc_standalone_locale_c,
   nelibc_standalone_locale_all_utf8,
   nelibc_standalone_locale_all_de,
@@ -705,6 +725,22 @@ static const char *const nelibc_standalone_locale_all_composites[16] = {
   nelibc_standalone_locale_all_utf8_mon_time,
   nelibc_standalone_locale_all_de_mon_time,
   nelibc_standalone_locale_all_utf8_de_mon_time,
+  nelibc_standalone_locale_all_de_collate[0],
+  nelibc_standalone_locale_all_de_collate[1],
+  nelibc_standalone_locale_all_de_collate[2],
+  nelibc_standalone_locale_all_de_collate[3],
+  nelibc_standalone_locale_all_de_collate[4],
+  nelibc_standalone_locale_all_de_collate[5],
+  nelibc_standalone_locale_all_de_collate[6],
+  nelibc_standalone_locale_all_de_collate[7],
+  nelibc_standalone_locale_all_de_collate[8],
+  nelibc_standalone_locale_all_de_collate[9],
+  nelibc_standalone_locale_all_de_collate[10],
+  nelibc_standalone_locale_all_de_collate[11],
+  nelibc_standalone_locale_all_de_collate[12],
+  nelibc_standalone_locale_all_de_collate[13],
+  nelibc_standalone_locale_all_de_collate[14],
+  nelibc_standalone_locale_all_de_collate[15],
 };
 
 int nelibc_standalone_global_ctype_mode(void) {
@@ -724,7 +760,7 @@ int nelibc_standalone_global_time_is_de(void) {
 }
 
 int nelibc_standalone_global_collate_mode(void) {
-  return 0;
+  return nelibc_standalone_collate_de;
 }
 
 int nelibc_standalone_collate_mode(void) {
@@ -765,7 +801,8 @@ char *nelibc_standalone_setlocale(int category, const char *name) {
       unsigned int state = (nelibc_standalone_ctype_utf8 ? 1u : 0u) |
           (nelibc_standalone_numeric_de ? 2u : 0u) |
           (nelibc_standalone_monetary_de ? 4u : 0u) |
-          (nelibc_standalone_time_de ? 8u : 0u);
+          (nelibc_standalone_time_de ? 8u : 0u) |
+          (nelibc_standalone_collate_de ? 16u : 0u);
       return (char *)nelibc_standalone_locale_all_composites[state];
     }
     if (category == LC_CTYPE && nelibc_standalone_ctype_utf8)
@@ -776,6 +813,8 @@ char *nelibc_standalone_setlocale(int category, const char *name) {
       return nelibc_standalone_locale_de_monetary;
     if (category == LC_TIME && nelibc_standalone_time_de)
       return nelibc_standalone_locale_de_time;
+    if (category == LC_COLLATE && nelibc_standalone_collate_de)
+      return nelibc_standalone_locale_de_collate;
     return nelibc_standalone_locale_c;
   }
   if (nelibc_locale_name_equal(name, "C") || nelibc_locale_name_equal(name, "POSIX")) {
@@ -787,7 +826,16 @@ char *nelibc_standalone_setlocale(int category, const char *name) {
       nelibc_standalone_monetary_de = 0;
     if (category == LC_TIME || category == LC_ALL)
       nelibc_standalone_time_de = 0;
+    if (category == LC_COLLATE || category == LC_ALL)
+      nelibc_standalone_collate_de = 0;
     return nelibc_standalone_locale_c;
+  }
+  if (category == LC_COLLATE &&
+      (nelibc_locale_name_equal(name, "de_DE.UTF-8") ||
+       nelibc_locale_name_equal(name, "de_DE.utf8") ||
+       nelibc_locale_name_equal(name, "de_DE"))) {
+    nelibc_standalone_collate_de = 1;
+    return nelibc_standalone_locale_de_collate;
   }
   if (category == LC_NUMERIC &&
       (nelibc_locale_name_equal(name, "de_DE.UTF-8") ||
@@ -822,6 +870,7 @@ char *nelibc_standalone_setlocale(int category, const char *name) {
       nelibc_standalone_numeric_de = 0;
       nelibc_standalone_monetary_de = 0;
       nelibc_standalone_time_de = 0;
+      nelibc_standalone_collate_de = 0;
       return (char *)nelibc_standalone_locale_all_utf8;
     }
   }
@@ -831,16 +880,18 @@ char *nelibc_standalone_setlocale(int category, const char *name) {
     nelibc_standalone_numeric_de = 0;
     nelibc_standalone_monetary_de = 0;
     nelibc_standalone_time_de = 0;
+    nelibc_standalone_collate_de = 0;
     return (char *)nelibc_standalone_locale_all_utf8;
   }
   if (category == LC_ALL) {
-    for (unsigned int state = 0; state < 16; ++state) {
+    for (unsigned int state = 0; state < 32; ++state) {
       const char *composite = nelibc_standalone_locale_all_composites[state];
       if (strcmp(name, composite) == 0) {
         nelibc_standalone_ctype_utf8 = (state & 1u) != 0;
         nelibc_standalone_numeric_de = (state & 2u) != 0;
         nelibc_standalone_monetary_de = (state & 4u) != 0;
         nelibc_standalone_time_de = (state & 8u) != 0;
+        nelibc_standalone_collate_de = (state & 16u) != 0;
         return (char *)composite;
       }
     }
