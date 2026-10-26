@@ -1386,6 +1386,11 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
       end
       format_index = format_index + 1
     end
+    local allocate_assignment: boolean = false
+    if format[format_index] == 109 then
+      allocate_assignment = true
+      format_index = format_index + 1
+    end
     local length_modifier: cint = 0
     if format[format_index] == 108 then
       length_modifier = 1
@@ -1405,6 +1410,14 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
     local conversion: cint = format[format_index]
     if conversion == 0 then break end
     format_index = format_index + 1
+
+    if allocate_assignment and (suppress or
+        (conversion ~= 99 and conversion ~= 115 and conversion ~= 91) or
+        length_modifier ~= 0) then
+      nelibc_errno_location()[0] = 22 -- EINVAL
+      stream_unlock(stream)
+      return assignments
+    end
 
     if conversion == 110 then
       if not suppress then
@@ -1888,6 +1901,17 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
     if not suppress then destination = nelibc_va_arg_pointer(arguments) end
     local wide_output: *[0]cint = (@*[0]cint)(destination)
     local byte_output: *[0]cchar = (@*[0]cchar)(destination)
+    local allocated_output: *[0]cchar = nilptr
+    local output_capacity: csize = 0
+    if allocate_assignment then
+      output_capacity = 64
+      allocated_output = (@*[0]cchar)(nelibc_malloc(output_capacity))
+      if allocated_output == nilptr then
+        stream_unlock(stream)
+        nelibc_errno_location()[0] = 12 -- ENOMEM
+        return -1
+      end
+    end
     local output_index: csize = 0
     local conversion_state: [16]culong = {}
     local matched_count: csize = 0
@@ -1928,8 +1952,28 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
         stop = true
         break
       end
+      if allocate_assignment and output_index + 1 >= output_capacity then
+        if output_capacity > MAX_CSIZE // 2 then
+          nelibc_free((@pointer)(allocated_output))
+          stream_unlock(stream)
+          nelibc_errno_location()[0] = 75 -- EOVERFLOW
+          return -1
+        end
+        output_capacity = output_capacity * 2
+        local grown: pointer = nelibc_realloc((@pointer)(allocated_output), output_capacity)
+        if grown == nilptr then
+          nelibc_free((@pointer)(allocated_output))
+          stream_unlock(stream)
+          nelibc_errno_location()[0] = 12 -- ENOMEM
+          return -1
+        end
+        allocated_output = (@*[0]cchar)(grown)
+      end
       if not suppress then
-        if length_modifier == 1 then
+        if allocate_assignment then
+          allocated_output[output_index] = (@cchar)(current)
+          output_index = output_index + 1
+        elseif length_modifier == 1 then
           wide_output[output_index] = (@cint)(current)
           output_index = output_index + 1
         else
@@ -1939,11 +1983,19 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
       end
       matched_count = matched_count + 1
     end
-    if matched_count == 0 then break end
+    if matched_count == 0 then
+      if allocate_assignment then nelibc_free((@pointer)(allocated_output)) end
+      break
+    end
     if not suppress then
       if conversion ~= 99 then
-        if length_modifier == 1 then wide_output[output_index] = 0
+        if allocate_assignment then allocated_output[output_index] = 0
+        elseif length_modifier == 1 then wide_output[output_index] = 0
         else byte_output[output_index] = 0 end
+      end
+      if allocate_assignment then
+        local allocated_destination: *[0]*cchar = (@*[0]*cchar)(destination)
+        allocated_destination[0] = allocated_output
       end
       assignments = assignments + 1
     end

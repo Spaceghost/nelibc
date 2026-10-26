@@ -349,13 +349,13 @@ including APIs absent from the pinned musl export set.
   when a conversion requires input. Zig, GCC, and TinyCC smoke checks pass;
   hybrid profiles delegate to their host libc. Positional arguments and
   extensions such as POSIX `%m` remain outside this tested slice.
-- The standalone narrow scanf family now parses C strings and byte streams with
+- The standalone narrow scanf family parses C strings and byte streams with
   literals/whitespace, suppression, widths, `%n`, `%c`/`%s`/scansets, integer
-  bases, and decimal/hexadecimal floats. `%lc`/`%ls` use multibyte decoding;
-  `%l[` matches multibyte set members and ranges, and wide conversions restore
-  the original input bytes when they stop. Positional arguments and POSIX `%m`
-  remain gaps. Hybrid builds delegate the six narrow scanner APIs to the
-  selected host libc.
+  bases, decimal/hexadecimal floats, and POSIX allocation forms `%mc`, `%ms`,
+  and `%m[`. `%lc`/`%ls` use multibyte decoding; `%l[` matches multibyte set
+  members and ranges, and wide conversions restore original input bytes when
+  they stop. Positional arguments and wide `%m` remain gaps. Hybrid builds
+  delegate the six narrow scanner APIs to their selected host libc.
 - Standalone `swprintf`/`vswprintf` format wide literals and strings through
   Nelibc's multibyte and narrow-formatting paths. Integer/double, wide `%s` and
   `%c`, `%n`, and truncation cases pass; `%L` formats are explicitly rejected

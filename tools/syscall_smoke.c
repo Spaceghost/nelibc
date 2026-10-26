@@ -1996,6 +1996,29 @@ int main(int argc, char **argv) {
       strcmp(narrow_scan_word, "xyz") != 0 || fgetc(narrow_scan_stream) != '1' ||
       fclose(narrow_scan_stream) != 0)
     return 303;
+  char *allocated_scan_word = NULL;
+  if (sscanf("allocated tail", "%ms", &allocated_scan_word) != 1 ||
+      allocated_scan_word == NULL || strcmp(allocated_scan_word, "allocated") != 0)
+    return 320;
+  free(allocated_scan_word);
+  allocated_scan_word = NULL;
+  char long_allocated_input[97];
+  memset(long_allocated_input, 'q', sizeof long_allocated_input - 1);
+  long_allocated_input[sizeof long_allocated_input - 1] = 0;
+  if (sscanf(long_allocated_input, "%ms", &allocated_scan_word) != 1 ||
+      allocated_scan_word == NULL || strlen(allocated_scan_word) != 96)
+    return 323;
+  free(allocated_scan_word);
+  allocated_scan_word = NULL;
+  if (sscanf("wide123", "%4m[a-z]", &allocated_scan_word) != 1 ||
+      allocated_scan_word == NULL || strcmp(allocated_scan_word, "wide") != 0)
+    return 321;
+  free(allocated_scan_word);
+  allocated_scan_word = NULL;
+  if (sscanf("UTF8", "%3mc", &allocated_scan_word) != 1 ||
+      allocated_scan_word == NULL || memcmp(allocated_scan_word, "UTF", 3) != 0)
+    return 322;
+  free(allocated_scan_word);
   float narrow_scan_float = 0.0f;
   double narrow_scan_double = 0.0;
   if (sscanf("12.5 -2.25", "%f %lf", &narrow_scan_float,
