@@ -58,12 +58,12 @@ mode. Standalone archives provide `wcscoll`, `wcscoll_l`, `wcsxfrm`, and
 ordering in `de_DE.UTF-8` locale handles. German weights cover ASCII, Latin-1,
 and precomposed Latin Extended-A accents, including umlauts and sharp-s, using
 base-letter, accent, and case levels. Generated Unicode 16.0 data covers 934
-nonzero-class combining marks with one or two canonical components, plus 50
-spacing marks that decompose into two or three class-zero components. Combining
+nonzero-class combining marks with one or two canonical components, plus 58
+CCC-zero source marks that decompose into two or three components. Combining
 marks are ordered by canonical combining class, preserving input order within
 each class. Consumer checks cover wide and narrow comparisons and transform
-keys for all 50 supported spacing-mark decompositions. Mixed-class
-spacing-mark decompositions and full Unicode collation remain unsupported.
+keys for all 58 source-mark decompositions, including mixed-class components.
+Full Unicode collation remains unsupported.
 These weights also apply to narrow `strcoll`/`strxfrm` when that thread locale
 is selected.
 Hybrid links use the host libc implementations.

@@ -444,11 +444,11 @@ including APIs absent from the pinned musl export set.
   and `ß`, with primary, accent, and case levels. Wide and narrow comparisons
   and transform keys share those weights. Generated Unicode 16.0 data covers
   934 nonzero-class combining marks with one or two canonical components,
-  plus 50 spacing marks that decompose into two or three class-zero components.
+  plus 58 CCC-zero source marks that decompose into two or three components.
   Combining marks sort by canonical combining class, preserving input order
   within each class. Consumer checks cover wide and narrow comparisons and
-  transform keys for all 50 spacing-mark expansions. Mixed-class
-  decompositions and full Unicode collation remain unsupported.
+  transform keys for all 58, including mixed-class components. Full Unicode
+  collation remains unsupported.
   Global `setlocale` now selects German collation and preserves it in `LC_ALL`
   category composites. Hybrid profiles continue to use their host's wide
   collation. German time data covers localized weekday/month names and

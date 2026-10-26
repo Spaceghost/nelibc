@@ -185,7 +185,7 @@ local german_extended_a_weights: [432]cuint = {
 local GermanCombiningInfo: type = @record{weight1: cuint, class1: cuint,
   weight2: cuint, class2: cuint}
 local GermanMarkExpansionInfo: type = @record{count: cuint, part1: cuint,
-  part2: cuint, part3: cuint}
+  part2: cuint, part3: cuint, class1: cuint, class2: cuint, class3: cuint}
 -- BEGIN GENERATED GERMAN COMBINING MARK WEIGHTS
 -- Generated from Unicode 16.0.0; do not edit by hand.
 local german_combining_info_count: csize = 934_csize
@@ -1126,69 +1126,77 @@ local german_combining_infos: [4670]cuint = {
   0x1e94a_cuint, 0x1e68a_cuint, 0x7_cuint, 0x0_cuint, 0x0_cuint,
 }
 -- END GENERATED GERMAN COMBINING MARK WEIGHTS
--- BEGIN GENERATED GERMAN CCC-0 MARK EXPANSIONS
+-- BEGIN GENERATED GERMAN CCC-0 SOURCE MARK EXPANSIONS
 -- Generated from Unicode 16.0.0; do not edit by hand.
-local german_mark_expansion_count: csize = 50_csize
-local german_mark_expansions: [250]cuint = {
-  0x9cb_cuint, 0x2_cuint, 0x9c7_cuint, 0x9be_cuint, 0x0_cuint,
-  0x9cc_cuint, 0x2_cuint, 0x9c7_cuint, 0x9d7_cuint, 0x0_cuint,
-  0xb48_cuint, 0x2_cuint, 0xb47_cuint, 0xb56_cuint, 0x0_cuint,
-  0xb4b_cuint, 0x2_cuint, 0xb47_cuint, 0xb3e_cuint, 0x0_cuint,
-  0xb4c_cuint, 0x2_cuint, 0xb47_cuint, 0xb57_cuint, 0x0_cuint,
-  0xbca_cuint, 0x2_cuint, 0xbc6_cuint, 0xbbe_cuint, 0x0_cuint,
-  0xbcb_cuint, 0x2_cuint, 0xbc7_cuint, 0xbbe_cuint, 0x0_cuint,
-  0xbcc_cuint, 0x2_cuint, 0xbc6_cuint, 0xbd7_cuint, 0x0_cuint,
-  0xcc0_cuint, 0x2_cuint, 0xcbf_cuint, 0xcd5_cuint, 0x0_cuint,
-  0xcc7_cuint, 0x2_cuint, 0xcc6_cuint, 0xcd5_cuint, 0x0_cuint,
-  0xcc8_cuint, 0x2_cuint, 0xcc6_cuint, 0xcd6_cuint, 0x0_cuint,
-  0xcca_cuint, 0x2_cuint, 0xcc6_cuint, 0xcc2_cuint, 0x0_cuint,
-  0xccb_cuint, 0x3_cuint, 0xcc6_cuint, 0xcc2_cuint, 0xcd5_cuint,
-  0xd4a_cuint, 0x2_cuint, 0xd46_cuint, 0xd3e_cuint, 0x0_cuint,
-  0xd4b_cuint, 0x2_cuint, 0xd47_cuint, 0xd3e_cuint, 0x0_cuint,
-  0xd4c_cuint, 0x2_cuint, 0xd46_cuint, 0xd57_cuint, 0x0_cuint,
-  0xddc_cuint, 0x2_cuint, 0xdd9_cuint, 0xdcf_cuint, 0x0_cuint,
-  0xdde_cuint, 0x2_cuint, 0xdd9_cuint, 0xddf_cuint, 0x0_cuint,
-  0xf93_cuint, 0x2_cuint, 0xf92_cuint, 0xfb7_cuint, 0x0_cuint,
-  0xf9d_cuint, 0x2_cuint, 0xf9c_cuint, 0xfb7_cuint, 0x0_cuint,
-  0xfa2_cuint, 0x2_cuint, 0xfa1_cuint, 0xfb7_cuint, 0x0_cuint,
-  0xfa7_cuint, 0x2_cuint, 0xfa6_cuint, 0xfb7_cuint, 0x0_cuint,
-  0xfac_cuint, 0x2_cuint, 0xfab_cuint, 0xfb7_cuint, 0x0_cuint,
-  0xfb9_cuint, 0x2_cuint, 0xf90_cuint, 0xfb5_cuint, 0x0_cuint,
-  0x1b3b_cuint, 0x2_cuint, 0x1b3a_cuint, 0x1b35_cuint, 0x0_cuint,
-  0x1b3d_cuint, 0x2_cuint, 0x1b3c_cuint, 0x1b35_cuint, 0x0_cuint,
-  0x1b40_cuint, 0x2_cuint, 0x1b3e_cuint, 0x1b35_cuint, 0x0_cuint,
-  0x1b41_cuint, 0x2_cuint, 0x1b3f_cuint, 0x1b35_cuint, 0x0_cuint,
-  0x1b43_cuint, 0x2_cuint, 0x1b42_cuint, 0x1b35_cuint, 0x0_cuint,
-  0x1112e_cuint, 0x2_cuint, 0x11131_cuint, 0x11127_cuint, 0x0_cuint,
-  0x1112f_cuint, 0x2_cuint, 0x11132_cuint, 0x11127_cuint, 0x0_cuint,
-  0x1134b_cuint, 0x2_cuint, 0x11347_cuint, 0x1133e_cuint, 0x0_cuint,
-  0x1134c_cuint, 0x2_cuint, 0x11347_cuint, 0x11357_cuint, 0x0_cuint,
-  0x113c5_cuint, 0x2_cuint, 0x113c2_cuint, 0x113c2_cuint, 0x0_cuint,
-  0x113c7_cuint, 0x2_cuint, 0x113c2_cuint, 0x113b8_cuint, 0x0_cuint,
-  0x113c8_cuint, 0x2_cuint, 0x113c2_cuint, 0x113c9_cuint, 0x0_cuint,
-  0x114bb_cuint, 0x2_cuint, 0x114b9_cuint, 0x114ba_cuint, 0x0_cuint,
-  0x114bc_cuint, 0x2_cuint, 0x114b9_cuint, 0x114b0_cuint, 0x0_cuint,
-  0x114be_cuint, 0x2_cuint, 0x114b9_cuint, 0x114bd_cuint, 0x0_cuint,
-  0x115ba_cuint, 0x2_cuint, 0x115b8_cuint, 0x115af_cuint, 0x0_cuint,
-  0x115bb_cuint, 0x2_cuint, 0x115b9_cuint, 0x115af_cuint, 0x0_cuint,
-  0x11938_cuint, 0x2_cuint, 0x11935_cuint, 0x11930_cuint, 0x0_cuint,
-  0x16121_cuint, 0x2_cuint, 0x1611e_cuint, 0x1611e_cuint, 0x0_cuint,
-  0x16122_cuint, 0x2_cuint, 0x1611e_cuint, 0x16129_cuint, 0x0_cuint,
-  0x16123_cuint, 0x2_cuint, 0x1611e_cuint, 0x1611f_cuint, 0x0_cuint,
-  0x16124_cuint, 0x2_cuint, 0x16129_cuint, 0x1611f_cuint, 0x0_cuint,
-  0x16125_cuint, 0x2_cuint, 0x1611e_cuint, 0x16120_cuint, 0x0_cuint,
-  0x16126_cuint, 0x3_cuint, 0x1611e_cuint, 0x1611e_cuint, 0x1611f_cuint,
-  0x16127_cuint, 0x3_cuint, 0x1611e_cuint, 0x16129_cuint, 0x1611f_cuint,
-  0x16128_cuint, 0x3_cuint, 0x1611e_cuint, 0x1611e_cuint, 0x16120_cuint,
+local german_mark_expansion_count: csize = 58_csize
+local german_mark_expansions: [464]cuint = {
+  0x9cb_cuint, 0x2_cuint, 0x9c7_cuint, 0x9be_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x9cc_cuint, 0x2_cuint, 0x9c7_cuint, 0x9d7_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xb48_cuint, 0x2_cuint, 0xb47_cuint, 0xb56_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xb4b_cuint, 0x2_cuint, 0xb47_cuint, 0xb3e_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xb4c_cuint, 0x2_cuint, 0xb47_cuint, 0xb57_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xbca_cuint, 0x2_cuint, 0xbc6_cuint, 0xbbe_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xbcb_cuint, 0x2_cuint, 0xbc7_cuint, 0xbbe_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xbcc_cuint, 0x2_cuint, 0xbc6_cuint, 0xbd7_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xc48_cuint, 0x2_cuint, 0xc46_cuint, 0xc56_cuint, 0x0_cuint, 0x0_cuint, 0x5b_cuint, 0x0_cuint,
+  0xcc0_cuint, 0x2_cuint, 0xcbf_cuint, 0xcd5_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xcc7_cuint, 0x2_cuint, 0xcc6_cuint, 0xcd5_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xcc8_cuint, 0x2_cuint, 0xcc6_cuint, 0xcd6_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xcca_cuint, 0x2_cuint, 0xcc6_cuint, 0xcc2_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xccb_cuint, 0x3_cuint, 0xcc6_cuint, 0xcc2_cuint, 0xcd5_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xd4a_cuint, 0x2_cuint, 0xd46_cuint, 0xd3e_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xd4b_cuint, 0x2_cuint, 0xd47_cuint, 0xd3e_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xd4c_cuint, 0x2_cuint, 0xd46_cuint, 0xd57_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xdda_cuint, 0x2_cuint, 0xdd9_cuint, 0xdca_cuint, 0x0_cuint, 0x0_cuint, 0x9_cuint, 0x0_cuint,
+  0xddc_cuint, 0x2_cuint, 0xdd9_cuint, 0xdcf_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xddd_cuint, 0x3_cuint, 0xdd9_cuint, 0xdcf_cuint, 0xdca_cuint, 0x0_cuint, 0x0_cuint, 0x9_cuint,
+  0xdde_cuint, 0x2_cuint, 0xdd9_cuint, 0xddf_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xf73_cuint, 0x2_cuint, 0xf71_cuint, 0xf72_cuint, 0x0_cuint, 0x81_cuint, 0x82_cuint, 0x0_cuint,
+  0xf75_cuint, 0x2_cuint, 0xf71_cuint, 0xf74_cuint, 0x0_cuint, 0x81_cuint, 0x84_cuint, 0x0_cuint,
+  0xf76_cuint, 0x2_cuint, 0xfb2_cuint, 0xf80_cuint, 0x0_cuint, 0x0_cuint, 0x82_cuint, 0x0_cuint,
+  0xf78_cuint, 0x2_cuint, 0xfb3_cuint, 0xf80_cuint, 0x0_cuint, 0x0_cuint, 0x82_cuint, 0x0_cuint,
+  0xf81_cuint, 0x2_cuint, 0xf71_cuint, 0xf80_cuint, 0x0_cuint, 0x81_cuint, 0x82_cuint, 0x0_cuint,
+  0xf93_cuint, 0x2_cuint, 0xf92_cuint, 0xfb7_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xf9d_cuint, 0x2_cuint, 0xf9c_cuint, 0xfb7_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xfa2_cuint, 0x2_cuint, 0xfa1_cuint, 0xfb7_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xfa7_cuint, 0x2_cuint, 0xfa6_cuint, 0xfb7_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xfac_cuint, 0x2_cuint, 0xfab_cuint, 0xfb7_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0xfb9_cuint, 0x2_cuint, 0xf90_cuint, 0xfb5_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x1b3b_cuint, 0x2_cuint, 0x1b3a_cuint, 0x1b35_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x1b3d_cuint, 0x2_cuint, 0x1b3c_cuint, 0x1b35_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x1b40_cuint, 0x2_cuint, 0x1b3e_cuint, 0x1b35_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x1b41_cuint, 0x2_cuint, 0x1b3f_cuint, 0x1b35_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x1b43_cuint, 0x2_cuint, 0x1b42_cuint, 0x1b35_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x1112e_cuint, 0x2_cuint, 0x11131_cuint, 0x11127_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x1112f_cuint, 0x2_cuint, 0x11132_cuint, 0x11127_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x1134b_cuint, 0x2_cuint, 0x11347_cuint, 0x1133e_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x1134c_cuint, 0x2_cuint, 0x11347_cuint, 0x11357_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x113c5_cuint, 0x2_cuint, 0x113c2_cuint, 0x113c2_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x113c7_cuint, 0x2_cuint, 0x113c2_cuint, 0x113b8_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x113c8_cuint, 0x2_cuint, 0x113c2_cuint, 0x113c9_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x114bb_cuint, 0x2_cuint, 0x114b9_cuint, 0x114ba_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x114bc_cuint, 0x2_cuint, 0x114b9_cuint, 0x114b0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x114be_cuint, 0x2_cuint, 0x114b9_cuint, 0x114bd_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x115ba_cuint, 0x2_cuint, 0x115b8_cuint, 0x115af_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x115bb_cuint, 0x2_cuint, 0x115b9_cuint, 0x115af_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x11938_cuint, 0x2_cuint, 0x11935_cuint, 0x11930_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x16121_cuint, 0x2_cuint, 0x1611e_cuint, 0x1611e_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x16122_cuint, 0x2_cuint, 0x1611e_cuint, 0x16129_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x16123_cuint, 0x2_cuint, 0x1611e_cuint, 0x1611f_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x16124_cuint, 0x2_cuint, 0x16129_cuint, 0x1611f_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x16125_cuint, 0x2_cuint, 0x1611e_cuint, 0x16120_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x16126_cuint, 0x3_cuint, 0x1611e_cuint, 0x1611e_cuint, 0x1611f_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x16127_cuint, 0x3_cuint, 0x1611e_cuint, 0x16129_cuint, 0x1611f_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
+  0x16128_cuint, 0x3_cuint, 0x1611e_cuint, 0x1611e_cuint, 0x16120_cuint, 0x0_cuint, 0x0_cuint, 0x0_cuint,
 }
--- END GENERATED GERMAN CCC-0 MARK EXPANSIONS
+-- END GENERATED GERMAN CCC-0 SOURCE MARK EXPANSIONS
 
 local function nelibc_german_mark_expansion(value: cwchar_t): GermanMarkExpansionInfo <inline>
   local low: csize = 0
   local high: csize = german_mark_expansion_count
   while low < high do
     local middle: csize = low + (high - low) // 2
-    local offset = middle * 5
+    local offset = middle * 8
     local codepoint = german_mark_expansions[offset]
     if value < codepoint then
       high = middle
@@ -1198,10 +1206,14 @@ local function nelibc_german_mark_expansion(value: cwchar_t): GermanMarkExpansio
       return {count = german_mark_expansions[offset + 1],
         part1 = german_mark_expansions[offset + 2],
         part2 = german_mark_expansions[offset + 3],
-        part3 = german_mark_expansions[offset + 4]}
+        part3 = german_mark_expansions[offset + 4],
+        class1 = german_mark_expansions[offset + 5],
+        class2 = german_mark_expansions[offset + 6],
+        class3 = german_mark_expansions[offset + 7]}
     end
   end
-  return {count = 0, part1 = 0, part2 = 0, part3 = 0}
+  return {count = 0, part1 = 0, part2 = 0, part3 = 0,
+    class1 = 0, class2 = 0, class3 = 0}
 end
 
 local function nelibc_german_extended_a_weight(value: cwchar_t): CollationWeights <inline>
@@ -1251,7 +1263,11 @@ local function nelibc_german_combining_weight(value: cwchar_t): cuint <inline>
 end
 
 local function nelibc_german_combining_class(value: cwchar_t): cuint <inline>
-  return nelibc_german_combining_info(value).class1
+  local combining_class = nelibc_german_combining_info(value).class1
+  if combining_class ~= 0 then return combining_class end
+  local expansion = nelibc_german_mark_expansion(value)
+  if expansion.count ~= 0 then return expansion.class1 end
+  return 0
 end
 
 local function nelibc_german_weights(value: cwchar_t): CollationWeights <inline>
@@ -1261,10 +1277,20 @@ local function nelibc_german_weights(value: cwchar_t): CollationWeights <inline>
   end
   local expansion = nelibc_german_mark_expansion(value)
   if expansion.count ~= 0 then
+    local first: cuint = 0
+    local second: cuint = 0
     local third: cuint = 0
-    if expansion.count > 2 then third = 0x10000_cuint + expansion.part3 end
-    return {first = 0x10000_cuint + expansion.part1,
-      second = 0x10000_cuint + expansion.part2,
+    if expansion.class1 == 0 then first = 0x10000_cuint + expansion.part1 end
+    if expansion.class2 == 0 then
+      if first == 0 then first = 0x10000_cuint + expansion.part2
+      else second = 0x10000_cuint + expansion.part2 end
+    end
+    if expansion.count > 2 and expansion.class3 == 0 then
+      if first == 0 then first = 0x10000_cuint + expansion.part3
+      elseif second == 0 then second = 0x10000_cuint + expansion.part3
+      else third = 0x10000_cuint + expansion.part3 end
+    end
+    return {first = first, second = second,
       third = third,
       secondary = 0x20_cuint, case_weight = 0x20_cuint}
   end
@@ -1415,9 +1441,24 @@ local function nelibc_german_secondary_next(iter: *LevelIter): cuint <inline>
       local expansion = nelibc_german_mark_expansion(value)
       if expansion.count ~= 0 then
         iter.index = iter.index + 1
-        iter.repeat_weight = 0x20_cuint
-        iter.repeat_count = expansion.count - 1
-        return 0x20_cuint
+        local default_count: cuint = 0
+        if expansion.class1 == 0 and
+            (expansion.count == 1 or expansion.class2 == 0) then
+          default_count = default_count + 1
+        end
+        if expansion.class2 == 0 and
+            (expansion.count == 2 or expansion.class3 == 0) then
+          default_count = default_count + 1
+        end
+        if expansion.count > 2 and expansion.class3 == 0 then
+          default_count = default_count + 1
+        end
+        if default_count ~= 0 then
+          iter.repeat_weight = 0x20_cuint
+          iter.repeat_count = default_count - 1
+          return 0x20_cuint
+        end
+        continue
       end
       local weights = nelibc_german_weights(value)
       local current_class = nelibc_german_combining_class(value)
@@ -1471,11 +1512,20 @@ local function nelibc_german_case_next(iter: *LevelIter): cuint <inline>
     if nelibc_german_combining_weight(value) == 0 then
       local expansion = nelibc_german_mark_expansion(value)
       if expansion.count ~= 0 then
-        iter.repeat_weight = 0x20_cuint
-        iter.repeat_count = expansion.count - 1
-        return 0x20_cuint
+        local default_count: cuint = 0
+        if expansion.class1 == 0 then default_count = default_count + 1 end
+        if expansion.class2 == 0 then default_count = default_count + 1 end
+        if expansion.count > 2 and expansion.class3 == 0 then
+          default_count = default_count + 1
+        end
+        if default_count ~= 0 then
+          iter.repeat_weight = 0x20_cuint
+          iter.repeat_count = default_count - 1
+          return 0x20_cuint
+        end
+      else
+        return nelibc_german_weights(value).case_weight
       end
-      return nelibc_german_weights(value).case_weight
     end
   end
   return 0

@@ -13,10 +13,10 @@ START = "-- BEGIN GENERATED GERMAN LATIN EXTENDED-A WEIGHTS"
 END = "-- END GENERATED GERMAN LATIN EXTENDED-A WEIGHTS"
 MARKS_START = "-- BEGIN GENERATED GERMAN COMBINING MARK WEIGHTS"
 MARKS_END = "-- END GENERATED GERMAN COMBINING MARK WEIGHTS"
-EXPANSIONS_START = "-- BEGIN GENERATED GERMAN CCC-0 MARK EXPANSIONS"
-EXPANSIONS_END = "-- END GENERATED GERMAN CCC-0 MARK EXPANSIONS"
-SMOKE_START = "/* BEGIN GENERATED GERMAN CCC-0 MARK EXPANSION SMOKE */"
-SMOKE_END = "/* END GENERATED GERMAN CCC-0 MARK EXPANSION SMOKE */"
+EXPANSIONS_START = "-- BEGIN GENERATED GERMAN CCC-0 SOURCE MARK EXPANSIONS"
+EXPANSIONS_END = "-- END GENERATED GERMAN CCC-0 SOURCE MARK EXPANSIONS"
+SMOKE_START = "/* BEGIN GENERATED GERMAN CCC-0 SOURCE MARK EXPANSION SMOKE */"
+SMOKE_END = "/* END GENERATED GERMAN CCC-0 SOURCE MARK EXPANSION SMOKE */"
 SMOKE_SOURCE = ROOT / "tools/lib_consumer_smoke.c"
 
 ACCENTS = {
@@ -105,20 +105,34 @@ def generate_marks() -> str:
     return "\n".join(lines)
 
 
-def generate_mark_expansions() -> str:
+def mark_expansion_rows():
+    if unicodedata.unidata_version != VERSION:
+        raise SystemExit(
+            f"need Python Unicode {VERSION}; found {unicodedata.unidata_version}"
+        )
     rows = []
     for codepoint in range(0x110000):
         char = chr(codepoint)
         if not unicodedata.category(char).startswith("M") or unicodedata.combining(char) != 0:
             continue
         parts = [ord(part) for part in unicodedata.normalize("NFD", char)]
-        if not 1 < len(parts) <= 3 or any(unicodedata.combining(chr(part)) != 0 for part in parts):
+        if not 1 < len(parts) <= 3:
             continue
-        rows.append((codepoint, len(parts), *parts, *([0] * (3 - len(parts)))))
+        classes = [unicodedata.combining(chr(part)) for part in parts]
+        rows.append((codepoint, parts, classes))
+    return rows
+
+
+def generate_mark_expansions() -> str:
+    rows = [
+        (codepoint, len(parts), *parts, *([0] * (3 - len(parts))),
+         *classes, *([0] * (3 - len(classes))))
+        for codepoint, parts, classes in mark_expansion_rows()
+    ]
 
     lines = [EXPANSIONS_START, f"-- Generated from Unicode {VERSION}; do not edit by hand."]
     lines.append(f"local german_mark_expansion_count: csize = {len(rows)}_csize")
-    lines.append(f"local german_mark_expansions: [{5 * len(rows)}]cuint = {{")
+    lines.append(f"local german_mark_expansions: [{8 * len(rows)}]cuint = {{")
     for row in rows:
         lines.append("  " + ", ".join(f"0x{x:x}_cuint" for x in row) + ",")
     lines.extend(["}", EXPANSIONS_END])
@@ -130,25 +144,16 @@ def c_utf8_literal(value: str) -> str:
 
 
 def generate_mark_expansion_smoke() -> str:
-    if unicodedata.unidata_version != VERSION:
-        raise SystemExit(
-            f"need Python Unicode {VERSION}; found {unicodedata.unidata_version}"
-        )
     rows = []
-    for codepoint in range(0x110000):
+    for codepoint, parts, _ in mark_expansion_rows():
         char = chr(codepoint)
-        if not unicodedata.category(char).startswith("M") or unicodedata.combining(char) != 0:
-            continue
-        decomposition = unicodedata.normalize("NFD", char)
-        parts = [ord(part) for part in decomposition]
-        if not 1 < len(parts) <= 3 or any(unicodedata.combining(chr(part)) != 0 for part in parts):
-            continue
-        composed_wide = f'L"\\U{codepoint:08x}"'
-        decomposed_wide = 'L"' + "".join(f"\\U{part:08x}" for part in parts) + '"'
+        decomposition = "".join(chr(part) for part in parts)
+        composed_wide = f'L"a\\U{codepoint:08x}"'
+        decomposed_wide = 'L"a' + "".join(f"\\U{part:08x}" for part in parts) + '"'
         rows.append(
             "  {\n"
             f"    {composed_wide}, {decomposed_wide},\n"
-            f"    {c_utf8_literal(char)}, {c_utf8_literal(decomposition)}\n"
+            f"    {c_utf8_literal('a' + char)}, {c_utf8_literal('a' + decomposition)}\n"
             "  },"
         )
     lines = [

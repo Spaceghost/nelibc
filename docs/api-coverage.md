@@ -294,13 +294,11 @@ The Extended-A table is generated from Unicode 16.0.0 by
 by canonical combining class, with input order preserved within a class. The
 generated table covers 934 Unicode 16.0 marks across all code points that have
 one or two canonical components with nonzero combining classes. A second table
-covers 50 category-M spacing marks whose canonical decompositions contain two
-or three components, all with combining class zero. Supported decomposed
-sequences compare like their precomposed forms, including when a precomposed
-character has additional combining marks. Consumer checks cover wide and
-narrow comparisons and transform keys for all 50 spacing-mark expansions.
-Mixed-class spacing-mark
-decompositions and the broader Unicode Collation Algorithm remain unsupported.
+covers 58 category-M source marks with CCC zero whose canonical decompositions
+contain two or three components. Consumer checks cover wide and narrow
+comparisons and transform keys for all 58, including mixed-class components.
+The data remains a limited project-specific subset and does not implement the
+broader Unicode Collation Algorithm.
 This is a small project-specific subset, not full Unicode or glibc/musl
 locale-data parity.
 Non-C collation and additional time locales remain incomplete.
