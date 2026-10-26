@@ -1281,8 +1281,69 @@ nelibc_x86_64_sse_memcmp:
   jne .Lmemcmp_avx2_diff
   addq $32, %r8
   subq $32, %rdx
+.Lmemcmp_avx2_short_tail:
+  testq %rdx, %rdx
+  jz .Lmemcmp_avx2_short_equal
+  cmpq $8, %rdx
+  jb .Lmemcmp_avx2_short_tail4
+  movq (%rdi,%r8), %rax
+  movq (%rsi,%r8), %rcx
+  xorq %rcx, %rax
+  jnz .Lmemcmp_avx2_short_diff8
+  addq $8, %r8
+  subq $8, %rdx
+  jmp .Lmemcmp_avx2_short_tail
+.Lmemcmp_avx2_short_tail4:
+  cmpq $4, %rdx
+  jb .Lmemcmp_avx2_short_tail2
+  movl (%rdi,%r8), %eax
+  movl (%rsi,%r8), %ecx
+  xorl %ecx, %eax
+  jnz .Lmemcmp_avx2_short_diff4
+  addq $4, %r8
+  subq $4, %rdx
+  jmp .Lmemcmp_avx2_short_tail
+.Lmemcmp_avx2_short_tail2:
+  cmpq $2, %rdx
+  jb .Lmemcmp_avx2_short_tail1
+  movzwl (%rdi,%r8), %eax
+  movzwl (%rsi,%r8), %ecx
+  xorl %ecx, %eax
+  jnz .Lmemcmp_avx2_short_diff2
+  addq $2, %r8
+  subq $2, %rdx
+  jmp .Lmemcmp_avx2_short_tail
+.Lmemcmp_avx2_short_tail1:
+  movzbl (%rdi,%r8), %eax
+  movzbl (%rsi,%r8), %ecx
+  subl %ecx, %eax
+  jnz .Lmemcmp_avx2_short_byte_diff
+.Lmemcmp_avx2_short_equal:
   vzeroupper
-  jmp .Lmemcmp_vector128
+  xorl %eax, %eax
+  ret
+.Lmemcmp_avx2_short_diff8:
+  bsfq %rax, %rax
+  shrq $3, %rax
+  jmp .Lmemcmp_avx2_short_diff_byte
+.Lmemcmp_avx2_short_diff4:
+  bsfl %eax, %eax
+  shrl $3, %eax
+  jmp .Lmemcmp_avx2_short_diff_byte
+.Lmemcmp_avx2_short_diff2:
+  bsfl %eax, %eax
+  shrl $3, %eax
+.Lmemcmp_avx2_short_diff_byte:
+  addq %r8, %rax
+  movzbl (%rdi,%rax), %ecx
+  movzbl (%rsi,%rax), %edx
+  subl %edx, %ecx
+  movl %ecx, %eax
+  vzeroupper
+  ret
+.Lmemcmp_avx2_short_byte_diff:
+  vzeroupper
+  ret
 .Lmemcmp_avx2_start:
   cmpq $32768, %rdx
   jae .Lmemcmp_avx2_loop128

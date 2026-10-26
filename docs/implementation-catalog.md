@@ -70,16 +70,18 @@ Alpaquita system comparison. The 2026-10-25 pinned baseline is archived as
 `make memcmp-size-shootout-matrix` isolates `memcmp` and its first, middle, and
 last-byte mismatch cases at 36, 64, 132, 4,096, 4,100, and 65,536 bytes. It
 uses the same seven-pair alternating order and writes
-`build/memcmp-size-shootout-matrix.csv`; the current candidate is archived in
-`benchmarks/results/2026-10-25-memcmp-size-shootout-paired.csv`. On Bazzite 44
+`build/memcmp-size-shootout-matrix.csv`; the 2026-10-26 run is archived in
+`benchmarks/results/2026-10-26-memcmp-size-shootout-paired.csv`. On Bazzite 44
 with kernel 7.2.7 and an Intel i7-11700F pinned to CPU 2 (Zig 0.17.0, Nelua
 0.2.0-dev), equal-input Nelibc `memcmp` latency divided by host latency is
-1.94x at 36 bytes and 0.92x at 4,100 bytes with Zig/glibc; it is 0.26x and
-0.03x with Zig/musl. Ratios below 1 mean Nelibc was faster. The AVX2 path is
-runtime-gated, and the memory differential smoke passed with Zig/glibc,
-GCC/glibc, and Zig/musl; standalone Zig and GCC consumers also passed. This
-one-machine snapshot points to short-input glibc parity as the next `memcmp`
-optimization target; it is not a cross-distro performance claim. Optional
+1.10x at 36 bytes, 1.95x at 132 bytes, and 0.92x at 4,100 bytes with Zig/glibc;
+it is 0.15x, 0.12x, and 0.03x with Zig/musl. Ratios below 1 mean Nelibc was
+faster. The exact-width tail after the first AVX2 vector lowered the 36-byte
+glibc ratio from 1.94x to 1.10x in paired runs, while the other sizes remained
+close to the prior snapshot. The AVX2 path is runtime-gated, and memory
+differential smoke passed with Zig/glibc, GCC/glibc, and Zig/musl. These are
+one-machine function microbenchmarks, not Alpaquita distro results or a
+cross-distro performance claim.
 `make smoke-tcc` runs the Nelua memory API against bytewise references and
 guard pages, including 64-byte copies at all 16 source and destination
 alignments near both page edges. It also checks the TCC SSE2 helpers against
