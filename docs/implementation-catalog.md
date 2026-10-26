@@ -20,9 +20,9 @@ addresses and canonical zero-run compression. The legacy IPv4 `inet_addr`,
 Consumer checks cover valid and invalid input, canonical formatting,
 unsupported families, short buffers, and the legacy invalid-address sentinel.
 The byte-order checks exhaust all 65,536 16-bit values and 10,000 deterministic
-32-bit values. The IPv4/IPv6 consumer passes with Zig/glibc, GCC/glibc, and
-Zig/musl. Byte-order and IPv4/IPv6 checks also pass with standalone Zig and
-GCC. TinyCC was unavailable for this run.
+32-bit values. The IPv4/IPv6 and legacy IPv4 consumer passes with Zig/glibc,
+GCC/glibc, Zig/musl, and standalone Zig and GCC. The standalone consumer links
+without unresolved symbols. TinyCC was unavailable for this run.
 
 The initial C complex-math slice replaces `cabs*`, `creal*`, `cimag*`,
 `conj*`, `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, `ccos*`,
