@@ -336,11 +336,12 @@ including APIs absent from the pinned musl export set.
   helpers, plus glibc's four C23 parser aliases. Consumer checks pass under
   Zig/glibc, GCC/glibc, Zig/musl, TinyCC/glibc, and standalone Zig, GCC, and
   TinyCC; the C23 cases check `0b` parsing and the signed/unsigned limits.
-- Standalone `fnmatch` now handles byte-oriented literals, `*`, `?`, bracket
-  ranges, all twelve POSIX named character classes, escaping, pathname
-  separators, leading periods, leading-directory matching, and case folding.
-  Zig, GCC, and TinyCC standalone smoke checks cover these cases. Multibyte
-  matching remains a gap; hybrid archives use the selected host libc.
+- Standalone `fnmatch` now matches literals, `?`, `*` backtracking, bracket
+  ranges, and all twelve POSIX named character classes by decoded character in
+  C and UTF-8 locales. It also handles escaping, pathname separators, leading
+  periods, leading-directory matching, and case folding. Zig, GCC, and TinyCC
+  standalone smoke checks cover these cases. Stateful multibyte encodings
+  remain incomplete; hybrid archives use the host multibyte decoder.
 - Wide floating conversions `wcstof`, `wcstod`, and `wcstold` now use Nelibc's
   multibyte conversion and floating parser in hybrid and standalone profiles.
   Consumer coverage checks end-pointer mapping and no-conversion behavior.

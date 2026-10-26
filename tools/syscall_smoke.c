@@ -2336,6 +2336,18 @@ int main(int argc, char **argv) {
   }
   if (a_lines != 100 || b_lines != 100 || close(threaded_pipe[0]) != 0) return 177;
 #endif
+  if (setlocale(LC_CTYPE, "C.UTF-8") == NULL) return 267;
+  if (fnmatch("\303\251", "\303\251", 0) != 0 ||
+      fnmatch("?", "\303\251", 0) != 0 ||
+      fnmatch("??", "\303\251", 0) != FNM_NOMATCH ||
+      fnmatch("*\303\251", "x\303\251", 0) != 0 ||
+      fnmatch("[\303\251-\303\252]", "\303\252", 0) != 0 ||
+      fnmatch("[[:alpha:]]", "\303\251", 0) != 0 ||
+      fnmatch("\303\204", "\303\244", FNM_CASEFOLD) != 0 ||
+      fnmatch("?", "\377", 0) != FNM_NOMATCH ||
+      fnmatch("?", "\303\251", FNM_PATHNAME) != 0)
+    return 340;
+  if (setlocale(LC_CTYPE, "C") == NULL) return 270;
   int input_pipe[2];
   if (pipe(input_pipe) != 0 || write(input_pipe[1], "wxyz", 4) != 4 || close(input_pipe[1]) != 0) return 189;
   int saved_stdin = dup(0);

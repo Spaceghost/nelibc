@@ -30,6 +30,19 @@ local function ispunct(character: cint): cint <cimport> end
 local function isspace(character: cint): cint <cimport> end
 local function isupper(character: cint): cint <cimport> end
 local function isxdigit(character: cint): cint <cimport> end
+local function iswalnum(character: cint): cint <cimport> end
+local function iswalpha(character: cint): cint <cimport> end
+local function iswblank(character: cint): cint <cimport> end
+local function iswcntrl(character: cint): cint <cimport> end
+local function iswdigit(character: cint): cint <cimport> end
+local function iswgraph(character: cint): cint <cimport> end
+local function iswlower(character: cint): cint <cimport> end
+local function iswprint(character: cint): cint <cimport> end
+local function iswpunct(character: cint): cint <cimport> end
+local function iswspace(character: cint): cint <cimport> end
+local function iswupper(character: cint): cint <cimport> end
+local function iswxdigit(character: cint): cint <cimport> end
+local function towlower(character: cint): cint <cimport> end
 local function raise(signal: cint): cint <cimport> end
 local function _Exit(status: cint): void <cimport> end
 local function fork(): cint <cimport> end
@@ -145,8 +158,57 @@ local function getopt_report(program: *[0]cchar <const>, option: cint,
   write(2, (@pointer)(&suffix[0]), 2)
 end
 
+local function fnmatch_next_character(text: *[0]cchar <const>, index: csize,
+    wide: *[0]cint): csize <inline>
+  if text[index] == 0 then return 0 end
+  local mode = nelibc_multibyte_mode()
+  if mode == 2 then
+    local state: [16]culong = {}
+    local remaining: csize = 0
+    while text[index + remaining] ~= 0 do remaining = remaining + 1 end
+    nelibc_multibyte_state_reset((@pointer)(&state[0]))
+    return nelibc_multibyte_decode((@pointer)(&state[0]), wide,
+        &text[index], remaining)
+  end
+  local first: cuint = (@cuint)((@byte)(text[index]))
+  if mode == 0 or first < 0x80 then
+    if first > 0x7f then return ~0_csize end
+    wide[0] = (@cint)(first)
+    return 1
+  end
+  local count: csize
+  local value: cuint
+  if first >= 0xc2 and first <= 0xdf then
+    count = 2
+    value = first & 0x1f
+  elseif first >= 0xe0 and first <= 0xef then
+    count = 3
+    value = first & 0x0f
+  elseif first >= 0xf0 and first <= 0xf4 then
+    count = 4
+    value = first & 0x07
+  else
+    return ~0_csize
+  end
+  local offset: csize = 1
+  while offset < count do
+    local continuation: cuint = (@cuint)((@byte)(text[index + offset]))
+    if continuation == 0 or continuation < 0x80 or continuation > 0xbf then
+      return ~0_csize
+    end
+    if offset == 1 and ((first == 0xe0 and continuation < 0xa0) or
+        (first == 0xed and continuation >= 0xa0) or
+        (first == 0xf0 and continuation < 0x90) or
+        (first == 0xf4 and continuation > 0x8f)) then return ~0_csize end
+    value = (value << 6) | (continuation & 0x3f)
+    offset = offset + 1
+  end
+  wide[0] = (@cint)(value)
+  return count
+end
+
 local function fnmatch_fold(character: cint): cint <inline>
-  return tolower((@cint)((@cuint)(character) & 255_cuint))
+  return towlower(character)
 end
 
 local function fnmatch_named_class(pattern: *[0]cchar <const>, start: csize,
@@ -158,41 +220,41 @@ local function fnmatch_named_class(pattern: *[0]cchar <const>, start: csize,
   local matched = false
   if length == 5 and pattern[start] == 97 and pattern[start + 1] == 108 and
       pattern[start + 2] == 110 and pattern[start + 3] == 117 and pattern[start + 4] == 109 then
-    matched = isalnum(character) ~= 0
+    matched = iswalnum(character) ~= 0
   elseif length == 5 and pattern[start] == 97 and pattern[start + 1] == 108 and
       pattern[start + 2] == 112 and pattern[start + 3] == 104 and pattern[start + 4] == 97 then
-    matched = isalpha(character) ~= 0
+    matched = iswalpha(character) ~= 0
   elseif length == 5 and pattern[start] == 98 and pattern[start + 1] == 108 and
       pattern[start + 2] == 97 and pattern[start + 3] == 110 and pattern[start + 4] == 107 then
-    matched = isblank(character) ~= 0
+    matched = iswblank(character) ~= 0
   elseif length == 5 and pattern[start] == 99 and pattern[start + 1] == 110 and
       pattern[start + 2] == 116 and pattern[start + 3] == 114 and pattern[start + 4] == 108 then
-    matched = iscntrl(character) ~= 0
+    matched = iswcntrl(character) ~= 0
   elseif length == 5 and pattern[start] == 100 and pattern[start + 1] == 105 and
       pattern[start + 2] == 103 and pattern[start + 3] == 105 and pattern[start + 4] == 116 then
-    matched = isdigit(character) ~= 0
+    matched = iswdigit(character) ~= 0
   elseif length == 5 and pattern[start] == 103 and pattern[start + 1] == 114 and
       pattern[start + 2] == 97 and pattern[start + 3] == 112 and pattern[start + 4] == 104 then
-    matched = isgraph(character) ~= 0
+    matched = iswgraph(character) ~= 0
   elseif length == 5 and pattern[start] == 108 and pattern[start + 1] == 111 and
       pattern[start + 2] == 119 and pattern[start + 3] == 101 and pattern[start + 4] == 114 then
-    matched = islower(character) ~= 0
+    matched = iswlower(character) ~= 0
   elseif length == 5 and pattern[start] == 112 and pattern[start + 1] == 114 and
       pattern[start + 2] == 105 and pattern[start + 3] == 110 and pattern[start + 4] == 116 then
-    matched = isprint(character) ~= 0
+    matched = iswprint(character) ~= 0
   elseif length == 5 and pattern[start] == 112 and pattern[start + 1] == 117 and
       pattern[start + 2] == 110 and pattern[start + 3] == 99 and pattern[start + 4] == 116 then
-    matched = ispunct(character) ~= 0
+    matched = iswpunct(character) ~= 0
   elseif length == 5 and pattern[start] == 115 and pattern[start + 1] == 112 and
       pattern[start + 2] == 97 and pattern[start + 3] == 99 and pattern[start + 4] == 101 then
-    matched = isspace(character) ~= 0
+    matched = iswspace(character) ~= 0
   elseif length == 5 and pattern[start] == 117 and pattern[start + 1] == 112 and
       pattern[start + 2] == 112 and pattern[start + 3] == 101 and pattern[start + 4] == 114 then
-    matched = isupper(character) ~= 0
+    matched = iswupper(character) ~= 0
   elseif length == 6 and pattern[start] == 120 and pattern[start + 1] == 100 and
       pattern[start + 2] == 105 and pattern[start + 3] == 103 and pattern[start + 4] == 105 and
       pattern[start + 5] == 116 then
-    matched = isxdigit(character) ~= 0
+    matched = iswxdigit(character) ~= 0
   else
     return false
   end
@@ -230,20 +292,26 @@ local function fnmatch_bracket(pattern: *[0]cchar <const>, start: csize,
       first_item = false
       continue
     end
-    local first = (@cint)(pattern[index])
+    local first: cint = 0
     if pattern[index] == 92 and (flags & 2) == 0 and pattern[index + 1] ~= 0 then
       index = index + 1
-      first = (@cint)(pattern[index])
     end
-    index = index + 1
+    local first_width = fnmatch_next_character(pattern, index, &first)
+    if first_width == 0 or first_width == ~0_csize or first_width == ~1_csize then
+      return false
+    end
+    index = index + first_width
     if pattern[index] == 45 and pattern[index + 1] ~= 0 and pattern[index + 1] ~= 93 then
       index = index + 1
-      local last = (@cint)(pattern[index])
       if pattern[index] == 92 and (flags & 2) == 0 and pattern[index + 1] ~= 0 then
         index = index + 1
-        last = (@cint)(pattern[index])
       end
-      index = index + 1
+      local last: cint = 0
+      local last_width = fnmatch_next_character(pattern, index, &last)
+      if last_width == 0 or last_width == ~0_csize or last_width == ~1_csize then
+        return false
+      end
+      index = index + last_width
       if (flags & 16) ~= 0 then
         first = fnmatch_fold(first)
         last = fnmatch_fold(last)
@@ -289,7 +357,10 @@ local function fnmatch(pattern: cstring <const>, text: cstring <const>, flags: c
           local component_start = string_index == 0 or ((flags & 1) ~= 0 and s[string_index - 1] == 47)
           if ((flags & 1) ~= 0 and next_byte == 47) or
               ((flags & 4) ~= 0 and component_start and next_byte == 46) then break end
-          string_index = string_index + 1
+          local discarded: cint = 0
+          local width = fnmatch_next_character(s, string_index, &discarded)
+          if width == 0 or width == ~0_csize or width == ~1_csize then return 1 end
+          string_index = string_index + width
         end
         if s[string_index] == 0 or ((flags & 8) ~= 0 and s[string_index] == 47) then return 0 end
         return 1 -- FNM_NOMATCH
@@ -299,36 +370,47 @@ local function fnmatch(pattern: cstring <const>, text: cstring <const>, flags: c
       local component_start = string_index == 0 or ((flags & 1) ~= 0 and s[string_index - 1] == 47)
       if string_byte ~= 0 and ((flags & 1) == 0 or string_byte ~= 47) and
           not ((flags & 4) ~= 0 and component_start and string_byte == 46) then
+        local actual: cint = 0
+        local width = fnmatch_next_character(s, string_index, &actual)
+        if width == 0 or width == ~0_csize or width == ~1_csize then return 1 end
         pattern_index = pattern_index + 1
-        string_index = string_index + 1
+        string_index = string_index + width
         continue
       end
     elseif pattern_byte == 91 then
       local component_start = string_index == 0 or ((flags & 1) ~= 0 and s[string_index - 1] == 47)
       if string_byte ~= 0 and ((flags & 1) == 0 or string_byte ~= 47) and
           not ((flags & 4) ~= 0 and component_start and string_byte == 46) then
+        local actual: cint = 0
+        local width = fnmatch_next_character(s, string_index, &actual)
+        if width == 0 or width == ~0_csize or width == ~1_csize then return 1 end
         local after_bracket: csize = pattern_index
-        if fnmatch_bracket(p, pattern_index + 1, (@cint)(string_byte), flags,
+        if fnmatch_bracket(p, pattern_index + 1, actual, flags,
             &after_bracket) then
           pattern_index = after_bracket
-          string_index = string_index + 1
+          string_index = string_index + width
           continue
         end
       end
     else
-      local expected = (@cint)(pattern_byte)
-      local actual = (@cint)(string_byte)
       if pattern_byte == 92 and (flags & 2) == 0 and p[pattern_index + 1] ~= 0 then
         pattern_index = pattern_index + 1
-        expected = (@cint)(p[pattern_index])
+      end
+      local expected: cint = 0
+      local actual: cint = 0
+      local pattern_width = fnmatch_next_character(p, pattern_index, &expected)
+      local string_width = fnmatch_next_character(s, string_index, &actual)
+      if pattern_width == 0 or pattern_width == ~0_csize or pattern_width == ~1_csize or
+          string_width == 0 or string_width == ~0_csize or string_width == ~1_csize then
+        return 1
       end
       if (flags & 16) ~= 0 then
         expected = fnmatch_fold(expected)
         actual = fnmatch_fold(actual)
       end
       if string_byte ~= 0 and expected == actual then
-        pattern_index = pattern_index + 1
-        string_index = string_index + 1
+        pattern_index = pattern_index + pattern_width
+        string_index = string_index + string_width
         continue
       end
     end
@@ -337,7 +419,10 @@ local function fnmatch(pattern: cstring <const>, text: cstring <const>, flags: c
       local component_start = star_string == 0 or ((flags & 1) ~= 0 and s[star_string - 1] == 47)
       if next_byte ~= 0 and ((flags & 1) == 0 or next_byte ~= 47) and
           not ((flags & 4) ~= 0 and component_start and next_byte == 46) then
-        star_string = star_string + 1
+        local discarded: cint = 0
+        local width = fnmatch_next_character(s, star_string, &discarded)
+        if width == 0 or width == ~0_csize or width == ~1_csize then return 1 end
+        star_string = star_string + width
         string_index = star_string
         pattern_index = star_pattern
         continue

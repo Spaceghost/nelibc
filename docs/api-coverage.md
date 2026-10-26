@@ -80,12 +80,12 @@ and `pthread_atfork` are intentionally host-delegated so host fork handlers
 still run; standalone archives export Nelibc's implementations. This is a
 breadth comparison, not a behavioral conformance score.
 
-Standalone `fnmatch` supports byte-oriented literals, `*`, `?`, bracket
-characters/ranges, all twelve POSIX named character classes, escaping, and
-`FNM_PATHNAME`, `FNM_NOESCAPE`, `FNM_PERIOD`, `FNM_LEADING_DIR`, and
-`FNM_CASEFOLD`. Zig, GCC, and TinyCC standalone syscall smokes cover the class
-categories and flags. Multibyte character matching remains incomplete; hybrid
-archives use the selected host implementation.
+Standalone `fnmatch` matches literals, `?`, `*` backtracking, bracket ranges,
+and all twelve POSIX named character classes by decoded character in the C and
+UTF-8 locales. It also supports escaping and `FNM_PATHNAME`, `FNM_NOESCAPE`,
+`FNM_PERIOD`, `FNM_LEADING_DIR`, and `FNM_CASEFOLD`. Zig, GCC, and TinyCC
+standalone syscall smokes cover these cases. Stateful multibyte encodings
+remain incomplete; hybrid archives use the active host multibyte decoder.
 
 Standalone stdio now implements `fwide`, wide-character stream and string I/O,
 the corresponding unlocked calls, `getwc`/`putwc` aliases, and one-character
