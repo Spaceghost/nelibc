@@ -723,7 +723,21 @@ int main(int argc, char **argv) {
       fnmatch("foo\\*", "foo*", 0) != 0 ||
       fnmatch("foo\\*", "foo\\bar", FNM_NOESCAPE) != 0 ||
       fnmatch("*.C", "main.c", FNM_CASEFOLD) != 0 ||
-      fnmatch("*.c", "main.c/child", FNM_LEADING_DIR) != 0)
+      fnmatch("*.c", "main.c/child", FNM_LEADING_DIR) != 0 ||
+      fnmatch("[[:alnum:]]", "7", 0) != 0 ||
+      fnmatch("[[:alpha:]]", "Q", 0) != 0 ||
+      fnmatch("[[:blank:]]", "\t", 0) != 0 ||
+      fnmatch("[[:cntrl:]]", "\n", 0) != 0 ||
+      fnmatch("[[:digit:]]", "8", 0) != 0 ||
+      fnmatch("[[:graph:]]", "!", 0) != 0 ||
+      fnmatch("[[:lower:]]", "q", 0) != 0 ||
+      fnmatch("[[:print:]]", " ", 0) != 0 ||
+      fnmatch("[[:punct:]]", "!", 0) != 0 ||
+      fnmatch("[[:space:]]", "\n", 0) != 0 ||
+      fnmatch("[[:upper:]]", "Q", 0) != 0 ||
+      fnmatch("[[:xdigit:]]", "f", 0) != 0 ||
+      fnmatch("[[:digit:]]", "q", 0) == 0 ||
+      fnmatch("[![:digit:]]", "q", 0) != 0)
     return 339;
   if (argc == 2 && strcmp(argv[1], "--execveat-child") == 0) return 42;
   char executable_path[128];

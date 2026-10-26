@@ -18,6 +18,18 @@ local function strtod(text: cstring <const>, end_text: **cchar): cdouble <cimpor
 local function strtof(text: cstring <const>, end_text: **cchar): cfloat <cimport> end
 local function strtold(text: cstring <const>, end_text: **cchar): clongdouble <cimport> end
 local function tolower(character: cint): cint <cimport> end
+local function isalnum(character: cint): cint <cimport> end
+local function isalpha(character: cint): cint <cimport> end
+local function isblank(character: cint): cint <cimport> end
+local function iscntrl(character: cint): cint <cimport> end
+local function isdigit(character: cint): cint <cimport> end
+local function isgraph(character: cint): cint <cimport> end
+local function islower(character: cint): cint <cimport> end
+local function isprint(character: cint): cint <cimport> end
+local function ispunct(character: cint): cint <cimport> end
+local function isspace(character: cint): cint <cimport> end
+local function isupper(character: cint): cint <cimport> end
+local function isxdigit(character: cint): cint <cimport> end
 local function raise(signal: cint): cint <cimport> end
 local function _Exit(status: cint): void <cimport> end
 local function fork(): cint <cimport> end
@@ -137,6 +149,57 @@ local function fnmatch_fold(character: cint): cint <inline>
   return tolower((@cint)((@cuint)(character) & 255_cuint))
 end
 
+local function fnmatch_named_class(pattern: *[0]cchar <const>, start: csize,
+    character: cint, end_index: *[0]csize): boolean <inline>
+  local stop = start
+  while pattern[stop] ~= 0 and pattern[stop] ~= 58 do stop = stop + 1 end
+  if pattern[stop] ~= 58 or pattern[stop + 1] ~= 93 then return false end
+  local length = stop - start
+  local matched = false
+  if length == 5 and pattern[start] == 97 and pattern[start + 1] == 108 and
+      pattern[start + 2] == 110 and pattern[start + 3] == 117 and pattern[start + 4] == 109 then
+    matched = isalnum(character) ~= 0
+  elseif length == 5 and pattern[start] == 97 and pattern[start + 1] == 108 and
+      pattern[start + 2] == 112 and pattern[start + 3] == 104 and pattern[start + 4] == 97 then
+    matched = isalpha(character) ~= 0
+  elseif length == 5 and pattern[start] == 98 and pattern[start + 1] == 108 and
+      pattern[start + 2] == 97 and pattern[start + 3] == 110 and pattern[start + 4] == 107 then
+    matched = isblank(character) ~= 0
+  elseif length == 5 and pattern[start] == 99 and pattern[start + 1] == 110 and
+      pattern[start + 2] == 116 and pattern[start + 3] == 114 and pattern[start + 4] == 108 then
+    matched = iscntrl(character) ~= 0
+  elseif length == 5 and pattern[start] == 100 and pattern[start + 1] == 105 and
+      pattern[start + 2] == 103 and pattern[start + 3] == 105 and pattern[start + 4] == 116 then
+    matched = isdigit(character) ~= 0
+  elseif length == 5 and pattern[start] == 103 and pattern[start + 1] == 114 and
+      pattern[start + 2] == 97 and pattern[start + 3] == 112 and pattern[start + 4] == 104 then
+    matched = isgraph(character) ~= 0
+  elseif length == 5 and pattern[start] == 108 and pattern[start + 1] == 111 and
+      pattern[start + 2] == 119 and pattern[start + 3] == 101 and pattern[start + 4] == 114 then
+    matched = islower(character) ~= 0
+  elseif length == 5 and pattern[start] == 112 and pattern[start + 1] == 114 and
+      pattern[start + 2] == 105 and pattern[start + 3] == 110 and pattern[start + 4] == 116 then
+    matched = isprint(character) ~= 0
+  elseif length == 5 and pattern[start] == 112 and pattern[start + 1] == 117 and
+      pattern[start + 2] == 110 and pattern[start + 3] == 99 and pattern[start + 4] == 116 then
+    matched = ispunct(character) ~= 0
+  elseif length == 5 and pattern[start] == 115 and pattern[start + 1] == 112 and
+      pattern[start + 2] == 97 and pattern[start + 3] == 99 and pattern[start + 4] == 101 then
+    matched = isspace(character) ~= 0
+  elseif length == 5 and pattern[start] == 117 and pattern[start + 1] == 112 and
+      pattern[start + 2] == 112 and pattern[start + 3] == 101 and pattern[start + 4] == 114 then
+    matched = isupper(character) ~= 0
+  elseif length == 6 and pattern[start] == 120 and pattern[start + 1] == 100 and
+      pattern[start + 2] == 105 and pattern[start + 3] == 103 and pattern[start + 4] == 105 and
+      pattern[start + 5] == 116 then
+    matched = isxdigit(character) ~= 0
+  else
+    return false
+  end
+  end_index[0] = stop + 2
+  return matched
+end
+
 local function fnmatch_bracket(pattern: *[0]cchar <const>, start: csize,
     character: cint, flags: cint, end_index: *[0]csize): boolean <inline>
   local index = start
@@ -152,6 +215,20 @@ local function fnmatch_bracket(pattern: *[0]cchar <const>, start: csize,
     if pattern[index] == 93 and not first_item then
       end_index[0] = index + 1
       return matched ~= invert and have_item
+    end
+    if pattern[index] == 91 and pattern[index + 1] == 58 then
+      local class_end: csize = index + 2
+      if fnmatch_named_class(pattern, index + 2, character, &class_end) then
+        matched = true
+      elseif class_end > index + 2 then
+        -- The named class is valid but does not contain this byte.
+      else
+        return false
+      end
+      index = class_end
+      have_item = true
+      first_item = false
+      continue
     end
     local first = (@cint)(pattern[index])
     if pattern[index] == 92 and (flags & 2) == 0 and pattern[index + 1] ~= 0 then

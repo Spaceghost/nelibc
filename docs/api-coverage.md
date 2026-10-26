@@ -81,11 +81,11 @@ still run; standalone archives export Nelibc's implementations. This is a
 breadth comparison, not a behavioral conformance score.
 
 Standalone `fnmatch` supports byte-oriented literals, `*`, `?`, bracket
-characters/ranges, escaping, and `FNM_PATHNAME`, `FNM_NOESCAPE`, `FNM_PERIOD`,
-`FNM_LEADING_DIR`, and `FNM_CASEFOLD`. Zig, GCC, and TinyCC standalone syscall
-smokes cover those flags. Multibyte character matching and POSIX named
-character classes remain incomplete; hybrid archives use the selected host
-implementation.
+characters/ranges, all twelve POSIX named character classes, escaping, and
+`FNM_PATHNAME`, `FNM_NOESCAPE`, `FNM_PERIOD`, `FNM_LEADING_DIR`, and
+`FNM_CASEFOLD`. Zig, GCC, and TinyCC standalone syscall smokes cover the class
+categories and flags. Multibyte character matching remains incomplete; hybrid
+archives use the selected host implementation.
 
 Standalone stdio now implements `fwide`, wide-character stream and string I/O,
 the corresponding unlocked calls, `getwc`/`putwc` aliases, and one-character
