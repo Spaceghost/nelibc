@@ -2468,10 +2468,10 @@ errno-tls-zig-musl: $(OUT)
 freestanding-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -DNELIBC_STANDALONE' -o $(OUT)/string-freestanding-zig.o src/string.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/string-locale-freestanding-zig.o src/string_locale_freestanding.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/memory-freestanding-zig.o src/memory.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ffunction-sections' -o $(OUT)/memory-freestanding-zig.o src/memory.nelua
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_FREESTANDING -ffreestanding -fno-builtin -fno-stack-protector -c src/string_locale_lock.c -o $(OUT)/string-tls-freestanding-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/start_linux_x86_64.S -o $(OUT)/start-linux-x86_64-zig.o
-	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Iinclude tools/freestanding_smoke.c src/stdio_startup_stub.c $(OUT)/string-locale-freestanding-zig.o $(OUT)/string-tls-freestanding-zig.o $(OUT)/string-freestanding-zig.o $(OUT)/memory-freestanding-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/start-linux-x86_64-zig.o -o $(OUT)/freestanding-zig
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--gc-sections -Wl,--build-id=none -Iinclude tools/freestanding_smoke.c src/stdio_startup_stub.c $(OUT)/string-locale-freestanding-zig.o $(OUT)/string-tls-freestanding-zig.o $(OUT)/string-freestanding-zig.o $(OUT)/memory-freestanding-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/start-linux-x86_64-zig.o -o $(OUT)/freestanding-zig
 	@test -z "$$(nm -u $(OUT)/freestanding-zig)"
 
 smoke-freestanding-zig: freestanding-zig
@@ -2480,10 +2480,10 @@ smoke-freestanding-zig: freestanding-zig
 freestanding-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
 	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -DNELIBC_STANDALONE' -o $(OUT)/string-freestanding-gcc.o src/string.nelua
 	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/string-locale-freestanding-gcc.o src/string_locale_freestanding.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/memory-freestanding-gcc.o src/memory.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -ffunction-sections' -o $(OUT)/memory-freestanding-gcc.o src/memory.nelua
 	gcc -DNELIBC_FREESTANDING -ffreestanding -fno-builtin -fno-stack-protector -fno-tree-loop-distribute-patterns -c src/string_locale_lock.c -o $(OUT)/string-tls-freestanding-gcc.o
 	gcc -c src/sys/start_linux_x86_64.S -o $(OUT)/start-linux-x86_64-gcc.o
-	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Iinclude tools/freestanding_smoke.c src/stdio_startup_stub.c $(OUT)/string-locale-freestanding-gcc.o $(OUT)/string-tls-freestanding-gcc.o $(OUT)/string-freestanding-gcc.o $(OUT)/memory-freestanding-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/start-linux-x86_64-gcc.o -o $(OUT)/freestanding-gcc
+	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--gc-sections -Wl,--build-id=none -Iinclude tools/freestanding_smoke.c src/stdio_startup_stub.c $(OUT)/string-locale-freestanding-gcc.o $(OUT)/string-tls-freestanding-gcc.o $(OUT)/string-freestanding-gcc.o $(OUT)/memory-freestanding-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/start-linux-x86_64-gcc.o -o $(OUT)/freestanding-gcc
 	@test -z "$$(nm -u $(OUT)/freestanding-gcc)"
 
 smoke-freestanding-gcc: freestanding-gcc
