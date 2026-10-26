@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate canonical Latin Extended-A weights for standalone German collation."""
+"""Generate Unicode weights for standalone German collation."""
 
 from __future__ import annotations
 
@@ -78,20 +78,24 @@ def generate() -> str:
 def generate_marks() -> str:
     rows = []
     for codepoint in range(0x110000):
-        canonical = canonical_mark(codepoint)
-        if canonical == 0:
+        if unicodedata.combining(chr(codepoint)) == 0:
             continue
-        combining_class = unicodedata.combining(chr(canonical))
-        if combining_class == 0:
+        decomposition = unicodedata.normalize("NFD", chr(codepoint))
+        components = [ord(char) for char in decomposition]
+        if len(components) > 2 or any(unicodedata.combining(chr(part)) == 0
+                                      for part in components):
             continue
-        rows.append((codepoint, accent_weight(canonical), combining_class))
+        first, second = components[0], components[1] if len(components) == 2 else 0
+        rows.append((codepoint, accent_weight(first), unicodedata.combining(chr(first)),
+                     accent_weight(second) if second else 0,
+                     unicodedata.combining(chr(second)) if second else 0))
 
     lines = [MARKS_START, f"-- Generated from Unicode {VERSION}; do not edit by hand."]
     lines.append(f"local german_combining_info_count: csize = {len(rows)}_csize")
-    lines.append(f"local german_combining_infos: [{3 * len(rows)}]cuint = {{")
+    lines.append(f"local german_combining_infos: [{5 * len(rows)}]cuint = {{")
     values = [part for row in rows for part in row]
-    for offset in range(0, len(values), 8):
-        lines.append("  " + ", ".join(f"0x{x:x}_cuint" for x in values[offset:offset + 8]) + ",")
+    for row in rows:
+        lines.append("  " + ", ".join(f"0x{x:x}_cuint" for x in row) + ",")
     lines.extend(["}", MARKS_END])
     return "\n".join(lines)
 

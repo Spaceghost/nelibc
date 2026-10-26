@@ -57,12 +57,12 @@ mode. Standalone archives provide `wcscoll`, `wcscoll_l`, `wcsxfrm`, and
 `wcsxfrm_l` with code-point ordering in `C`/`C.UTF-8` and limited German
 ordering in `de_DE.UTF-8` locale handles. German weights cover ASCII, Latin-1,
 and precomposed Latin Extended-A accents, including umlauts and sharp-s, using
-base-letter, accent, and case levels. The generated table covers 933 Unicode
-16.0 combining marks across all code points with a single-codepoint canonical
-decomposition and nonzero combining class. They are ordered by canonical
-combining class, preserving input order within each class. Supported
-decomposed sequences compare like their precomposed forms. Multi-codepoint
-mark decompositions and full Unicode collation remain unsupported. The same
+base-letter, accent, and case levels. The generated table covers 934 Unicode
+16.0 combining marks across all code points with one or two canonical
+combining components. They are ordered by canonical combining class,
+preserving input order within each class. Supported decomposed sequences
+compare like their precomposed forms. Decompositions with more than two
+components and full Unicode collation remain unsupported. The same
 weights apply to narrow `strcoll`/`strxfrm` when that thread locale is selected.
 Hybrid links use the host libc implementations.
 

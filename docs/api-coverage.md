@@ -292,12 +292,12 @@ Extended-A letters, alongside the existing ASCII, umlaut, and sharp-s behavior.
 The Extended-A table is generated from Unicode 16.0.0 by
 `tools/gen_german_collation_data.py`. The supported combining marks are ordered
 by canonical combining class, with input order preserved within a class. The
-generated table covers 933 Unicode 16.0 marks across all code points that have
-a single-codepoint canonical decomposition and nonzero combining class.
+generated table covers 934 Unicode 16.0 marks across all code points that have
+one or two canonical combining components with nonzero combining classes.
 Supported decomposed sequences compare like their precomposed forms, including
-when a precomposed character has additional combining marks. Multi-codepoint
-mark decompositions and the broader Unicode Collation Algorithm remain
-unsupported. This is a small project-specific subset, not full Unicode or
+when a precomposed character has additional combining marks. Decompositions
+with more than two components and the broader Unicode Collation Algorithm
+remain unsupported. This is a small project-specific subset, not full Unicode or
 glibc/musl locale-data parity.
 Non-C collation and additional time locales remain incomplete.
 
