@@ -15,12 +15,14 @@ runtime and platform syscall layer separate from the public libc surface.
 The Nelua string/runtime object exports `htonl`, `htons`, `ntohl`, and `ntohs`
 for the project's little-endian Linux x86-64 target. It also implements
 `inet_pton` and `inet_ntop` for IPv4 and IPv6, including IPv4-mapped IPv6
-addresses and canonical zero-run compression. Consumer checks cover strict
-valid/invalid input, canonical formatting, unsupported families, and short
-buffers. The byte-order checks exhaust all 65,536 16-bit values and 10,000
-deterministic 32-bit values. The consumer passes with Zig/glibc, GCC/glibc,
-Zig/musl, and standalone Zig and GCC builds. TinyCC was unavailable for this
-run.
+addresses and canonical zero-run compression. The legacy IPv4 `inet_addr`,
+`inet_aton`, and `inet_ntoa` entry points reuse the same parser and formatter.
+Consumer checks cover valid and invalid input, canonical formatting,
+unsupported families, short buffers, and the legacy invalid-address sentinel.
+The byte-order checks exhaust all 65,536 16-bit values and 10,000 deterministic
+32-bit values. The IPv4/IPv6 consumer passes with Zig/glibc, GCC/glibc, and
+Zig/musl. Byte-order and IPv4/IPv6 checks also pass with standalone Zig and
+GCC. TinyCC was unavailable for this run.
 
 The initial C complex-math slice replaces `cabs*`, `creal*`, `cimag*`,
 `conj*`, `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, `ccos*`,

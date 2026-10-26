@@ -1803,6 +1803,15 @@ static int inet_conversion_probe(void) {
         inet_ntop(valid[i].family, address, text, sizeof text) == NULL ||
         strcmp(text, valid[i].canonical) != 0) return 1;
   }
+  struct in_addr legacy_address;
+  if (inet_aton("203.0.113.7", &legacy_address) != 1 ||
+      inet_addr("203.0.113.7") != legacy_address.s_addr ||
+      strcmp(inet_ntoa(legacy_address), "203.0.113.7") != 0) return 8;
+  struct in_addr unchanged = legacy_address;
+  if (inet_aton("203.0.113.999", &legacy_address) != 0 ||
+      legacy_address.s_addr != unchanged.s_addr ||
+      inet_addr("203.0.113.999") != INADDR_NONE) return 9;
+  if (inet_addr("255.255.255.255") != INADDR_BROADCAST) return 10;
   static const char *const invalid_v4[] = {
     "", ".1.2.3", "1.2.3", "1.2.3.256", "1.2.3.4.", "1..3.4", "1.2.3.4x"
   };

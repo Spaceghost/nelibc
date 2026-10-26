@@ -571,13 +571,13 @@ ilogbl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 imaxabs,inttypes.h,inttypes.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 imaxdiv,inttypes.h,inttypes.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 index,strings.h,strings.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
-inet_addr,arpa/inet.h,,,not-declared
-inet_aton,arpa/inet.h,,,not-declared
+inet_addr,arpa/inet.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
+inet_aton,arpa/inet.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
 inet_lnaof,arpa/inet.h,,,not-declared
 inet_makeaddr,arpa/inet.h,,,not-declared
 inet_netof,arpa/inet.h,,,not-declared
 inet_network,arpa/inet.h,,,not-declared
-inet_ntoa,arpa/inet.h,,,not-declared
+inet_ntoa,arpa/inet.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
 inet_ntop,arpa/inet.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
 inet_pton,arpa/inet.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
 initgroups,grp.h,,,not-declared

@@ -258,6 +258,27 @@ local function inet_ntop(af: cint, source: pointer, destination: *[0]cchar,
   return (@*cchar)(destination)
 end
 
+local inet_ntoa_buffer: [16]cchar
+
+local function inet_aton(source: *[0]cchar <const>, destination: pointer): cint
+    <cexport, codename 'inet_aton'>
+  return inet_pton(2, source, destination)
+end
+
+local function inet_addr(source: *[0]cchar <const>): cuint
+    <cexport, codename 'inet_addr'>
+  local address: cuint = 0xffffffff_cuint
+  if inet_pton(2, source, (@pointer)(&address)) == 0 then
+    return 0xffffffff_cuint
+  end
+  return address
+end
+
+local function inet_ntoa(address: cuint): *cchar <cexport, codename 'inet_ntoa'>
+  return inet_ntop(2, (@pointer)(&address), &inet_ntoa_buffer[0],
+      16_cuint)
+end
+
 local function nelibc_strtok_state(): *[0]*[0]cchar <cimport> end
 local function nelibc_locale_strcoll(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <cimport> end
 local function nelibc_locale_strxfrm(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <cimport> end
