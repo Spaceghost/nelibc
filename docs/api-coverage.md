@@ -104,10 +104,10 @@ Standalone narrow `fscanf`, `vfscanf`, `scanf`, `vscanf`, `sscanf`, and
 literals and ranges work with multibyte format strings, and the stream restores
 the exact input bytes after a wide conversion stops. Narrow `%mc`, `%ms`, and
 `%m[` allocate their result with Nelibc's allocator. Fully positional narrow
-formats can reorder pointer arguments; mixing positional with sequential
-arguments is unspecified, and wide positional formats and wide `%m` remain
-incomplete. The C consumer smoke covers allocated strings, scansets and
-character fields, positional reordering, ordinary string and stream input,
+and wide formats can reorder pointer arguments; mixing positional with
+sequential arguments is unspecified, and wide `%m` remains incomplete. The C
+consumer smoke covers allocated strings, scansets and character fields,
+narrow and wide positional reordering, ordinary string and stream input,
 ASCII and Unicode scansets, multi-byte whitespace pushback, integer base
 detection, decimal/hexadecimal floats, `%n`, and UTF-8 `%lc`/`%ls`. Hybrid
 builds leave the narrow family to host libc.

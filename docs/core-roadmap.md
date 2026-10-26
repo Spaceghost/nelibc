@@ -354,10 +354,10 @@ including APIs absent from the pinned musl export set.
   bases, decimal/hexadecimal floats, and POSIX allocation forms `%mc`, `%ms`,
   and `%m[`. `%lc`/`%ls` use multibyte decoding; `%l[` matches multibyte set
   members and ranges, and wide conversions restore original input bytes when
-  they stop. Fully positional narrow formats such as `%2$s %1$d` now select
-  pointer arguments from a copied `va_list`; mixing positional and sequential
-  argument forms remains unspecified. Wide positional formats and wide `%m`
-  remain gaps. Hybrid builds delegate the six narrow scanner APIs to their
+  they stop. Fully positional narrow and wide formats select pointer
+  arguments from a copied `va_list`; mixing positional and sequential argument
+  forms remains unspecified. Wide `%m` remains a gap. Hybrid builds delegate
+  the six narrow scanner APIs to their
   selected host libc.
 - Standalone `swprintf`/`vswprintf` format wide literals and strings through
   Nelibc's multibyte and narrow-formatting paths. Integer/double, wide `%s` and

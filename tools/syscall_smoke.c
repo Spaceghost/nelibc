@@ -2118,6 +2118,11 @@ int main(int argc, char **argv) {
               wide_string_word) != 2 || wide_string_integer != 27 ||
       wcscmp(wide_string_word, L"sample") != 0)
     return 298;
+  wide_string_integer = 0;
+  if (swscanf(L"sample 27", L"%2$ls %1$d", &wide_string_integer,
+              wide_string_word) != 2 || wide_string_integer != 27 ||
+      wcscmp(wide_string_word, L"sample") != 0)
+    return 326;
   if (swscanf(L"", L"%d", &wide_string_integer) != EOF ||
       swscanf(L"", L"") != 0)
     return 300;
