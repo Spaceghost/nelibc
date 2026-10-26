@@ -314,9 +314,9 @@ its internal fork handlers still run. Nelibc keeps its own implementations
 for standalone mode. Also audit against the current POSIX pthread index,
 including APIs absent from the pinned musl export set.
 
-- The latest available-profile inventory has 1,111 declared names. The three
-  rebuilt hybrid archives (Zig/glibc, GCC/glibc, and Zig/musl) export 874
-  functions each; the rebuilt standalone Zig and GCC archives export 1,113,
+- The latest available-profile inventory has 1,113 declared names. The three
+  rebuilt hybrid archives (Zig/glibc, GCC/glibc, and Zig/musl) export 876
+  functions each; the rebuilt standalone Zig and GCC archives export 1,115,
   including two implementation-only entries. TinyCC was unavailable for this
   run. The inventory classifies 228 APIs as host-delegated and 10
   declared-but-unexported in the Zig/musl archive.
@@ -325,9 +325,9 @@ including APIs absent from the pinned musl export set.
   a completeness percentage. See `build/api-coverage.csv` after
   `make api-coverage`.
 - The corrected musl 1.2.5 public-symbol comparison finds 1,471 declarations
-  that are also exported by the pinned release archives: Nelibc exports 808
+  that are also exported by the pinned release archives: Nelibc exports 810
   in at least one tested hybrid profile, delegates 223 to a hybrid host, and does not
-  yet declare 440. No declared API is missing from the tested hybrid archives.
+  yet declare 438. No declared API is missing from the tested hybrid archives.
   The largest undeclared groups are network database APIs (32), stdlib (30),
   and unistd (29). These
   are gap counts, not completion percentages; no API has yet been declared intentionally out

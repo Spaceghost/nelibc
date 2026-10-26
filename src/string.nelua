@@ -4,6 +4,7 @@
 -- Keep this function independent of Nelua's standard library: it is the
 -- beginning of the runtime-free replacement layer.
 local function malloc(size: csize): pointer <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
 
 -- Linux x86-64 is little-endian; the network byte-order API uses big-endian.
 local function htonl(hostlong: cuint): cuint <cexport, codename 'htonl'>
@@ -24,6 +25,237 @@ end
 
 local function ntohs(netshort: cushort): cushort <cexport, codename 'ntohs'>
   return htons(netshort)
+end
+
+local function nelibc_parse_ipv4(source: *[0]cchar <const>, output: *[4]byte): boolean
+  local index: csize = 0
+  for part: csize = 0, 3 do
+    local first = (@byte)(source[index])
+    if first < 48 or first > 57 then return false end
+    local value: cuint = 0
+    local digits: csize = 0
+    while (@byte)(source[index]) >= 48 and (@byte)(source[index]) <= 57 do
+      value = value * 10 + (@cuint)((@byte)(source[index]) - 48)
+      if value > 255 or digits == 3 then return false end
+      digits = digits + 1
+      index = index + 1
+    end
+    output[part] = (@byte)(value)
+    if part < 3 then
+      if (@byte)(source[index]) ~= 46 then return false end
+      index = index + 1
+    elseif source[index] ~= 0 then
+      return false
+    end
+  end
+  return true
+end
+
+local function inet_pton(af: cint, source: *[0]cchar <const>, destination: pointer): cint
+    <cexport, codename 'inet_pton'>
+  local errno = nelibc_errno_location()
+  if af == 2 then
+    local bytes: [4]byte
+    if not nelibc_parse_ipv4(source, &bytes[0]) then return 0 end
+    local output = (@*[0]byte)(destination)
+    for i: csize = 0, 3 do output[i] = bytes[i] end
+    return 1
+  elseif af == 10 then
+    local groups: [8]cushort
+    local count: csize = 0
+    local index: csize = 0
+    local compressed: cint = -1
+    if (@byte)(source[0]) == 58 then
+      if (@byte)(source[1]) ~= 58 then return 0 end
+      compressed = 0
+      index = 2
+    end
+    while source[index] ~= 0 do
+      if count >= 8 then return 0 end
+      local token_start = index
+      local value: cushort = 0
+      local digits: csize = 0
+      local embedded_ipv4: boolean = false
+      while true do
+        local ch = (@byte)(source[index])
+        if (ch >= 48 and ch <= 57) or (ch >= 65 and ch <= 70) or
+            (ch >= 97 and ch <= 102) then
+          if digits == 4 then return 0 end
+          local digit: cushort = 0
+          if ch >= 48 and ch <= 57 then digit = (@cushort)(ch - 48)
+          elseif ch >= 65 and ch <= 70 then digit = (@cushort)(ch - 55)
+          else digit = (@cushort)(ch - 87) end
+          value = (value << 4) | digit
+          digits = digits + 1
+          index = index + 1
+        elseif ch == 46 then
+          local v4: [4]byte
+          if count > 6 or not nelibc_parse_ipv4(&source[token_start], &v4[0]) then
+            return 0
+          end
+          groups[count] = ((@cushort)(v4[0]) << 8) | (@cushort)(v4[1])
+          groups[count + 1] = ((@cushort)(v4[2]) << 8) | (@cushort)(v4[3])
+          count = count + 2
+          index = index + 1
+          embedded_ipv4 = true
+          break
+        else
+          break
+        end
+      end
+      if embedded_ipv4 then break end
+      if digits == 0 then return 0 end
+      groups[count] = value
+      count = count + 1
+      if source[index] == 0 then break end
+      if (@byte)(source[index]) ~= 58 then return 0 end
+      index = index + 1
+      if (@byte)(source[index]) == 58 then
+        if compressed >= 0 then return 0 end
+        compressed = (@cint)(count)
+        index = index + 1
+        if source[index] == 0 then break end
+      elseif source[index] == 0 then
+        return 0
+      end
+    end
+    if compressed < 0 then
+      if count ~= 8 then return 0 end
+    else
+      if count >= 8 then return 0 end
+      local zeros = 8 - count
+      local position = count
+      while position > compressed do
+        position = position - 1
+        groups[position + zeros] = groups[position]
+      end
+      for i: csize = 0, zeros - 1 do groups[compressed + i] = 0 end
+      count = 8
+    end
+    local output = (@*[0]byte)(destination)
+    for i: csize = 0, 7 do
+      output[i * 2] = (@byte)(groups[i] >> 8)
+      output[i * 2 + 1] = (@byte)(groups[i] & 0xff_cushort)
+    end
+    return 1
+  end
+  errno[0] = 97 -- EAFNOSUPPORT
+  return -1
+end
+
+local function inet_ntop(af: cint, source: pointer, destination: *[0]cchar,
+    size: cuint): *cchar <cexport, codename 'inet_ntop'>
+  local errno = nelibc_errno_location()
+  local output: [46]cchar
+  local length: csize = 0
+  local input = (@*[0]byte)(source)
+  if af == 2 then
+    for i: csize = 0, 3 do
+      local value: cuint = (@cuint)(input[i])
+      local digits: [3]cchar
+      local digit_count: csize = 0
+      repeat
+        digits[digit_count] = (@cchar)(48 + value % 10)
+        digit_count = digit_count + 1
+        value = value // 10
+      until value == 0
+      while digit_count > 0 do
+        digit_count = digit_count - 1
+        output[length] = digits[digit_count]
+        length = length + 1
+      end
+      if i < 3 then
+        output[length] = (@cchar)(46)
+        length = length + 1
+      end
+    end
+  elseif af == 10 then
+    local groups: [8]cushort
+    for i: csize = 0, 7 do
+      groups[i] = ((@cushort)(input[i * 2]) << 8) |
+          (@cushort)(input[i * 2 + 1])
+    end
+    if groups[0] == 0 and groups[1] == 0 and groups[2] == 0 and
+        groups[3] == 0 and groups[4] == 0 and groups[5] == 0xffff_cushort then
+      output[0] = (@cchar)(58); output[1] = (@cchar)(58)
+      output[2] = (@cchar)(102); output[3] = (@cchar)(102)
+      output[4] = (@cchar)(102); output[5] = (@cchar)(102)
+      output[6] = (@cchar)(58)
+      length = 7
+      for i: csize = 12, 15 do
+        local value: cuint = (@cuint)(input[i])
+        local digits: [3]cchar
+        local digit_count: csize = 0
+        repeat
+          digits[digit_count] = (@cchar)(48 + value % 10)
+          digit_count = digit_count + 1
+          value = value // 10
+        until value == 0
+        while digit_count > 0 do
+          digit_count = digit_count - 1
+          output[length] = digits[digit_count]
+          length = length + 1
+        end
+        if i < 15 then output[length] = (@cchar)(46); length = length + 1 end
+      end
+    else
+      local best_start: cint = -1
+      local best_length: csize = 1
+      local i: csize = 0
+      while i < 8 do
+        if groups[i] == 0 then
+          local run_start = i
+          while i < 8 and groups[i] == 0 do i = i + 1 end
+          local run_length = i - run_start
+          if run_length > best_length then
+            best_start = (@cint)(run_start)
+            best_length = run_length
+          end
+        else
+          i = i + 1
+        end
+      end
+      i = 0
+      while i < 8 do
+        if (@cint)(i) == best_start then
+          output[length] = (@cchar)(58); output[length + 1] = (@cchar)(58)
+          length = length + 2
+          i = i + best_length
+          continue
+        end
+        if length > 0 and (@byte)(output[length - 1]) ~= 58 then
+          output[length] = (@cchar)(58)
+          length = length + 1
+        end
+        local value: cuint = (@cuint)(groups[i])
+        local digits: [4]cchar
+        local digit_count: csize = 0
+        repeat
+          local digit = value & 0x0f_cuint
+          if digit < 10 then digits[digit_count] = (@cchar)(48 + digit)
+          else digits[digit_count] = (@cchar)(87 + digit) end
+          digit_count = digit_count + 1
+          value = value >> 4
+        until value == 0
+        while digit_count > 0 do
+          digit_count = digit_count - 1
+          output[length] = digits[digit_count]
+          length = length + 1
+        end
+        i = i + 1
+      end
+    end
+  else
+    errno[0] = 97 -- EAFNOSUPPORT
+    return nilptr
+  end
+  if size <= length then
+    errno[0] = 28 -- ENOSPC
+    return nilptr
+  end
+  for i: csize = 0, length - 1 do destination[i] = output[i] end
+  destination[length] = 0
+  return (@*cchar)(destination)
 end
 
 local function nelibc_strtok_state(): *[0]*[0]cchar <cimport> end

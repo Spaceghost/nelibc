@@ -1780,9 +1780,58 @@ static int byte_order_probe(void) {
   return 0;
 }
 
+static int inet_conversion_probe(void) {
+  static const struct {
+    int family;
+    const char *input;
+    const char *canonical;
+  } valid[] = {
+    {AF_INET, "192.0.2.1", "192.0.2.1"},
+    {AF_INET, "0.0.0.0", "0.0.0.0"},
+    {AF_INET6, "::", "::"},
+    {AF_INET6, "::1", "::1"},
+    {AF_INET6, "2001:0DB8:0:0:0:0:0:1", "2001:db8::1"},
+    {AF_INET6, "2001:db8:0:1:1:1:1:1", "2001:db8:0:1:1:1:1:1"},
+    {AF_INET6, "1:0:0:2:0:0:3:4", "1::2:0:0:3:4"},
+    {AF_INET6, "::ffff:192.0.2.1", "::ffff:192.0.2.1"},
+    {AF_INET6, "1:2:3:4:5:6:192.0.2.1", "1:2:3:4:5:6:c000:201"},
+  };
+  unsigned char address[16];
+  char text[INET6_ADDRSTRLEN];
+  for (size_t i = 0; i < sizeof valid / sizeof valid[0]; ++i) {
+    if (inet_pton(valid[i].family, valid[i].input, address) != 1 ||
+        inet_ntop(valid[i].family, address, text, sizeof text) == NULL ||
+        strcmp(text, valid[i].canonical) != 0) return 1;
+  }
+  static const char *const invalid_v4[] = {
+    "", ".1.2.3", "1.2.3", "1.2.3.256", "1.2.3.4.", "1..3.4", "1.2.3.4x"
+  };
+  for (size_t i = 0; i < sizeof invalid_v4 / sizeof invalid_v4[0]; ++i)
+    if (inet_pton(AF_INET, invalid_v4[i], address) != 0) return 2;
+  static const char *const invalid_v6[] = {
+    "", ":1", "1:", ":::1", "1::2::3", "1:2:3:4:5:6:7",
+    "1:2:3:4:5:6:7:8:9", "12345::1", "::ffff:192.0.2.256", "fe80::1%lo"
+  };
+  for (size_t i = 0; i < sizeof invalid_v6 / sizeof invalid_v6[0]; ++i)
+    if (inet_pton(AF_INET6, invalid_v6[i], address) != 0) return 3;
+  errno = 0;
+  if (inet_pton(AF_UNIX, "127.0.0.1", address) != -1 || errno != EAFNOSUPPORT)
+    return 4;
+  if (inet_pton(AF_UNIX, "::1", address) != -1 || errno != EAFNOSUPPORT)
+    return 5;
+  errno = 0;
+  if (inet_ntop(AF_INET, address, text, 4) != NULL || errno != ENOSPC) return 6;
+  errno = 0;
+  if (inet_ntop(AF_UNIX, address, text, sizeof text) != NULL || errno != EAFNOSUPPORT)
+    return 7;
+  return 0;
+}
+
 int main(int argc, char **argv) {
   int byte_order_result = byte_order_probe();
   if (byte_order_result != 0) return 640 + byte_order_result;
+  int inet_result = inet_conversion_probe();
+  if (inet_result != 0) return 650 + inet_result;
   int locale_float_parser_result = locale_float_parser_probe();
   if (locale_float_parser_result != 0) return 89 + locale_float_parser_result;
   void *minimal_aligned = memalign(1, 17);

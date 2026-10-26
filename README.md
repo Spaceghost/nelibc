@@ -44,9 +44,9 @@ symbol coverage, not behavioral conformance.
 
 | Hybrid coverage | Count |
 | --- | ---: |
-| Exported by Nelibc in at least one tested profile | 808 |
+| Exported by Nelibc in at least one tested profile | 810 |
 | Deliberately supplied by host libc | 223 |
-| Not yet declared by Nelibc | 440 |
+| Not yet declared by Nelibc | 438 |
 
 | Area | Status |
 | --- | --- |

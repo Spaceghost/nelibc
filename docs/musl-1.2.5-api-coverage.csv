@@ -578,8 +578,8 @@ inet_makeaddr,arpa/inet.h,,,not-declared
 inet_netof,arpa/inet.h,,,not-declared
 inet_network,arpa/inet.h,,,not-declared
 inet_ntoa,arpa/inet.h,,,not-declared
-inet_ntop,arpa/inet.h,,,not-declared
-inet_pton,arpa/inet.h,,,not-declared
+inet_ntop,arpa/inet.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
+inet_pton,arpa/inet.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
 initgroups,grp.h,,,not-declared
 initstate,stdlib.h,,,not-declared
 inotify_add_watch,sys/inotify.h,,,not-declared
