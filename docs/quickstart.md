@@ -58,8 +58,9 @@ mode. Standalone archives provide `wcscoll`, `wcscoll_l`, `wcsxfrm`, and
 ordering in `de_DE.UTF-8` locale handles. German weights cover ASCII, Latin-1,
 and precomposed Latin Extended-A accents, including umlauts and sharp-s, using
 base-letter, accent, and case levels. One supported combining mark after an
-unaccented base compares like its precomposed form; multiple marks per base
-and full Unicode collation remain unsupported. The same weights apply to narrow
+unaccented base compares like its precomposed form. Multiple marks retain input
+order; canonical mark reordering and full Unicode collation remain unsupported.
+The same weights apply to narrow
 `strcoll`/`strxfrm` when that thread locale is selected. Hybrid links use the
 host libc implementations.
 

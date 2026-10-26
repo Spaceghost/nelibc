@@ -1874,6 +1874,7 @@ int main(int argc, char **argv) {
       wcscoll_l(L"café", L"caff", german_collate) >= 0 ||
       wcscoll_l(L"café", L"cafe\u0301", german_collate) != 0 ||
       wcscoll_l(L"É", L"E\u0301", german_collate) != 0 ||
+      wcscoll_l(L"a\u0301\u0327", L"a\u0327\u0301", german_collate) >= 0 ||
       wcscoll_l(L"É", L"é", german_collate) <= 0 ||
       wcscoll_l(L"c", L"č", german_collate) >= 0 ||
       wcscoll_l(L"č", L"d", german_collate) >= 0 ||
@@ -1903,6 +1904,9 @@ int main(int argc, char **argv) {
       precomposed_length != decomposed_length ||
       wcscmp(precomposed_key, decomposed_key) != 0)
     return 95;
+  wcsxfrm_l(precomposed_key, L"a\u0301\u0327", 64, german_collate);
+  wcsxfrm_l(decomposed_key, L"a\u0327\u0301", 64, german_collate);
+  if (wcscmp(precomposed_key, decomposed_key) >= 0) return 96;
   wchar_t german_ss_key[32], german_sharp_s_key[32];
   size_t german_ss_length = wcsxfrm_l(german_ss_key, L"ss", 32, german_collate);
   size_t german_sharp_s_length = wcsxfrm_l(german_sharp_s_key, L"ß", 32, german_collate);
@@ -1919,15 +1923,20 @@ int main(int argc, char **argv) {
       strxfrm(german_precomposed_key, "café", sizeof german_precomposed_key);
   size_t german_decomposed_key_length =
       strxfrm(german_decomposed_key, "cafe\xcc\x81", sizeof german_decomposed_key);
+  char german_marks_first_key[128], german_marks_second_key[128];
+  strxfrm(german_marks_first_key, "a\xcc\x81\xcc\xa7", sizeof german_marks_first_key);
+  strxfrm(german_marks_second_key, "a\xcc\xa7\xcc\x81", sizeof german_marks_second_key);
   if (old_collate_locale == (locale_t)0 || wcscoll(L"ä", L"aa") >= 0 ||
       strcoll("a", "ä") >= 0 || german_a_key_length >= sizeof german_a_key ||
       german_umlaut_key_length >= sizeof german_umlaut_key ||
       strcmp(german_a_key, german_umlaut_key) >= 0 ||
       strcoll("café", "cafe\xcc\x81") != 0 ||
+      strcoll("a\xcc\x81\xcc\xa7", "a\xcc\xa7\xcc\x81") >= 0 ||
       german_precomposed_key_length >= sizeof german_precomposed_key ||
       german_decomposed_key_length >= sizeof german_decomposed_key ||
       german_precomposed_key_length != german_decomposed_key_length ||
       strcmp(german_precomposed_key, german_decomposed_key) != 0 ||
+      strcmp(german_marks_first_key, german_marks_second_key) >= 0 ||
       uselocale(old_collate_locale) != german_collate)
     return 92;
   old_collate_locale = uselocale(german_collate_c);

@@ -292,8 +292,8 @@ Extended-A letters, alongside the existing ASCII, umlaut, and sharp-s behavior.
 The Extended-A table is generated from Unicode 16.0.0 by
 `tools/gen_german_collation_data.py`. A supported single combining mark
 following an unaccented base compares like its precomposed form. Multiple
-marks per base and the broader Unicode Collation Algorithm are not implemented.
-This remains a project-specific subset, not full Unicode or glibc/musl
+marks per base are weighted in input order; canonical mark reordering is not
+implemented. This remains a project-specific subset, not full Unicode or glibc/musl
 locale-data parity. Non-C collation and additional time locales remain
 incomplete.
 

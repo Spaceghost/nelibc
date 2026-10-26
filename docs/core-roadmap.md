@@ -443,8 +443,9 @@ including APIs absent from the pinned musl export set.
   Latin-1, and precomposed Latin Extended-A accents, including `ä`/`ö`/`ü`
   and `ß`, with primary, accent, and case levels. Wide and narrow comparisons
   and transform keys share those weights. One supported combining mark after
-  an unaccented base compares like its precomposed form; multiple marks per
-  base and full Unicode collation remain unsupported.
+  an unaccented base compares like its precomposed form. Multiple marks retain
+  input order; canonical mark reordering and full Unicode collation remain
+  unsupported.
   Global `setlocale` now selects German collation and preserves it in `LC_ALL`
   category composites. Hybrid profiles continue to use their host's wide
   collation. German time data covers localized weekday/month names and
