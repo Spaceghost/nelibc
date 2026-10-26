@@ -343,6 +343,12 @@ including APIs absent from the pinned musl export set.
   input and output, unlocked variants, aliases, and one-character `ungetwc`
   pushback. UTF-8 stream smoke coverage passes on Zig, GCC, and TinyCC. Hybrid
   profiles continue to use the host stdio ABI and implementations.
+- Standalone wide scanf functions now cover literals/whitespace, suppression,
+  widths, `%n`, `%c`/`%s`/scansets, integer bases, decimal and hexadecimal
+  floating input, and multibyte conversion. Empty `swscanf` input returns EOF
+  when a conversion requires input. Zig, GCC, and TinyCC smoke checks pass;
+  hybrid profiles delegate to their host libc. Positional arguments and
+  extensions such as POSIX `%m` remain outside this tested slice.
 - Standalone `swprintf`/`vswprintf` format wide literals and strings through
   Nelibc's multibyte and narrow-formatting paths. Integer/double, wide `%s` and
   `%c`, `%n`, and truncation cases pass; `%L` formats are explicitly rejected

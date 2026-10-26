@@ -1970,6 +1970,9 @@ int main(int argc, char **argv) {
               wide_string_word) != 2 || wide_string_integer != 27 ||
       wcscmp(wide_string_word, L"sample") != 0)
     return 298;
+  if (swscanf(L"", L"%d", &wide_string_integer) != EOF ||
+      swscanf(L"", L"") != 0)
+    return 300;
   char wide_stdio_bytes[32] = {0};
   FILE *wide_stream = fmemopen(wide_stdio_bytes, sizeof wide_stdio_bytes, "w+");
   if (wide_stream == NULL || fwide(wide_stream, 0) != 0) return 268;

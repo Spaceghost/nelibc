@@ -1903,8 +1903,12 @@ local function vswscanf(input: *[0]cint <const>, format: *[0]cint <const>,
   end
   local source: *[0]cint = (@*[0]cint)(input)
   local byte_length: csize = wcsrtombs(nilptr, &source, 0, nilptr)
-  if byte_length == ~0_csize or byte_length == MAX_CSIZE then
+  if byte_length == ~0_csize then
     nelibc_errno_location()[0] = 84 -- EILSEQ
+    return -1
+  end
+  if byte_length == MAX_CSIZE then
+    nelibc_errno_location()[0] = 75 -- EOVERFLOW
     return -1
   end
   local bytes: *[0]cchar = (@*[0]cchar)(nelibc_malloc(byte_length + 1))
@@ -1918,7 +1922,11 @@ local function vswscanf(input: *[0]cint <const>, format: *[0]cint <const>,
     nelibc_errno_location()[0] = 84 -- EILSEQ
     return -1
   end
-  local stream: *FILE = fmemopen((@pointer)(bytes), byte_length, 'r'_cstring)
+  -- fmemopen rejects a zero size. Its memory length scan still sees an empty
+  -- string in a one-byte buffer containing the terminator.
+  local stream_size: csize = byte_length
+  if stream_size == 0 then stream_size = 1 end
+  local stream: *FILE = fmemopen((@pointer)(bytes), stream_size, 'r'_cstring)
   if stream == nilptr then
     nelibc_free((@pointer)(bytes))
     return -1

@@ -87,6 +87,16 @@ state. Zig, GCC, and TinyCC standalone smoke runs cover UTF-8 reads/writes,
 wide pushback, line reads, and stream orientation. Hybrid archives delegate
 these functions to the selected host libc.
 
+Standalone `fwscanf`, `vfwscanf`, `wscanf`, `vwscanf`, `swscanf`, and
+`vswscanf` support literals and whitespace, suppression, field widths, `%n`,
+character/string/scanset conversions, integer conversions, and decimal or
+hexadecimal floating conversions. Narrow output conversions transcode wide
+input through the active multibyte locale; `l` conversions store `wchar_t`.
+The Zig, GCC, and TinyCC standalone smoke covers UTF-8 input, scansets, integer
+base detection, decimal and hexadecimal floats, `%n`, wide string input, and
+empty-string EOF behavior. Hybrid archives delegate the six APIs to host libc.
+This is a tested conversion slice, not a complete scanf conformance claim.
+
 Standalone `swprintf` and `vswprintf` now reuse the Nelua narrow formatter,
 transcoding wide literals and strings through the active multibyte locale.
 They support integer and double conversions, `%s`/`%c` wide arguments,
