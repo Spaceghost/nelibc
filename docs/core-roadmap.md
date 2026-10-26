@@ -448,7 +448,8 @@ including APIs absent from the pinned musl export set.
   Combining marks sort by canonical combining class, preserving input order
   within each class. Consumer checks cover wide and narrow comparisons and
   transform keys for all 58, including mixed-class components. Full Unicode
-  collation remains unsupported.
+  collation remains unsupported. The consumer also exercises all 55 Unicode
+  16.0 combining classes across 1,485 pairwise reorderings.
   Global `setlocale` now selects German collation and preserves it in `LC_ALL`
   category composites. Hybrid profiles continue to use their host's wide
   collation. German time data covers localized weekday/month names and

@@ -297,8 +297,10 @@ one or two canonical components with nonzero combining classes. A second table
 covers 58 category-M source marks with CCC zero whose canonical decompositions
 contain two or three components. Consumer checks cover wide and narrow
 comparisons and transform keys for all 58, including mixed-class components.
-The data remains a limited project-specific subset and does not implement the
-broader Unicode Collation Algorithm.
+The consumer also tests all 55 Unicode 16.0 combining classes across 1,485
+pairwise canonical-order comparisons and transform keys. The data remains a
+limited project-specific subset and does not implement the broader Unicode
+Collation Algorithm.
 This is a small project-specific subset, not full Unicode or glibc/musl
 locale-data parity.
 Non-C collation and additional time locales remain incomplete.

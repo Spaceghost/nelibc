@@ -119,7 +119,8 @@ local PrimaryIter: type = @record{text: pointer, index: csize, pending: cuint,
 local LevelIter: type = @record{text: pointer, index: csize, cluster_start: csize,
   cluster_end: csize, cluster_scan: csize, cluster_class: cuint,
   cluster_virtual: cuint, cluster_pending_weight: cuint,
-  cluster_pending_class: cuint, repeat_weight: cuint, repeat_count: cuint}
+  cluster_pending_class: cuint, cluster_component: cuint,
+  repeat_weight: cuint, repeat_count: cuint}
 
 -- BEGIN GENERATED GERMAN LATIN EXTENDED-A WEIGHTS
 -- Generated from Unicode 16.0.0; do not edit by hand.
@@ -1270,6 +1271,40 @@ local function nelibc_german_combining_class(value: cwchar_t): cuint <inline>
   return 0
 end
 
+local function nelibc_german_next_cluster_class(text: *[0]cwchar_t <const>,
+    start: csize, end_index: csize, after: cuint, include_virtual: cint): cuint <inline>
+  local next_class: cuint = 0
+  for scan: csize = start, end_index - 1 do
+    local expansion = nelibc_german_mark_expansion(text[scan])
+    local class1: cuint = 0
+    local class2: cuint = 0
+    local class3: cuint = 0
+    if expansion.count ~= 0 then
+      class1 = expansion.class1
+      class2 = expansion.class2
+      class3 = expansion.class3
+    else
+      local info = nelibc_german_combining_info(text[scan])
+      class1 = info.class1
+      class2 = info.class2
+    end
+    if class1 > after and (next_class == 0 or class1 < next_class) then
+      next_class = class1
+    end
+    if class2 > after and (next_class == 0 or class2 < next_class) then
+      next_class = class2
+    end
+    if class3 > after and (next_class == 0 or class3 < next_class) then
+      next_class = class3
+    end
+  end
+  if include_virtual ~= 0 and 230_cuint > after and
+      (next_class == 0 or 230_cuint < next_class) then
+    next_class = 230_cuint
+  end
+  return next_class
+end
+
 local function nelibc_german_weights(value: cwchar_t): CollationWeights <inline>
   local combining = nelibc_german_combining_weight(value)
   if combining ~= 0 then
@@ -1417,29 +1452,65 @@ local function nelibc_german_secondary_next(iter: *LevelIter): cuint <inline>
       end
       while iter.cluster_scan < iter.cluster_end do
         local value = text[iter.cluster_scan]
-        iter.cluster_scan = iter.cluster_scan + 1
-        local info = nelibc_german_combining_info(value)
-        if info.class1 == iter.cluster_class then
-          if info.class2 == iter.cluster_class then
-            iter.cluster_pending_weight = info.weight2
-            iter.cluster_pending_class = info.class2
+        local expansion = nelibc_german_mark_expansion(value)
+        if expansion.count ~= 0 then
+          while iter.cluster_component < expansion.count do
+            local part: cuint = 0
+            local part_class: cuint = 0
+            if iter.cluster_component == 0 then
+              part, part_class = expansion.part1, expansion.class1
+            elseif iter.cluster_component == 1 then
+              part, part_class = expansion.part2, expansion.class2
+            else
+              part, part_class = expansion.part3, expansion.class3
+            end
+            iter.cluster_component = iter.cluster_component + 1
+            if part_class == iter.cluster_class then
+              local info = nelibc_german_combining_info((@cwchar_t)(part))
+              if info.class1 == iter.cluster_class then
+                if info.class2 == iter.cluster_class then
+                  iter.cluster_pending_weight = info.weight2
+                  iter.cluster_pending_class = info.class2
+                end
+                return info.weight1
+              elseif info.class2 == iter.cluster_class then
+                return info.weight2
+              end
+            end
           end
-          return info.weight1
-        elseif info.class2 == iter.cluster_class then
-          return info.weight2
+          iter.cluster_component = 0
+          iter.cluster_scan = iter.cluster_scan + 1
+        else
+          iter.cluster_scan = iter.cluster_scan + 1
+          local info = nelibc_german_combining_info(value)
+          if info.class1 == iter.cluster_class then
+            if info.class2 == iter.cluster_class then
+              iter.cluster_pending_weight = info.weight2
+              iter.cluster_pending_class = info.class2
+            end
+            return info.weight1
+          elseif info.class2 == iter.cluster_class then
+            return info.weight2
+          end
         end
       end
-      if iter.cluster_class == 202_cuint then
-        iter.cluster_class = 230_cuint
-        iter.cluster_scan = iter.cluster_start
-      else
-        iter.cluster_class = 0
+      local include_virtual: cint = 0
+      if iter.cluster_virtual ~= 0 then include_virtual = 1 end
+      iter.cluster_class = nelibc_german_next_cluster_class(text,
+        iter.cluster_start, iter.cluster_end, iter.cluster_class, include_virtual)
+      iter.cluster_scan = iter.cluster_start
+      iter.cluster_component = 0
+      if iter.cluster_class == 0 then
+        iter.cluster_virtual = 0
+        iter.cluster_pending_weight = 0
+        iter.cluster_pending_class = 0
       end
     else
       if text[iter.index] == 0 then return 0 end
       local value = text[iter.index]
       local expansion = nelibc_german_mark_expansion(value)
-      if expansion.count ~= 0 then
+      if expansion.count ~= 0 and expansion.class1 == 0 then
+        local expansion_index = iter.index
         iter.index = iter.index + 1
         local default_count: cuint = 0
         if expansion.class1 == 0 and
@@ -1452,6 +1523,21 @@ local function nelibc_german_secondary_next(iter: *LevelIter): cuint <inline>
         end
         if expansion.count > 2 and expansion.class3 == 0 then
           default_count = default_count + 1
+        end
+        if (expansion.count > 1 and expansion.class2 ~= 0) or
+            (expansion.count > 2 and expansion.class3 ~= 0) then
+          iter.cluster_start = expansion_index
+          iter.cluster_end = iter.index
+          while nelibc_german_combining_class(text[iter.cluster_end]) ~= 0 do
+            iter.cluster_end = iter.cluster_end + 1
+          end
+          iter.cluster_scan = iter.cluster_start
+          iter.cluster_component = 0
+          iter.cluster_class = nelibc_german_next_cluster_class(text,
+            iter.cluster_start, iter.cluster_end, 0, 0)
+          iter.cluster_virtual = 0
+          iter.cluster_pending_weight = 0
+          iter.cluster_pending_class = 0
         end
         if default_count ~= 0 then
           iter.repeat_weight = 0x20_cuint
@@ -1469,8 +1555,10 @@ local function nelibc_german_secondary_next(iter: *LevelIter): cuint <inline>
         end
         iter.cluster_end = iter.index
         iter.cluster_scan = iter.cluster_start
-        iter.cluster_class = 202_cuint
+        iter.cluster_component = 0
         iter.cluster_virtual = 0
+        iter.cluster_class = nelibc_german_next_cluster_class(text,
+          iter.cluster_start, iter.cluster_end, 0, 0)
       else
         iter.index = iter.index + 1
         if weights.secondary == 0x20_cuint or
@@ -1483,12 +1571,16 @@ local function nelibc_german_secondary_next(iter: *LevelIter): cuint <inline>
             iter.cluster_start = cluster_start
             iter.cluster_end = iter.index
             iter.cluster_scan = cluster_start
-            iter.cluster_class = 202_cuint
+            iter.cluster_component = 0
             if weights.secondary ~= 0x20_cuint then
               iter.cluster_virtual = weights.secondary
             else
               iter.cluster_virtual = 0
             end
+            local include_virtual: cint = 0
+            if iter.cluster_virtual ~= 0 then include_virtual = 1 end
+            iter.cluster_class = nelibc_german_next_cluster_class(text,
+              iter.cluster_start, iter.cluster_end, 0, include_virtual)
           else
             return weights.secondary
           end
@@ -1549,10 +1641,12 @@ local function nelibc_compare_secondary(left: *[0]cwchar_t <const>,
   local left_iter: LevelIter = {text = left, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
+    cluster_component = 0,
     repeat_weight = 0, repeat_count = 0}
   local right_iter: LevelIter = {text = right, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
+    cluster_component = 0,
     repeat_weight = 0, repeat_count = 0}
   while true do
     local a = nelibc_german_secondary_next(&left_iter)
@@ -1568,10 +1662,12 @@ local function nelibc_compare_case(left: *[0]cwchar_t <const>,
   local left_iter: LevelIter = {text = left, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
+    cluster_component = 0,
     repeat_weight = 0, repeat_count = 0}
   local right_iter: LevelIter = {text = right, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
+    cluster_component = 0,
     repeat_weight = 0, repeat_count = 0}
   while true do
     local a = nelibc_german_case_next(&left_iter)
@@ -1643,6 +1739,7 @@ local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
   local secondary_iter: LevelIter = {text = src, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
+    cluster_component = 0,
     repeat_weight = 0, repeat_count = 0}
   while true do
     local weight = nelibc_german_secondary_next(&secondary_iter)
@@ -1653,6 +1750,7 @@ local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
   local case_iter: LevelIter = {text = src, index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
+    cluster_component = 0,
     repeat_weight = 0, repeat_count = 0}
   while true do
     local weight = nelibc_german_case_next(&case_iter)

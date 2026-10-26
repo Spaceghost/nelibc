@@ -62,8 +62,9 @@ nonzero-class combining marks with one or two canonical components, plus 58
 CCC-zero source marks that decompose into two or three components. Combining
 marks are ordered by canonical combining class, preserving input order within
 each class. Consumer checks cover wide and narrow comparisons and transform
-keys for all 58 source-mark decompositions, including mixed-class components.
-Full Unicode collation remains unsupported.
+keys for all 58 source-mark decompositions. They also exercise all 55 Unicode
+16.0 combining classes across 1,485 pairwise reorderings. Full Unicode collation
+remains unsupported.
 These weights also apply to narrow `strcoll`/`strxfrm` when that thread locale
 is selected.
 Hybrid links use the host libc implementations.

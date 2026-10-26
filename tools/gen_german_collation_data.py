@@ -18,6 +18,8 @@ EXPANSIONS_END = "-- END GENERATED GERMAN CCC-0 SOURCE MARK EXPANSIONS"
 SMOKE_START = "/* BEGIN GENERATED GERMAN CCC-0 SOURCE MARK EXPANSION SMOKE */"
 SMOKE_END = "/* END GENERATED GERMAN CCC-0 SOURCE MARK EXPANSION SMOKE */"
 SMOKE_SOURCE = ROOT / "tools/lib_consumer_smoke.c"
+CLASS_SMOKE_START = "/* BEGIN GENERATED GERMAN COMBINING CLASS SMOKE */"
+CLASS_SMOKE_END = "/* END GENERATED GERMAN COMBINING CLASS SMOKE */"
 
 ACCENTS = {
     0x0300: 0x22,  # grave
@@ -173,6 +175,42 @@ def generate_mark_expansion_smoke() -> str:
     return "\n".join(lines)
 
 
+def generate_combining_class_smoke() -> str:
+    if unicodedata.unidata_version != VERSION:
+        raise SystemExit(
+            f"need Python Unicode {VERSION}; found {unicodedata.unidata_version}"
+        )
+    representatives = {}
+    for codepoint in range(0x110000):
+        char = chr(codepoint)
+        combining_class = unicodedata.combining(char)
+        if combining_class and len(unicodedata.normalize("NFD", char)) == 1:
+            representatives.setdefault(combining_class, codepoint)
+    rows = []
+    for combining_class, codepoint in sorted(representatives.items()):
+        char = chr(codepoint)
+        rows.append(
+            "  {\n"
+            f"    {combining_class}, L'\\U{codepoint:08x}',\n"
+            f"    {c_utf8_literal(char)}\n"
+            "  },"
+        )
+    lines = [
+        CLASS_SMOKE_START,
+        "typedef struct {",
+        "  unsigned int combining_class;",
+        "  wchar_t wide;",
+        "  const char *utf8;",
+        "} german_combining_class_case;",
+        "",
+        "static const german_combining_class_case german_combining_class_cases[] = {",
+        *rows,
+        "};",
+        CLASS_SMOKE_END,
+    ]
+    return "\n".join(lines)
+
+
 def main() -> None:
     text = SOURCE.read_text()
     for start, end, generated in (
@@ -192,7 +230,12 @@ def main() -> None:
         raise SystemExit("generated collation smoke markers missing from consumer")
     before, remainder = smoke.split(SMOKE_START, 1)
     _, after = remainder.split(SMOKE_END, 1)
-    SMOKE_SOURCE.write_text(before + generate_mark_expansion_smoke() + after)
+    smoke = before + generate_mark_expansion_smoke() + after
+    if CLASS_SMOKE_START not in smoke or CLASS_SMOKE_END not in smoke:
+        raise SystemExit("combining-class smoke markers missing from consumer")
+    before, remainder = smoke.split(CLASS_SMOKE_START, 1)
+    _, after = remainder.split(CLASS_SMOKE_END, 1)
+    SMOKE_SOURCE.write_text(before + generate_combining_class_smoke() + after)
 
 
 if __name__ == "__main__":

@@ -277,6 +277,236 @@ static const german_mark_expansion_case german_mark_expansion_cases[] = {
   },
 };
 /* END GENERATED GERMAN CCC-0 SOURCE MARK EXPANSION SMOKE */
+/* BEGIN GENERATED GERMAN COMBINING CLASS SMOKE */
+typedef struct {
+  unsigned int combining_class;
+  wchar_t wide;
+  const char *utf8;
+} german_combining_class_case;
+
+static const german_combining_class_case german_combining_class_cases[] = {
+  {
+    1, L'\U00000334',
+    "\xcc\xb4"
+  },
+  {
+    6, L'\U00016ff0',
+    "\xf0\x96\xbf\xb0"
+  },
+  {
+    7, L'\U0000093c',
+    "\xe0\xa4\xbc"
+  },
+  {
+    8, L'\U00003099',
+    "\xe3\x82\x99"
+  },
+  {
+    9, L'\U0000094d',
+    "\xe0\xa5\x8d"
+  },
+  {
+    10, L'\U000005b0',
+    "\xd6\xb0"
+  },
+  {
+    11, L'\U000005b1',
+    "\xd6\xb1"
+  },
+  {
+    12, L'\U000005b2',
+    "\xd6\xb2"
+  },
+  {
+    13, L'\U000005b3',
+    "\xd6\xb3"
+  },
+  {
+    14, L'\U000005b4',
+    "\xd6\xb4"
+  },
+  {
+    15, L'\U000005b5',
+    "\xd6\xb5"
+  },
+  {
+    16, L'\U000005b6',
+    "\xd6\xb6"
+  },
+  {
+    17, L'\U000005b7',
+    "\xd6\xb7"
+  },
+  {
+    18, L'\U000005b8',
+    "\xd6\xb8"
+  },
+  {
+    19, L'\U000005b9',
+    "\xd6\xb9"
+  },
+  {
+    20, L'\U000005bb',
+    "\xd6\xbb"
+  },
+  {
+    21, L'\U000005bc',
+    "\xd6\xbc"
+  },
+  {
+    22, L'\U000005bd',
+    "\xd6\xbd"
+  },
+  {
+    23, L'\U000005bf',
+    "\xd6\xbf"
+  },
+  {
+    24, L'\U000005c1',
+    "\xd7\x81"
+  },
+  {
+    25, L'\U000005c2',
+    "\xd7\x82"
+  },
+  {
+    26, L'\U0000fb1e',
+    "\xef\xac\x9e"
+  },
+  {
+    27, L'\U0000064b',
+    "\xd9\x8b"
+  },
+  {
+    28, L'\U0000064c',
+    "\xd9\x8c"
+  },
+  {
+    29, L'\U0000064d',
+    "\xd9\x8d"
+  },
+  {
+    30, L'\U00000618',
+    "\xd8\x98"
+  },
+  {
+    31, L'\U00000619',
+    "\xd8\x99"
+  },
+  {
+    32, L'\U0000061a',
+    "\xd8\x9a"
+  },
+  {
+    33, L'\U00000651',
+    "\xd9\x91"
+  },
+  {
+    34, L'\U00000652',
+    "\xd9\x92"
+  },
+  {
+    35, L'\U00000670',
+    "\xd9\xb0"
+  },
+  {
+    36, L'\U00000711',
+    "\xdc\x91"
+  },
+  {
+    84, L'\U00000c55',
+    "\xe0\xb1\x95"
+  },
+  {
+    91, L'\U00000c56',
+    "\xe0\xb1\x96"
+  },
+  {
+    103, L'\U00000e38',
+    "\xe0\xb8\xb8"
+  },
+  {
+    107, L'\U00000e48',
+    "\xe0\xb9\x88"
+  },
+  {
+    118, L'\U00000eb8',
+    "\xe0\xba\xb8"
+  },
+  {
+    122, L'\U00000ec8',
+    "\xe0\xbb\x88"
+  },
+  {
+    129, L'\U00000f71',
+    "\xe0\xbd\xb1"
+  },
+  {
+    130, L'\U00000f72',
+    "\xe0\xbd\xb2"
+  },
+  {
+    132, L'\U00000f74',
+    "\xe0\xbd\xb4"
+  },
+  {
+    202, L'\U00000321',
+    "\xcc\xa1"
+  },
+  {
+    214, L'\U00001dce',
+    "\xe1\xb7\x8e"
+  },
+  {
+    216, L'\U0000031b',
+    "\xcc\x9b"
+  },
+  {
+    218, L'\U00001dfa',
+    "\xe1\xb7\xba"
+  },
+  {
+    220, L'\U00000316',
+    "\xcc\x96"
+  },
+  {
+    222, L'\U0000059a',
+    "\xd6\x9a"
+  },
+  {
+    224, L'\U0000302e',
+    "\xe3\x80\xae"
+  },
+  {
+    226, L'\U0001d16d',
+    "\xf0\x9d\x85\xad"
+  },
+  {
+    228, L'\U000005ae',
+    "\xd6\xae"
+  },
+  {
+    230, L'\U00000300',
+    "\xcc\x80"
+  },
+  {
+    232, L'\U00000315',
+    "\xcc\x95"
+  },
+  {
+    233, L'\U0000035c',
+    "\xcd\x9c"
+  },
+  {
+    234, L'\U0000035d',
+    "\xcd\x9d"
+  },
+  {
+    240, L'\U00000345',
+    "\xcd\x85"
+  },
+};
+/* END GENERATED GERMAN COMBINING CLASS SMOKE */
 extern long nelibc_test_legacy_strtol(const char *, char **, int)
     __asm__("strtol");
 extern long nelibc_test_legacy_wcstol(const wchar_t *, wchar_t **, int)
@@ -2143,6 +2373,27 @@ int main(int argc, char **argv) {
         wcscmp(composed_key, decomposed_key) != 0)
       return 110 + (int)i;
   }
+  for (size_t i = 0;
+       i < sizeof german_combining_class_cases / sizeof german_combining_class_cases[0];
+       ++i) {
+    for (size_t j = 0;
+         j < sizeof german_combining_class_cases / sizeof german_combining_class_cases[0];
+         ++j) {
+      if (german_combining_class_cases[i].combining_class <=
+          german_combining_class_cases[j].combining_class)
+        continue;
+      wchar_t high_first[] = {L'a', german_combining_class_cases[i].wide,
+          german_combining_class_cases[j].wide, 0};
+      wchar_t canonical[] = {L'a', german_combining_class_cases[j].wide,
+          german_combining_class_cases[i].wide, 0};
+      wchar_t high_key[32], canonical_key[32];
+      size_t high_length = wcsxfrm_l(high_key, high_first, 32, german_collate);
+      size_t canonical_length = wcsxfrm_l(canonical_key, canonical, 32, german_collate);
+      if (wcscoll_l(high_first, canonical, german_collate) != 0 ||
+          high_length != canonical_length || wcscmp(high_key, canonical_key) != 0)
+        return 115;
+    }
+  }
   const wchar_t *german_words[] = {
       L"a", L"ä", L"aa", L"ab", L"ac", L"ad", L"ae", L"af", L"az",
       L"b", L"c", L"cafe", L"cafè", L"café", L"caff", L"cc", L"cč",
@@ -2252,6 +2503,28 @@ int main(int argc, char **argv) {
     if (composed_length != decomposed_length ||
         strcmp(composed_key, decomposed_key) != 0)
       return 106;
+  }
+  for (size_t i = 0;
+       i < sizeof german_combining_class_cases / sizeof german_combining_class_cases[0];
+       ++i) {
+    for (size_t j = 0;
+         j < sizeof german_combining_class_cases / sizeof german_combining_class_cases[0];
+         ++j) {
+      if (german_combining_class_cases[i].combining_class <=
+          german_combining_class_cases[j].combining_class)
+        continue;
+      char high_first[32] = "a", canonical[32] = "a";
+      strcat(high_first, german_combining_class_cases[i].utf8);
+      strcat(high_first, german_combining_class_cases[j].utf8);
+      strcat(canonical, german_combining_class_cases[j].utf8);
+      strcat(canonical, german_combining_class_cases[i].utf8);
+      char high_key[128], canonical_key[128];
+      size_t high_length = strxfrm(high_key, high_first, sizeof high_key);
+      size_t canonical_length = strxfrm(canonical_key, canonical, sizeof canonical_key);
+      if (strcoll(high_first, canonical) != 0 || high_length != canonical_length ||
+          strcmp(high_key, canonical_key) != 0)
+        return 116;
+    }
   }
   if (uselocale(old_collate_locale) != german_collate) return 108;
   old_collate_locale = uselocale(german_collate_c);
