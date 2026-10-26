@@ -1878,6 +1878,7 @@ int main(int argc, char **argv) {
       wcscoll_l(L"á\u0327", L"a\u0327\u0301", german_collate) != 0 ||
       wcscoll_l(L"a\u0301\u0308", L"a\u0308\u0301", german_collate) <= 0 ||
       wcscoll_l(L"a\u0315\u0327", L"a\u0327\u0315", german_collate) != 0 ||
+      wcscoll_l(L"a\u05b0\u0327", L"a\u0327\u05b0", german_collate) != 0 ||
       wcscoll_l(L"a\u0340", L"a\u0300", german_collate) != 0 ||
       wcscoll_l(L"É", L"é", german_collate) <= 0 ||
       wcscoll_l(L"c", L"č", german_collate) >= 0 ||
@@ -1917,6 +1918,9 @@ int main(int argc, char **argv) {
   wcsxfrm_l(precomposed_key, L"a\u0315\u0327", 64, german_collate);
   wcsxfrm_l(decomposed_key, L"a\u0327\u0315", 64, german_collate);
   if (wcscmp(precomposed_key, decomposed_key) != 0) return 99;
+  wcsxfrm_l(precomposed_key, L"a\u05b0\u0327", 64, german_collate);
+  wcsxfrm_l(decomposed_key, L"a\u0327\u05b0", 64, german_collate);
+  if (wcscmp(precomposed_key, decomposed_key) != 0) return 100;
   wchar_t german_ss_key[32], german_sharp_s_key[32];
   size_t german_ss_length = wcsxfrm_l(german_ss_key, L"ss", 32, german_collate);
   size_t german_sharp_s_length = wcsxfrm_l(german_sharp_s_key, L"ß", 32, german_collate);
@@ -1941,6 +1945,11 @@ int main(int argc, char **argv) {
           sizeof german_extended_marks_first);
   strxfrm(german_extended_marks_second, "a\xcc\xa7\xcc\x95",
           sizeof german_extended_marks_second);
+  char german_hebrew_marks_first[128], german_hebrew_marks_second[128];
+  strxfrm(german_hebrew_marks_first, "a\xd6\xb0\xcc\xa7",
+          sizeof german_hebrew_marks_first);
+  strxfrm(german_hebrew_marks_second, "a\xcc\xa7\xd6\xb0",
+          sizeof german_hebrew_marks_second);
   if (old_collate_locale == (locale_t)0 || wcscoll(L"ä", L"aa") >= 0 ||
       strcoll("a", "ä") >= 0 || german_a_key_length >= sizeof german_a_key ||
       german_umlaut_key_length >= sizeof german_umlaut_key ||
@@ -1948,6 +1957,7 @@ int main(int argc, char **argv) {
       strcoll("café", "cafe\xcc\x81") != 0 ||
       strcoll("a\xcc\x81\xcc\xa7", "a\xcc\xa7\xcc\x81") != 0 ||
       strcoll("a\xcc\x95\xcc\xa7", "a\xcc\xa7\xcc\x95") != 0 ||
+      strcoll("a\xd6\xb0\xcc\xa7", "a\xcc\xa7\xd6\xb0") != 0 ||
       strcoll("á\xcc\xa7", "a\xcc\xa7\xcc\x81") != 0 ||
       german_precomposed_key_length >= sizeof german_precomposed_key ||
       german_decomposed_key_length >= sizeof german_decomposed_key ||
@@ -1955,6 +1965,7 @@ int main(int argc, char **argv) {
       strcmp(german_precomposed_key, german_decomposed_key) != 0 ||
       strcmp(german_marks_first_key, german_marks_second_key) != 0 ||
       strcmp(german_extended_marks_first, german_extended_marks_second) != 0 ||
+      strcmp(german_hebrew_marks_first, german_hebrew_marks_second) != 0 ||
       uselocale(old_collate_locale) != german_collate)
     return 92;
   old_collate_locale = uselocale(german_collate_c);

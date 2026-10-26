@@ -442,11 +442,11 @@ including APIs absent from the pinned musl export set.
   `de_DE.UTF-8` collation handles add a limited German ordering for ASCII,
   Latin-1, and precomposed Latin Extended-A accents, including `ä`/`ö`/`ü`
   and `ß`, with primary, accent, and case levels. Wide and narrow comparisons
-  and transform keys share those weights. The generated table covers 110
-  Unicode 16.0 combining marks in U+0300–U+036F with a single-codepoint
-  canonical decomposition. They sort by canonical combining class, preserving
-  input order within each class. Other marks and full Unicode collation remain
-  unsupported.
+  and transform keys share those weights. The generated table covers 933
+  Unicode 16.0 combining marks with a single-codepoint canonical decomposition
+  and nonzero combining class. They sort by canonical combining class,
+  preserving input order within each class. Multi-codepoint decompositions and
+  full Unicode collation remain unsupported.
   Global `setlocale` now selects German collation and preserves it in `LC_ALL`
   category composites. Hybrid profiles continue to use their host's wide
   collation. German time data covers localized weekday/month names and

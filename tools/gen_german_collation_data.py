@@ -77,7 +77,7 @@ def generate() -> str:
 
 def generate_marks() -> str:
     rows = []
-    for codepoint in range(0x0300, 0x0370):
+    for codepoint in range(0x110000):
         canonical = canonical_mark(codepoint)
         if canonical == 0:
             continue
