@@ -442,12 +442,12 @@ including APIs absent from the pinned musl export set.
   `de_DE.UTF-8` collation handles add a limited German ordering for ASCII,
   Latin-1, and precomposed Latin Extended-A accents, including `ä`/`ö`/`ü`
   and `ß`, with primary, accent, and case levels. Wide and narrow comparisons
-  and transform keys share those weights. Decomposed combining sequences and
-  full Unicode collation remain unsupported.
+  and transform keys share those weights. One supported combining mark after
+  an unaccented base compares like its precomposed form; multiple marks per
+  base and full Unicode collation remain unsupported.
   Global `setlocale` now selects German collation and preserves it in `LC_ALL`
-  category composites;
-  broader Unicode collation data is missing.
-  Hybrid profiles continue to use their host's wide collation. German time data covers localized weekday/month names and
+  category composites. Hybrid profiles continue to use their host's wide
+  collation. German time data covers localized weekday/month names and
   `%c`/`%x` formats. Global `setlocale` selects C or German `LC_TIME`,
   reports/accepts its supported `LC_ALL` composites, and `duplocale` snapshots
   the global time category. `strtod`, floating formatting, grouping, `strcoll`,

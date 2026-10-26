@@ -114,6 +114,7 @@ end
 
 local CollationWeights: type = @record{first: cuint, second: cuint, secondary: cuint, case_weight: cuint}
 local PrimaryIter: type = @record{text: pointer, index: csize, pending: cuint}
+local LevelIter: type = @record{text: pointer, index: csize}
 
 -- BEGIN GENERATED GERMAN LATIN EXTENDED-A WEIGHTS
 -- Generated from Unicode 16.0.0; do not edit by hand.
@@ -197,7 +198,28 @@ local function nelibc_german_extended_a_weight(value: cwchar_t): CollationWeight
     secondary = 0x20_cuint, case_weight = 0x20_cuint}
 end
 
+local function nelibc_german_combining_weight(value: cwchar_t): cuint <inline>
+  if value == 0x300 then return 0x22_cuint
+  elseif value == 0x301 then return 0x23_cuint
+  elseif value == 0x302 then return 0x24_cuint
+  elseif value == 0x303 then return 0x25_cuint
+  elseif value == 0x304 then return 0x2a_cuint
+  elseif value == 0x306 then return 0x29_cuint
+  elseif value == 0x307 then return 0x2c_cuint
+  elseif value == 0x308 then return 0x21_cuint
+  elseif value == 0x30a then return 0x26_cuint
+  elseif value == 0x30b then return 0x2d_cuint
+  elseif value == 0x30c then return 0x28_cuint
+  elseif value == 0x327 then return 0x27_cuint
+  elseif value == 0x328 then return 0x2b_cuint end
+  return 0
+end
+
 local function nelibc_german_weights(value: cwchar_t): CollationWeights <inline>
+  local combining = nelibc_german_combining_weight(value)
+  if combining ~= 0 then
+    return {first = 0, second = 0, secondary = combining, case_weight = 0x20_cuint}
+  end
   local folded = value
   local case_weight: cuint = 0x20_cuint
   if value >= 65 and value <= 90 then
@@ -287,11 +309,43 @@ local function nelibc_german_primary_next(iter: *PrimaryIter): cuint <inline>
     return value
   end
   local text = (@*[0]cwchar_t)(iter.text)
+  while text[iter.index] ~= 0 do
+    local weights = nelibc_german_weights(text[iter.index])
+    iter.index = iter.index + 1
+    if weights.first ~= 0 then
+      iter.pending = weights.second
+      return weights.first
+    end
+  end
+  return 0
+end
+
+local function nelibc_german_secondary_next(iter: *LevelIter): cuint <inline>
+  local text = (@*[0]cwchar_t)(iter.text)
   if text[iter.index] == 0 then return 0 end
-  local weights = nelibc_german_weights(text[iter.index])
+  local value = text[iter.index]
+  local weights = nelibc_german_weights(value)
   iter.index = iter.index + 1
-  iter.pending = weights.second
-  return weights.first
+  if weights.secondary == 0x20_cuint then
+    local accent = nelibc_german_combining_weight(text[iter.index])
+    if accent ~= 0 then
+      iter.index = iter.index + 1
+      return accent
+    end
+  end
+  return weights.secondary
+end
+
+local function nelibc_german_case_next(iter: *LevelIter): cuint <inline>
+  local text = (@*[0]cwchar_t)(iter.text)
+  while text[iter.index] ~= 0 do
+    local value = text[iter.index]
+    iter.index = iter.index + 1
+    if nelibc_german_combining_weight(value) == 0 then
+      return nelibc_german_weights(value).case_weight
+    end
+  end
+  return 0
 end
 
 local function nelibc_compare_primary(left: *[0]cwchar_t <const>,
@@ -309,32 +363,28 @@ end
 
 local function nelibc_compare_secondary(left: *[0]cwchar_t <const>,
     right: *[0]cwchar_t <const>): cint <inline>
-  local index: csize = 0
-  while left[index] ~= 0 and right[index] ~= 0 do
-    local a = nelibc_german_weights(left[index]).secondary
-    local b = nelibc_german_weights(right[index]).secondary
+  local left_iter: LevelIter = {text = left, index = 0}
+  local right_iter: LevelIter = {text = right, index = 0}
+  while true do
+    local a = nelibc_german_secondary_next(&left_iter)
+    local b = nelibc_german_secondary_next(&right_iter)
     if a < b then return -1 end
     if a > b then return 1 end
-    index = index + 1
+    if a == 0 then return 0 end
   end
-  if left[index] == 0 and right[index] ~= 0 then return -1 end
-  if right[index] == 0 and left[index] ~= 0 then return 1 end
-  return 0
 end
 
 local function nelibc_compare_case(left: *[0]cwchar_t <const>,
     right: *[0]cwchar_t <const>): cint <inline>
-  local index: csize = 0
-  while left[index] ~= 0 and right[index] ~= 0 do
-    local a = nelibc_german_weights(left[index]).case_weight
-    local b = nelibc_german_weights(right[index]).case_weight
+  local left_iter: LevelIter = {text = left, index = 0}
+  local right_iter: LevelIter = {text = right, index = 0}
+  while true do
+    local a = nelibc_german_case_next(&left_iter)
+    local b = nelibc_german_case_next(&right_iter)
     if a < b then return -1 end
     if a > b then return 1 end
-    index = index + 1
+    if a == 0 then return 0 end
   end
-  if left[index] == 0 and right[index] ~= 0 then return -1 end
-  if right[index] == 0 and left[index] ~= 0 then return 1 end
-  return 0
 end
 
 local function nelibc_wide_collate(left: *[0]cwchar_t <const>,
@@ -395,18 +445,18 @@ local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
     length = nelibc_german_emit(dest, size, length, weight)
   end
   length = nelibc_german_emit(dest, size, length, 1_cuint)
-  local index: csize = 0
-  while src[index] ~= 0 do
-    length = nelibc_german_emit(dest, size, length,
-      nelibc_german_weights(src[index]).secondary)
-    index = index + 1
+  local secondary_iter: LevelIter = {text = src, index = 0}
+  while true do
+    local weight = nelibc_german_secondary_next(&secondary_iter)
+    if weight == 0 then break end
+    length = nelibc_german_emit(dest, size, length, weight)
   end
   length = nelibc_german_emit(dest, size, length, 1_cuint)
-  index = 0
-  while src[index] ~= 0 do
-    length = nelibc_german_emit(dest, size, length,
-      nelibc_german_weights(src[index]).case_weight)
-    index = index + 1
+  local case_iter: LevelIter = {text = src, index = 0}
+  while true do
+    local weight = nelibc_german_case_next(&case_iter)
+    if weight == 0 then break end
+    length = nelibc_german_emit(dest, size, length, weight)
   end
   length = nelibc_german_emit(dest, size, length, 1_cuint)
   if length < size then dest[length] = 0 end

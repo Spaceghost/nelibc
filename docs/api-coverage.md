@@ -290,10 +290,12 @@ formats. German collation assigns base-letter primary weights and accent
 secondary weights to Latin-1 and precomposed, canonically decomposable Latin
 Extended-A letters, alongside the existing ASCII, umlaut, and sharp-s behavior.
 The Extended-A table is generated from Unicode 16.0.0 by
-`tools/gen_german_collation_data.py`. Decomposed combining-mark sequences and
-the broader Unicode Collation Algorithm are not implemented. This is a small
-project-specific subset, not full Unicode or glibc/musl locale-data parity.
-Non-C collation and additional time locales remain incomplete.
+`tools/gen_german_collation_data.py`. A supported single combining mark
+following an unaccented base compares like its precomposed form. Multiple
+marks per base and the broader Unicode Collation Algorithm are not implemented.
+This remains a project-specific subset, not full Unicode or glibc/musl
+locale-data parity. Non-C collation and additional time locales remain
+incomplete.
 
 `scalb` and `scalbf` scale by integral exponents and report invalid fractional
 exponents; `significand` and `significandf` normalize finite nonzero inputs so
