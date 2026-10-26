@@ -10,6 +10,15 @@ libc. A function becomes eligible for replacement when its implementation,
 edge cases, ABI, and cross-libc behavior are established. Keep the compiler
 runtime and platform syscall layer separate from the public libc surface.
 
+## Network byte order
+
+The Nelua string/runtime object exports `htonl`, `htons`, `ntohl`, and `ntohs`
+for the project's little-endian Linux x86-64 target. The C consumer exhaustively
+checks all 65,536 16-bit values and 10,000 deterministic 32-bit values, then
+checks both conversion round trips. The consumer passes with Zig/glibc,
+GCC/glibc, Zig/musl, and standalone Zig and GCC builds. TinyCC was unavailable
+for this run.
+
 The initial C complex-math slice replaces `cabs*`, `creal*`, `cimag*`,
 `conj*`, `cproj*`, `carg*`, `csqrt*`, `cexp*`, `clog*`, `csin*`, `ccos*`,
 `csinh*`, `ccosh*`, `ctan*`, `ctanh*`, `catan*`, `catanh*`, `casin*`,

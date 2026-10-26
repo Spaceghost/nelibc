@@ -4,6 +4,28 @@
 -- Keep this function independent of Nelua's standard library: it is the
 -- beginning of the runtime-free replacement layer.
 local function malloc(size: csize): pointer <cimport> end
+
+-- Linux x86-64 is little-endian; the network byte-order API uses big-endian.
+local function htonl(hostlong: cuint): cuint <cexport, codename 'htonl'>
+  return ((hostlong & 0x000000ff_cuint) << 24) |
+      ((hostlong & 0x0000ff00_cuint) << 8) |
+      ((hostlong & 0x00ff0000_cuint) >> 8) |
+      ((hostlong & 0xff000000_cuint) >> 24)
+end
+
+local function htons(hostshort: cushort): cushort <cexport, codename 'htons'>
+  return ((hostshort & 0x00ff_cushort) << 8) |
+      ((hostshort & 0xff00_cushort) >> 8)
+end
+
+local function ntohl(netlong: cuint): cuint <cexport, codename 'ntohl'>
+  return htonl(netlong)
+end
+
+local function ntohs(netshort: cushort): cushort <cexport, codename 'ntohs'>
+  return htons(netshort)
+end
+
 local function nelibc_strtok_state(): *[0]*[0]cchar <cimport> end
 local function nelibc_locale_strcoll(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <cimport> end
 local function nelibc_locale_strxfrm(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <cimport> end

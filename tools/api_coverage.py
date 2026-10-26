@@ -133,6 +133,9 @@ def declaration_names(text: str) -> set[str]:
     """
     text = remove_comments(text)
     text = text.replace("\\\n", " ")
+    # Remove the C++ linkage opener before stripping string literals; otherwise
+    # its now-empty braces look like a struct body and hide every prototype.
+    text = re.sub(r'\bextern\s+"C"\s*\{', " ", text)
     text = re.sub(r"^[ \t]*#.*$", " ", text, flags=re.M)
     text = re.sub(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'', " ", text)
 

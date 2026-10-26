@@ -553,8 +553,8 @@ herror,netdb.h,,,not-declared
 hsearch,search.h,,,not-declared
 hsearch_r,search.h,,,not-declared
 hstrerror,netdb.h,,,not-declared
-htonl,arpa/inet.h;netinet/in.h,,,not-declared
-htons,arpa/inet.h;netinet/in.h,,,not-declared
+htonl,arpa/inet.h;netinet/in.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
+htons,arpa/inet.h;netinet/in.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
 hypot,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 hypotf,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 hypotl,math.h,math.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
@@ -817,8 +817,8 @@ ns_parserr,arpa/nameser.h,,,not-declared
 ns_put16,arpa/nameser.h,,,not-declared
 ns_put32,arpa/nameser.h,,,not-declared
 ns_skiprr,arpa/nameser.h,,,not-declared
-ntohl,arpa/inet.h;netinet/in.h,,,not-declared
-ntohs,arpa/inet.h;netinet/in.h,,,not-declared
+ntohl,arpa/inet.h;netinet/in.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
+ntohs,arpa/inet.h;netinet/in.h,arpa/inet.h,zig_glibc;gcc_glibc;zig_musl,implemented
 open,fcntl.h,fcntl.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented
 open_by_handle_at,fcntl.h,,,not-declared
 open_memstream,stdio.h,nelibc_stdio_standalone.h,zig_glibc;gcc_glibc;zig_musl;tcc_glibc,implemented

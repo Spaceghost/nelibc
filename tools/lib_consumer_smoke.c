@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <stdint.h>
+#include <arpa/inet.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -1760,7 +1761,28 @@ done:
   return result;
 }
 
+static int byte_order_probe(void) {
+  for (uint32_t value = 0; value <= UINT16_MAX; ++value) {
+    uint16_t expected = (uint16_t)((value << 8) | (value >> 8));
+    if (htons((uint16_t)value) != expected ||
+        ntohs(expected) != (uint16_t)value || ntohs(htons((uint16_t)value)) != value)
+      return 1;
+  }
+  uint32_t value = 0x12345678U;
+  for (unsigned int i = 0; i < 10000; ++i) {
+    uint32_t expected = ((value & 0x000000ffU) << 24) |
+        ((value & 0x0000ff00U) << 8) | ((value & 0x00ff0000U) >> 8) |
+        ((value & 0xff000000U) >> 24);
+    if (htonl(value) != expected || ntohl(expected) != value ||
+        ntohl(htonl(value)) != value) return 2;
+    value = value * 1664525U + 1013904223U;
+  }
+  return 0;
+}
+
 int main(int argc, char **argv) {
+  int byte_order_result = byte_order_probe();
+  if (byte_order_result != 0) return 640 + byte_order_result;
   int locale_float_parser_result = locale_float_parser_probe();
   if (locale_float_parser_result != 0) return 89 + locale_float_parser_result;
   void *minimal_aligned = memalign(1, 17);
