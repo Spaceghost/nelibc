@@ -1,18 +1,19 @@
 # nelibc
 
-**A C-compatible libc, incrementally reimplemented in [Nelua](https://nelua.io).**
+### A libc, rebuilt piece by piece in [Nelua](https://nelua.io).
 
-Nelibc starts alongside an existing libc and replaces functions one at a time.
-Use the Nelua implementation where it is ready; let glibc or musl provide the
-rest. The long-term target is a libc that can stand on its own.
+Nelibc lets C programs use Nelua implementations for the functions that are
+ready, while glibc or musl supplies the rest. The goal is a libc that can
+eventually run on its own.
 
-> **Status:** experimental; Linux x86-64. Hybrid builds are useful now.
-> Standalone builds work for a growing slice and are not a complete general
-> purpose libc yet.
+**Status:** experimental · Linux x86-64 · hybrid use works today · standalone
+runtime is incomplete
+
+---
 
 ## Try it
 
-Requirements: [Nelua](https://nelua.io) and [Zig](https://ziglang.org/) (`zig cc`).
+Install [Nelua](https://nelua.io) and [Zig](https://ziglang.org/), then:
 
 ```sh
 git clone https://github.com/Spaceghost/nelibc.git
@@ -20,76 +21,65 @@ cd nelibc
 make dogfood-zig
 ```
 
-This builds the hybrid archive, links a real C program, runs it, and checks
-that Nelibc's symbols are present. To link your own program:
+That builds Nelibc, links a C program against it, runs the program, and checks
+that Nelibc's symbols made it into the executable.
+
+To link your own C program:
 
 ```sh
 make lib-zig
-zig cc -Iinclude -fno-builtin your_program.c build/libnelibc-zig.a -o your_program
-./your_program
+zig cc -Iinclude -fno-builtin app.c build/libnelibc-zig.a -o app
 ```
 
-`-fno-builtin` keeps compiler builtins from bypassing the symbols being tested.
-The [quickstart](docs/quickstart.md) covers GCC, musl, and TinyCC too.
+`-fno-builtin` makes sure the compiler calls the library functions being
+tested. See the [quickstart](docs/quickstart.md) for GCC, musl, and TinyCC.
 
-## How replacement works
+## What works
 
-| Build | Nelibc provides | Existing libc provides |
-|---|---|---|
-| Hybrid (default) | Functions Nelibc exports | Uncovered APIs, locale data, and host runtime services |
-| Standalone | Its implemented libc and Linux syscall layer | Nothing at runtime; this profile is still incomplete |
+| Area | Snapshot |
+| --- | --- |
+| Memory, strings, conversions | Broad implementation; differential checks across build profiles |
+| Math | Wide real and complex coverage; numerical edge cases remain |
+| Stdio | Hybrid stdio plus a growing standalone implementation |
+| Files, processes, threads | Linux x86-64 base; standalone POSIX coverage is partial |
+| Locale, wide chars, networking | Partial locale and Unicode support; resolver APIs remain |
 
-Each function keeps the C ABI. This lets ordinary C programs use Nelibc
-incrementally, while standalone builds reveal which runtime pieces still need
-implementation.
+Hybrid builds can replace selected functions and leave the rest to the host
+libc. Standalone builds use Nelibc's own runtime and syscall layer, and are
+still under development.
 
-## Progress
+## Track completeness
 
-The pinned musl 1.2.5 symbol audit tracks **1,471 public functions**:
+The API tracker compares declarations, archive exports, and host delegation
+across compiler and libc profiles. It is the source of truth for symbol-level
+progress; symbol counts do not measure behavioral completeness.
 
-| Status | Functions | What it means |
-|---|---:|---|
-| Nelibc implementation | 803 | Implemented in Nelua in at least one hybrid profile |
-| Host delegated | 223 | Available through glibc or musl in hybrid builds |
-| Not declared yet | 445 | Remaining API-surface candidates |
+- [Function and symbol audit](docs/musl-1.2.5-api-coverage.csv)
+- [How coverage is measured](docs/api-coverage.md)
+- [Prioritized core roadmap](docs/core-roadmap.md)
+- [Builds, implementations, and test catalog](docs/implementation-catalog.md)
 
-These are symbol counts, not behavioral completeness scores. Each function
-still needs ABI, edge-case, and cross-libc validation. See the
-[full function audit](docs/musl-1.2.5-api-coverage.csv),
-[coverage notes](docs/api-coverage.md), and
-[ranked core roadmap](docs/core-roadmap.md).
+Refresh the local report with `make api-coverage`.
 
-| Area | Current state |
-|---|---|
-| Memory, strings, and conversions | Broad Nelua implementation; differential-tested across compiler/libc profiles |
-| Math | Broad real and complex math coverage; numerical and floating-environment gaps remain |
-| Stdio | Hybrid wrappers and a growing standalone stream/formatting implementation |
-| Processes, files, and threads | Linux x86-64 syscall base; standalone POSIX behavior is still a subset |
-| Locale, wide characters, and networking | Partial locale/Unicode behavior; resolver and network database APIs remain major gaps |
+## Build profiles
 
-## Build profiles and checks
-
-Zig cc is the default. The project also compares GCC and TinyCC, and tests
-glibc and musl hybrid builds.
+Zig cc is the default. GCC and TinyCC are used for comparison; hybrid builds
+cover glibc and musl.
 
 ```sh
-make dogfood-matrix       # Zig/glibc, GCC/glibc, Zig/musl, TinyCC/glibc
-make smoke-matrix         # available build, ABI, and differential checks
-make api-coverage         # regenerate build/api-coverage.csv
+make dogfood-matrix
+make smoke-matrix
 ```
 
-TinyCC is optional; pass `TCC` and `TCC_LIBTCC1` when it is installed outside
-the default paths. See the [build and implementation reference](docs/implementation-catalog.md)
-for detailed targets, individual API notes, benchmark records, and test scope.
+TinyCC is optional. See the [quickstart](docs/quickstart.md) for setup and
+individual build commands.
 
 ## Contributing
 
-Start with a small API slice: implement it in Nelua, expose the stable C ABI,
-add a C consumer check, then compare behavior across the available host
-profiles. Keep host-delegated behavior explicit and update the coverage tracker
-when declarations or exports change.
+Pick a small API slice, implement it in Nelua, expose its C ABI, and add a C
+consumer check. Keep host delegation explicit and update the coverage tracker.
 
 ## License
 
-MIT. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for third-party
-notices covering the fdlibm-derived math code.
+MIT. See [third-party notices](THIRD_PARTY_NOTICES.md) for the fdlibm-derived
+math code.

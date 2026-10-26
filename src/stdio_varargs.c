@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+
 /* A va_list parameter is already adjusted by the C ABI on array-based
  * implementations. Consume it in C so Nelua never takes its address. */
 int nelibc_va_arg_int(va_list arguments) { return va_arg(arguments, int); }
@@ -28,4 +29,22 @@ void nelibc_store_format_count(void *pointer, int length, size_t count) {
     case 5: *(short *)pointer = (short)count; break;
     default: *(int *)pointer = (int)count; break;
   }
+}
+
+#include <stdlib.h>
+
+long long nelibc_scan_strtoll(const char *text, char **end_text, int base) {
+  return strtoll(text, end_text, base);
+}
+unsigned long long nelibc_scan_strtoull(const char *text, char **end_text, int base) {
+  return strtoull(text, end_text, base);
+}
+float nelibc_scan_strtof(const char *text, char **end_text) {
+  return strtof(text, end_text);
+}
+double nelibc_scan_strtod(const char *text, char **end_text) {
+  return strtod(text, end_text);
+}
+long double nelibc_scan_strtold(const char *text, char **end_text) {
+  return strtold(text, end_text);
 }

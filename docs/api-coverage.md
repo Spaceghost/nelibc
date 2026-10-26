@@ -97,6 +97,15 @@ base detection, decimal and hexadecimal floats, `%n`, wide string input, and
 empty-string EOF behavior. Hybrid archives delegate the six APIs to host libc.
 This is a tested conversion slice, not a complete scanf conformance claim.
 
+Standalone narrow `fscanf`, `vfscanf`, `scanf`, `vscanf`, `sscanf`, and
+`vsscanf` support literals and whitespace, suppression, field widths, `%n`,
+`%c`/`%s`/scansets, integer bases, and decimal/hexadecimal floating input.
+`%lc` and `%ls` decode through the active multibyte state; wide scansets,
+positional arguments, POSIX `%m`, and multi-byte whitespace pushback remain
+incomplete. The C consumer smoke covers string and stream input, scansets,
+integer base detection, floats, `%n`, and UTF-8 `%lc`/`%ls`. Hybrid builds leave
+the narrow family to host libc.
+
 Standalone `swprintf` and `vswprintf` now reuse the Nelua narrow formatter,
 transcoding wide literals and strings through the active multibyte locale.
 They support integer and double conversions, `%s`/`%c` wide arguments,

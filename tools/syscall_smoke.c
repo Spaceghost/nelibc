@@ -292,6 +292,7 @@ static void *pthread_return_self(void *arg) {
 
 static void make_seek_path(char path[64]) {
   static const char prefix[] = "/tmp/nelibc-seek-";
+  static unsigned int path_sequence;
   char digits[16];
   size_t length = 0;
   size_t digit_count = 0;
@@ -304,6 +305,14 @@ static void make_seek_path(char path[64]) {
     digits[digit_count++] = (char)('0' + pid % 10);
     pid /= 10;
   } while (pid != 0);
+  while (digit_count != 0) path[length++] = digits[--digit_count];
+  path[length++] = '-';
+  unsigned int sequence = ++path_sequence;
+  digit_count = 0;
+  do {
+    digits[digit_count++] = (char)('0' + sequence % 10);
+    sequence /= 10;
+  } while (sequence != 0);
   while (digit_count != 0) path[length++] = digits[--digit_count];
   path[length] = 0;
 }
@@ -1915,7 +1924,59 @@ int main(int argc, char **argv) {
   char stdio_buffer[sizeof "puts\n!UV" - 1] = {0};
   if (read(pipefd[0], stdio_buffer, sizeof stdio_buffer) != (long)sizeof stdio_buffer ||
       memcmp(stdio_buffer, "puts\n!UV", sizeof stdio_buffer) != 0) return 166;
+  int narrow_scan_int = 0;
+  int narrow_scan_auto = 0;
+  int narrow_scan_octal = 0;
+  unsigned int narrow_scan_hex = 0;
+  if (sscanf("42 -17 0x2a 077", "%d %i %x %i", &narrow_scan_int,
+             &narrow_scan_auto, &narrow_scan_hex, &narrow_scan_octal) != 4 ||
+      narrow_scan_int != 42 || narrow_scan_auto != -17 ||
+      narrow_scan_hex != 42 || narrow_scan_octal != 63)
+    return 301;
+  if (sscanf("", "%d", &narrow_scan_int) != EOF ||
+      sscanf("x", "%d", &narrow_scan_int) != 0 ||
+      sscanf("12x", "%d", &narrow_scan_int) != 1 || narrow_scan_int != 12)
+    return 311;
+  if (sscanf("a 19", "%*c %d", &narrow_scan_int) != 1 ||
+      narrow_scan_int != 19)
+    return 312;
+  char narrow_scan_word[8] = {0};
+  int narrow_scan_count = -1;
+  if (sscanf("alpha rest", "%5s%n", narrow_scan_word, &narrow_scan_count) != 1 ||
+      strcmp(narrow_scan_word, "alpha") != 0 || narrow_scan_count != 5)
+    return 302;
+  char narrow_scan_buffer[] = "xyz123!";
+  FILE *narrow_scan_stream = fmemopen(narrow_scan_buffer,
+                                      sizeof narrow_scan_buffer - 1, "r");
+  memset(narrow_scan_word, 0, sizeof narrow_scan_word);
+  if (narrow_scan_stream == NULL ||
+      fscanf(narrow_scan_stream, "%3[a-z]", narrow_scan_word) != 1 ||
+      strcmp(narrow_scan_word, "xyz") != 0 || fgetc(narrow_scan_stream) != '1' ||
+      fclose(narrow_scan_stream) != 0)
+    return 303;
+  float narrow_scan_float = 0.0f;
+  double narrow_scan_double = 0.0;
+  if (sscanf("12.5 -2.25", "%f %lf", &narrow_scan_float,
+             &narrow_scan_double) != 2 || narrow_scan_float != 12.5f ||
+      narrow_scan_double != -2.25)
+    return 304;
+  long double narrow_scan_long_double = 0.0L;
+  if (sscanf("0x1.8p+1 0x1.4p+2", "%la %Lf", &narrow_scan_double,
+             &narrow_scan_long_double) != 2 || narrow_scan_double != 3.0 ||
+      narrow_scan_long_double != 5.0L)
+    return 313;
   if (setlocale(LC_CTYPE, "C.UTF-8") == NULL) return 267;
+  wchar_t narrow_scan_wide = 0;
+  if (sscanf("\303\251", "%lc", &narrow_scan_wide) != 1 ||
+      narrow_scan_wide != 0xE9)
+    return 305;
+  wchar_t narrow_scan_wide_word[8] = {0};
+  int narrow_scan_wide_result =
+      sscanf("\303\251x rest", "%ls", narrow_scan_wide_word);
+  if (narrow_scan_wide_result != 1) return 307;
+  if (narrow_scan_wide_word[0] != 0xE9) return 308;
+  if (narrow_scan_wide_word[1] != L'x') return 309;
+  if (narrow_scan_wide_word[2] != 0) return 310;
   char scan_bytes[] = "alpha \303\251Zrest";
   FILE *scan_stream = fmemopen(scan_bytes, sizeof scan_bytes - 1, "r");
   char narrow_word[8] = {0};

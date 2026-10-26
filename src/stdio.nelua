@@ -8,6 +8,7 @@
 
 require 'C.stdarg'
 
+
 local function nelibc_va_arg_int(arguments: cvalist): cint <cimport> end
 local function nelibc_va_arg_pointer(arguments: cvalist): pointer <cimport> end
 local function nelibc_va_arg_long(arguments: cvalist): clong <cimport> end
@@ -17,6 +18,14 @@ local function nelibc_va_arg_unsigned_long_long(arguments: cvalist): culonglong 
 local function nelibc_va_arg_size(arguments: cvalist): csize <cimport> end
 local function nelibc_va_arg_unsigned_int(arguments: cvalist): cuint <cimport> end
 local function nelibc_va_arg_double(arguments: cvalist): cdouble <cimport> end
+local function isspace(character: cint): cint <cimport> end
+local function nelibc_scan_strtoll(text: *[0]cchar <const>, end_text: **cchar,
+    base: cint): clonglong <cimport> end
+local function nelibc_scan_strtoull(text: *[0]cchar <const>, end_text: **cchar,
+    base: cint): culonglong <cimport> end
+local function nelibc_scan_strtof(text: *[0]cchar <const>, end_text: **cchar): cfloat <cimport> end
+local function nelibc_scan_strtod(text: *[0]cchar <const>, end_text: **cchar): cdouble <cimport> end
+local function nelibc_scan_strtold(text: *[0]cchar <const>, end_text: **cchar): clongdouble <cimport> end
 local function nelibc_va_copy(destination: cvalist, source: cvalist): void <cimport> end
 local function nelibc_store_format_count(pointer: pointer, length: cint, count: csize): void <cimport> end
 
@@ -464,6 +473,33 @@ local function fgetc_unlocked(stream: *FILE): cint <inline>
   return read_char_unoriented(stream)
 end
 
+local function scan_read_wide_unlocked(stream: *FILE, state: pointer,
+    wide: *[0]cint, byte_count: *[0]csize): cint <inline>
+  while true do
+    local character: cint = fgetc_unlocked(stream)
+    if character == -1 then return 0 end
+    byte_count[0] = byte_count[0] + 1
+    local byte: cchar = (@cchar)(character)
+    local converted: csize = mbrtowc(wide, &byte, 1, state)
+    if converted == ~0_csize then
+      nelibc_errno_location()[0] = 84 -- EILSEQ
+      return -1
+    end
+    if converted == ~1_csize then continue end
+    return 1
+  end
+end
+
+local function ungetc_unlocked(character: cint, stream: *FILE): cint <inline>
+  stream_orient(stream, -1)
+  if character == -1 or stream.has_pushback ~= 0 or (stream.flags & READABLE) == 0 then return -1 end
+  stream.pushback_value = character & 255
+  stream.has_pushback = 1
+  stream.flags = stream.flags | LAST_READ
+  stream.flags = stream.flags & ~STREAM_EOF
+  return character & 255
+end
+
 local function fwide(stream: *FILE, mode: cint): cint <cexport, codename 'fwide'>
   if stream == nilptr then return 0 end
   stream_lock(stream)
@@ -833,7 +869,7 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
           if digit == 0 then base = 8 else base = 10 end
         end
         if token_length + 1 >= token_capacity then
-          if token_capacity > MAX_CSIZE // 2 or token_capacity * 2 > MAX_CSIZE // (@csize)(#cint) then
+          if token_capacity > MAX_CSIZE // 2 or token_capacity * 2 > MAX_CSIZE // (@csize)(#cchar) then
             nelibc_free((@pointer)(token))
             stream_unlock(stream)
             nelibc_errno_location()[0] = 75 -- EOVERFLOW
@@ -1015,7 +1051,7 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
           break
         end
         if token_length + 1 >= token_capacity then
-          if token_capacity > MAX_CSIZE // 2 or token_capacity * 2 > MAX_CSIZE // (@csize)(#cint) then
+          if token_capacity > MAX_CSIZE // 2 or token_capacity * 2 > MAX_CSIZE // (@csize)(#cchar) then
             nelibc_free((@pointer)(token))
             stream_unlock(stream)
             nelibc_errno_location()[0] = 75 -- EOVERFLOW
@@ -1194,6 +1230,637 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
   stream_unlock(stream)
   if input_failure and assignments == 0 then return -1 end
   return assignments
+end
+
+
+local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
+    arguments: cvalist): cint <cexport, codename 'vfscanf'>
+  if stream == nilptr or format == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  stream_lock(stream)
+  if stream_orient(stream, -1) > 0 then
+    stream_unlock(stream)
+    return -1
+  end
+  local format_index: csize = 0
+  local input_count: csize = 0
+  local assignments: cint = 0
+  local input_failure: boolean = false
+  while format[format_index] ~= 0 do
+    if isspace((@cint)(format[format_index])) ~= 0 then
+      while format[format_index] ~= 0 and isspace((@cint)(format[format_index])) ~= 0 do
+        format_index = format_index + 1
+      end
+      local next: cint = fgetc_unlocked(stream)
+      if next == -1 then input_failure = true; break end
+      input_count = input_count + 1
+      if isspace(next) == 0 then
+        ungetc_unlocked(next, stream)
+        input_count = input_count - 1
+      end
+      continue
+    end
+    if format[format_index] ~= 37 then
+      local next: cint = fgetc_unlocked(stream)
+      if next == -1 then input_failure = true; break end
+      input_count = input_count + 1
+      if next ~= (@cint)(format[format_index]) then
+        ungetc_unlocked(next, stream)
+        input_count = input_count - 1
+        break
+      end
+      format_index = format_index + 1
+      continue
+    end
+
+    format_index = format_index + 1
+    if format[format_index] == 37 then
+      local next: cint = fgetc_unlocked(stream)
+      if next == -1 then input_failure = true; break end
+      input_count = input_count + 1
+      if next ~= 37 then
+        ungetc_unlocked(next, stream)
+        input_count = input_count - 1
+        break
+      end
+      format_index = format_index + 1
+      continue
+    end
+
+    local suppress: boolean = false
+    if format[format_index] == 42 then suppress = true; format_index = format_index + 1 end
+    local width: csize = 0
+    while format[format_index] >= 48 and format[format_index] <= 57 do
+      if width > (MAX_CSIZE - 10) // 10 then
+        width = MAX_CSIZE
+      else
+        width = width * 10 + (@csize)(format[format_index] - 48)
+      end
+      format_index = format_index + 1
+    end
+    local length_modifier: cint = 0
+    if format[format_index] == 108 then
+      length_modifier = 1
+      format_index = format_index + 1
+      if format[format_index] == 108 then length_modifier = 2; format_index = format_index + 1 end
+    elseif format[format_index] == 104 then
+      length_modifier = 5
+      format_index = format_index + 1
+      if format[format_index] == 104 then length_modifier = 4; format_index = format_index + 1 end
+    elseif format[format_index] == 106 or format[format_index] == 122 or format[format_index] == 116 then
+      length_modifier = 3
+      format_index = format_index + 1
+    elseif format[format_index] == 76 then
+      length_modifier = 6
+      format_index = format_index + 1
+    end
+    local conversion: cint = format[format_index]
+    if conversion == 0 then break end
+    format_index = format_index + 1
+
+    if conversion == 110 then
+      if not suppress then
+        local destination: pointer = nelibc_va_arg_pointer(arguments)
+        if length_modifier == 4 then
+          local count_destination: *[0]cchar = (@*[0]cchar)(destination)
+          count_destination[0] = (@cchar)(input_count)
+        elseif length_modifier == 5 then
+          local count_destination: *[0]cshort = (@*[0]cshort)(destination)
+          count_destination[0] = (@cshort)(input_count)
+        elseif length_modifier == 1 then
+          local count_destination: *[0]clong = (@*[0]clong)(destination)
+          count_destination[0] = (@clong)(input_count)
+        elseif length_modifier == 2 then
+          local count_destination: *[0]clonglong = (@*[0]clonglong)(destination)
+          count_destination[0] = (@clonglong)(input_count)
+        elseif length_modifier == 3 then
+          local count_destination: *[0]clong = (@*[0]clong)(destination)
+          count_destination[0] = (@clong)(input_count)
+        else
+          local count_destination: *[0]cint = (@*[0]cint)(destination)
+          count_destination[0] = (@cint)(input_count)
+        end
+      end
+      continue
+    end
+    if conversion == 100 or conversion == 105 or conversion == 111 or
+        conversion == 117 or conversion == 120 or conversion == 88 or
+        conversion == 112 then
+      while true do
+        local leading: cint = fgetc_unlocked(stream)
+        if leading == -1 then input_failure = true; break end
+        input_count = input_count + 1
+        if isspace(leading) == 0 then
+          ungetc_unlocked(leading, stream)
+          input_count = input_count - 1
+          break
+        end
+      end
+      if input_failure then break end
+      if width == 0 then width = MAX_CSIZE end
+      local token_capacity: csize = 64
+      local token: *[0]cchar = (@*[0]cchar)(nelibc_malloc(token_capacity * (@csize)(#cchar)))
+      if token == nilptr then
+        stream_unlock(stream)
+        nelibc_errno_location()[0] = 12 -- ENOMEM
+        return -1
+      end
+      local token_length: csize = 0
+      local base: cint = 10
+      if conversion == 111 then base = 8 end
+      if conversion == 120 or conversion == 88 or conversion == 112 then base = 16 end
+      if conversion == 105 then base = 0 end
+      local token_eof: boolean = false
+      while token_length < width do
+        local current: cint = fgetc_unlocked(stream)
+        if current == -1 then token_eof = true; break end
+        local code: cint = (@cint)(current)
+        local digit: cint = -1
+        if code >= 48 and code <= 57 then digit = code - 48
+        elseif code >= 65 and code <= 70 then digit = code - 55
+        elseif code >= 97 and code <= 102 then digit = code - 87 end
+        local sign: boolean = (code == 43 or code == 45) and token_length == 0
+        local prefix_zero: boolean = token_length == 1 and token[0] == 48
+        if token_length == 2 and (token[0] == 43 or token[0] == 45) and token[1] == 48 then
+          prefix_zero = true
+        end
+        local prefix: boolean = (code == 120 or code == 88) and prefix_zero and
+            (conversion == 105 or conversion == 120 or conversion == 88 or conversion == 112)
+        local valid_digit: boolean = false
+        if digit >= 0 then
+          if base == 16 then valid_digit = digit < 16
+          elseif base == 8 then valid_digit = digit < 8
+          elseif base == 10 then valid_digit = digit < 10
+          else
+            if token_length == 0 or (token_length == 1 and sign) then
+              valid_digit = digit < 10
+            elseif prefix_zero then valid_digit = digit < 8
+            else valid_digit = digit < 10 end
+          end
+        end
+        if not sign and not prefix and not valid_digit then
+          ungetc_unlocked(current, stream)
+          break
+        end
+        if prefix then base = 16
+        elseif conversion == 105 and base == 0 and digit >= 0 then
+          if digit == 0 then base = 8 else base = 10 end
+        end
+        if token_length + 1 >= token_capacity then
+          if token_capacity > MAX_CSIZE // 2 or token_capacity * 2 > MAX_CSIZE // (@csize)(#cint) then
+            nelibc_free((@pointer)(token))
+            stream_unlock(stream)
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            return -1
+          end
+          token_capacity = token_capacity * 2
+          local grown: pointer = nelibc_realloc((@pointer)(token),
+              token_capacity * (@csize)(#cchar))
+          if grown == nilptr then
+            nelibc_free((@pointer)(token))
+            stream_unlock(stream)
+            return -1
+          end
+          token = (@*[0]cchar)(grown)
+        end
+        token[token_length] = (@cchar)(code)
+        token_length = token_length + 1
+        input_count = input_count + 1
+      end
+      if token_length == 0 then
+        nelibc_free((@pointer)(token))
+        if token_eof then input_failure = true end
+        break
+      end
+      token[token_length] = 0
+      local end_text: *[0]cchar = nilptr
+      local signed_conversion: boolean = conversion == 100 or conversion == 105
+      local signed_value: clonglong = 0
+      local unsigned_value: culonglong = 0
+      if signed_conversion then
+        signed_value = nelibc_scan_strtoll(token, &end_text, base)
+      else
+        unsigned_value = nelibc_scan_strtoull(token, &end_text, base)
+      end
+      local converted: boolean = end_text == &token[token_length]
+      nelibc_free((@pointer)(token))
+      if not converted then break end
+      if not suppress then
+        local destination: pointer = nelibc_va_arg_pointer(arguments)
+        if conversion == 112 then
+          local pointer_destination: *[0]*byte = (@*[0]*byte)(destination)
+          pointer_destination[0] = (@*byte)((@usize)(unsigned_value))
+        elseif signed_conversion then
+          if length_modifier == 4 then
+            local output: *[0]cchar = (@*[0]cchar)(destination); output[0] = (@cchar)(signed_value)
+          elseif length_modifier == 5 then
+            local output: *[0]cshort = (@*[0]cshort)(destination); output[0] = (@cshort)(signed_value)
+          elseif length_modifier == 1 then
+            local output: *[0]clong = (@*[0]clong)(destination); output[0] = (@clong)(signed_value)
+          elseif length_modifier == 2 or length_modifier == 6 then
+            local output: *[0]clonglong = (@*[0]clonglong)(destination); output[0] = signed_value
+          else
+            local output: *[0]cint = (@*[0]cint)(destination); output[0] = (@cint)(signed_value)
+          end
+        else
+          if length_modifier == 4 then
+            local output: *[0]cuchar = (@*[0]cuchar)(destination); output[0] = (@cuchar)(unsigned_value)
+          elseif length_modifier == 5 then
+            local output: *[0]cushort = (@*[0]cushort)(destination); output[0] = (@cushort)(unsigned_value)
+          elseif length_modifier == 1 then
+            local output: *[0]culong = (@*[0]culong)(destination); output[0] = (@culong)(unsigned_value)
+          elseif length_modifier == 2 or length_modifier == 6 then
+            local output: *[0]culonglong = (@*[0]culonglong)(destination); output[0] = unsigned_value
+          else
+            local output: *[0]cuint = (@*[0]cuint)(destination); output[0] = (@cuint)(unsigned_value)
+          end
+        end
+        assignments = assignments + 1
+      end
+      if token_eof then input_failure = true end
+      continue
+    end
+    if conversion == 97 or conversion == 65 or conversion == 101 or conversion == 69 or
+        conversion == 102 or conversion == 70 or conversion == 103 or conversion == 71 then
+      while true do
+        local leading: cint = fgetc_unlocked(stream)
+        if leading == -1 then input_failure = true; break end
+        input_count = input_count + 1
+        if isspace(leading) == 0 then
+          ungetc_unlocked(leading, stream)
+          input_count = input_count - 1
+          break
+        end
+      end
+      if input_failure then break end
+      if width == 0 then width = MAX_CSIZE end
+      local token_capacity: csize = 64
+      local token: *[0]cchar = (@*[0]cchar)(nelibc_malloc(token_capacity * (@csize)(#cchar)))
+      if token == nilptr then
+        stream_unlock(stream)
+        nelibc_errno_location()[0] = 12 -- ENOMEM
+        return -1
+      end
+      local token_length: csize = 0
+      local significand_digits: csize = 0
+      local exponent_digits: csize = 0
+      local decimal_point: boolean = false
+      local exponent: boolean = false
+      local hexadecimal: boolean = false
+      local special_kind: cint = 0
+      local special_state: cint = 0
+      local token_eof: boolean = false
+      while token_length < width do
+        local current: cint = fgetc_unlocked(stream)
+        if current == -1 then token_eof = true; break end
+        local code: cint = (@cint)(current)
+        local is_digit: boolean = code >= 48 and code <= 57
+        local is_hex_digit: boolean = is_digit or
+            (hexadecimal and not exponent and
+                ((code >= 65 and code <= 70) or (code >= 97 and code <= 102)))
+        local is_sign: boolean = code == 43 or code == 45
+        local accept: boolean = false
+        local zero_prefix: boolean = (token_length == 1 and token[0] == 48) or
+            (token_length == 2 and (token[0] == 43 or token[0] == 45) and token[1] == 48)
+        local special_start: boolean = token_length == 0 or
+            (token_length == 1 and (token[0] == 43 or token[0] == 45))
+        if special_kind == 0 and special_start and
+            (code == 105 or code == 73 or code == 110 or code == 78) then
+          if code == 105 or code == 73 then special_kind = 1 else special_kind = 2 end
+          special_state = 1
+          accept = true
+        elseif special_kind == 1 then -- inf[inity]
+          local expected: cint = 0
+          if special_state == 1 then expected = 110
+          elseif special_state == 2 then expected = 102
+          elseif special_state == 3 then
+            if code == 105 or code == 73 then special_state = 4; accept = true end
+          elseif special_state == 4 then expected = 110
+          elseif special_state == 5 then expected = 105
+          elseif special_state == 6 then expected = 116
+          elseif special_state == 7 then expected = 121 end
+          if expected ~= 0 and (code == expected or code == expected - 32) then
+            special_state = special_state + 1
+            accept = true
+          end
+          if not accept then ungetc_unlocked(current, stream); break end
+        elseif special_kind == 2 then -- nan[(payload)]
+          local expected: cint = 0
+          if special_state == 1 then expected = 97
+          elseif special_state == 2 then expected = 110
+          elseif special_state == 3 then
+            if code == 40 then special_state = 4; accept = true end
+          elseif special_state == 4 then
+            if code == 41 then special_state = 5; accept = true
+            elseif (code >= 48 and code <= 57) or (code >= 65 and code <= 90) or
+                (code >= 97 and code <= 122) or code == 95 then accept = true end
+          end
+          if expected ~= 0 and (code == expected or code == expected - 32) then
+            special_state = special_state + 1
+            accept = true
+          end
+          if special_state == 3 and not accept then ungetc_unlocked(current, stream); break end
+          if special_state == 5 and not accept then ungetc_unlocked(current, stream); break end
+          if not accept then ungetc_unlocked(current, stream); break end
+        elseif special_kind ~= 0 then
+          ungetc_unlocked(current, stream)
+          break
+        elseif (code == 120 or code == 88) and not hexadecimal and not exponent and zero_prefix then
+          hexadecimal = true
+          accept = true
+        elseif is_hex_digit then
+          accept = true
+          if exponent then exponent_digits = exponent_digits + 1
+          else significand_digits = significand_digits + 1 end
+        elseif is_sign and (token_length == 0 or token[token_length - 1] == 101 or
+            token[token_length - 1] == 69 or token[token_length - 1] == 112 or
+            token[token_length - 1] == 80) then
+          accept = true
+        elseif code == 46 and not decimal_point and not exponent then
+          decimal_point = true
+          accept = true
+        elseif ((not hexadecimal and (code == 101 or code == 69)) or
+            (hexadecimal and (code == 112 or code == 80))) and not exponent and significand_digits > 0 then
+          exponent = true
+          accept = true
+        end
+        if not accept then
+          ungetc_unlocked(current, stream)
+          break
+        end
+        if token_length + 1 >= token_capacity then
+          if token_capacity > MAX_CSIZE // 2 or token_capacity * 2 > MAX_CSIZE // (@csize)(#cint) then
+            nelibc_free((@pointer)(token))
+            stream_unlock(stream)
+            nelibc_errno_location()[0] = 75 -- EOVERFLOW
+            return -1
+          end
+          token_capacity = token_capacity * 2
+          local grown: pointer = nelibc_realloc((@pointer)(token),
+              token_capacity * (@csize)(#cchar))
+          if grown == nilptr then
+            nelibc_free((@pointer)(token))
+            stream_unlock(stream)
+            return -1
+          end
+          token = (@*[0]cchar)(grown)
+        end
+        token[token_length] = (@cchar)(code)
+        token_length = token_length + 1
+        input_count = input_count + 1
+      end
+      local special_complete: boolean = special_kind == 0 or
+          (special_kind == 1 and (special_state == 3 or special_state == 8)) or
+          (special_kind == 2 and (special_state == 3 or special_state == 5))
+      if token_length == 0 or not special_complete or
+          (special_kind == 0 and (significand_digits == 0 or
+              (exponent and exponent_digits == 0))) then
+        nelibc_free((@pointer)(token))
+        if token_length == 0 and token_eof then input_failure = true end
+        break
+      end
+      token[token_length] = 0
+      local end_text: *[0]cchar = nilptr
+      local float_value: cfloat = 0.0_cfloat
+      local double_value: cdouble = 0.0_cdouble
+      local long_double_value: clongdouble = 0.0_clongdouble
+      if length_modifier == 6 then long_double_value = nelibc_scan_strtold(token, &end_text)
+      elseif length_modifier == 1 then double_value = nelibc_scan_strtod(token, &end_text)
+      else float_value = nelibc_scan_strtof(token, &end_text) end
+      local converted: boolean = end_text == &token[token_length]
+      nelibc_free((@pointer)(token))
+      if not converted then break end
+      if not suppress then
+        local destination: pointer = nelibc_va_arg_pointer(arguments)
+        if length_modifier == 6 then
+          local output: *[0]clongdouble = (@*[0]clongdouble)(destination)
+          output[0] = long_double_value
+        elseif length_modifier == 1 then
+          local output: *[0]cdouble = (@*[0]cdouble)(destination)
+          output[0] = double_value
+        else
+          local output: *[0]cfloat = (@*[0]cfloat)(destination)
+          output[0] = float_value
+        end
+        assignments = assignments + 1
+      end
+      if token_eof then input_failure = true end
+      continue
+    end
+    if conversion ~= 99 and conversion ~= 115 and conversion ~= 91 then
+      stream_unlock(stream)
+      return assignments
+    end
+
+    local scanset_start: csize = 0
+    local scanset_end: csize = 0
+    local scanset_invert: boolean = false
+    if conversion == 91 then
+      if format[format_index] == 94 then
+        scanset_invert = true
+        format_index = format_index + 1
+      end
+      scanset_start = format_index
+      if format[format_index] == 93 then format_index = format_index + 1 end
+      while format[format_index] ~= 0 and format[format_index] ~= 93 do
+        format_index = format_index + 1
+      end
+      if format[format_index] ~= 93 then
+        stream_unlock(stream)
+        nelibc_errno_location()[0] = 22 -- EINVAL
+        return -1
+      end
+      scanset_end = format_index
+      format_index = format_index + 1
+    end
+    if conversion == 115 and length_modifier == 1 then
+      if width == 0 then width = MAX_CSIZE end
+      local destination: pointer = nilptr
+      if not suppress then destination = nelibc_va_arg_pointer(arguments) end
+      local wide_output: *[0]cint = (@*[0]cint)(destination)
+      local conversion_state: [16]culong = {}
+      local matched_count: csize = 0
+      local unsupported_delimiter: boolean = false
+      while matched_count < width do
+        local wide: cint = 0
+        local byte_count: csize = 0
+        local conversion_result: cint = scan_read_wide_unlocked(stream,
+            (@pointer)(&conversion_state[0]), &wide, &byte_count)
+        input_count = input_count + byte_count
+        if conversion_result == 0 then input_failure = true; break end
+        if conversion_result < 0 then input_failure = true; break end
+        if iswspace(wide) ~= 0 then
+          if matched_count == 0 then continue end
+          if byte_count == 1 then
+            ungetc_unlocked(wide, stream)
+            input_count = input_count - 1
+          else
+            -- This stream currently guarantees one-byte pushback. Keep the
+            -- decoded field intact and report that this delimiter cannot be
+            -- restored yet.
+            nelibc_errno_location()[0] = 38 -- ENOSYS
+            unsupported_delimiter = true
+          end
+          break
+        end
+        if not suppress then wide_output[matched_count] = wide end
+        matched_count = matched_count + 1
+      end
+      if matched_count ~= 0 and not suppress then
+        wide_output[matched_count] = 0
+        assignments = assignments + 1
+      end
+      if unsupported_delimiter then
+        stream_unlock(stream)
+        return assignments
+      end
+      if input_failure then break end
+      if matched_count == 0 then break end
+      continue
+    end
+    if length_modifier == 1 and conversion == 91 then
+      -- Wide scanset decoding also needs multi-byte pushback for its first
+      -- nonmatching wide character; return an explicit unsupported status.
+      stream_unlock(stream)
+      nelibc_errno_location()[0] = 38 -- ENOSYS
+      return assignments
+    end
+    if conversion == 99 and length_modifier == 1 then
+      if width == 0 then width = 1 end
+      local destination: pointer = nilptr
+      if not suppress then destination = nelibc_va_arg_pointer(arguments) end
+      local wide_output: *[0]cint = (@*[0]cint)(destination)
+      local conversion_state: [16]culong = {}
+      local converted_count: csize = 0
+      while converted_count < width do
+        local wide: cint = 0
+        local byte_count: csize = 0
+        local conversion_result: cint = scan_read_wide_unlocked(stream,
+            (@pointer)(&conversion_state[0]), &wide, &byte_count)
+        input_count = input_count + byte_count
+        if conversion_result ~= 1 then
+          input_failure = true
+          break
+        end
+        if not suppress then wide_output[converted_count] = wide end
+        converted_count = converted_count + 1
+      end
+      if converted_count == width and not suppress then assignments = assignments + 1 end
+      if input_failure then break end
+      continue
+    end
+    if width == 0 then
+      if conversion == 99 then width = 1 else width = MAX_CSIZE end
+    end
+    local first_input: cint = -1
+    local has_first_input: boolean = false
+    if conversion == 115 then
+      while true do
+        first_input = fgetc_unlocked(stream)
+        if first_input == -1 then input_failure = true; break end
+        input_count = input_count + 1
+        if isspace(first_input) == 0 then
+          has_first_input = true
+          break
+        end
+      end
+      if not has_first_input then break end
+    end
+
+    local destination: pointer = nilptr
+    if not suppress then destination = nelibc_va_arg_pointer(arguments) end
+    local wide_output: *[0]cint = (@*[0]cint)(destination)
+    local byte_output: *[0]cchar = (@*[0]cchar)(destination)
+    local output_index: csize = 0
+    local conversion_state: [16]culong = {}
+    local matched_count: csize = 0
+    local stop: boolean = false
+    while matched_count < width and not stop do
+      local current: cint
+      if has_first_input then
+        current = first_input
+        has_first_input = false
+      else
+        current = fgetc_unlocked(stream)
+        if current == -1 then input_failure = true; stop = true; break end
+        input_count = input_count + 1
+      end
+      local matches: boolean = true
+      if conversion == 115 then matches = isspace(current) == 0 end
+      if conversion == 91 then
+        local set_index: csize = scanset_start
+        local in_set: boolean = false
+        while set_index < scanset_end do
+          if format[set_index] == 93 and set_index == scanset_start then
+            if current == 93 then in_set = true end
+            set_index = set_index + 1
+          elseif set_index + 2 < scanset_end and format[set_index + 1] == 45 and
+              format[set_index] <= (@cint)(current) and (@cint)(current) <= format[set_index + 2] then
+            in_set = true
+            set_index = set_index + 3
+          else
+            if current == (@cint)(format[set_index]) then in_set = true end
+            set_index = set_index + 1
+          end
+        end
+        matches = in_set ~= scanset_invert
+      end
+      if not matches then
+        ungetc_unlocked(current, stream)
+        input_count = input_count - 1
+        stop = true
+        break
+      end
+      if not suppress then
+        if length_modifier == 1 then
+          wide_output[output_index] = (@cint)(current)
+          output_index = output_index + 1
+        else
+          byte_output[output_index] = (@cchar)(current)
+          output_index = output_index + 1
+        end
+      end
+      matched_count = matched_count + 1
+    end
+    if matched_count == 0 then break end
+    if not suppress then
+      if conversion ~= 99 then
+        if length_modifier == 1 then wide_output[output_index] = 0
+        else byte_output[output_index] = 0 end
+      end
+      assignments = assignments + 1
+    end
+    if stop then break end
+  end
+  stream_unlock(stream)
+  if input_failure and assignments == 0 then return -1 end
+  return assignments
+end
+
+
+local function fscanf(stream: *FILE, format: *[0]cchar <const>, ...: cvarargs): cint
+    <cexport, codename 'fscanf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vfscanf(stream, format, arguments)
+  C.va_end(arguments)
+  return result
+end
+
+local function vscanf(format: *[0]cchar <const>, arguments: cvalist): cint
+    <cexport, codename 'vscanf'>
+  return vfscanf(&stdin_FILE, format, arguments)
+end
+
+local function scanf(format: *[0]cchar <const>, ...: cvarargs): cint
+    <cexport, codename 'scanf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vscanf(format, arguments)
+  C.va_end(arguments)
+  return result
 end
 
 local function fwscanf(stream: *FILE, format: *[0]cint <const>, ...: cvarargs): cint
@@ -1935,6 +2602,43 @@ local function vswscanf(input: *[0]cint <const>, format: *[0]cint <const>,
   local result: cint = vfwscanf(stream, format, arguments)
   close_stream(stream, true)
   nelibc_free((@pointer)(bytes))
+  return result
+end
+
+local function vsscanf(input: *[0]cchar <const>, format: *[0]cchar <const>,
+    arguments: cvalist): cint <cexport, codename 'vsscanf'>
+  if input == nilptr or format == nilptr then
+    nelibc_errno_location()[0] = 22 -- EINVAL
+    return -1
+  end
+  local input_length: csize = 0
+  while input[input_length] ~= 0 do input_length = input_length + 1 end
+  if input_length == MAX_CSIZE then
+    nelibc_errno_location()[0] = 75 -- EOVERFLOW
+    return -1
+  end
+  local bytes: *[0]cchar = (@*[0]cchar)(nelibc_malloc(input_length + 1))
+  if bytes == nilptr then return -1 end
+  memcpy((@pointer)(bytes), (@pointer)(input), input_length + 1)
+  local stream_size: csize = input_length
+  if stream_size == 0 then stream_size = 1 end
+  local stream: *FILE = fmemopen((@pointer)(bytes), stream_size, 'r'_cstring)
+  if stream == nilptr then
+    nelibc_free((@pointer)(bytes))
+    return -1
+  end
+  local result: cint = vfscanf(stream, format, arguments)
+  close_stream(stream, true)
+  nelibc_free((@pointer)(bytes))
+  return result
+end
+
+local function sscanf(input: *[0]cchar <const>, format: *[0]cchar <const>,
+    ...: cvarargs): cint <cexport, codename 'sscanf'>
+  local arguments: cvalist
+  C.va_start(arguments, format)
+  local result: cint = vsscanf(input, format, arguments)
+  C.va_end(arguments)
   return result
 end
 
