@@ -115,6 +115,20 @@ host-bend-hello-zig: $(OUT)/libnelibc-host-zig.a tools/host_bend_hello.bend tool
 	@test "$$(cat $(OUT)/host-bend-hello-zig.log)" = hi || { echo 'expected hi'; exit 1; }
 	@echo 'host-bend-hello-zig: Bend 2 IO.print ran through the nelibc host profile'
 
+# Lane check with the Bend pool: tools/host_bend_parallel.bend is a fork-join
+# program, so the runtime creates worker threads at --threads 4; under the
+# host profile they must be created and switched to as lanes (the harness
+# counts them with NELIBC_HOST_STATS=1) and the result must still be 65536.
+host-bend-parallel-zig: $(OUT)/libnelibc-host-zig.a tools/host_bend_parallel.bend tools/host_linux.c
+	@command -v $(BEND) >/dev/null 2>&1 || { echo 'host-bend-parallel-zig: bend not found, skipped'; exit 0; }
+	BEND_NO_TELEMETRY=1 $(BEND) tools/host_bend_parallel.bend -o $(OUT)/host-bend-parallel.c
+	$(ZIG) cc $(ZIGFLAGS) $(HOST_LINK_FLAGS) -w -O2 $(OUT)/host-bend-parallel.c tools/host_linux.c $(OUT)/libnelibc-host-zig.a -o $(OUT)/host-bend-parallel-zig
+	@test -z "$$($(NM) -u $(OUT)/host-bend-parallel-zig)"
+	@NELIBC_HOST_STATS=1 $(OUT)/host-bend-parallel-zig +RTS --threads 4 --gpu off > $(OUT)/host-bend-parallel-zig.log 2>&1; status=$$?; cat $(OUT)/host-bend-parallel-zig.log; test $$status -eq 0 || { echo "bend parallel program exited $$status"; exit 1; }
+	@grep -qx 65536 $(OUT)/host-bend-parallel-zig.log || { echo 'expected 65536'; exit 1; }
+	@grep -q 'lanes created 3, lane switches [1-9]' $(OUT)/host-bend-parallel-zig.log || { echo 'expected three worker lanes that ran'; exit 1; }
+	@echo 'host-bend-parallel-zig: Bend 2 fork-join workers ran as lanes through the nelibc host profile'
+
 # Generated-C snapshot of the host archive (tools/host_snapshot.sh): the
 # Nelua modules lowered to C by the pinned Nelua, the C and assembly sources,
 # the headers, and a plain Makefile. A consumer needs a C compiler, ar, and

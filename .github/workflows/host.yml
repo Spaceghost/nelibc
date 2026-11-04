@@ -28,7 +28,7 @@ jobs:
       - name: host archives, link checks, hosted smoke
         run: make host-check-zig host-smoke-zig NELUA="$NELUA" ZIG="$ZIG"
       - name: Bend 2 IO.print through the host profile
-        run: make host-bend-hello-zig NELUA="$NELUA" ZIG="$ZIG" BEND="$BEND"
+        run: make host-bend-hello-zig host-bend-parallel-zig NELUA="$NELUA" ZIG="$ZIG" BEND="$BEND"
       - name: standalone and freestanding smokes
         run: make smoke-standalone-zig smoke-freestanding-zig NELUA="$NELUA" ZIG="$ZIG"
       - name: generated-C snapshot rebuilt with zig cc and gcc

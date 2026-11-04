@@ -147,6 +147,7 @@ still runs.
 ```sh
 make host-matrix                                   # archives, link checks, hosted smoke (Zig and GCC)
 make host-bend-hello-zig BEND=/path/to/bend        # Bend 2.0.39 IO.print through the profile
+make host-bend-parallel-zig BEND=/path/to/bend     # Bend fork-join workers as lanes, 65536
 make host-bend-run-zig BEND_C=program.c BEND_ARGS='+RTS --threads 1 --gpu off'
 ```
 
@@ -189,7 +190,15 @@ Recorded on 2026-11-04 in an Incus container (Debian 12, bak) with Nelua
 - `make host-snapshot-matrix`: the generated-C snapshot rebuilt with Zig and
   with GCC passes the same checks, including the `syscall` scan.
 - The Bend hello program linked against `libnelibc-host-zig.a` printed `hi`
-  and exited 0 at `+RTS --threads 1`, `2`, `4`, and `8`.
+  and exited 0 at `+RTS --threads 1`, `2`, `4`, and `8`; its worker pool
+  never opens for a sequential program, so that run created no lanes.
+- `tools/host_bend_parallel.bend` (a fork-join `pow2(16n)`, 65536) compiled
+  with Bend 2.0.39, linked the same way, and run with `NELIBC_HOST_STATS=1`
+  printed `65536` and exited 0 at every count; the harness reported 0, 1,
+  3, and 7 lanes created and 0, 2, 6, and 14 lane switches at `--threads
+  1`, `2`, `4`, and `8`. Each worker ran first to its pool wait and the main
+  lane then finished the rows itself, so this shows the pool's threads
+  being created and scheduled as lanes, not a parallel speedup.
 - `make host-bend-hello-zig`: the emitted `IO.print("hi")` program linked
   against `libnelibc-host-zig.a` and `tools/host_linux.c` prints `hi` and
   exits 0.

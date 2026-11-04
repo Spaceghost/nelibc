@@ -68,8 +68,12 @@ the detached-exit helper are dropped from the host archive by section),
 and `host-check-*` disassembles the whole-archive link to prove it. In the
 same container and as the same user, `host-matrix` and
 `host-snapshot-matrix` passed with Zig and GCC, `host-bend-hello-zig`
-printed `hi`, and the same hello executable printed `hi` and exited 0 at
-`+RTS --threads 2`, `4`, and `8`.
+printed `hi`, the same hello executable printed `hi` and exited 0 at
+`+RTS --threads 2`, `4`, and `8`, and the fork-join program
+`tools/host_bend_parallel.bend` printed `65536` at `--threads 1`, `2`, `4`,
+and `8` with the Bend pool's workers created and run as lanes (1, 3, and 7
+lanes; 2, 6, and 14 switches) as reported by the harness's
+`NELIBC_HOST_STATS=1` counters.
 
 Hybrid archives now leave `fork` and `pthread_atfork` to the host libc. The
 Nelua raw-syscall fork and Nelibc atfork registry remain available in standalone
