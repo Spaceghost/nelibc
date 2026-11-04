@@ -19,6 +19,42 @@ archive; it does not certify every behavior required by C or POSIX.
 
 ## Current evidence
 
+### Gate run, 2026-11-04 (main `5c54547`)
+
+Recorded in the Incus container `nelibc-writ` on bak (Debian 12, glibc 2.36,
+GCC 12.2, Zig 0.17.0, Nelua `3c29419`, Bend 2.0.39), as the unprivileged
+`build` user, one target at a time. Every target reachable from
+`smoke-matrix`, `dogfood-matrix`, `host-matrix`, and `host-bend-hello-zig`
+that does not name a TinyCC profile passed: 112 targets across hybrid
+Zig/glibc, GCC/glibc, and Zig/musl, standalone Zig and GCC, freestanding Zig
+and GCC, and the host profile with Zig and GCC. The run surfaced and fixed
+six regressions that the previous evidence had not covered because it was
+recorded on a different host: the freestanding and collation-diff links
+after `string.nelua` gained the `inet_*` conversions, a syscall smoke that
+asserted an `unshare` failure which succeeds for a privileged caller, three
+absolute-addressed x87 constant loads that Debian's default-PIE linker
+rejects, a missing `stddef.h` in the standalone `signal.h`, missing
+`INFINITY`/`NAN`/`HUGE_VAL*` in the standalone `math.h`, and a `powl`
+identity check that compared exception flags against glibc 2.36's spurious
+underflow.
+
+After that run the `arpa/inet.h` conversions moved out of `string.nelua`
+into `src/inet.nelua` (one object per profile in every archive), and the
+`shootout-matrix` targets that do not name TinyCC were run on the same host
+as the same user: 40 targets (memory, string, strstr, strcasecmp,
+strverscmp, sysconf, confstr, pathconf, float, int, rand_r, qsort, stdio,
+and I/O shootouts on Zig/glibc, GCC/glibc, and Zig/musl) completed and
+wrote their CSVs under `/work/artifacts/gate-20261104-1640-shootout/` in
+the container. The musl pathconf shootout now exempts
+`REC_MIN_XFER_SIZE`, `REC_XFER_ALIGN`, and `ALLOC_SIZE_MIN`, which musl
+hardcodes to 4096 while glibc and Nelibc report `f_bsize` (131072 on the
+container's ZFS root). The numbers are from one machine and one run; they
+locate regressions, they are not a published benchmark.
+
+Not run: every `*-tcc` target. Debian's packaged TinyCC 0.9.27 cannot build
+the profile (see the quickstart) and no mob-branch build is installed in the
+container yet. Those profiles are unrun, not passing.
+
 Hybrid archives now leave `fork` and `pthread_atfork` to the host libc. The
 Nelua raw-syscall fork and Nelibc atfork registry remain available in standalone
 builds; the hybrid unistd objects localize those symbols so glibc and musl can
