@@ -95,13 +95,14 @@ static int credential_sync_is_detached_thread(void) {
          nelibc_thread_current_context_detached();
 }
 
+/* Through the profile's raw entry point, so the host profile (which has no
+ * `syscall` instruction of its own) dispatches these too. */
+extern long nelibc_raw_syscall3(unsigned long number, unsigned long first,
+                                unsigned long second, unsigned long third);
+
 static long standalone_syscall3(long number, long first, long second, long third) {
-  long result;
-  __asm__ volatile("syscall"
-                   : "=a"(result)
-                   : "a"(number), "D"(first), "S"(second), "d"(third)
-                   : "rcx", "r11", "memory");
-  return result;
+  return nelibc_raw_syscall3((unsigned long)number, (unsigned long)first,
+                             (unsigned long)second, (unsigned long)third);
 }
 
 static void credential_futex_wake(int *word, int count) {

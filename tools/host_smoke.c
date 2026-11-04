@@ -10,6 +10,7 @@
 #include <sched.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -57,8 +58,48 @@ static void on_exit_handler(void) {
   fflush(stdout);
 }
 
-static void *never_started(void *argument) {
-  return argument;
+/* Lanes: threads multiplexed on the host's one hardware thread. The worker
+ * and main alternate turns under a mutex and condition variable, the worker
+ * then blocks on a pipe main fills, and its result comes back through join.
+ * Thread-local storage and gettid must differ between the two lanes. */
+typedef struct handoff {
+  pthread_mutex_t mutex;
+  pthread_cond_t condition;
+  int turn;
+  int counter;
+  int pipe_fd;
+  pid_t worker_tid;
+  pthread_t worker_self;
+} handoff;
+
+static __thread int lane_local;
+static volatile int detached_ran;
+
+static void *worker(void *argument) {
+  handoff *state = argument;
+  char byte;
+  int round;
+  lane_local = 7;
+  state->worker_tid = gettid();
+  state->worker_self = pthread_self();
+  for (round = 0; round < 1000; round++) {
+    if (pthread_mutex_lock(&state->mutex) != 0) return (void *)1;
+    while (state->turn != 1)
+      if (pthread_cond_wait(&state->condition, &state->mutex) != 0) return (void *)2;
+    state->counter++;
+    state->turn = 0;
+    if (pthread_cond_signal(&state->condition) != 0) return (void *)3;
+    if (pthread_mutex_unlock(&state->mutex) != 0) return (void *)4;
+  }
+  if (read(state->pipe_fd, &byte, 1) != 1 || byte != 'y') return (void *)5;
+  if (lane_local != 7) return (void *)6;
+  return (void *)(uintptr_t)(state->counter + 1);
+}
+
+static void *detached_worker(void *argument) {
+  (void)argument;
+  detached_ran = 1;
+  return NULL;
 }
 
 static pthread_once_t once_control = PTHREAD_ONCE_INIT;
@@ -84,6 +125,9 @@ int main(int argc, char **argv, char **envp) {
   pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
   pthread_key_t key;
   pthread_t thread;
+  pthread_attr_t attributes;
+  handoff state;
+  void *joined;
   cpu_set_t cpus;
   int result;
   size_t index;
@@ -164,7 +208,7 @@ int main(int argc, char **argv, char **envp) {
   if (sched_yield() != 0) return 40;
   if (sysconf(_SC_PAGESIZE) != 4096) return 41;
 
-  /* Single-lane pthreads: synchronization works, creation is refused. */
+  /* pthreads: synchronization, then real threads as cooperative lanes. */
   if (pthread_mutex_lock(&mutex) != 0 || pthread_mutex_unlock(&mutex) != 0) return 42;
   if (pthread_mutex_trylock(&mutex) != 0) return 43;
   if (pthread_mutex_unlock(&mutex) != 0) return 44;
@@ -174,8 +218,37 @@ int main(int argc, char **argv, char **envp) {
   if (pthread_setspecific(key, &key) != 0 || pthread_getspecific(key) != &key) return 47;
   if (pthread_key_delete(key) != 0) return 48;
   if (pthread_self() == NULL) return 49;
-  result = pthread_create(&thread, NULL, never_started, NULL);
-  if (result == 0) return 50;
+  memset(&state, 0, sizeof state);
+  if (pthread_mutex_init(&state.mutex, NULL) != 0 || pthread_cond_init(&state.condition, NULL) != 0) return 50;
+  if (pipe(pipe_fds) != 0) return 58;
+  state.pipe_fd = pipe_fds[0];
+  lane_local = 3;
+  result = pthread_create(&thread, NULL, worker, &state);
+  if (result != 0) return 59;
+  for (index = 0; index < 1000; index++) {
+    if (pthread_mutex_lock(&state.mutex) != 0) return 64;
+    state.turn = 1;
+    if (pthread_cond_signal(&state.condition) != 0) return 65;
+    while (state.turn != 0)
+      if (pthread_cond_wait(&state.condition, &state.mutex) != 0) return 66;
+    if (pthread_mutex_unlock(&state.mutex) != 0) return 67;
+  }
+  if (state.counter != 1000) return 68;
+  byte = 'y';
+  if (write(pipe_fds[1], &byte, 1) != 1) return 69;
+  if (pthread_join(thread, &joined) != 0) return 70;
+  if ((uintptr_t)joined != 1001) return 71;
+  if (lane_local != 3) return 72;
+  if (state.worker_tid == gettid() || state.worker_tid <= 0) return 73;
+  if (state.worker_self == pthread_self() || !pthread_equal(state.worker_self, thread)) return 74;
+  if (close(pipe_fds[0]) != 0 || close(pipe_fds[1]) != 0) return 75;
+  if (pthread_attr_init(&attributes) != 0 ||
+      pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_DETACHED) != 0) return 76;
+  if (pthread_create(&thread, &attributes, detached_worker, NULL) != 0) return 77;
+  pause.tv_nsec = 1000000;
+  if (nanosleep(&pause, NULL) != 0) return 78; /* the detached lane runs meanwhile */
+  if (!detached_ran) return 79;
+  if (pthread_attr_destroy(&attributes) != 0) return 80;
 
   /* Faults reach the recorded handler on the recorded alternate stack. */
   stack.ss_sp = alternate_stack;

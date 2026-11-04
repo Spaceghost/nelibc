@@ -13,11 +13,14 @@
  * already supplies `drift_hw` for its drivers supplies this table from the
  * same platform code (clock, console, memory).
  *
- * Threads: the host profile is single-lane. `pthread_create` fails with
- * EAGAIN, blocking waits that no other thread could satisfy stop the machine
- * through `exit` with status NELIBC_HOST_EXIT_DEADLOCK, and futex, mutex,
- * and condition operations that cannot block succeed as on a one-thread
- * process. Atomics are compiler-provided and unaffected.
+ * Threads: the host profile multiplexes every thread the program creates
+ * onto the one hardware thread the host supplies (cooperative lanes). A
+ * lane runs until it blocks in the libc (futex wait, sleep, empty pipe,
+ * poll with nothing ready), calls sched_yield, or exits; the profile then
+ * switches stack and thread pointer (through thread_pointer_set) to the
+ * next runnable lane. Nothing preempts a lane. A wait that no lane could
+ * end stops the machine through `exit` with status
+ * NELIBC_HOST_EXIT_DEADLOCK. Atomics are compiler-provided and unaffected.
  */
 #ifndef NELIBC_HOST_H
 #define NELIBC_HOST_H
@@ -76,7 +79,8 @@ typedef struct nelibc_host {
   void (*sleep)(void *context, uint64_t nanoseconds);
 
   /* Required. Install the x86-64 thread pointer (FS base). On Linux this is
-   * arch_prctl(ARCH_SET_FS); in a kernel it is a write to MSR 0xC0000100. */
+   * arch_prctl(ARCH_SET_FS); in a kernel it is a write to MSR 0xC0000100.
+   * Called at boot and on every switch between lanes. */
   int (*thread_pointer_set)(void *context, void *thread_pointer);
 
   /* Required. Terminate with a status. Must not return. */
@@ -90,7 +94,7 @@ typedef struct nelibc_host {
   char **environment;
 
   /* CPUs reported by sched_getaffinity and sysconf(_SC_NPROCESSORS_ONLN);
-   * 0 means 1. The profile still runs one lane. */
+   * 0 means 1. The profile still runs on one hardware thread. */
   int cpu_count;
 
   nelibc_host_tls tls;

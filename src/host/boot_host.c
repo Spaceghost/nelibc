@@ -4,7 +4,6 @@
  * the ELF auxiliary vector and issued its own syscalls. */
 #include "nelibc_host.h"
 
-#define NELIBC_HOST_ENOSYS 38
 #define NELIBC_HOST_EINVAL 22
 #define NELIBC_HOST_ENOMEM 12
 
@@ -72,17 +71,6 @@ void nelibc_tls_layout(nelibc_tls_layout_record *layout) {
   layout->image_filesz = host->tls.filesz;
   layout->image_memsz = host->tls.memsz;
   layout->image_align = host->tls.align;
-}
-
-/* The host profile has one lane: thread creation reports EAGAIN upstream. */
-long nelibc_clone_thread(void *start, void *arg, void *stack_top,
-                         void *tls_tp, int *tid) {
-  (void)start;
-  (void)arg;
-  (void)stack_top;
-  (void)tls_tp;
-  (void)tid;
-  return -NELIBC_HOST_ENOSYS;
 }
 
 static int nelibc_host_setup_tls(const nelibc_host *host) {

@@ -5,13 +5,23 @@
  *
  * Covered: console write, anonymous memory, clocks and sleeps, signal
  * bookkeeping with inline delivery for raise, a self-pipe with poll/select,
- * futex semantics for a single lane, identity and limit queries, and process
- * exit. Everything else returns -ENOSYS after the optional diagnostic hook.
+ * cooperative lanes behind clone/futex/exit, identity and limit queries, and
+ * process exit. Everything else returns -ENOSYS after the optional
+ * diagnostic hook.
+ *
+ * Lanes: every thread the program creates is a lane on the one hardware
+ * thread the host supplies. A lane runs until it blocks (futex wait, sleep,
+ * empty pipe, poll with nothing ready), yields, or exits; the dispatcher then
+ * switches the stack and thread pointer to the next runnable lane. Nothing
+ * preempts a lane, so a spinning loop that never enters the dispatcher
+ * starves the others, exactly as on a one-CPU kernel without a timer tick.
  */
 #include "nelibc_host.h"
 
 #define EPERM 1
 #define ENOENT 2
+#define ESRCH 3
+#define EINTR 4
 #define EBADF 9
 #define EAGAIN 11
 #define ENOMEM 12
@@ -24,10 +34,12 @@
 #define ESPIPE 29
 #define EPIPE 32
 #define ERANGE 34
+#define EDEADLK 35
 #define ENOSYS 38
 #define ETIMEDOUT 110
 #define ECHILD 10
 
+#define NELIBC_HOST_LANE_COUNT 64
 #define NELIBC_HOST_FD_COUNT 64
 #define NELIBC_HOST_PIPE_COUNT 8
 #define NELIBC_HOST_PIPE_CAPACITY 65536
@@ -149,7 +161,9 @@ static int realtime_now(uint64_t *nanoseconds) {
   return monotonic_now(nanoseconds);
 }
 
-static int sleep_for(uint64_t nanoseconds) {
+/* Stop the hardware thread for a while: the host's sleep, or a spin on its
+ * clock. Used only when no lane can run in the meantime. */
+static int host_sleep_raw(uint64_t nanoseconds) {
   const nelibc_host *host = table();
   uint64_t start;
   uint64_t now;
@@ -162,6 +176,384 @@ static int sleep_for(uint64_t nanoseconds) {
     if (monotonic_now(&now) != 0) return -EINVAL;
   } while (now - start < nanoseconds);
   return 0;
+}
+
+/* Lanes ----------------------------------------------------------------- */
+
+enum {
+  LANE_FREE = 0,
+  LANE_RUNNABLE,
+  LANE_BLOCKED,
+  LANE_EXITED
+};
+
+typedef struct host_lane {
+  void *sp;                 /* saved stack pointer while not running */
+  void *thread_pointer;     /* FS base installed when the lane runs */
+  int tid;
+  int state;
+  int *wait_address;        /* futex word the lane sleeps on, or NULL */
+  int has_deadline;
+  uint64_t deadline;        /* monotonic nanoseconds */
+  long wake_result;         /* what the blocking call returns */
+  int pi_handoff;           /* FUTEX_UNLOCK_PI gave this lane the lock */
+  int *clear_tid;           /* CLONE_CHILD_CLEARTID / set_tid_address */
+  void *robust_list;        /* set_robust_list head */
+  unsigned long pending_signals;
+  int (*start)(void *);
+  void *argument;
+  void *release[3];         /* regions to unmap once the lane is off them */
+  size_t release_size[3];
+} host_lane;
+
+static host_lane lanes[NELIBC_HOST_LANE_COUNT];
+static host_lane *current_lane;
+static host_lane *switched_from;
+static int next_tid = 2;
+
+/* Save callee-saved registers and the stack pointer of the running lane,
+ * load the other lane's, and return into it. A fresh lane's stack holds six
+ * zero slots and lane_entry as the return address. */
+extern void host_lane_switch(void **save_sp, void *load_sp);
+__asm__(".text\n"
+        ".globl host_lane_switch\n"
+        ".type host_lane_switch,@function\n"
+        "host_lane_switch:\n"
+        "  pushq %rbp\n"
+        "  pushq %rbx\n"
+        "  pushq %r12\n"
+        "  pushq %r13\n"
+        "  pushq %r14\n"
+        "  pushq %r15\n"
+        "  movq %rsp, (%rdi)\n"
+        "  movq %rsi, %rsp\n"
+        "  popq %r15\n"
+        "  popq %r14\n"
+        "  popq %r13\n"
+        "  popq %r12\n"
+        "  popq %rbx\n"
+        "  popq %rbp\n"
+        "  ret\n"
+        ".size host_lane_switch, .-host_lane_switch\n");
+
+static host_lane *lane_current(void) {
+  if (current_lane == NULL) {
+    lanes[0].state = LANE_RUNNABLE;
+    lanes[0].tid = 1;
+    lanes[0].thread_pointer = nelibc_host_thread_pointer_current();
+    current_lane = &lanes[0];
+  }
+  return current_lane;
+}
+
+static host_lane *lane_by_tid(int tid) {
+  unsigned index;
+  if (tid <= 0) return NULL;
+  for (index = 0; index < NELIBC_HOST_LANE_COUNT; index++)
+    if (lanes[index].state != LANE_FREE && lanes[index].state != LANE_EXITED &&
+        lanes[index].tid == tid)
+      return &lanes[index];
+  return NULL;
+}
+
+static int lanes_other_live(host_lane *self) {
+  unsigned index;
+  for (index = 0; index < NELIBC_HOST_LANE_COUNT; index++)
+    if (&lanes[index] != self && lanes[index].state != LANE_FREE &&
+        lanes[index].state != LANE_EXITED)
+      return 1;
+  return 0;
+}
+
+static long deliver_signal(long signal);
+static long do_munmap(void *address, size_t length);
+static long futex_wake(int *address, int count);
+
+/* Runs in the lane that was just switched to: free what the lane we left
+ * can no longer free itself, then deliver signals queued for this lane. */
+static void lane_after_switch(void) {
+  host_lane *from = switched_from;
+  host_lane *self = current_lane;
+  unsigned index;
+  switched_from = NULL;
+  if (from != NULL && from->state == LANE_EXITED) {
+    for (index = 0; index < 3; index++) {
+      if (from->release[index] != NULL) do_munmap(from->release[index], from->release_size[index]);
+      from->release[index] = NULL;
+    }
+    from->state = LANE_FREE;
+  }
+  while (self->pending_signals != 0) {
+    long signal;
+    for (signal = 1; signal < NELIBC_HOST_SIGNAL_COUNT; signal++)
+      if (self->pending_signals & (1ul << signal)) break;
+    self->pending_signals &= ~(1ul << signal);
+    deliver_signal(signal);
+  }
+}
+
+static void switch_to(host_lane *next) {
+  host_lane *previous = lane_current();
+  const nelibc_host *host = table();
+  if (next == previous) return;
+  current_lane = next;
+  if (next->thread_pointer != previous->thread_pointer) {
+    host->thread_pointer_set(host->context, next->thread_pointer);
+    nelibc_host_thread_pointer_record(next->thread_pointer);
+  }
+  switched_from = previous;
+  host_lane_switch(&previous->sp, next->sp);
+  lane_after_switch();
+}
+
+static int lanes_timed_waiters(void) {
+  unsigned index;
+  for (index = 0; index < NELIBC_HOST_LANE_COUNT; index++)
+    if (lanes[index].state == LANE_BLOCKED && lanes[index].has_deadline) return 1;
+  return 0;
+}
+
+static void lanes_expire(uint64_t now) {
+  unsigned index;
+  for (index = 0; index < NELIBC_HOST_LANE_COUNT; index++) {
+    host_lane *lane = &lanes[index];
+    if (lane->state == LANE_BLOCKED && lane->has_deadline && lane->deadline <= now) {
+      lane->state = LANE_RUNNABLE;
+      lane->has_deadline = 0;
+      lane->wait_address = NULL;
+      lane->wake_result = -ETIMEDOUT;
+    }
+  }
+}
+
+static int lanes_earliest_deadline(uint64_t *deadline) {
+  unsigned index;
+  int found = 0;
+  for (index = 0; index < NELIBC_HOST_LANE_COUNT; index++) {
+    host_lane *lane = &lanes[index];
+    if (lane->state == LANE_BLOCKED && lane->has_deadline &&
+        (!found || lane->deadline < *deadline)) {
+      *deadline = lane->deadline;
+      found = 1;
+    }
+  }
+  return found;
+}
+
+/* Round robin: the first runnable lane after self, self last. */
+static host_lane *lane_pick(host_lane *self) {
+  unsigned start = (unsigned)(self - lanes);
+  unsigned step;
+  for (step = 1; step <= NELIBC_HOST_LANE_COUNT; step++) {
+    host_lane *lane = &lanes[(start + step) % NELIBC_HOST_LANE_COUNT];
+    if (lane->state == LANE_RUNNABLE) return lane;
+  }
+  return NULL;
+}
+
+/* Run another lane until this one is runnable again. Returns only when the
+ * calling lane is runnable; an exited lane never comes back. */
+static void schedule(void) {
+  host_lane *self = lane_current();
+  for (;;) {
+    host_lane *next;
+    uint64_t now;
+    uint64_t earliest;
+    if (lanes_timed_waiters() && monotonic_now(&now) == 0) lanes_expire(now);
+    next = lane_pick(self);
+    if (next != NULL) {
+      switch_to(next);
+      if (self->state == LANE_RUNNABLE) return;
+      continue;
+    }
+    if (!lanes_earliest_deadline(&earliest) || monotonic_now(&now) != 0)
+      nelibc_host_fail("nelibc host: every lane is waiting for another, stopping\n",
+                       NELIBC_HOST_EXIT_DEADLOCK);
+    if (earliest > now) host_sleep_raw(earliest - now);
+  }
+}
+
+/* Block the calling lane on a futex word (or just time, when address is
+ * NULL). Returns 0 when woken, -ETIMEDOUT, or -EINTR for a queued signal. */
+static long lane_block(int *address, int has_deadline, uint64_t deadline) {
+  host_lane *self = lane_current();
+  self->state = LANE_BLOCKED;
+  self->wait_address = address;
+  self->has_deadline = has_deadline;
+  self->deadline = deadline;
+  self->wake_result = 0;
+  schedule();
+  self->wait_address = NULL;
+  self->has_deadline = 0;
+  return self->wake_result;
+}
+
+/* Let other lanes run. Returns 0 when no lane can make progress before the
+ * caller's own deadline would (or without one, ever): the caller then fails
+ * as a deadlock or sleeps the deadline out itself. */
+static int lane_yield(int has_deadline, uint64_t deadline) {
+  host_lane *self = lane_current();
+  host_lane *next;
+  uint64_t now;
+  uint64_t earliest;
+  if (lanes_timed_waiters() && monotonic_now(&now) == 0) lanes_expire(now);
+  next = lane_pick(self);
+  if (next != self) {
+    switch_to(next);
+    return 1;
+  }
+  if (!lanes_earliest_deadline(&earliest)) {
+    if (!has_deadline) return 0;
+    earliest = deadline;
+  } else if (has_deadline && deadline < earliest) {
+    earliest = deadline;
+  }
+  if (monotonic_now(&now) != 0) return 0;
+  if (earliest > now) host_sleep_raw(earliest - now);
+  return 1;
+}
+
+static long futex_wake(int *address, int count) {
+  long woken = 0;
+  unsigned index;
+  for (index = 0; index < NELIBC_HOST_LANE_COUNT && woken < count; index++) {
+    host_lane *lane = &lanes[index];
+    if (lane->state == LANE_BLOCKED && lane->wait_address == address) {
+      lane->state = LANE_RUNNABLE;
+      lane->wait_address = NULL;
+      lane->has_deadline = 0;
+      lane->wake_result = 0;
+      woken++;
+    }
+  }
+  return woken;
+}
+
+static long futex_requeue(int *from, int *to, int count) {
+  long moved = 0;
+  unsigned index;
+  for (index = 0; index < NELIBC_HOST_LANE_COUNT && moved < count; index++) {
+    host_lane *lane = &lanes[index];
+    if (lane->state == LANE_BLOCKED && lane->wait_address == from) {
+      lane->wait_address = to;
+      moved++;
+    }
+  }
+  return moved;
+}
+
+/* Linux robust-list walk at thread exit: every lock the lane still owns is
+ * marked FUTEX_OWNER_DIED and one waiter is woken. */
+static void lane_robust_exit(host_lane *lane) {
+  void **head = lane->robust_list;
+  void **entry;
+  long offset;
+  void *pending;
+  unsigned count = 0;
+  if (head == NULL) return;
+  offset = (long)head[1];
+  pending = head[2];
+  entry = head[0];
+  while (entry != NULL && entry != (void **)head && count++ < 2048) {
+    void **next = entry[0];
+    if (entry != pending) {
+      int *lock = (int *)((char *)entry + offset);
+      int value = __atomic_load_n(lock, __ATOMIC_ACQUIRE);
+      if ((value & 0x3fffffff) == lane->tid) {
+        __atomic_store_n(lock, (value & (int)0x80000000) | 0x40000000, __ATOMIC_RELEASE);
+        if (value & (int)0x80000000) futex_wake(lock, 1);
+      }
+    }
+    entry = next;
+  }
+  lane->robust_list = NULL;
+}
+
+/* Thread exit (syscall 60 and the detached-exit helper). The lane's stack
+ * stays mapped until the next lane runs lane_after_switch. */
+static void lane_exit(int status) {
+  const nelibc_host *host = table();
+  host_lane *self = lane_current();
+  lane_robust_exit(self);
+  if (self->clear_tid != NULL) {
+    __atomic_store_n(self->clear_tid, 0, __ATOMIC_RELEASE);
+    futex_wake(self->clear_tid, 1);
+    self->clear_tid = NULL;
+  }
+  self->pending_signals = 0;
+  self->state = LANE_EXITED;
+  if (!lanes_other_live(self)) host->exit(host->context, status);
+  schedule();
+  for (;;) {
+  }
+}
+
+static void lane_entry(void) {
+  host_lane *self = current_lane;
+  lane_after_switch();
+  lane_exit(self->start(self->argument));
+}
+
+/* thread.nelua's clone wrapper: a new lane on the caller-provided stack and
+ * TLS block, runnable but not running until the creator blocks or yields.
+ * tid, when given, receives the thread id now and is cleared and woken when
+ * the lane exits (CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID). */
+long nelibc_clone_thread(void *start, void *arg, void *stack_top,
+                         void *tls_tp, int *tid) {
+  host_lane *self = lane_current();
+  host_lane *lane = NULL;
+  unsigned long *sp;
+  unsigned index;
+  if (start == NULL || stack_top == NULL) return -EINVAL;
+  for (index = 0; index < NELIBC_HOST_LANE_COUNT; index++)
+    if (lanes[index].state == LANE_FREE) {
+      lane = &lanes[index];
+      break;
+    }
+  if (lane == NULL) return -EAGAIN;
+  zero_bytes(lane, sizeof *lane);
+  do {
+    lane->tid = next_tid++;
+    if (next_tid > 0x3fffffff) next_tid = 2;
+  } while (lane_by_tid(lane->tid) != NULL);
+  lane->thread_pointer = tls_tp != NULL ? tls_tp : self->thread_pointer;
+  lane->start = (int (*)(void *))start;
+  lane->argument = arg;
+  lane->clear_tid = tid;
+  sp = (unsigned long *)((uintptr_t)stack_top & ~(uintptr_t)15);
+  sp -= 1;                                  /* entry sees rsp = 8 mod 16 */
+  *--sp = (unsigned long)(uintptr_t)lane_entry;
+  for (index = 0; index < 6; index++) *--sp = 0;
+  lane->sp = sp;
+  if (tid != NULL) __atomic_store_n(tid, lane->tid, __ATOMIC_RELEASE);
+  lane->state = LANE_RUNNABLE;
+  return lane->tid;
+}
+
+/* environment_adapter.c's version unmaps its own stack and leaves through a
+ * `syscall` instruction; the host archive weakens it so this one is linked.
+ * The three regions are released by the next lane, after the switch. */
+void nelibc_thread_detached_exit(void *stack, size_t stack_size, void *tls,
+                                 size_t tls_size, void *cleanup_stack,
+                                 size_t cleanup_stack_size) {
+  host_lane *self = lane_current();
+  self->release[0] = stack;
+  self->release_size[0] = stack_size;
+  self->release[1] = tls;
+  self->release_size[1] = tls_size;
+  self->release[2] = cleanup_stack;
+  self->release_size[2] = cleanup_stack_size;
+  lane_exit(0);
+}
+
+/* Sleep: other lanes run meanwhile. */
+static int sleep_for(uint64_t nanoseconds) {
+  uint64_t now;
+  long result;
+  if (monotonic_now(&now) != 0 || !lanes_other_live(lane_current()))
+    return host_sleep_raw(nanoseconds);
+  result = lane_block(NULL, 1, now + nanoseconds);
+  return result == -EINTR ? -EINTR : 0;
 }
 
 static int timespec_valid(const kernel_timespec *value) {
@@ -206,10 +598,18 @@ static long do_nanosleep(const kernel_timespec *requested, kernel_timespec *rema
   int result;
   if (requested == NULL) return -EFAULT;
   if (!timespec_valid(requested)) return -EINVAL;
-  result = sleep_for(timespec_nanoseconds(requested));
-  if (result == 0 && remaining != NULL) {
-    remaining->tv_sec = 0;
-    remaining->tv_nsec = 0;
+  {
+    uint64_t start = 0;
+    uint64_t total = timespec_nanoseconds(requested);
+    int clocked = monotonic_now(&start) == 0;
+    result = sleep_for(total);
+    if (remaining != NULL) {
+      uint64_t left = 0;
+      uint64_t now;
+      if (result == -EINTR && clocked && monotonic_now(&now) == 0 && now - start < total)
+        left = total - (now - start);
+      store_timespec(remaining, left);
+    }
   }
   return result;
 }
@@ -331,11 +731,12 @@ static long do_pipe2(int *out, int flags) {
 static long pipe_read(host_fd *entry, unsigned char *buffer, size_t length) {
   host_pipe *pipe = &pipes[entry->pipe];
   size_t count = 0;
-  if (pipe->length == 0) {
+  while (pipe->length == 0) {
     if (pipe->writers == 0) return 0;
     if (entry->status_flags & 0x800) return -EAGAIN;
-    nelibc_host_fail("nelibc host: blocking read on an empty pipe with a single lane\n",
-                     NELIBC_HOST_EXIT_DEADLOCK);
+    if (!lane_yield(0, 0))
+      nelibc_host_fail("nelibc host: blocking read on an empty pipe that no lane can fill\n",
+                       NELIBC_HOST_EXIT_DEADLOCK);
   }
   while (count < length && pipe->length > 0) {
     buffer[count++] = pipe->buffer[pipe->head];
@@ -349,10 +750,12 @@ static long pipe_write(host_fd *entry, const unsigned char *buffer, size_t lengt
   host_pipe *pipe = &pipes[entry->pipe];
   size_t count = 0;
   if (pipe->readers == 0) return -EPIPE;
-  if (pipe->length == NELIBC_HOST_PIPE_CAPACITY) {
+  while (pipe->length == NELIBC_HOST_PIPE_CAPACITY) {
     if (entry->status_flags & 0x800) return -EAGAIN;
-    nelibc_host_fail("nelibc host: blocking write on a full pipe with a single lane\n",
-                     NELIBC_HOST_EXIT_DEADLOCK);
+    if (!lane_yield(0, 0))
+      nelibc_host_fail("nelibc host: blocking write on a full pipe that no lane can drain\n",
+                       NELIBC_HOST_EXIT_DEADLOCK);
+    if (pipe->readers == 0) return -EPIPE;
   }
   while (count < length && pipe->length < NELIBC_HOST_PIPE_CAPACITY) {
     pipe->buffer[(pipe->head + pipe->length) % NELIBC_HOST_PIPE_CAPACITY] = buffer[count++];
@@ -461,24 +864,52 @@ static long do_dup3(long old_fd, long new_fd, int flags) {
 
 /* poll and select -------------------------------------------------------- */
 
-static long wait_or_fail(long ready, int has_timeout, uint64_t timeout_nanoseconds) {
-  if (ready > 0) return ready;
-  if (!has_timeout)
-    nelibc_host_fail("nelibc host: indefinite wait with nothing ready on a single lane\n",
-                     NELIBC_HOST_EXIT_DEADLOCK);
-  if (timeout_nanoseconds > 0) {
-    int result = sleep_for(timeout_nanoseconds);
-    if (result != 0) return result;
+/* Wait for scan() to report something ready, letting other lanes run. With
+ * a timeout the wait ends at the deadline (result 0); without one, a wait
+ * that no lane could satisfy stops the host. */
+static long wait_ready(long (*scan)(void *), void *argument, int has_timeout,
+                       uint64_t timeout_nanoseconds) {
+  uint64_t deadline = 0;
+  uint64_t now;
+  int clocked = 0;
+  if (has_timeout) {
+    if (timeout_nanoseconds == 0) return scan(argument);
+    clocked = monotonic_now(&now) == 0;
+    deadline = now + timeout_nanoseconds;
+    if (!clocked) {
+      long ready = scan(argument);
+      if (ready != 0) return ready;
+      host_sleep_raw(timeout_nanoseconds);
+      return scan(argument);
+    }
   }
-  return 0;
+  for (;;) {
+    long ready = scan(argument);
+    if (ready != 0) return ready;
+    if (has_timeout) {
+      if (monotonic_now(&now) != 0 || now >= deadline) return scan(argument);
+      if (!lane_yield(1, deadline)) {
+        host_sleep_raw(deadline - now);
+        return scan(argument);
+      }
+    } else if (!lane_yield(0, 0)) {
+      nelibc_host_fail("nelibc host: indefinite wait with nothing ready that no lane can change\n",
+                       NELIBC_HOST_EXIT_DEADLOCK);
+    }
+  }
 }
 
-static long do_poll(kernel_pollfd *entries, unsigned long count,
-                    int has_timeout, uint64_t timeout_nanoseconds) {
+typedef struct poll_request {
+  kernel_pollfd *entries;
+  unsigned long count;
+} poll_request;
+
+static long poll_scan(void *argument) {
+  poll_request *request = argument;
+  kernel_pollfd *entries = request->entries;
+  unsigned long count = request->count;
   long ready = 0;
   unsigned long index;
-  if (count > 1024) return -EINVAL;
-  if (count > 0 && entries == NULL) return -EFAULT;
   for (index = 0; index < count; index++) {
     kernel_pollfd *item = &entries[index];
     host_fd *entry;
@@ -496,41 +927,71 @@ static long do_poll(kernel_pollfd *entries, unsigned long count,
     if (entry->kind == FD_PIPE_WRITE && pipes[entry->pipe].readers == 0) item->revents |= 0x8;
     if (item->revents != 0) ready++;
   }
-  return wait_or_fail(ready, has_timeout, timeout_nanoseconds);
+  return ready;
+}
+
+static long do_poll(kernel_pollfd *entries, unsigned long count,
+                    int has_timeout, uint64_t timeout_nanoseconds) {
+  poll_request request;
+  if (count > 1024) return -EINVAL;
+  if (count > 0 && entries == NULL) return -EFAULT;
+  request.entries = entries;
+  request.count = count;
+  return wait_ready(poll_scan, &request, has_timeout, timeout_nanoseconds);
 }
 
 static int fdset_test(const unsigned long *set, long fd) {
   return set != NULL && (set[fd / 64] >> (fd % 64)) & 1;
 }
 
-static long do_select(long nfds, unsigned long *reads, unsigned long *writes,
-                      unsigned long *excepts, int has_timeout,
-                      uint64_t timeout_nanoseconds) {
-  unsigned long ready_reads[16] = {0};
-  unsigned long ready_writes[16] = {0};
+typedef struct select_request {
+  long nfds;
+  const unsigned long *reads;
+  const unsigned long *writes;
+  const unsigned long *excepts;
+  unsigned long ready_reads[16];
+  unsigned long ready_writes[16];
+} select_request;
+
+static long select_scan(void *argument) {
+  select_request *request = argument;
   long ready = 0;
   long fd;
-  if (nfds < 0 || nfds > 1024) return -EINVAL;
-  for (fd = 0; fd < nfds; fd++) {
+  zero_bytes(request->ready_reads, sizeof request->ready_reads);
+  zero_bytes(request->ready_writes, sizeof request->ready_writes);
+  for (fd = 0; fd < request->nfds; fd++) {
     host_fd *entry;
-    int wants_read = fdset_test(reads, fd);
-    int wants_write = fdset_test(writes, fd);
-    if (!wants_read && !wants_write && !fdset_test(excepts, fd)) continue;
+    int wants_read = fdset_test(request->reads, fd);
+    int wants_write = fdset_test(request->writes, fd);
+    if (!wants_read && !wants_write && !fdset_test(request->excepts, fd)) continue;
     entry = fd_entry(fd);
     if (entry == NULL) return -EBADF;
     if (wants_read && fd_readable(entry)) {
-      ready_reads[fd / 64] |= 1ul << (fd % 64);
+      request->ready_reads[fd / 64] |= 1ul << (fd % 64);
       ready++;
     }
     if (wants_write && fd_writable(entry)) {
-      ready_writes[fd / 64] |= 1ul << (fd % 64);
+      request->ready_writes[fd / 64] |= 1ul << (fd % 64);
       ready++;
     }
   }
-  ready = wait_or_fail(ready, has_timeout, timeout_nanoseconds);
+  return ready;
+}
+
+static long do_select(long nfds, unsigned long *reads, unsigned long *writes,
+                      unsigned long *excepts, int has_timeout,
+                      uint64_t timeout_nanoseconds) {
+  select_request request;
+  long ready;
+  if (nfds < 0 || nfds > 1024) return -EINVAL;
+  request.nfds = nfds;
+  request.reads = reads;
+  request.writes = writes;
+  request.excepts = excepts;
+  ready = wait_ready(select_scan, &request, has_timeout, timeout_nanoseconds);
   if (ready < 0) return ready;
-  if (reads != NULL) copy_bytes(reads, ready_reads, sizeof ready_reads[0] * ((nfds + 63) / 64));
-  if (writes != NULL) copy_bytes(writes, ready_writes, sizeof ready_writes[0] * ((nfds + 63) / 64));
+  if (reads != NULL) copy_bytes(reads, request.ready_reads, sizeof request.ready_reads[0] * ((nfds + 63) / 64));
+  if (writes != NULL) copy_bytes(writes, request.ready_writes, sizeof request.ready_writes[0] * ((nfds + 63) / 64));
   if (excepts != NULL) zero_bytes(excepts, sizeof(unsigned long) * ((nfds + 63) / 64));
   return ready;
 }
@@ -584,9 +1045,9 @@ static int signal_default_ignored(long signal) {
   return signal == 17 || signal == 23 || signal == 28 || signal == 18;
 }
 
-/* Deliver a thread-directed signal inline: there is no other lane to
- * interrupt, so raise() is a direct call and a default terminating action
- * stops the host with the conventional 128 + signal status. */
+/* Deliver a signal to the calling lane inline: raise() is a direct call and
+ * a default terminating action stops the host with the conventional
+ * 128 + signal status. */
 static long deliver_signal(long signal) {
   kernel_sigaction *action;
   void *handler;
@@ -608,6 +1069,33 @@ static long deliver_signal(long signal) {
     ((void (*)(int, void *, void *))handler)((int)signal, info, NULL);
   } else {
     ((void (*)(int))handler)((int)signal);
+  }
+  return 0;
+}
+
+/* tkill/tgkill: a signal for another lane is queued and delivered when that
+ * lane next runs; a blocking wait it is in ends with EINTR. Signal 0 is the
+ * liveness probe thread.nelua uses to reclaim robust-list slots. */
+static long deliver_signal_to(long tid, long signal) {
+  host_lane *lane = lane_by_tid((int)tid);
+  kernel_sigaction *action;
+  if (lane == NULL) return -ESRCH;
+  if (signal == 0) return 0;
+  if (signal < 0 || signal >= NELIBC_HOST_SIGNAL_COUNT) return -EINVAL;
+  if (lane == lane_current()) return deliver_signal(signal);
+  action = &signal_actions[signal];
+  if ((unsigned long)action->handler == 1ul) return 0;
+  if (action->handler == NULL) {
+    if (signal_default_ignored(signal)) return 0;
+    nelibc_host_fail("nelibc host: terminating signal with the default action\n",
+                     128 + (int)signal);
+  }
+  lane->pending_signals |= 1ul << signal;
+  if (lane->state == LANE_BLOCKED) {
+    lane->state = LANE_RUNNABLE;
+    lane->wait_address = NULL;
+    lane->has_deadline = 0;
+    lane->wake_result = -EINTR;
   }
   return 0;
 }
@@ -730,58 +1218,169 @@ static long do_mremap(void *old_address, size_t old_size, size_t new_size,
 
 /* Futex for one lane ------------------------------------------------------ */
 
+#define FUTEX_WAITERS ((int)0x80000000)
+#define FUTEX_OWNER_DIED 0x40000000
+#define FUTEX_TID_MASK 0x3fffffff
+
+/* Deadline for a futex wait in monotonic nanoseconds. FUTEX_WAIT takes a
+ * relative timeout; the bitset and PI forms take an absolute one on the
+ * monotonic clock, or on the realtime clock with FUTEX_CLOCK_REALTIME. */
+static long futex_deadline(long operation, int relative, const kernel_timespec *timeout,
+                           uint64_t *deadline) {
+  uint64_t now;
+  uint64_t target;
+  if (!timespec_valid(timeout)) return -EINVAL;
+  target = timespec_nanoseconds(timeout);
+  if (monotonic_now(&now) != 0) return -EINVAL;
+  if (relative) {
+    *deadline = now + target;
+    return 0;
+  }
+  if (operation & 256) { /* FUTEX_CLOCK_REALTIME */
+    uint64_t real;
+    if (realtime_now(&real) != 0) return -EINVAL;
+    *deadline = target > real ? now + (target - real) : now;
+    return 0;
+  }
+  *deadline = target;
+  return 0;
+}
+
+static int futex_waiters_on(int *address) {
+  unsigned index;
+  for (index = 0; index < NELIBC_HOST_LANE_COUNT; index++)
+    if (lanes[index].state == LANE_BLOCKED && lanes[index].wait_address == address)
+      return 1;
+  return 0;
+}
+
+static long futex_wake_op(int *address, int count, int *address2, int count2, int encoded) {
+  int op = (encoded >> 28) & 0xf;
+  int cmp = (encoded >> 24) & 0xf;
+  int oparg = (encoded >> 12) & 0xfff;
+  int cmparg = encoded & 0xfff;
+  int old;
+  int result;
+  int hit;
+  if (address2 == NULL) return -EFAULT;
+  if (op & 8) oparg = 1 << (oparg & 7); /* FUTEX_OP_OPARG_SHIFT */
+  old = __atomic_load_n(address2, __ATOMIC_ACQUIRE);
+  switch (op & 7) {
+  case 0: __atomic_store_n(address2, oparg, __ATOMIC_RELEASE); break;
+  case 1: __atomic_store_n(address2, old + oparg, __ATOMIC_RELEASE); break;
+  case 2: __atomic_store_n(address2, old | oparg, __ATOMIC_RELEASE); break;
+  case 3: __atomic_store_n(address2, old & ~oparg, __ATOMIC_RELEASE); break;
+  case 4: __atomic_store_n(address2, old ^ oparg, __ATOMIC_RELEASE); break;
+  default: return -ENOSYS;
+  }
+  switch (cmp) {
+  case 0: hit = old == cmparg; break;
+  case 1: hit = old != cmparg; break;
+  case 2: hit = old < cmparg; break;
+  case 3: hit = old <= cmparg; break;
+  case 4: hit = old > cmparg; break;
+  case 5: hit = old >= cmparg; break;
+  default: return -ENOSYS;
+  }
+  result = (int)futex_wake(address, count);
+  if (hit) result += (int)futex_wake(address2, count2);
+  return result;
+}
+
 static long do_futex(int *address, long operation, int value,
-                     const kernel_timespec *timeout) {
+                     const kernel_timespec *timeout, int *address2, int value3) {
   long op = operation & 0x7f;
+  host_lane *self = lane_current();
+  uint64_t deadline = 0;
+  long result;
   if (address == NULL) return -EFAULT;
   switch (op) {
   case 0: /* FUTEX_WAIT */
   case 9: /* FUTEX_WAIT_BITSET */
     if (__atomic_load_n(address, __ATOMIC_ACQUIRE) != value) return -EAGAIN;
     if (timeout != NULL) {
-      uint64_t now;
-      uint64_t target;
-      if (!timespec_valid(timeout)) return -EINVAL;
-      target = timespec_nanoseconds(timeout);
-      if (op == 9) { /* absolute */
-        int result = (operation & 256) ? realtime_now(&now) : monotonic_now(&now);
-        if (result != 0) return result;
-        if (target > now) sleep_for(target - now);
-      } else {
-        sleep_for(target);
-      }
-      return -ETIMEDOUT;
+      result = futex_deadline(operation, op == 0, timeout, &deadline);
+      if (result != 0) return result;
     }
-    nelibc_host_fail("nelibc host: futex wait that no other lane can wake\n",
-                     NELIBC_HOST_EXIT_DEADLOCK);
-    return -EAGAIN;
+    return lane_block(address, timeout != NULL, deadline);
   case 1:  /* FUTEX_WAKE */
   case 10: /* FUTEX_WAKE_BITSET */
+    return futex_wake(address, value);
   case 5:  /* FUTEX_WAKE_OP */
-    return 0;
+    return futex_wake_op(address, value, address2, (int)(uintptr_t)timeout, value3);
   case 3: /* FUTEX_REQUEUE */
-    return 0;
   case 4: /* FUTEX_CMP_REQUEUE */
-    return 0;
+    if (address2 == NULL) return -EFAULT;
+    if (op == 4 && __atomic_load_n(address, __ATOMIC_ACQUIRE) != value3) return -EAGAIN;
+    result = futex_wake(address, value);
+    {
+      long moved = futex_requeue(address, address2, (int)(uintptr_t)timeout);
+      return op == 4 ? result + moved : result;
+    }
   case 6: /* FUTEX_LOCK_PI */
   case 13: /* FUTEX_LOCK_PI2 */
-    if (__atomic_load_n(address, __ATOMIC_ACQUIRE) == 0) {
-      __atomic_store_n(address, 1, __ATOMIC_RELEASE);
+    if (timeout != NULL) {
+      result = futex_deadline(operation, 0, timeout, &deadline);
+      if (result != 0) return result;
+    }
+    for (;;) {
+      int current = __atomic_load_n(address, __ATOMIC_ACQUIRE);
+      if ((current & FUTEX_TID_MASK) == 0) {
+        int next = self->tid | (current & FUTEX_OWNER_DIED) |
+                   (futex_waiters_on(address) ? FUTEX_WAITERS : 0);
+        if (__atomic_compare_exchange_n(address, &current, next, 0,
+                                        __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+          return 0;
+        continue;
+      }
+      if ((current & FUTEX_TID_MASK) == self->tid) return -EDEADLK;
+      if (lane_by_tid(current & FUTEX_TID_MASK) == NULL) return -ESRCH;
+      if (!(current & FUTEX_WAITERS) &&
+          !__atomic_compare_exchange_n(address, &current, current | FUTEX_WAITERS, 0,
+                                       __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+        continue;
+      self->pi_handoff = 0;
+      result = lane_block(address, timeout != NULL, deadline);
+      if (self->pi_handoff) {
+        self->pi_handoff = 0;
+        return 0;
+      }
+      if (result == -ETIMEDOUT || result == -EINTR) return result;
+    }
+  case 7: { /* FUTEX_UNLOCK_PI */
+    int current = __atomic_load_n(address, __ATOMIC_ACQUIRE);
+    unsigned index;
+    host_lane *waiter = NULL;
+    if ((current & FUTEX_TID_MASK) != self->tid) return -EPERM;
+    for (index = 0; index < NELIBC_HOST_LANE_COUNT; index++)
+      if (lanes[index].state == LANE_BLOCKED && lanes[index].wait_address == address) {
+        waiter = &lanes[index];
+        break;
+      }
+    if (waiter == NULL) {
+      __atomic_store_n(address, 0, __ATOMIC_RELEASE);
       return 0;
     }
-    if (timeout != NULL) return -ETIMEDOUT;
-    nelibc_host_fail("nelibc host: priority-inheritance lock held by the only lane\n",
-                     NELIBC_HOST_EXIT_DEADLOCK);
-    return -EAGAIN;
-  case 7: /* FUTEX_UNLOCK_PI */
-    __atomic_store_n(address, 0, __ATOMIC_RELEASE);
+    waiter->state = LANE_RUNNABLE;
+    waiter->wait_address = NULL;
+    waiter->has_deadline = 0;
+    waiter->wake_result = 0;
+    waiter->pi_handoff = 1;
+    __atomic_store_n(address, waiter->tid | (futex_waiters_on(address) ? FUTEX_WAITERS : 0),
+                     __ATOMIC_RELEASE);
     return 0;
-  case 8: /* FUTEX_TRYLOCK_PI */
-    if (__atomic_load_n(address, __ATOMIC_ACQUIRE) == 0) {
-      __atomic_store_n(address, 1, __ATOMIC_RELEASE);
+  }
+  case 8: { /* FUTEX_TRYLOCK_PI */
+    int current = __atomic_load_n(address, __ATOMIC_ACQUIRE);
+    int next;
+    if ((current & FUTEX_TID_MASK) != 0) return -EAGAIN;
+    next = self->tid | (current & FUTEX_OWNER_DIED) |
+           (futex_waiters_on(address) ? FUTEX_WAITERS : 0);
+    if (__atomic_compare_exchange_n(address, &current, next, 0,
+                                    __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
       return 0;
-    }
     return -EAGAIN;
+  }
   default:
     return -ENOSYS;
   }
@@ -899,7 +1498,7 @@ long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
     return do_select((long)a1, (unsigned long *)a2, (unsigned long *)a3,
                      (unsigned long *)a4, timeout != NULL, nanoseconds);
   }
-  case 24: return 0;                                           /* sched_yield */
+  case 24: lane_yield(0, 0); return 0;                         /* sched_yield */
   case 25: return do_mremap((void *)a1, a2, a3, (long)a4);
   case 26: return 0;                                           /* msync */
   case 28: return 0;                                           /* madvise */
@@ -909,9 +1508,13 @@ long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
   case 35: return do_nanosleep((const kernel_timespec *)a1, (kernel_timespec *)a2);
   case 37: return 0;                                           /* alarm */
   case 39: return 1;                                           /* getpid */
-  case 56: return -ENOSYS;                                     /* clone */
+  case 56: return -ENOSYS;                                     /* raw clone: threads use nelibc_clone_thread */
   case 57: case 58: case 59: return -ENOSYS;                   /* fork, vfork, execve */
-  case 60: case 231:                                           /* exit, exit_group */
+  case 60:                                                     /* exit: this lane */
+    lane_exit((int)a1);
+    for (;;) {
+    }
+  case 231:                                                    /* exit_group */
     host->exit(host->context, (int)a1);
     for (;;) {
     }
@@ -961,7 +1564,10 @@ long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
   case 158: /* arch_prctl */
     if (a1 == 0x1002) {
       int result = host->thread_pointer_set(host->context, (void *)a2);
-      if (result == 0) nelibc_host_thread_pointer_record((void *)a2);
+      if (result == 0) {
+        nelibc_host_thread_pointer_record((void *)a2);
+        lane_current()->thread_pointer = (void *)a2;
+      }
       return result;
     }
     if (a1 == 0x1003) {
@@ -970,8 +1576,8 @@ long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
       return 0;
     }
     return -EINVAL;
-  case 186: return 1;                                          /* gettid */
-  case 200: return deliver_signal((long)a2);                   /* tkill */
+  case 186: return lane_current()->tid;                        /* gettid */
+  case 200: return deliver_signal_to((long)a1, (long)a2);      /* tkill */
   case 201: { /* time */
     uint64_t nanoseconds;
     int result = realtime_now(&nanoseconds);
@@ -979,10 +1585,11 @@ long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
     if (a1 != 0) *(long *)a1 = (long)(nanoseconds / 1000000000ull);
     return (long)(nanoseconds / 1000000000ull);
   }
-  case 202: return do_futex((int *)a1, (long)a2, (int)a3, (const kernel_timespec *)a4);
+  case 202: return do_futex((int *)a1, (long)a2, (int)a3, (const kernel_timespec *)a4,
+                            (int *)a5, (int)a6);
   case 203: return 0;                                          /* sched_setaffinity */
   case 204: return do_sched_getaffinity(a2, (unsigned long *)a3);
-  case 218: return 1;                                          /* set_tid_address */
+  case 218: lane_current()->clear_tid = (int *)a1; return lane_current()->tid; /* set_tid_address */
   case 228: return do_clock_gettime((int)a1, (kernel_timespec *)a2);
   case 229: { /* clock_getres */
     kernel_timespec *value = (kernel_timespec *)a2;
@@ -992,7 +1599,7 @@ long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
   }
   case 230: return do_clock_nanosleep((int)a1, (int)a2, (const kernel_timespec *)a3,
                                       (kernel_timespec *)a4);
-  case 234: return deliver_signal((long)a3);                   /* tgkill */
+  case 234: return deliver_signal_to((long)a2, (long)a3);      /* tgkill */
   case 257: return -ENOENT;                                    /* openat */
   case 262: case 332: return -ENOENT;                          /* newfstatat, statx */
   case 269: return -ENOENT;                                    /* faccessat */
@@ -1009,7 +1616,13 @@ long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
     return do_poll((kernel_pollfd *)a1, a2, timeout != NULL,
                    timeout != NULL ? timespec_nanoseconds(timeout) : 0);
   }
-  case 273: return 0;                                          /* set_robust_list */
+  case 273: lane_current()->robust_list = (void *)a1; return 0; /* set_robust_list */
+  case 274: /* get_robust_list */
+    if (a1 != 0 && a1 != (unsigned long)lane_current()->tid) return -ESRCH;
+    if (a2 == 0 || a3 == 0) return -EFAULT;
+    *(void **)a2 = lane_current()->robust_list;
+    *(size_t *)a3 = 24;
+    return 0;
   case 292: return do_dup3((long)a1, (long)a2, (int)a3);
   case 293: return do_pipe2((int *)a1, (int)a2);
   case 302: /* prlimit64 */

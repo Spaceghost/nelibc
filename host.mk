@@ -16,12 +16,15 @@ $(OUT)/host-boot-gcc.o: src/host/boot_host.c include/nelibc_host.h | $(OUT)
 
 # The host archive keeps the Linux syscall assembly object for its lock and
 # registry helpers but strips the weak raw-syscall aliases, so the dispatcher
-# is the only definition the linker can pick.
+# is the only definition the linker can pick. The environment adapter loses
+# nelibc_thread_detached_exit (its own section: it unmaps its stack and leaves
+# through a `syscall` instruction); the dispatcher's lane version replaces it.
 define host-archive
 	cp $< $@
-	$(AR) d $@ start-linux-x86_64-standalone-$(1).o sys-linux-x86_64-standalone-$(1)-asm.o
+	$(AR) d $@ start-linux-x86_64-standalone-$(1).o sys-linux-x86_64-standalone-$(1)-asm.o environment-adapter-standalone-$(1).o
 	$(OBJCOPY) --strip-symbol=nelibc_raw_syscall3 --strip-symbol=nelibc_raw_syscall6 $(OUT)/sys-linux-x86_64-standalone-$(1)-asm.o $(OUT)/sys-linux-x86_64-host-$(1)-asm.o
-	$(AR) rs $@ $(OUT)/sys-linux-x86_64-host-$(1)-asm.o $(OUT)/host-syscall-$(1).o $(OUT)/host-boot-$(1).o
+	$(OBJCOPY) --remove-section=.text.nelibc_thread_detached_exit --strip-symbol=nelibc_thread_detached_exit $(OUT)/environment-adapter-standalone-$(1).o $(OUT)/environment-adapter-host-$(1).o
+	$(AR) rs $@ $(OUT)/sys-linux-x86_64-host-$(1)-asm.o $(OUT)/environment-adapter-host-$(1).o $(OUT)/host-syscall-$(1).o $(OUT)/host-boot-$(1).o
 endef
 
 $(OUT)/libnelibc-host-zig.a: $(OUT)/libnelibc-standalone-zig.a $(OUT)/host-syscall-zig.o $(OUT)/host-boot-zig.o
@@ -32,16 +35,24 @@ $(OUT)/libnelibc-host-gcc.a: $(OUT)/libnelibc-standalone-gcc.a $(OUT)/host-sysca
 lib-host-zig: $(OUT)/libnelibc-host-zig.a
 lib-host-gcc: $(OUT)/libnelibc-host-gcc.a
 
-# Every symbol the host archive needs is inside it or in nelibc_host, and no
-# `syscall` instruction remains reachable through the raw entry points.
+# Every symbol the host archive needs is inside it or in nelibc_host, and the
+# only `syscall` instruction left is nelibc_rt_sigreturn's, the restorer the
+# Linux profiles install with sigaction; the dispatcher never installs it.
+HOST_SYSCALL_ALLOWED := nelibc_rt_sigreturn
+define host-syscall-scan
+	@found="$$($(OBJDUMP) -d $(1) | awk '/^[0-9a-f]+ <.*>:$$/ { fn = $$2 } /\tsyscall/ { print fn }' | sort -u | tr -d '<>:' | grep -vx '$(HOST_SYSCALL_ALLOWED)')"; test -z "$$found" || { echo "syscall instructions in $(1): $$found"; exit 1; }
+endef
+define host-check
+	@test -z "$$($(NM) -u $(OUT)/host-linked-$(1).o | grep -v _GLOBAL_OFFSET_TABLE_)" || { $(NM) -u $(OUT)/host-linked-$(1).o; exit 1; }
+	$(call host-syscall-scan,$(OUT)/host-linked-$(1).o)
+	@echo 'host archive ($(1)): no undefined symbols, no syscall instruction outside $(HOST_SYSCALL_ALLOWED)'
+endef
 host-check-zig: $(OUT)/libnelibc-host-zig.a
 	$(ZIG) cc $(ZIGFLAGS) -nostdlib -r -Wl,--whole-archive $< -Wl,--no-whole-archive -o $(OUT)/host-linked-zig.o
-	@test -z "$$($(NM) -u $(OUT)/host-linked-zig.o | grep -v _GLOBAL_OFFSET_TABLE_)" || { $(NM) -u $(OUT)/host-linked-zig.o; exit 1; }
-	@echo 'host archive (zig): no undefined symbols'
+	$(call host-check,zig)
 host-check-gcc: $(OUT)/libnelibc-host-gcc.a
 	gcc -nostdlib -r -Wl,--whole-archive $< -Wl,--no-whole-archive -o $(OUT)/host-linked-gcc.o
-	@test -z "$$($(NM) -u $(OUT)/host-linked-gcc.o | grep -v _GLOBAL_OFFSET_TABLE_)" || { $(NM) -u $(OUT)/host-linked-gcc.o; exit 1; }
-	@echo 'host archive (gcc): no undefined symbols'
+	$(call host-check,gcc)
 
 # Hosted consumer: tools/host_linux.c is the "kernel" (raw Linux syscalls for
 # console, memory, clock, exit); tools/host_smoke.c is the program.
@@ -96,6 +107,7 @@ define host-snapshot-check
 	$(MAKE) -C $(HOST_SNAPSHOT) CC='$(2)' AR='$(AR)' OBJCOPY='$(OBJCOPY)' O=obj-$(1) all
 	$(2) -nostdlib -r -Wl,--whole-archive $(HOST_SNAPSHOT)/obj-$(1)/libnelibc-host.a -Wl,--no-whole-archive -o $(OUT)/host-snapshot-linked-$(1).o
 	@test -z "$$($(NM) -u $(OUT)/host-snapshot-linked-$(1).o | grep -v _GLOBAL_OFFSET_TABLE_)" || { $(NM) -u $(OUT)/host-snapshot-linked-$(1).o; exit 1; }
+	$(call host-syscall-scan,$(OUT)/host-snapshot-linked-$(1).o)
 	$(2) $(HOST_LINK_FLAGS) $(3) tools/host_smoke.c tools/host_linux.c $(HOST_SNAPSHOT)/obj-$(1)/libnelibc-host.a -o $(OUT)/host-smoke-snapshot-$(1)
 	@test -z "$$($(NM) -u $(OUT)/host-smoke-snapshot-$(1))"
 	@$(OUT)/host-smoke-snapshot-$(1) > $(OUT)/host-smoke-snapshot-$(1).log 2>&1; status=$$?; cat $(OUT)/host-smoke-snapshot-$(1).log; test $$status -eq 7 || { echo "host snapshot smoke ($(1)) exited $$status"; exit 1; }

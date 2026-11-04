@@ -82,13 +82,15 @@ CFLAGS_errno := -ftls-model=local-exec
 CFLAGS_stdio_varargs := -std=c11
 CFLAGS_syscall_host := -std=c11
 CFLAGS_boot_host := -std=c11
+CFLAGS_environment_adapter := -ffunction-sections
 
 C_OBJECTS := string_locale string inet memory ctype stdlib locale stdlib_exit \
   stdlib_float sys_linux_x86_64 errno thread alloc alloc_exports spawn unistd \
   stdio math_core fenv stdio_varargs fcntl_adapter credential_adapter \
-  stdio_lock_standalone stdio_startup_stub environment_adapter \
+  stdio_lock_standalone stdio_startup_stub \
   semaphore_adapter mqueue_adapter complex_abi syscall_host boot_host
 OBJECTS := $(addprefix $(O)/,$(addsuffix .o,$(C_OBJECTS))) \
+  $(O)/environment_adapter_host.o \
   $(O)/linux_x86_64_host.o $(O)/memory_x86_64.o $(O)/math_core_x86_64.o
 
 all: $(O)/libnelibc-host.a
@@ -110,13 +112,19 @@ $(O)/linux_x86_64_host.o: src/linux_x86_64.S | $(O)
 	$(CC) -c $< -o $(O)/linux_x86_64.o
 	$(OBJCOPY) --strip-symbol=nelibc_raw_syscall3 --strip-symbol=nelibc_raw_syscall6 $(O)/linux_x86_64.o $@
 
+# The environment adapter's nelibc_thread_detached_exit unmaps its own stack
+# and leaves through a `syscall` instruction; the dispatcher's lane version
+# replaces it, so the section goes.
+$(O)/environment_adapter_host.o: $(O)/environment_adapter.o
+	$(OBJCOPY) --remove-section=.text.nelibc_thread_detached_exit --strip-symbol=nelibc_thread_detached_exit $< $@
+
 $(O)/memory_x86_64.o: src/memory_x86_64.S | $(O)
 	$(CC) -c $< -o $@
 $(O)/math_core_x86_64.o: src/math_core_x86_64.S | $(O)
 	$(CC) -c $< -o $@
 
 clean:
-	rm -f $(OBJECTS) $(O)/linux_x86_64.o $(O)/libnelibc-host.a
+	rm -f $(OBJECTS) $(O)/linux_x86_64.o $(O)/environment_adapter.o $(O)/libnelibc-host.a
 
 .PHONY: all clean
 MK
