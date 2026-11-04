@@ -2,7 +2,7 @@
  * names a Linux syscall, so the backend is a number table in front of the
  * raw syscall entry points in linux_x86_64.S. The host profile does not link
  * this file; its dispatcher defines nelibc_sys3/6 itself. */
-#include "../include/nelibc_sys.h"
+#include "../../include/nelibc_sys.h"
 #include "linux_x86_64_ops.h"
 
 extern long nelibc_raw_syscall3(unsigned long number, unsigned long a1,
