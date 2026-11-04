@@ -2264,9 +2264,14 @@ int main(void) {
   feclearexcept(FE_ALL_EXCEPT);
   errno = 0;
   volatile long double nelibc_powl_identity = nelibc_powl(LDBL_MIN, 1.0L);
+  /* x**1 is exact, so Nelibc must raise nothing. glibc 2.36's x87 powl
+   * raises spurious inexact and underflow here, so the host's flags and
+   * errno are observed but not required to match. */
+  (void)host_powl_identity_flags;
+  (void)host_powl_identity_errno;
   if (nelibc_powl_identity != host_powl_identity ||
-      fetestexcept(FE_ALL_EXCEPT) != host_powl_identity_flags ||
-      errno != host_powl_identity_errno) {
+      nelibc_powl_identity != LDBL_MIN ||
+      fetestexcept(FE_ALL_EXCEPT) != 0 || errno != 0) {
     fprintf(stderr, "powl exponent-one identity raised unexpected flags or errno\n");
     return 1;
   }
