@@ -413,7 +413,7 @@ nelibc_frexpl_hw:
   fxch %st(1)
   fistpl (%rdi)
   addl $1, (%rdi)
-  fldt .Ltwo
+  fldt .Ltwo(%rip)
   fdivrp %st, %st(1)
   ret
 2:
@@ -628,7 +628,7 @@ nelibc_roundl_away_hw:
   fldcw 2(%rsp)
   fldt 56(%rsp)
   fabs
-  fldt .Lhalf80
+  fldt .Lhalf80(%rip)
   faddp %st, %st(1)
   frndint
   cmpw $0, 4(%rsp)
@@ -673,7 +673,7 @@ nelibc_lroundl_hw:
   fldcw 2(%rsp)
   fldt 72(%rsp)
   fabs
-  fldt .Lhalf80
+  fldt .Lhalf80(%rip)
   faddp %st, %st(1)
   frndint
   cmpw $0, 4(%rsp)

@@ -3,6 +3,7 @@
 
 #ifdef NELIBC_STANDALONE
 
+#include <stddef.h>
 #include <sys/types.h>
 
 typedef int sig_atomic_t;
