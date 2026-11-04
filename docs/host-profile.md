@@ -91,12 +91,30 @@ later because the host sees only `clone` and `futex`.
 
 ### Faults
 
-The profile records `sigaction(SIGSEGV)` and `sigaltstack` but cannot deliver
-a hardware fault: that is the host's exception path. A kernel that wants Bend's
-fail-stop message should call the recorded handler from its page-fault or
-general-protection handler on the recorded alternate stack, or halt directly.
-`memory_protect` is what makes a guard page real; a host that leaves it NULL
-has advisory guards only.
+The profile records `sigaction` and `sigaltstack`; the host's exception path
+delivers. `nelibc_host_fault(signal, code, address)` is the entry a kernel
+calls from its page-fault, general-protection, divide-error, or
+invalid-opcode handler with the Linux signal the fault maps to (`SIGSEGV`,
+`SIGBUS`, `SIGFPE`, `SIGILL`), a `si_code`, and the faulting address. The
+profile runs the recorded handler on the recorded alternate stack when the
+action has `SA_ONSTACK` and the fault did not already occur on that stack,
+with a `siginfo_t` carrying `si_signo`, `si_code`, and `si_addr` under
+`SA_SIGINFO`. A handler that returns makes the call return 0 and the host
+resumes the faulting instruction, so the handler must have repaired the
+fault, as on Linux. A handler that exits or unwinds never comes back. With no
+handler, `SIG_DFL`, or `SIG_IGN`, the profile stops through `host->exit`
+with status 128 + signal after a message on descriptor 2. That is Bend's
+fail-stop message for stack overflow: it needs `sigaltstack` plus a real
+guard page, so `memory_protect` is what makes the guard real; a host that
+leaves it NULL has advisory guards only.
+
+`tools/host_linux.c` shows the host side: it catches the four signals from
+Linux on a private alternate stack and forwards them, with `SA_NODEFER` so a
+handler that unwinds leaves the signal deliverable. `tools/host_smoke.c`
+takes two `SIGSEGV`s on a `PROT_NONE` page: the first handler unprotects the
+page and returns, and the write resumes; the second runs on the recorded
+alternate stack, checks `si_addr`, and exits through the libc so `atexit`
+still runs.
 
 ## Build and check
 
@@ -189,5 +207,6 @@ ship.
 ## Not done
 
 - Cooperative or kernel threads behind the table.
-- Fault delivery to the recorded handler from a host exception.
+- A `ucontext` for fault handlers: the profile passes NULL, so a handler
+  cannot inspect or patch registers.
 - Any architecture other than x86-64.
