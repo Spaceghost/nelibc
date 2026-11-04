@@ -10,7 +10,10 @@ x86-64 project; the standalone runtime is a separate, incomplete profile.
 - Nelua compiler (`nelua`)
 - Zig (`zig cc`) for the default build and final linking
 - GCC for the GCC comparison profile
-- TinyCC and its `libtcc1.a` for the TinyCC profile
+- TinyCC and its `libtcc1.a` for the TinyCC profile; the profile needs the
+  current mob branch (0.9.28 development). The 0.9.27 release packaged by
+  Debian 12 lacks `__thread` and rejects `INFINITY`/`NAN` in static
+  initializers, so it cannot build the profile.
 
 Zig builds default to `-mcpu=x86_64`, so binaries run on baseline x86-64
 machines. Override this with `make ZIGFLAGS='-mcpu=x86_64_v3'` when you

@@ -15,12 +15,20 @@ diff, and shootout runs inside the Incus container `nelibc-writ` on bak
 (Debian 12; Nelua `3c29419` at `/opt/nelua/nelua`, Zig 0.17.0 at
 `/opt/zig/zig`, GCC 12.2, TinyCC 0.9.27, musl-gcc, Bend 2.0.39 at
 `/opt/bend-2.0.39/bend/bin/bend`). The checkout is `/work/nelibc`, a clone of
-`origin/main`; push, then `git pull` there.
+`origin/main`; push, then `git pull` there. Run the matrix as the
+unprivileged `build` user, not root: several syscall smokes assert the
+unprivileged error path, and root in the container is privileged enough to
+make them succeed instead.
 
 ```sh
-ssh bak incus exec nelibc-writ -- sh -c 'cd /work/nelibc && git pull -q && \
-  make smoke-matrix NELUA=/opt/nelua/nelua ZIG=/opt/zig/zig'
+ssh bak incus exec nelibc-writ -- su build -c 'cd /work/nelibc && git pull -q && \
+  TMPDIR=/work/tmp ZIG_GLOBAL_CACHE_DIR=/work/zig-cache \
+  make smoke-matrix "NELUA=/opt/nelua/nelua --cache-dir /work/nelua-cache" ZIG=/opt/zig/zig'
 ```
+
+Debian's packaged TinyCC 0.9.27 cannot build the TinyCC profile (see the
+quickstart); `TCC=` must point at a mob-branch build. Until one is installed
+in the container, `*-tcc` targets are unrun.
 
 CI (`.github/workflows/host.yml`) runs on the self-hosted bak runner and
 covers the host profile plus the standalone and freestanding Zig smokes only.
