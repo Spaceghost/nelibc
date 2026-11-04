@@ -105,6 +105,46 @@ static void host_unsupported(void *context, unsigned long number) {
   linux_syscall(1, 2, (long)text, (long)length, 0, 0, 0);
 }
 
+/* Hardware faults: Linux reports them as signals. Catch SIGILL, SIGBUS,
+ * SIGFPE, and SIGSEGV on a private alternate stack (a kernel would take the
+ * exception on its own stack the same way) and hand them to the profile,
+ * which runs the program's recorded handler. Returning resumes the faulting
+ * instruction exactly as Linux would; SA_NODEFER keeps the signal deliverable
+ * if the handler unwinds instead of returning. */
+static unsigned char host_fault_stack[1 << 16] __attribute__((aligned(16)));
+
+static void host_fault_handler(int signal, void *info, void *context) {
+  (void)context;
+  nelibc_host_fault(signal, *(int *)((char *)info + 8),
+                    *(void **)((char *)info + 16));
+}
+
+extern void host_fault_restorer(void);
+__asm__(".text\n"
+        ".globl host_fault_restorer\n"
+        ".type host_fault_restorer,@function\n"
+        "host_fault_restorer:\n"
+        "  movq $15, %rax\n"
+        "  syscall\n"
+        ".size host_fault_restorer, .-host_fault_restorer\n");
+
+static void host_install_faults(void) {
+  struct { void *sp; int flags; size_t size; } stack;
+  struct { void *handler; unsigned long flags; void *restorer; unsigned long mask; } action;
+  static const int signals[] = { 4, 7, 8, 11 };
+  unsigned index;
+  stack.sp = host_fault_stack;
+  stack.flags = 0;
+  stack.size = sizeof host_fault_stack;
+  linux_syscall(131, (long)&stack, 0, 0, 0, 0, 0);
+  action.handler = (void *)host_fault_handler;
+  action.flags = 0x4 | 0x08000000 | 0x40000000 | 0x04000000; /* SIGINFO ONSTACK NODEFER RESTORER */
+  action.restorer = (void *)host_fault_restorer;
+  action.mask = 0;
+  for (index = 0; index < sizeof signals / sizeof signals[0]; index++)
+    linux_syscall(13, signals[index], (long)&action, 0, 8, 0, 0);
+}
+
 /* ELF64 program headers of this static executable, via the linker-provided
  * __ehdr_start symbol. */
 typedef struct {
@@ -168,6 +208,7 @@ void host_start(long *initial_stack) {
       host.tls.align = phdr[index].align;
     }
   }
+  host_install_faults();
   nelibc_host_run(&host, main, argc, argv);
 }
 

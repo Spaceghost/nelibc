@@ -612,6 +612,70 @@ static long deliver_signal(long signal) {
   return 0;
 }
 
+/* Faults ---------------------------------------------------------------- */
+
+typedef struct fault_call {
+  void *handler;
+  int signal;
+  int siginfo;
+  unsigned char info[128];
+} fault_call;
+
+static void fault_invoke(void *argument) {
+  fault_call *call = argument;
+  if (call->siginfo)
+    ((void (*)(int, void *, void *))call->handler)(call->signal, call->info, NULL);
+  else
+    ((void (*)(int))call->handler)(call->signal);
+}
+
+/* Run function(argument) with the stack pointer moved to stack_top, then
+ * return to the original stack. rbx keeps the old stack pointer across the
+ * call; everything the SysV ABI lets a callee clobber is declared. */
+static void call_on_stack(void *stack_top, void (*function)(void *), void *argument) {
+  __asm__ volatile(
+      "movq %%rsp, %%rbx\n\t"
+      "movq %%rdx, %%rsp\n\t"
+      "andq $-16, %%rsp\n\t"
+      "call *%%rax\n\t"
+      "movq %%rbx, %%rsp\n\t"
+      : "+a"(function), "+d"(stack_top), "+D"(argument)
+      :
+      : "rbx", "rcx", "rsi", "r8", "r9", "r10", "r11", "memory", "cc",
+        "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7",
+        "xmm8", "xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15");
+}
+
+int nelibc_host_fault(int signal, int code, void *address) {
+  kernel_sigaction *action;
+  void *handler;
+  fault_call call;
+  if (signal <= 0 || signal >= NELIBC_HOST_SIGNAL_COUNT) return -EINVAL;
+  action = &signal_actions[signal];
+  handler = action->handler;
+  if (handler == NULL || (unsigned long)handler == 1ul)
+    nelibc_host_fail("nelibc host: fault with no handler, stopping\n", 128 + signal);
+  if (action->flags & 0x80000000ul) action->handler = NULL; /* SA_RESETHAND */
+  call.handler = handler;
+  call.signal = signal;
+  call.siginfo = (action->flags & 4) != 0; /* SA_SIGINFO */
+  zero_bytes(call.info, sizeof call.info);
+  *(int *)call.info = signal;           /* si_signo */
+  *(int *)(call.info + 8) = code;       /* si_code */
+  copy_bytes(call.info + 16, &address, sizeof address); /* si_addr */
+  if ((action->flags & 0x08000000ul) && signal_stack.sp != NULL &&
+      !(signal_stack.flags & 2)) { /* SA_ONSTACK with a usable stack */
+    char *base = signal_stack.sp;
+    char *current = (char *)__builtin_frame_address(0);
+    if (current < base || current >= base + signal_stack.size) {
+      call_on_stack(base + signal_stack.size, fault_invoke, &call);
+      return 0;
+    }
+  }
+  fault_invoke(&call);
+  return 0;
+}
+
 /* Memory ---------------------------------------------------------------- */
 
 static long do_mmap(void *address, size_t length, long protection, long flags,

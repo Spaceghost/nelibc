@@ -25,8 +25,12 @@ typedef struct siginfo {
       long si_utime;
       long si_stime;
     } _sigchld;
+    struct {
+      void *si_addr;
+    } _sigfault;
   } _sifields;
 } siginfo_t;
+#define si_addr _sifields._sigfault.si_addr
 #define si_pid _sifields._sigchld.si_pid
 #define si_uid _sifields._sigchld.si_uid
 #define si_status _sifields._sigchld.si_status
@@ -55,7 +59,10 @@ struct sigevent {
 #define sigev_notify_thread_id _sigev_un._tid
 
 struct sigaction {
-  sighandler_t sa_handler;
+  union {
+    sighandler_t sa_handler;
+    void (*sa_sigaction)(int, siginfo_t *, void *);
+  };
   sigset_t sa_mask;
   int sa_flags;
   void (*sa_restorer)(void);

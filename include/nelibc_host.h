@@ -118,6 +118,22 @@ const nelibc_host *nelibc_host_current(void);
 /* Write a message to descriptor 2 and stop with status; never returns. */
 void nelibc_host_fail(const char *message, int status);
 
+/* Fault delivery. A host calls this from its exception path (page fault,
+ * general protection, divide error, invalid opcode) with the Linux signal
+ * the fault maps to (SIGSEGV 11, SIGBUS 7, SIGFPE 8, SIGILL 4), a si_code,
+ * and the faulting address. If the program recorded a handler for that
+ * signal with sigaction, the profile calls it: on the stack recorded with
+ * sigaltstack when the action has SA_ONSTACK and the fault did not occur on
+ * that stack already, otherwise on the current stack; with a siginfo_t
+ * carrying si_signo, si_code, and si_addr when SA_SIGINFO is set, and a
+ * NULL ucontext. A handler that returns makes this return 0, and the host
+ * resumes the faulting instruction (so the handler must have repaired the
+ * fault, as on Linux). A handler that exits or unwinds never comes back.
+ * With no handler, SIG_DFL, or SIG_IGN, the profile stops through
+ * host->exit with status 128 + signal after a message on descriptor 2.
+ * Returns -EINVAL for a signal outside 1..64. */
+int nelibc_host_fault(int signal, int code, void *address);
+
 #ifdef __cplusplus
 }
 #endif

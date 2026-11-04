@@ -24,6 +24,33 @@ static void on_signal(int signal) {
   handled_signal = signal;
 }
 
+/* Faults: the host's exception path reaches the recorded SIGSEGV handler on
+ * the recorded alternate stack. The first fault is repaired (the page is
+ * unprotected) and the handler returns, so the write resumes; the second is
+ * the fail-stop path and leaves through the libc exit so atexit still runs. */
+static unsigned char alternate_stack[1 << 16] __attribute__((aligned(16)));
+static void *fault_page;
+static volatile int fault_count;
+static void *volatile fault_address;
+static volatile int fault_on_alternate_stack;
+
+static void on_fault(int signal, siginfo_t *info, void *context) {
+  char probe;
+  (void)context;
+  fault_count++;
+  fault_address = info->si_addr;
+  fault_on_alternate_stack = (unsigned char *)&probe >= alternate_stack &&
+                             (unsigned char *)&probe < alternate_stack + sizeof alternate_stack;
+  if (signal != SIGSEGV || info->si_signo != SIGSEGV) _exit(60);
+  if (fault_count == 1) {
+    if (mprotect(fault_page, 4096, PROT_READ | PROT_WRITE) != 0) _exit(61);
+    return;
+  }
+  if (!fault_on_alternate_stack || fault_address != fault_page) _exit(62);
+  printf("host smoke: OK\n");
+  exit(7);
+}
+
 static void on_exit_handler(void) {
   atexit_ran = 1;
   printf("atexit handler ran\n");
@@ -46,6 +73,7 @@ int main(int argc, char **argv, char **envp) {
   struct timespec second;
   struct timespec pause = {0, 2000000};
   struct sigaction action;
+  stack_t stack;
   int pipe_fds[2];
   fd_set reads;
   struct timeval timeout = {0, 0};
@@ -149,8 +177,25 @@ int main(int argc, char **argv, char **envp) {
   result = pthread_create(&thread, NULL, never_started, NULL);
   if (result == 0) return 50;
 
-  /* Exit path: atexit handler, stdio flush, then host exit status. */
+  /* Faults reach the recorded handler on the recorded alternate stack. */
+  stack.ss_sp = alternate_stack;
+  stack.ss_size = sizeof alternate_stack;
+  stack.ss_flags = 0;
+  if (sigaltstack(&stack, NULL) != 0) return 52;
+  memset(&action, 0, sizeof action);
+  action.sa_sigaction = on_fault;
+  action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+  if (sigaction(SIGSEGV, &action, NULL) != 0) return 53;
+  fault_page = mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (fault_page == MAP_FAILED || mprotect(fault_page, 4096, PROT_NONE) != 0) return 54;
+  *(volatile int *)fault_page = 42; /* first fault: repaired, the write resumes */
+  if (fault_count != 1 || *(volatile int *)fault_page != 42 ||
+      fault_address != fault_page || !fault_on_alternate_stack) return 55;
+  if (mprotect(fault_page, 4096, PROT_NONE) != 0) return 56;
+
+  /* Exit path: atexit handler, stdio flush, then host exit status. The
+   * second fault's handler prints the OK line and calls exit(7). */
   if (atexit(on_exit_handler) != 0) return 51;
-  printf("host smoke: OK\n");
-  exit(7);
+  *(volatile int *)fault_page = 43;
+  return 57;
 }
