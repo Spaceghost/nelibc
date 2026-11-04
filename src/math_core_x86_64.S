@@ -80,8 +80,8 @@ nelibc_fenv_raise_hw:
 .Lnelibc_fenv_one:    .double 1.0
 .Lnelibc_fenv_two:    .double 2.0
 .Lnelibc_fenv_three:  .double 3.0
-.Lnelibc_fenv_max:    .double 0x1.fffffffffffffp1023
-.Lnelibc_fenv_min:    .double 0x1p-1022
+.Lnelibc_fenv_max:    .quad 0x7fefffffffffffff  /* DBL_MAX; GNU as has no hex-float literals */
+.Lnelibc_fenv_min:    .quad 0x0010000000000000  /* DBL_MIN */
 .text
 
 .globl nelibc_sqrt_hw
