@@ -862,7 +862,7 @@ int main(int argc, char **argv) {
   char domainname_zero = 'X';
   if (getdomainname(&domainname_zero, 0) != 0 || domainname_zero != 'X') return 487;
   errno = 0;
-  if (unshare(0x40000000) != -1 ||
+  if (unshare(0x1) != -1 ||
       (errno != EINVAL && errno != EPERM && errno != ENOSYS)) return 477;
   errno = 0;
   if (setns(-1, 0) != -1 ||

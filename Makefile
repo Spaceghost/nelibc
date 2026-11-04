@@ -1323,21 +1323,21 @@ wide-string-diff-tcc: tcc
 wide-string-diff-matrix: wide-string-diff-zig wide-string-diff-gcc wide-string-diff-zig-musl wide-string-diff-tcc
 
 collation-diff-zig: zig
-	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin tools/collation_diff.c $(OUT)/string-locale-zig.o $(OUT)/string-locale-lock-zig.o $(OUT)/string-zig.o $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/collation-diff-zig
+	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin tools/collation_diff.c $(OUT)/string-locale-zig.o $(OUT)/string-locale-lock-zig.o $(OUT)/string-zig.o $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/errno-host-zig.o -o $(OUT)/collation-diff-zig
 	$(OUT)/collation-diff-zig --global C
 
 collation-diff-gcc: gcc
-	gcc -Iinclude -fno-builtin tools/collation_diff.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-gcc.o $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/collation-diff-gcc
+	gcc -Iinclude -fno-builtin tools/collation_diff.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-gcc.o $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/errno-host-gcc.o -o $(OUT)/collation-diff-gcc
 	$(OUT)/collation-diff-gcc --global C
 
 collation-diff-zig-musl: zig-musl
-	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -Iinclude -fno-builtin tools/collation_diff.c $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o $(OUT)/string-zig-musl.o $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/collation-diff-zig-musl
+	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -static -Iinclude -fno-builtin tools/collation_diff.c $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o $(OUT)/string-zig-musl.o $(OUT)/memory-zig-musl.o $(OUT)/memory-x86_64-simd.o $(OUT)/errno-host-zig-musl.o -o $(OUT)/collation-diff-zig-musl
 	$(OUT)/collation-diff-zig-musl --global C
 
 collation-diff-tcc: tcc
 	$(TCC) -pthread -Iinclude -fno-builtin -c tools/collation_diff.c -o $(OUT)/collation-diff-tcc.o
 	$(ZIG) cc $(ZIGFLAGS) -pthread -fno-builtin -c src/string_locale_lock.c -o $(OUT)/string-locale-lock-collation-tcc.o
-	$(ZIG) cc $(ZIGFLAGS) -pthread -Iinclude -fno-builtin $(OUT)/collation-diff-tcc.o $(OUT)/string-locale-tcc.o $(OUT)/string-locale-lock-collation-tcc.o $(OUT)/string-tcc.o $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o $(TCC_LIBTCC1) -o $(OUT)/collation-diff-tcc
+	$(ZIG) cc $(ZIGFLAGS) -pthread -Iinclude -fno-builtin $(OUT)/collation-diff-tcc.o $(OUT)/string-locale-tcc.o $(OUT)/string-locale-lock-collation-tcc.o $(OUT)/string-tcc.o $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/errno-host-tcc.o $(TCC_LIBTCC1) -o $(OUT)/collation-diff-tcc
 	$(OUT)/collation-diff-tcc --global C
 
 collation-diff-matrix: collation-diff-zig collation-diff-gcc collation-diff-zig-musl collation-diff-tcc
