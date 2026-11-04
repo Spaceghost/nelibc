@@ -137,6 +137,8 @@ MUSL_STDIO_WRAP_FLAGS ?= -Wl,-u,nelibc_hybrid_free -Wl,--wrap=fread -Wl,--wrap=f
 
 all: smoke-zig
 
+include host.mk
+
 $(OUT):
 	mkdir -p $@
 
