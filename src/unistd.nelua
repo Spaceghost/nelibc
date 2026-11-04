@@ -5815,6 +5815,30 @@ local function sigaction(signal: cint, action: pointer <const>, old_action: poin
   return result
 end
 
+-- ISO C signal with the glibc/BSD semantics: the handler stays installed and
+-- interrupted syscalls restart. Returns the previous handler or SIG_ERR.
+local function signal(signal_number: cint, handler: pointer): pointer <cexport, codename 'signal'>
+  local action: Sigaction
+  local old_action: Sigaction
+  action.handler = handler
+  action.flags = 0x10000000_cint -- SA_RESTART
+  action.restorer = nilptr
+  for i = 0, 15 do
+    action.mask.bits[i] = 0_culong
+  end
+  if sigaction(signal_number, (@pointer)(&action), (@pointer)(&old_action)) ~= 0 then
+    return (@pointer)((@usize)(-1)) -- SIG_ERR
+  end
+  return old_action.handler
+end
+
+-- POSIX sigaltstack uses the kernel stack_t layout directly on x86_64.
+local function sigaltstack(stack: pointer <const>, old_stack: pointer): cint <cexport, codename 'sigaltstack'>
+  return (@cint)(syscall_result(nelibc_raw_syscall3(
+    131_culong, (@culong)((@usize)(stack)), (@culong)((@usize)(old_stack)), 0_culong
+  )))
+end
+
 -- Linux x86_64 uses an 8-byte kernel sigset even when libc's sigset_t is larger.
 local function sigprocmask(how: cint, set: pointer <const>, oldset: pointer): cint <cexport, codename 'sigprocmask'>
   local kernel_set: culong

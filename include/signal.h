@@ -143,6 +143,18 @@ int sigtimedwait(const sigset_t *set, siginfo_t *info,
                  const struct timespec *timeout);
 int sigaction(int signal, const struct sigaction *action,
               struct sigaction *old_action);
+sighandler_t signal(int signal, sighandler_t handler);
+
+typedef struct {
+  void *ss_sp;
+  int ss_flags;
+  size_t ss_size;
+} stack_t;
+#define SS_ONSTACK 1
+#define SS_DISABLE 2
+#define MINSIGSTKSZ 2048
+#define SIGSTKSZ 8192
+int sigaltstack(const stack_t *stack, stack_t *old_stack);
 
 #else
 

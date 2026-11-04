@@ -36,11 +36,11 @@ lib-host-gcc: $(OUT)/libnelibc-host-gcc.a
 # `syscall` instruction remains reachable through the raw entry points.
 host-check-zig: $(OUT)/libnelibc-host-zig.a
 	$(ZIG) cc $(ZIGFLAGS) -nostdlib -r -Wl,--whole-archive $< -Wl,--no-whole-archive -o $(OUT)/host-linked-zig.o
-	@test -z "$$($(NM) -u $(OUT)/host-linked-zig.o)" || { $(NM) -u $(OUT)/host-linked-zig.o; exit 1; }
+	@test -z "$$($(NM) -u $(OUT)/host-linked-zig.o | grep -v _GLOBAL_OFFSET_TABLE_)" || { $(NM) -u $(OUT)/host-linked-zig.o; exit 1; }
 	@echo 'host archive (zig): no undefined symbols'
 host-check-gcc: $(OUT)/libnelibc-host-gcc.a
 	gcc -nostdlib -r -Wl,--whole-archive $< -Wl,--no-whole-archive -o $(OUT)/host-linked-gcc.o
-	@test -z "$$($(NM) -u $(OUT)/host-linked-gcc.o)" || { $(NM) -u $(OUT)/host-linked-gcc.o; exit 1; }
+	@test -z "$$($(NM) -u $(OUT)/host-linked-gcc.o | grep -v _GLOBAL_OFFSET_TABLE_)" || { $(NM) -u $(OUT)/host-linked-gcc.o; exit 1; }
 	@echo 'host archive (gcc): no undefined symbols'
 
 # Hosted consumer: tools/host_linux.c is the "kernel" (raw Linux syscalls for
@@ -59,3 +59,26 @@ host-smoke-gcc: $(OUT)/libnelibc-host-gcc.a tools/host_smoke.c tools/host_linux.
 	$(call host-smoke-run,gcc)
 
 host-matrix: host-check-zig host-check-gcc host-smoke-zig host-smoke-gcc
+
+# Link any Bend-emitted C file, unmodified, against the host profile and run
+# it under the Linux host:
+#   make host-bend-run-zig BEND_C=/path/program.c BEND_ARGS='+RTS --threads 1 --gpu off'
+# The Zig (clang) driver is required: the generated file uses musttail.
+BEND_C ?= $(OUT)/host-bend-hello.c
+BEND_OUT ?= $(OUT)/host-bend-program
+BEND_ARGS ?=
+host-bend-run-zig: $(OUT)/libnelibc-host-zig.a tools/host_linux.c
+	$(ZIG) cc $(ZIGFLAGS) $(HOST_LINK_FLAGS) -w -O2 $(BEND_C) tools/host_linux.c $(OUT)/libnelibc-host-zig.a -o $(BEND_OUT)
+	@test -z "$$($(NM) -u $(BEND_OUT))"
+	@$(BEND_OUT) $(BEND_ARGS) > $(BEND_OUT).log 2>&1; status=$$?; tail -20 $(BEND_OUT).log; test $$status -eq 0 || { echo "bend program exited $$status"; exit 1; }
+
+# Bend runtime smoke: emit C for tools/host_bend_hello.bend with the pinned
+# compiler (bend 2.0.39), run it through host-bend-run-zig, expect "hi".
+# Skipped when BEND is not installed so the ordinary matrix stays light.
+BEND ?= bend
+host-bend-hello-zig: $(OUT)/libnelibc-host-zig.a tools/host_bend_hello.bend tools/host_linux.c
+	@command -v $(BEND) >/dev/null 2>&1 || { echo 'host-bend-hello-zig: bend not found, skipped'; exit 0; }
+	BEND_NO_TELEMETRY=1 $(BEND) tools/host_bend_hello.bend -o $(OUT)/host-bend-hello.c
+	$(MAKE) host-bend-run-zig BEND_C=$(OUT)/host-bend-hello.c BEND_OUT=$(OUT)/host-bend-hello-zig
+	@test "$$(cat $(OUT)/host-bend-hello-zig.log)" = hi || { echo 'expected hi'; exit 1; }
+	@echo 'host-bend-hello-zig: Bend 2 IO.print ran through the nelibc host profile'

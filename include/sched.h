@@ -45,6 +45,22 @@ typedef struct { unsigned long __bits[CPU_SETSIZE / __NELIBC_CPU_BITS]; }
    (((set)->__bits[(size_t)(cpu) / __NELIBC_CPU_BITS] >> \
      ((size_t)(cpu) % __NELIBC_CPU_BITS)) & 1UL) != 0)
 
+static inline int nelibc_cpu_count(const void *set, size_t size) {
+  const unsigned char *bytes = (const unsigned char *)set;
+  int count = 0;
+  size_t index;
+  for (index = 0; index < size; index++) {
+    unsigned char byte = bytes[index];
+    while (byte != 0) {
+      count += byte & 1;
+      byte >>= 1;
+    }
+  }
+  return count;
+}
+#define CPU_COUNT(set) nelibc_cpu_count((set), sizeof(*(set)))
+#define CPU_COUNT_S(size, set) nelibc_cpu_count((set), (size))
+
 int sched_yield(void);
 int sched_getaffinity(pid_t process, size_t size, cpu_set_t *mask);
 int sched_setaffinity(pid_t process, size_t size, const cpu_set_t *mask);
