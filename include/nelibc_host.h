@@ -122,6 +122,10 @@ const nelibc_host *nelibc_host_current(void);
 /* Write a message to descriptor 2 and stop with status; never returns. */
 void nelibc_host_fail(const char *message, int status);
 
+/* Lane counters for diagnostics: lanes created so far (threads the program
+ * made) and switches between lanes. Either pointer may be NULL. */
+void nelibc_host_lane_stats(unsigned long *created, unsigned long *switches);
+
 /* Fault delivery. A host calls this from its exception path (page fault,
  * general protection, divide error, invalid opcode) with the Linux signal
  * the fault maps to (SIGSEGV 11, SIGBUS 7, SIGFPE 8, SIGILL 4), a si_code,

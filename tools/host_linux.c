@@ -102,18 +102,23 @@ static void host_write_number(char *text, size_t *length, unsigned long number) 
   while (count > 0) text[(*length)++] = number_text[--count];
 }
 
+static void host_write_text(char *text, size_t *length, const char *words) {
+  while (*words != 0) text[(*length)++] = *words++;
+}
+
 static void host_exit(void *context, int status) {
   (void)context;
   if (host_stats) {
-    char text[96] = "host_linux: thread pointer set ";
+    char text[160] = "host_linux: thread pointer set ";
     size_t length = 31;
+    unsigned long created;
+    unsigned long switches;
+    nelibc_host_lane_stats(&created, &switches);
     host_write_number(text, &length, host_thread_pointer_sets);
-    text[length++] = ' ';
-    text[length++] = 't';
-    text[length++] = 'i';
-    text[length++] = 'm';
-    text[length++] = 'e';
-    text[length++] = 's';
+    host_write_text(text, &length, " times, lanes created ");
+    host_write_number(text, &length, created);
+    host_write_text(text, &length, ", lane switches ");
+    host_write_number(text, &length, switches);
     text[length++] = '\n';
     linux_syscall(1, 2, (long)text, (long)length, 0, 0, 0);
   }

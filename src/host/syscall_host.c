@@ -210,6 +210,13 @@ static host_lane lanes[NELIBC_HOST_LANE_COUNT];
 static host_lane *current_lane;
 static host_lane *switched_from;
 static int next_tid = 2;
+static unsigned long lanes_created;
+static unsigned long lane_switches;
+
+void nelibc_host_lane_stats(unsigned long *created, unsigned long *switches) {
+  if (created != NULL) *created = lanes_created;
+  if (switches != NULL) *switches = lane_switches;
+}
 
 /* Save callee-saved registers and the stack pointer of the running lane,
  * load the other lane's, and return into it. A fresh lane's stack holds six
@@ -302,6 +309,7 @@ static void switch_to(host_lane *next) {
     nelibc_host_thread_pointer_record(next->thread_pointer);
   }
   switched_from = previous;
+  lane_switches++;
   host_lane_switch(&previous->sp, next->sp);
   lane_after_switch();
 }
@@ -527,6 +535,7 @@ long nelibc_clone_thread(void *start, void *arg, void *stack_top,
   lane->sp = sp;
   if (tid != NULL) __atomic_store_n(tid, lane->tid, __ATOMIC_RELEASE);
   lane->state = LANE_RUNNABLE;
+  lanes_created++;
   return lane->tid;
 }
 
