@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include "../include/nelibc_sys.h"
 #include <errno.h>
 #include <limits.h>
 #include <stddef.h>
@@ -172,10 +173,10 @@ extern char **environ;
 extern int nelibc_waitpid(pid_t pid, int *status, int options);
 int nelibc_cancellation_enter(void);
 void nelibc_cancellation_leave(int previous_type);
-extern long nelibc_raw_syscall3(unsigned long number, unsigned long arg1,
+extern long nelibc_sys3(unsigned long op, unsigned long arg1,
                                 unsigned long arg2, unsigned long arg3)
     __attribute__((weak));
-extern long nelibc_raw_syscall6(unsigned long number, unsigned long arg1,
+extern long nelibc_sys6(unsigned long op, unsigned long arg1,
                                 unsigned long arg2, unsigned long arg3,
                                 unsigned long arg4, unsigned long arg5,
                                 unsigned long arg6) __attribute__((weak));
@@ -282,18 +283,18 @@ static long nelibc_glibc_cp3(unsigned long nr, unsigned long a, unsigned long b,
                              unsigned long c) {
   (void)pthread_once(&nelibc_glibc_once, nelibc_glibc_resolve);
   switch (nr) {
-    case 0: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.read, nelibc_glibc.read((int)a, (void *)b, c));
-    case 1: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.write, nelibc_glibc.write((int)a, (void *)b, c));
-    case 3: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.close, nelibc_glibc.close((int)a));
-    case 7: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.poll, nelibc_glibc.poll((void *)a, b, (int)c));
-    case 19: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.readv, nelibc_glibc.readv((int)a, (void *)b, (int)c));
-    case 20: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.writev, nelibc_glibc.writev((int)a, (void *)b, (int)c));
-    case 43: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.accept, nelibc_glibc.accept((int)a, (void *)b, (void *)c));
-    case 34: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pause, nelibc_glibc.pause());
-    case 35: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.nanosleep, nelibc_glibc.nanosleep((void *)a, (void *)b));
-    case 42: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.connect, nelibc_glibc.connect((int)a, (void *)b, (socklen_t)c));
-    case 74: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.fsync, nelibc_glibc.fsync((int)a));
-    case 75: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.fdatasync, nelibc_glibc.fdatasync((int)a));
+    case NELIBC_SYS_READ: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.read, nelibc_glibc.read((int)a, (void *)b, c));
+    case NELIBC_SYS_WRITE: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.write, nelibc_glibc.write((int)a, (void *)b, c));
+    case NELIBC_SYS_CLOSE: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.close, nelibc_glibc.close((int)a));
+    case NELIBC_SYS_POLL: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.poll, nelibc_glibc.poll((void *)a, b, (int)c));
+    case NELIBC_SYS_READV: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.readv, nelibc_glibc.readv((int)a, (void *)b, (int)c));
+    case NELIBC_SYS_WRITEV: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.writev, nelibc_glibc.writev((int)a, (void *)b, (int)c));
+    case NELIBC_SYS_ACCEPT: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.accept, nelibc_glibc.accept((int)a, (void *)b, (void *)c));
+    case NELIBC_SYS_PAUSE: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pause, nelibc_glibc.pause());
+    case NELIBC_SYS_NANOSLEEP: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.nanosleep, nelibc_glibc.nanosleep((void *)a, (void *)b));
+    case NELIBC_SYS_CONNECT: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.connect, nelibc_glibc.connect((int)a, (void *)b, (socklen_t)c));
+    case NELIBC_SYS_FSYNC: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.fsync, nelibc_glibc.fsync((int)a));
+    case NELIBC_SYS_FDATASYNC: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.fdatasync, nelibc_glibc.fdatasync((int)a));
     default: return LONG_MIN;
   }
 }
@@ -302,22 +303,22 @@ static long nelibc_glibc_cp6(unsigned long nr, unsigned long a, unsigned long b,
                              unsigned long f) {
   (void)pthread_once(&nelibc_glibc_once, nelibc_glibc_resolve);
   switch (nr) {
-    case 257: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.openat, nelibc_glibc.openat((int)a, (void *)b, (int)c, (mode_t)d));
-    case 44: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.sendto, nelibc_glibc.sendto((int)a, (void *)b, c, (int)d, (void *)e, (socklen_t)f));
-    case 45: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.recvfrom, nelibc_glibc.recvfrom((int)a, (void *)b, c, (int)d, (void *)e, (void *)f));
-    case 46: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.sendmsg, nelibc_glibc.sendmsg((int)a, (void *)b, (int)c));
-    case 47: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.recvmsg, nelibc_glibc.recvmsg((int)a, (void *)b, (int)c));
-    case 61: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.wait4, nelibc_glibc.wait4((pid_t)a, (void *)b, (int)c, (void *)d));
-    case 17: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pread, nelibc_glibc.pread((int)a, (void *)b, c, (off_t)d));
-    case 18: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pwrite, nelibc_glibc.pwrite((int)a, (void *)b, c, (off_t)d));
-    case 23: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.select, nelibc_glibc.select((int)a, (void *)b, (void *)c, (void *)d, (void *)e));
+    case NELIBC_SYS_OPENAT: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.openat, nelibc_glibc.openat((int)a, (void *)b, (int)c, (mode_t)d));
+    case NELIBC_SYS_SENDTO: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.sendto, nelibc_glibc.sendto((int)a, (void *)b, c, (int)d, (void *)e, (socklen_t)f));
+    case NELIBC_SYS_RECVFROM: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.recvfrom, nelibc_glibc.recvfrom((int)a, (void *)b, c, (int)d, (void *)e, (void *)f));
+    case NELIBC_SYS_SENDMSG: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.sendmsg, nelibc_glibc.sendmsg((int)a, (void *)b, (int)c));
+    case NELIBC_SYS_RECVMSG: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.recvmsg, nelibc_glibc.recvmsg((int)a, (void *)b, (int)c));
+    case NELIBC_SYS_WAIT4: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.wait4, nelibc_glibc.wait4((pid_t)a, (void *)b, (int)c, (void *)d));
+    case NELIBC_SYS_PREAD64: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pread, nelibc_glibc.pread((int)a, (void *)b, c, (off_t)d));
+    case NELIBC_SYS_PWRITE64: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pwrite, nelibc_glibc.pwrite((int)a, (void *)b, c, (off_t)d));
+    case NELIBC_SYS_SELECT: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.select, nelibc_glibc.select((int)a, (void *)b, (void *)c, (void *)d, (void *)e));
     case 230: { if (nelibc_glibc.clock_nanosleep == NULL) return LONG_MIN; int r = nelibc_glibc.clock_nanosleep((clockid_t)a, (int)b, (void *)c, (void *)d); return r ? -(long)r : 0; }
-    case 288: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.accept4, nelibc_glibc.accept4((int)a, (void *)b, (void *)c, (int)d));
-    case 247: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.waitid, nelibc_glibc.waitid((idtype_t)a, (id_t)b, (siginfo_t *)c, (int)d));
-    case 295: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.preadv, nelibc_glibc.preadv((int)a, (void *)b, (int)c, (off_t)d));
-    case 296: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pwritev, nelibc_glibc.pwritev((int)a, (void *)b, (int)c, (off_t)d));
-    case 327: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.preadv2, nelibc_glibc.preadv2((int)a, (void *)b, (int)c, (off_t)d, (int)f));
-    case 328: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pwritev2, nelibc_glibc.pwritev2((int)a, (void *)b, (int)c, (off_t)d, (int)f));
+    case NELIBC_SYS_ACCEPT4: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.accept4, nelibc_glibc.accept4((int)a, (void *)b, (void *)c, (int)d));
+    case NELIBC_SYS_WAITID: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.waitid, nelibc_glibc.waitid((idtype_t)a, (id_t)b, (siginfo_t *)c, (int)d));
+    case NELIBC_SYS_PREADV: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.preadv, nelibc_glibc.preadv((int)a, (void *)b, (int)c, (off_t)d));
+    case NELIBC_SYS_PWRITEV: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pwritev, nelibc_glibc.pwritev((int)a, (void *)b, (int)c, (off_t)d));
+    case NELIBC_SYS_PREADV2: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.preadv2, nelibc_glibc.preadv2((int)a, (void *)b, (int)c, (off_t)d, (int)f));
+    case NELIBC_SYS_PWRITEV2: return NELIBC_GLIBC_RESULT_OR_FALLBACK(nelibc_glibc.pwritev2, nelibc_glibc.pwritev2((int)a, (void *)b, (int)c, (off_t)d, (int)f));
     default: (void)e; (void)f; return LONG_MIN;
   }
 }
@@ -326,31 +327,31 @@ static long nelibc_glibc_cp6(unsigned long nr, unsigned long a, unsigned long b,
 #ifdef NELIBC_USE_MUSL_SYSCALL_CP
 extern long __syscall_cp(long number, long arg1, long arg2, long arg3,
                          long arg4, long arg5, long arg6);
-long nelibc_cancellable_syscall3(unsigned long number, unsigned long arg1,
+long nelibc_cancellable_sys3(unsigned long number, unsigned long arg1,
                                  unsigned long arg2, unsigned long arg3) {
-  return __syscall_cp((long)number, (long)arg1, (long)arg2, (long)arg3,
+  return __syscall_cp((long)nelibc_sys_linux_x86_64_number(number), (long)arg1, (long)arg2, (long)arg3,
                       0, 0, 0);
 }
-long nelibc_cancellable_syscall6(unsigned long number, unsigned long arg1,
+long nelibc_cancellable_sys6(unsigned long number, unsigned long arg1,
                                  unsigned long arg2, unsigned long arg3,
                                  unsigned long arg4, unsigned long arg5,
                                  unsigned long arg6) {
-  return __syscall_cp((long)number, (long)arg1, (long)arg2, (long)arg3,
+  return __syscall_cp((long)nelibc_sys_linux_x86_64_number(number), (long)arg1, (long)arg2, (long)arg3,
                       (long)arg4, (long)arg5, (long)arg6);
 }
 #else
-long nelibc_cancellable_syscall3(unsigned long number, unsigned long arg1,
+long nelibc_cancellable_sys3(unsigned long number, unsigned long arg1,
                                  unsigned long arg2, unsigned long arg3) {
 #ifdef NELIBC_USE_GLIBC_CANCEL_WRAPPERS
   long host_result = nelibc_glibc_cp3(number, arg1, arg2, arg3);
   if (host_result != LONG_MIN) return host_result;
 #endif
   int previous_type = nelibc_cancellation_enter();
-  long result = nelibc_raw_syscall3(number, arg1, arg2, arg3);
+  long result = nelibc_sys3(number, arg1, arg2, arg3);
   nelibc_cancellation_leave(previous_type);
   return result;
 }
-long nelibc_cancellable_syscall6(unsigned long number, unsigned long arg1,
+long nelibc_cancellable_sys6(unsigned long number, unsigned long arg1,
                                  unsigned long arg2, unsigned long arg3,
                                  unsigned long arg4, unsigned long arg5,
                                  unsigned long arg6) {
@@ -359,7 +360,7 @@ long nelibc_cancellable_syscall6(unsigned long number, unsigned long arg1,
   if (host_result != LONG_MIN) return host_result;
 #endif
   int previous_type = nelibc_cancellation_enter();
-  long result = nelibc_raw_syscall6(number, arg1, arg2, arg3, arg4, arg5,
+  long result = nelibc_sys6(number, arg1, arg2, arg3, arg4, arg5,
                                     arg6);
   nelibc_cancellation_leave(previous_type);
   return result;
@@ -374,7 +375,7 @@ static void nelibc_cancel_signal_handler(int signal_number) {
 }
 
 int nelibc_thread_cancel_signal_install(void) {
-  if (nelibc_raw_syscall6 == NULL || nelibc_rt_sigreturn == NULL) return ENOSYS;
+  if (nelibc_sys6 == NULL || nelibc_rt_sigreturn == NULL) return ENOSYS;
   struct nelibc_kernel_sigaction {
     void (*handler)(int);
     unsigned long flags;
@@ -386,15 +387,15 @@ int nelibc_thread_cancel_signal_install(void) {
     .restorer = nelibc_rt_sigreturn,
     .mask = 0,
   };
-  long result = nelibc_raw_syscall6(13, 32, (unsigned long)&action,
+  long result = nelibc_sys6(NELIBC_SYS_RT_SIGACTION, 32, (unsigned long)&action,
                                    0, sizeof(unsigned long), 0, 0);
   return result < 0 && result >= -4095 ? (int)-result : 0;
 }
 
 int nelibc_thread_cancel_signal_unblock(void) {
-  if (nelibc_raw_syscall6 == NULL) return ENOSYS;
+  if (nelibc_sys6 == NULL) return ENOSYS;
   unsigned long set = 1UL << 31; /* signal 32 is reserved for cancellation */
-  long result = nelibc_raw_syscall6(14, 1, (unsigned long)&set, 0,
+  long result = nelibc_sys6(NELIBC_SYS_RT_SIGPROCMASK, 1, (unsigned long)&set, 0,
                                    sizeof(unsigned long), 0, 0);
   return result < 0 && result >= -4095 ? (int)-result : 0;
 }
@@ -914,7 +915,7 @@ void nelibc_thread_slots_fork_parent(void) {
 
 void nelibc_thread_slots_fork_child(void) {
 #ifdef NELIBC_STANDALONE
-  int current_tid = (int)nelibc_raw_syscall3(186, 0, 0, 0);
+  int current_tid = (int)nelibc_sys3(NELIBC_SYS_GETTID, 0, 0, 0);
   for (size_t i = 0; i < sizeof(nelibc_thread_tid_slots) /
                           sizeof(nelibc_thread_tid_slots[0]); ++i) {
     nelibc_thread_tid_slot *slot = &nelibc_thread_tid_slots[i];
@@ -1098,13 +1099,13 @@ static void nelibc_resolve_host_multibyte(void) {
 }
 #else
 static int nelibc_system_lock_word;
-extern long nelibc_raw_syscall6(unsigned long number, unsigned long arg1,
+extern long nelibc_sys6(unsigned long op, unsigned long arg1,
                                 unsigned long arg2, unsigned long arg3,
                                 unsigned long arg4, unsigned long arg5,
                                 unsigned long arg6);
 
 static void nelibc_system_futex_wait(void) {
-  (void)nelibc_raw_syscall6(202, (unsigned long)&nelibc_system_lock_word,
+  (void)nelibc_sys6(NELIBC_SYS_FUTEX, (unsigned long)&nelibc_system_lock_word,
                             128, 1, 0, 0, 0);
 }
 
@@ -1118,7 +1119,7 @@ void nelibc_system_lock(void) {
 
 void nelibc_system_unlock(void) {
   __atomic_store_n(&nelibc_system_lock_word, 0, __ATOMIC_RELEASE);
-  (void)nelibc_raw_syscall6(202, (unsigned long)&nelibc_system_lock_word,
+  (void)nelibc_sys6(NELIBC_SYS_FUTEX, (unsigned long)&nelibc_system_lock_word,
                             129, 1, 0, 0, 0);
 }
 

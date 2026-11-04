@@ -83,11 +83,11 @@ static void host_sleep(void *context, uint64_t nanoseconds) {
  * profile installed a thread pointer (once at boot, then once per lane
  * switch) on descriptor 2 at exit, so a run can show whether lanes ran. */
 static int host_stats;
-static unsigned long host_thread_pointer_sets;
+static unsigned long host_thread_area_sets;
 
-static int host_thread_pointer_set(void *context, void *thread_pointer) {
+static int host_thread_area_set(void *context, void *thread_pointer) {
   (void)context;
-  host_thread_pointer_sets++;
+  host_thread_area_sets++;
   return (int)linux_syscall(158, 0x1002, (long)thread_pointer, 0, 0, 0, 0);
 }
 
@@ -114,7 +114,7 @@ static void host_exit(void *context, int status) {
     unsigned long created;
     unsigned long switches;
     nelibc_host_lane_stats(&created, &switches);
-    host_write_number(text, &length, host_thread_pointer_sets);
+    host_write_number(text, &length, host_thread_area_sets);
     host_write_text(text, &length, " times, lanes created ");
     host_write_number(text, &length, created);
     host_write_text(text, &length, ", lane switches ");
@@ -126,7 +126,7 @@ static void host_exit(void *context, int status) {
 }
 
 static void host_unsupported(void *context, unsigned long number) {
-  char text[64] = "host_linux: unsupported syscall ";
+  char text[64] = "host_linux: unsupported operation ";
   size_t length = 32;
   (void)context;
   host_write_number(text, &length, number);
@@ -231,7 +231,7 @@ void host_start(long *initial_stack) {
   host.clock_monotonic = host_clock_monotonic;
   host.clock_realtime = host_clock_realtime;
   host.sleep = host_sleep;
-  host.thread_pointer_set = host_thread_pointer_set;
+  host.thread_area_set = host_thread_area_set;
   host.exit = host_exit;
   host.unsupported = host_unsupported;
   host.environment = host_environment;

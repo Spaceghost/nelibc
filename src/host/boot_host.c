@@ -12,7 +12,7 @@ char **environ;
 
 static char *nelibc_host_empty_environment[1];
 static const nelibc_host *nelibc_host_table;
-static void *nelibc_host_thread_pointer;
+static void *nelibc_host_thread_area;
 
 extern void nelibc_stdio_init(void);
 extern void exit(int status);
@@ -28,12 +28,12 @@ const nelibc_host *nelibc_host_current(void) {
   return nelibc_host_table;
 }
 
-void *nelibc_host_thread_pointer_current(void) {
-  return nelibc_host_thread_pointer;
+void *nelibc_host_thread_area_current(void) {
+  return nelibc_host_thread_area;
 }
 
-void nelibc_host_thread_pointer_record(void *thread_pointer) {
-  nelibc_host_thread_pointer = thread_pointer;
+void nelibc_host_thread_area_record(void *thread_pointer) {
+  nelibc_host_thread_area = thread_pointer;
 }
 
 static size_t nelibc_host_cstring_length(const char *text) {
@@ -105,14 +105,14 @@ static int nelibc_host_setup_tls(const nelibc_host *host) {
   for (index = filesz; index < rounded; index++) image[index] = 0;
   for (index = 0; index < 64; index++) thread_pointer[index] = 0;
   *(void **)thread_pointer = thread_pointer;
-  nelibc_host_thread_pointer = thread_pointer;
-  return host->thread_pointer_set(host->context, thread_pointer);
+  nelibc_host_thread_area = thread_pointer;
+  return host->thread_area_set(host->context, thread_pointer);
 }
 
 int nelibc_host_boot(const nelibc_host *host) {
   int result;
   if (host == NULL || host->console_write == NULL ||
-      host->memory_reserve == NULL || host->thread_pointer_set == NULL ||
+      host->memory_reserve == NULL || host->thread_area_set == NULL ||
       host->exit == NULL)
     return -NELIBC_HOST_EINVAL;
   nelibc_host_table = host;

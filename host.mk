@@ -39,12 +39,13 @@ $(OUT)/sys-linux-x86_64-host-gcc-asm.o: src/sys/linux_x86_64.S | $(OUT)
 	gcc -g0 -c $< -o $(OUT)/sys-linux-x86_64-host-gcc-asm-full.o
 	$(OBJCOPY) $(HOST_ASM_STRIP) $(OUT)/sys-linux-x86_64-host-gcc-asm-full.o $@
 
-# The host archive is the standalone archive with the Linux entry point
-# removed and the syscall assembly object and environment adapter swapped
-# for the host-compiled ones above.
+# The host archive is the standalone archive with the Linux entry point and
+# the Linux operation backend (src/sys/linux_x86_64_ops.c) removed, and the
+# syscall assembly object and environment adapter swapped for the
+# host-compiled ones above. The dispatcher defines nelibc_sys3/6 itself.
 define host-archive
 	cp $< $@
-	$(AR) d $@ start-linux-x86_64-standalone-$(1).o sys-linux-x86_64-standalone-$(1)-asm.o environment-adapter-standalone-$(1).o
+	$(AR) d $@ start-linux-x86_64-standalone-$(1).o sys-linux-x86_64-standalone-$(1)-asm.o sys-ops-standalone-$(1).o environment-adapter-standalone-$(1).o
 	$(AR) rs $@ $(OUT)/sys-linux-x86_64-host-$(1)-asm.o $(OUT)/environment-adapter-host-$(1).o $(OUT)/host-syscall-$(1).o $(OUT)/host-boot-$(1).o
 endef
 

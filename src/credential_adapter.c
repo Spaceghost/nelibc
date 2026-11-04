@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+#include "../include/nelibc_sys.h"
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -13,14 +14,6 @@
 extern int __setxid(int number, int first, int second, int third);
 extern void __synccall(void (*callback)(void *), void *context);
 
-static long linux_syscall2(long number, long first, long second) {
-  long result;
-  __asm__ volatile("syscall"
-                   : "=a"(result)
-                   : "a"(number), "D"(first), "S"(second)
-                   : "rcx", "r11", "memory");
-  return result;
-}
 
 struct setgroups_context {
   size_t count;
@@ -31,10 +24,10 @@ struct setgroups_context {
 static void setgroups_all_threads(void *opaque) {
   struct setgroups_context *context = opaque;
   if (context->result < 0) return;
-  long result = linux_syscall2(116, (long)context->count, (long)context->groups);
+  long result = nelibc_sys3(NELIBC_SYS_SETGROUPS, (unsigned long)context->count, (unsigned long)context->groups, 0);
   if (result < 0 && result >= -4095 && context->result == 0) {
-    long pid = linux_syscall2(39, 0, 0);
-    linux_syscall2(62, pid, 9); /* kill(getpid(), SIGKILL) on partial success */
+    long pid = nelibc_sys3(NELIBC_SYS_GETPID, 0, 0, 0);
+    nelibc_sys3(NELIBC_SYS_KILL, (unsigned long)pid, 9, 0); /* kill(getpid(), SIGKILL) on partial success */
   }
   context->result = result;
 }
@@ -95,18 +88,13 @@ static int credential_sync_is_detached_thread(void) {
          nelibc_thread_current_context_detached();
 }
 
-/* Through the profile's raw entry point, so the host profile (which has no
- * `syscall` instruction of its own) dispatches these too. */
-extern long nelibc_raw_syscall3(unsigned long number, unsigned long first,
-                                unsigned long second, unsigned long third);
-
-static long standalone_syscall3(long number, long first, long second, long third) {
-  return nelibc_raw_syscall3((unsigned long)number, (unsigned long)first,
-                             (unsigned long)second, (unsigned long)third);
+static long standalone_syscall3(long op, long first, long second, long third) {
+  return nelibc_sys3((unsigned long)op, (unsigned long)first,
+                     (unsigned long)second, (unsigned long)third);
 }
 
 static void credential_futex_wake(int *word, int count) {
-  standalone_syscall3(202, (long)word, 1, count); /* FUTEX_WAKE */
+  standalone_syscall3(NELIBC_SYS_FUTEX, (long)word, 1, count); /* FUTEX_WAKE */
 }
 
 static void credential_spin_lock(int *lock) {
@@ -115,7 +103,7 @@ static void credential_spin_lock(int *lock) {
     if (__atomic_compare_exchange_n(lock, &expected, 1, 0, __ATOMIC_ACQUIRE,
                                     __ATOMIC_RELAXED))
       return;
-    standalone_syscall3(202, (long)lock, 0, 1); /* FUTEX_WAIT */
+    standalone_syscall3(NELIBC_SYS_FUTEX, (long)lock, 0, 1); /* FUTEX_WAIT */
   }
 }
 
@@ -127,7 +115,7 @@ static void credential_spin_unlock(int *lock) {
 int nelibc_credential_sync_begin(void) {
   credential_spin_lock(&credential_sync_registration_lock);
   if (credential_sync_users == 0) {
-    credential_sync_parent_tid = (int)standalone_syscall3(186, 0, 0, 0);
+    credential_sync_parent_tid = (int)standalone_syscall3(NELIBC_SYS_GETTID, 0, 0, 0);
     __atomic_store_n(&credential_sync_state, 0, __ATOMIC_RELEASE);
     __atomic_store_n(&credential_sync_active, 1, __ATOMIC_RELEASE);
   }
@@ -146,8 +134,8 @@ void nelibc_credential_sync_serve(void) {
       credential_sync_arguments[1],
       credential_sync_arguments[2]);
   if (result < 0 && result >= -4095) {
-    long pid = standalone_syscall3(39, 0, 0, 0);
-    standalone_syscall3(62, pid, 9, 0); /* kill(getpid(), SIGKILL) after partial success */
+    long pid = standalone_syscall3(NELIBC_SYS_GETPID, 0, 0, 0);
+    standalone_syscall3(NELIBC_SYS_KILL, pid, 9, 0); /* kill(getpid(), SIGKILL) after partial success */
     return;
   }
   __atomic_store_n(&credential_sync_result, result, __ATOMIC_RELAXED);
@@ -164,9 +152,9 @@ void nelibc_credential_sync_end(void) {
   credential_spin_unlock(&credential_sync_registration_lock);
 }
 
-static long credential_sync_request(long number, long first, long second, long third) {
+static long credential_sync_request(long op, long first, long second, long third) {
   credential_spin_lock(&credential_sync_request_lock);
-  credential_sync_number = number;
+  credential_sync_number = op;
   credential_sync_arguments[0] = first;
   credential_sync_arguments[1] = second;
   credential_sync_arguments[2] = third;
@@ -174,7 +162,7 @@ static long credential_sync_request(long number, long first, long second, long t
 
   while (__atomic_load_n(&credential_sync_state, __ATOMIC_ACQUIRE) != 2) {
     int expected = 1;
-    standalone_syscall3(202, (long)&credential_sync_state, 0, expected); /* FUTEX_WAIT */
+    standalone_syscall3(NELIBC_SYS_FUTEX, (long)&credential_sync_state, 0, expected); /* FUTEX_WAIT */
   }
   long result = __atomic_load_n(&credential_sync_result, __ATOMIC_ACQUIRE);
   __atomic_store_n(&credential_sync_state, 0, __ATOMIC_RELEASE);
@@ -182,19 +170,19 @@ static long credential_sync_request(long number, long first, long second, long t
   return result;
 }
 
-static int standalone_credential_set(long number, long first, long second, long third) {
+static int standalone_credential_set(long op, long first, long second, long third) {
   if (credential_sync_is_detached_thread()) {
     errno = ENOTSUP;
     return -1;
   }
-  long result = standalone_syscall3(number, first, second, third);
+  long result = standalone_syscall3(op, first, second, third);
   if (result < 0 && result >= -4095) {
     errno = (int)-result;
     return -1;
   }
   if (__atomic_load_n(&credential_sync_active, __ATOMIC_ACQUIRE) == 1 &&
-      (int)standalone_syscall3(186, 0, 0, 0) != credential_sync_parent_tid) {
-    result = credential_sync_request(number, first, second, third);
+      (int)standalone_syscall3(NELIBC_SYS_GETTID, 0, 0, 0) != credential_sync_parent_tid) {
+    result = credential_sync_request(op, first, second, third);
     if (result < 0 && result >= -4095) {
       errno = (int)-result;
       return -1;
@@ -203,20 +191,20 @@ static int standalone_credential_set(long number, long first, long second, long 
   return 0;
 }
 
-#define DEFINE_STANDALONE_SETTER(name, signature, number, first, second, third) \
+#define DEFINE_STANDALONE_SETTER(name, signature, op, first, second, third) \
   int name signature { \
-    return standalone_credential_set(number, (long)(first), (long)(second), (long)(third)); \
+    return standalone_credential_set(op, (long)(first), (long)(second), (long)(third)); \
   }
 
-DEFINE_STANDALONE_SETTER(setuid, (uid_t uid), 105, uid, 0, 0)
-DEFINE_STANDALONE_SETTER(seteuid, (uid_t uid), 117, (uid_t)-1, uid, (uid_t)-1)
-DEFINE_STANDALONE_SETTER(setreuid, (uid_t ruid, uid_t euid), 113, ruid, euid, 0)
-DEFINE_STANDALONE_SETTER(setresuid, (uid_t ruid, uid_t euid, uid_t suid), 117, ruid, euid, suid)
-DEFINE_STANDALONE_SETTER(setgid, (gid_t gid), 106, gid, 0, 0)
-DEFINE_STANDALONE_SETTER(setegid, (gid_t gid), 119, (gid_t)-1, gid, (gid_t)-1)
-DEFINE_STANDALONE_SETTER(setregid, (gid_t rgid, gid_t egid), 114, rgid, egid, 0)
-DEFINE_STANDALONE_SETTER(setresgid, (gid_t rgid, gid_t egid, gid_t sgid), 119, rgid, egid, sgid)
-DEFINE_STANDALONE_SETTER(setgroups, (size_t count, const gid_t groups[]), 116, count, groups, 0)
+DEFINE_STANDALONE_SETTER(setuid, (uid_t uid), NELIBC_SYS_SETUID, uid, 0, 0)
+DEFINE_STANDALONE_SETTER(seteuid, (uid_t uid), NELIBC_SYS_SETRESUID, (uid_t)-1, uid, (uid_t)-1)
+DEFINE_STANDALONE_SETTER(setreuid, (uid_t ruid, uid_t euid), NELIBC_SYS_SETREUID, ruid, euid, 0)
+DEFINE_STANDALONE_SETTER(setresuid, (uid_t ruid, uid_t euid, uid_t suid), NELIBC_SYS_SETRESUID, ruid, euid, suid)
+DEFINE_STANDALONE_SETTER(setgid, (gid_t gid), NELIBC_SYS_SETGID, gid, 0, 0)
+DEFINE_STANDALONE_SETTER(setegid, (gid_t gid), NELIBC_SYS_SETRESGID, (gid_t)-1, gid, (gid_t)-1)
+DEFINE_STANDALONE_SETTER(setregid, (gid_t rgid, gid_t egid), NELIBC_SYS_SETREGID, rgid, egid, 0)
+DEFINE_STANDALONE_SETTER(setresgid, (gid_t rgid, gid_t egid, gid_t sgid), NELIBC_SYS_SETRESGID, rgid, egid, sgid)
+DEFINE_STANDALONE_SETTER(setgroups, (size_t count, const gid_t groups[]), NELIBC_SYS_SETGROUPS, count, groups, 0)
 
 #undef DEFINE_STANDALONE_SETTER
 

@@ -1,9 +1,10 @@
-extern long nelibc_raw_syscall6(unsigned long, unsigned long, unsigned long,
+#include "../include/nelibc_sys.h"
+extern long nelibc_sys6(unsigned long, unsigned long, unsigned long,
                                 unsigned long, unsigned long, unsigned long,
                                 unsigned long);
 
 static int current_tid(void) {
-  return (int)nelibc_raw_syscall6(186, 0, 0, 0, 0, 0, 0);
+  return (int)nelibc_sys6(NELIBC_SYS_GETTID, 0, 0, 0, 0, 0, 0);
 }
 
 void nelibc_stdio_lock(int *word, int *owner, int *depth) {
@@ -21,7 +22,7 @@ void nelibc_stdio_lock(int *word, int *owner, int *depth) {
       return;
     }
     while (__atomic_load_n(word, __ATOMIC_RELAXED) != 0)
-      nelibc_raw_syscall6(202, (unsigned long)word, 128, 1, 0, 0, 0);
+      nelibc_sys6(NELIBC_SYS_FUTEX, (unsigned long)word, 128, 1, 0, 0, 0);
   }
 }
 
@@ -45,5 +46,5 @@ void nelibc_stdio_unlock(int *word, int *owner, int *depth) {
   if (__atomic_sub_fetch(depth, 1, __ATOMIC_RELAXED) != 0) return;
   __atomic_store_n(owner, 0, __ATOMIC_RELEASE);
   __atomic_store_n(word, 0, __ATOMIC_RELEASE);
-  nelibc_raw_syscall6(202, (unsigned long)word, 129, 1, 0, 0, 0);
+  nelibc_sys6(NELIBC_SYS_FUTEX, (unsigned long)word, 129, 1, 0, 0, 0);
 }

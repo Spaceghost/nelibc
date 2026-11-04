@@ -1,6 +1,12 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
 
+-- nelibc_sys operations this module uses; tools/sys_ops.py keeps the block current. (begin)
+local SYS_MMAP: culong <comptime> = 9
+local SYS_MUNMAP: culong <comptime> = 11
+local SYS_MREMAP: culong <comptime> = 24
+-- (end nelibc_sys operations)
+
 -- A bootstrap allocator for Linux x86_64. Small blocks come from reusable
 -- mmap-backed size-class slabs; large or highly aligned blocks own one map.
 local AllocationHeader: type = @record{
@@ -37,8 +43,8 @@ local POOL_COUNT: csize <comptime> = 9
 local pools: [9]PoolState = {}
 local slab_mappings: *AllocationHeader = nilptr
 
-local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
-local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
+local function nelibc_sys3(op: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
+local function nelibc_sys6(op: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_allocator_lock(): void <cimport> end
 local function nelibc_allocator_unlock(): void <cimport> end
@@ -73,8 +79,8 @@ local function pool_size(index: csize): csize <inline>
 end
 
 local function map_anonymous(size: csize): pointer <inline>
-  local result = nelibc_raw_syscall6(
-    9_culong, 0_culong, (@culong)(size), 3_culong, 34_culong,
+  local result = nelibc_sys6(
+    SYS_MMAP, 0_culong, (@culong)(size), 3_culong, 34_culong,
     (@culong)(-1_cint), 0_culong
   )
   if result < 0 and result >= -4095 then
@@ -299,8 +305,8 @@ local function nelibc_free(ptr: pointer): void <cexport, codename 'nelibc_free'>
     if previous == nilptr then nelibc_direct_registry_publish((@pointer)(next_mapping))
     else previous.pool_index = (@csize)((@usize)(next_mapping)) end
   end
-  local result = nelibc_raw_syscall3(
-    11_culong, -- munmap
+  local result = nelibc_sys3(
+    SYS_MUNMAP, -- munmap
     (@culong)(base),
     (@culong)(header.mapping_size),
     0_culong
@@ -439,8 +445,8 @@ local function nelibc_realloc(ptr: pointer, size: csize): pointer <cexport, code
         current = (@*AllocationHeader)((@usize)(current.pool_index))
       end
       if current == old_header then
-        local resized_mapping = nelibc_raw_syscall6(
-          25_culong, -- mremap
+        local resized_mapping = nelibc_sys6(
+          SYS_MREMAP, -- mremap
           (@culong)(base),
           (@culong)(old_header.mapping_size),
           (@culong)(required_size),

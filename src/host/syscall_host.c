@@ -1,7 +1,9 @@
-/* Host profile syscall dispatch. The standalone Nelua modules issue Linux
- * x86-64 syscall numbers through nelibc_raw_syscall3/6; here those numbers
- * are answered from the bound nelibc_host table instead of a `syscall`
- * instruction. Results follow the kernel ABI: a value or a negative errno.
+/* Host profile operation dispatch. The standalone Nelua modules and C
+ * adapters ask for platform operations by NELIBC_SYS_* number through
+ * nelibc_sys3/6 (include/nelibc_sys.h); here those operations are answered
+ * from the bound nelibc_host table. No Linux syscall number and no
+ * `syscall` instruction is involved. Results follow the convention the
+ * modules were written against: a value or a negative errno.
  *
  * Covered: console write, anonymous memory, clocks and sleeps, signal
  * bookkeeping with inline delivery for raise, a self-pipe with poll/select,
@@ -17,6 +19,7 @@
  * starves the others, exactly as on a one-CPU kernel without a timer tick.
  */
 #include "nelibc_host.h"
+#include "nelibc_sys.h"
 
 #define EPERM 1
 #define ENOENT 2
@@ -45,8 +48,8 @@
 #define NELIBC_HOST_PIPE_CAPACITY 65536
 #define NELIBC_HOST_SIGNAL_COUNT 65
 
-extern void *nelibc_host_thread_pointer_current(void);
-extern void nelibc_host_thread_pointer_record(void *thread_pointer);
+extern void *nelibc_host_thread_area_current(void);
+extern void nelibc_host_thread_area_record(void *thread_pointer);
 
 enum {
   FD_FREE = 0,
@@ -247,7 +250,7 @@ static host_lane *lane_current(void) {
   if (current_lane == NULL) {
     lanes[0].state = LANE_RUNNABLE;
     lanes[0].tid = 1;
-    lanes[0].thread_pointer = nelibc_host_thread_pointer_current();
+    lanes[0].thread_pointer = nelibc_host_thread_area_current();
     current_lane = &lanes[0];
   }
   return current_lane;
@@ -309,8 +312,8 @@ static void switch_to(host_lane *next) {
   if (next == previous) return;
   current_lane = next;
   if (next->thread_pointer != previous->thread_pointer) {
-    host->thread_pointer_set(host->context, next->thread_pointer);
-    nelibc_host_thread_pointer_record(next->thread_pointer);
+    host->thread_area_set(host->context, next->thread_pointer);
+    nelibc_host_thread_area_record(next->thread_pointer);
   }
   switched_from = previous;
   lane_switches++;
@@ -1471,44 +1474,44 @@ static void report_unsupported(unsigned long number) {
 
 /* Dispatch -------------------------------------------------------------- */
 
-long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
+long nelibc_sys6(unsigned long number, unsigned long a1,
                          unsigned long a2, unsigned long a3, unsigned long a4,
                          unsigned long a5, unsigned long a6) {
   const nelibc_host *host = table();
   if (host == NULL) {
-    if (number == 60 || number == 231) {
+    if (number == NELIBC_SYS_EXIT || number == NELIBC_SYS_EXIT_GROUP) {
       for (;;) {
       }
     }
     return -ENOSYS;
   }
   switch (number) {
-  case 0: return do_read((long)a1, (void *)a2, a3);
-  case 1: return do_write((long)a1, (const void *)a2, a3);
-  case 2: return -ENOENT;                                      /* open */
-  case 3: /* close */
+  case NELIBC_SYS_READ: return do_read((long)a1, (void *)a2, a3);
+  case NELIBC_SYS_WRITE: return do_write((long)a1, (const void *)a2, a3);
+  case NELIBC_SYS_OPEN: return -ENOENT;                                      /* open */
+  case NELIBC_SYS_CLOSE: /* close */
     if (fd_entry((long)a1) == NULL) return -EBADF;
     fd_release((long)a1);
     return 0;
-  case 4: case 5: case 6: return -ENOENT;                      /* stat */
-  case 7: return do_poll((kernel_pollfd *)a1, a2, (int)a3 >= 0,
+  case NELIBC_SYS_STAT: case NELIBC_SYS_FSTAT: case NELIBC_SYS_LSTAT: return -ENOENT;                      /* stat */
+  case NELIBC_SYS_POLL: return do_poll((kernel_pollfd *)a1, a2, (int)a3 >= 0,
                          (int)a3 > 0 ? (uint64_t)(int)a3 * 1000000ull : 0);
-  case 8: return -ESPIPE;                                      /* lseek */
-  case 9: return do_mmap((void *)a1, a2, (long)a3, (long)a4, (long)a5, (long)a6);
-  case 10: return do_mprotect((void *)a1, a2, (long)a3);
-  case 11: return do_munmap((void *)a1, a2);
-  case 12: return -ENOMEM;                                     /* brk */
-  case 13: return do_rt_sigaction((long)a1, (const kernel_sigaction *)a2,
+  case NELIBC_SYS_LSEEK: return -ESPIPE;                                      /* lseek */
+  case NELIBC_SYS_MMAP: return do_mmap((void *)a1, a2, (long)a3, (long)a4, (long)a5, (long)a6);
+  case NELIBC_SYS_MPROTECT: return do_mprotect((void *)a1, a2, (long)a3);
+  case NELIBC_SYS_MUNMAP: return do_munmap((void *)a1, a2);
+  case NELIBC_SYS_BRK: return -ENOMEM;                                     /* brk */
+  case NELIBC_SYS_RT_SIGACTION: return do_rt_sigaction((long)a1, (const kernel_sigaction *)a2,
                                   (kernel_sigaction *)a3, a4);
-  case 14: return do_rt_sigprocmask((long)a1, (const unsigned long *)a2,
+  case NELIBC_SYS_RT_SIGPROCMASK: return do_rt_sigprocmask((long)a1, (const unsigned long *)a2,
                                     (unsigned long *)a3, a4);
-  case 16: return fd_entry((long)a1) == NULL ? -EBADF : -ENOTTY; /* ioctl */
-  case 17: case 18: return -ESPIPE;                            /* pread, pwrite */
-  case 19: return do_readv((long)a1, (const kernel_iovec *)a2, (long)a3);
-  case 20: return do_writev((long)a1, (const kernel_iovec *)a2, (long)a3);
-  case 21: return -ENOENT;                                     /* access */
-  case 22: return do_pipe2((int *)a1, 0);
-  case 23: {
+  case NELIBC_SYS_IOCTL: return fd_entry((long)a1) == NULL ? -EBADF : -ENOTTY; /* ioctl */
+  case NELIBC_SYS_PREAD64: case NELIBC_SYS_PWRITE64: return -ESPIPE;                            /* pread, pwrite */
+  case NELIBC_SYS_READV: return do_readv((long)a1, (const kernel_iovec *)a2, (long)a3);
+  case NELIBC_SYS_WRITEV: return do_writev((long)a1, (const kernel_iovec *)a2, (long)a3);
+  case NELIBC_SYS_ACCESS: return -ENOENT;                                     /* access */
+  case NELIBC_SYS_PIPE: return do_pipe2((int *)a1, 0);
+  case NELIBC_SYS_SELECT: {
     const kernel_timeval *timeout = (const kernel_timeval *)a5;
     uint64_t nanoseconds = 0;
     if (timeout != NULL) {
@@ -1518,37 +1521,37 @@ long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
     return do_select((long)a1, (unsigned long *)a2, (unsigned long *)a3,
                      (unsigned long *)a4, timeout != NULL, nanoseconds);
   }
-  case 24: lane_yield(0, 0); return 0;                         /* sched_yield */
-  case 25: return do_mremap((void *)a1, a2, a3, (long)a4);
-  case 26: return 0;                                           /* msync */
-  case 28: return 0;                                           /* madvise */
-  case 32: return do_fcntl((long)a1, 0, 0);                    /* dup */
-  case 33: return a1 == a2 ? (fd_entry((long)a1) == NULL ? -EBADF : (long)a2)
+  case NELIBC_SYS_SCHED_YIELD: lane_yield(0, 0); return 0;                         /* sched_yield */
+  case NELIBC_SYS_MREMAP: return do_mremap((void *)a1, a2, a3, (long)a4);
+  case NELIBC_SYS_MSYNC: return 0;                                           /* msync */
+  case NELIBC_SYS_MADVISE: return 0;                                           /* madvise */
+  case NELIBC_SYS_DUP: return do_fcntl((long)a1, 0, 0);                    /* dup */
+  case NELIBC_SYS_DUP2: return a1 == a2 ? (fd_entry((long)a1) == NULL ? -EBADF : (long)a2)
                            : do_dup3((long)a1, (long)a2, 0);
-  case 35: return do_nanosleep((const kernel_timespec *)a1, (kernel_timespec *)a2);
-  case 37: return 0;                                           /* alarm */
-  case 39: return 1;                                           /* getpid */
-  case 56: return -ENOSYS;                                     /* raw clone: threads use nelibc_clone_thread */
-  case 57: case 58: case 59: return -ENOSYS;                   /* fork, vfork, execve */
-  case 60:                                                     /* exit: this lane */
+  case NELIBC_SYS_NANOSLEEP: return do_nanosleep((const kernel_timespec *)a1, (kernel_timespec *)a2);
+  case NELIBC_SYS_ALARM: return 0;                                           /* alarm */
+  case NELIBC_SYS_GETPID: return 1;                                           /* getpid */
+  case NELIBC_SYS_CLONE: return -ENOSYS;                                     /* raw clone: threads use nelibc_clone_thread */
+  case NELIBC_SYS_FORK: case NELIBC_SYS_VFORK: case NELIBC_SYS_EXECVE: return -ENOSYS;                   /* fork, vfork, execve */
+  case NELIBC_SYS_EXIT:                                                     /* exit: this lane */
     lane_exit((int)a1);
     for (;;) {
     }
-  case 231:                                                    /* exit_group */
+  case NELIBC_SYS_EXIT_GROUP:                                                    /* exit_group */
     host->exit(host->context, (int)a1);
     for (;;) {
     }
-  case 61: return -ECHILD;                                   /* wait4 */
-  case 62: return deliver_signal((long)a2);                    /* kill */
-  case 63: return do_uname((char *)a1);
-  case 72: return do_fcntl((long)a1, (long)a2, a3);
-  case 79: /* getcwd */
+  case NELIBC_SYS_WAIT4: return -ECHILD;                                   /* wait4 */
+  case NELIBC_SYS_KILL: return deliver_signal((long)a2);                    /* kill */
+  case NELIBC_SYS_UNAME: return do_uname((char *)a1);
+  case NELIBC_SYS_FCNTL: return do_fcntl((long)a1, (long)a2, a3);
+  case NELIBC_SYS_GETCWD: /* getcwd */
     if (a2 < 2) return -ERANGE;
     copy_string((char *)a1, a2, "/");
     return 2;
-  case 89: case 267: return -ENOENT;                           /* readlink */
-  case 95: return 022;                                         /* umask */
-  case 96: { /* gettimeofday */
+  case NELIBC_SYS_READLINK: case NELIBC_SYS_READLINKAT: return -ENOENT;                           /* readlink */
+  case NELIBC_SYS_UMASK: return 022;                                         /* umask */
+  case NELIBC_SYS_GETTIMEOFDAY: { /* gettimeofday */
     kernel_timeval *value = (kernel_timeval *)a1;
     uint64_t nanoseconds;
     int result;
@@ -1559,106 +1562,106 @@ long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
     value->tv_usec = (long)(nanoseconds % 1000000000ull / 1000ull);
     return 0;
   }
-  case 97: return fill_rlimit((long)a1, (kernel_rlimit *)a2);  /* getrlimit */
-  case 98: if (a2 != 0) zero_bytes((void *)a2, 144); return 0;   /* getrusage */
-  case 99: return -ENOSYS;                                     /* sysinfo */
-  case 100: { /* times */
+  case NELIBC_SYS_GETRLIMIT: return fill_rlimit((long)a1, (kernel_rlimit *)a2);  /* getrlimit */
+  case NELIBC_SYS_GETRUSAGE: if (a2 != 0) zero_bytes((void *)a2, 144); return 0;   /* getrusage */
+  case NELIBC_SYS_SYSINFO: return -ENOSYS;                                     /* sysinfo */
+  case NELIBC_SYS_TIMES: { /* times */
     uint64_t nanoseconds = 0;
     if (a1 != 0) zero_bytes((void *)a1, 32);
     if (monotonic_now(&nanoseconds) != 0) return 0;
     return (long)(nanoseconds / 10000000ull);
   }
-  case 102: case 104: case 107: case 108: return 0;            /* uid, gid */
-  case 109: case 110: case 111: case 121: return 1;            /* setpgid, getppid, getpgrp, getpgid */
-  case 112: return 1;                                          /* setsid */
-  case 131: return do_sigaltstack((const kernel_stack *)a1, (kernel_stack *)a2);
-  case 143: if (a2 != 0) zero_bytes((void *)a2, 4); return 0;  /* sched_getparam */
-  case 144: return (long)a2 == 0 ? 0 : -EPERM;                 /* sched_setscheduler */
-  case 145: return 0;                                          /* sched_getscheduler */
-  case 146: return (long)a1 == 1 || (long)a1 == 2 ? 99 : 0;    /* priority max */
-  case 147: return (long)a1 == 1 || (long)a1 == 2 ? 1 : 0;     /* priority min */
-  case 157: /* prctl */
+  case NELIBC_SYS_GETUID: case NELIBC_SYS_GETGID: case NELIBC_SYS_GETEUID: case NELIBC_SYS_GETEGID: return 0;            /* uid, gid */
+  case NELIBC_SYS_SETPGID: case NELIBC_SYS_GETPPID: case NELIBC_SYS_GETPGRP: case NELIBC_SYS_GETPGID: return 1;            /* setpgid, getppid, getpgrp, getpgid */
+  case NELIBC_SYS_SETSID: return 1;                                          /* setsid */
+  case NELIBC_SYS_SIGALTSTACK: return do_sigaltstack((const kernel_stack *)a1, (kernel_stack *)a2);
+  case NELIBC_SYS_SCHED_GETPARAM: if (a2 != 0) zero_bytes((void *)a2, 4); return 0;  /* sched_getparam */
+  case NELIBC_SYS_SCHED_SETSCHEDULER: return (long)a2 == 0 ? 0 : -EPERM;                 /* sched_setscheduler */
+  case NELIBC_SYS_SCHED_GETSCHEDULER: return 0;                                          /* sched_getscheduler */
+  case NELIBC_SYS_SCHED_GET_PRIORITY_MAX: return (long)a1 == 1 || (long)a1 == 2 ? 99 : 0;    /* priority max */
+  case NELIBC_SYS_SCHED_GET_PRIORITY_MIN: return (long)a1 == 1 || (long)a1 == 2 ? 1 : 0;     /* priority min */
+  case NELIBC_SYS_PRCTL: /* prctl */
     if ((long)a1 == 15) return 0;                              /* PR_SET_NAME */
     if ((long)a1 == 16) { copy_string((char *)a2, 16, "nelibc"); return 0; }
     return -EINVAL;
   case 158: /* arch_prctl */
     if (a1 == 0x1002) {
-      int result = host->thread_pointer_set(host->context, (void *)a2);
+      int result = host->thread_area_set(host->context, (void *)a2);
       if (result == 0) {
-        nelibc_host_thread_pointer_record((void *)a2);
+        nelibc_host_thread_area_record((void *)a2);
         lane_current()->thread_pointer = (void *)a2;
       }
       return result;
     }
     if (a1 == 0x1003) {
       if (a2 == 0) return -EFAULT;
-      *(void **)a2 = nelibc_host_thread_pointer_current();
+      *(void **)a2 = nelibc_host_thread_area_current();
       return 0;
     }
     return -EINVAL;
-  case 186: return lane_current()->tid;                        /* gettid */
-  case 200: return deliver_signal_to((long)a1, (long)a2);      /* tkill */
-  case 201: { /* time */
+  case NELIBC_SYS_GETTID: return lane_current()->tid;                        /* gettid */
+  case NELIBC_SYS_TKILL: return deliver_signal_to((long)a1, (long)a2);      /* tkill */
+  case NELIBC_SYS_TIME: { /* time */
     uint64_t nanoseconds;
     int result = realtime_now(&nanoseconds);
     if (result != 0) return result;
     if (a1 != 0) *(long *)a1 = (long)(nanoseconds / 1000000000ull);
     return (long)(nanoseconds / 1000000000ull);
   }
-  case 202: return do_futex((int *)a1, (long)a2, (int)a3, (const kernel_timespec *)a4,
+  case NELIBC_SYS_FUTEX: return do_futex((int *)a1, (long)a2, (int)a3, (const kernel_timespec *)a4,
                             (int *)a5, (int)a6);
-  case 203: return 0;                                          /* sched_setaffinity */
-  case 204: return do_sched_getaffinity(a2, (unsigned long *)a3);
-  case 218: lane_current()->clear_tid = (int *)a1; return lane_current()->tid; /* set_tid_address */
-  case 228: return do_clock_gettime((int)a1, (kernel_timespec *)a2);
-  case 229: { /* clock_getres */
+  case NELIBC_SYS_SCHED_SETAFFINITY: return 0;                                          /* sched_setaffinity */
+  case NELIBC_SYS_SCHED_GETAFFINITY: return do_sched_getaffinity(a2, (unsigned long *)a3);
+  case NELIBC_SYS_SET_TID_ADDRESS: lane_current()->clear_tid = (int *)a1; return lane_current()->tid; /* set_tid_address */
+  case NELIBC_SYS_CLOCK_GETTIME: return do_clock_gettime((int)a1, (kernel_timespec *)a2);
+  case NELIBC_SYS_CLOCK_GETRES: { /* clock_getres */
     kernel_timespec *value = (kernel_timespec *)a2;
     if ((long)a1 < 0 || (long)a1 > 7) return -EINVAL;
     if (value != NULL) { value->tv_sec = 0; value->tv_nsec = 1; }
     return 0;
   }
-  case 230: return do_clock_nanosleep((int)a1, (int)a2, (const kernel_timespec *)a3,
+  case NELIBC_SYS_CLOCK_NANOSLEEP: return do_clock_nanosleep((int)a1, (int)a2, (const kernel_timespec *)a3,
                                       (kernel_timespec *)a4);
-  case 234: return deliver_signal_to((long)a2, (long)a3);      /* tgkill */
-  case 257: return -ENOENT;                                    /* openat */
-  case 262: case 332: return -ENOENT;                          /* newfstatat, statx */
-  case 269: return -ENOENT;                                    /* faccessat */
-  case 270: { /* pselect6 */
+  case NELIBC_SYS_TGKILL: return deliver_signal_to((long)a2, (long)a3);      /* tgkill */
+  case NELIBC_SYS_OPENAT: return -ENOENT;                                    /* openat */
+  case NELIBC_SYS_NEWFSTATAT: case NELIBC_SYS_STATX: return -ENOENT;                          /* newfstatat, statx */
+  case NELIBC_SYS_FACCESSAT: return -ENOENT;                                    /* faccessat */
+  case NELIBC_SYS_PSELECT6: { /* pselect6 */
     const kernel_timespec *timeout = (const kernel_timespec *)a5;
     if (timeout != NULL && !timespec_valid(timeout)) return -EINVAL;
     return do_select((long)a1, (unsigned long *)a2, (unsigned long *)a3,
                      (unsigned long *)a4, timeout != NULL,
                      timeout != NULL ? timespec_nanoseconds(timeout) : 0);
   }
-  case 271: { /* ppoll */
+  case NELIBC_SYS_PPOLL: { /* ppoll */
     const kernel_timespec *timeout = (const kernel_timespec *)a3;
     if (timeout != NULL && !timespec_valid(timeout)) return -EINVAL;
     return do_poll((kernel_pollfd *)a1, a2, timeout != NULL,
                    timeout != NULL ? timespec_nanoseconds(timeout) : 0);
   }
-  case 273: lane_current()->robust_list = (void *)a1; return 0; /* set_robust_list */
-  case 274: /* get_robust_list */
+  case NELIBC_SYS_SET_ROBUST_LIST: lane_current()->robust_list = (void *)a1; return 0; /* set_robust_list */
+  case NELIBC_SYS_GET_ROBUST_LIST: /* get_robust_list */
     if (a1 != 0 && a1 != (unsigned long)lane_current()->tid) return -ESRCH;
     if (a2 == 0 || a3 == 0) return -EFAULT;
     *(void **)a2 = lane_current()->robust_list;
     *(size_t *)a3 = 24;
     return 0;
-  case 292: return do_dup3((long)a1, (long)a2, (int)a3);
-  case 293: return do_pipe2((int *)a1, (int)a2);
-  case 302: /* prlimit64 */
+  case NELIBC_SYS_DUP3: return do_dup3((long)a1, (long)a2, (int)a3);
+  case NELIBC_SYS_PIPE2: return do_pipe2((int *)a1, (int)a2);
+  case NELIBC_SYS_PRLIMIT64: /* prlimit64 */
     if (a3 != 0) {
       const kernel_rlimit *requested = (const kernel_rlimit *)a3;
       if (requested->current > requested->maximum) return -EINVAL;
     }
     return fill_rlimit((long)a2, (kernel_rlimit *)a4);
-  case 318: return -ENOSYS;                                    /* getrandom */
+  case NELIBC_SYS_GETRANDOM: return -ENOSYS;                                    /* getrandom */
   default:
     report_unsupported(number);
     return -ENOSYS;
   }
 }
 
-long nelibc_raw_syscall3(unsigned long number, unsigned long a1,
+long nelibc_sys3(unsigned long number, unsigned long a1,
                          unsigned long a2, unsigned long a3) {
-  return nelibc_raw_syscall6(number, a1, a2, a3, 0, 0, 0);
+  return nelibc_sys6(number, a1, a2, a3, 0, 0, 0);
 }

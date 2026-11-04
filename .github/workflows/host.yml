@@ -25,6 +25,8 @@ jobs:
           "$ZIG" version
           gcc --version | head -1
           BEND_NO_TELEMETRY=1 "$BEND" version || echo "bend unavailable; hello smoke will skip"
+      - name: platform-operation vocabulary in sync
+        run: make sys-ops-check
       - name: host archives, link checks, hosted smoke
         run: make host-check-zig host-smoke-zig NELUA="$NELUA" ZIG="$ZIG"
       - name: Bend 2 IO.print through the host profile

@@ -1,6 +1,30 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
 
+-- nelibc_sys operations this module uses; tools/sys_ops.py keeps the block current. (begin)
+local SYS_READ: culong <comptime> = 0
+local SYS_WRITE: culong <comptime> = 1
+local SYS_MMAP: culong <comptime> = 9
+local SYS_MPROTECT: culong <comptime> = 10
+local SYS_MUNMAP: culong <comptime> = 11
+local SYS_RT_SIGPROCMASK: culong <comptime> = 14
+local SYS_SCHED_YIELD: culong <comptime> = 23
+local SYS_GETPID: culong <comptime> = 34
+local SYS_EXIT: culong <comptime> = 55
+local SYS_FLOCK: culong <comptime> = 60
+local SYS_SCHED_GETPARAM: culong <comptime> = 107
+local SYS_SCHED_SETSCHEDULER: culong <comptime> = 108
+local SYS_SCHED_GETSCHEDULER: culong <comptime> = 109
+local SYS_PRCTL: culong <comptime> = 114
+local SYS_GETTID: culong <comptime> = 121
+local SYS_FUTEX: culong <comptime> = 137
+local SYS_SCHED_SETAFFINITY: culong <comptime> = 138
+local SYS_SCHED_GETAFFINITY: culong <comptime> = 139
+local SYS_CLOCK_GETTIME: culong <comptime> = 149
+local SYS_TGKILL: culong <comptime> = 155
+local SYS_SET_ROBUST_LIST: culong <comptime> = 178
+-- (end nelibc_sys operations)
+
 -- Experimental Linux x86_64 thread runtime for the standalone profile.
 local TLSLayout: type = @record{
   image_start: pointer,
@@ -259,8 +283,8 @@ local pthread_objects: *PthreadObject = nilptr
 local pthread_objects_lock: cint = 0
 local MAX_CSIZE: csize <comptime> = ~0_csize
 
-local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
-local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
+local function nelibc_sys3(op: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
+local function nelibc_sys6(op: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_tls_layout(layout: *TLSLayout): void <cimport> end
 local function nelibc_clone_thread(start: pointer, arg: pointer, stack_top: pointer, tls_tp: pointer, tid: *[0]cint): clong <cimport> end
@@ -313,9 +337,9 @@ local function pthread_cancel_defer_end(): void <inline>
      context.cancel_state == PTHREAD_CANCEL_ENABLE and
      context.cancel_type == PTHREAD_CANCEL_ASYNCHRONOUS and
      nelibc_atomic_load_int(&context.cancel_pending) ~= 0 then
-    local pid = nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong)
-    local tid = nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong)
-    nelibc_raw_syscall3(234_culong, (@culong)(pid), (@culong)(tid), 32_culong)
+    local pid = nelibc_sys3(SYS_GETPID, 0_culong, 0_culong, 0_culong)
+    local tid = nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong)
+    nelibc_sys3(SYS_TGKILL, (@culong)(pid), (@culong)(tid), 32_culong)
   end
 end
 
@@ -330,14 +354,14 @@ end
 local function pthread_object_registry_lock(): void
   pthread_cancel_defer_begin()
   while nelibc_atomic_cas_int(&pthread_objects_lock, 0, 1) ~= 0 do
-    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&pthread_objects_lock)),
+    nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&pthread_objects_lock)),
                         128_culong, 1_culong, 0_culong, 0_culong, 0_culong)
   end
 end
 
 local function pthread_object_registry_unlock(): void
   nelibc_atomic_store_int(&pthread_objects_lock, 0)
-  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&pthread_objects_lock)),
+  nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&pthread_objects_lock)),
                       129_culong, 1_culong, 0_culong, 0_culong, 0_culong)
   pthread_cancel_defer_end()
 end
@@ -378,12 +402,12 @@ end
 
 local function pthread_robust_slot_alloc(): *PthreadRobustSlot
   pthread_robust_slot_lock_acquire()
-  local pid = nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong)
+  local pid = nelibc_sys3(SYS_GETPID, 0_culong, 0_culong, 0_culong)
   local index: csize = 0
   while index < ROBUST_SLOT_COUNT do
     local slot = &pthread_robust_slots[index]
     if slot.state == 2 and slot.tid > 0 then
-      local alive = nelibc_raw_syscall3(234_culong, (@culong)(pid),
+      local alive = nelibc_sys3(SYS_TGKILL, (@culong)(pid),
                                         (@culong)(slot.tid), 0_culong)
       if alive == -3 then slot.state = 0 end -- ESRCH: kernel completed robust-list exit
     end
@@ -416,14 +440,14 @@ local function pthread_robust_register(context: *PthreadContext): boolean
   if context == nilptr or context.robust_slot == nilptr then return false end
   if context.robust_registered ~= 0 then return true end
   local slot = context.robust_slot
-  local tid = nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong)
-  local result = nelibc_raw_syscall3(273_culong,
+  local tid = nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong)
+  local result = nelibc_sys3(SYS_SET_ROBUST_LIST,
       (@culong)((@usize)(&slot.head)), 24_culong, 0_culong)
   slot.tid = (@cint)(tid)
   slot.state = 2
   if result < 0 and result >= -4095 then return false end
   context.robust_registered = 1
-  context.robust_pid = (@cint)(nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong))
+  context.robust_pid = (@cint)(nelibc_sys3(SYS_GETPID, 0_culong, 0_culong, 0_culong))
   return true
 end
 
@@ -440,7 +464,7 @@ local function pthread_current_context(): *PthreadContext <inline>
     nelibc_thread_cancel_signal_install()
     nelibc_thread_cancel_signal_unblock()
   end
-  local pid = (@cint)(nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong))
+  local pid = (@cint)(nelibc_sys3(SYS_GETPID, 0_culong, 0_culong, 0_culong))
   if context.robust_pid ~= pid then
     context.robust_registered = 0
     context.robust_slot = nilptr
@@ -451,7 +475,7 @@ local function pthread_current_context(): *PthreadContext <inline>
   end
   pthread_robust_register(context)
   if context == &initial_thread_context then
-    initial_thread_tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+    initial_thread_tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   end
   return context
 end
@@ -491,14 +515,14 @@ local function pthread_key_lock_acquire(): void <inline>
   pthread_cancel_defer_begin()
   while true do
     if nelibc_atomic_cas_int(&pthread_key_lock, 0, 1) == 0 then return end
-    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&pthread_key_lock)),
+    nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&pthread_key_lock)),
                         128_culong, 1_culong, 0_culong, 0_culong, 0_culong)
   end
 end
 
 local function pthread_key_lock_release(): void <inline>
   nelibc_atomic_store_int(&pthread_key_lock, 0)
-  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&pthread_key_lock)),
+  nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&pthread_key_lock)),
                       129_culong, 1_culong, 0_culong, 0_culong, 0_culong)
   pthread_cancel_defer_end()
 end
@@ -640,8 +664,8 @@ local function thread_trampoline(argument: pointer): cint <cexport, codename 'ne
 end
 
 local function map_rw(size: csize): pointer <inline>
-  local result = nelibc_raw_syscall6(
-    9_culong, 0_culong, (@culong)(size), 3_culong, 34_culong,
+  local result = nelibc_sys6(
+    SYS_MMAP, 0_culong, (@culong)(size), 3_culong, 34_culong,
     (@culong)(-1_cint), 0_culong
   )
   if result < 0 and result >= -4095 then
@@ -652,7 +676,7 @@ local function map_rw(size: csize): pointer <inline>
 end
 
 local function unmap(addr: pointer, size: csize): void <inline>
-  nelibc_raw_syscall3(11_culong, (@culong)((@usize)(addr)), (@culong)(size), 0_culong)
+  nelibc_sys3(SYS_MUNMAP, (@culong)((@usize)(addr)), (@culong)(size), 0_culong)
 end
 
 local function pthread_detached_cleanup(context: *PthreadContext): void
@@ -710,8 +734,8 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
     if stack == nilptr then return -1 end
   end
   if guard_size > 0 then
-    local protect_result = nelibc_raw_syscall3(
-      10_culong, (@culong)((@usize)(stack)), (@culong)(guard_size), 0_culong
+    local protect_result = nelibc_sys3(
+      SYS_MPROTECT, (@culong)((@usize)(stack)), (@culong)(guard_size), 0_culong
     )
     if protect_result < 0 and protect_result >= -4095 then
       nelibc_errno_location()[0] = (@cint)(-protect_result)
@@ -868,7 +892,7 @@ local function thread_wait_until(handle: *ThreadHandle,
       timeout.tv_nsec = 10000000
       if deadline ~= nilptr then
         local now: Timespec
-        local clock_result = nelibc_raw_syscall3(228_culong, 0_culong,
+        local clock_result = nelibc_sys3(SYS_CLOCK_GETTIME, 0_culong,
             (@culong)((@usize)(&now)), 0_culong) -- clock_gettime(CLOCK_REALTIME)
         if clock_result < 0 and clock_result >= -4095 then
           nelibc_errno_location()[0] = (@cint)(-clock_result)
@@ -892,8 +916,8 @@ local function thread_wait_until(handle: *ThreadHandle,
           timeout.tv_nsec = remaining_nsec
         end
       end
-      nelibc_raw_syscall6(
-        202_culong, (@culong)((@usize)(tid_word)), 0_culong,
+      nelibc_sys6(
+        SYS_FUTEX, (@culong)((@usize)(tid_word)), 0_culong,
         (@culong)(expected_tid), (@culong)((@usize)(&timeout)), 0_culong, 0_culong
       )
     end
@@ -1099,7 +1123,7 @@ end
 local function pthread_context_exit(context: *PthreadContext, result: pointer): void
   if context ~= nilptr then
     if nelibc_atomic_exchange_int(&context.exiting, 1) ~= 0 then
-      nelibc_raw_syscall3(60_culong, 0_culong, 0_culong, 0_culong)
+      nelibc_sys3(SYS_EXIT, 0_culong, 0_culong, 0_culong)
       while true do end
     end
     context.cancel_state = PTHREAD_CANCEL_DISABLE
@@ -1115,7 +1139,7 @@ local function pthread_context_exit(context: *PthreadContext, result: pointer): 
   else
     pthread_key_run_destructors()
   end
-  nelibc_raw_syscall3(60_culong, 0_culong, 0_culong, 0_culong)
+  nelibc_sys3(SYS_EXIT, 0_culong, 0_culong, 0_culong)
   while true do end
 end
 
@@ -1123,7 +1147,7 @@ local function pthread_cancel_wake(context: *PthreadContext): void
   local address = nelibc_atomic_load_pointer(&context.cancel_wait_address)
   if address == nilptr then return end
   nelibc_atomic_fetch_add_int((@*[0]cint)(address), 1)
-  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(address)),
+  nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(address)),
                       (@culong)(context.cancel_wait_wake_operation),
                       2147483647_culong, 0_culong, 0_culong, 0_culong)
 end
@@ -1156,7 +1180,7 @@ local function pthread_sigmask(how: cint, set: pointer <const>, oldset: pointer)
     kernel_set = set_words[0] & ~(1_culong << 31)
     set_pointer = (@pointer)(&kernel_set)
   end
-  local result = nelibc_raw_syscall6(14_culong, (@culong)(how),
+  local result = nelibc_sys6(SYS_RT_SIGPROCMASK, (@culong)(how),
       (@culong)((@usize)(set_pointer)), (@culong)((@usize)(oldset)),
       8_culong, 0_culong, 0_culong)
   if result < 0 and result >= -4095 then return (@cint)(-result) end
@@ -1185,8 +1209,8 @@ local function pthread_cancel(thread: pointer): cint <cexport, codename 'pthread
   if nelibc_atomic_load_int(&context.cancel_state) == PTHREAD_CANCEL_ENABLE then
     pthread_cancel_wake(context)
     if tid > 0 then
-      local pid = nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong)
-      nelibc_raw_syscall3(234_culong, (@culong)(pid), (@culong)(tid), 32_culong)
+      local pid = nelibc_sys3(SYS_GETPID, 0_culong, 0_culong, 0_culong)
+      nelibc_sys3(SYS_TGKILL, (@culong)(pid), (@culong)(tid), 32_culong)
     end
   end
   return 0
@@ -1221,7 +1245,7 @@ end
 local function pthread_trampoline(argument: pointer): cint <cexport, codename 'nelibc_pthread_trampoline'>
   local context = (@*PthreadContext)(argument)
   while nelibc_atomic_load_int(&context.startup_gate) == 0 do
-    nelibc_raw_syscall6(202_culong,
+    nelibc_sys6(SYS_FUTEX,
       (@culong)((@usize)(&context.startup_gate)), 128_culong,
       0_culong, 0_culong, 0_culong, 0_culong)
   end
@@ -1243,7 +1267,7 @@ local function pthread_default_attr_lock_acquire(): void <inline>
   pthread_cancel_defer_begin()
   while true do
     if nelibc_atomic_cas_int(&default_thread_attr_lock, 0, 1) == 0 then return end
-    nelibc_raw_syscall6(202_culong,
+    nelibc_sys6(SYS_FUTEX,
         (@culong)((@usize)(&default_thread_attr_lock)), 128_culong, 1_culong,
         0_culong, 0_culong, 0_culong)
   end
@@ -1251,7 +1275,7 @@ end
 
 local function pthread_default_attr_lock_release(): void <inline>
   nelibc_atomic_store_int(&default_thread_attr_lock, 0)
-  nelibc_raw_syscall6(202_culong,
+  nelibc_sys6(SYS_FUTEX,
       (@culong)((@usize)(&default_thread_attr_lock)), 129_culong, 1_culong,
       0_culong, 0_culong, 0_culong)
   pthread_cancel_defer_end()
@@ -1668,7 +1692,7 @@ local function pthread_mutex_acquire(mutex: *PthreadMutex): void
   while true do
     local previous = nelibc_atomic_exchange_int(&mutex.state, 2)
     if previous == 0 then return end
-    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
+    nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&mutex.state)),
                         operation, 2_culong, 0_culong, 0_culong, 0_culong)
   end
 end
@@ -1699,7 +1723,7 @@ end
 local function pthread_priority_set(tid: cint, policy: cint, priority: cint): cint
   local param: SchedParam
   param.sched_priority = priority
-  local result = nelibc_raw_syscall3(144_culong, (@culong)(tid),
+  local result = nelibc_sys3(SYS_SCHED_SETSCHEDULER, (@culong)(tid),
       (@culong)(policy), (@culong)((@usize)(&param)))
   if result < 0 and result >= -4095 then return (@cint)(-result) end
   return 0
@@ -1856,7 +1880,7 @@ local function pthread_rwlock_waiter_priority_update(context: *PthreadContext,
     nelibc_atomic_fetch_add_int(&rwlock.sequence, 1)
     local operation: culong = 129_culong -- FUTEX_WAKE | FUTEX_PRIVATE_FLAG
     if rwlock.pshared ~= 0 then operation = 1_culong end
-    nelibc_raw_syscall6(202_culong,
+    nelibc_sys6(SYS_FUTEX,
       (@culong)((@usize)(&rwlock.sequence)), operation,
       2147483647_culong, 0_culong, 0_culong, 0_culong)
   end
@@ -1923,13 +1947,13 @@ local function pthread_priority_protect_enter(mutex: *PthreadMutex): cint
   local policy: cint
   local priority: cint
   if context.protect_mutexes == nilptr then
-    local current_policy = nelibc_raw_syscall3(145_culong, 0_culong, 0_culong, 0_culong)
+    local current_policy = nelibc_sys3(SYS_SCHED_GETSCHEDULER, 0_culong, 0_culong, 0_culong)
     if current_policy < 0 and current_policy >= -4095 then
       pthread_priority_context_unlock(context)
       return (@cint)(-current_policy)
     end
     local param: SchedParam
-    local result = nelibc_raw_syscall3(143_culong, 0_culong,
+    local result = nelibc_sys3(SYS_SCHED_GETPARAM, 0_culong,
         (@culong)((@usize)(&param)), 0_culong)
     if result < 0 and result >= -4095 then
       pthread_priority_context_unlock(context)
@@ -2024,7 +2048,7 @@ local function pthread_mutex_protect_finish(mutex: *PthreadMutex,
       if mutex.robust ~= PTHREAD_MUTEX_ROBUST and mutex.pshared == 0 then
         operation = 129_culong
       end
-      nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
+      nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&mutex.state)),
           operation, 1_culong, 0_culong, 0_culong, 0_culong)
     end
     return protect_result
@@ -2078,11 +2102,11 @@ local function pthread_mutex_lock_robust(mutex: *PthreadMutex, tid: cint,
     end
     local wait_result: clong
     if abstime == nilptr then
-      wait_result = nelibc_raw_syscall6(202_culong,
+      wait_result = nelibc_sys6(SYS_FUTEX,
           (@culong)((@usize)(&mutex.state)), wait_operation,
           (@culong)(wait_state), 0_culong, 0_culong, 0_culong)
     else
-      wait_result = nelibc_raw_syscall6(202_culong,
+      wait_result = nelibc_sys6(SYS_FUTEX,
           (@culong)((@usize)(&mutex.state)), wait_operation,
           (@culong)(wait_state), (@culong)((@usize)(abstime)),
           0_culong, 0xFFFFFFFF_culong)
@@ -2148,7 +2172,7 @@ local function pthread_mutex_lock_pi(mutex: *PthreadMutex, tid: cint,
   while true do
     local timeout: culong = 0_culong
     if abstime ~= nilptr then timeout = (@culong)((@usize)(abstime)) end
-    local result = nelibc_raw_syscall6(202_culong,
+    local result = nelibc_sys6(SYS_FUTEX,
         (@culong)((@usize)(&mutex.state)), operation, 0_culong,
         timeout, 0_culong, 0_culong)
     if result >= 0 then
@@ -2157,7 +2181,7 @@ local function pthread_mutex_lock_pi(mutex: *PthreadMutex, tid: cint,
          nelibc_atomic_load_int(&mutex.robust_state) == 2 then
         local unlock_operation: culong = FUTEX_UNLOCK_PI
         if mutex.pshared == 0 then unlock_operation = unlock_operation | 128_culong end
-        nelibc_raw_syscall6(202_culong,
+        nelibc_sys6(SYS_FUTEX,
             (@culong)((@usize)(&mutex.state)), unlock_operation,
             0_culong, 0_culong, 0_culong, 0_culong)
         context.robust_slot.head.list_op_pending = nilptr
@@ -2220,7 +2244,7 @@ local function pthread_mutex_trylock_pi(mutex: *PthreadMutex, tid: cint): cint
   end
   local operation: culong = FUTEX_TRYLOCK_PI
   if mutex.pshared == 0 then operation = operation | 128_culong end
-  local result = nelibc_raw_syscall6(202_culong,
+  local result = nelibc_sys6(SYS_FUTEX,
       (@culong)((@usize)(&mutex.state)), operation, 0_culong,
       0_culong, 0_culong, 0_culong)
   if result < 0 and result >= -4095 then
@@ -2234,7 +2258,7 @@ local function pthread_mutex_trylock_pi(mutex: *PthreadMutex, tid: cint): cint
      nelibc_atomic_load_int(&mutex.robust_state) == 2 then
     local unlock_operation: culong = FUTEX_UNLOCK_PI
     if mutex.pshared == 0 then unlock_operation = unlock_operation | 128_culong end
-    nelibc_raw_syscall6(202_culong,
+    nelibc_sys6(SYS_FUTEX,
         (@culong)((@usize)(&mutex.state)), unlock_operation,
         0_culong, 0_culong, 0_culong, 0_culong)
     context.robust_slot.head.list_op_pending = nilptr
@@ -2273,7 +2297,7 @@ local function pthread_mutex_unlock_pi(mutex: *PthreadMutex, tid: cint): cint
   while true do
     state = nelibc_atomic_load_int(&mutex.state)
     if (state & FUTEX_WAITERS) ~= 0 then
-      local result = nelibc_raw_syscall6(202_culong,
+      local result = nelibc_sys6(SYS_FUTEX,
           (@culong)((@usize)(&mutex.state)), operation, 0_culong,
           0_culong, 0_culong, 0_culong)
       if result < 0 and result >= -4095 then
@@ -2292,7 +2316,7 @@ end
 
 local function pthread_mutex_lock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_lock'>
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   if mutex.protocol == PTHREAD_PRIO_INHERIT then
     return pthread_mutex_lock_pi(mutex, tid, nilptr, CLOCK_REALTIME)
   end
@@ -2316,7 +2340,7 @@ local function pthread_mutex_clocklock(mutex: *PthreadMutex, clock_id: cint,
      abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000 then
     return 22 -- EINVAL
   end
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   if mutex.protocol == PTHREAD_PRIO_INHERIT then
     return pthread_mutex_lock_pi(mutex, tid, abstime, clock_id)
   end
@@ -2342,8 +2366,8 @@ local function pthread_mutex_clocklock(mutex: *PthreadMutex, clock_id: cint,
       nelibc_atomic_store_int(&mutex.owner, tid)
       return pthread_mutex_protect_finish(mutex, 0)
     end
-    local wait_result = nelibc_raw_syscall6(
-      202_culong, (@culong)((@usize)(&mutex.state)), operation, 2_culong,
+    local wait_result = nelibc_sys6(
+      SYS_FUTEX, (@culong)((@usize)(&mutex.state)), operation, 2_culong,
       (@culong)((@usize)(abstime)), 0_culong, 0xFFFFFFFF_culong
     )
     if wait_result < 0 and wait_result >= -4095 then
@@ -2368,7 +2392,7 @@ end
 
 local function pthread_mutex_trylock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_trylock'>
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   if mutex.protocol == PTHREAD_PRIO_INHERIT then
     return pthread_mutex_protect_finish(mutex,
         pthread_mutex_trylock_pi(mutex, tid))
@@ -2419,7 +2443,7 @@ end
 
 local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_unlock'>
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   if mutex.protocol == PTHREAD_PRIO_INHERIT then
     return pthread_mutex_unlock_pi(mutex, tid)
   end
@@ -2442,7 +2466,7 @@ local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codena
     if (previous & FUTEX_WAITERS) ~= 0 then
       -- Match the shared-key wake used by Linux robust-list owner-death exit.
       local operation: culong = 1_culong -- FUTEX_WAKE
-      nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
+      nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&mutex.state)),
                           operation, 1_culong, 0_culong, 0_culong, 0_culong)
     end
     return pthread_priority_protect_leave(mutex)
@@ -2458,7 +2482,7 @@ local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codena
   if previous == 2 then
     local operation: culong = 1_culong
     if mutex.pshared == 0 then operation = 129_culong end -- FUTEX_WAKE_PRIVATE
-    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&mutex.state)),
+    nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&mutex.state)),
                         operation, 1_culong, 0_culong, 0_culong, 0_culong)
   end
   if mutex.protocol == PTHREAD_PRIO_PROTECT then
@@ -2468,7 +2492,7 @@ local function pthread_mutex_unlock(mutex: *PthreadMutex): cint <cexport, codena
 end
 
 local function pthread_mutex_lock_for_ceiling(mutex: *PthreadMutex): cint
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   if mutex.robust == PTHREAD_MUTEX_ROBUST then
     return pthread_mutex_lock_robust(mutex, tid, nilptr, CLOCK_REALTIME)
   end
@@ -2521,7 +2545,7 @@ end
 local function pthread_mutex_consistent(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_consistent'>
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
   if mutex.robust ~= PTHREAD_MUTEX_ROBUST then return 22 end -- EINVAL
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   if nelibc_atomic_load_int(&mutex.robust_state) ~= 1 or
      (nelibc_atomic_load_int(&mutex.state) & FUTEX_TID_MASK) ~= tid then
     return 22 -- EINVAL
@@ -2555,7 +2579,7 @@ end
 local function pthread_spin_lock(lock: *[0]cint): cint
     <cexport, codename 'pthread_spin_lock'>
   if lock == nilptr then return 22 end -- EINVAL
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   local attempts: cint = 0
   while true do
     local state = nelibc_atomic_load_int(lock)
@@ -2564,7 +2588,7 @@ local function pthread_spin_lock(lock: *[0]cint): cint
     attempts = attempts + 1
     if attempts >= 128 then
       attempts = 0
-      nelibc_raw_syscall3(24_culong, 0_culong, 0_culong, 0_culong) -- sched_yield
+      nelibc_sys3(SYS_SCHED_YIELD, 0_culong, 0_culong, 0_culong) -- sched_yield
     end
   end
 end
@@ -2572,7 +2596,7 @@ end
 local function pthread_spin_trylock(lock: *[0]cint): cint
     <cexport, codename 'pthread_spin_trylock'>
   if lock == nilptr then return 22 end -- EINVAL
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   local state = nelibc_atomic_load_int(lock)
   if state == -1 then return 22 end -- EINVAL: destroyed
   if state ~= 0 or nelibc_atomic_cas_int(lock, 0, tid) ~= 0 then return 16 end -- EBUSY
@@ -2584,7 +2608,7 @@ local function pthread_spin_unlock(lock: *[0]cint): cint
   if lock == nilptr then return 22 end -- EINVAL
   local state = nelibc_atomic_load_int(lock)
   if state == -1 then return 22 end -- EINVAL: destroyed
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   if state ~= tid then return 1 end -- EPERM
   if nelibc_atomic_cas_int(lock, tid, 0) ~= 0 then return 1 end -- EPERM
   return 0
@@ -2676,7 +2700,7 @@ local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMut
   if abstime ~= nilptr and (abstime.tv_nsec < 0 or abstime.tv_nsec >= 1000000000) then
     return 22 -- EINVAL
   end
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   if nelibc_atomic_load_int(&mutex.owner) ~= tid then return 1 end -- EPERM
   if mutex.kind == 1 and mutex.count ~= 1 then return 22 end -- EINVAL
   local sequence = nelibc_atomic_load_int(&cond.sequence)
@@ -2716,8 +2740,8 @@ local function pthread_cond_wait_internal(cond: *PthreadCond, mutex: *PthreadMut
       pthread_cancel_wake(context)
     end
   end
-  local wait_result = nelibc_raw_syscall6(
-    202_culong, (@culong)((@usize)(&cond.sequence)), wait_operation,
+  local wait_result = nelibc_sys6(
+    SYS_FUTEX, (@culong)((@usize)(&cond.sequence)), wait_operation,
     (@culong)(sequence), timeout_pointer, 0_culong, futex_mask
   )
   local wait_error: cint = 0
@@ -2757,7 +2781,7 @@ local function pthread_cond_signal(cond: *PthreadCond): cint <cexport, codename 
   if nelibc_atomic_load_int(&cond.waiters) ~= 0 then
     local operation: culong = 129_culong
     if cond.pshared ~= 0 then operation = 1_culong end
-    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&cond.sequence)),
+    nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&cond.sequence)),
                         operation, 1_culong, 0_culong, 0_culong, 0_culong)
   end
   return 0
@@ -2769,7 +2793,7 @@ local function pthread_cond_broadcast(cond: *PthreadCond): cint <cexport, codena
   if nelibc_atomic_load_int(&cond.waiters) ~= 0 then
     local operation: culong = 129_culong
     if cond.pshared ~= 0 then operation = 1_culong end
-    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&cond.sequence)),
+    nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&cond.sequence)),
                         operation, 2147483647_culong, 0_culong, 0_culong, 0_culong)
   end
   return 0
@@ -2860,7 +2884,7 @@ local function pthread_barrier_wait(barrier: *PthreadBarrier): cint
     nelibc_atomic_fetch_add_int(&barrier.generation, 1)
     local operation: culong = 129_culong -- FUTEX_WAKE | FUTEX_PRIVATE_FLAG
     if barrier.pshared ~= 0 then operation = 1_culong end
-    nelibc_raw_syscall6(202_culong,
+    nelibc_sys6(SYS_FUTEX,
       (@culong)((@usize)(&barrier.generation)), operation,
       2147483647_culong, 0_culong, 0_culong, 0_culong)
     pthread_cancel_defer_end()
@@ -2869,7 +2893,7 @@ local function pthread_barrier_wait(barrier: *PthreadBarrier): cint
   local operation: culong = 128_culong -- FUTEX_WAIT | FUTEX_PRIVATE_FLAG
   if barrier.pshared ~= 0 then operation = 0_culong end
   while nelibc_atomic_load_int(&barrier.generation) == generation do
-    nelibc_raw_syscall6(202_culong,
+    nelibc_sys6(SYS_FUTEX,
       (@culong)((@usize)(&barrier.generation)), operation,
       (@culong)(generation), 0_culong, 0_culong, 0_culong)
   end
@@ -2892,7 +2916,7 @@ local function pthread_rwlock_wake(rwlock: *PthreadRwlock): void
   nelibc_atomic_fetch_add_int(&rwlock.sequence, 1)
   local operation: culong = 129_culong -- FUTEX_WAKE | FUTEX_PRIVATE_FLAG
   if rwlock.pshared ~= 0 then operation = 1_culong end
-  nelibc_raw_syscall6(202_culong,
+  nelibc_sys6(SYS_FUTEX,
     (@culong)((@usize)(&rwlock.sequence)), operation,
     2147483647_culong, 0_culong, 0_culong, 0_culong)
 end
@@ -2924,7 +2948,7 @@ local function pthread_rwlock_wait(rwlock: *PthreadRwlock, sequence: cint,
     bitset = 0xFFFFFFFF_culong
   end
   if rwlock.pshared == 0 then operation = operation | 128_culong end
-  local result = nelibc_raw_syscall6(202_culong,
+  local result = nelibc_sys6(SYS_FUTEX,
     (@culong)((@usize)(&rwlock.sequence)), operation,
     (@culong)(sequence), timeout_pointer, 0_culong, bitset)
   if result < 0 and result >= -4095 then
@@ -3035,7 +3059,7 @@ local function pthread_rwlock_rdlock_internal(rwlock: *PthreadRwlock,
     abstime: *Timespec, clock_id: cint, nonblocking: boolean): cint
   if not pthread_rwlock_valid(rwlock) then return 22 end -- EINVAL
   local context = pthread_rwlock_owner_context()
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   if nelibc_atomic_load_int(&rwlock.state) < 0 and rwlock.writer == tid then
     if nonblocking then return 16 end -- EBUSY
     return 35 -- EDEADLK
@@ -3172,7 +3196,7 @@ end
 local function pthread_rwlock_wrlock_internal(rwlock: *PthreadRwlock,
     abstime: *Timespec, clock_id: cint, nonblocking: boolean): cint
   if not pthread_rwlock_valid(rwlock) then return 22 end -- EINVAL
-  local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+  local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
   if not nonblocking and nelibc_atomic_load_int(&rwlock.state) < 0 and
       rwlock.writer == tid then
     return 35 -- EDEADLK
@@ -3279,7 +3303,7 @@ local function pthread_rwlock_unlock(rwlock: *PthreadRwlock): cint
   while true do
     local state = nelibc_atomic_load_int(&rwlock.state)
     if state < 0 then
-      local tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
+      local tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
       if rwlock.writer ~= tid then return 1 end -- EPERM
       nelibc_atomic_store_int(&rwlock.writer, 0)
       if nelibc_atomic_cas_int(&rwlock.state, -1, 0) ~= 0 then return 1 end
@@ -3352,7 +3376,7 @@ local function sem_post(sem: *Semaphore): cint <cexport, codename 'sem_post'>
     nelibc_atomic_fetch_add_int(&sem.sequence, 1)
     local operation: culong = 129_culong
     if semaphore_shared(sem) then operation = 1_culong end
-    nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&sem.sequence)),
+    nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&sem.sequence)),
                         operation, 1_culong, 0_culong, 0_culong, 0_culong)
   end
   return 0
@@ -3410,7 +3434,7 @@ local function semaphore_wait(sem: *Semaphore, abstime: *Timespec, timed: boolea
       mask = 0xFFFFFFFF_culong
     end
     if not semaphore_shared(sem) then operation = operation | 128_culong end
-    local result = nelibc_raw_syscall6(202_culong, (@culong)((@usize)(&sem.sequence)),
+    local result = nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&sem.sequence)),
       operation, (@culong)(sequence), timeout_pointer, 0_culong, mask)
     if context ~= nilptr then nelibc_atomic_store_pointer(&context.cancel_wait_address, nilptr) end
     nelibc_atomic_fetch_add_int(&sem.waiters, -1)
@@ -3458,7 +3482,7 @@ end
 local function named_sem_registry_lock(): void
   pthread_cancel_defer_begin()
   while nelibc_atomic_cas_int(&named_semaphore_handles_lock, 0, 1) ~= 0 do
-    nelibc_raw_syscall3(24_culong, 0_culong, 0_culong, 0_culong)
+    nelibc_sys3(SYS_SCHED_YIELD, 0_culong, 0_culong, 0_culong)
   end
 end
 
@@ -3469,13 +3493,13 @@ end
 
 local function pthread_fork_global_lock(lock: *[0]cint): void <inline>
   while nelibc_atomic_cas_int(lock, 0, 1) ~= 0 do
-    nelibc_raw_syscall3(24_culong, 0_culong, 0_culong, 0_culong)
+    nelibc_sys3(SYS_SCHED_YIELD, 0_culong, 0_culong, 0_culong)
   end
 end
 
 local function pthread_fork_global_unlock(lock: *[0]cint): void <inline>
   nelibc_atomic_store_int(lock, 0)
-  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(lock)), 129_culong,
+  nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(lock)), 129_culong,
                       1_culong, 0_culong, 0_culong, 0_culong)
 end
 
@@ -3504,8 +3528,8 @@ local function nelibc_thread_fork_child(): void <cexport, codename 'nelibc_threa
   local current_object: *PthreadObject = nilptr
   if context ~= nilptr then current_object = (@*PthreadObject)(context.object) end
   if context ~= nilptr and context.robust_slot ~= nilptr then
-    local current_tid = (@cint)(nelibc_raw_syscall3(186_culong, 0_culong, 0_culong, 0_culong))
-    local current_pid = (@cint)(nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong))
+    local current_tid = (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong))
+    local current_pid = (@cint)(nelibc_sys3(SYS_GETPID, 0_culong, 0_culong, 0_culong))
     local dummy_mutex: PthreadMutex = {}
     local robust_next_offset = (@usize)((@pointer)(&dummy_mutex.robust_next)) -
                                (@usize)((@pointer)(&dummy_mutex))
@@ -3530,7 +3554,7 @@ local function nelibc_thread_fork_child(): void <cexport, codename 'nelibc_threa
           local old_owner = mutex.owner
           local old_count = mutex.count
           nelibc_atomic_store_int(&mutex.state, 0)
-          local lock_result = nelibc_raw_syscall6(202_culong,
+          local lock_result = nelibc_sys6(SYS_FUTEX,
               (@culong)((@usize)(&mutex.state)), 134_culong,
               0_culong, 0_culong, 0_culong, 0_culong) -- FUTEX_LOCK_PI | PRIVATE
           if lock_result >= 0 then
@@ -3670,7 +3694,7 @@ local function nelibc_sem_open_impl(name: cstring <const>, oflag: cint,
     end
   end
   -- flock serializes the first initializer against concurrent sem_open calls.
-  local lock_result = nelibc_raw_syscall6(73_culong, (@culong)(fd), 2_culong,
+  local lock_result = nelibc_sys6(SYS_FLOCK, (@culong)(fd), 2_culong,
                                            0_culong, 0_culong, 0_culong, 0_culong)
   if lock_result < 0 then
     nelibc_errno_location()[0] = (@cint)(-lock_result)
@@ -3681,7 +3705,7 @@ local function nelibc_sem_open_impl(name: cstring <const>, oflag: cint,
   if created then
     if ftruncate(fd, 16_clong) ~= 0 then
       local error_code = nelibc_errno_location()[0]
-      nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+      nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
       close(fd); unlink(&path[0]); nelibc_errno_location()[0] = error_code
       return nilptr
     end
@@ -3691,28 +3715,28 @@ local function nelibc_sem_open_impl(name: cstring <const>, oflag: cint,
       size = lseek(fd, 0_clong, 2_cint)
       if size < 0_clong then
         local error_code = nelibc_errno_location()[0]
-        nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+        nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
         close(fd); nelibc_errno_location()[0] = error_code
         return nilptr
       end
       if size ~= 0_clong then break end
-      nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
-      nelibc_raw_syscall3(24_culong, 0_culong, 0_culong, 0_culong)
-      lock_result = nelibc_raw_syscall6(73_culong, (@culong)(fd), 2_culong,
+      nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+      nelibc_sys3(SYS_SCHED_YIELD, 0_culong, 0_culong, 0_culong)
+      lock_result = nelibc_sys6(SYS_FLOCK, (@culong)(fd), 2_culong,
                                          0_culong, 0_culong, 0_culong, 0_culong)
       if lock_result < 0 then
         nelibc_errno_location()[0] = (@cint)(-lock_result); close(fd); return nilptr
       end
     end
     if size ~= 16_clong then
-      nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+      nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
       close(fd); nelibc_errno_location()[0] = 22; return nilptr
     end
   end
   local mapped = mmap(nilptr, 16_csize, 3_cint, 1_cint, fd, 0_clong)
   if mapped == (@pointer)(~0_csize) then
     local error_code = nelibc_errno_location()[0]
-    nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+    nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
     close(fd)
     if created then unlink(&path[0]) end
     nelibc_errno_location()[0] = error_code
@@ -3726,13 +3750,13 @@ local function nelibc_sem_open_impl(name: cstring <const>, oflag: cint,
     semaphore.waiters = 0
   elseif not semaphore_valid(semaphore) or not semaphore_shared(semaphore) then
     munmap(mapped, 16_csize)
-    nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+    nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
     close(fd); nelibc_errno_location()[0] = 22; return nilptr
   end
   local handle = (@*NamedSemaphoreHandle)(nelibc_malloc(24_csize))
   if handle == nilptr then
     munmap(mapped, 16_csize)
-    nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+    nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
     close(fd)
     if created then unlink(&path[0]) end
     nelibc_errno_location()[0] = 12 -- ENOMEM
@@ -3744,7 +3768,7 @@ local function nelibc_sem_open_impl(name: cstring <const>, oflag: cint,
   handle.next = named_semaphore_handles
   named_semaphore_handles = handle
   named_sem_registry_unlock()
-  nelibc_raw_syscall6(73_culong, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+  nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
   return semaphore
 end
 
@@ -3782,7 +3806,7 @@ end
 local function pthread_once_cancel_cleanup(argument: pointer): void
   local control = (@*[0]cint)(argument)
   nelibc_atomic_store_int(control, 0)
-  nelibc_raw_syscall6(202_culong, (@culong)((@usize)(control)),
+  nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(control)),
                       129_culong, 2147483647_culong,
                       0_culong, 0_culong, 0_culong)
 end
@@ -3812,13 +3836,13 @@ local function pthread_once(control: *[0]cint, init_routine: function(): void): 
       if cleanup_registered then
         pthread_cleanup_pop_frame(context, &cleanup_frame, 0)
       end
-      nelibc_raw_syscall6(202_culong, (@culong)((@usize)(control)),
+      nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(control)),
                           129_culong, 2147483647_culong,
                           0_culong, 0_culong, 0_culong)
       pthread_cancel_defer_end()
       return 0
     elseif state == 1 then
-      nelibc_raw_syscall6(202_culong, (@culong)((@usize)(control)),
+      nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(control)),
                           128_culong, 1_culong, 0_culong, 0_culong, 0_culong)
     else
       return 22 -- EINVAL
@@ -3907,7 +3931,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
     state.context.rwlock_read_owners[rwlock_owner_index].count = 0
     rwlock_owner_index = rwlock_owner_index + 1
   end
-  state.context.robust_pid = (@cint)(nelibc_raw_syscall3(39_culong,
+  state.context.robust_pid = (@cint)(nelibc_sys3(SYS_GETPID,
       0_culong, 0_culong, 0_culong))
   if state.context.robust_slot == nilptr then
     nelibc_thread_tid_slot_release(tid_word)
@@ -3940,7 +3964,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   if inheritsched == PTHREAD_EXPLICIT_SCHED then
     local param: SchedParam
     param.sched_priority = schedpriority
-    local result = nelibc_raw_syscall3(144_culong,
+    local result = nelibc_sys3(SYS_SCHED_SETSCHEDULER,
         (@culong)(nelibc_thread_tid_load((@pointer)(state.handle.tid_word))),
         (@culong)(schedpolicy), (@culong)((@usize)(&param)))
     if result < 0 and result >= -4095 then
@@ -3950,7 +3974,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   if scheduling_error ~= 0 then
     state.handle.state = 1
     nelibc_atomic_store_int(&state.context.startup_gate, -1)
-    nelibc_raw_syscall6(202_culong,
+    nelibc_sys6(SYS_FUTEX,
       (@culong)((@usize)(&state.context.startup_gate)), 129_culong,
       1_culong, 0_culong, 0_culong, 0_culong)
     thread_wait(&state.handle)
@@ -3964,7 +3988,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   pthread_object_register(state)
   thread[0] = object
   nelibc_atomic_store_int(&state.context.startup_gate, 1)
-  nelibc_raw_syscall6(202_culong,
+  nelibc_sys6(SYS_FUTEX,
     (@culong)((@usize)(&state.context.startup_gate)), 129_culong,
     1_culong, 0_culong, 0_culong, 0_culong)
   return 0
@@ -4176,7 +4200,7 @@ local function pthread_find_current_stack(probe: usize, stack_start: *[0]usize,
   local line_length: csize = 0
   local dropping_line = false
   while true do
-    local count = nelibc_raw_syscall3(0_culong, (@culong)(fd),
+    local count = nelibc_sys3(SYS_READ, (@culong)(fd),
         (@culong)((@usize)(&input[0])), 4096_culong)
     if count < 0 and count >= -4095 then
       close(fd)
@@ -4300,7 +4324,7 @@ local function pthread_getaffinity_np(thread: pointer, cpusetsize: csize,
   local tid: cint
   local thread_error = pthread_target_tid(thread, &tid)
   if thread_error ~= 0 then return thread_error end
-  local result = nelibc_raw_syscall3(204_culong, (@culong)(tid),
+  local result = nelibc_sys3(SYS_SCHED_GETAFFINITY, (@culong)(tid),
       (@culong)(cpusetsize), (@culong)((@usize)(cpuset))) -- sched_getaffinity
   if result < 0 and result >= -4095 then return (@cint)(-result) end
   return 0
@@ -4311,7 +4335,7 @@ local function pthread_setaffinity_np(thread: pointer, cpusetsize: csize,
   local tid: cint
   local thread_error = pthread_target_tid(thread, &tid)
   if thread_error ~= 0 then return thread_error end
-  local result = nelibc_raw_syscall3(203_culong, (@culong)(tid),
+  local result = nelibc_sys3(SYS_SCHED_SETAFFINITY, (@culong)(tid),
       (@culong)(cpusetsize), (@culong)((@usize)(cpuset))) -- sched_setaffinity
   if result < 0 and result >= -4095 then return (@cint)(-result) end
   return 0
@@ -4355,7 +4379,7 @@ local function pthread_getname_np(thread: pointer, name: *[0]cchar,
   local thread_error = pthread_target_tid(thread, &tid)
   if thread_error ~= 0 then return thread_error end
   if thread == pthread_self() then
-    local result = nelibc_raw_syscall6(157_culong, 16_culong,
+    local result = nelibc_sys6(SYS_PRCTL, 16_culong,
         (@culong)((@usize)(name)), 0_culong, 0_culong, 0_culong, 0_culong)
     if result < 0 and result >= -4095 then return (@cint)(-result) end
     return 0
@@ -4368,7 +4392,7 @@ local function pthread_getname_np(thread: pointer, name: *[0]cchar,
     if error_code == 2 then return 3 end -- ESRCH: target exited
     return error_code
   end
-  local result = nelibc_raw_syscall3(0_culong, (@culong)(fd),
+  local result = nelibc_sys3(SYS_READ, (@culong)(fd),
       (@culong)((@usize)(name)), (@culong)(length)) -- read
   close(fd)
   if result < 0 and result >= -4095 then return (@cint)(-result) end
@@ -4390,7 +4414,7 @@ local function pthread_setname_np(thread: pointer,
   local thread_error = pthread_target_tid(thread, &tid)
   if thread_error ~= 0 then return thread_error end
   if thread == pthread_self() then
-    local result = nelibc_raw_syscall6(157_culong, 15_culong,
+    local result = nelibc_sys6(SYS_PRCTL, 15_culong,
         (@culong)((@usize)(name)), 0_culong, 0_culong, 0_culong, 0_culong)
     if result < 0 and result >= -4095 then return (@cint)(-result) end
     return 0
@@ -4403,7 +4427,7 @@ local function pthread_setname_np(thread: pointer,
     if error_code == 2 then return 3 end -- ESRCH: target exited
     return error_code
   end
-  local result = nelibc_raw_syscall3(1_culong, (@culong)(fd),
+  local result = nelibc_sys3(SYS_WRITE, (@culong)(fd),
       (@culong)((@usize)(name)), (@culong)(name_length)) -- write
   close(fd)
   if result < 0 and result >= -4095 then return (@cint)(-result) end
@@ -4416,9 +4440,9 @@ local function pthread_kill(thread: pointer, signal: cint): cint <cexport, coden
   local tid: cint
   local thread_error = pthread_target_tid(thread, &tid)
   if thread_error ~= 0 then return thread_error end
-  local pid = nelibc_raw_syscall3(39_culong, 0_culong, 0_culong, 0_culong)
+  local pid = nelibc_sys3(SYS_GETPID, 0_culong, 0_culong, 0_culong)
   if pid < 0 then return 3 end -- ESRCH
-  local result = nelibc_raw_syscall3(234_culong, (@culong)(pid),
+  local result = nelibc_sys3(SYS_TGKILL, (@culong)(pid),
       (@culong)(tid), (@culong)(signal))
   if result < 0 and result >= -4095 then return (@cint)(-result) end
   return 0
@@ -4459,11 +4483,11 @@ local function pthread_getschedparam(thread: pointer, policy: *[0]cint,
     return 0
   end
   if context ~= nilptr then pthread_priority_context_unlock(context) end
-  local sched_policy = nelibc_raw_syscall3(145_culong, (@culong)(tid),
+  local sched_policy = nelibc_sys3(SYS_SCHED_GETSCHEDULER, (@culong)(tid),
                                            0_culong, 0_culong)
   if sched_policy < 0 and sched_policy >= -4095 then return (@cint)(-sched_policy) end
   local sched_param: SchedParam
-  local result = nelibc_raw_syscall3(143_culong, (@culong)(tid),
+  local result = nelibc_sys3(SYS_SCHED_GETPARAM, (@culong)(tid),
       (@culong)((@usize)(&sched_param)), 0_culong)
   if result < 0 and result >= -4095 then return (@cint)(-result) end
   policy[0] = (@cint)(sched_policy)
@@ -4506,7 +4530,7 @@ local function pthread_setschedparam(thread: pointer, policy: cint,
     pthread_priority_context_unlock(context)
     return 0
   end
-  local result = nelibc_raw_syscall3(144_culong, (@culong)(tid),
+  local result = nelibc_sys3(SYS_SCHED_SETSCHEDULER, (@culong)(tid),
       (@culong)(policy), (@culong)((@usize)(param)))
   if result < 0 and result >= -4095 then
     if context ~= nilptr then pthread_priority_context_unlock(context) end

@@ -1,13 +1,17 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
 
+-- nelibc_sys operations this module uses; tools/sys_ops.py keeps the block current. (begin)
+local SYS_WRITE: culong <comptime> = 1
+-- (end nelibc_sys operations)
+
 -- The assembly shim implements the Linux x86_64 syscall register ABI. Return
 -- raw kernel results here; POSIX errno translation is a separate libc layer.
-local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
+local function nelibc_sys3(op: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
 
 local function nelibc_linux_write(fd: cint, buf: pointer, count: csize): clong <cexport, codename 'nelibc_linux_write'>
-  return nelibc_raw_syscall3(
-    1_culong,
+  return nelibc_sys3(
+    SYS_WRITE,
     (@culong)(fd),
     (@culong)((@usize)(buf)),
     (@culong)(count)

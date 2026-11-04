@@ -1,8 +1,32 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
 
-local function nelibc_raw_syscall3(number: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
-local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
+-- nelibc_sys operations this module uses; tools/sys_ops.py keeps the block current. (begin)
+local SYS_READ: culong <comptime> = 0
+local SYS_WRITE: culong <comptime> = 1
+local SYS_CLOSE: culong <comptime> = 3
+local SYS_RT_SIGACTION: culong <comptime> = 13
+local SYS_RT_SIGPROCMASK: culong <comptime> = 14
+local SYS_DUP2: culong <comptime> = 28
+local SYS_FORK: culong <comptime> = 52
+local SYS_EXIT: culong <comptime> = 55
+local SYS_WAIT4: culong <comptime> = 56
+local SYS_KILL: culong <comptime> = 57
+local SYS_FCNTL: culong <comptime> = 59
+local SYS_CHDIR: culong <comptime> = 66
+local SYS_FCHDIR: culong <comptime> = 67
+local SYS_GETUID: culong <comptime> = 78
+local SYS_GETGID: culong <comptime> = 79
+local SYS_SETPGID: culong <comptime> = 84
+local SYS_SETRESUID: culong <comptime> = 92
+local SYS_SETRESGID: culong <comptime> = 94
+local SYS_SCHED_SETPARAM: culong <comptime> = 106
+local SYS_SCHED_SETSCHEDULER: culong <comptime> = 108
+local SYS_OPENAT: culong <comptime> = 163
+-- (end nelibc_sys operations)
+
+local function nelibc_sys3(op: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
+local function nelibc_sys6(op: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function malloc(size: csize): pointer <cimport> end
 local function free(ptr: pointer): void <cimport> end
@@ -297,20 +321,20 @@ local function nelibc_spawn_child_fail(error_fd: cint, error_number: cint): void
   local written: csize = 0
   while written < 4_csize do
     local address = (@pointer)((@usize)(&error_number) + (@usize)(written))
-    local write_result = nelibc_raw_syscall3(1_culong, (@culong)(error_fd),
+    local write_result = nelibc_sys3(SYS_WRITE, (@culong)(error_fd),
         (@culong)((@usize)(address)), (@culong)(4_csize - written))
     if write_result == -4_clong then continue end -- EINTR
     if write_result <= 0_clong then break end
     written = written + (@csize)(write_result)
   end
-  nelibc_raw_syscall3(60_culong, 127_culong, 0_culong, 0_culong)
+  nelibc_sys3(SYS_EXIT, 127_culong, 0_culong, 0_culong)
   while true do end
 end
 
 -- Spawn is not a cancellation point, including its child-error cleanup path.
 local function nelibc_spawn_reap_child(child: cint): void
   while true do
-    local result = nelibc_raw_syscall6(61_culong, (@culong)(child), 0_culong,
+    local result = nelibc_sys6(SYS_WAIT4, (@culong)(child), 0_culong,
         0_culong, 0_culong, 0_culong, 0_culong) -- wait4(pid, NULL, 0, NULL)
     if result == -4_clong then continue end -- EINTR
     return
@@ -336,25 +360,25 @@ local function nelibc_spawn_apply_actions(actions: *SpawnFileActions,
   while action ~= nilptr do
     local result: clong = 0_clong
     if action.kind == 1_cint then
-      result = nelibc_raw_syscall3(3_culong, (@culong)(action.fd), 0_culong, 0_culong)
+      result = nelibc_sys3(SYS_CLOSE, (@culong)(action.fd), 0_culong, 0_culong)
     elseif action.kind == 2_cint then
-      result = nelibc_raw_syscall3(33_culong, (@culong)(action.fd),
+      result = nelibc_sys3(SYS_DUP2, (@culong)(action.fd),
           (@culong)(action.newfd), 0_culong)
     elseif action.kind == 3_cint then
-      result = nelibc_raw_syscall6(257_culong, 0xffffffffffffff9c_culong,
+      result = nelibc_sys6(SYS_OPENAT, 0xffffffffffffff9c_culong,
           (@culong)((@usize)(action.pathname)), (@culong)(action.flags),
           (@culong)(action.mode), 0_culong, 0_culong)
       if result >= 0_clong and result ~= action.fd then
         local opened_fd = result
-        result = nelibc_raw_syscall3(33_culong, (@culong)(opened_fd),
+        result = nelibc_sys3(SYS_DUP2, (@culong)(opened_fd),
             (@culong)(action.fd), 0_culong)
-        nelibc_raw_syscall3(3_culong, (@culong)(opened_fd), 0_culong, 0_culong)
+        nelibc_sys3(SYS_CLOSE, (@culong)(opened_fd), 0_culong, 0_culong)
       end
     elseif action.kind == 4_cint then
-      result = nelibc_raw_syscall3(80_culong,
+      result = nelibc_sys3(SYS_CHDIR,
           (@culong)((@usize)(action.pathname)), 0_culong, 0_culong)
     else
-      result = nelibc_raw_syscall3(81_culong, (@culong)(action.fd), 0_culong, 0_culong)
+      result = nelibc_sys3(SYS_FCHDIR, (@culong)(action.fd), 0_culong, 0_culong)
     end
     if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
     action = action.next
@@ -366,7 +390,7 @@ local function nelibc_spawn_apply_attributes(attributes: *SpawnAttributes,
   if attributes == nilptr then return end
   local result: clong = 0_clong
   if (attributes.flags & 0x02_cint) ~= 0_cint then -- POSIX_SPAWN_SETPGROUP
-    result = nelibc_raw_syscall3(109_culong, 0_culong,
+    result = nelibc_sys3(SYS_SETPGID, 0_culong,
         (@culong)(attributes.pgroup), 0_culong)
     if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
   end
@@ -382,7 +406,7 @@ local function nelibc_spawn_apply_attributes(attributes: *SpawnAttributes,
         default_action.flags = 0_culong
         default_action.restorer = nilptr
         default_action.mask = 0_culong
-        result = nelibc_raw_syscall6(13_culong, (@culong)(signal_number),
+        result = nelibc_sys6(SYS_RT_SIGACTION, (@culong)(signal_number),
             (@culong)((@usize)(&default_action)), 0_culong, 8_culong,
             0_culong, 0_culong)
         if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
@@ -391,31 +415,31 @@ local function nelibc_spawn_apply_attributes(attributes: *SpawnAttributes,
     end
   end
   if (attributes.flags & 0x08_cint) ~= 0_cint then -- POSIX_SPAWN_SETSIGMASK
-    result = nelibc_raw_syscall6(14_culong, 2_culong,
+    result = nelibc_sys6(SYS_RT_SIGPROCMASK, 2_culong,
         (@culong)((@usize)(&attributes.sigmask)), 0_culong, 8_culong,
         0_culong, 0_culong)
     if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
   end
   if (attributes.flags & 0x01_cint) ~= 0_cint then -- POSIX_SPAWN_RESETIDS
-    local real_gid = nelibc_raw_syscall3(104_culong, 0_culong, 0_culong, 0_culong)
-    result = nelibc_raw_syscall6(119_culong, (@culong)(real_gid),
+    local real_gid = nelibc_sys3(SYS_GETGID, 0_culong, 0_culong, 0_culong)
+    result = nelibc_sys6(SYS_SETRESGID, (@culong)(real_gid),
         (@culong)(real_gid), 0xffffffffffffffff_culong, 0_culong, 0_culong, 0_culong)
     if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
-    local real_uid = nelibc_raw_syscall3(102_culong, 0_culong, 0_culong, 0_culong)
-    result = nelibc_raw_syscall6(117_culong, (@culong)(real_uid),
+    local real_uid = nelibc_sys3(SYS_GETUID, 0_culong, 0_culong, 0_culong)
+    result = nelibc_sys6(SYS_SETRESUID, (@culong)(real_uid),
         (@culong)(real_uid), 0xffffffffffffffff_culong, 0_culong, 0_culong, 0_culong)
     if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
   end
   if (attributes.flags & 0x20_cint) ~= 0_cint then -- POSIX_SPAWN_SETSCHEDULER
     local parameter: SpawnSchedParam
     parameter.sched_priority = attributes.schedpriority
-    result = nelibc_raw_syscall3(144_culong, 0_culong,
+    result = nelibc_sys3(SYS_SCHED_SETSCHEDULER, 0_culong,
         (@culong)(attributes.schedpolicy), (@culong)((@usize)(&parameter)))
     if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
   elseif (attributes.flags & 0x10_cint) ~= 0_cint then -- POSIX_SPAWN_SETSCHEDPARAM
     local parameter: SpawnSchedParam
     parameter.sched_priority = attributes.schedpriority
-    result = nelibc_raw_syscall3(142_culong, 0_culong,
+    result = nelibc_sys3(SYS_SCHED_SETPARAM, 0_culong,
         (@culong)((@usize)(&parameter)), 0_culong)
     if result < 0_clong then nelibc_spawn_child_fail(error_fd, (@cint)(-result)) end
   end
@@ -544,51 +568,51 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
   end
   local maximum_action_fd = nelibc_spawn_max_action_fd(action_state)
   if maximum_action_fd >= 0x7ffffffe_cint then
-    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
-    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+    nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[1]), 0_culong, 0_culong)
     nelibc_spawn_candidates_destroy(executable_candidates)
     nelibc_errno_location()[0] = saved_errno
     return 24_cint -- EMFILE: no room above all action descriptors for the error channel
   end
   local minimum_error_fd = maximum_action_fd + 1_cint
   if minimum_error_fd < 3_cint then minimum_error_fd = 3_cint end
-  local raw_read_fd = nelibc_raw_syscall3(72_culong, (@culong)(error_pipe[0]),
+  local raw_read_fd = nelibc_sys3(SYS_FCNTL, (@culong)(error_pipe[0]),
       1030_culong, (@culong)(minimum_error_fd))
   if raw_read_fd < 0_clong then
     local error_number = (@cint)(-raw_read_fd)
-    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
-    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+    nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[1]), 0_culong, 0_culong)
     nelibc_spawn_candidates_destroy(executable_candidates)
     nelibc_errno_location()[0] = saved_errno
     return error_number
   end
-  local raw_write_fd = nelibc_raw_syscall3(72_culong, (@culong)(error_pipe[1]),
+  local raw_write_fd = nelibc_sys3(SYS_FCNTL, (@culong)(error_pipe[1]),
       1030_culong, (@culong)(minimum_error_fd + 1_cint))
   if raw_write_fd < 0_clong then
     local error_number = (@cint)(-raw_write_fd)
-    nelibc_raw_syscall3(3_culong, (@culong)(raw_read_fd), 0_culong, 0_culong)
-    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
-    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+    nelibc_sys3(SYS_CLOSE, (@culong)(raw_read_fd), 0_culong, 0_culong)
+    nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[1]), 0_culong, 0_culong)
     nelibc_spawn_candidates_destroy(executable_candidates)
     nelibc_errno_location()[0] = saved_errno
     return error_number
   end
-  nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
-  nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+  nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+  nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[1]), 0_culong, 0_culong)
   error_pipe[0] = (@cint)(raw_read_fd)
   error_pipe[1] = (@cint)(raw_write_fd)
-  local raw_child = nelibc_raw_syscall3(57_culong, 0_culong, 0_culong, 0_culong)
+  local raw_child = nelibc_sys3(SYS_FORK, 0_culong, 0_culong, 0_culong)
   local child = (@cint)(syscall_result(raw_child))
   if child < 0_cint then
     local error_number = nelibc_errno_location()[0]
-    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
-    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+    nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[1]), 0_culong, 0_culong)
     nelibc_spawn_candidates_destroy(executable_candidates)
     nelibc_errno_location()[0] = saved_errno
     return error_number
   end
   if child == 0_cint then
-    nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+    nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[0]), 0_culong, 0_culong)
     nelibc_spawn_apply_attributes(attribute_state, error_pipe[1])
     nelibc_spawn_apply_actions(action_state, error_pipe[1])
     local child_error: cint = 0_cint
@@ -616,13 +640,13 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
     nelibc_spawn_child_fail(error_pipe[1], child_error)
   end
 
-  nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[1]), 0_culong, 0_culong)
+  nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[1]), 0_culong, 0_culong)
   local child_error: cint = 0
   local received: csize = 0
   local read_error: cint = 0
   while received < 4_csize do
     local address = (@pointer)((@usize)(&child_error) + (@usize)(received))
-    local result = nelibc_raw_syscall3(0_culong, (@culong)(error_pipe[0]),
+    local result = nelibc_sys3(SYS_READ, (@culong)(error_pipe[0]),
                                        (@culong)((@usize)(address)),
                                        (@culong)(4_csize - received))
     if result == 0_culong then break end
@@ -633,9 +657,9 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
     end
     received = received + (@csize)(result)
   end
-  nelibc_raw_syscall3(3_culong, (@culong)(error_pipe[0]), 0_culong, 0_culong)
+  nelibc_sys3(SYS_CLOSE, (@culong)(error_pipe[0]), 0_culong, 0_culong)
   if read_error ~= 0_cint or (received ~= 0_csize and received ~= 4_csize) then
-    nelibc_raw_syscall3(62_culong, (@culong)(child), 9_culong, 0_culong) -- kill SIGKILL
+    nelibc_sys3(SYS_KILL, (@culong)(child), 9_culong, 0_culong) -- kill SIGKILL
     nelibc_spawn_reap_child(child)
     nelibc_spawn_candidates_destroy(executable_candidates)
     nelibc_errno_location()[0] = saved_errno

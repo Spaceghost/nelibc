@@ -1,12 +1,13 @@
 /* Nelibc host profile: the platform operations a kernel or other
  * freestanding environment supplies beneath the Nelua libc.
  *
- * The host profile is the standalone Linux x86-64 archive with its Linux
- * entry point and raw `syscall` instruction removed. Every kernel request the
- * standalone modules make still arrives as a Linux x86-64 syscall number at
- * `nelibc_raw_syscall3`/`nelibc_raw_syscall6`; the host profile dispatches
- * those numbers to the operations below and answers the rest with -ENOSYS.
- * The libc modules themselves are not modified.
+ * The host profile is the standalone archive with its Linux entry point and
+ * its Linux operation backend removed. Every platform request the modules
+ * make arrives as a Nelibc operation (NELIBC_SYS_*, include/nelibc_sys.h)
+ * at `nelibc_sys3`/`nelibc_sys6`; the host profile answers those from the
+ * callbacks below and the rest with -ENOSYS. No Linux syscall number and no
+ * `syscall` instruction remains. The libc modules themselves are not
+ * modified.
  *
  * The shape follows Drift's `drift_hw`: one table of callbacks plus a context
  * pointer, bound once, with no global state owned by the host. A kernel that
@@ -17,7 +18,7 @@
  * onto the one hardware thread the host supplies (cooperative lanes). A
  * lane runs until it blocks in the libc (futex wait, sleep, empty pipe,
  * poll with nothing ready), calls sched_yield, or exits; the profile then
- * switches stack and thread pointer (through thread_pointer_set) to the
+ * switches stack and thread pointer (through thread_area_set) to the
  * next runnable lane. Nothing preempts a lane. A wait that no lane could
  * end stops the machine through `exit` with status
  * NELIBC_HOST_EXIT_DEADLOCK. Atomics are compiler-provided and unaffected.
@@ -78,17 +79,18 @@ typedef struct nelibc_host {
    * monotonic clock. */
   void (*sleep)(void *context, uint64_t nanoseconds);
 
-  /* Required. Install the x86-64 thread pointer (FS base). On Linux this is
-   * arch_prctl(ARCH_SET_FS); in a kernel it is a write to MSR 0xC0000100.
-   * Called at boot and on every switch between lanes. */
-  int (*thread_pointer_set)(void *context, void *thread_pointer);
+  /* Required. Install the thread-local storage base in the architecture's
+   * thread register (the FS base on x86-64: arch_prctl(ARCH_SET_FS) on
+   * Linux, MSR 0xC0000100 in a kernel). Called at boot and on every switch
+   * between lanes. */
+  int (*thread_area_set)(void *context, void *thread_area);
 
   /* Required. Terminate with a status. Must not return. */
   void (*exit)(void *context, int status);
 
-  /* Optional. Called once per unsupported syscall number before -ENOSYS is
-   * returned, for diagnostics. */
-  void (*unsupported)(void *context, unsigned long number);
+  /* Optional. Called once per unsupported operation (a NELIBC_SYS_* value)
+   * before -ENOSYS is returned, for diagnostics. */
+  void (*unsupported)(void *context, unsigned long operation);
 
   /* NULL-terminated "NAME=value" vector for getenv, or NULL. */
   char **environment;
