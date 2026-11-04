@@ -82,3 +82,30 @@ host-bend-hello-zig: $(OUT)/libnelibc-host-zig.a tools/host_bend_hello.bend tool
 	$(MAKE) host-bend-run-zig BEND_C=$(OUT)/host-bend-hello.c BEND_OUT=$(OUT)/host-bend-hello-zig
 	@test "$$(cat $(OUT)/host-bend-hello-zig.log)" = hi || { echo 'expected hi'; exit 1; }
 	@echo 'host-bend-hello-zig: Bend 2 IO.print ran through the nelibc host profile'
+
+# Generated-C snapshot of the host archive (tools/host_snapshot.sh): the
+# Nelua modules lowered to C by the pinned Nelua, the C and assembly sources,
+# the headers, and a plain Makefile. A consumer needs a C compiler, ar, and
+# objcopy only. host-snapshot-check-* rebuilds the archive from the snapshot
+# with that compiler, requires no undefined symbols, and runs the hosted smoke.
+HOST_SNAPSHOT ?= $(OUT)/host-snapshot
+host-snapshot: tools/host_snapshot.sh | $(OUT)
+	sh tools/host_snapshot.sh '$(NELUA)' $(HOST_SNAPSHOT)
+
+define host-snapshot-check
+	$(MAKE) -C $(HOST_SNAPSHOT) CC='$(2)' AR='$(AR)' OBJCOPY='$(OBJCOPY)' O=obj-$(1) all
+	$(2) -nostdlib -r -Wl,--whole-archive $(HOST_SNAPSHOT)/obj-$(1)/libnelibc-host.a -Wl,--no-whole-archive -o $(OUT)/host-snapshot-linked-$(1).o
+	@test -z "$$($(NM) -u $(OUT)/host-snapshot-linked-$(1).o | grep -v _GLOBAL_OFFSET_TABLE_)" || { $(NM) -u $(OUT)/host-snapshot-linked-$(1).o; exit 1; }
+	$(2) $(HOST_LINK_FLAGS) $(3) tools/host_smoke.c tools/host_linux.c $(HOST_SNAPSHOT)/obj-$(1)/libnelibc-host.a -o $(OUT)/host-smoke-snapshot-$(1)
+	@test -z "$$($(NM) -u $(OUT)/host-smoke-snapshot-$(1))"
+	@$(OUT)/host-smoke-snapshot-$(1) > $(OUT)/host-smoke-snapshot-$(1).log 2>&1; status=$$?; cat $(OUT)/host-smoke-snapshot-$(1).log; test $$status -eq 7 || { echo "host snapshot smoke ($(1)) exited $$status"; exit 1; }
+	@grep -q '^host smoke: OK' $(OUT)/host-smoke-snapshot-$(1).log && grep -q '^atexit handler ran' $(OUT)/host-smoke-snapshot-$(1).log
+	@echo 'host snapshot ($(1)): archive built from generated C, no undefined symbols, hosted smoke passed'
+endef
+
+host-snapshot-check-zig: host-snapshot tools/host_smoke.c tools/host_linux.c
+	$(call host-snapshot-check,zig,$(ZIG) cc $(ZIGFLAGS),)
+host-snapshot-check-gcc: host-snapshot tools/host_smoke.c tools/host_linux.c
+	$(call host-snapshot-check,gcc,gcc,-fno-tree-loop-distribute-patterns)
+
+host-snapshot-matrix: host-snapshot-check-zig host-snapshot-check-gcc
