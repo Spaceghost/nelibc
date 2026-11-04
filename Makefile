@@ -481,7 +481,7 @@ $(OUT)/libnelibc-zig.a: Makefile zig $(OUT)/inet-zig.o $(OUT)/stdio-format-zig.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-zig.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/fclose-hybrid-zig.o src/fclose_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-zig.o src/sys/linux_x86_64.nelua
-	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-zig-asm.o
+	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-zig-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_WITH_UNISTD -DNELIBC_USE_GLIBC_CANCEL_WRAPPERS -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin -fno-sanitize=all -c src/stdio_host_adapter.c -o $(OUT)/stdio-host-adapter-zig.o
@@ -531,7 +531,7 @@ $(OUT)/libnelibc-gcc.a: Makefile gcc $(OUT)/inet-gcc.o $(OUT)/stdio-format-gcc.o
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-gcc.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/fclose-hybrid-gcc.o src/fclose_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-gcc.o src/sys/linux_x86_64.nelua
-	gcc -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-gcc-asm.o
+	gcc -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-gcc-asm.o
 	gcc -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-gcc.o
 	gcc -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_WITH_UNISTD -DNELIBC_USE_GLIBC_CANCEL_WRAPPERS -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-gcc.o
 	gcc -Iinclude -fno-builtin -fno-sanitize=all -c src/stdio_host_adapter.c -o $(OUT)/stdio-host-adapter-gcc.o
@@ -579,7 +579,7 @@ $(OUT)/libnelibc-zig-musl.a: Makefile zig-musl $(OUT)/inet-zig-musl.o $(OUT)/mal
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/stdio-hybrid-zig-musl.o src/stdio_hybrid_musl.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/atexit-musl-hybrid-zig-musl.o src/atexit_musl_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/sys-linux-x86_64-zig-musl.o src/sys/linux_x86_64.nelua
-	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-zig-musl-asm.o
+	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-zig-musl-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_WITH_UNISTD -DNELIBC_USE_MUSL_SYSCALL_CP -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -c src/stdio_host_adapter.c -o $(OUT)/stdio-host-adapter-zig-musl.o
@@ -630,7 +630,7 @@ $(OUT)/libnelibc-tcc.a: Makefile tcc $(OUT)/inet-tcc.o $(OUT)/stdio-format-tcc.o
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-tcc.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/fclose-hybrid-tcc.o src/fclose_hybrid.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-tcc.o src/sys/linux_x86_64.nelua
-	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-tcc-asm.o
+	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-tcc-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-tcc.o
 	# TinyCC lacks C TLS; compile this TLS-bearing adapter with Zig cc.
 	$(ZIG) cc $(ZIGFLAGS) -pthread -Iinclude -fno-builtin -DNELIBC_WITH_UNISTD -DNELIBC_USE_GLIBC_CANCEL_WRAPPERS -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-tcc.o
@@ -1601,7 +1601,7 @@ alloc-shootout-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/libnelibc-zig.a
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/alloc-bench-zig.o src/alloc.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/sys-linux-x86_64-bench-zig.o src/sys/linux_x86_64.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-O2 -fno-builtin' -o $(OUT)/errno-host-bench-zig.o src/errno/host.nelua
-	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-bench-zig-asm.o
+	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-bench-zig-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-bench-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -O2 -Iinclude -fno-builtin -DNELIBC_ALLOCATOR_FASTPATH_SAFE -DBENCH_COMPILER='"Zig cc"' -DBENCH_LIBC='"glibc"' -DNELIBC_BENCH_GLIBC tools/alloc_bench.c $(OUT)/alloc-bench-zig.o $(OUT)/memory-bench-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/sys-linux-x86_64-bench-zig.o $(OUT)/sys-linux-x86_64-bench-zig-asm.o $(OUT)/sys-ops-bench-zig.o $(OUT)/errno-host-bench-zig.o $(OUT)/libnelibc-zig.a -o $(OUT)/alloc-shootout-zig
 	$(OUT)/alloc-shootout-zig > $(OUT)/alloc-shootout-zig.csv
@@ -1612,7 +1612,7 @@ alloc-shootout-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/libnelibc-gcc.a
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/alloc-bench-gcc.o src/alloc.nelua
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/sys-linux-x86_64-bench-gcc.o src/sys/linux_x86_64.nelua
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/errno-host-bench-gcc.o src/errno/host.nelua
-	gcc -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-bench-gcc-asm.o
+	gcc -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-bench-gcc-asm.o
 	gcc -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-bench-gcc.o
 	gcc -O2 -Iinclude -fno-builtin -DNELIBC_ALLOCATOR_FASTPATH_SAFE -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DNELIBC_BENCH_GLIBC tools/alloc_bench.c $(OUT)/alloc-bench-gcc.o $(OUT)/memory-bench-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/sys-linux-x86_64-bench-gcc.o $(OUT)/sys-linux-x86_64-bench-gcc-asm.o $(OUT)/sys-ops-bench-gcc.o $(OUT)/errno-host-bench-gcc.o $(OUT)/libnelibc-gcc.a -o $(OUT)/alloc-shootout-gcc
 	$(OUT)/alloc-shootout-gcc > $(OUT)/alloc-shootout-gcc.csv
@@ -1623,7 +1623,7 @@ alloc-shootout-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/alloc-bench-zig-musl.o src/alloc.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/sys-linux-x86_64-bench-zig-musl.o src/sys/linux_x86_64.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -O2 -fno-builtin' -o $(OUT)/errno-host-bench-zig-musl.o src/errno/host.nelua
-	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-bench-zig-musl-asm.o
+	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-bench-zig-musl-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-bench-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_STATIC_MUSL -c src/alloc_hybrid_adapter.c -o $(OUT)/alloc-hybrid-adapter-zig-musl-bench.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-zig-musl-bench.o
@@ -1638,7 +1638,7 @@ alloc-shootout-tcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/libnelibc-tcc.a
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/alloc-bench-tcc.o src/alloc.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/sys-linux-x86_64-bench-tcc.o src/sys/linux_x86_64.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/errno-host-bench-tcc.o src/errno/host.nelua
-	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-bench-tcc-asm.o
+	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-bench-tcc-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-bench-tcc.o
 	$(TCC) -O2 -Iinclude -fno-builtin -DNELIBC_ALLOCATOR_FASTPATH_SAFE -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DNELIBC_BENCH_GLIBC tools/alloc_bench.c $(OUT)/alloc-bench-tcc.o $(OUT)/memory-bench-tcc.o $(OUT)/memory-tcc-helper-bench.o $(OUT)/memory-tcc-simd-bench.o $(OUT)/sys-linux-x86_64-bench-tcc.o $(OUT)/sys-linux-x86_64-bench-tcc-asm.o $(OUT)/sys-ops-bench-tcc.o $(OUT)/errno-host-bench-tcc.o $(OUT)/libnelibc-tcc.a -o $(OUT)/alloc-shootout-tcc
 	$(OUT)/alloc-shootout-tcc > $(OUT)/alloc-shootout-tcc.csv
@@ -2438,7 +2438,7 @@ syscall-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-zig.o $(OUT
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-zig.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-zig.o src/open_memstream_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-zig.o src/fmemopen_hybrid.nelua
-	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-zig-asm.o
+	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-zig-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -pthread -Iinclude -fno-builtin -DNELIBC_TESTING tools/syscall_smoke.c $(OUT)/string-locale-zig.o $(OUT)/string-locale-lock-zig.o src/fcntl_adapter.c src/credential_adapter.c src/stdio_host_adapter.c src/alloc_hybrid_adapter.c tools/syscall_interpose_smoke.c $(OUT)/string-syscall-zig.o $(OUT)/stdlib-syscall-zig.o $(OUT)/memory-syscall-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/unistd-smoke-zig.o $(OUT)/stdio-hybrid-zig.o $(OUT)/open-memstream-hybrid-zig.o $(OUT)/fmemopen-hybrid-zig.o $(OUT)/alloc-zig.o $(OUT)/errno-host-zig.o $(OUT)/sys-linux-x86_64-zig.o $(OUT)/sys-linux-x86_64-zig-asm.o $(OUT)/sys-ops-zig.o src/environment_adapter.c -o $(OUT)/syscall-smoke-zig
 
@@ -2459,7 +2459,7 @@ syscall-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-gcc.o $(OUT
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-gcc.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-gcc.o src/open_memstream_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-gcc.o src/fmemopen_hybrid.nelua
-	gcc -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-gcc-asm.o
+	gcc -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-gcc-asm.o
 	gcc -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-gcc.o
 	gcc -pthread -Iinclude -fno-builtin -DNELIBC_TESTING tools/syscall_smoke.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o src/fcntl_adapter.c src/credential_adapter.c src/stdio_host_adapter.c src/alloc_hybrid_adapter.c tools/syscall_interpose_smoke.c $(OUT)/string-syscall-gcc.o $(OUT)/stdlib-syscall-gcc.o $(OUT)/memory-syscall-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/unistd-smoke-gcc.o $(OUT)/stdio-hybrid-gcc.o $(OUT)/open-memstream-hybrid-gcc.o $(OUT)/fmemopen-hybrid-gcc.o $(OUT)/alloc-gcc.o $(OUT)/errno-host-gcc.o $(OUT)/sys-linux-x86_64-gcc.o $(OUT)/sys-linux-x86_64-gcc-asm.o $(OUT)/sys-ops-gcc.o src/environment_adapter.c -o $(OUT)/syscall-smoke-gcc
 
@@ -2481,7 +2481,7 @@ syscall-zig-musl: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-zig-mu
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/open-memstream-hybrid-zig-musl.o src/open_memstream_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/fmemopen-hybrid-zig-musl.o src/fmemopen_hybrid.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $(OUT)/atexit-musl-hybrid-zig-musl.o src/atexit_musl_hybrid.nelua
-	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-zig-musl-asm.o
+	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-zig-musl-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -pthread -target x86_64-linux-musl -static -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL $(MUSL_STDIO_WRAP_FLAGS) -DNELIBC_TESTING tools/syscall_smoke.c $(OUT)/string-locale-zig-musl.o $(OUT)/string-locale-lock-zig-musl.o src/fcntl_adapter.c src/credential_adapter.c src/stdio_host_adapter.c src/alloc_hybrid_adapter.c tools/syscall_interpose_smoke.c $(OUT)/string-syscall-zig-musl.o $(OUT)/stdlib-syscall-zig-musl.o $(OUT)/memory-syscall-zig-musl.o $(OUT)/memory-x86_64-simd.o $(OUT)/unistd-smoke-zig-musl.o $(OUT)/stdio-hybrid-zig-musl.o $(OUT)/open-memstream-hybrid-zig-musl.o $(OUT)/fmemopen-hybrid-zig-musl.o $(OUT)/atexit-musl-hybrid-zig-musl.o $(OUT)/alloc-zig-musl.o $(OUT)/errno-host-zig-musl.o $(OUT)/sys-linux-x86_64-zig-musl.o $(OUT)/sys-linux-x86_64-zig-musl-asm.o $(OUT)/sys-ops-zig-musl.o src/environment_adapter.c -o $(OUT)/syscall-smoke-zig-musl
 
@@ -2497,7 +2497,7 @@ syscall-tcc: tcc $(OUT)/memory-x86_64-simd.o
 	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-smoke-tcc.o $(OUT)/unistd-smoke-tcc.o.host && mv $(OUT)/unistd-smoke-tcc.o.host $(OUT)/unistd-smoke-tcc.o
 	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-tcc.o src/open_memstream_hybrid.nelua
 	@$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-tcc.o src/fmemopen_hybrid.nelua
-	@$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-tcc-asm.o
+	@$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-tcc-asm.o
 	@$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-tcc.o
 	# TinyCC lacks max_align_t; long double supplies its x86-64 alignment here.
 	@$(TCC) -pthread -Iinclude -fno-builtin -Dmax_align_t='long double' -DNELIBC_TESTING -c tools/syscall_smoke.c -o $(OUT)/syscall-smoke-tcc.o
@@ -2523,7 +2523,7 @@ syscall-tls-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-gcc.o $
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/stdio-hybrid-tls-gcc.o src/stdio_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/open-memstream-hybrid-tls-gcc.o src/open_memstream_hybrid.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/fmemopen-hybrid-tls-gcc.o src/fmemopen_hybrid.nelua
-	gcc -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-tls-gcc-asm.o
+	gcc -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-tls-gcc-asm.o
 	gcc -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-tls-gcc.o
 	gcc -pthread -Iinclude -fno-builtin -DNELIBC_WITH_UNISTD tools/syscall_smoke.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o src/fcntl_adapter.c src/credential_adapter.c src/stdio_host_adapter.c tools/syscall_interpose_smoke.c $(OUT)/string-syscall-tls-gcc.o $(OUT)/stdlib-syscall-tls-gcc.o $(OUT)/memory-syscall-tls-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/unistd-tls-gcc.o $(OUT)/stdio-hybrid-tls-gcc.o $(OUT)/open-memstream-hybrid-tls-gcc.o $(OUT)/fmemopen-hybrid-tls-gcc.o $(OUT)/alloc-tls-gcc.o $(OUT)/errno-tls-gcc.o $(OUT)/sys-linux-x86_64-tls-gcc.o $(OUT)/sys-linux-x86_64-tls-gcc-asm.o $(OUT)/sys-ops-tls-gcc.o src/environment_adapter.c -o $(OUT)/syscall-smoke-tls-gcc
 	gcc -pthread -fno-builtin tools/errno_tls_smoke.c $(OUT)/errno-tls-gcc.o -o $(OUT)/errno-tls-smoke-gcc
@@ -2582,7 +2582,7 @@ standalone-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-zig.o src/unistd.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/stdio-standalone-zig.o src/stdio.nelua
 	$(ZIG) cc $(ZIGFLAGS) -c -std=c11 -ffreestanding -fno-builtin -fno-sanitize=all src/stdio_varargs.c -o $(OUT)/stdio-varargs-standalone-zig.o
-	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o
+	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/start_linux_x86_64_standalone.S -o $(OUT)/start-linux-x86_64-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Iinclude -DNELIBC_TESTING tools/syscall_smoke.c src/stdio_startup_stub.c src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c tools/syscall_interpose_smoke.c $(OUT)/string-locale-standalone-zig.o $(OUT)/string-standalone-zig.o $(OUT)/memory-standalone-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-zig.o $(OUT)/stdlib-standalone-zig.o $(OUT)/locale-standalone-zig.o $(OUT)/stdlib-exit-standalone-zig.o $(OUT)/stdlib-float-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o $(OUT)/sys-ops-standalone-zig.o $(OUT)/start-linux-x86_64-standalone-zig.o $(OUT)/errno-standalone-zig.o $(OUT)/tls-fixture-standalone-zig.o $(OUT)/tls-alignment-fixture-standalone-zig.o $(OUT)/thread-standalone-zig.o $(OUT)/alloc-standalone-zig.o $(OUT)/alloc-exports-standalone-zig.o $(OUT)/spawn-standalone-zig.o $(OUT)/unistd-standalone-smoke-zig.o $(OUT)/stdio-standalone-zig.o $(OUT)/stdio-varargs-standalone-zig.o src/environment_adapter.c -o $(OUT)/standalone-zig
@@ -2612,7 +2612,7 @@ standalone-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-gcc.o src/unistd.nelua
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/stdio-standalone-gcc.o src/stdio.nelua
 	gcc -c -std=c11 -ffreestanding -fno-builtin -fno-sanitize=all src/stdio_varargs.c -o $(OUT)/stdio-varargs-standalone-gcc.o
-	gcc -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o
+	gcc -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o
 	gcc -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-standalone-gcc.o
 	gcc -c src/sys/start_linux_x86_64_standalone.S -o $(OUT)/start-linux-x86_64-standalone-gcc.o
 	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Iinclude -DNELIBC_TESTING tools/syscall_smoke.c src/stdio_startup_stub.c src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c tools/syscall_interpose_smoke.c $(OUT)/string-locale-standalone-gcc.o $(OUT)/string-standalone-gcc.o $(OUT)/memory-standalone-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-gcc.o $(OUT)/stdlib-standalone-gcc.o $(OUT)/locale-standalone-gcc.o $(OUT)/stdlib-exit-standalone-gcc.o $(OUT)/stdlib-float-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o $(OUT)/sys-ops-standalone-gcc.o $(OUT)/start-linux-x86_64-standalone-gcc.o $(OUT)/errno-standalone-gcc.o $(OUT)/tls-fixture-standalone-gcc.o $(OUT)/tls-alignment-fixture-standalone-gcc.o $(OUT)/thread-standalone-gcc.o $(OUT)/alloc-standalone-gcc.o $(OUT)/alloc-exports-standalone-gcc.o $(OUT)/spawn-standalone-gcc.o $(OUT)/unistd-standalone-smoke-gcc.o $(OUT)/stdio-standalone-gcc.o $(OUT)/stdio-varargs-standalone-gcc.o src/environment_adapter.c -o $(OUT)/standalone-gcc
@@ -2647,7 +2647,7 @@ standalone-tcc: $(OUT) $(OUT)/memory-tcc-simd.o
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/unistd-standalone-tcc.o src/unistd.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/stdio-standalone-tcc.o src/stdio.nelua
 	$(TCC) -c -std=c11 -ffreestanding -fno-builtin -fno-sanitize=all src/stdio_varargs.c -o $(OUT)/stdio-varargs-standalone-tcc.o
-	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S src/sys/linux_x86_64_ops.c -o $(OUT)/sys-linux-x86_64-standalone-tcc-asm.o
+	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-standalone-tcc-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-standalone-tcc.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/start_linux_x86_64_standalone.S -o $(OUT)/start-linux-x86_64-standalone-tcc.o
 	$(TCC) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/fcntl_adapter.c -o $(OUT)/fcntl-adapter-standalone-tcc.o
