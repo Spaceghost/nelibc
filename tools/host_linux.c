@@ -79,28 +79,52 @@ static void host_sleep(void *context, uint64_t nanoseconds) {
   }
 }
 
+/* NELIBC_HOST_STATS=1 in the real environment: report how many times the
+ * profile installed a thread pointer (once at boot, then once per lane
+ * switch) on descriptor 2 at exit, so a run can show whether lanes ran. */
+static int host_stats;
+static unsigned long host_thread_pointer_sets;
+
 static int host_thread_pointer_set(void *context, void *thread_pointer) {
   (void)context;
+  host_thread_pointer_sets++;
   return (int)linux_syscall(158, 0x1002, (long)thread_pointer, 0, 0, 0, 0);
 }
 
-static void host_exit(void *context, int status) {
-  (void)context;
-  for (;;) linux_syscall(231, status, 0, 0, 0, 0, 0);
-}
-
-static void host_unsupported(void *context, unsigned long number) {
+static void host_write_number(char *text, size_t *length, unsigned long number) {
   static const char digits[] = "0123456789";
-  char text[48] = "host_linux: unsupported syscall ";
   char number_text[24];
-  size_t length = 32;
   size_t count = 0;
-  (void)context;
   do {
     number_text[count++] = digits[number % 10];
     number /= 10;
   } while (number != 0);
-  while (count > 0) text[length++] = number_text[--count];
+  while (count > 0) text[(*length)++] = number_text[--count];
+}
+
+static void host_exit(void *context, int status) {
+  (void)context;
+  if (host_stats) {
+    char text[96] = "host_linux: thread pointer set ";
+    size_t length = 31;
+    host_write_number(text, &length, host_thread_pointer_sets);
+    text[length++] = ' ';
+    text[length++] = 't';
+    text[length++] = 'i';
+    text[length++] = 'm';
+    text[length++] = 'e';
+    text[length++] = 's';
+    text[length++] = '\n';
+    linux_syscall(1, 2, (long)text, (long)length, 0, 0, 0);
+  }
+  for (;;) linux_syscall(231, status, 0, 0, 0, 0, 0);
+}
+
+static void host_unsupported(void *context, unsigned long number) {
+  char text[64] = "host_linux: unsupported syscall ";
+  size_t length = 32;
+  (void)context;
+  host_write_number(text, &length, number);
   text[length++] = '\n';
   linux_syscall(1, 2, (long)text, (long)length, 0, 0, 0);
 }
@@ -179,10 +203,19 @@ static char *host_environment[] = {
   0
 };
 
+static int host_text_equal(const char *a, const char *b) {
+  while (*a != 0 && *a == *b) {
+    a++;
+    b++;
+  }
+  return *a == *b;
+}
+
 void host_start(long *initial_stack) {
   static nelibc_host host;
   int argc = (int)initial_stack[0];
   char **argv = (char **)(initial_stack + 1);
+  char **real_environment = argv + argc + 1;
   const elf_phdr *phdr = (const elf_phdr *)((const char *)&__ehdr_start + __ehdr_start.phoff);
   unsigned short index;
 
@@ -207,6 +240,8 @@ void host_start(long *initial_stack) {
       host.tls.align = phdr[index].align;
     }
   }
+  for (index = 0; real_environment[index] != 0; index++)
+    if (host_text_equal(real_environment[index], "NELIBC_HOST_STATS=1")) host_stats = 1;
   host_install_faults();
   nelibc_host_run(&host, main, argc, argv);
 }
