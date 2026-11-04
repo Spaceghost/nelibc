@@ -53,41 +53,63 @@ implements, from the table above:
   `F_SETFD`, `F_DUPFD`), `dup`, `dup2`, `dup3`, `close`, `read`, `write`,
   `poll`, `ppoll`, `select`, `pselect6` over an in-memory ring per pipe.
 - Signals: `rt_sigaction`, `rt_sigprocmask`, `sigaltstack` record state;
-  `kill`, `tkill`, `tgkill` deliver to the calling thread inline, so `raise`
-  and `abort` behave as on Linux and a default terminating action ends the
-  program with status 128 + signal.
-- Threads: `futex` with single-lane semantics (see below), `sched_yield`,
+  `kill`, and `tkill`/`tgkill` aimed at the calling lane, deliver inline, so
+  `raise` and `abort` behave as on Linux and a default terminating action
+  ends the program with status 128 + signal. `tkill`/`tgkill` aimed at
+  another lane queue the signal for delivery when that lane next runs and
+  end a blocking wait it is in with `EINTR`; signal 0 is the liveness probe.
+- Threads: `clone` through `nelibc_clone_thread` (the wrapper `pthread_create`
+  uses), `futex` (wait, wake, wake-op, requeue, cmp-requeue, and the
+  priority-inheritance lock, unlock, and trylock operations), `sched_yield`,
   `sched_getaffinity`, scheduler parameter queries, `set_tid_address`,
-  `set_robust_list`, `arch_prctl(ARCH_SET_FS/ARCH_GET_FS)`.
-- Identity and limits: `getpid` 1, `gettid` 1, uid/gid 0, `uname`,
-  `getrlimit`/`prlimit64` with fixed values, `getrusage` zeros, `getcwd` "/",
-  `umask`, `prctl(PR_SET_NAME/PR_GET_NAME)`.
+  `set_robust_list`/`get_robust_list` with the robust-list walk at thread
+  exit, `arch_prctl(ARCH_SET_FS/ARCH_GET_FS)`. See "Lanes" below.
+- Identity and limits: `getpid` 1, `gettid` per lane (the initial lane is
+  1), uid/gid 0, `uname`, `getrlimit`/`prlimit64` with fixed values,
+  `getrusage` zeros, `getcwd` "/", `umask`, `prctl(PR_SET_NAME/PR_GET_NAME)`.
 - Files: every path operation returns `ENOENT`; `lseek`, `pread`, `pwrite`
   return `ESPIPE`; `ioctl` returns `ENOTTY`.
-- Process: `exit` and `exit_group` call `host->exit`; `fork`, `clone`,
-  `execve`, `wait4` return `ENOSYS` or `ECHILD`.
+- Process: `exit` ends the calling lane (and the program, through
+  `host->exit`, when it was the last one); `exit_group` calls `host->exit`;
+  `fork`, raw `clone`, `execve`, `wait4` return `ENOSYS` or `ECHILD`.
 
 Anything else returns `ENOSYS` after `host->unsupported`.
 
-### One lane
+### Lanes
 
-The profile runs one hardware thread and makes no attempt to hide it:
+The host supplies one hardware thread; the profile multiplexes every thread
+the program creates onto it as a cooperative lane:
 
-- `pthread_create` returns `EAGAIN` (`nelibc_clone_thread` reports `ENOSYS`).
-- Uncontended mutexes, condition signals, `pthread_once`, keys, and
-  `pthread_self` work as on a one-thread process.
-- A wait that no other thread could satisfy, such as a futex wait without a
-  timeout, a blocking read on an empty pipe, or `select` with nothing ready and
-  no timeout, stops the program through `host->exit` with status
-  `NELIBC_HOST_EXIT_DEADLOCK` (125) after a message on descriptor 2. A wait
-  with a timeout sleeps and reports the timeout.
+- `pthread_create` works. `nelibc_clone_thread` makes the new lane on the
+  stack and TLS block `thread.nelua` prepared, writes the thread id to the
+  `CLONE_PARENT_SETTID` word, and leaves the lane runnable. It first runs
+  when the creator blocks, yields, or exits.
+- A lane runs until it blocks in the dispatcher (a futex wait, `nanosleep`,
+  a read on an empty pipe, a write on a full one, `poll`/`select` with
+  nothing ready), calls `sched_yield`, or exits. The dispatcher then saves
+  the callee-saved registers and stack pointer, installs the next lane's
+  thread pointer through `thread_pointer_set`, and resumes it. Nothing
+  preempts a lane: a loop that never enters the dispatcher starves the
+  others, as on a one-CPU kernel without a timer interrupt.
+- Futex wake, requeue, and the PI unlock move lanes between the blocked and
+  runnable sets; `FUTEX_LOCK_PI` records the owner's thread id and the
+  waiters bit exactly as the kernel does, so `thread.nelua`'s mutex fast
+  paths stay valid. A thread exit clears the `CLONE_CHILD_CLEARTID` word,
+  wakes its joiner, and walks the robust list.
+- Timed waits sleep through `host->sleep` only when no lane is runnable;
+  otherwise other lanes run until the deadline. Up to 64 lanes exist at
+  once (`NELIBC_HOST_LANE_COUNT`); `pthread_create` reports `EAGAIN` past
+  that.
+- A wait that no lane could end, such as a futex wait without a timeout when
+  every other lane is also blocked without one, stops the program through
+  `host->exit` with status `NELIBC_HOST_EXIT_DEADLOCK` (125) after a message
+  on descriptor 2.
+- `sigaltstack` and the signal mask are process-wide, not per lane.
 
-For the Bend 2.0.39 runtime this is enough at `--threads 1`: the worker pool
-creates no threads for one lane, and the inspected programs (`IO.print`, the
-Writ examples and corpus) never reach the IO helper pool, so `pthread_create`
-is linked but not called. Cooperative threads behind the same table are the
-next step if a consumer needs the helpers; kernel threads remain possible
-later because the host sees only `clone` and `futex`.
+Kernel (preemptive) threads remain possible later because the host still
+sees only `nelibc_clone_thread`, `futex`, and `exit`; a host that supplies
+real threads would replace the lane scheduler in `syscall_host.c` and keep
+the rest.
 
 ### Faults
 
@@ -139,7 +161,9 @@ pointer, and exit, reads PT_TLS from the ELF header, and calls
 `nelibc_host_run`. `tools/host_smoke.c` is the program: stdio, environment,
 allocator growth, zero-filled reservations, formatting, clocks and sleeps, the
 self-pipe with `select` and `O_NONBLOCK`, signal registration and inline
-`raise`, affinity, single-lane pthreads, `atexit`, and a nonzero exit status.
+`raise`, affinity, pthreads as lanes (a thousand mutex-and-condition turns
+with a worker lane, a pipe handoff, join with a result, per-lane TLS and
+`gettid`, a detached lane), faults, `atexit`, and a nonzero exit status.
 The linked executable must also have no undefined symbols.
 
 Consumers compile against `include/` with `-DNELIBC_STANDALONE
@@ -153,10 +177,17 @@ Recorded on 2026-11-04 in an Incus container (Debian 12, bak) with Nelua
 2.0.39 (release archive sha256 `6cf462fd…c7ab`):
 
 - `make host-check-zig` and `make host-check-gcc`: no undefined symbols in
-  either host archive.
+  either host archive, and the disassembly of the whole-archive link holds
+  no `syscall` instruction outside `nelibc_rt_sigreturn` (the restorer the
+  Linux profiles install; the dispatcher never installs it).
 - `make host-smoke-zig` and `make host-smoke-gcc`: both print the three
   smoke lines and the `atexit` line and exit 7; both executables have no
-  undefined symbols.
+  undefined symbols. The smoke's lane section (worker lane, pipe handoff,
+  join, detached lane) passed on both.
+- `make host-snapshot-matrix`: the generated-C snapshot rebuilt with Zig and
+  with GCC passes the same checks, including the `syscall` scan.
+- The Bend hello program linked against `libnelibc-host-zig.a` printed `hi`
+  and exited 0 at `+RTS --threads 1`, `2`, `4`, and `8`.
 - `make host-bend-hello-zig`: the emitted `IO.print("hi")` program linked
   against `libnelibc-host-zig.a` and `tools/host_linux.c` prints `hi` and
   exits 0.
@@ -208,5 +239,6 @@ ship.
 
 ## Not done
 
-- Cooperative or kernel threads behind the table.
+- Kernel (preemptive) threads behind the table; lanes are cooperative.
+- Per-lane `sigaltstack` and signal masks.
 - Any architecture other than x86-64.

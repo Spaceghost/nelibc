@@ -13,7 +13,7 @@ archive; it does not certify every behavior required by C or POSIX.
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P1 | Process creation APIs | Standalone `posix_spawn`/`posix_spawnp` handles direct execution, PATH lookup, synchronous setup/exec-error reporting, ordered close/dup2/open/chdir/fchdir file actions, and standard spawn attributes; negative file-action descriptors return `EBADF` | Broaden process/signal/fork interaction audit and successful real-time scheduling coverage where permitted; hybrid profiles continue to use host spawn implementations |
 | P2 | Locale and character data | Standalone locale data supports C plus UTF-8 case/width/classification, C-style C/C.UTF-8 collation, a limited German UTF-8 collation, C/German numeric/monetary conventions, and German `LC_TIME` names/formats; thread and global locale state carry ctype, numeric, monetary, collation, and time categories | Expand Unicode collation weights and add more locale datasets |
-| P2 | Host profile (freestanding consumers) | Writ's freestanding Bend runtime and a Drift-style kernel need the standalone libc without Linux beneath it; `docs/host-profile.md` supplies it as the standalone archive over a `nelibc_host` callback table, single lane, with `make host-matrix` and the unmodified Bend 2.0.39 runtime as consumer checks | Cooperative threads behind the same table for the Bend IO helpers and a QEMU long-mode boot of the Bend corpus beside Drift's reference kernel |
+| P2 | Host profile (freestanding consumers) | Writ's freestanding Bend runtime and a Drift-style kernel need the standalone libc without Linux beneath it; `docs/host-profile.md` supplies it as the standalone archive over a `nelibc_host` callback table, with pthreads as cooperative lanes on the host's one hardware thread, fault delivery, a generated-C snapshot, and `make host-matrix`, `host-snapshot-matrix`, and the unmodified Bend 2.0.39 runtime as consumer checks | Kernel (preemptive) threads behind the same table and a QEMU long-mode boot of the Bend corpus beside Drift's reference kernel |
 | P2 | API-surface audit | The generated coverage table only sees declarations in current project headers and smoke references are locators, not proofs | Corrected baseline comparison against musl 1.2.5 is recorded in `docs/musl-1.2.5-api-coverage.csv`; classify the remaining undeclared candidates by program impact and record intentional omissions |
 | P3 | Platform portability | The syscall and startup backend is Linux x86-64-specific | Separate the syscall/ABI layer and add a second architecture before claiming portable standalone support |
 
@@ -54,6 +54,22 @@ locate regressions, they are not a published benchmark.
 Not run: every `*-tcc` target. Debian's packaged TinyCC 0.9.27 cannot build
 the profile (see the quickstart) and no mob-branch build is installed in the
 container yet. Those profiles are unrun, not passing.
+
+### Host profile lanes, 2026-11-04
+
+The host profile gained cooperative threads: `pthread_create` makes a lane
+on the one hardware thread, and the dispatcher switches lanes on every
+blocking wait, `sched_yield`, and thread exit, with futex wake, requeue,
+wake-op, and the priority-inheritance operations moving lanes, signals
+queued per lane, and the robust list walked at exit. In the same change
+the archive lost its last reachable `syscall` instructions (the credential
+adapter now goes through the raw entry point; the raw syscall bodies and
+the detached-exit helper are dropped from the host archive by section),
+and `host-check-*` disassembles the whole-archive link to prove it. In the
+same container and as the same user, `host-matrix` and
+`host-snapshot-matrix` passed with Zig and GCC, `host-bend-hello-zig`
+printed `hi`, and the same hello executable printed `hi` and exited 0 at
+`+RTS --threads 2`, `4`, and `8`.
 
 Hybrid archives now leave `fork` and `pthread_atfork` to the host libc. The
 Nelua raw-syscall fork and Nelibc atfork registry remain available in standalone

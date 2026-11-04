@@ -54,8 +54,8 @@ Hybrid archives add Nelua implementations while uncovered symbols continue to
 come from the selected host libc. Standalone is a separate profile with its
 own gaps. The [host profile](docs/host-profile.md) is standalone without
 Linux: the same objects over a table of host callbacks (console, memory,
-clock, exit) for kernels and other freestanding environments, one lane,
-checked by `make host-matrix` and by running the unmodified
+clock, exit) for kernels and other freestanding environments, with
+threads as cooperative lanes on the one hardware thread, checked by `make host-matrix` and by running the unmodified
 [Bend](https://github.com/bendlang/bend) 2 runtime that
 [Writ](https://github.com/Spaceghost/writ) compiles to. The [musl 1.2.5 API inventory](docs/musl-1.2.5-api-coverage.csv)
 tracks 1,471 function symbols. In the pinned hybrid comparison:
