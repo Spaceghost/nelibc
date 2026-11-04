@@ -149,7 +149,7 @@ $(OUT)/math-core-zig-musl.o: src/math_core.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin' -o $@ $<
 
 $(OUT)/math-core-gcc.o: src/math_core.nelua | $(OUT)
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $@ $<
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-stack-protector -fno-builtin' -o $@ $<
 
 $(OUT)/math-core-tcc.o: src/math_core.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $@ $<
@@ -166,7 +166,7 @@ $(OUT)/fenv-standalone-zig.o: src/fenv_standalone.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $@ $<
 
 $(OUT)/fenv-standalone-gcc.o: src/fenv_standalone.nelua | $(OUT)
-	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $@ $<
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-stack-protector -fno-builtin' -o $@ $<
 
 $(OUT)/fenv-standalone-tcc.o: src/fenv_standalone.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $@ $<
