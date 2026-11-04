@@ -5,7 +5,7 @@ TCC ?= tcc
 TCC_LIBTCC1 ?= $(shell $(TCC) -print-search-dirs 2>/dev/null | sed -n 's/^install: //p')/libtcc1.a
 AR ?= ar
 OBJCOPY ?= objcopy
-HYBRID_HOST_SYMBOLS := --localize-symbol=fork --localize-symbol=pthread_atfork
+HYBRID_HOST_SYMBOLS := --localize-symbol=fork --localize-symbol=_Fork --localize-symbol=pthread_atfork
 NM ?= nm
 OUT ?= build
 PATHCONF_PATHS ?= . /proc /dev/shm /boot

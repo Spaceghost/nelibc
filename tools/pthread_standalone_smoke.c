@@ -2185,6 +2185,17 @@ int main(void) {
     return 218;
   atfork_order_count = 0;
 
+  pid_t no_handlers_child = _Fork();
+  if (no_handlers_child == 0) {
+    if (atfork_order_count != 0) _exit(286);
+    _exit(0);
+  }
+  int no_handlers_status = -1;
+  if (no_handlers_child < 0 ||
+      waitpid(no_handlers_child, &no_handlers_status, 0) != no_handlers_child ||
+      no_handlers_status != 0 || atfork_order_count != 0)
+    return 287;
+
   atomic_store_explicit(&atfork_registration_stop, 0, memory_order_relaxed);
   atomic_store_explicit(&atfork_registration_count, 0, memory_order_relaxed);
   pthread_t atfork_registrar;

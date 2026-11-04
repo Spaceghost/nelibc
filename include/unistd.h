@@ -16,6 +16,7 @@
 #endif
 
 extern char **environ;
+int _Fork(void);
 
 #ifndef F_OK
 #define F_OK 0

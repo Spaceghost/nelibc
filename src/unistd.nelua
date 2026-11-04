@@ -763,6 +763,19 @@ local function fork(): cint <cexport, codename 'fork'>
   return (@cint)(syscall_result(result))
 end
 
+-- POSIX _Fork skips application atfork handlers but repairs Nelibc's own
+-- locks and thread state in both processes.
+local function nelibc_fork_no_handlers(): cint <cexport, codename '_Fork'>
+  nelibc_fork_prepare()
+  local result = nelibc_raw_syscall3(57_culong, 0_culong, 0_culong, 0_culong)
+  if result == 0 then
+    nelibc_fork_child()
+    return 0_cint
+  end
+  nelibc_fork_parent()
+  return (@cint)(syscall_result(result))
+end
+
 local function execve(pathname: cstring <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <cexport, codename 'execve'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   return (@cint)(syscall_result(nelibc_raw_syscall3(

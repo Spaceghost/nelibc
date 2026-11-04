@@ -1299,6 +1299,17 @@ static int archive_unistd_adapter_probe(void) {
     return 16;
   atfork_probe_count = 0;
 
+  child = _Fork();
+  if (child < 0) return 39;
+  if (child == 0) {
+    if (atfork_probe_count != 0) _Exit(40);
+    _Exit(41);
+  }
+  status = 0;
+  if (waitpid(child, &status, 0) != child || !WIFEXITED(status) ||
+      WEXITSTATUS(status) != 41 || atfork_probe_count != 0)
+    return 42;
+
   if (fcntl(STDOUT_FILENO, F_GETFD) < 0) return 11;
   int large_file_fd = open64("/dev/null", O_RDONLY);
   if (large_file_fd < 0 || close(large_file_fd) != 0) return 22;

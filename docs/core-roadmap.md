@@ -310,6 +310,10 @@ setter follows the Linux manual's replacement behavior; musl 1.2.5 instead
 only raises its stack and guard defaults.
 The `pthread_kill`, `pthread_getcpuclockid`, and `pthread_setschedprio` are
 implemented in standalone mode and delegated to the host in hybrid mode.
+POSIX `_Fork` is implemented in standalone mode: it resets Nelibc's internal
+fork-sensitive locks without calling application `pthread_atfork` handlers.
+Hybrid builds delegate `_Fork` to the host, and the consumer smoke checks that
+registered handlers are skipped in both standalone and hybrid profiles.
 Hybrid archives delegate `pthread_atfork` and `fork` to the selected libc so
 its internal fork handlers still run. Nelibc keeps its own implementations
 for standalone mode. Also audit against the current POSIX pthread index,
