@@ -82,7 +82,9 @@ CFLAGS_errno := -ftls-model=local-exec
 CFLAGS_stdio_varargs := -std=c11
 CFLAGS_syscall_host := -std=c11
 CFLAGS_boot_host := -std=c11
-CFLAGS_environment_adapter := -ffunction-sections
+# Clang-only: no address-significance table, so objcopy can drop a section.
+CLANG_ONLY := $(shell $(CC) --version 2>/dev/null | head -1 | grep -q -i 'clang' && echo -fno-addrsig)
+CFLAGS_environment_adapter := -ffunction-sections -fno-asynchronous-unwind-tables -fno-unwind-tables $(CLANG_ONLY)
 
 C_OBJECTS := string_locale string inet memory ctype stdlib locale stdlib_exit \
   stdlib_float sys_linux_x86_64 errno thread alloc alloc_exports spawn unistd \
@@ -116,7 +118,7 @@ $(O)/linux_x86_64_host.o: src/linux_x86_64.S | $(O)
 # and leaves through a `syscall` instruction; the dispatcher's lane version
 # replaces it, so the section goes.
 $(O)/environment_adapter_host.o: $(O)/environment_adapter.o
-	$(OBJCOPY) --remove-section=.text.nelibc_thread_detached_exit --strip-symbol=nelibc_thread_detached_exit $< $@
+	$(OBJCOPY) --remove-section=.text.nelibc_thread_detached_exit $< $@
 
 $(O)/memory_x86_64.o: src/memory_x86_64.S | $(O)
 	$(CC) -c $< -o $@

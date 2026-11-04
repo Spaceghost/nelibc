@@ -14,22 +14,32 @@ $(OUT)/host-syscall-gcc.o: src/host/syscall_host.c include/nelibc_host.h | $(OUT
 $(OUT)/host-boot-gcc.o: src/host/boot_host.c include/nelibc_host.h | $(OUT)
 	gcc $(HOST_CFLAGS) -fno-tree-loop-distribute-patterns -c $< -o $@
 
+# The environment adapter, compiled for the host archive without
+# nelibc_thread_detached_exit: that helper unmaps its own stack and leaves
+# through a `syscall` instruction, and the dispatcher's lane version replaces
+# it. Function sections and no unwind tables let objcopy drop just that one.
+HOST_ADAPTER_CFLAGS := -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -ffunction-sections -fno-asynchronous-unwind-tables -fno-unwind-tables
+$(OUT)/environment-adapter-host-zig.o: src/environment_adapter.c | $(OUT)
+	$(ZIG) cc $(ZIGFLAGS) $(HOST_ADAPTER_CFLAGS) -fno-addrsig -c $< -o $(OUT)/environment-adapter-host-zig-full.o
+	$(OBJCOPY) --remove-section=.text.nelibc_thread_detached_exit $(OUT)/environment-adapter-host-zig-full.o $@
+$(OUT)/environment-adapter-host-gcc.o: src/environment_adapter.c | $(OUT)
+	gcc $(HOST_ADAPTER_CFLAGS) -fno-tree-loop-distribute-patterns -c $< -o $(OUT)/environment-adapter-host-gcc-full.o
+	$(OBJCOPY) --remove-section=.text.nelibc_thread_detached_exit $(OUT)/environment-adapter-host-gcc-full.o $@
+
 # The host archive keeps the Linux syscall assembly object for its lock and
 # registry helpers but strips the weak raw-syscall aliases, so the dispatcher
-# is the only definition the linker can pick. The environment adapter loses
-# nelibc_thread_detached_exit (its own section: it unmaps its stack and leaves
-# through a `syscall` instruction); the dispatcher's lane version replaces it.
+# is the only definition the linker can pick. The standalone environment
+# adapter is swapped for the host-compiled one above.
 define host-archive
 	cp $< $@
 	$(AR) d $@ start-linux-x86_64-standalone-$(1).o sys-linux-x86_64-standalone-$(1)-asm.o environment-adapter-standalone-$(1).o
 	$(OBJCOPY) --strip-symbol=nelibc_raw_syscall3 --strip-symbol=nelibc_raw_syscall6 $(OUT)/sys-linux-x86_64-standalone-$(1)-asm.o $(OUT)/sys-linux-x86_64-host-$(1)-asm.o
-	$(OBJCOPY) --remove-section=.text.nelibc_thread_detached_exit --strip-symbol=nelibc_thread_detached_exit $(OUT)/environment-adapter-standalone-$(1).o $(OUT)/environment-adapter-host-$(1).o
 	$(AR) rs $@ $(OUT)/sys-linux-x86_64-host-$(1)-asm.o $(OUT)/environment-adapter-host-$(1).o $(OUT)/host-syscall-$(1).o $(OUT)/host-boot-$(1).o
 endef
 
-$(OUT)/libnelibc-host-zig.a: $(OUT)/libnelibc-standalone-zig.a $(OUT)/host-syscall-zig.o $(OUT)/host-boot-zig.o
+$(OUT)/libnelibc-host-zig.a: $(OUT)/libnelibc-standalone-zig.a $(OUT)/host-syscall-zig.o $(OUT)/host-boot-zig.o $(OUT)/environment-adapter-host-zig.o
 	$(call host-archive,zig)
-$(OUT)/libnelibc-host-gcc.a: $(OUT)/libnelibc-standalone-gcc.a $(OUT)/host-syscall-gcc.o $(OUT)/host-boot-gcc.o
+$(OUT)/libnelibc-host-gcc.a: $(OUT)/libnelibc-standalone-gcc.a $(OUT)/host-syscall-gcc.o $(OUT)/host-boot-gcc.o $(OUT)/environment-adapter-host-gcc.o
 	$(call host-archive,gcc)
 
 lib-host-zig: $(OUT)/libnelibc-host-zig.a
