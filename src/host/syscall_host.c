@@ -618,13 +618,14 @@ typedef struct fault_call {
   void *handler;
   int signal;
   int siginfo;
+  void *context;
   unsigned char info[128];
 } fault_call;
 
 static void fault_invoke(void *argument) {
   fault_call *call = argument;
   if (call->siginfo)
-    ((void (*)(int, void *, void *))call->handler)(call->signal, call->info, NULL);
+    ((void (*)(int, void *, void *))call->handler)(call->signal, call->info, call->context);
   else
     ((void (*)(int))call->handler)(call->signal);
 }
@@ -646,7 +647,7 @@ static void call_on_stack(void *stack_top, void (*function)(void *), void *argum
         "xmm8", "xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15");
 }
 
-int nelibc_host_fault(int signal, int code, void *address) {
+int nelibc_host_fault(int signal, int code, void *address, void *context) {
   kernel_sigaction *action;
   void *handler;
   fault_call call;
@@ -659,6 +660,7 @@ int nelibc_host_fault(int signal, int code, void *address) {
   call.handler = handler;
   call.signal = signal;
   call.siginfo = (action->flags & 4) != 0; /* SA_SIGINFO */
+  call.context = context;
   zero_bytes(call.info, sizeof call.info);
   *(int *)call.info = signal;           /* si_signo */
   *(int *)(call.info + 8) = code;       /* si_code */

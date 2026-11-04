@@ -36,8 +36,8 @@ static volatile int fault_on_alternate_stack;
 
 static void on_fault(int signal, siginfo_t *info, void *context) {
   char probe;
-  (void)context;
   fault_count++;
+  if (context == NULL) _exit(63); /* the Linux harness passes its ucontext */
   fault_address = info->si_addr;
   fault_on_alternate_stack = (unsigned char *)&probe >= alternate_stack &&
                              (unsigned char *)&probe < alternate_stack + sizeof alternate_stack;

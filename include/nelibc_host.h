@@ -126,13 +126,15 @@ void nelibc_host_fail(const char *message, int status);
  * sigaltstack when the action has SA_ONSTACK and the fault did not occur on
  * that stack already, otherwise on the current stack; with a siginfo_t
  * carrying si_signo, si_code, and si_addr when SA_SIGINFO is set, and a
- * NULL ucontext. A handler that returns makes this return 0, and the host
+ * context passed through untouched as the handler's third argument (the
+ * host's own machine context, a ucontext_t on the Linux harness, or NULL).
+ * A handler that returns makes this return 0, and the host
  * resumes the faulting instruction (so the handler must have repaired the
  * fault, as on Linux). A handler that exits or unwinds never comes back.
  * With no handler, SIG_DFL, or SIG_IGN, the profile stops through
  * host->exit with status 128 + signal after a message on descriptor 2.
  * Returns -EINVAL for a signal outside 1..64. */
-int nelibc_host_fault(int signal, int code, void *address);
+int nelibc_host_fault(int signal, int code, void *address, void *context);
 
 #ifdef __cplusplus
 }

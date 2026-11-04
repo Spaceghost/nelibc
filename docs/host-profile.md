@@ -92,14 +92,16 @@ later because the host sees only `clone` and `futex`.
 ### Faults
 
 The profile records `sigaction` and `sigaltstack`; the host's exception path
-delivers. `nelibc_host_fault(signal, code, address)` is the entry a kernel
+delivers. `nelibc_host_fault(signal, code, address, context)` is the entry a kernel
 calls from its page-fault, general-protection, divide-error, or
 invalid-opcode handler with the Linux signal the fault maps to (`SIGSEGV`,
 `SIGBUS`, `SIGFPE`, `SIGILL`), a `si_code`, and the faulting address. The
 profile runs the recorded handler on the recorded alternate stack when the
 action has `SA_ONSTACK` and the fault did not already occur on that stack,
 with a `siginfo_t` carrying `si_signo`, `si_code`, and `si_addr` under
-`SA_SIGINFO`. A handler that returns makes the call return 0 and the host
+`SA_SIGINFO`, and `context` passed through as the handler's third argument
+(the host's machine context: the Linux harness passes the kernel's
+`ucontext_t`, a kernel passes its trap frame or NULL). A handler that returns makes the call return 0 and the host
 resumes the faulting instruction, so the handler must have repaired the
 fault, as on Linux. A handler that exits or unwinds never comes back. With no
 handler, `SIG_DFL`, or `SIG_IGN`, the profile stops through `host->exit`
@@ -207,6 +209,4 @@ ship.
 ## Not done
 
 - Cooperative or kernel threads behind the table.
-- A `ucontext` for fault handlers: the profile passes NULL, so a handler
-  cannot inspect or patch registers.
 - Any architecture other than x86-64.

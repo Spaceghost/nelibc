@@ -114,9 +114,8 @@ static void host_unsupported(void *context, unsigned long number) {
 static unsigned char host_fault_stack[1 << 16] __attribute__((aligned(16)));
 
 static void host_fault_handler(int signal, void *info, void *context) {
-  (void)context;
   nelibc_host_fault(signal, *(int *)((char *)info + 8),
-                    *(void **)((char *)info + 16));
+                    *(void **)((char *)info + 16), context);
 }
 
 extern void host_fault_restorer(void);
