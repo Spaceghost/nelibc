@@ -6,6 +6,20 @@
 #include <float.h>
 extern int signgam;
 
+#if defined(__GNUC__) || defined(__clang__)
+#define HUGE_VALF (__builtin_huge_valf())
+#define HUGE_VAL (__builtin_huge_val())
+#define HUGE_VALL (__builtin_huge_vall())
+#define INFINITY (__builtin_inff())
+#define NAN (__builtin_nanf(""))
+#else
+#define HUGE_VALF (1e10000f)
+#define HUGE_VAL (1e10000)
+#define HUGE_VALL (1e10000L)
+#define INFINITY HUGE_VALF
+#define NAN (0.0f / 0.0f)
+#endif
+
 float fabsf(float value);
 double fabs(double value);
 long double fabsl(long double value);
