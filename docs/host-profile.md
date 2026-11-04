@@ -164,9 +164,30 @@ AVX state (`CR4.OSFXSR`, `OSXSAVE`, `XCR0`) because the standalone memory
 routines probe for AVX2 with `cpuid`/`xgetbv`. Both are kernel work, not libc
 work, and are tracked in Writ's freestanding runtime tasks.
 
+## Generated-C snapshot
+
+`make host-snapshot` runs `tools/host_snapshot.sh`, which lowers every Nelua
+module of the host archive to C with the pinned Nelua (`nelua -c -r`) and
+writes `build/host-snapshot/` with those files, the C and assembly sources
+the archive links with, a copy of `include/`, a `SNAPSHOT` provenance line
+(Nelibc commit, Nelua version, time), and a plain `Makefile`. From the
+snapshot a consumer needs a C compiler, `ar`, and `objcopy` only:
+
+```sh
+make -C build/host-snapshot CC='zig cc -mcpu=x86_64' O=obj-zig
+make -C build/host-snapshot CC=gcc O=obj-gcc
+```
+
+`make host-snapshot-matrix` builds the archive from the snapshot with Zig and
+with GCC, links each whole with `-r` and requires `nm -u` to be empty, then
+links and runs the hosted smoke against it. Recorded on 2026-11-04 in the
+same container as the evidence above (main `f1c716c` plus the `.quad`
+spelling of the fenv constants): both compilers pass. The snapshot is a
+build artifact, not checked in; regenerate it from the commit you want to
+ship.
+
 ## Not done
 
 - Cooperative or kernel threads behind the table.
 - Fault delivery to the recorded handler from a host exception.
-- A generated-C snapshot of the host archive so a consumer needs no Nelua.
 - Any architecture other than x86-64.

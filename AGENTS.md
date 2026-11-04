@@ -43,6 +43,7 @@ Before pushing a behavior change, run and record the result of:
 | `make smoke-matrix` | hybrid (zig/glibc, gcc/glibc, zig/musl, tcc/glibc), standalone (zig, gcc, tcc), freestanding (zig, gcc), consumers, diffs |
 | `make dogfood-matrix` | link a C program against each hybrid archive |
 | `make host-matrix` + `make host-bend-hello-zig` | host profile (zig, gcc) and the Bend runtime over it |
+| `make host-snapshot-matrix` | the generated-C snapshot rebuilt without Nelua (zig, gcc) |
 | `make shootout-matrix` | performance versus the host libc per profile |
 
 A shootout result is a number from a specific profile on a specific machine;
