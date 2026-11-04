@@ -202,8 +202,8 @@ typedef struct host_lane {
   void *argument;
   void *release[3];         /* regions to unmap once the lane is off them */
   size_t release_size[3];
-  unsigned long signal_mask;  /* rt_sigprocmask, inherited at clone */
-  kernel_stack signal_stack;  /* sigaltstack, per lane as on Linux */
+  unsigned long mask;       /* rt_sigprocmask, inherited at clone */
+  kernel_stack altstack;    /* sigaltstack, per lane as on Linux */
 } host_lane;
 
 static host_lane lanes[NELIBC_HOST_LANE_COUNT];
@@ -254,8 +254,8 @@ static host_lane *lane_current(void) {
 }
 
 /* The signal mask and alternate stack are per lane, as per thread on Linux. */
-#define signal_mask (lane_current()->signal_mask)
-#define signal_stack (lane_current()->signal_stack)
+#define signal_mask (lane_current()->mask)
+#define signal_stack (lane_current()->altstack)
 
 static host_lane *lane_by_tid(int tid) {
   unsigned index;
@@ -531,7 +531,7 @@ long nelibc_clone_thread(void *start, void *arg, void *stack_top,
     if (next_tid > 0x3fffffff) next_tid = 2;
   } while (lane_by_tid(lane->tid) != NULL);
   lane->thread_pointer = tls_tp != NULL ? tls_tp : self->thread_pointer;
-  lane->signal_mask = self->signal_mask;
+  lane->mask = self->mask;
   lane->start = (int (*)(void *))start;
   lane->argument = arg;
   lane->clear_tid = tid;
