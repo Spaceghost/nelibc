@@ -17,8 +17,9 @@ $(OUT)/host-boot-gcc.o: src/host/boot_host.c include/nelibc_host.h | $(OUT)
 # The environment adapter, compiled for the host archive without
 # nelibc_thread_detached_exit: that helper unmaps its own stack and leaves
 # through a `syscall` instruction, and the dispatcher's lane version replaces
-# it. Function sections and no unwind tables let objcopy drop just that one.
-HOST_ADAPTER_CFLAGS := -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -ffunction-sections -fno-asynchronous-unwind-tables -fno-unwind-tables
+# it. Function sections, no debug info (zig cc emits it by default), and no
+# unwind tables leave nothing referencing that section, so objcopy can drop it.
+HOST_ADAPTER_CFLAGS := -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -g0 -ffunction-sections -fno-asynchronous-unwind-tables -fno-unwind-tables
 $(OUT)/environment-adapter-host-zig.o: src/environment_adapter.c | $(OUT)
 	$(ZIG) cc $(ZIGFLAGS) $(HOST_ADAPTER_CFLAGS) -fno-addrsig -c $< -o $(OUT)/environment-adapter-host-zig-full.o
 	$(OBJCOPY) --remove-section=.text.nelibc_thread_detached_exit $(OUT)/environment-adapter-host-zig-full.o $@

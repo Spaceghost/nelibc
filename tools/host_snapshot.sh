@@ -84,7 +84,7 @@ CFLAGS_syscall_host := -std=c11
 CFLAGS_boot_host := -std=c11
 # Clang-only: no address-significance table, so objcopy can drop a section.
 CLANG_ONLY := $(shell $(CC) --version 2>/dev/null | head -1 | grep -q -i 'clang' && echo -fno-addrsig)
-CFLAGS_environment_adapter := -ffunction-sections -fno-asynchronous-unwind-tables -fno-unwind-tables $(CLANG_ONLY)
+CFLAGS_environment_adapter := -g0 -ffunction-sections -fno-asynchronous-unwind-tables -fno-unwind-tables $(CLANG_ONLY)
 
 C_OBJECTS := string_locale string inet memory ctype stdlib locale stdlib_exit \
   stdlib_float sys_linux_x86_64 errno thread alloc alloc_exports spawn unistd \
