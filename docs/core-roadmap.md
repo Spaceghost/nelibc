@@ -73,7 +73,19 @@ printed `hi`, the same hello executable printed `hi` and exited 0 at
 `tools/host_bend_parallel.bend` printed `65536` at `--threads 1`, `2`, `4`,
 and `8` with the Bend pool's workers created and run as lanes (1, 3, and 7
 lanes; 2, 6, and 14 switches) as reported by the harness's
-`NELIBC_HOST_STATS=1` counters.
+`NELIBC_HOST_STATS=1` counters. `make host-bend-parallel-zig` now runs that
+program at `--threads 4` and requires 65536 plus three worker lanes that
+switched.
+
+After the lane change, main `2e3ee6f` was gated in the same container as
+the `build` user, one target at a time: all 152 non-TinyCC targets reachable
+from `smoke-matrix`, `dogfood-matrix`, `host-matrix`, `host-bend-hello-zig`,
+`host-snapshot-matrix`, and `shootout-matrix` passed (logs under
+`/work/artifacts/gate-20261104-1906-lanes/`). One target,
+`spawn-smoke-resetids-userns`, first failed because a second `make` in the
+same tree rebuilt the standalone archive at the same moment (`ar: file
+truncated`) and passed when rerun alone. `lib-adapter-symbols` needs the
+TinyCC archive and stays unrun with the rest of the TinyCC profile.
 
 Hybrid archives now leave `fork` and `pthread_atfork` to the host libc. The
 Nelua raw-syscall fork and Nelibc atfork registry remain available in standalone
