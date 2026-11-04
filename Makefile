@@ -345,7 +345,7 @@ gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-gcc.o $(OUT)/string
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/string-gcc.o $(SOURCE)
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/memory-gcc.o src/memory.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/ctype-gcc.o src/ctype.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -DNELIBC_QSORT_GCC_INTROSORT' -o $(OUT)/stdlib-gcc.o src/stdlib.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -DNELIBC_QSORT_GCC_INTROSORT' -o $(OUT)/stdlib-gcc.o src/stdlib.nelua
 	$(OBJCOPY) --localize-symbol=nelibc_test_qsort_depth_fallbacks $(OUT)/stdlib-gcc.o
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/stdlib-float-gcc.o src/stdlib_float.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/errno-host-gcc.o src/errno/host.nelua
@@ -979,7 +979,7 @@ strtok-shootout-zig: $(OUT)/libnelibc-zig.a
 	cat $(OUT)/strtok-shootout-zig.csv
 
 strtok-shootout-gcc: $(OUT)/libnelibc-gcc.a
-	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/string-strtok-gcc.o src/string.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/string-strtok-gcc.o src/string.nelua
 	gcc -O2 -pthread -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strtok_bench.c -o $(OUT)/strtok-gcc-host
 	gcc -O2 -pthread -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' -DBENCH_NELIBC_STRTOK_R tools/strtok_bench.c $(OUT)/string-strtok-gcc.o $(OUT)/libnelibc-gcc.a -o $(OUT)/strtok-gcc-nelibc
 	$(OUT)/strtok-gcc-host > $(OUT)/strtok-shootout-gcc-host.csv
@@ -1349,7 +1349,7 @@ collation-shootout-zig: zig
 	cat $(OUT)/collation-shootout-zig.csv
 
 collation-shootout-gcc: gcc
-	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/string-collation-gcc.o src/string.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/string-collation-gcc.o src/string.nelua
 	gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' tools/collation_bench.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-collation-gcc.o $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/collation-shootout-gcc
 	$(OUT)/collation-shootout-gcc $(COLLATION_LOCALE) > $(OUT)/collation-shootout-gcc.csv
 	cat $(OUT)/collation-shootout-gcc.csv
@@ -1399,7 +1399,7 @@ float-shootout-zig: zig
 	cat $(OUT)/float-shootout-zig.csv
 
 float-shootout-gcc: gcc
-	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-gcc.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-gcc.o src/stdlib_float.nelua
 	gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' tools/float_bench.c $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-bench-gcc.o $(OUT)/errno-host-gcc.o -o $(OUT)/float-shootout-gcc
 	$(OUT)/float-shootout-gcc > $(OUT)/float-shootout-gcc.csv
 	cat $(OUT)/float-shootout-gcc.csv
@@ -1432,7 +1432,7 @@ float-long-shootout-zig: zig
 	cat $(OUT)/float-long-shootout-zig.csv
 
 float-long-shootout-gcc: gcc
-	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-gcc.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/stdlib-float-bench-gcc.o src/stdlib_float.nelua
 	gcc -O2 -Iinclude -fno-builtin -DBENCH_LONG_DECIMALS -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' tools/float_bench.c $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-bench-gcc.o $(OUT)/errno-host-gcc.o -o $(OUT)/float-long-shootout-gcc
 	$(OUT)/float-long-shootout-gcc > $(OUT)/float-long-shootout-gcc.csv
 	cat $(OUT)/float-long-shootout-gcc.csv
@@ -1478,7 +1478,7 @@ int-shootout-zig: zig
 	cat $(OUT)/int-shootout-zig.csv
 
 int-shootout-gcc: gcc
-	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-int-bench-gcc.o src/stdlib.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/stdlib-int-bench-gcc.o src/stdlib.nelua
 	gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/int_bench.c -o $(OUT)/int-shootout-host-gcc
 	gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/int_bench.c $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-int-bench-gcc.o $(OUT)/errno-host-gcc.o src/environment_adapter.c -o $(OUT)/int-shootout-nelibc-gcc
 	$(OUT)/int-shootout-host-gcc > $(OUT)/int-shootout-host-gcc.csv
@@ -1580,10 +1580,10 @@ alloc-shootout-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/libnelibc-zig.a
 	cat $(OUT)/alloc-shootout-zig.csv
 
 alloc-shootout-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/libnelibc-gcc.a
-	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/memory-bench-gcc.o src/memory.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/alloc-bench-gcc.o src/alloc.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/sys-linux-x86_64-bench-gcc.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/errno-host-bench-gcc.o src/errno/host.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/memory-bench-gcc.o src/memory.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/alloc-bench-gcc.o src/alloc.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/sys-linux-x86_64-bench-gcc.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/errno-host-bench-gcc.o src/errno/host.nelua
 	gcc -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-bench-gcc-asm.o
 	gcc -O2 -Iinclude -fno-builtin -DNELIBC_ALLOCATOR_FASTPATH_SAFE -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DNELIBC_BENCH_GLIBC tools/alloc_bench.c $(OUT)/alloc-bench-gcc.o $(OUT)/memory-bench-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/sys-linux-x86_64-bench-gcc.o $(OUT)/sys-linux-x86_64-bench-gcc-asm.o $(OUT)/errno-host-bench-gcc.o $(OUT)/libnelibc-gcc.a -o $(OUT)/alloc-shootout-gcc
 	$(OUT)/alloc-shootout-gcc > $(OUT)/alloc-shootout-gcc.csv
@@ -1980,7 +1980,7 @@ shootout-zig: bench-zig
 	@cat $(OUT)/mem-shootout-zig.csv
 
 bench-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/memory-bench-gcc.o src/memory.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/memory-bench-gcc.o src/memory.nelua
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/mem_bench.c -o $(OUT)/mem-bench-gcc-libc
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/mem_bench.c $(OUT)/memory-bench-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/mem-bench-gcc-nelibc
 
@@ -2049,7 +2049,7 @@ memcmp-shootout-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/memory-x86_64-sse
 	@cat $(OUT)/memcmp-shootout-zig.csv
 
 memcmp-shootout-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/memory-x86_64-sse2-baseline.o
-	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/memory-memcmp-gcc.o src/memory.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/memory-memcmp-gcc.o src/memory.nelua
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/memcmp_bench.c -o $(OUT)/memcmp-bench-gcc-libc
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc-sse2"' tools/memcmp_bench.c $(OUT)/memory-memcmp-gcc.o $(OUT)/memory-x86_64-sse2-baseline.o -o $(OUT)/memcmp-bench-gcc-sse2
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/memcmp_bench.c $(OUT)/memory-memcmp-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/memcmp-bench-gcc-nelibc
@@ -2103,8 +2103,8 @@ strstr-shootout-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
 	@cat $(OUT)/strstr-shootout-zig.csv
 
 strstr-shootout-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/string-strstr-gcc.o src/string.nelua
-	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/memory-strstr-gcc.o src/memory.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/string-strstr-gcc.o src/string.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/memory-strstr-gcc.o src/memory.nelua
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"libc"' tools/strstr_bench.c -o $(OUT)/strstr-bench-gcc-libc
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/strstr_bench.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-strstr-gcc.o $(OUT)/memory-strstr-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strstr-bench-gcc-nelibc
 	@$(OUT)/strstr-bench-gcc-libc > $(OUT)/strstr-shootout-gcc-libc.csv
@@ -2153,7 +2153,7 @@ strcasecmp-shootout-zig: zig
 	@cat $(OUT)/strcasecmp-shootout-zig.csv
 
 strcasecmp-shootout-gcc: gcc
-	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/string-strcasecmp-gcc.o src/string.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/string-strcasecmp-gcc.o src/string.nelua
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strcasecmp_bench.c -o $(OUT)/strcasecmp-bench-gcc-libc
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' -DBENCH_NELIBC tools/strcasecmp_bench.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-strcasecmp-gcc.o $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strcasecmp-bench-gcc-nelibc
 	@$(OUT)/strcasecmp-bench-gcc-libc --exhaustive > $(OUT)/strcasecmp-exhaustive-gcc-libc.csv
@@ -2234,7 +2234,7 @@ strverscmp-shootout-zig: zig
 	@cat $(OUT)/strverscmp-shootout-zig.csv
 
 strverscmp-shootout-gcc: gcc
-	@$(NELUA) -B -r --cc gcc --cflags='-O2 -fno-builtin' -o $(OUT)/string-strverscmp-gcc.o src/string.nelua
+	@$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -O2 -fno-builtin' -o $(OUT)/string-strverscmp-gcc.o src/string.nelua
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/strverscmp_bench.c -o $(OUT)/strverscmp-gcc-libc
 	@gcc -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"GCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/strverscmp_bench.c $(OUT)/string-locale-gcc.o $(OUT)/string-locale-lock-gcc.o $(OUT)/string-strverscmp-gcc.o $(OUT)/memory-gcc.o $(OUT)/memory-x86_64-simd.o -o $(OUT)/strverscmp-gcc-nelibc
 	@$(OUT)/strverscmp-gcc-libc > $(OUT)/strverscmp-shootout-gcc-libc.csv
@@ -2481,7 +2481,7 @@ syscall-tls-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-gcc.o $
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/string-syscall-tls-gcc.o src/string.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/stdlib-syscall-tls-gcc.o src/stdlib.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/sys-linux-x86_64-tls-gcc.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ftls-model=initial-exec' -o $(OUT)/errno-tls-gcc.o src/errno/standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ftls-model=initial-exec' -o $(OUT)/errno-tls-gcc.o src/errno/standalone.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/alloc-tls-gcc.o src/alloc.nelua
 	$(NELUA) -B -r --cc gcc --cflags=-fno-builtin -o $(OUT)/unistd-tls-gcc.o src/unistd.nelua
 	$(OBJCOPY) $(HYBRID_HOST_SYMBOLS) $(OUT)/unistd-tls-gcc.o $(OUT)/unistd-tls-gcc.o.host && mv $(OUT)/unistd-tls-gcc.o.host $(OUT)/unistd-tls-gcc.o
@@ -2514,9 +2514,9 @@ smoke-freestanding-zig: freestanding-zig
 	$(OUT)/freestanding-zig
 
 freestanding-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -DNELIBC_STANDALONE' -o $(OUT)/string-freestanding-gcc.o src/string.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/string-locale-freestanding-gcc.o src/string_locale_freestanding.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -ffunction-sections' -o $(OUT)/memory-freestanding-gcc.o src/memory.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -DNELIBC_STANDALONE' -o $(OUT)/string-freestanding-gcc.o src/string.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/string-locale-freestanding-gcc.o src/string_locale_freestanding.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -ffunction-sections' -o $(OUT)/memory-freestanding-gcc.o src/memory.nelua
 	gcc -DNELIBC_FREESTANDING -ffreestanding -fno-builtin -fno-stack-protector -fno-tree-loop-distribute-patterns -c src/string_locale_lock.c -o $(OUT)/string-tls-freestanding-gcc.o
 	gcc -c src/sys/start_linux_x86_64.S -o $(OUT)/start-linux-x86_64-gcc.o
 	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--gc-sections -Wl,--build-id=none -Iinclude tools/freestanding_smoke.c src/stdio_startup_stub.c $(OUT)/string-locale-freestanding-gcc.o $(OUT)/string-tls-freestanding-gcc.o $(OUT)/string-freestanding-gcc.o $(OUT)/memory-freestanding-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/start-linux-x86_64-gcc.o -o $(OUT)/freestanding-gcc
@@ -2555,25 +2555,25 @@ smoke-standalone-zig: standalone-zig
 	NELIBC_GETENV_PROBE=visible $(OUT)/standalone-zig
 
 standalone-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -DNELIBC_STANDALONE' -o $(OUT)/string-standalone-gcc.o src/string.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/string-locale-standalone-gcc.o src/string_locale_standalone.nelua
-	$(NELUA) -C -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/memory-standalone-gcc.o src/memory.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/ctype-standalone-gcc.o src/ctype.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -ftls-model=local-exec' -o $(OUT)/stdlib-standalone-gcc.o src/stdlib.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/locale-standalone-gcc.o src/locale_standalone.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/stdlib-exit-standalone-gcc.o src/stdlib_exit_standalone.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/stdlib-float-standalone-gcc.o src/stdlib_float.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/sys-linux-x86_64-standalone-gcc.o src/sys/linux_x86_64.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/errno-standalone-gcc.o src/errno/standalone.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/tls-fixture-standalone-gcc.o tools/tls_fixture.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -DNELIBC_STANDALONE' -o $(OUT)/string-standalone-gcc.o src/string.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/string-locale-standalone-gcc.o src/string_locale_standalone.nelua
+	$(NELUA) -C -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/memory-standalone-gcc.o src/memory.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/ctype-standalone-gcc.o src/ctype.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -ftls-model=local-exec' -o $(OUT)/stdlib-standalone-gcc.o src/stdlib.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/locale-standalone-gcc.o src/locale_standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/stdlib-exit-standalone-gcc.o src/stdlib_exit_standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/stdlib-float-standalone-gcc.o src/stdlib_float.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/sys-linux-x86_64-standalone-gcc.o src/sys/linux_x86_64.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/errno-standalone-gcc.o src/errno/standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $(OUT)/tls-fixture-standalone-gcc.o tools/tls_fixture.nelua
 	gcc -c -std=c11 -ffreestanding -fno-stack-protector -fno-builtin -fno-sanitize=all -ftls-model=local-exec tools/tls_alignment_fixture.c -o $(OUT)/tls-alignment-fixture-standalone-gcc.o
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/thread-standalone-gcc.o src/thread.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/alloc-standalone-gcc.o src/alloc.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/alloc-exports-standalone-gcc.o src/alloc/standalone_exports.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/spawn-standalone-gcc.o src/spawn_standalone.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/unistd-standalone-gcc.o src/unistd.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-gcc.o src/unistd.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/stdio-standalone-gcc.o src/stdio.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/thread-standalone-gcc.o src/thread.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/alloc-standalone-gcc.o src/alloc.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/alloc-exports-standalone-gcc.o src/alloc/standalone_exports.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/spawn-standalone-gcc.o src/spawn_standalone.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/unistd-standalone-gcc.o src/unistd.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-gcc.o src/unistd.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/stdio-standalone-gcc.o src/stdio.nelua
 	gcc -c -std=c11 -ffreestanding -fno-builtin -fno-sanitize=all src/stdio_varargs.c -o $(OUT)/stdio-varargs-standalone-gcc.o
 	gcc -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o
 	gcc -c src/sys/start_linux_x86_64_standalone.S -o $(OUT)/start-linux-x86_64-standalone-gcc.o
