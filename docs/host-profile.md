@@ -1,0 +1,164 @@
+# Host profile
+
+The host profile is Nelibc for an environment that is not Linux user space:
+a kernel, a unikernel, or a test harness that wants to be the operating system.
+It is the standalone x86-64 archive with two things removed, the Linux entry
+point and the `syscall` instruction, and one thing added, a dispatcher that
+answers Linux x86-64 syscall numbers from a table of host callbacks. The Nelua
+modules are the standalone objects, unchanged.
+
+The first consumer is [Writ](https://github.com/Spaceghost/writ): its
+freestanding Bend runtime design names Nelibc as the candidate libc beneath
+the unmodified Bend-generated evaluator on a Drift-style kernel. The second is
+[Drift](https://github.com/Spaceghost/drift): the callback table follows the
+shape of Drift's `drift_hw`, so one platform layer can supply both.
+
+## Contract
+
+`include/nelibc_host.h` declares `nelibc_host`:
+
+| Callback | Required | Backs |
+| --- | --- | --- |
+| `console_write(fd, buffer, length)` | yes | `write`/`writev` on descriptors 1 and 2, all stdio output |
+| `memory_reserve(length, alignment)` | yes | anonymous `mmap`, thread stacks, the allocator, `mremap` growth; must return zero-filled memory |
+| `memory_protect`, `memory_release` | no | `mprotect`, `munmap`; absent means success without effect |
+| `clock_monotonic(&ns)` | no | `clock_gettime` for monotonic, boot, and CPU clocks; `nanosleep` and futex timeouts; absent means `EINVAL` |
+| `clock_realtime(&ns)` | no | `CLOCK_REALTIME`, `gettimeofday`, `time`; falls back to the monotonic clock |
+| `sleep(ns)` | no | sleeps and timed waits; absent means a spin on the monotonic clock |
+| `thread_pointer_set(tp)` | yes | the x86-64 FS base for `errno` and the rest of static TLS (`arch_prctl` in Linux terms, MSR `0xC0000100` in a kernel) |
+| `exit(status)` | yes | `_exit`, `exit_group`, fatal signals, and the profile's own stops |
+| `unsupported(number)` | no | called once per syscall number that returns `ENOSYS` |
+| `environment` | no | `getenv`; a `NAME=value` vector or NULL |
+| `cpu_count` | no | `sched_getaffinity` and `sysconf(_SC_NPROCESSORS_ONLN)`; 0 means 1 |
+| `tls` | yes if the program has TLS | the PT_TLS image (start, filesz, memsz, align) |
+
+`nelibc_host_boot(host)` binds the table, builds the initial thread's TLS block
+from the template, installs the thread pointer, and initializes stdio.
+`nelibc_host_run(host, main, argc, argv)` does that and then runs `main`
+through the libc `exit`, so `atexit` handlers run and stdio flushes before
+`host->exit`.
+
+### What the dispatcher answers
+
+`src/host/syscall_host.c` is the only place a host sees Linux numbers. It
+implements, from the table above:
+
+- Console: `write`, `writev` on 1 and 2; `read` on 0 returns end of file.
+- Memory: anonymous `mmap` (hints ignored, `MAP_FIXED` and file mappings
+  refused), `mprotect`, `munmap`, `mremap` with `MREMAP_MAYMOVE`, `madvise`,
+  `msync`, `brk` refused.
+- Time: `clock_gettime`, `clock_getres`, `nanosleep`, `clock_nanosleep`,
+  `gettimeofday`, `time`, `times`.
+- Self-pipe: `pipe`, `pipe2`, `fcntl` (`F_GETFL`, `F_SETFL`, `F_GETFD`,
+  `F_SETFD`, `F_DUPFD`), `dup`, `dup2`, `dup3`, `close`, `read`, `write`,
+  `poll`, `ppoll`, `select`, `pselect6` over an in-memory ring per pipe.
+- Signals: `rt_sigaction`, `rt_sigprocmask`, `sigaltstack` record state;
+  `kill`, `tkill`, `tgkill` deliver to the calling thread inline, so `raise`
+  and `abort` behave as on Linux and a default terminating action ends the
+  program with status 128 + signal.
+- Threads: `futex` with single-lane semantics (see below), `sched_yield`,
+  `sched_getaffinity`, scheduler parameter queries, `set_tid_address`,
+  `set_robust_list`, `arch_prctl(ARCH_SET_FS/ARCH_GET_FS)`.
+- Identity and limits: `getpid` 1, `gettid` 1, uid/gid 0, `uname`,
+  `getrlimit`/`prlimit64` with fixed values, `getrusage` zeros, `getcwd` "/",
+  `umask`, `prctl(PR_SET_NAME/PR_GET_NAME)`.
+- Files: every path operation returns `ENOENT`; `lseek`, `pread`, `pwrite`
+  return `ESPIPE`; `ioctl` returns `ENOTTY`.
+- Process: `exit` and `exit_group` call `host->exit`; `fork`, `clone`,
+  `execve`, `wait4` return `ENOSYS` or `ECHILD`.
+
+Anything else returns `ENOSYS` after `host->unsupported`.
+
+### One lane
+
+The profile runs one hardware thread and makes no attempt to hide it:
+
+- `pthread_create` returns `EAGAIN` (`nelibc_clone_thread` reports `ENOSYS`).
+- Uncontended mutexes, condition signals, `pthread_once`, keys, and
+  `pthread_self` work as on a one-thread process.
+- A wait that no other thread could satisfy, such as a futex wait without a
+  timeout, a blocking read on an empty pipe, or `select` with nothing ready and
+  no timeout, stops the program through `host->exit` with status
+  `NELIBC_HOST_EXIT_DEADLOCK` (125) after a message on descriptor 2. A wait
+  with a timeout sleeps and reports the timeout.
+
+For the Bend 2.0.39 runtime this is enough at `--threads 1`: the worker pool
+creates no threads for one lane, and the inspected programs (`IO.print`, the
+Writ examples and corpus) never reach the IO helper pool, so `pthread_create`
+is linked but not called. Cooperative threads behind the same table are the
+next step if a consumer needs the helpers; kernel threads remain possible
+later because the host sees only `clone` and `futex`.
+
+### Faults
+
+The profile records `sigaction(SIGSEGV)` and `sigaltstack` but cannot deliver
+a hardware fault: that is the host's exception path. A kernel that wants Bend's
+fail-stop message should call the recorded handler from its page-fault or
+general-protection handler on the recorded alternate stack, or halt directly.
+`memory_protect` is what makes a guard page real; a host that leaves it NULL
+has advisory guards only.
+
+## Build and check
+
+```sh
+make host-matrix                                   # archives, link checks, hosted smoke (Zig and GCC)
+make host-bend-hello-zig BEND=/path/to/bend        # Bend 2.0.39 IO.print through the profile
+make host-bend-run-zig BEND_C=program.c BEND_ARGS='+RTS --threads 1 --gpu off'
+```
+
+`build/libnelibc-host-zig.a` and `build/libnelibc-host-gcc.a` are the standalone
+archives minus `start-linux-x86_64-standalone-*.o`, with the weak raw-syscall
+aliases stripped from the assembly helper object and `host-syscall-*.o` plus
+`host-boot-*.o` added. `host-check-*` links each archive whole with `-r` and
+requires `nm -u` to be empty, the same gate Drift's `native-check` applies to
+its drivers: nothing outside the archive and the host table is needed.
+
+`host-smoke-*` is a hosted consumer. `tools/host_linux.c` is the "kernel": it
+fills the table with raw Linux syscalls for console, memory, clock, thread
+pointer, and exit, reads PT_TLS from the ELF header, and calls
+`nelibc_host_run`. `tools/host_smoke.c` is the program: stdio, environment,
+allocator growth, zero-filled reservations, formatting, clocks and sleeps, the
+self-pipe with `select` and `O_NONBLOCK`, signal registration and inline
+`raise`, affinity, single-lane pthreads, `atexit`, and a nonzero exit status.
+The linked executable must also have no undefined symbols.
+
+Consumers compile against `include/` with `-DNELIBC_STANDALONE
+-ffreestanding -fno-builtin -nostdlib`. The Bend-generated file additionally
+needs a clang-based driver (`zig cc`) for `musttail`.
+
+## Evidence
+
+Recorded on 2026-11-04 in an Incus container (Debian 12, bak) with Nelua
+`3c29419` (Spaceghost/nelua-lang, the Drift pin), Zig 0.17.0, GCC 12.2, Bend
+2.0.39 (release archive sha256 `6cf462fd…c7ab`):
+
+- `make host-check-zig` and `make host-check-gcc`: no undefined symbols in
+  either host archive.
+- `make host-smoke-zig` and `make host-smoke-gcc`: see the status below.
+- `make host-bend-hello-zig`: see the status below.
+
+This is hosted execution under Linux. It shows the libc surface works above
+the table and that the unmodified Bend-generated C links and runs against it.
+It is not a boot, not a kernel, and not evidence for any Writ host
+qualification; those need the serial-console runs the Writ specification
+describes on an actual x86-64 image.
+
+## Working with Drift
+
+Drift's kernel example (`examples/kernel`) already supplies register access,
+DMA memory, a PIT-calibrated TSC clock, and serial output to its drivers
+through `drift_hw`. The same code supplies `nelibc_host`: `console_write` is
+the serial routine, `clock_monotonic` is the TSC clock, `memory_reserve` is an
+arena, `exit` is the debug-exit port. Two gaps remain before Bend runs there:
+Drift's reference kernel is 32-bit Multiboot and the Bend term is a 64-bit
+word, so a long-mode variant is needed; and that kernel must enable SSE and
+AVX state (`CR4.OSFXSR`, `OSXSAVE`, `XCR0`) because the standalone memory
+routines probe for AVX2 with `cpuid`/`xgetbv`. Both are kernel work, not libc
+work, and are tracked in Writ's freestanding runtime tasks.
+
+## Not done
+
+- Cooperative or kernel threads behind the table.
+- Fault delivery to the recorded handler from a host exception.
+- A generated-C snapshot of the host archive so a consumer needs no Nelua.
+- Any architecture other than x86-64.
