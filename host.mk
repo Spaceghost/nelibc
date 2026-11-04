@@ -27,20 +27,30 @@ $(OUT)/environment-adapter-host-gcc.o: src/environment_adapter.c | $(OUT)
 	gcc $(HOST_ADAPTER_CFLAGS) -fno-tree-loop-distribute-patterns -c $< -o $(OUT)/environment-adapter-host-gcc-full.o
 	$(OBJCOPY) --remove-section=.text.nelibc_thread_detached_exit $(OUT)/environment-adapter-host-gcc-full.o $@
 
-# The host archive keeps the Linux syscall assembly object for its lock and
-# registry helpers but strips the weak raw-syscall aliases, so the dispatcher
-# is the only definition the linker can pick. The standalone environment
-# adapter is swapped for the host-compiled one above.
+# The Linux syscall assembly object, compiled for the host archive without
+# its raw syscall section (the bodies behind the weak nelibc_raw_syscall3/6
+# aliases), so the dispatcher is the only definition the linker can pick. The
+# lock, registry, and sigreturn helpers stay.
+HOST_ASM_STRIP := --remove-section=.text.nelibc_raw_syscall --strip-symbol=nelibc_raw_syscall3 --strip-symbol=nelibc_raw_syscall6 --strip-symbol=nelibc_raw_syscall3_real --strip-symbol=nelibc_raw_syscall6_real
+$(OUT)/sys-linux-x86_64-host-zig-asm.o: src/sys/linux_x86_64.S | $(OUT)
+	$(ZIG) cc $(ZIGFLAGS) -g0 -c $< -o $(OUT)/sys-linux-x86_64-host-zig-asm-full.o
+	$(OBJCOPY) $(HOST_ASM_STRIP) $(OUT)/sys-linux-x86_64-host-zig-asm-full.o $@
+$(OUT)/sys-linux-x86_64-host-gcc-asm.o: src/sys/linux_x86_64.S | $(OUT)
+	gcc -g0 -c $< -o $(OUT)/sys-linux-x86_64-host-gcc-asm-full.o
+	$(OBJCOPY) $(HOST_ASM_STRIP) $(OUT)/sys-linux-x86_64-host-gcc-asm-full.o $@
+
+# The host archive is the standalone archive with the Linux entry point
+# removed and the syscall assembly object and environment adapter swapped
+# for the host-compiled ones above.
 define host-archive
 	cp $< $@
 	$(AR) d $@ start-linux-x86_64-standalone-$(1).o sys-linux-x86_64-standalone-$(1)-asm.o environment-adapter-standalone-$(1).o
-	$(OBJCOPY) --strip-symbol=nelibc_raw_syscall3 --strip-symbol=nelibc_raw_syscall6 $(OUT)/sys-linux-x86_64-standalone-$(1)-asm.o $(OUT)/sys-linux-x86_64-host-$(1)-asm.o
 	$(AR) rs $@ $(OUT)/sys-linux-x86_64-host-$(1)-asm.o $(OUT)/environment-adapter-host-$(1).o $(OUT)/host-syscall-$(1).o $(OUT)/host-boot-$(1).o
 endef
 
-$(OUT)/libnelibc-host-zig.a: $(OUT)/libnelibc-standalone-zig.a $(OUT)/host-syscall-zig.o $(OUT)/host-boot-zig.o $(OUT)/environment-adapter-host-zig.o
+$(OUT)/libnelibc-host-zig.a: $(OUT)/libnelibc-standalone-zig.a $(OUT)/host-syscall-zig.o $(OUT)/host-boot-zig.o $(OUT)/environment-adapter-host-zig.o $(OUT)/sys-linux-x86_64-host-zig-asm.o
 	$(call host-archive,zig)
-$(OUT)/libnelibc-host-gcc.a: $(OUT)/libnelibc-standalone-gcc.a $(OUT)/host-syscall-gcc.o $(OUT)/host-boot-gcc.o $(OUT)/environment-adapter-host-gcc.o
+$(OUT)/libnelibc-host-gcc.a: $(OUT)/libnelibc-standalone-gcc.a $(OUT)/host-syscall-gcc.o $(OUT)/host-boot-gcc.o $(OUT)/environment-adapter-host-gcc.o $(OUT)/sys-linux-x86_64-host-gcc-asm.o
 	$(call host-archive,gcc)
 
 lib-host-zig: $(OUT)/libnelibc-host-zig.a

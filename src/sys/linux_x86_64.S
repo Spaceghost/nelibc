@@ -1,4 +1,6 @@
-.text
+/* The two raw syscall bodies sit in their own section so the host profile
+ * (docs/host-profile.md) can drop them from its archive. */
+.section .text.nelibc_raw_syscall,"ax",@progbits
 .globl nelibc_raw_syscall3_real
 .type nelibc_raw_syscall3_real, @function
 nelibc_raw_syscall3_real:
@@ -29,6 +31,7 @@ nelibc_raw_syscall6_real:
 /* Weak alias lets the smoke harness inject one syscall result. */
 .weak nelibc_raw_syscall6
 .set nelibc_raw_syscall6, nelibc_raw_syscall6_real
+.text
 
 .globl nelibc_allocator_lock
 .type nelibc_allocator_lock, @function

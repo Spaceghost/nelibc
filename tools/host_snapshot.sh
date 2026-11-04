@@ -107,12 +107,12 @@ $(O)/libnelibc-host.a: $(OBJECTS)
 $(O)/%.o: src/%.c | $(O)
 	$(CC) $(CFLAGS_BASE) $(GCC_ONLY) $(CFLAGS_$*) -c $< -o $@
 
-# The Linux syscall helper object keeps its lock and registry helpers but
-# loses the weak raw-syscall aliases, so the host dispatcher is the only
-# definition the linker can pick.
+# The Linux syscall helper object keeps its lock, registry, and sigreturn
+# helpers but loses the raw syscall section and the weak aliases to it, so
+# the host dispatcher is the only definition the linker can pick.
 $(O)/linux_x86_64_host.o: src/linux_x86_64.S | $(O)
-	$(CC) -c $< -o $(O)/linux_x86_64.o
-	$(OBJCOPY) --strip-symbol=nelibc_raw_syscall3 --strip-symbol=nelibc_raw_syscall6 $(O)/linux_x86_64.o $@
+	$(CC) -g0 -c $< -o $(O)/linux_x86_64.o
+	$(OBJCOPY) --remove-section=.text.nelibc_raw_syscall --strip-symbol=nelibc_raw_syscall3 --strip-symbol=nelibc_raw_syscall6 --strip-symbol=nelibc_raw_syscall3_real --strip-symbol=nelibc_raw_syscall6_real $(O)/linux_x86_64.o $@
 
 # The environment adapter's nelibc_thread_detached_exit unmaps its own stack
 # and leaves through a `syscall` instruction; the dispatcher's lane version
