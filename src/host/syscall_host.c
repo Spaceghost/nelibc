@@ -503,9 +503,11 @@ static void lane_entry(void) {
 }
 
 /* thread.nelua's clone wrapper: a new lane on the caller-provided stack and
- * TLS block, runnable but not running until the creator blocks or yields.
- * tid, when given, receives the thread id now and is cleared and woken when
- * the lane exits (CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID). */
+ * TLS block. The new lane runs first, until it blocks, yields, or exits
+ * (Linux promises no order either way); a program whose main thread never
+ * waits would otherwise starve every worker it made. tid, when given,
+ * receives the thread id before either lane continues and is cleared and
+ * woken when the lane exits (CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID). */
 long nelibc_clone_thread(void *start, void *arg, void *stack_top,
                          void *tls_tp, int *tid) {
   host_lane *self = lane_current();
@@ -536,7 +538,11 @@ long nelibc_clone_thread(void *start, void *arg, void *stack_top,
   if (tid != NULL) __atomic_store_n(tid, lane->tid, __ATOMIC_RELEASE);
   lane->state = LANE_RUNNABLE;
   lanes_created++;
-  return lane->tid;
+  {
+    int child_tid = lane->tid;
+    switch_to(lane);
+    return child_tid;
+  }
 }
 
 /* environment_adapter.c's version unmaps its own stack and leaves through a

@@ -82,8 +82,10 @@ the program creates onto it as a cooperative lane:
 
 - `pthread_create` works. `nelibc_clone_thread` makes the new lane on the
   stack and TLS block `thread.nelua` prepared, writes the thread id to the
-  `CLONE_PARENT_SETTID` word, and leaves the lane runnable. It first runs
-  when the creator blocks, yields, or exits.
+  `CLONE_PARENT_SETTID` word, and runs the new lane first, until it blocks,
+  yields, or exits; the creator then continues. (Linux promises no order;
+  this one keeps a main thread that never waits from starving the workers
+  it made, which is how the Bend pool starts.)
 - A lane runs until it blocks in the dispatcher (a futex wait, `nanosleep`,
   a read on an empty pipe, a write on a full one, `poll`/`select` with
   nothing ready), calls `sched_yield`, or exits. The dispatcher then saves
