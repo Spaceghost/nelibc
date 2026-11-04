@@ -106,7 +106,8 @@ the program creates onto it as a cooperative lane:
   every other lane is also blocked without one, stops the program through
   `host->exit` with status `NELIBC_HOST_EXIT_DEADLOCK` (125) after a message
   on descriptor 2.
-- `sigaltstack` and the signal mask are process-wide, not per lane.
+- `sigaltstack` and the signal mask are per lane; a new lane inherits its
+  creator's mask and starts without an alternate stack, as on Linux.
 
 Kernel (preemptive) threads remain possible later because the host still
 sees only `nelibc_clone_thread`, `futex`, and `exit`; a host that supplies
@@ -251,5 +252,6 @@ ship.
 ## Not done
 
 - Kernel (preemptive) threads behind the table; lanes are cooperative.
-- Per-lane `sigaltstack` and signal masks.
+- The signal mask is recorded, not enforced: a blocked signal is still
+  delivered by `raise`, `kill`, and `tkill`.
 - Any architecture other than x86-64.
