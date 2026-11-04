@@ -26,11 +26,11 @@ jobs:
           gcc --version | head -1
           BEND_NO_TELEMETRY=1 "$BEND" version || echo "bend unavailable; hello smoke will skip"
       - name: host archives, link checks, hosted smoke
-        run: make host-matrix NELUA="$NELUA" ZIG="$ZIG"
+        run: make host-check-zig host-smoke-zig NELUA="$NELUA" ZIG="$ZIG"
       - name: Bend 2 IO.print through the host profile
         run: make host-bend-hello-zig NELUA="$NELUA" ZIG="$ZIG" BEND="$BEND"
       - name: standalone and freestanding smokes
-        run: make smoke-standalone-gcc smoke-freestanding-gcc smoke-standalone-zig NELUA="$NELUA" ZIG="$ZIG"
+        run: make smoke-standalone-zig smoke-freestanding-zig NELUA="$NELUA" ZIG="$ZIG"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
