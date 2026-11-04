@@ -2502,7 +2502,7 @@ errno-tls-zig-musl: $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin -ftls-model=initial-exec' -o $(OUT)/errno-tls-zig-musl.o src/errno/standalone.nelua
 
 freestanding-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -DNELIBC_STANDALONE' -o $(OUT)/string-freestanding-zig.o src/string.nelua
+	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ffunction-sections -DNELIBC_STANDALONE' -o $(OUT)/string-freestanding-zig.o src/string.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/string-locale-freestanding-zig.o src/string_locale_freestanding.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ffunction-sections' -o $(OUT)/memory-freestanding-zig.o src/memory.nelua
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_FREESTANDING -ffreestanding -fno-builtin -fno-stack-protector -c src/string_locale_lock.c -o $(OUT)/string-tls-freestanding-zig.o
@@ -2514,7 +2514,7 @@ smoke-freestanding-zig: freestanding-zig
 	$(OUT)/freestanding-zig
 
 freestanding-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
-	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -DNELIBC_STANDALONE' -o $(OUT)/string-freestanding-gcc.o src/string.nelua
+	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -ffunction-sections -DNELIBC_STANDALONE' -o $(OUT)/string-freestanding-gcc.o src/string.nelua
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/string-locale-freestanding-gcc.o src/string_locale_freestanding.nelua
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -ffunction-sections' -o $(OUT)/memory-freestanding-gcc.o src/memory.nelua
 	gcc -DNELIBC_FREESTANDING -ffreestanding -fno-builtin -fno-stack-protector -fno-tree-loop-distribute-patterns -c src/string_locale_lock.c -o $(OUT)/string-tls-freestanding-gcc.o
