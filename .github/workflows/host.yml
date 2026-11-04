@@ -1,0 +1,41 @@
+name: host profile
+# Runs on the self-hosted bak runner (Incus container gh-runners on bak), which
+# carries the pinned toolchains under /opt: Nelua (Spaceghost/nelua-lang
+# 3c29419), Zig 0.17.0, and Bend 2.0.39. GPU work does not belong here; the
+# alienware runners are reserved for jobs that need a GPU.
+on:
+  push:
+    branches: [main, host-profile]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  host-matrix:
+    runs-on: [self-hosted, linux, x64, bak]
+    timeout-minutes: 40
+    env:
+      NELUA: /opt/nelua/nelua
+      ZIG: /opt/zig/zig
+      BEND: /opt/bend-2.0.39/bend/bin/bend
+    steps:
+      - uses: actions/checkout@v4
+      - name: toolchains
+        run: |
+          "$NELUA" --version | head -1
+          "$ZIG" version
+          gcc --version | head -1
+          BEND_NO_TELEMETRY=1 "$BEND" version || echo "bend unavailable; hello smoke will skip"
+      - name: host archives, link checks, hosted smoke
+        run: make host-matrix NELUA="$NELUA" ZIG="$ZIG"
+      - name: Bend 2 IO.print through the host profile
+        run: make host-bend-hello-zig NELUA="$NELUA" ZIG="$ZIG" BEND="$BEND"
+      - name: standalone and freestanding smokes
+        run: make smoke-standalone-gcc smoke-freestanding-gcc smoke-standalone-zig NELUA="$NELUA" ZIG="$ZIG"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: host-profile-logs
+          path: |
+            build/host-smoke-*.log
+            build/host-bend-*.log
+          if-no-files-found: ignore

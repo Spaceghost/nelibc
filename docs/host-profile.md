@@ -134,8 +134,16 @@ Recorded on 2026-11-04 in an Incus container (Debian 12, bak) with Nelua
 
 - `make host-check-zig` and `make host-check-gcc`: no undefined symbols in
   either host archive.
-- `make host-smoke-zig` and `make host-smoke-gcc`: see the status below.
-- `make host-bend-hello-zig`: see the status below.
+- `make host-smoke-zig` and `make host-smoke-gcc`: both print the three
+  smoke lines and the `atexit` line and exit 7; both executables have no
+  undefined symbols.
+- `make host-bend-hello-zig`: the emitted `IO.print("hi")` program linked
+  against `libnelibc-host-zig.a` and `tools/host_linux.c` prints `hi` and
+  exits 0.
+- `make host-bend-run-zig BEND_C=example.c BEND_ARGS='+RTS --threads 1 --gpu off'`
+  with `example.c` emitted from Writ `7ad85be`'s `Example.bend`: the program
+  prints its 16 `PASS` lines (the negotiation, capability, commit, and
+  revocation checks) and exits 0.
 
 This is hosted execution under Linux. It shows the libc surface works above
 the table and that the unmodified Bend-generated C links and runs against it.
