@@ -6,9 +6,9 @@
 local function malloc(size: csize): pointer <cimport> end
 
 local function nelibc_strtok_state(): *[0]*[0]cchar <cimport> end
-local function nelibc_locale_strcoll(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <cimport> end
-local function nelibc_locale_strxfrm(dest: *[0]cchar, src: *[0]cchar <const>, size: csize): csize <cimport> end
-local function strverscmp(left: cstring <const>, right: cstring <const>): cint <cexport, codename 'strverscmp'>
+local function nelibc_locale_strcoll(left: *const [0]cchar, right: *const [0]cchar): cint <cimport> end
+local function nelibc_locale_strxfrm(dest: *[0]cchar, src: *const [0]cchar, size: csize): csize <cimport> end
+local function strverscmp(left: *const [0]cchar, right: *const [0]cchar): cint <cexport, codename 'strverscmp'>
   local left: *[0]cchar = (@*[0]cchar)(left)
   local right: *[0]cchar = (@*[0]cchar)(right)
   local index: csize = 0
@@ -51,14 +51,14 @@ local function strverscmp(left: cstring <const>, right: cstring <const>): cint <
   return (@cint)(left_character) - (@cint)(right_character)
 end
 
-local function nelibc_x86_64_sse_strlen(s: pointer <const>): csize <cimport> end
-local function nelibc_x86_64_sse_memchr(s: pointer <const>, value: cint, n: csize): pointer <cimport> end
-local function nelibc_x86_64_sse_strcasecmp(a: pointer <const>, b: pointer <const>): cint <cimport> end
-local function nelibc_x86_64_sse_strncasecmp(a: pointer <const>, b: pointer <const>, n: csize): cint <cimport> end
-local function memmem(haystack: pointer <const>, haystack_len: csize,
-                      needle: pointer <const>, needle_len: csize): pointer <cimport> end
+local function nelibc_x86_64_sse_strlen(s: *const void): csize <cimport> end
+local function nelibc_x86_64_sse_memchr(s: *const void, value: cint, n: csize): pointer <cimport> end
+local function nelibc_x86_64_sse_strcasecmp(a: *const void, b: *const void): cint <cimport> end
+local function nelibc_x86_64_sse_strncasecmp(a: *const void, b: *const void, n: csize): cint <cimport> end
+local function memmem(haystack: *const void, haystack_len: csize,
+                      needle: *const void, needle_len: csize): pointer <cimport> end
 
-local function strlen(s: cstring <const>): csize <cexport, codename 'strlen'>
+local function strlen(s: *const [0]cchar): csize <cexport, codename 'strlen'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   ## if ccinfo.is_x86_64 then
   return nelibc_x86_64_sse_strlen(s)
@@ -71,7 +71,7 @@ local function strlen(s: cstring <const>): csize <cexport, codename 'strlen'>
   ## end
 end
 
-local function strnlen(s: cstring <const>, maxlen: csize): csize <cexport, codename 'strnlen'>
+local function strnlen(s: *const [0]cchar, maxlen: csize): csize <cexport, codename 'strnlen'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   local n: csize = 0
   while n < maxlen and s[n] ~= 0 do
@@ -82,7 +82,7 @@ end
 
 -- Hybrid builds resolve malloc from the host libc; the standalone profile
 -- links the malloc wrapper backed by nelibc's allocator.
-local function strdup(s: cstring <const>): *cchar <cexport, codename 'strdup'>
+local function strdup(s: *const [0]cchar): *cchar <cexport, codename 'strdup'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   local length: csize = strlen(s)
   local copy: *[0]cchar = (@*[0]cchar)(malloc(length + 1))
@@ -95,7 +95,7 @@ local function strdup(s: cstring <const>): *cchar <cexport, codename 'strdup'>
   return copy
 end
 
-local function strndup(s: cstring <const>, maxlen: csize): *cchar <cexport, codename 'strndup'>
+local function strndup(s: *const [0]cchar, maxlen: csize): *cchar <cexport, codename 'strndup'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   local length: csize = strnlen(s, maxlen)
   local copy: *[0]cchar = (@*[0]cchar)(malloc(length + 1))
@@ -109,7 +109,7 @@ local function strndup(s: cstring <const>, maxlen: csize): *cchar <cexport, code
   return copy
 end
 
-local function strcmp(a: cstring <const>, b: cstring <const>): cint <cexport, codename 'strcmp'>
+local function strcmp(a: *const [0]cchar, b: *const [0]cchar): cint <cexport, codename 'strcmp'>
   local a: *[0]cchar = (@*[0]cchar)(a)
   local b: *[0]cchar = (@*[0]cchar)(b)
   local i: csize = 0
@@ -122,7 +122,7 @@ local function strcmp(a: cstring <const>, b: cstring <const>): cint <cexport, co
   end
 end
 
-local function strcasecmp(a: cstring <const>, b: cstring <const>): cint <cexport, codename 'strcasecmp'>
+local function strcasecmp(a: *const [0]cchar, b: *const [0]cchar): cint <cexport, codename 'strcasecmp'>
   local a: *[0]cchar = (@*[0]cchar)(a)
   local b: *[0]cchar = (@*[0]cchar)(b)
   ## if ccinfo.is_x86_64 then
@@ -145,7 +145,7 @@ local function strcasecmp(a: cstring <const>, b: cstring <const>): cint <cexport
   end
 end
 
-local function nelibc_strcasecmp(a: cstring <const>, b: cstring <const>): cint <cexport, codename 'nelibc_strcasecmp'>
+local function nelibc_strcasecmp(a: *const [0]cchar, b: *const [0]cchar): cint <cexport, codename 'nelibc_strcasecmp'>
   local a: *[0]cchar = (@*[0]cchar)(a)
   local b: *[0]cchar = (@*[0]cchar)(b)
   ## if ccinfo.is_x86_64 then
@@ -168,13 +168,13 @@ local function nelibc_strcasecmp(a: cstring <const>, b: cstring <const>): cint <
   end
 end
 
-local function strcoll(a: cstring <const>, b: cstring <const>): cint <cexport, codename 'strcoll'>
+local function strcoll(a: *const [0]cchar, b: *const [0]cchar): cint <cexport, codename 'strcoll'>
   local a: *[0]cchar = (@*[0]cchar)(a)
   local b: *[0]cchar = (@*[0]cchar)(b)
   return nelibc_locale_strcoll(a, b)
 end
 
-local function strncmp(a: cstring <const>, b: cstring <const>, n: csize): cint <cexport, codename 'strncmp'>
+local function strncmp(a: *const [0]cchar, b: *const [0]cchar, n: csize): cint <cexport, codename 'strncmp'>
   local a: *[0]cchar = (@*[0]cchar)(a)
   local b: *[0]cchar = (@*[0]cchar)(b)
   local i: csize = 0
@@ -188,7 +188,7 @@ local function strncmp(a: cstring <const>, b: cstring <const>, n: csize): cint <
   return 0
 end
 
-local function strncasecmp(a: cstring <const>, b: cstring <const>, n: csize): cint <cexport, codename 'strncasecmp'>
+local function strncasecmp(a: *const [0]cchar, b: *const [0]cchar, n: csize): cint <cexport, codename 'strncasecmp'>
   local a: *[0]cchar = (@*[0]cchar)(a)
   local b: *[0]cchar = (@*[0]cchar)(b)
   ## if ccinfo.is_x86_64 then
@@ -212,7 +212,7 @@ local function strncasecmp(a: cstring <const>, b: cstring <const>, n: csize): ci
   return 0
 end
 
-local function nelibc_strncasecmp(a: cstring <const>, b: cstring <const>, n: csize): cint <cexport, codename 'nelibc_strncasecmp'>
+local function nelibc_strncasecmp(a: *const [0]cchar, b: *const [0]cchar, n: csize): cint <cexport, codename 'nelibc_strncasecmp'>
   local a: *[0]cchar = (@*[0]cchar)(a)
   local b: *[0]cchar = (@*[0]cchar)(b)
   ## if ccinfo.is_x86_64 then
@@ -236,7 +236,7 @@ local function nelibc_strncasecmp(a: cstring <const>, b: cstring <const>, n: csi
   return 0
 end
 
-local function strcpy(dest: *[0]cchar, src: cstring <const>): *[0]cchar <cexport, codename 'strcpy'>
+local function strcpy(dest: *[0]cchar, src: *const [0]cchar): *[0]cchar <cexport, codename 'strcpy'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   local i: csize = 0
   while true do
@@ -248,7 +248,7 @@ local function strcpy(dest: *[0]cchar, src: cstring <const>): *[0]cchar <cexport
   return dest
 end
 
-local function strlcpy(dest: *[0]cchar, src: cstring <const>, size: csize): csize <cexport, codename 'strlcpy'>
+local function strlcpy(dest: *[0]cchar, src: *const [0]cchar, size: csize): csize <cexport, codename 'strlcpy'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   local length: csize = 0
   while src[length] ~= 0 do
@@ -265,12 +265,12 @@ local function strlcpy(dest: *[0]cchar, src: cstring <const>, size: csize): csiz
   return length
 end
 
-local function strxfrm(dest: *[0]cchar, src: cstring <const>, size: csize): csize <cexport, codename 'strxfrm'>
+local function strxfrm(dest: *[0]cchar, src: *const [0]cchar, size: csize): csize <cexport, codename 'strxfrm'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   return nelibc_locale_strxfrm(dest, src, size)
 end
 
-local function strlcat(dest: *[0]cchar, src: cstring <const>, size: csize): csize <cexport, codename 'strlcat'>
+local function strlcat(dest: *[0]cchar, src: *const [0]cchar, size: csize): csize <cexport, codename 'strlcat'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   local dest_len: csize = 0
   while dest_len < size and dest[dest_len] ~= 0 do
@@ -289,7 +289,7 @@ local function strlcat(dest: *[0]cchar, src: cstring <const>, size: csize): csiz
   return dest_len + src_len
 end
 
-local function stpcpy(dest: *[0]cchar, src: cstring <const>): *cchar <cexport, codename 'stpcpy'>
+local function stpcpy(dest: *[0]cchar, src: *const [0]cchar): *cchar <cexport, codename 'stpcpy'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   local i: csize = 0
   while true do
@@ -300,7 +300,7 @@ local function stpcpy(dest: *[0]cchar, src: cstring <const>): *cchar <cexport, c
   end
 end
 
-local function strcat(dest: *[0]cchar, src: cstring <const>): *[0]cchar <cexport, codename 'strcat'>
+local function strcat(dest: *[0]cchar, src: *const [0]cchar): *[0]cchar <cexport, codename 'strcat'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   local i: csize = 0
   while dest[i] ~= 0 do
@@ -316,7 +316,7 @@ local function strcat(dest: *[0]cchar, src: cstring <const>): *[0]cchar <cexport
   return dest
 end
 
-local function strncat(dest: *[0]cchar, src: cstring <const>, n: csize): *[0]cchar <cexport, codename 'strncat'>
+local function strncat(dest: *[0]cchar, src: *const [0]cchar, n: csize): *[0]cchar <cexport, codename 'strncat'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   local i: csize = 0
   while dest[i] ~= 0 do
@@ -332,7 +332,7 @@ local function strncat(dest: *[0]cchar, src: cstring <const>, n: csize): *[0]cch
   return dest
 end
 
-local function strncpy(dest: *[0]cchar, src: cstring <const>, n: csize): *[0]cchar <cexport, codename 'strncpy'>
+local function strncpy(dest: *[0]cchar, src: *const [0]cchar, n: csize): *[0]cchar <cexport, codename 'strncpy'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   local i: csize = 0
   while i < n and src[i] ~= 0 do
@@ -346,7 +346,7 @@ local function strncpy(dest: *[0]cchar, src: cstring <const>, n: csize): *[0]cch
   return dest
 end
 
-local function stpncpy(dest: *[0]cchar, src: cstring <const>, n: csize): *cchar <cexport, codename 'stpncpy'>
+local function stpncpy(dest: *[0]cchar, src: *const [0]cchar, n: csize): *cchar <cexport, codename 'stpncpy'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   local i: csize = 0
   while i < n and src[i] ~= 0 do
@@ -363,7 +363,7 @@ local function stpncpy(dest: *[0]cchar, src: cstring <const>, n: csize): *cchar 
   return endptr
 end
 
-local function strchr(s: cstring <const>, c: cint): *cchar <cexport, codename 'strchr'>
+local function strchr(s: *const [0]cchar, c: cint): *cchar <cexport, codename 'strchr'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   local target: byte = (@byte)(c)
   local i: csize = 0
@@ -374,17 +374,17 @@ local function strchr(s: cstring <const>, c: cint): *cchar <cexport, codename 's
   end
 end
 
-local function strchrnul(s: *[0]cchar <const>, c: cint): *cchar
+local function strchrnul(s: *const [0]cchar, c: cint): *cchar
     <cexport, codename 'strchrnul'>
   local target: byte = (@byte)(c)
   local i: csize = 0
   while s[i] ~= 0 and (@byte)(s[i]) ~= target do
     i = i + 1
   end
-  return &s[i]
+  return (@*cchar)(&s[i])
 end
 
-local function strrchr(s: cstring <const>, c: cint): *cchar <cexport, codename 'strrchr'>
+local function strrchr(s: *const [0]cchar, c: cint): *cchar <cexport, codename 'strrchr'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   local target: byte = (@byte)(c)
   local last: *cchar = nilptr
@@ -396,17 +396,17 @@ local function strrchr(s: cstring <const>, c: cint): *cchar <cexport, codename '
   end
 end
 
-local function index(s: cstring <const>, c: cint): *cchar <cexport, codename 'index'>
+local function index(s: *const [0]cchar, c: cint): *cchar <cexport, codename 'index'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   return strchr(s, c)
 end
 
-local function rindex(s: cstring <const>, c: cint): *cchar <cexport, codename 'rindex'>
+local function rindex(s: *const [0]cchar, c: cint): *cchar <cexport, codename 'rindex'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   return strrchr(s, c)
 end
 
-local function strstr(haystack: cstring <const>, needle: cstring <const>): *cchar <cexport, codename 'strstr'>
+local function strstr(haystack: *const [0]cchar, needle: *const [0]cchar): *cchar <cexport, codename 'strstr'>
   local haystack: *[0]cchar = (@*[0]cchar)(haystack)
   local needle: *[0]cchar = (@*[0]cchar)(needle)
   if needle[0] == 0 then return haystack end
@@ -459,21 +459,21 @@ local function strstr(haystack: cstring <const>, needle: cstring <const>): *ccha
   return (@*cchar)(memmem(haystack, haystack_len, needle, needle_len))
 end
 
-local function strcasestr(haystack: *[0]cchar <const>, needle: *[0]cchar <const>): *cchar
+local function strcasestr(haystack: *const [0]cchar, needle: *const [0]cchar): *cchar
     <cexport, codename 'strcasestr'>
-  if needle[0] == 0 then return haystack end
+  if needle[0] == 0 then return (@*cchar)(haystack) end
   local needle_len: csize = strlen(needle)
   local start: csize = 0
   while haystack[start] ~= 0 do
     if strncasecmp(&haystack[start], needle, needle_len) == 0 then
-      return &haystack[start]
+      return (@*cchar)(&haystack[start])
     end
     start = start + 1
   end
   return nilptr
 end
 
-local function strspn(s: cstring <const>, accept: cstring <const>): csize <cexport, codename 'strspn'>
+local function strspn(s: *const [0]cchar, accept: *const [0]cchar): csize <cexport, codename 'strspn'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   local accept: *[0]cchar = (@*[0]cchar)(accept)
   local i: csize = 0
@@ -488,7 +488,7 @@ local function strspn(s: cstring <const>, accept: cstring <const>): csize <cexpo
   return i
 end
 
-local function strcspn(s: cstring <const>, reject: cstring <const>): csize <cexport, codename 'strcspn'>
+local function strcspn(s: *const [0]cchar, reject: *const [0]cchar): csize <cexport, codename 'strcspn'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   local reject: *[0]cchar = (@*[0]cchar)(reject)
   local i: csize = 0
@@ -503,7 +503,7 @@ local function strcspn(s: cstring <const>, reject: cstring <const>): csize <cexp
   return i
 end
 
-local function strpbrk(s: cstring <const>, accept: cstring <const>): *cchar <cexport, codename 'strpbrk'>
+local function strpbrk(s: *const [0]cchar, accept: *const [0]cchar): *cchar <cexport, codename 'strpbrk'>
   local s: *[0]cchar = (@*[0]cchar)(s)
   local accept: *[0]cchar = (@*[0]cchar)(accept)
   local i: csize = 0
@@ -518,7 +518,7 @@ local function strpbrk(s: cstring <const>, accept: cstring <const>): *cchar <cex
   return nilptr
 end
 
-local function strtok_r(s: *[0]cchar, delim: cstring <const>, saveptr: *[0]*[0]cchar): *cchar <cexport, codename 'strtok_r'>
+local function strtok_r(s: *[0]cchar, delim: *const [0]cchar, saveptr: *[0]*[0]cchar): *cchar <cexport, codename 'strtok_r'>
   local delim: *[0]cchar = (@*[0]cchar)(delim)
   -- POSIX does not require *saveptr to be initialized on the first call.
   local state: *[0]cchar = s
@@ -576,7 +576,7 @@ local function strtok_r(s: *[0]cchar, delim: cstring <const>, saveptr: *[0]*[0]c
   return token
 end
 
-local function strtok(s: *[0]cchar, delim: cstring <const>): *cchar <cexport, codename 'strtok'>
+local function strtok(s: *[0]cchar, delim: *const [0]cchar): *cchar <cexport, codename 'strtok'>
   local delim: *[0]cchar = (@*[0]cchar)(delim)
   local state: *[0]*[0]cchar = nelibc_strtok_state()
   if state == nilptr then return nilptr end
@@ -634,7 +634,7 @@ local function strtok(s: *[0]cchar, delim: cstring <const>): *cchar <cexport, co
   return token
 end
 
-local function strsep(stringp: *[0]*[0]cchar, delim: cstring <const>): *cchar <cexport, codename 'strsep'>
+local function strsep(stringp: *[0]*[0]cchar, delim: *const [0]cchar): *cchar <cexport, codename 'strsep'>
   local delim: *[0]cchar = (@*[0]cchar)(delim)
   local s: *[0]cchar = stringp[0]
   if s == nilptr then return nilptr end

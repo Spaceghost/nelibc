@@ -2,9 +2,9 @@
 ## pragmas.noentrypoint = true
 
 local function nelibc_host_fdopen(descriptor: cint,
-    mode: *[0]cchar <const>): pointer <cimport> end
+    mode: *const [0]cchar): pointer <cimport> end
 
-local function fdopen(descriptor: cint, mode: *[0]cchar <const>): pointer
+local function fdopen(descriptor: cint, mode: *const [0]cchar): pointer
     <cexport, codename 'fdopen'>
   return nelibc_host_fdopen(descriptor, mode)
 end

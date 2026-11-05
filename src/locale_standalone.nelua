@@ -1271,7 +1271,7 @@ local function nelibc_german_combining_class(value: cwchar_t): cuint <inline>
   return 0
 end
 
-local function nelibc_german_next_cluster_class(text: *[0]cwchar_t <const>,
+local function nelibc_german_next_cluster_class(text: *const [0]cwchar_t,
     start: csize, end_index: csize, after: cuint, include_virtual: cint): cuint <inline>
   local next_class: cuint = 0
   for scan: csize = start, end_index - 1 do
@@ -1623,10 +1623,10 @@ local function nelibc_german_case_next(iter: *LevelIter): cuint <inline>
   return 0
 end
 
-local function nelibc_compare_primary(left: *[0]cwchar_t <const>,
-    right: *[0]cwchar_t <const>): cint <inline>
-  local left_iter: PrimaryIter = {text = left, index = 0, pending = 0, pending2 = 0}
-  local right_iter: PrimaryIter = {text = right, index = 0, pending = 0, pending2 = 0}
+local function nelibc_compare_primary(left: *const [0]cwchar_t,
+    right: *const [0]cwchar_t): cint <inline>
+  local left_iter: PrimaryIter = {text = (@pointer)(left), index = 0, pending = 0, pending2 = 0}
+  local right_iter: PrimaryIter = {text = (@pointer)(right), index = 0, pending = 0, pending2 = 0}
   while true do
     local a = nelibc_german_primary_next(&left_iter)
     local b = nelibc_german_primary_next(&right_iter)
@@ -1636,14 +1636,14 @@ local function nelibc_compare_primary(left: *[0]cwchar_t <const>,
   end
 end
 
-local function nelibc_compare_secondary(left: *[0]cwchar_t <const>,
-    right: *[0]cwchar_t <const>): cint <inline>
-  local left_iter: LevelIter = {text = left, index = 0, cluster_start = 0,
+local function nelibc_compare_secondary(left: *const [0]cwchar_t,
+    right: *const [0]cwchar_t): cint <inline>
+  local left_iter: LevelIter = {text = (@pointer)(left), index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
     cluster_component = 0,
     repeat_weight = 0, repeat_count = 0}
-  local right_iter: LevelIter = {text = right, index = 0, cluster_start = 0,
+  local right_iter: LevelIter = {text = (@pointer)(right), index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
     cluster_component = 0,
@@ -1657,14 +1657,14 @@ local function nelibc_compare_secondary(left: *[0]cwchar_t <const>,
   end
 end
 
-local function nelibc_compare_case(left: *[0]cwchar_t <const>,
-    right: *[0]cwchar_t <const>): cint <inline>
-  local left_iter: LevelIter = {text = left, index = 0, cluster_start = 0,
+local function nelibc_compare_case(left: *const [0]cwchar_t,
+    right: *const [0]cwchar_t): cint <inline>
+  local left_iter: LevelIter = {text = (@pointer)(left), index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
     cluster_component = 0,
     repeat_weight = 0, repeat_count = 0}
-  local right_iter: LevelIter = {text = right, index = 0, cluster_start = 0,
+  local right_iter: LevelIter = {text = (@pointer)(right), index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
     cluster_component = 0,
@@ -1678,8 +1678,8 @@ local function nelibc_compare_case(left: *[0]cwchar_t <const>,
   end
 end
 
-local function nelibc_wide_collate(left: *[0]cwchar_t <const>,
-    right: *[0]cwchar_t <const>, collate_mode: cint): cint <inline>
+local function nelibc_wide_collate(left: *const [0]cwchar_t,
+    right: *const [0]cwchar_t, collate_mode: cint): cint <inline>
   if collate_mode == 1 then
     local primary = nelibc_compare_primary(left, right)
     if primary ~= 0 then return primary end
@@ -1694,18 +1694,18 @@ local function nelibc_wide_collate(left: *[0]cwchar_t <const>,
   return 0
 end
 
-local function wcscoll(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>): cint
-    <cexport, codename 'nelibc_wcscoll_impl'>
+local function wcscoll(left: *const [0]cwchar_t, right: *const [0]cwchar_t): cint
+    <cexport, codename 'wcscoll'>
   return nelibc_wide_collate(left, right, nelibc_locale_collate_mode(nilptr))
 end
 
-local function wcscoll_l(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>,
-    locale: pointer): cint <cexport, codename 'nelibc_wcscoll_l_impl'>
+local function wcscoll_l(left: *const [0]cwchar_t, right: *const [0]cwchar_t,
+    locale: pointer): cint <cexport, codename 'wcscoll_l'>
   if nelibc_locale_collate_mode(locale) < 0 then return 0 end
   return nelibc_wide_collate(left, right, nelibc_locale_collate_mode(locale))
 end
 
-local function nelibc_wide_transform(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>,
+local function nelibc_wide_transform(dest: *[0]cwchar_t, src: *const [0]cwchar_t,
     size: csize): csize <inline>
   local length: csize = 0
   while src[length] ~= 0 do length = length + 1 end
@@ -1727,16 +1727,16 @@ local function nelibc_german_emit(dest: *[0]cwchar_t, size: csize,
 end
 
 local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
-    src: *[0]cwchar_t <const>, size: csize): csize <inline>
+    src: *const [0]cwchar_t, size: csize): csize <inline>
   local length: csize = 0
-  local primary_iter: PrimaryIter = {text = src, index = 0, pending = 0, pending2 = 0}
+  local primary_iter: PrimaryIter = {text = (@pointer)(src), index = 0, pending = 0, pending2 = 0}
   while true do
     local weight = nelibc_german_primary_next(&primary_iter)
     if weight == 0 then break end
     length = nelibc_german_emit(dest, size, length, weight)
   end
   length = nelibc_german_emit(dest, size, length, 1_cuint)
-  local secondary_iter: LevelIter = {text = src, index = 0, cluster_start = 0,
+  local secondary_iter: LevelIter = {text = (@pointer)(src), index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
     cluster_component = 0,
@@ -1747,7 +1747,7 @@ local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
     length = nelibc_german_emit(dest, size, length, weight)
   end
   length = nelibc_german_emit(dest, size, length, 1_cuint)
-  local case_iter: LevelIter = {text = src, index = 0, cluster_start = 0,
+  local case_iter: LevelIter = {text = (@pointer)(src), index = 0, cluster_start = 0,
     cluster_end = 0, cluster_scan = 0, cluster_class = 0, cluster_virtual = 0,
     cluster_pending_weight = 0, cluster_pending_class = 0,
     cluster_component = 0,
@@ -1762,15 +1762,15 @@ local function nelibc_german_wide_transform(dest: *[0]cwchar_t,
   return length
 end
 
-local function wcsxfrm(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, size: csize): csize
-    <cexport, codename 'nelibc_wcsxfrm_impl'>
+local function wcsxfrm(dest: *[0]cwchar_t, src: *const [0]cwchar_t, size: csize): csize
+    <cexport, codename 'wcsxfrm'>
   local mode = nelibc_locale_collate_mode(nilptr)
   if mode == 1 then return nelibc_german_wide_transform(dest, src, size) end
   return nelibc_wide_transform(dest, src, size)
 end
 
-local function wcsxfrm_l(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>,
-    size: csize, locale: pointer): csize <cexport, codename 'nelibc_wcsxfrm_l_impl'>
+local function wcsxfrm_l(dest: *[0]cwchar_t, src: *const [0]cwchar_t,
+    size: csize, locale: pointer): csize <cexport, codename 'wcsxfrm_l'>
   if nelibc_locale_collate_mode(locale) < 0 then
     if size ~= 0 then dest[0] = 0 end
     return 0
@@ -1795,13 +1795,13 @@ local function nelibc_locale_time_mode(locale: pointer): cint <inline>
   return -1
 end
 
-local function nelibc_locale_name_is(name: *[0]cchar <const>, literal: *[0]cchar <const>): boolean <inline>
+local function nelibc_locale_name_is(name: *const [0]cchar, literal: *const [0]cchar): boolean <inline>
   local index: csize = 0
   while name[index] ~= 0 and name[index] == literal[index] do index = index + 1 end
   return name[index] == 0 and literal[index] == 0
 end
 
-local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): pointer
+local function newlocale(mask: cint, name: *const [0]cchar, base: pointer): pointer
     <cexport, codename 'newlocale'>
   if mask <= 0 or (mask & ~63) ~= 0 or name == nilptr then
     nelibc_errno_location()[0] = 22
@@ -3789,7 +3789,7 @@ local function iswpunct_l(value: cwchar_t, locale: pointer): cint <cexport, code
   return iswpunct_for_mode(value, mode)
 end
 
-local function wctype_descriptor(name: *[0]cchar <const>): culong <inline>
+local function wctype_descriptor(name: *const [0]cchar): culong <inline>
   if name == nilptr then return 0 end
   if nelibc_locale_name_is(name, "alnum") then return 1 end
   if nelibc_locale_name_is(name, "alpha") then return 2 end
@@ -3806,11 +3806,11 @@ local function wctype_descriptor(name: *[0]cchar <const>): culong <inline>
   return 0
 end
 
-local function wctype(name: cstring <const>): culong <cexport, codename 'wctype'>
+local function wctype(name: *const [0]cchar): culong <cexport, codename 'wctype'>
   local name: *[0]cchar = (@*[0]cchar)(name)
   return wctype_descriptor(name)
 end
-local function wctype_l(name: *[0]cchar <const>, locale: pointer): culong
+local function wctype_l(name: *const [0]cchar, locale: pointer): culong
     <cexport, codename 'wctype_l'>
   if nelibc_locale_ctype_mode(locale) < 0 then return 0 end
   return wctype_descriptor(name)
@@ -3865,11 +3865,11 @@ end
 -- END GENERATED UNICODE WIDTH TABLES
 
 local function nelibc_standalone_setlocale(category: cint,
-    name: *[0]cchar <const>): *[0]cchar <cimport> end
+    name: *const [0]cchar): *[0]cchar <cimport> end
 
-local function setlocale(category: cint, name: *[0]cchar <const>): *[0]cchar
+local function setlocale(category: cint, name: *const [0]cchar): *[0]cchar
     <cexport, codename 'setlocale'>
-  return nelibc_standalone_setlocale(category, name)
+  return nelibc_standalone_setlocale(category, (@*[0]cchar)(name))
 end
 
 local LocaleConv: type = @record{
@@ -3980,10 +3980,3 @@ local function standalone_strerror_r(errnum: cint, buffer: *[0]cchar,
     buffer_size: csize): cint <cexport, codename 'strerror_r'>
   return nelibc_strerror_r(errnum, buffer, buffer_size)
 end
-
--- Keep the wide collation and transform algorithms in Nelua while exposing
--- the standard const-qualified wide-string ABI from the standalone archive.
-## cemitdefn [[int wcscoll(const wchar_t *a, const wchar_t *b) { return nelibc_wcscoll_impl((wchar_t *)a, (wchar_t *)b); }]]
-## cemitdefn [[int wcscoll_l(const wchar_t *a, const wchar_t *b, void *l) { return nelibc_wcscoll_l_impl((wchar_t *)a, (wchar_t *)b, l); }]]
-## cemitdefn [[size_t wcsxfrm(wchar_t *d, const wchar_t *s, size_t n) { return nelibc_wcsxfrm_impl(d, (wchar_t *)s, n); }]]
-## cemitdefn [[size_t wcsxfrm_l(wchar_t *d, const wchar_t *s, size_t n, void *l) { return nelibc_wcsxfrm_l_impl(d, (wchar_t *)s, n, l); }]]

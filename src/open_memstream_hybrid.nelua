@@ -25,7 +25,7 @@ local function publish_memstream(state: *MemstreamState): void <inline>
 end
 
 local function nelibc_open_memstream_write(cookie: pointer,
-    source: pointer <const>, count: csize): clong <cexport, codename 'nelibc_open_memstream_write'>
+    source: *const void, count: csize): clong <cexport, codename 'nelibc_open_memstream_write'>
   local state: *MemstreamState = (@*MemstreamState)(cookie)
   if count == 0 then return 0 end
   if state.position > MAX_LONG or count > MAX_LONG - state.position then

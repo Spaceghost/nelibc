@@ -5,7 +5,7 @@ local function nelibc_host_stdout(): pointer <cimport> end
 local function nelibc_host_stdin(): pointer <cimport> end
 local function nelibc_host_stderr(): pointer <cimport> end
 local function nelibc_host_localeconv(): pointer <cimport> end
-local function nelibc_host_setlocale(category: cint, locale: *[0]cchar <const>): *[0]cchar <cimport> end
+local function nelibc_host_setlocale(category: cint, locale: *const [0]cchar): *[0]cchar <cimport> end
 local function nelibc_host_fseeko(stream: pointer, offset: clong, whence: cint): cint <cimport> end
 local function nelibc_host_ftello(stream: pointer): clong <cimport> end
 local function nelibc_host_stream_lock(stream: pointer): cint <cimport> end
@@ -13,17 +13,17 @@ local function nelibc_host_stream_unlock(stream: pointer, lock_token: cint): voi
 local function fputc_unlocked(character: cint, stream: pointer): cint <cimport> end
 local function getc_unlocked(stream: pointer): cint <cimport> end
 local function fread_unlocked(buffer: pointer, size: csize, count: csize, stream: pointer): csize <cimport> end
-local function fwrite_unlocked(buffer: pointer <const>, size: csize, count: csize, stream: pointer): csize <cimport> end
+local function fwrite_unlocked(buffer: *const void, size: csize, count: csize, stream: pointer): csize <cimport> end
 local function fflush_unlocked(stream: pointer): cint <cimport> end
 local function fileno_unlocked(stream: pointer): cint <cimport> end
 local function feof_unlocked(stream: pointer): cint <cimport> end
 local function ferror_unlocked(stream: pointer): cint <cimport> end
 local function clearerr_unlocked(stream: pointer): void <cimport> end
 local function _IO_ungetc(character: cint, stream: pointer): cint <cimport> end
-local function nelibc_host_freopen(pathname: *[0]cchar <const>, mode: *[0]cchar <const>, stream: pointer): pointer <cimport> end
+local function nelibc_host_freopen(pathname: *const [0]cchar, mode: *const [0]cchar, stream: pointer): pointer <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function strerror(errnum: cint): *[0]cchar <cimport> end
-local function unlinkat(dirfd: cint, pathname: *[0]cchar <const>, flags: cint): cint <cimport> end
+local function unlinkat(dirfd: cint, pathname: *const [0]cchar, flags: cint): cint <cimport> end
 local function realloc(ptr: pointer, size: csize): pointer <cimport> end
 
 local function putchar(character: cint): cint <cexport, codename 'putchar'>
@@ -34,7 +34,7 @@ local function putchar(character: cint): cint <cexport, codename 'putchar'>
   return result
 end
 
-local function puts(string: cstring <const>): cint <cexport, codename 'puts'>
+local function puts(string: *const [0]cchar): cint <cexport, codename 'puts'>
   local string: *[0]cchar = (@*[0]cchar)(string)
   local stream = nelibc_host_stdout()
   local length: csize = 0
@@ -51,9 +51,9 @@ local function localeconv(): pointer <cexport, codename 'localeconv'>
   return nelibc_host_localeconv()
 end
 
-local function setlocale(category: cint, locale: *[0]cchar <const>): *[0]cchar
+local function setlocale(category: cint, locale: *const [0]cchar): *[0]cchar
     <cexport, codename 'setlocale'>
-  return nelibc_host_setlocale(category, locale)
+  return nelibc_host_setlocale(category, (@*[0]cchar)(locale))
 end
 
 local function fseeko(stream: pointer, offset: clong, whence: cint): cint
@@ -240,7 +240,7 @@ local function ungetc(character: cint, stream: pointer): cint <cexport, codename
   return nelibc_host_ungetc(character, stream)
 end
 
-local function nelibc_host_fputs(string: cstring <const>, stream: pointer): cint <cexport, codename 'nelibc_host_fputs'>
+local function nelibc_host_fputs(string: *const [0]cchar, stream: pointer): cint <cexport, codename 'nelibc_host_fputs'>
   local string: *[0]cchar = (@*[0]cchar)(string)
   local length: csize = 0
   while string[length] ~= 0 do length = length + 1 end
@@ -252,12 +252,12 @@ local function nelibc_host_fputs(string: cstring <const>, stream: pointer): cint
   return result
 end
 
-local function fputs(string: cstring <const>, stream: pointer): cint <cexport, codename 'fputs'>
+local function fputs(string: *const [0]cchar, stream: pointer): cint <cexport, codename 'fputs'>
   local string: *[0]cchar = (@*[0]cchar)(string)
   return nelibc_host_fputs(string, stream)
 end
 
-local function fputs_unlocked(string: cstring <const>, stream: pointer): cint <cexport, codename 'fputs_unlocked'>
+local function fputs_unlocked(string: *const [0]cchar, stream: pointer): cint <cexport, codename 'fputs_unlocked'>
   local string: *[0]cchar = (@*[0]cchar)(string)
   if string == nilptr or stream == nilptr then return -1 end
   local length: csize = 0
@@ -295,7 +295,7 @@ local function fread(buffer: pointer, size: csize, count: csize, stream: pointer
   return result
 end
 
-local function fwrite(buffer: pointer <const>, size: csize, count: csize, stream: pointer): csize <cexport, codename 'fwrite'>
+local function fwrite(buffer: *const void, size: csize, count: csize, stream: pointer): csize <cexport, codename 'fwrite'>
   if size == 0 or count == 0 then return 0 end
   local stream_lock_token: cint = nelibc_host_stream_lock(stream)
   local result = fwrite_unlocked(buffer, size, count, stream)
@@ -303,13 +303,13 @@ local function fwrite(buffer: pointer <const>, size: csize, count: csize, stream
   return result
 end
 
-local function freopen(pathname: cstring <const>, mode: cstring <const>, stream: pointer): pointer <cexport, codename 'freopen'>
+local function freopen(pathname: *const [0]cchar, mode: *const [0]cchar, stream: pointer): pointer <cexport, codename 'freopen'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   local mode: *[0]cchar = (@*[0]cchar)(mode)
   return nelibc_host_freopen(pathname, mode, stream)
 end
 
-local function perror(prefix: cstring <const>): void <cexport, codename 'perror'>
+local function perror(prefix: *const [0]cchar): void <cexport, codename 'perror'>
   local prefix: *[0]cchar = (@*[0]cchar)(prefix)
   local error_number: cint = nelibc_errno_location()[0]
   local stream = nelibc_host_stderr()
@@ -330,7 +330,7 @@ local function perror(prefix: cstring <const>): void <cexport, codename 'perror'
   nelibc_errno_location()[0] = error_number
 end
 
-local function remove(pathname: cstring <const>): cint <cexport, codename 'remove'>
+local function remove(pathname: *const [0]cchar): cint <cexport, codename 'remove'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   if pathname == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL

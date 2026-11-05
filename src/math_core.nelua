@@ -2594,13 +2594,13 @@ local function finitef(value: cfloat): cint <cexport, codename 'finitef'>
   return 0_cint
 end
 
-local function nan(tag: *cchar <const>): cdouble <cexport, codename 'nan'>
+local function nan(tag: *const cchar): cdouble <cexport, codename 'nan'>
   return double_from_bits(0x7FF8000000000000_culonglong)
 end
-local function nanf(tag: *cchar <const>): cfloat <cexport, codename 'nanf'>
+local function nanf(tag: *const cchar): cfloat <cexport, codename 'nanf'>
   return float_from_bits(0x7FC00000_cuint)
 end
-local function nanl(tag: *cchar <const>): clongdouble <cexport, codename 'nanl'>
+local function nanl(tag: *const cchar): clongdouble <cexport, codename 'nanl'>
   local quiet_nan: LongDoubleBits = {
     parts = {significand = 0xC000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
   }

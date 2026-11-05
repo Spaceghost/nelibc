@@ -1,12 +1,12 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
 
-local function openat(dirfd: cint, pathname: pointer <const>, flags: cint, mode: cuint): cint <cimport> end
+local function openat(dirfd: cint, pathname: *const void, flags: cint, mode: cuint): cint <cimport> end
 local function close(fd: cint): cint <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
-local function nelibc_host_fdopen(fd: cint, mode: *[0]cchar <const>): pointer <cimport> end
+local function nelibc_host_fdopen(fd: cint, mode: *const [0]cchar): pointer <cimport> end
 
-local function fopen(pathname: cstring <const>, mode: cstring <const>): pointer <cexport, codename 'fopen'>
+local function fopen(pathname: *const [0]cchar, mode: *const [0]cchar): pointer <cexport, codename 'fopen'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   local mode: *[0]cchar = (@*[0]cchar)(mode)
   if pathname == nilptr or mode == nilptr then

@@ -50,8 +50,8 @@ local function nelibc_allocator_lock(): void <cimport> end
 local function nelibc_allocator_unlock(): void <cimport> end
 local function nelibc_allocator_cancel_defer_begin(): void <cimport> end
 local function nelibc_allocator_cancel_defer_end(): void <cimport> end
-local function nelibc_memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
-local function memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+local function nelibc_memcpy(dest: pointer, src: *const void, n: csize): pointer <cimport> end
+local function memmove(dest: pointer, src: *const void, n: csize): pointer <cimport> end
 local function nelibc_memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
 local function nelibc_thread_state(slot: cuint, size: csize): pointer <cimport> end
 local function nelibc_allocator_slab_registry_publish(head: pointer): void <cimport> end

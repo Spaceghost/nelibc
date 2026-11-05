@@ -26,7 +26,7 @@ local function ntohs(netshort: cushort): cushort <cexport, codename 'ntohs'>
   return htons(netshort)
 end
 
-local function nelibc_parse_ipv4(source: *[0]cchar <const>, output: *[4]byte): boolean
+local function nelibc_parse_ipv4(source: *const [0]cchar, output: *[4]byte): boolean
   local index: csize = 0
   for part: csize = 0, 3 do
     local first = (@byte)(source[index])
@@ -50,7 +50,7 @@ local function nelibc_parse_ipv4(source: *[0]cchar <const>, output: *[4]byte): b
   return true
 end
 
-local function inet_pton(af: cint, source: *[0]cchar <const>, destination: pointer): cint
+local function inet_pton(af: cint, source: *const [0]cchar, destination: pointer): cint
     <cexport, codename 'inet_pton'>
   local errno = nelibc_errno_location()
   if af == 2 then
@@ -259,12 +259,12 @@ end
 
 local inet_ntoa_buffer: [16]cchar
 
-local function inet_aton(source: *[0]cchar <const>, destination: pointer): cint
+local function inet_aton(source: *const [0]cchar, destination: pointer): cint
     <cexport, codename 'inet_aton'>
   return inet_pton(2, source, destination)
 end
 
-local function inet_addr(source: *[0]cchar <const>): cuint
+local function inet_addr(source: *const [0]cchar): cuint
     <cexport, codename 'inet_addr'>
   local address: cuint = 0xffffffff_cuint
   if inet_pton(2, source, (@pointer)(&address)) == 0 then

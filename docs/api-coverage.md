@@ -35,7 +35,9 @@ The declaration scanner handles the C declaration forms currently used by
 these headers. Review new or unusual declaration syntax when extending the
 header set. The implementation scanner also recognizes public function names
 passed as the first argument to `DEFINE_*` wrapper macros in C adapters and C
-entry points emitted through Nelua `cemitdefn` blocks.
+entry points emitted through Nelua `cemitdefn` blocks (none remain in `src/`
+since the 2026-11-05 `*const` migration; the wide-character wrappers in
+`memory.nelua` are now plain exported Nelua functions).
 
 ## Pinned musl API comparison
 

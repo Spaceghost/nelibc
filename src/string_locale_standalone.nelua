@@ -3,13 +3,13 @@
 
 local function malloc(size: csize): pointer <cimport> end
 local function free(ptr: pointer): void <cimport> end
-local function mbstowcs(output: *[0]cwchar_t, text: *[0]cchar <const>, limit: csize): csize <cimport> end
-local function wcstombs(output: *[0]cchar, text: *[0]cwchar_t <const>, limit: csize): csize <cimport> end
-local function wcscoll(left: *[0]cwchar_t <const>, right: *[0]cwchar_t <const>): cint <cimport> end
-local function wcsxfrm(dest: *[0]cwchar_t, src: *[0]cwchar_t <const>, size: csize): csize <cimport> end
+local function mbstowcs(output: *[0]cwchar_t, text: *const [0]cchar, limit: csize): csize <cimport> end
+local function wcstombs(output: *[0]cchar, text: *const [0]cwchar_t, limit: csize): csize <cimport> end
+local function wcscoll(left: *const [0]cwchar_t, right: *const [0]cwchar_t): cint <cimport> end
+local function wcsxfrm(dest: *[0]cwchar_t, src: *const [0]cwchar_t, size: csize): csize <cimport> end
 local function nelibc_standalone_collate_mode(): cint <cimport> end
 local function uselocale(locale: pointer): pointer <cimport> end
-local function newlocale(mask: cint, name: *[0]cchar <const>, base: pointer): pointer <cimport> end
+local function newlocale(mask: cint, name: *const [0]cchar, base: pointer): pointer <cimport> end
 local function duplocale(locale: pointer): pointer <cimport> end
 
 local function enter_german_utf8_locale(): pointer <inline>
@@ -25,25 +25,25 @@ local function enter_german_utf8_locale(): pointer <inline>
   return uselocale(utf8_locale)
 end
 
-local function byte_collate(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <inline>
+local function byte_collate(left: *const [0]cchar, right: *const [0]cchar): cint <inline>
   local i: csize = 0
   while left[i] ~= 0 and left[i] == right[i] do i = i + 1 end
   return (@cint)((@byte)(left[i])) - (@cint)((@byte)(right[i]))
 end
 
-local function multibyte_to_wide(text: *[0]cchar <const>, length: *[0]csize): *[0]cwchar_t <inline>
-  length[0] = mbstowcs(nilptr, text, 0)
+local function multibyte_to_wide(text: *const [0]cchar, length: *[0]csize): *[0]cwchar_t <inline>
+  length[0] = mbstowcs(nilptr, (@*[0]cchar)(text), 0)
   if length[0] == ~0_csize or length[0] > (~0_csize // 4) - 1 then return nilptr end
   local wide = (@*[0]cwchar_t)(malloc((length[0] + 1) * 4))
   if wide == nilptr then return nilptr end
-  if mbstowcs(wide, text, length[0] + 1) ~= length[0] then
+  if mbstowcs(wide, (@*[0]cchar)(text), length[0] + 1) ~= length[0] then
     free((@pointer)(wide))
     return nilptr
   end
   return wide
 end
 
-local function nelibc_locale_strcoll(left: cstring <const>, right: cstring <const>): cint <cexport, codename 'nelibc_locale_strcoll'>
+local function nelibc_locale_strcoll(left: *const [0]cchar, right: *const [0]cchar): cint <cexport, codename 'nelibc_locale_strcoll'>
   local left: *[0]cchar = (@*[0]cchar)(left)
   local right: *[0]cchar = (@*[0]cchar)(right)
   if nelibc_standalone_collate_mode() == 1 then
@@ -67,7 +67,7 @@ local function nelibc_locale_strcoll(left: cstring <const>, right: cstring <cons
   return byte_collate(left, right)
 end
 
-local function nelibc_locale_strxfrm(dest: *[0]cchar, src: cstring <const>, size: csize): csize <cexport, codename 'nelibc_locale_strxfrm'>
+local function nelibc_locale_strxfrm(dest: *[0]cchar, src: *const [0]cchar, size: csize): csize <cexport, codename 'nelibc_locale_strxfrm'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   if nelibc_standalone_collate_mode() == 1 then
     local previous_locale = enter_german_utf8_locale()

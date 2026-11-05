@@ -1,15 +1,15 @@
 ## pragmas.nogc = true
 ## pragmas.noentrypoint = true
 
-local function openat(dirfd: cint, pathname: pointer <const>, flags: cint, mode: cuint): cint <cimport> end
-local function unlinkat(dirfd: cint, pathname: *[0]cchar <const>, flags: cint): cint <cimport> end
+local function openat(dirfd: cint, pathname: *const void, flags: cint, mode: cuint): cint <cimport> end
+local function unlinkat(dirfd: cint, pathname: *const [0]cchar, flags: cint): cint <cimport> end
 local function close(fd: cint): cint <cimport> end
 local function getpid(): cint <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
-local function nelibc_host_fdopen(fd: cint, mode: *[0]cchar <const>): pointer <cimport> end
+local function nelibc_host_fdopen(fd: cint, mode: *const [0]cchar): pointer <cimport> end
 local function nelibc_stdio_lock(word: *cint, owner: *cint, depth: *cint): void <cimport> end
 local function nelibc_stdio_unlock(word: *cint, owner: *cint, depth: *cint): void <cimport> end
-local function memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+local function memcpy(dest: pointer, src: *const void, n: csize): pointer <cimport> end
 
 local tmpfile_lock_word: cint = 0
 local tmpfile_lock_owner: cint = 0

@@ -127,7 +127,7 @@ local function feholdexcept(environment: *[0]cuchar): cint <cexport, codename 'f
   return 0_cint
 end
 
-local function fesetenv(environment: *[0]cuchar <const>): cint <cexport, codename 'fesetenv'>
+local function fesetenv(environment: *const [0]cuchar): cint <cexport, codename 'fesetenv'>
   if environment == nilptr then return 1_cint end
   if (@usize)(environment) == 0xffffffffffffffff_usize or
       (@usize)(environment) == 0xfffffffffffffffe_usize then
@@ -155,7 +155,7 @@ local function fesetenv(environment: *[0]cuchar <const>): cint <cexport, codenam
   return 0_cint
 end
 
-local function feupdateenv(environment: *[0]cuchar <const>): cint <cexport, codename 'feupdateenv'>
+local function feupdateenv(environment: *const [0]cuchar): cint <cexport, codename 'feupdateenv'>
   if environment == nilptr then return 1_cint end
   local flags = fetestexcept(0x3d_cint)
   if fesetenv(environment) ~= 0_cint then return 1_cint end

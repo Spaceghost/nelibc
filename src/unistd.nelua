@@ -232,10 +232,10 @@ local function mbsrtowcs(output: *[0]cint, source: *[0]*[0]cchar,
 local function malloc(size: csize): pointer <cimport> end
 local function free(ptr: pointer): void <cimport> end
 local function realloc(ptr: pointer, size: csize): pointer <cimport> end
-local function memcpy(dest: pointer, src: pointer <const>, size: csize): pointer <cimport> end
+local function memcpy(dest: pointer, src: *const void, size: csize): pointer <cimport> end
 local function memset(dest: pointer, value: cint, size: csize): pointer <cimport> end
-local function getenv(name: *[0]cchar <const>): *[0]cchar <cimport> end
-local function fopen(pathname: cstring <const>, mode: cstring <const>): pointer <cimport> end
+local function getenv(name: *const [0]cchar): *[0]cchar <cimport> end
+local function fopen(pathname: *const [0]cchar, mode: *const [0]cchar): pointer <cimport> end
 local function fclose(stream: pointer): cint <cimport> end
 local function fileno(stream: pointer): cint <cimport> end
 local function getline(line: **cchar, capacity: *csize, stream: pointer): clong <cimport> end
@@ -244,11 +244,11 @@ local function ferror(stream: pointer): cint <cimport> end
 local function nelibc_getdate_err_location(): *[0]cint <cimport> end
 local function nelibc_environment_vector(): **cchar <cimport> end
 local function snprintf(buffer: *[0]cchar, max_size: csize,
-    format: *[0]cchar <const>, ...): cint <cimport> end
+    format: *const [0]cchar, ...): cint <cimport> end
 local function qsort(base: pointer, count: csize, width: csize,
     compare: function(pointer, pointer): cint): void <cimport> end
-local function strcoll(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <cimport> end
-local function strverscmp(left: *[0]cchar <const>, right: *[0]cchar <const>): cint <cimport> end
+local function strcoll(left: *const [0]cchar, right: *const [0]cchar): cint <cimport> end
+local function strverscmp(left: *const [0]cchar, right: *const [0]cchar): cint <cimport> end
 local function nelibc_cancellation_enter(): cint <cimport> end
 local function nelibc_cancellation_leave(previous_type: cint): void <cimport> end
 local function nelibc_cancellable_sys3(op: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
@@ -359,13 +359,13 @@ local function socketpair(domain: cint, socket_type: cint, protocol: cint, socke
   )))
 end
 
-local function bind(sockfd: cint, address: pointer <const>, address_length: cuint): cint <cexport, codename 'bind'>
+local function bind(sockfd: cint, address: *const void, address_length: cuint): cint <cexport, codename 'bind'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_BIND, (@culong)(sockfd), (@culong)((@usize)(address)), (@culong)(address_length)
   )))
 end
 
-local function connect(sockfd: cint, address: pointer <const>, address_length: cuint): cint <cexport, codename 'connect'>
+local function connect(sockfd: cint, address: *const void, address_length: cuint): cint <cexport, codename 'connect'>
   local raw_result = nelibc_cancellable_sys3(
     SYS_CONNECT, (@culong)(sockfd), (@culong)((@usize)(address)), (@culong)(address_length)
   )
@@ -394,7 +394,7 @@ local function accept4(sockfd: cint, address: pointer, address_length: *[0]cuint
   return (@cint)(syscall_result(raw_result))
 end
 
-local function sendto(sockfd: cint, buffer: pointer <const>, length: csize, flags: cint, address: pointer <const>, address_length: cuint): clong <cexport, codename 'sendto'>
+local function sendto(sockfd: cint, buffer: *const void, length: csize, flags: cint, address: *const void, address_length: cuint): clong <cexport, codename 'sendto'>
   local raw_result = nelibc_cancellable_sys6(
     SYS_SENDTO, (@culong)(sockfd), (@culong)((@usize)(buffer)), (@culong)(length),
     (@culong)(flags), (@culong)((@usize)(address)), (@culong)(address_length)
@@ -410,7 +410,7 @@ local function recvfrom(sockfd: cint, buffer: pointer, length: csize, flags: cin
   return syscall_result(raw_result)
 end
 
-local function send(sockfd: cint, buffer: pointer <const>, length: csize, flags: cint): clong <cexport, codename 'send'>
+local function send(sockfd: cint, buffer: *const void, length: csize, flags: cint): clong <cexport, codename 'send'>
   return sendto(sockfd, buffer, length, flags, nilptr, 0_cuint)
 end
 
@@ -418,7 +418,7 @@ local function recv(sockfd: cint, buffer: pointer, length: csize, flags: cint): 
   return recvfrom(sockfd, buffer, length, flags, nilptr, nilptr)
 end
 
-local function sendmsg(sockfd: cint, message: pointer <const>, flags: cint): clong <cexport, codename 'sendmsg'>
+local function sendmsg(sockfd: cint, message: *const void, flags: cint): clong <cexport, codename 'sendmsg'>
   local raw_result = nelibc_cancellable_sys3(
     SYS_SENDMSG, (@culong)(sockfd), (@culong)((@usize)(message)), (@culong)(flags)
   )
@@ -452,7 +452,7 @@ local function getpeername(sockfd: cint, address: pointer, address_length: *[0]c
   )))
 end
 
-local function setsockopt(sockfd: cint, level: cint, option_name: cint, option_value: pointer <const>, option_length: cuint): cint <cexport, codename 'setsockopt'>
+local function setsockopt(sockfd: cint, level: cint, option_name: cint, option_value: *const void, option_length: cuint): cint <cexport, codename 'setsockopt'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_SETSOCKOPT, (@culong)(sockfd), (@culong)(level), (@culong)(option_name),
     (@culong)((@usize)(option_value)), (@culong)(option_length), 0_culong
@@ -493,8 +493,8 @@ local function tcdrain(fd: cint): cint <cexport, codename 'tcdrain'>
 end
 
 -- Linux POSIX message queues use file descriptors and absolute realtime deadlines.
-local function mq_timedsend(mqdes: cint, message: pointer <const>, message_length: csize,
-                            priority: cuint, timeout: pointer <const>): cint
+local function mq_timedsend(mqdes: cint, message: *const void, message_length: csize,
+                            priority: cuint, timeout: *const void): cint
     <cexport, codename 'mq_timedsend'>
   return (@cint)(syscall_result(nelibc_cancellable_sys6(
     SYS_MQ_TIMEDSEND, (@culong)(mqdes), (@culong)((@usize)(message)),
@@ -504,7 +504,7 @@ local function mq_timedsend(mqdes: cint, message: pointer <const>, message_lengt
 end
 
 local function mq_timedreceive(mqdes: cint, message: pointer, message_length: csize,
-                               priority: pointer, timeout: pointer <const>): clong
+                               priority: pointer, timeout: *const void): clong
     <cexport, codename 'mq_timedreceive'>
   return syscall_result(nelibc_cancellable_sys6(
     SYS_MQ_TIMEDRECEIVE, (@culong)(mqdes), (@culong)((@usize)(message)),
@@ -513,7 +513,7 @@ local function mq_timedreceive(mqdes: cint, message: pointer, message_length: cs
   ))
 end
 
-local function mq_send(mqdes: cint, message: pointer <const>, message_length: csize,
+local function mq_send(mqdes: cint, message: *const void, message_length: csize,
                        priority: cuint): cint <cexport, codename 'mq_send'>
   return mq_timedsend(mqdes, message, message_length, priority, nilptr)
 end
@@ -523,7 +523,7 @@ local function mq_receive(mqdes: cint, message: pointer, message_length: csize,
   return mq_timedreceive(mqdes, message, message_length, priority, nilptr)
 end
 
-local function mq_name_for_kernel(name: pointer <const>): pointer <inline>
+local function mq_name_for_kernel(name: *const void): pointer <inline>
   if name == nilptr then
     nelibc_errno_location()[0] = 22_cint -- EINVAL
     return nilptr
@@ -544,8 +544,8 @@ local function mq_name_for_kernel(name: pointer <const>): pointer <inline>
   return (@pointer)((@usize)(name) + 1_usize)
 end
 
-local function nelibc_mq_open_impl(name: pointer <const>, flags: cint, mode: cuint,
-                                   attributes: pointer <const>): cint
+local function nelibc_mq_open_impl(name: *const void, flags: cint, mode: cuint,
+                                   attributes: *const void): cint
     <cexport, codename '__nelibc_mq_open_impl'>
   local kernel_name = mq_name_for_kernel(name)
   if kernel_name == nilptr then return -1_cint end
@@ -561,7 +561,7 @@ local function mq_close(mqdes: cint): cint <cexport, codename 'mq_close'>
   )))
 end
 
-local function mq_unlink(name: pointer <const>): cint <cexport, codename 'mq_unlink'>
+local function mq_unlink(name: *const void): cint <cexport, codename 'mq_unlink'>
   local kernel_name = mq_name_for_kernel(name)
   if kernel_name == nilptr then return -1_cint end
   return (@cint)(syscall_result(nelibc_sys3(
@@ -570,7 +570,7 @@ local function mq_unlink(name: pointer <const>): cint <cexport, codename 'mq_unl
 end
 
 -- Linux mq_notify is a direct syscall; a null event removes this process's registration.
-local function nelibc_mq_notify_syscall(mqdes: cint, notification: pointer <const>): cint
+local function nelibc_mq_notify_syscall(mqdes: cint, notification: *const void): cint
     <cexport, codename '__nelibc_mq_notify_syscall'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_MQ_NOTIFY, (@culong)(mqdes), (@culong)((@usize)(notification)), 0_culong
@@ -584,7 +584,7 @@ local function mq_getattr(mqdes: cint, attributes: pointer): cint <cexport, code
   )))
 end
 
-local function mq_setattr(mqdes: cint, new_attributes: pointer <const>, old_attributes: pointer): cint
+local function mq_setattr(mqdes: cint, new_attributes: *const void, old_attributes: pointer): cint
     <cexport, codename 'mq_setattr'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_MQ_GETSETATTR, (@culong)(mqdes), (@culong)((@usize)(new_attributes)),
@@ -593,7 +593,7 @@ local function mq_setattr(mqdes: cint, new_attributes: pointer <const>, old_attr
 end
 
 -- Linux mount attaches a filesystem to a target path.
-local function mount(source: pointer <const>, target: pointer <const>, filesystem: pointer <const>, mountflags: culong, data: pointer <const>): cint <cexport, codename 'mount'>
+local function mount(source: *const void, target: *const void, filesystem: *const void, mountflags: culong, data: *const void): cint <cexport, codename 'mount'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_MOUNT,
     (@culong)((@usize)(source)),
@@ -606,7 +606,7 @@ local function mount(source: pointer <const>, target: pointer <const>, filesyste
 end
 
 -- Linux umount2 detaches a mounted filesystem with optional unmount flags.
-local function umount2(target: pointer <const>, flags: cint): cint <cexport, codename 'umount2'>
+local function umount2(target: *const void, flags: cint): cint <cexport, codename 'umount2'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_UMOUNT2,
     (@culong)((@usize)(target)),
@@ -616,12 +616,12 @@ local function umount2(target: pointer <const>, flags: cint): cint <cexport, cod
 end
 
 -- umount is the flags-zero form of umount2.
-local function umount(target: pointer <const>): cint <cexport, codename 'umount'>
+local function umount(target: *const void): cint <cexport, codename 'umount'>
   return umount2(target, 0)
 end
 
 -- Linux pivot_root changes the root mount and moves the old root beneath it.
-local function pivot_root(new_root: pointer <const>, put_old: pointer <const>): cint <cexport, codename 'pivot_root'>
+local function pivot_root(new_root: *const void, put_old: *const void): cint <cexport, codename 'pivot_root'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_PIVOT_ROOT,
     (@culong)((@usize)(new_root)),
@@ -651,7 +651,7 @@ local function setns(fd: cint, nstype: cint): cint <cexport, codename 'setns'>
 end
 
 -- Linux sethostname changes the nodename of the calling UTS namespace.
-local function sethostname(name: pointer <const>, length: csize): cint <cexport, codename 'sethostname'>
+local function sethostname(name: *const void, length: csize): cint <cexport, codename 'sethostname'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_SETHOSTNAME,
     (@culong)((@usize)(name)),
@@ -661,7 +661,7 @@ local function sethostname(name: pointer <const>, length: csize): cint <cexport,
 end
 
 -- Linux setdomainname changes the NIS domain name of the calling UTS namespace.
-local function setdomainname(name: pointer <const>, length: csize): cint <cexport, codename 'setdomainname'>
+local function setdomainname(name: *const void, length: csize): cint <cexport, codename 'setdomainname'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_SETDOMAINNAME,
     (@culong)((@usize)(name)),
@@ -680,7 +680,7 @@ local function read(fd: cint, buf: pointer, count: csize): clong <cexport, coden
   return syscall_result(raw_result)
 end
 
-local function readv(fd: cint, iov: pointer <const>, iovcnt: cint): clong <cexport, codename 'readv'>
+local function readv(fd: cint, iov: *const void, iovcnt: cint): clong <cexport, codename 'readv'>
   local raw_result = nelibc_cancellable_sys3(SYS_READV, (@culong)(fd), (@culong)((@usize)(iov)), (@culong)(iovcnt))
   return syscall_result(raw_result)
 end
@@ -703,7 +703,7 @@ local function pread64(fd: cint, buf: pointer, count: csize, offset: clong): clo
 end
 
 -- Linux x86_64 uses a native-width offset for preadv; only 32-bit ABIs split it.
-local function preadv(fd: cint, iov: pointer <const>, iovcnt: cint, offset: clong): clong <cexport, codename 'preadv'>
+local function preadv(fd: cint, iov: *const void, iovcnt: cint, offset: clong): clong <cexport, codename 'preadv'>
   local raw_result = nelibc_cancellable_sys6(
     SYS_PREADV,
     (@culong)(fd),
@@ -716,12 +716,12 @@ local function preadv(fd: cint, iov: pointer <const>, iovcnt: cint, offset: clon
   return syscall_result(raw_result)
 end
 
-local function preadv64(fd: cint, iov: pointer <const>, iovcnt: cint, offset: clong): clong <cexport, codename 'preadv64'>
+local function preadv64(fd: cint, iov: *const void, iovcnt: cint, offset: clong): clong <cexport, codename 'preadv64'>
   return preadv(fd, iov, iovcnt, offset)
 end
 
 -- Linux x86_64 preadv2 uses a native-width offset followed by flags.
-local function preadv2(fd: cint, iov: pointer <const>, iovcnt: cint, offset: clong, flags: cuint): clong <cexport, codename 'preadv2'>
+local function preadv2(fd: cint, iov: *const void, iovcnt: cint, offset: clong, flags: cuint): clong <cexport, codename 'preadv2'>
   local raw_result = nelibc_cancellable_sys6(
     SYS_PREADV2,
     (@culong)(fd),
@@ -744,7 +744,7 @@ local function write(fd: cint, buf: pointer, count: csize): clong <cexport, code
   return syscall_result(raw_result)
 end
 
-local function writev(fd: cint, iov: pointer <const>, iovcnt: cint): clong <cexport, codename 'writev'>
+local function writev(fd: cint, iov: *const void, iovcnt: cint): clong <cexport, codename 'writev'>
   local raw_result = nelibc_cancellable_sys3(SYS_WRITEV, (@culong)(fd), (@culong)((@usize)(iov)), (@culong)(iovcnt))
   return syscall_result(raw_result)
 end
@@ -762,7 +762,7 @@ local function poll(fds: pointer, nfds: culong, timeout: cint): cint <cexport, c
   return (@cint)(syscall_result(raw_result))
 end
 
-local function ppoll(fds: pointer, nfds: culong, timeout: pointer <const>, sigmask: pointer <const>): cint <cexport, codename 'ppoll'>
+local function ppoll(fds: pointer, nfds: culong, timeout: *const void, sigmask: *const void): cint <cexport, codename 'ppoll'>
   local timeout_copy: Timespec
   local timeout_pointer: pointer = nilptr
   if timeout ~= nilptr then
@@ -794,7 +794,7 @@ local function select(nfds: cint, readfds: pointer, writefds: pointer, exceptfds
   return (@cint)(syscall_result(raw_result))
 end
 
-local function pselect(nfds: cint, readfds: pointer, writefds: pointer, exceptfds: pointer, timeout: pointer <const>, sigmask: pointer <const>): cint <cexport, codename 'pselect'>
+local function pselect(nfds: cint, readfds: pointer, writefds: pointer, exceptfds: pointer, timeout: *const void, sigmask: *const void): cint <cexport, codename 'pselect'>
   local timeout_copy: Timespec
   local timeout_pointer: pointer = nilptr
   if timeout ~= nilptr then
@@ -823,7 +823,7 @@ local function pselect(nfds: cint, readfds: pointer, writefds: pointer, exceptfd
   return (@cint)(syscall_result(raw_result))
 end
 
-local function nanosleep(requested: pointer <const>, remaining: pointer): cint <cexport, codename 'nanosleep'>
+local function nanosleep(requested: *const void, remaining: pointer): cint <cexport, codename 'nanosleep'>
   local raw_result = nelibc_cancellable_sys3(
     SYS_NANOSLEEP, (@culong)((@usize)(requested)), (@culong)((@usize)(remaining)), 0_culong
   )
@@ -831,7 +831,7 @@ local function nanosleep(requested: pointer <const>, remaining: pointer): cint <
 end
 
 -- POSIX clock_nanosleep returns an error number directly and leaves errno alone.
-local function clock_nanosleep(clock_id: cint, flags: cint, requested: pointer <const>, remaining: pointer): cint <cexport, codename 'clock_nanosleep'>
+local function clock_nanosleep(clock_id: cint, flags: cint, requested: *const void, remaining: pointer): cint <cexport, codename 'clock_nanosleep'>
   local result = nelibc_cancellable_sys6(
     SYS_CLOCK_NANOSLEEP, (@culong)(clock_id), (@culong)(flags),
     (@culong)((@usize)(requested)), (@culong)((@usize)(remaining)),
@@ -863,7 +863,7 @@ local function getitimer(which: cint, current: pointer): cint <cexport, codename
   )))
 end
 
-local function setitimer(which: cint, new_value: pointer <const>, old_value: pointer): cint <cexport, codename 'setitimer'>
+local function setitimer(which: cint, new_value: *const void, old_value: pointer): cint <cexport, codename 'setitimer'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_SETITIMER, (@culong)(which), (@culong)((@usize)(new_value)),
     (@culong)((@usize)(old_value))
@@ -992,7 +992,7 @@ local function nelibc_fork_no_handlers(): cint <cexport, codename '_Fork'>
   return (@cint)(syscall_result(result))
 end
 
-local function execve(pathname: cstring <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <cexport, codename 'execve'>
+local function execve(pathname: *const [0]cchar, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <cexport, codename 'execve'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_EXECVE,
@@ -1002,7 +1002,7 @@ local function execve(pathname: cstring <const>, argv: *[0]*[0]cchar, envp: *[0]
   )))
 end
 
-local function execve_with_shell_fallback(pathname: *[0]cchar <const>,
+local function execve_with_shell_fallback(pathname: *const [0]cchar,
     argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <inline>
   local result = execve(pathname, argv, envp)
   if result ~= -1_cint or nelibc_errno_location()[0] ~= 8_cint then return result end -- ENOEXEC
@@ -1018,7 +1018,7 @@ local function execve_with_shell_fallback(pathname: *[0]cchar <const>,
     return -1_cint
   end
   shell_arguments[0] = '/bin/sh'
-  shell_arguments[1] = pathname
+  shell_arguments[1] = (@*[0]cchar)(pathname)
   local index: csize = 1_csize
   while index < argument_count do
     shell_arguments[index + 1_csize] = argv[index]
@@ -1032,7 +1032,7 @@ local function execve_with_shell_fallback(pathname: *[0]cchar <const>,
   return result
 end
 
-local function exec_search_path(file: *[0]cchar <const>, argv: *[0]*[0]cchar,
+local function exec_search_path(file: *const [0]cchar, argv: *[0]*[0]cchar,
     envp: *[0]*[0]cchar): cint <inline>
   local file_length: csize = 0
   local has_slash: boolean = false
@@ -1102,17 +1102,17 @@ local function exec_search_path(file: *[0]cchar <const>, argv: *[0]*[0]cchar,
   return -1_cint
 end
 
-local function execv(pathname: cstring <const>, argv: *[0]*[0]cchar): cint <cexport, codename 'execv'>
+local function execv(pathname: *const [0]cchar, argv: *[0]*[0]cchar): cint <cexport, codename 'execv'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   return execve(pathname, argv, (@*[0]*[0]cchar)(nelibc_environment_vector()))
 end
 
-local function execvp(file: cstring <const>, argv: *[0]*[0]cchar): cint <cexport, codename 'execvp'>
+local function execvp(file: *const [0]cchar, argv: *[0]*[0]cchar): cint <cexport, codename 'execvp'>
   local file: *[0]cchar = (@*[0]cchar)(file)
   return exec_search_path(file, argv, (@*[0]*[0]cchar)(nelibc_environment_vector()))
 end
 
-local function execvpe(file: cstring <const>, argv: *[0]*[0]cchar,
+local function execvpe(file: *const [0]cchar, argv: *[0]*[0]cchar,
     envp: *[0]*[0]cchar): cint <cexport, codename 'execvpe'>
   local file: *[0]cchar = (@*[0]cchar)(file)
   return exec_search_path(file, argv, envp)
@@ -1121,14 +1121,14 @@ end
 -- musl's static posix_spawnp calls this internal entry point. Providing it
 -- here lets hybrid musl builds keep Nelibc's execvp shell fallback without
 -- pulling musl's execvp object, which also defines the public execvp symbol.
-local function __execvpe(file: cstring <const>, argv: *[0]*[0]cchar,
+local function __execvpe(file: *const [0]cchar, argv: *[0]*[0]cchar,
     envp: *[0]*[0]cchar): cint <cexport, codename '__execvpe'>
   local file: *[0]cchar = (@*[0]cchar)(file)
   return exec_search_path(file, argv, envp)
 end
 
 -- Linux execveat resolves pathname relative to dirfd, with AT_EMPTY_PATH support.
-local function execveat(dirfd: cint, pathname: cstring <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar, flags: cint): cint <cexport, codename 'execveat'>
+local function execveat(dirfd: cint, pathname: *const [0]cchar, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar, flags: cint): cint <cexport, codename 'execveat'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_EXECVEAT,
@@ -1184,7 +1184,7 @@ local function clock_getcpuclockid(process_id: cint, clock_id: *[0]cint): cint
   return 0_cint
 end
 
-local function clock_settime(clock_id: cint, time_value: pointer <const>): cint
+local function clock_settime(clock_id: cint, time_value: *const void): cint
     <cexport, codename 'clock_settime'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_CLOCK_SETTIME, (@culong)(clock_id), (@culong)((@usize)(time_value)), 0_culong
@@ -1240,7 +1240,7 @@ local gmtime_result: Tm = {
 }
 
 -- Convert seconds since the Epoch to UTC without consulting host timezone state.
-local function gmtime_r(timer: *[0]clong <const>, result: *Tm): *Tm
+local function gmtime_r(timer: *const [0]clong, result: *Tm): *Tm
     <cexport, codename 'gmtime_r'>
   if timer == nilptr or result == nilptr then return nilptr end
   local timestamp: clonglong = (@clonglong)(timer[0])
@@ -1306,7 +1306,7 @@ local function gmtime_r(timer: *[0]clong <const>, result: *Tm): *Tm
   return result
 end
 
-local function gmtime(timer: *[0]clong <const>): *Tm <cexport, codename 'gmtime'>
+local function gmtime(timer: *const [0]clong): *Tm <cexport, codename 'gmtime'>
   return gmtime_r(timer, &gmtime_result)
 end
 
@@ -1334,7 +1334,7 @@ local TzRule: type = @record{kind: cint, month: clonglong, week: clonglong,
 
 -- Cache only stable statx fields for a timezone file. atime is deliberately
 -- excluded because reading the zone file may update it.
-local function tz_read_file_signature(path: *[0]cchar <const>,
+local function tz_read_file_signature(path: *const [0]cchar,
     signature: *[56]cchar): boolean
   local metadata: [256]cchar = {}
   local result = nelibc_sys6(SYS_STATX, (@culong)(-100_cint),
@@ -1367,7 +1367,7 @@ end
 
 ## if NELIBC_TESTING then
 -- Test-only ABI hooks; normal libc archives do not export them.
-local function nelibc_tz_file_signature(path: cstring <const>,
+local function nelibc_tz_file_signature(path: *const [0]cchar,
     signature: *[56]cchar): cint <cexport, codename '__nelibc_tz_file_signature'>
   local path: *[0]cchar = (@*[0]cchar)(path)
   if path == nilptr or signature == nilptr then return -1_cint end
@@ -1376,7 +1376,7 @@ local function nelibc_tz_file_signature(path: cstring <const>,
 end
 
 -- Private smoke-test seam for exercising the unset-TZ /etc/localtime path.
-local function nelibc_set_localtime_path(path: *[0]cchar <const>): cint
+local function nelibc_set_localtime_path(path: *const [0]cchar): cint
     <cexport, codename '__nelibc_set_localtime_path'>
   if path == nilptr or path[0] == 0_cchar then return -1_cint end
   local index: csize = 0
@@ -1392,7 +1392,7 @@ local function nelibc_set_localtime_path(path: *[0]cchar <const>): cint
 end
 ## end
 
-local function tz_file_path(zone: *[0]cchar <const>, path: *[512]cchar): boolean
+local function tz_file_path(zone: *const [0]cchar, path: *[512]cchar): boolean
   local source: *[0]cchar = (@*[0]cchar)(zone)
   local relative: boolean = false
   if zone == nilptr then
@@ -1414,7 +1414,7 @@ local function tz_file_path(zone: *[0]cchar <const>, path: *[512]cchar): boolean
   end
   local index: csize = 0
   if relative then
-    local prefix: *[0]cchar <const> = "/usr/share/zoneinfo/"
+    local prefix: *const [0]cchar = "/usr/share/zoneinfo/"
     while prefix[index] ~= 0_cchar do
       if index >= 510 then return false end
       path[index] = prefix[index]
@@ -1432,7 +1432,7 @@ local function tz_file_path(zone: *[0]cchar <const>, path: *[512]cchar): boolean
   return true
 end
 
-local function tz_file_signature_matches(path: *[0]cchar <const>): boolean
+local function tz_file_signature_matches(path: *const [0]cchar): boolean
   if not tz_localtime_signature_ready then return false end
   local current: [56]cchar = {}
   if not tz_read_file_signature(path, &current[0]) then return false end
@@ -1444,7 +1444,7 @@ local function tz_file_signature_matches(path: *[0]cchar <const>): boolean
   return true
 end
 
-local function tz_zone_file_signature_store(zone: *[0]cchar <const>): void
+local function tz_zone_file_signature_store(zone: *const [0]cchar): void
   local path: [512]cchar = {}
   if not tz_file_path(zone, &path[0]) then
     tz_localtime_signature_ready = false
@@ -1454,7 +1454,7 @@ local function tz_zone_file_signature_store(zone: *[0]cchar <const>): void
       &path[0], &tz_localtime_signature[0])
 end
 
-local function tz_cache_matches(zone: *[0]cchar <const>): boolean
+local function tz_cache_matches(zone: *const [0]cchar): boolean
   if not tz_cache_ready then return false end
   if zone == nilptr then
     if tz_cache_is_set then return false end
@@ -1474,7 +1474,7 @@ local function tz_cache_matches(zone: *[0]cchar <const>): boolean
   return tz_file_signature_matches(&path[0])
 end
 
-local function tz_cache_store(zone: *[0]cchar <const>): void <inline>
+local function tz_cache_store(zone: *const [0]cchar): void <inline>
   tz_cache_is_set = zone ~= nilptr
   local index: csize = 0
   if zone ~= nilptr then
@@ -1491,7 +1491,7 @@ local function tz_cache_store(zone: *[0]cchar <const>): void <inline>
   tz_cache_ready = true
 end
 
-local function tz_parse_decimal(data: *[0]cchar <const>, index: *[0]csize,
+local function tz_parse_decimal(data: *const [0]cchar, index: *[0]csize,
     limit: csize): clonglong
   local value: clonglong = 0_clonglong
   while index[0] < limit and data[index[0]] >= 48_cchar and data[index[0]] <= 57_cchar do
@@ -1506,7 +1506,7 @@ local function tz_parse_decimal(data: *[0]cchar <const>, index: *[0]csize,
   return value
 end
 
-local function tz_parse_abbreviation(data: *[0]cchar <const>, index: *[0]csize,
+local function tz_parse_abbreviation(data: *const [0]cchar, index: *[0]csize,
     limit: csize, name: *[16]cchar): boolean
   local quoted: boolean = false
   if index[0] < limit and data[index[0]] == 60_cchar then
@@ -1536,7 +1536,7 @@ local function tz_parse_abbreviation(data: *[0]cchar <const>, index: *[0]csize,
 end
 
 -- POSIX TZ offsets are seconds west of UTC; the returned value retains that sign.
-local function tz_parse_offset(data: *[0]cchar <const>, index: *[0]csize,
+local function tz_parse_offset(data: *const [0]cchar, index: *[0]csize,
     limit: csize, offset: *[0]clonglong): boolean
   local sign: clonglong = 1_clonglong
   if index[0] < limit and data[index[0]] == 45_cchar then
@@ -1565,7 +1565,7 @@ local function tz_parse_offset(data: *[0]cchar <const>, index: *[0]csize,
   return true
 end
 
-local function tz_parse_rule(data: *[0]cchar <const>, index: *[0]csize,
+local function tz_parse_rule(data: *const [0]cchar, index: *[0]csize,
     limit: csize, rule: *TzRule): boolean
   if index[0] >= limit then return false end
   if data[index[0]] == 77_cchar then -- Mmonth.week.weekday
@@ -1671,7 +1671,7 @@ local function tz_rule_epoch(year: clonglong, rule: *TzRule): clonglong
   return tz_days_from_civil(year, rule.month, day) * 86400_clonglong + rule.seconds
 end
 
-local function tz_apply_footer(data: *[0]cchar <const>, footer: csize, data_length: csize,
+local function tz_apply_footer(data: *const [0]cchar, footer: csize, data_length: csize,
     timestamp: clonglong, year: clonglong, offset: *[0]clonglong,
     is_dst: *[0]cint, zone: *[16]cchar): boolean
   if footer >= data_length or data[footer] ~= 10_cchar then return false end
@@ -1736,8 +1736,8 @@ local function tz_apply_footer(data: *[0]cchar <const>, footer: csize, data_leng
   return true
 end
 
-local function tz_apply_posix_zone(specification: *[0]cchar <const>, length: csize,
-    timer: *[0]clong <const>, result: *Tm): boolean
+local function tz_apply_posix_zone(specification: *const [0]cchar, length: csize,
+    timer: *const [0]clong, result: *Tm): boolean
   if length > 255 then return false end
   local footer: [258]cchar = {}
   footer[0] = 10_cchar
@@ -1775,7 +1775,7 @@ local function tz_apply_posix_zone(specification: *[0]cchar <const>, length: csi
   return true
 end
 
-local function tz_read_unsigned(data: *[0]cchar <const>, offset: csize, width: csize): culonglong <inline>
+local function tz_read_unsigned(data: *const [0]cchar, offset: csize, width: csize): culonglong <inline>
   local value: culonglong = 0_culonglong
   local index: csize = 0
   while index < width do
@@ -1786,8 +1786,8 @@ local function tz_read_unsigned(data: *[0]cchar <const>, offset: csize, width: c
 end
 
 -- Read TZif v1-v4 transition tables from /etc/localtime or TZ's zone file.
-local function localtime_tzif(timer: *[0]clong <const>, result: *Tm,
-    path: *[0]cchar <const>): cint
+local function localtime_tzif(timer: *const [0]clong, result: *Tm,
+    path: *const [0]cchar): cint
   local data: [131072]cchar = {}
   local fd: clong = syscall_result(nelibc_sys3(
     SYS_OPENAT, (@culong)(-100_clong), (@culong)((@usize)(path)), 0_culong))
@@ -1940,9 +1940,9 @@ local localtime_result: Tm = {
 
 -- Parse the fixed-offset form of POSIX TZ (for example EST5 or JST-9).
 -- The sign is reversed by POSIX: EST5 means UTC-05:00.
-local function localtime_r_core(timer: *[0]clong <const>, result: *Tm): *Tm
+local function localtime_r_core(timer: *const [0]clong, result: *Tm): *Tm
   if timer == nilptr or result == nilptr then return nilptr end
-  local zone: *[0]cchar <const> = getenv("TZ")
+  local zone: *const [0]cchar = getenv("TZ")
   local zone_path: [512]cchar = {}
   if tz_file_path(zone, &zone_path[0]) then
     local zone_status: cint = localtime_tzif(timer, result, &zone_path[0])
@@ -2012,7 +2012,7 @@ local function localtime_r_core(timer: *[0]clong <const>, result: *Tm): *Tm
 end
 
 local function tz_copy_global_name(destination: *[16]cchar,
-    source: *[0]cchar <const>): void <inline>
+    source: *const [0]cchar): void <inline>
   local index: csize = 0
   if source ~= nilptr then
     while index < 15 and source[index] ~= 0_cchar do
@@ -2029,7 +2029,7 @@ end
 
 -- Publish POSIX timezone globals from the same TZ/TZif engine used by localtime.
 local function tzset(): void <cexport, codename 'tzset'>
-  local zone: *[0]cchar <const> = getenv("TZ")
+  local zone: *const [0]cchar = getenv("TZ")
   tz_cache_store(zone)
   tz_zone_file_signature_store(zone)
   timezone = 0_clong
@@ -2081,14 +2081,14 @@ local function tzset(): void <cexport, codename 'tzset'>
 end
 
 -- POSIX localtime_r behaves as though tzset refreshed the environment state.
-local function localtime_r(timer: *[0]clong <const>, result: *Tm): *Tm
+local function localtime_r(timer: *const [0]clong, result: *Tm): *Tm
     <cexport, codename 'localtime_r'>
   if timer == nilptr or result == nilptr then return nilptr end
   if not tz_cache_matches(getenv("TZ")) then tzset() end
   return localtime_r_core(timer, result)
 end
 
-local function localtime(timer: *[0]clong <const>): *Tm <cexport, codename 'localtime'>
+local function localtime(timer: *const [0]clong): *Tm <cexport, codename 'localtime'>
   return localtime_r(timer, &localtime_result)
 end
 
@@ -2224,7 +2224,7 @@ end
 
 local asctime_result: [26]cchar = {}
 
-local function asctime_r(time_value: *Tm <const>, buffer: *[0]cchar): *[0]cchar
+local function asctime_r(time_value: *const Tm, buffer: *[0]cchar): *[0]cchar
     <cexport, codename 'asctime_r'>
   if time_value == nilptr or buffer == nilptr then
     nelibc_errno_location()[0] = 22_cint -- EINVAL
@@ -2293,11 +2293,11 @@ local function asctime_r(time_value: *Tm <const>, buffer: *[0]cchar): *[0]cchar
   return buffer
 end
 
-local function asctime(time_value: *Tm <const>): *[0]cchar <cexport, codename 'asctime'>
+local function asctime(time_value: *const Tm): *[0]cchar <cexport, codename 'asctime'>
   return asctime_r(time_value, &asctime_result[0])
 end
 
-local function ctime_r(timer: *[0]clong <const>, buffer: *[0]cchar): *[0]cchar
+local function ctime_r(timer: *const [0]clong, buffer: *[0]cchar): *[0]cchar
     <cexport, codename 'ctime_r'>
   if timer == nilptr or buffer == nilptr then
     nelibc_errno_location()[0] = 22_cint
@@ -2312,13 +2312,13 @@ local function ctime_r(timer: *[0]clong <const>, buffer: *[0]cchar): *[0]cchar
   return asctime_r(&broken_down, buffer)
 end
 
-local function ctime(timer: *[0]clong <const>): *[0]cchar <cexport, codename 'ctime'>
+local function ctime(timer: *const [0]clong): *[0]cchar <cexport, codename 'ctime'>
   if ctime_r(timer, &asctime_result[0]) == nilptr then return nilptr end
   return (@*[0]cchar)(&asctime_result[0])
 end
 
 local function strftime_append_text(buffer: *[0]cchar, max_size: csize,
-    position: *[0]csize, text: *[0]cchar <const>): boolean <inline>
+    position: *[0]csize, text: *const [0]cchar): boolean <inline>
   local index: csize = 0
   while text[index] ~= 0_cchar do
     if position[0] + 1 >= max_size then return false end
@@ -2381,8 +2381,8 @@ local function strptime_fold(character: cchar): cint <inline>
   return value
 end
 
-local function strptime_word(input: *[0]cchar <const>, position: *[0]csize,
-    word: *[0]cchar <const>): boolean <inline>
+local function strptime_word(input: *const [0]cchar, position: *[0]csize,
+    word: *const [0]cchar): boolean <inline>
   local index: csize = 0
   while word[index] ~= 0_cchar do
     if input[position[0] + index] == 0_cchar or
@@ -2396,7 +2396,7 @@ local function strptime_word(input: *[0]cchar <const>, position: *[0]csize,
 end
 
 -- C-locale strptime parser for the standard calendar and clock directives.
-local function strptime(input: cstring <const>, format: cstring <const>,
+local function strptime(input: *const [0]cchar, format: *const [0]cchar,
     time_value: *Tm): *[0]cchar <cexport, codename 'strptime'>
   local input: *[0]cchar = (@*[0]cchar)(input)
   local format: *[0]cchar = (@*[0]cchar)(format)
@@ -2800,7 +2800,7 @@ local function getdate_fail(stream: pointer, line: *[0]cchar, error: cint): *Tm 
 end
 
 -- XSI getdate reads strptime formats from the file named by DATEMSK.
-local function getdate(input: cstring <const>): *Tm <cexport, codename 'getdate'>
+local function getdate(input: *const [0]cchar): *Tm <cexport, codename 'getdate'>
   local input: *[0]cchar = (@*[0]cchar)(input)
   local error_location = nelibc_getdate_err_location()
   if input == nilptr then error_location[0] = 8_cint; return nilptr end
@@ -2927,7 +2927,7 @@ end
 
 -- POSIX locale-explicit wrappers use the thread-local locale mechanism so
 -- callers can mix Nelibc's time functions with an independent locale handle.
-local function strptime_l(input: *[0]cchar <const>, format: *[0]cchar <const>,
+local function strptime_l(input: *const [0]cchar, format: *const [0]cchar,
     time_value: *Tm, locale: pointer): *[0]cchar
     <cexport, codename 'strptime_l'>
   local previous: pointer = uselocale(locale)
@@ -2939,7 +2939,7 @@ end
 
 -- C-locale strftime directives; locale-specific names can replace these tables later.
 local function strftime(buffer: *[0]cchar, max_size: csize,
-    format: *[0]cchar <const>, time_value: *Tm <const>): csize
+    format: *const [0]cchar, time_value: *const Tm): csize
     <cexport, codename 'strftime'>
   if buffer == nilptr or format == nilptr or time_value == nilptr then return 0 end
   if max_size == 0 then return 0 end
@@ -3254,7 +3254,7 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
 end
 
 local function strftime_l(buffer: *[0]cchar, max_size: csize,
-    format: *[0]cchar <const>, time_value: *Tm <const>, locale: pointer): csize
+    format: *const [0]cchar, time_value: *const Tm, locale: pointer): csize
     <cexport, codename 'strftime_l'>
   local previous: pointer = uselocale(locale)
   if previous == nilptr then return 0 end
@@ -3264,7 +3264,7 @@ local function strftime_l(buffer: *[0]cchar, max_size: csize,
 end
 
 local function wcsftime(buffer: *[0]cint, max_size: csize,
-    format: *[0]cint <const>, time_value: *Tm <const>): csize
+    format: *const [0]cint, time_value: *const Tm): csize
     <cexport, codename 'wcsftime'>
   if buffer == nilptr or format == nilptr or time_value == nilptr or max_size == 0 then
     return 0
@@ -3313,7 +3313,7 @@ local function wcsftime(buffer: *[0]cint, max_size: csize,
 end
 
 local function wcsftime_l(buffer: *[0]cint, max_size: csize,
-    format: *[0]cint <const>, time_value: *Tm <const>, locale: pointer): csize
+    format: *const [0]cint, time_value: *const Tm, locale: pointer): csize
     <cexport, codename 'wcsftime_l'>
   local previous: pointer = uselocale(locale)
   if previous == nilptr then return 0 end
@@ -3407,7 +3407,7 @@ local Sysinfo: type = @record{
   mem_unit: cuint
 }
 
-local function setrlimit(resource: cint, limits: pointer <const>): cint <cexport, codename 'setrlimit'>
+local function setrlimit(resource: cint, limits: *const void): cint <cexport, codename 'setrlimit'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_SETRLIMIT,
     (@culong)(resource),
@@ -3471,7 +3471,7 @@ local function sched_getscheduler(pid: cint): cint
   )))
 end
 
-local function sched_setparam(pid: cint, param: *SchedParam <const>): cint
+local function sched_setparam(pid: cint, param: *const SchedParam): cint
     <cexport, codename 'sched_setparam'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_SCHED_SETPARAM, (@culong)(pid), (@culong)((@usize)(param)), 0_culong
@@ -3479,7 +3479,7 @@ local function sched_setparam(pid: cint, param: *SchedParam <const>): cint
 end
 
 local function sched_setscheduler(pid: cint, policy: cint,
-    param: *SchedParam <const>): cint <cexport, codename 'sched_setscheduler'>
+    param: *const SchedParam): cint <cexport, codename 'sched_setscheduler'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_SCHED_SETSCHEDULER, (@culong)(pid), (@culong)(policy),
     (@culong)((@usize)(param))
@@ -3505,7 +3505,7 @@ local function sched_getaffinity(pid: cint, size: csize, mask: pointer): cint <c
   return 0_cint
 end
 
-local function sched_setaffinity(pid: cint, size: csize, mask: pointer <const>): cint <cexport, codename 'sched_setaffinity'>
+local function sched_setaffinity(pid: cint, size: csize, mask: *const void): cint <cexport, codename 'sched_setaffinity'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_SCHED_SETAFFINITY,
     (@culong)(pid),
@@ -3610,7 +3610,7 @@ local Utsname: type = @record{
   domainname: [65]cchar
 }
 
-local function copy_utsname_field(destination: pointer, source: *[0]cchar <const>, length: csize,
+local function copy_utsname_field(destination: pointer, source: *const [0]cchar, length: csize,
                                   error_on_truncation: boolean): cint <inline>
   local source_length: csize = 0
   while source_length < 65_csize and source[source_length] ~= 0 do
@@ -3645,7 +3645,7 @@ local function getdomainname(name: pointer, length: csize): cint <cexport, coden
   return copy_utsname_field(name, (@*[0]cchar)(&uts.domainname[0]), length, false)
 end
 
-local function pwrite(fd: cint, buf: pointer <const>, count: csize, offset: clong): clong <cexport, codename 'pwrite'>
+local function pwrite(fd: cint, buf: *const void, count: csize, offset: clong): clong <cexport, codename 'pwrite'>
   local raw_result = nelibc_cancellable_sys6(
     SYS_PWRITE64,
     (@culong)(fd),
@@ -3658,12 +3658,12 @@ local function pwrite(fd: cint, buf: pointer <const>, count: csize, offset: clon
   return syscall_result(raw_result)
 end
 
-local function pwrite64(fd: cint, buf: pointer <const>, count: csize, offset: clong): clong <cexport, codename 'pwrite64'>
+local function pwrite64(fd: cint, buf: *const void, count: csize, offset: clong): clong <cexport, codename 'pwrite64'>
   return pwrite(fd, buf, count, offset)
 end
 
 -- Linux x86_64 uses a native-width offset for pwritev; only 32-bit ABIs split it.
-local function pwritev(fd: cint, iov: pointer <const>, iovcnt: cint, offset: clong): clong <cexport, codename 'pwritev'>
+local function pwritev(fd: cint, iov: *const void, iovcnt: cint, offset: clong): clong <cexport, codename 'pwritev'>
   local raw_result = nelibc_cancellable_sys6(
     SYS_PWRITEV,
     (@culong)(fd),
@@ -3676,12 +3676,12 @@ local function pwritev(fd: cint, iov: pointer <const>, iovcnt: cint, offset: clo
   return syscall_result(raw_result)
 end
 
-local function pwritev64(fd: cint, iov: pointer <const>, iovcnt: cint, offset: clong): clong <cexport, codename 'pwritev64'>
+local function pwritev64(fd: cint, iov: *const void, iovcnt: cint, offset: clong): clong <cexport, codename 'pwritev64'>
   return pwritev(fd, iov, iovcnt, offset)
 end
 
 -- Linux x86_64 pwritev2 uses the same offset and flags argument layout.
-local function pwritev2(fd: cint, iov: pointer <const>, iovcnt: cint, offset: clong, flags: cuint): clong <cexport, codename 'pwritev2'>
+local function pwritev2(fd: cint, iov: *const void, iovcnt: cint, offset: clong, flags: cuint): clong <cexport, codename 'pwritev2'>
   local raw_result = nelibc_cancellable_sys6(
     SYS_PWRITEV2,
     (@culong)(fd),
@@ -3719,7 +3719,7 @@ local function timerfd_create(clock_id: cint, flags: cint): cint <cexport, coden
   )))
 end
 
-local function timerfd_settime(fd: cint, flags: cint, new_value: pointer <const>, old_value: pointer): cint <cexport, codename 'timerfd_settime'>
+local function timerfd_settime(fd: cint, flags: cint, new_value: *const void, old_value: pointer): cint <cexport, codename 'timerfd_settime'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_TIMERFD_SETTIME, (@culong)(fd), (@culong)(flags),
     (@culong)((@usize)(new_value)), (@culong)((@usize)(old_value)),
@@ -3735,7 +3735,7 @@ end
 
 -- POSIX timers expose an opaque timer_t that differs between host libcs. Keep
 -- a small nonzero public ID and translate it to the Linux kernel timer ID.
-local function timer_create(clock_id: cint, event: pointer <const>, timer_id: pointer): cint
+local function timer_create(clock_id: cint, event: *const void, timer_id: pointer): cint
     <cexport, codename 'timer_create'>
   local kernel_timer_id: cint = -1
   local result = syscall_result(nelibc_sys3(
@@ -3749,7 +3749,7 @@ local function timer_create(clock_id: cint, event: pointer <const>, timer_id: po
 end
 
 local function timer_settime(timer_id: cint, flags: cint,
-    new_value: pointer <const>, old_value: pointer): cint
+    new_value: *const void, old_value: pointer): cint
     <cexport, codename 'timer_settime'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_TIMER_SETTIME, (@culong)(timer_id - 1), (@culong)(flags),
@@ -3778,7 +3778,7 @@ local function timer_delete(timer_id: cint): cint <cexport, codename 'timer_dele
   )))
 end
 
-local function signalfd(fd: cint, signal_mask: pointer <const>, flags: cint): cint <cexport, codename 'signalfd'>
+local function signalfd(fd: cint, signal_mask: *const void, flags: cint): cint <cexport, codename 'signalfd'>
   local kernel_mask = ((@*Sigset)(signal_mask)).bits[0] & ~(1_culong << 31)
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_SIGNALFD4, (@culong)(fd), (@culong)((@usize)(&kernel_mask)),
@@ -3787,7 +3787,7 @@ local function signalfd(fd: cint, signal_mask: pointer <const>, flags: cint): ci
 end
 
 -- Linux x86_64 memfd_create creates an anonymous, sealable file descriptor.
-local function memfd_create(name: *[0]cchar <const>, flags: cuint): cint
+local function memfd_create(name: *const [0]cchar, flags: cuint): cint
     <cexport, codename 'memfd_create'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_MEMFD_CREATE, (@culong)((@usize)(name)), (@culong)(flags), 0_culong
@@ -3845,7 +3845,7 @@ local function epoll_pwait(epfd: cint, events: pointer, maxevents: cint,
 end
 
 local function epoll_pwait2(epfd: cint, events: pointer, maxevents: cint,
-    timeout: pointer <const>, signal_mask: pointer <const>): cint
+    timeout: *const void, signal_mask: *const void): cint
     <cexport, codename 'epoll_pwait2'>
   return (@cint)(syscall_result(nelibc_cancellable_sys6(
     SYS_EPOLL_PWAIT2, (@culong)(epfd), (@culong)((@usize)(events)),
@@ -4045,7 +4045,7 @@ local function tee(in_fd: cint, out_fd: cint, length: csize, flags: cuint): clon
 end
 
 -- Linux vmsplice maps userspace iovec data into a pipe's buffer ring.
-local function vmsplice(fd: cint, iov: pointer <const>, iovcnt: csize, flags: cuint): clong <cexport, codename 'vmsplice'>
+local function vmsplice(fd: cint, iov: *const void, iovcnt: csize, flags: cuint): clong <cexport, codename 'vmsplice'>
   return syscall_result(nelibc_sys6(
     SYS_VMSPLICE,
     (@culong)(fd),
@@ -4058,7 +4058,7 @@ local function vmsplice(fd: cint, iov: pointer <const>, iovcnt: csize, flags: cu
 end
 
 -- Linux fsetxattr updates an extended attribute on an open file descriptor.
-local function fsetxattr(fd: cint, name: pointer <const>, value: pointer <const>, size: csize, flags: cint): cint <cexport, codename 'fsetxattr'>
+local function fsetxattr(fd: cint, name: *const void, value: *const void, size: csize, flags: cint): cint <cexport, codename 'fsetxattr'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_FSETXATTR,
     (@culong)(fd),
@@ -4071,7 +4071,7 @@ local function fsetxattr(fd: cint, name: pointer <const>, value: pointer <const>
 end
 
 -- Linux fgetxattr reads an extended attribute from an open file descriptor.
-local function fgetxattr(fd: cint, name: pointer <const>, value: pointer, size: csize): clong <cexport, codename 'fgetxattr'>
+local function fgetxattr(fd: cint, name: *const void, value: pointer, size: csize): clong <cexport, codename 'fgetxattr'>
   return syscall_result(nelibc_sys6(
     SYS_FGETXATTR,
     (@culong)(fd),
@@ -4097,7 +4097,7 @@ local function flistxattr(fd: cint, list: pointer, size: csize): clong <cexport,
 end
 
 -- Linux fremovexattr removes an extended attribute from an open file descriptor.
-local function fremovexattr(fd: cint, name: pointer <const>): cint <cexport, codename 'fremovexattr'>
+local function fremovexattr(fd: cint, name: *const void): cint <cexport, codename 'fremovexattr'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_FREMOVEXATTR,
     (@culong)(fd),
@@ -4107,7 +4107,7 @@ local function fremovexattr(fd: cint, name: pointer <const>): cint <cexport, cod
 end
 
 -- Linux setxattr updates an extended attribute by pathname.
-local function setxattr(pathname: pointer <const>, name: pointer <const>, value: pointer <const>, size: csize, flags: cint): cint <cexport, codename 'setxattr'>
+local function setxattr(pathname: *const void, name: *const void, value: *const void, size: csize, flags: cint): cint <cexport, codename 'setxattr'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_SETXATTR,
     (@culong)((@usize)(pathname)),
@@ -4120,7 +4120,7 @@ local function setxattr(pathname: pointer <const>, name: pointer <const>, value:
 end
 
 -- Linux getxattr reads an extended attribute by pathname.
-local function getxattr(pathname: pointer <const>, name: pointer <const>, value: pointer, size: csize): clong <cexport, codename 'getxattr'>
+local function getxattr(pathname: *const void, name: *const void, value: pointer, size: csize): clong <cexport, codename 'getxattr'>
   return syscall_result(nelibc_sys6(
     SYS_GETXATTR,
     (@culong)((@usize)(pathname)),
@@ -4133,7 +4133,7 @@ local function getxattr(pathname: pointer <const>, name: pointer <const>, value:
 end
 
 -- Linux listxattr returns the NUL-separated attribute names for a pathname.
-local function listxattr(pathname: pointer <const>, list: pointer, size: csize): clong <cexport, codename 'listxattr'>
+local function listxattr(pathname: *const void, list: pointer, size: csize): clong <cexport, codename 'listxattr'>
   return syscall_result(nelibc_sys6(
     SYS_LISTXATTR,
     (@culong)((@usize)(pathname)),
@@ -4146,7 +4146,7 @@ local function listxattr(pathname: pointer <const>, list: pointer, size: csize):
 end
 
 -- Linux removexattr removes an extended attribute by pathname.
-local function removexattr(pathname: pointer <const>, name: pointer <const>): cint <cexport, codename 'removexattr'>
+local function removexattr(pathname: *const void, name: *const void): cint <cexport, codename 'removexattr'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_REMOVEXATTR,
     (@culong)((@usize)(pathname)),
@@ -4156,7 +4156,7 @@ local function removexattr(pathname: pointer <const>, name: pointer <const>): ci
 end
 
 -- Linux lsetxattr stores an extended attribute on the symlink inode itself.
-local function lsetxattr(pathname: pointer <const>, name: pointer <const>, value: pointer <const>, size: csize, flags: cint): cint <cexport, codename 'lsetxattr'>
+local function lsetxattr(pathname: *const void, name: *const void, value: *const void, size: csize, flags: cint): cint <cexport, codename 'lsetxattr'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_LSETXATTR,
     (@culong)((@usize)(pathname)),
@@ -4169,7 +4169,7 @@ local function lsetxattr(pathname: pointer <const>, name: pointer <const>, value
 end
 
 -- Linux lgetxattr reads an extended attribute from the symlink inode itself.
-local function lgetxattr(pathname: pointer <const>, name: pointer <const>, value: pointer, size: csize): clong <cexport, codename 'lgetxattr'>
+local function lgetxattr(pathname: *const void, name: *const void, value: pointer, size: csize): clong <cexport, codename 'lgetxattr'>
   return syscall_result(nelibc_sys6(
     SYS_LGETXATTR,
     (@culong)((@usize)(pathname)),
@@ -4182,7 +4182,7 @@ local function lgetxattr(pathname: pointer <const>, name: pointer <const>, value
 end
 
 -- Linux llistxattr lists attributes on the symlink inode itself.
-local function llistxattr(pathname: pointer <const>, list: pointer, size: csize): clong <cexport, codename 'llistxattr'>
+local function llistxattr(pathname: *const void, list: pointer, size: csize): clong <cexport, codename 'llistxattr'>
   return syscall_result(nelibc_sys6(
     SYS_LLISTXATTR,
     (@culong)((@usize)(pathname)),
@@ -4195,7 +4195,7 @@ local function llistxattr(pathname: pointer <const>, list: pointer, size: csize)
 end
 
 -- Linux lremovexattr removes an extended attribute from the symlink inode itself.
-local function lremovexattr(pathname: pointer <const>, name: pointer <const>): cint <cexport, codename 'lremovexattr'>
+local function lremovexattr(pathname: *const void, name: *const void): cint <cexport, codename 'lremovexattr'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_LREMOVEXATTR,
     (@culong)((@usize)(pathname)),
@@ -4205,7 +4205,7 @@ local function lremovexattr(pathname: pointer <const>, name: pointer <const>): c
 end
 
 -- Linux 6.17+ setxattrat uses the versioned xattr_args ABI and supports dirfd/AT_EMPTY_PATH.
-local function setxattrat(dirfd: cint, pathname: pointer <const>, at_flags: cuint, name: pointer <const>, args: pointer <const>, args_size: csize): cint <cexport, codename 'setxattrat'>
+local function setxattrat(dirfd: cint, pathname: *const void, at_flags: cuint, name: *const void, args: *const void, args_size: csize): cint <cexport, codename 'setxattrat'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_SETXATTRAT,
     (@culong)(dirfd),
@@ -4218,7 +4218,7 @@ local function setxattrat(dirfd: cint, pathname: pointer <const>, at_flags: cuin
 end
 
 -- Linux getxattrat reads an attribute using the versioned xattr_args ABI.
-local function getxattrat(dirfd: cint, pathname: pointer <const>, at_flags: cuint, name: pointer <const>, args: pointer, args_size: csize): clong <cexport, codename 'getxattrat'>
+local function getxattrat(dirfd: cint, pathname: *const void, at_flags: cuint, name: *const void, args: pointer, args_size: csize): clong <cexport, codename 'getxattrat'>
   return syscall_result(nelibc_sys6(
     SYS_GETXATTRAT,
     (@culong)(dirfd),
@@ -4231,7 +4231,7 @@ local function getxattrat(dirfd: cint, pathname: pointer <const>, at_flags: cuin
 end
 
 -- Linux listxattrat lists attributes relative to a directory descriptor or fd path.
-local function listxattrat(dirfd: cint, pathname: pointer <const>, at_flags: cuint, list: pointer, size: csize): clong <cexport, codename 'listxattrat'>
+local function listxattrat(dirfd: cint, pathname: *const void, at_flags: cuint, list: pointer, size: csize): clong <cexport, codename 'listxattrat'>
   return syscall_result(nelibc_sys6(
     SYS_LISTXATTRAT,
     (@culong)(dirfd),
@@ -4244,7 +4244,7 @@ local function listxattrat(dirfd: cint, pathname: pointer <const>, at_flags: cui
 end
 
 -- Linux removexattrat removes an attribute relative to a directory descriptor or fd path.
-local function removexattrat(dirfd: cint, pathname: pointer <const>, at_flags: cuint, name: pointer <const>): cint <cexport, codename 'removexattrat'>
+local function removexattrat(dirfd: cint, pathname: *const void, at_flags: cuint, name: *const void): cint <cexport, codename 'removexattrat'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_REMOVEXATTRAT,
     (@culong)(dirfd),
@@ -4257,7 +4257,7 @@ local function removexattrat(dirfd: cint, pathname: pointer <const>, at_flags: c
 end
 
 -- Linux 6.17+ file_getattr reads inode attributes through a dirfd/path pair.
-local function file_getattr(dirfd: cint, pathname: pointer <const>, attributes: pointer, attributes_size: csize, at_flags: cuint): cint <cexport, codename 'file_getattr'>
+local function file_getattr(dirfd: cint, pathname: *const void, attributes: pointer, attributes_size: csize, at_flags: cuint): cint <cexport, codename 'file_getattr'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_FILE_GETATTR,
     (@culong)(dirfd),
@@ -4270,7 +4270,7 @@ local function file_getattr(dirfd: cint, pathname: pointer <const>, attributes: 
 end
 
 -- Linux 6.17+ file_setattr updates inode attributes through a dirfd/path pair.
-local function file_setattr(dirfd: cint, pathname: pointer <const>, attributes: pointer <const>, attributes_size: csize, at_flags: cuint): cint <cexport, codename 'file_setattr'>
+local function file_setattr(dirfd: cint, pathname: *const void, attributes: *const void, attributes_size: csize, at_flags: cuint): cint <cexport, codename 'file_setattr'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_FILE_SETATTR,
     (@culong)(dirfd),
@@ -4283,7 +4283,7 @@ local function file_setattr(dirfd: cint, pathname: pointer <const>, attributes: 
 end
 
 -- Linux 6.15+ open_tree_attr opens a path or cloned mount and optionally applies mount attributes.
-local function open_tree_attr(dirfd: cint, pathname: pointer <const>, flags: cuint, attributes: pointer <const>, attributes_size: csize): cint <cexport, codename 'open_tree_attr'>
+local function open_tree_attr(dirfd: cint, pathname: *const void, flags: cuint, attributes: *const void, attributes_size: csize): cint <cexport, codename 'open_tree_attr'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_OPEN_TREE_ATTR,
     (@culong)(dirfd),
@@ -4296,7 +4296,7 @@ local function open_tree_attr(dirfd: cint, pathname: pointer <const>, flags: cui
 end
 
 -- Linux mount_setattr changes properties on a mount or mount tree.
-local function mount_setattr(dirfd: cint, pathname: pointer <const>, flags: cuint, attributes: pointer, attributes_size: csize): cint <cexport, codename 'mount_setattr'>
+local function mount_setattr(dirfd: cint, pathname: *const void, flags: cuint, attributes: pointer, attributes_size: csize): cint <cexport, codename 'mount_setattr'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_MOUNT_SETATTR,
     (@culong)(dirfd),
@@ -4309,7 +4309,7 @@ local function mount_setattr(dirfd: cint, pathname: pointer <const>, flags: cuin
 end
 
 -- Linux open_tree returns an O_PATH descriptor or a detached mount clone.
-local function open_tree(dirfd: cint, pathname: pointer <const>, flags: cuint): cint <cexport, codename 'open_tree'>
+local function open_tree(dirfd: cint, pathname: *const void, flags: cuint): cint <cexport, codename 'open_tree'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_OPEN_TREE,
     (@culong)(dirfd),
@@ -4319,7 +4319,7 @@ local function open_tree(dirfd: cint, pathname: pointer <const>, flags: cuint): 
 end
 
 -- Linux move_mount attaches or moves a mount between two paths.
-local function move_mount(from_dirfd: cint, from_path: pointer <const>, to_dirfd: cint, to_path: pointer <const>, flags: cuint): cint <cexport, codename 'move_mount'>
+local function move_mount(from_dirfd: cint, from_path: *const void, to_dirfd: cint, to_path: *const void, flags: cuint): cint <cexport, codename 'move_mount'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_MOVE_MOUNT,
     (@culong)(from_dirfd),
@@ -4342,7 +4342,7 @@ local function fsmount(fsfd: cint, flags: cuint, attr_flags: cuint): cint <cexpo
 end
 
 -- Linux fsopen creates a filesystem configuration context.
-local function fsopen(fsname: pointer <const>, flags: cuint): cint <cexport, codename 'fsopen'>
+local function fsopen(fsname: *const void, flags: cuint): cint <cexport, codename 'fsopen'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_FSOPEN,
     (@culong)((@usize)(fsname)),
@@ -4352,7 +4352,7 @@ local function fsopen(fsname: pointer <const>, flags: cuint): cint <cexport, cod
 end
 
 -- Linux fsconfig sets a parameter or issues a filesystem context command.
-local function fsconfig(fd: cint, command: cuint, key: pointer <const>, value: pointer <const>, aux: cint): cint <cexport, codename 'fsconfig'>
+local function fsconfig(fd: cint, command: cuint, key: *const void, value: *const void, aux: cint): cint <cexport, codename 'fsconfig'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_FSCONFIG,
     (@culong)(fd),
@@ -4365,7 +4365,7 @@ local function fsconfig(fd: cint, command: cuint, key: pointer <const>, value: p
 end
 
 -- Linux fspick creates a filesystem configuration context from an existing mount.
-local function fspick(dirfd: cint, pathname: pointer <const>, flags: cuint): cint <cexport, codename 'fspick'>
+local function fspick(dirfd: cint, pathname: *const void, flags: cuint): cint <cexport, codename 'fspick'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_FSPICK,
     (@culong)(dirfd),
@@ -4420,7 +4420,7 @@ local function sync(): void <cexport, codename 'sync'>
 end
 
 -- POSIX swab exchanges adjacent byte pairs; an odd final byte is ignored.
-local function swab(from: pointer <const>, to: pointer, count: clong): void <cexport, codename 'swab'>
+local function swab(from: *const void, to: pointer, count: clong): void <cexport, codename 'swab'>
   if count < 2_clong then return end
   local source = (@*[0]cchar)(from)
   local destination = (@*[0]cchar)(to)
@@ -4459,7 +4459,7 @@ local function pipe2(pipefd: *[0]cint, flags: cint): cint <cexport, codename 'pi
 end
 
 -- POSIX openat; mode is consumed only when flags request file creation.
-local function openat(dirfd: cint, pathname: pointer <const>, flags: cint, mode: cuint): cint <cexport, codename 'openat'>
+local function openat(dirfd: cint, pathname: *const void, flags: cint, mode: cuint): cint <cexport, codename 'openat'>
   local create_mode: cuint = 0
   if (flags & 0x40) ~= 0 or (flags & 0x410000) == 0x410000 then
     create_mode = mode
@@ -4477,26 +4477,26 @@ local function openat(dirfd: cint, pathname: pointer <const>, flags: cint, mode:
 end
 
 -- x86_64 openat64 has the same large-file syscall ABI as openat.
-local function openat64(dirfd: cint, pathname: pointer <const>, flags: cint, mode: cuint): cint <cexport, codename 'openat64'>
+local function openat64(dirfd: cint, pathname: *const void, flags: cint, mode: cuint): cint <cexport, codename 'openat64'>
   return openat(dirfd, pathname, flags, mode)
 end
 
 -- POSIX open resolves a path from the current working directory.
-local function open(pathname: pointer <const>, flags: cint, mode: cuint): cint <cexport, codename 'open'>
+local function open(pathname: *const void, flags: cint, mode: cuint): cint <cexport, codename 'open'>
   return openat(-100_cint, pathname, flags, mode)
 end
 
 -- POSIX creat opens a write-only file, creating or truncating it as needed.
-local function creat(pathname: pointer <const>, mode: cuint): cint <cexport, codename 'creat'>
+local function creat(pathname: *const void, mode: cuint): cint <cexport, codename 'creat'>
   return openat(-100_cint, pathname, 0x241_cint, mode)
 end
 
-local function open64(pathname: pointer <const>, flags: cint, mode: cuint): cint <cexport, codename 'open64'>
+local function open64(pathname: *const void, flags: cint, mode: cuint): cint <cexport, codename 'open64'>
   return open(pathname, flags, mode)
 end
 
 -- POSIX truncate uses Linux x86_64 syscall 76 and follows the final symlink.
-local function truncate(pathname: pointer <const>, length: clong): cint <cexport, codename 'truncate'>
+local function truncate(pathname: *const void, length: clong): cint <cexport, codename 'truncate'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_TRUNCATE,
     (@culong)((@usize)(pathname)),
@@ -4505,7 +4505,7 @@ local function truncate(pathname: pointer <const>, length: clong): cint <cexport
   )))
 end
 
-local function unlinkat(dirfd: cint, pathname: pointer <const>, flags: cint): cint <cexport, codename 'unlinkat'>
+local function unlinkat(dirfd: cint, pathname: *const void, flags: cint): cint <cexport, codename 'unlinkat'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_UNLINKAT,
     (@culong)(dirfd),
@@ -4515,21 +4515,21 @@ local function unlinkat(dirfd: cint, pathname: pointer <const>, flags: cint): ci
 end
 
 -- POSIX unlink removes a non-directory path relative to the current directory.
-local function unlink(pathname: pointer <const>): cint <cexport, codename 'unlink'>
+local function unlink(pathname: *const void): cint <cexport, codename 'unlink'>
   return unlinkat(-100_cint, pathname, 0_cint)
 end
 
 -- POSIX rmdir removes a directory through unlinkat's AT_REMOVEDIR flag.
-local function rmdir(pathname: pointer <const>): cint <cexport, codename 'rmdir'>
+local function rmdir(pathname: *const void): cint <cexport, codename 'rmdir'>
   return unlinkat(-100_cint, pathname, 0x200_cint)
 end
 
-local function mkdirat(dirfd: cint, pathname: pointer <const>, mode: cuint): cint <cexport, codename 'mkdirat'>
+local function mkdirat(dirfd: cint, pathname: *const void, mode: cuint): cint <cexport, codename 'mkdirat'>
   return (@cint)(syscall_result(nelibc_sys3(SYS_MKDIRAT, (@culong)(dirfd), (@culong)((@usize)(pathname)), (@culong)(mode))))
 end
 
 -- POSIX mkdir creates a directory relative to the current working directory.
-local function mkdir(pathname: pointer <const>, mode: cuint): cint <cexport, codename 'mkdir'>
+local function mkdir(pathname: *const void, mode: cuint): cint <cexport, codename 'mkdir'>
   return mkdirat(-100_cint, pathname, mode)
 end
 
@@ -4566,7 +4566,7 @@ end
 
 -- Use kernel randomness and a power-of-two alphabet to avoid modulo bias.
 local function temp_template_randomize(template: *[0]cchar, start: csize): boolean <inline>
-  local alphabet: *[0]cchar <const> = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
+  local alphabet: *const [0]cchar = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
   local produced: csize = 0
   while produced < 6_csize do
     local bytes: [16]cuchar
@@ -4644,7 +4644,7 @@ local function mkdtemp(template: *[0]cchar): *[0]cchar <cexport, codename 'mkdte
 end
 
 -- POSIX mknodat creates a node relative to a directory descriptor.
-local function mknodat(dirfd: cint, pathname: pointer <const>, mode: cuint, device: culong): cint <cexport, codename 'mknodat'>
+local function mknodat(dirfd: cint, pathname: *const void, mode: cuint, device: culong): cint <cexport, codename 'mknodat'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_MKNODAT,
     (@culong)(dirfd),
@@ -4657,22 +4657,22 @@ local function mknodat(dirfd: cint, pathname: pointer <const>, mode: cuint, devi
 end
 
 -- POSIX mknod creates a node relative to the current working directory.
-local function mknod(pathname: pointer <const>, mode: cuint, device: culong): cint <cexport, codename 'mknod'>
+local function mknod(pathname: *const void, mode: cuint, device: culong): cint <cexport, codename 'mknod'>
   return mknodat(-100_cint, pathname, mode, device)
 end
 
 -- Linux mkfifoat creates a FIFO with mknodat and no device number.
-local function mkfifoat(dirfd: cint, pathname: pointer <const>, mode: cuint): cint <cexport, codename 'mkfifoat'>
+local function mkfifoat(dirfd: cint, pathname: *const void, mode: cuint): cint <cexport, codename 'mkfifoat'>
   return mknodat(dirfd, pathname, 0x1000_cuint | mode, 0_culong)
 end
 
 -- POSIX mkfifo creates a FIFO relative to the current working directory.
-local function mkfifo(pathname: pointer <const>, mode: cuint): cint <cexport, codename 'mkfifo'>
+local function mkfifo(pathname: *const void, mode: cuint): cint <cexport, codename 'mkfifo'>
   return mkfifoat(-100_cint, pathname, mode)
 end
 
 -- POSIX chmod changes permissions on a path, following its final symlink.
-local function chmod(pathname: pointer <const>, mode: cuint): cint <cexport, codename 'chmod'>
+local function chmod(pathname: *const void, mode: cuint): cint <cexport, codename 'chmod'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_CHMOD,
     (@culong)((@usize)(pathname)),
@@ -4692,7 +4692,7 @@ local function fchmod(fd: cint, mode: cuint): cint <cexport, codename 'fchmod'>
 end
 
 -- POSIX fchmodat uses fchmodat2 when available; legacy kernels support flags=0.
-local function fchmodat(dirfd: cint, pathname: pointer <const>, mode: cuint, flags: cint): cint <cexport, codename 'fchmodat'>
+local function fchmodat(dirfd: cint, pathname: *const void, mode: cuint, flags: cint): cint <cexport, codename 'fchmodat'>
   local result = nelibc_sys6(
     SYS_FCHMODAT2,
     (@culong)(dirfd),
@@ -4714,7 +4714,7 @@ local function fchmodat(dirfd: cint, pathname: pointer <const>, mode: cuint, fla
 end
 
 -- POSIX nanosecond timestamp update using the native x86_64 timespec layout.
-local function utimensat(dirfd: cint, pathname: pointer <const>, timestamps: pointer <const>, flags: cint): cint <cexport, codename 'utimensat'>
+local function utimensat(dirfd: cint, pathname: *const void, timestamps: *const void, flags: cint): cint <cexport, codename 'utimensat'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_UTIMENSAT,
     (@culong)(dirfd),
@@ -4727,7 +4727,7 @@ local function utimensat(dirfd: cint, pathname: pointer <const>, timestamps: poi
 end
 
 -- Convert the legacy timeval pair to the native nanosecond syscall ABI.
-local function timeval_to_timespec(timestamps: *Timeval <const>, converted: *[2]Timespec): cint
+local function timeval_to_timespec(timestamps: *const Timeval, converted: *[2]Timespec): cint
   local timeval_array: *[0]Timeval = (@*[0]Timeval)(timestamps)
   for index = 0, 1 do
     if timeval_array[index].tv_usec < 0_clong or timeval_array[index].tv_usec >= 1000000_clong then
@@ -4741,46 +4741,46 @@ local function timeval_to_timespec(timestamps: *Timeval <const>, converted: *[2]
 end
 
 -- POSIX seconds-resolution timestamp update.
-local function utime(pathname: *[0]cchar <const>, timestamps: *Utimbuf <const>): cint
+local function utime(pathname: *const [0]cchar, timestamps: *const Utimbuf): cint
     <cexport, codename 'utime'>
-  if timestamps == nilptr then return utimensat(-100_cint, pathname, nilptr, 0_cint) end
+  if timestamps == nilptr then return utimensat(-100_cint, (@pointer)(pathname), nilptr, 0_cint) end
   local utimbuf = (@*Utimbuf)(timestamps)
   local converted: [2]Timespec = {
     {tv_sec = utimbuf.actime, tv_nsec = 0_clong},
     {tv_sec = utimbuf.modtime, tv_nsec = 0_clong}
   }
-  return utimensat(-100_cint, pathname, (@pointer)(&converted[0]), 0_cint)
+  return utimensat(-100_cint, (@pointer)(pathname), (@pointer)(&converted[0]), 0_cint)
 end
 
 -- Legacy microsecond timestamp interface converted to the nanosecond syscall ABI.
-local function utimes(pathname: *[0]cchar <const>, timestamps: *Timeval <const>): cint
+local function utimes(pathname: *const [0]cchar, timestamps: *const Timeval): cint
     <cexport, codename 'utimes'>
-  if timestamps == nilptr then return utimensat(-100_cint, pathname, nilptr, 0_cint) end
+  if timestamps == nilptr then return utimensat(-100_cint, (@pointer)(pathname), nilptr, 0_cint) end
   local converted: [2]Timespec
   if timeval_to_timespec(timestamps, &converted[0]) ~= 0_cint then return -1_cint end
-  return utimensat(-100_cint, pathname, (@pointer)(&converted[0]), 0_cint)
+  return utimensat(-100_cint, (@pointer)(pathname), (@pointer)(&converted[0]), 0_cint)
 end
 
 -- BSD timeval interface that updates a symlink itself rather than its target.
-local function lutimes(pathname: *[0]cchar <const>, timestamps: *Timeval <const>): cint
+local function lutimes(pathname: *const [0]cchar, timestamps: *const Timeval): cint
     <cexport, codename 'lutimes'>
-  if timestamps == nilptr then return utimensat(-100_cint, pathname, nilptr, 0x100_cint) end
+  if timestamps == nilptr then return utimensat(-100_cint, (@pointer)(pathname), nilptr, 0x100_cint) end
   local converted: [2]Timespec
   if timeval_to_timespec(timestamps, &converted[0]) ~= 0_cint then return -1_cint end
-  return utimensat(-100_cint, pathname, (@pointer)(&converted[0]), 0x100_cint)
+  return utimensat(-100_cint, (@pointer)(pathname), (@pointer)(&converted[0]), 0x100_cint)
 end
 
 -- Legacy timeval interface relative to a directory descriptor.
-local function futimesat(dirfd: cint, pathname: *[0]cchar <const>, timestamps: *Timeval <const>): cint
+local function futimesat(dirfd: cint, pathname: *const [0]cchar, timestamps: *const Timeval): cint
     <cexport, codename 'futimesat'>
-  if timestamps == nilptr then return utimensat(dirfd, pathname, nilptr, 0_cint) end
+  if timestamps == nilptr then return utimensat(dirfd, (@pointer)(pathname), nilptr, 0_cint) end
   local converted: [2]Timespec
   if timeval_to_timespec(timestamps, &converted[0]) ~= 0_cint then return -1_cint end
-  return utimensat(dirfd, pathname, (@pointer)(&converted[0]), 0_cint)
+  return utimensat(dirfd, (@pointer)(pathname), (@pointer)(&converted[0]), 0_cint)
 end
 
 -- POSIX futimens uses utimensat's Linux AT_EMPTY_PATH descriptor form.
-local function futimens(fd: cint, timestamps: pointer <const>): cint <cexport, codename 'futimens'>
+local function futimens(fd: cint, timestamps: *const void): cint <cexport, codename 'futimens'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_UTIMENSAT, (@culong)(fd), (@culong)((@usize)(''_cstring)),
     (@culong)((@usize)(timestamps)), 0x1000_culong, 0_culong, 0_culong
@@ -4788,14 +4788,14 @@ local function futimens(fd: cint, timestamps: pointer <const>): cint <cexport, c
 end
 
 -- Legacy descriptor-based microsecond timestamp update.
-local function futimes(fd: cint, timestamps: *Timeval <const>): cint <cexport, codename 'futimes'>
+local function futimes(fd: cint, timestamps: *const Timeval): cint <cexport, codename 'futimes'>
   if timestamps == nilptr then return futimens(fd, nilptr) end
   local converted: [2]Timespec
   if timeval_to_timespec(timestamps, &converted[0]) ~= 0_cint then return -1_cint end
   return futimens(fd, (@pointer)(&converted[0]))
 end
 
-local function renameat(olddirfd: cint, oldpath: pointer <const>, newdirfd: cint, newpath: pointer <const>): cint <cexport, codename 'renameat'>
+local function renameat(olddirfd: cint, oldpath: *const void, newdirfd: cint, newpath: *const void): cint <cexport, codename 'renameat'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_RENAMEAT, (@culong)(olddirfd), (@culong)((@usize)(oldpath)),
     (@culong)(newdirfd), (@culong)((@usize)(newpath)), 0_culong, 0_culong
@@ -4803,11 +4803,11 @@ local function renameat(olddirfd: cint, oldpath: pointer <const>, newdirfd: cint
 end
 
 -- POSIX rename operates between paths relative to the current directory.
-local function rename(oldpath: pointer <const>, newpath: pointer <const>): cint <cexport, codename 'rename'>
+local function rename(oldpath: *const void, newpath: *const void): cint <cexport, codename 'rename'>
   return renameat(-100_cint, oldpath, -100_cint, newpath)
 end
 
-local function linkat(olddirfd: cint, oldpath: pointer <const>, newdirfd: cint, newpath: pointer <const>, flags: cint): cint <cexport, codename 'linkat'>
+local function linkat(olddirfd: cint, oldpath: *const void, newdirfd: cint, newpath: *const void, flags: cint): cint <cexport, codename 'linkat'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_LINKAT, (@culong)(olddirfd), (@culong)((@usize)(oldpath)),
     (@culong)(newdirfd), (@culong)((@usize)(newpath)), (@culong)(flags), 0_culong
@@ -4815,7 +4815,7 @@ local function linkat(olddirfd: cint, oldpath: pointer <const>, newdirfd: cint, 
 end
 
 -- POSIX fchownat changes ownership relative to a directory descriptor.
-local function fchownat(dirfd: cint, pathname: pointer <const>, owner: cuint, group: cuint, flags: cint): cint <cexport, codename 'fchownat'>
+local function fchownat(dirfd: cint, pathname: *const void, owner: cuint, group: cuint, flags: cint): cint <cexport, codename 'fchownat'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_FCHOWNAT,
     (@culong)(dirfd),
@@ -4835,21 +4835,21 @@ local function fchown(fd: cint, owner: cuint, group: cuint): cint <cexport, code
 end
 
 -- POSIX chown follows the final symlink.
-local function chown(pathname: pointer <const>, owner: cuint, group: cuint): cint <cexport, codename 'chown'>
+local function chown(pathname: *const void, owner: cuint, group: cuint): cint <cexport, codename 'chown'>
   return fchownat(-100_cint, pathname, owner, group, 0_cint)
 end
 
 -- POSIX lchown changes ownership of the symlink itself.
-local function lchown(pathname: pointer <const>, owner: cuint, group: cuint): cint <cexport, codename 'lchown'>
+local function lchown(pathname: *const void, owner: cuint, group: cuint): cint <cexport, codename 'lchown'>
   return fchownat(-100_cint, pathname, owner, group, 0x100_cint)
 end
 
 -- POSIX link creates a hard link relative to the current directory.
-local function link(oldpath: pointer <const>, newpath: pointer <const>): cint <cexport, codename 'link'>
+local function link(oldpath: *const void, newpath: *const void): cint <cexport, codename 'link'>
   return linkat(-100_cint, oldpath, -100_cint, newpath, 0_cint)
 end
 
-local function faccessat2_raw(dirfd: cint, pathname: pointer <const>, mode: cint, flags: cint): clong
+local function faccessat2_raw(dirfd: cint, pathname: *const void, mode: cint, flags: cint): clong
   if (mode & ~7_cint) ~= 0 or (flags & ~0x1300_cint) ~= 0 then
     return -22_clong
   end
@@ -4860,12 +4860,12 @@ local function faccessat2_raw(dirfd: cint, pathname: pointer <const>, mode: cint
 end
 
 -- Linux faccessat2 exposes flags without the older libc emulation layer.
-local function faccessat2(dirfd: cint, pathname: pointer <const>, mode: cint, flags: cint): cint <cexport, codename 'faccessat2'>
+local function faccessat2(dirfd: cint, pathname: *const void, mode: cint, flags: cint): cint <cexport, codename 'faccessat2'>
   return (@cint)(syscall_result(faccessat2_raw(dirfd, pathname, mode, flags)))
 end
 
 -- POSIX faccessat falls back to the older syscall when flags are not needed.
-local function faccessat(dirfd: cint, pathname: pointer <const>, mode: cint, flags: cint): cint <cexport, codename 'faccessat'>
+local function faccessat(dirfd: cint, pathname: *const void, mode: cint, flags: cint): cint <cexport, codename 'faccessat'>
   local result = faccessat2_raw(dirfd, pathname, mode, flags)
   if result == -38_clong and flags == 0 then
     result = nelibc_sys3(
@@ -4876,12 +4876,12 @@ local function faccessat(dirfd: cint, pathname: pointer <const>, mode: cint, fla
 end
 
 -- POSIX access uses the real IDs and follows the final symlink.
-local function access(pathname: pointer <const>, mode: cint): cint <cexport, codename 'access'>
+local function access(pathname: *const void, mode: cint): cint <cexport, codename 'access'>
   return faccessat(-100_cint, pathname, mode, 0_cint)
 end
 
 -- Linux x86_64 struct stat has the same layout as glibc and musl on this ABI.
-local function fstatat(dirfd: cint, pathname: pointer <const>, statbuf: pointer, flags: cint): cint <cexport, codename 'fstatat'>
+local function fstatat(dirfd: cint, pathname: *const void, statbuf: pointer, flags: cint): cint <cexport, codename 'fstatat'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_NEWFSTATAT,
     (@culong)(dirfd),
@@ -4900,17 +4900,17 @@ local function fstat(fd: cint, statbuf: pointer): cint <cexport, codename 'fstat
 end
 
 -- AT_FDCWD selects the process working directory for a pathname lookup.
-local function stat(pathname: pointer <const>, statbuf: pointer): cint <cexport, codename 'stat'>
+local function stat(pathname: *const void, statbuf: pointer): cint <cexport, codename 'stat'>
   return fstatat(-100_cint, pathname, statbuf, 0_cint)
 end
 
 -- AT_SYMLINK_NOFOLLOW returns metadata for the link itself.
-local function lstat(pathname: pointer <const>, statbuf: pointer): cint <cexport, codename 'lstat'>
+local function lstat(pathname: *const void, statbuf: pointer): cint <cexport, codename 'lstat'>
   return fstatat(-100_cint, pathname, statbuf, 256_cint)
 end
 
 -- Linux statx writes the libc-neutral statx UAPI structure supplied by the caller.
-local function statx(dirfd: cint, pathname: pointer <const>, flags: cint, mask: cuint, statbuf: pointer): cint <cexport, codename 'statx'>
+local function statx(dirfd: cint, pathname: *const void, flags: cint, mask: cuint, statbuf: pointer): cint <cexport, codename 'statx'>
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_STATX,
     (@culong)(dirfd),
@@ -4922,7 +4922,7 @@ local function statx(dirfd: cint, pathname: pointer <const>, flags: cint, mask: 
   )))
 end
 
-local function symlinkat(target: pointer <const>, newdirfd: cint, linkpath: pointer <const>): cint <cexport, codename 'symlinkat'>
+local function symlinkat(target: *const void, newdirfd: cint, linkpath: *const void): cint <cexport, codename 'symlinkat'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_SYMLINKAT,
     (@culong)((@usize)(target)),
@@ -4932,11 +4932,11 @@ local function symlinkat(target: pointer <const>, newdirfd: cint, linkpath: poin
 end
 
 -- POSIX symlink creates a link path relative to the current directory.
-local function symlink(target: pointer <const>, linkpath: pointer <const>): cint <cexport, codename 'symlink'>
+local function symlink(target: *const void, linkpath: *const void): cint <cexport, codename 'symlink'>
   return symlinkat(target, -100_cint, linkpath)
 end
 
-local function readlinkat(dirfd: cint, pathname: pointer <const>, buf: pointer, bufsiz: csize): clong <cexport, codename 'readlinkat'>
+local function readlinkat(dirfd: cint, pathname: *const void, buf: pointer, bufsiz: csize): clong <cexport, codename 'readlinkat'>
   return syscall_result(nelibc_cancellable_sys6(
     SYS_READLINKAT,
     (@culong)(dirfd),
@@ -4949,7 +4949,7 @@ local function readlinkat(dirfd: cint, pathname: pointer <const>, buf: pointer, 
 end
 
 -- POSIX readlink uses the current working directory for its pathname.
-local function readlink(pathname: pointer <const>, buf: pointer, bufsiz: csize): clong <cexport, codename 'readlink'>
+local function readlink(pathname: *const void, buf: pointer, bufsiz: csize): clong <cexport, codename 'readlink'>
   return readlinkat(-100_cint, pathname, buf, bufsiz)
 end
 
@@ -5036,7 +5036,7 @@ local function confstr(name: cint, buffer: pointer, length: csize): csize <cexpo
     nelibc_errno_location()[0] = 22_cint -- EINVAL: unsupported/invalid selector
     return 0_csize
   end
-  local path: *[0]cchar <const> = '/bin:/usr/bin'
+  local path: *const [0]cchar = '/bin:/usr/bin'
   local required: csize = 14_csize -- includes the terminating NUL
   if buffer ~= nilptr and length > 0_csize then
     local copy_length = length
@@ -5159,7 +5159,7 @@ local function nelibc_pathconf_value(name: cint, target: pointer, fd: cint,
   return -1_clong -- _PC_REC_INCR_XFER_SIZE / _PC_REC_MAX_XFER_SIZE
 end
 
-local function pathconf(pathname: pointer <const>, name: cint): clong <cexport, codename 'pathconf'>
+local function pathconf(pathname: *const void, name: cint): clong <cexport, codename 'pathconf'>
   return nelibc_pathconf_value(name, (@pointer)(pathname), -1_cint, false)
 end
 
@@ -5309,7 +5309,7 @@ local function get_current_dir_name(): *[0]cchar <cexport, codename 'get_current
   end
 end
 
-local function chdir(pathname: pointer <const>): cint <cexport, codename 'chdir'>
+local function chdir(pathname: *const void): cint <cexport, codename 'chdir'>
   local result = nelibc_sys3(
     SYS_CHDIR,
     (@culong)((@usize)(pathname)),
@@ -5383,7 +5383,7 @@ local function fdopendir(fd: cint): pointer <cexport, codename 'fdopendir'>
   return nelibc_dir_stream_create(fd)
 end
 
-local function opendir(pathname: cstring <const>): pointer <cexport, codename 'opendir'>
+local function opendir(pathname: *const [0]cchar): pointer <cexport, codename 'opendir'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   local fd = open((@pointer)(pathname), 0x90000_cint, 0_cuint) -- O_DIRECTORY|O_CLOEXEC
   if fd < 0 then return nilptr end
@@ -5588,7 +5588,7 @@ local function nelibc_scandir_stream(directory: pointer, namelist: *[0]pointer,
   return (@cint)(count)
 end
 
-local function scandir(pathname: cstring <const>, namelist: *[0]pointer,
+local function scandir(pathname: *const [0]cchar, namelist: *[0]pointer,
     selector: function(pointer): cint,
     compare: function(pointer, pointer): cint): cint <cexport, codename 'scandir'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
@@ -5602,7 +5602,7 @@ local function scandir(pathname: cstring <const>, namelist: *[0]pointer,
   return nelibc_scandir_stream(directory, namelist, selector, compare)
 end
 
-local function scandirat(dirfd: cint, pathname: cstring <const>, namelist: *[0]pointer,
+local function scandirat(dirfd: cint, pathname: *const [0]cchar, namelist: *[0]pointer,
     selector: function(pointer): cint,
     compare: function(pointer, pointer): cint): cint <cexport, codename 'scandirat'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
@@ -5624,7 +5624,7 @@ local function scandirat(dirfd: cint, pathname: cstring <const>, namelist: *[0]p
 end
 
 -- realpath resolves dot components and symlinks using only Nelibc path calls.
-local function realpath(pathname: cstring <const>, resolved_path: *[0]cchar): *[0]cchar <cexport, codename 'realpath'>
+local function realpath(pathname: *const [0]cchar, resolved_path: *[0]cchar): *[0]cchar <cexport, codename 'realpath'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   if pathname == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -5912,7 +5912,7 @@ local function getgroups(size: cint, groups: pointer): cint <cexport, codename '
 end
 
 -- Linux setgroups replaces the supplementary group list and may require privilege.
-local function nelibc_raw_setgroups(size: csize, groups: pointer <const>): cint <cexport, codename 'nelibc_raw_setgroups'>
+local function nelibc_raw_setgroups(size: csize, groups: *const void): cint <cexport, codename 'nelibc_raw_setgroups'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_SETGROUPS,
     (@culong)(size),
@@ -6010,7 +6010,7 @@ local KernelSigaction: type = @record{
 local function nelibc_rt_sigreturn(): void <cimport> end
 
 -- Convert the glibc/musl x86_64 sigaction ABI to Linux's 8-byte kernel sigset ABI.
-local function sigaction(signal: cint, action: pointer <const>, old_action: pointer): cint <cexport, codename 'sigaction'>
+local function sigaction(signal: cint, action: *const void, old_action: pointer): cint <cexport, codename 'sigaction'>
   if signal == 32 then
     nelibc_errno_location()[0] = 22_cint -- EINVAL: internal cancellation signal
     return -1_cint
@@ -6062,14 +6062,14 @@ local function signal(signal_number: cint, handler: pointer): pointer <cexport, 
 end
 
 -- POSIX sigaltstack uses the kernel stack_t layout directly on x86_64.
-local function sigaltstack(stack: pointer <const>, old_stack: pointer): cint <cexport, codename 'sigaltstack'>
+local function sigaltstack(stack: *const void, old_stack: pointer): cint <cexport, codename 'sigaltstack'>
   return (@cint)(syscall_result(nelibc_sys3(
     SYS_SIGALTSTACK, (@culong)((@usize)(stack)), (@culong)((@usize)(old_stack)), 0_culong
   )))
 end
 
 -- Linux x86_64 uses an 8-byte kernel sigset even when libc's sigset_t is larger.
-local function sigprocmask(how: cint, set: pointer <const>, oldset: pointer): cint <cexport, codename 'sigprocmask'>
+local function sigprocmask(how: cint, set: *const void, oldset: pointer): cint <cexport, codename 'sigprocmask'>
   local kernel_set: culong
   local set_pointer: pointer = nilptr
   if set ~= nilptr then
@@ -6086,7 +6086,7 @@ local function sigprocmask(how: cint, set: pointer <const>, oldset: pointer): ci
   return (@cint)(result)
 end
 
-local function sigsuspend(mask: pointer <const>): cint <cexport, codename 'sigsuspend'>
+local function sigsuspend(mask: *const void): cint <cexport, codename 'sigsuspend'>
   local kernel_set: culong
   local mask_pointer: pointer = nilptr
   if mask ~= nilptr then
@@ -6099,7 +6099,7 @@ local function sigsuspend(mask: pointer <const>): cint <cexport, codename 'sigsu
   )))
 end
 
-local function sigtimedwait(set: pointer <const>, info: pointer, timeout: pointer <const>): cint
+local function sigtimedwait(set: *const void, info: pointer, timeout: *const void): cint
     <cexport, codename 'sigtimedwait'>
   local kernel_set: culong
   local set_pointer: pointer = nilptr
@@ -6114,12 +6114,12 @@ local function sigtimedwait(set: pointer <const>, info: pointer, timeout: pointe
   )))
 end
 
-local function sigwaitinfo(set: pointer <const>, info: pointer): cint <cexport, codename 'sigwaitinfo'>
+local function sigwaitinfo(set: *const void, info: pointer): cint <cexport, codename 'sigwaitinfo'>
   return sigtimedwait(set, info, nilptr)
 end
 
 -- POSIX sigwait returns an error number directly and must leave errno unchanged.
-local function sigwait(set: pointer <const>, signal: *[0]cint): cint <cexport, codename 'sigwait'>
+local function sigwait(set: *const void, signal: *[0]cint): cint <cexport, codename 'sigwait'>
   if signal == nilptr then return 14_cint end -- EFAULT
   local kernel_set: culong
   local set_pointer: pointer = nilptr
@@ -6153,7 +6153,7 @@ local function sigpending(set: pointer): cint <cexport, codename 'sigpending'>
   return 0_cint
 end
 
-local function sigismember(set: pointer <const>, signal: cint): cint <cexport, codename 'sigismember'>
+local function sigismember(set: *const void, signal: cint): cint <cexport, codename 'sigismember'>
   if signal < 1 or signal > 64 then
     nelibc_errno_location()[0] = 22_cint
     return -1_cint

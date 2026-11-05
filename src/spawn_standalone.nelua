@@ -30,8 +30,8 @@ local function nelibc_sys6(op: culong, arg1: culong, arg2: culong, arg3: culong,
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function malloc(size: csize): pointer <cimport> end
 local function free(ptr: pointer): void <cimport> end
-local function getenv(name: *[0]cchar <const>): *[0]cchar <cimport> end
-local function execve(pathname: *[0]cchar <const>, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <cimport> end
+local function getenv(name: *const [0]cchar): *[0]cchar <cimport> end
+local function execve(pathname: *const [0]cchar, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <cimport> end
 local function pipe2(pipefd: *[0]cint, flags: cint): cint <cimport> end
 local function nelibc_waitpid(pid: cint, status: pointer, options: cint): cint <cimport> end
 
@@ -241,7 +241,7 @@ end
 
 local function nelibc_spawn_append_action(actions: *SpawnFileActions, kind: cint,
     fd: cint, newfd: cint, flags: cint, mode: cuint,
-    pathname: *[0]cchar <const>): cint
+    pathname: *const [0]cchar): cint
   if actions == nilptr or actions.magic ~= spawn_actions_magic then return 22_cint end
   if fd < 0_cint or (kind == 2_cint and newfd < 0_cint) then return 9_cint end -- EBADF
   if (kind == 3_cint or kind == 4_cint) and pathname == nilptr then return 22_cint end
@@ -298,14 +298,14 @@ local function posix_spawn_file_actions_adddup2(actions: *SpawnFileActions,
 end
 
 local function posix_spawn_file_actions_addopen(actions: *SpawnFileActions,
-    fd: cint, pathname: *[0]cchar <const>, flags: cint, mode: cuint): cint
+    fd: cint, pathname: *const [0]cchar, flags: cint, mode: cuint): cint
     <cexport, codename 'posix_spawn_file_actions_addopen'>
   return nelibc_spawn_append_action(actions, 3_cint, fd, 0_cint, flags,
                                     mode, pathname)
 end
 
 local function posix_spawn_file_actions_addchdir_np(actions: *SpawnFileActions,
-    pathname: *[0]cchar <const>): cint
+    pathname: *const [0]cchar): cint
     <cexport, codename 'posix_spawn_file_actions_addchdir_np'>
   return nelibc_spawn_append_action(actions, 4_cint, 0_cint, 0_cint, 0_cint,
                                     0_cuint, pathname)
@@ -456,7 +456,7 @@ local function nelibc_spawn_candidates_destroy(candidates: *SpawnCandidate): voi
   end
 end
 
-local function nelibc_spawn_resolve_path(file: *[0]cchar <const>,
+local function nelibc_spawn_resolve_path(file: *const [0]cchar,
     candidates_out: *[0]*SpawnCandidate): cint
   candidates_out[0] = nilptr
   local file_length: csize = 0
@@ -533,7 +533,7 @@ local function nelibc_spawn_resolve_path(file: *[0]cchar <const>,
 end
 
 local function nelibc_posix_spawn_common(pid_output: *[0]cint,
-    pathname: *[0]cchar <const>, file_actions: pointer,
+    pathname: *const [0]cchar, file_actions: pointer,
     attributes: pointer, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar,
     search_path: boolean): cint
   if pid_output == nilptr or pathname == nilptr or argv == nilptr or envp == nilptr then
@@ -617,7 +617,7 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
     nelibc_spawn_apply_actions(action_state, error_pipe[1])
     local child_error: cint = 0_cint
     if executable_candidates == nilptr then
-      execve(pathname, argv, envp)
+      execve((@*[0]cchar)(pathname), argv, envp)
       child_error = nelibc_errno_location()[0]
     else
       local candidate = executable_candidates
@@ -679,8 +679,8 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
 end
 
 local function posix_spawn(pid_output: *[0]cint,
-    pathname: cstring <const>, file_actions: pointer <const>,
-    attributes: pointer <const>, argv: *[0]*[0]cchar,
+    pathname: *const [0]cchar, file_actions: *const void,
+    attributes: *const void, argv: *[0]*[0]cchar,
     envp: *[0]*[0]cchar): cint <cexport, codename 'posix_spawn'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   return nelibc_posix_spawn_common(pid_output, pathname,
@@ -688,8 +688,8 @@ local function posix_spawn(pid_output: *[0]cint,
 end
 
 local function posix_spawnp(pid_output: *[0]cint,
-    file: cstring <const>, file_actions: pointer <const>,
-    attributes: pointer <const>, argv: *[0]*[0]cchar,
+    file: *const [0]cchar, file_actions: *const void,
+    attributes: *const void, argv: *[0]*[0]cchar,
     envp: *[0]*[0]cchar): cint <cexport, codename 'posix_spawnp'>
   local file: *[0]cchar = (@*[0]cchar)(file)
   return nelibc_posix_spawn_common(pid_output, file,

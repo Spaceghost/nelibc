@@ -15,7 +15,7 @@ local function malloc(size: csize): pointer <cimport> end
 local function free(memory: pointer): void <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_host_fmemopen_cookie(cookie: pointer,
-    mode: *[0]cchar <const>): pointer <cimport> end
+    mode: *const [0]cchar): pointer <cimport> end
 local function nelibc_host_fmemopen_glibc_termination(): cint <cimport> end
 
 local function nelibc_fmemopen_read(cookie: pointer, destination: pointer,
@@ -34,7 +34,7 @@ local function nelibc_fmemopen_read(cookie: pointer, destination: pointer,
   return (@clong)(count)
 end
 
-local function nelibc_fmemopen_write(cookie: pointer, source: pointer <const>,
+local function nelibc_fmemopen_write(cookie: pointer, source: *const void,
     count: csize): clong <cexport, codename 'nelibc_fmemopen_write'>
   local state: *FmemopenState = (@*FmemopenState)(cookie)
   if state.initial_mode == 97 then -- 'a'
@@ -101,7 +101,7 @@ local function nelibc_fmemopen_close(cookie: pointer): cint <cexport, codename '
 end
 
 local function fmemopen(buffer: pointer, size: csize,
-    mode: cstring <const>): pointer <cexport, codename 'fmemopen'>
+    mode: *const [0]cchar): pointer <cexport, codename 'fmemopen'>
   local mode: *[0]cchar = (@*[0]cchar)(mode)
   if mode == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL

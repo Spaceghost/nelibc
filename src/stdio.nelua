@@ -20,13 +20,13 @@ local function nelibc_va_arg_unsigned_int(arguments: cvalist): cuint <cimport> e
 local function nelibc_va_arg_double(arguments: cvalist): cdouble <cimport> end
 local function nelibc_va_arg_pointer_at(arguments: cvalist, position: csize): pointer <cimport> end
 local function isspace(character: cint): cint <cimport> end
-local function nelibc_scan_strtoll(text: *[0]cchar <const>, end_text: **cchar,
+local function nelibc_scan_strtoll(text: *const [0]cchar, end_text: **cchar,
     base: cint): clonglong <cimport> end
-local function nelibc_scan_strtoull(text: *[0]cchar <const>, end_text: **cchar,
+local function nelibc_scan_strtoull(text: *const [0]cchar, end_text: **cchar,
     base: cint): culonglong <cimport> end
-local function nelibc_scan_strtof(text: *[0]cchar <const>, end_text: **cchar): cfloat <cimport> end
-local function nelibc_scan_strtod(text: *[0]cchar <const>, end_text: **cchar): cdouble <cimport> end
-local function nelibc_scan_strtold(text: *[0]cchar <const>, end_text: **cchar): clongdouble <cimport> end
+local function nelibc_scan_strtof(text: *const [0]cchar, end_text: **cchar): cfloat <cimport> end
+local function nelibc_scan_strtod(text: *const [0]cchar, end_text: **cchar): cdouble <cimport> end
+local function nelibc_scan_strtold(text: *const [0]cchar, end_text: **cchar): clongdouble <cimport> end
 local function nelibc_va_copy(destination: cvalist, source: cvalist): void <cimport> end
 local function nelibc_store_format_count(pointer: pointer, length: cint, count: csize): void <cimport> end
 
@@ -41,7 +41,7 @@ local function nelibc_double_bits(value: cdouble): culonglong <inline>
   return representation.bits
 end
 
-local function write(fd: cint, buffer: pointer <const>, count: csize): clong <cimport> end
+local function write(fd: cint, buffer: *const void, count: csize): clong <cimport> end
 local function read(fd: cint, buffer: pointer, count: csize): clong <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_radix_character(): cint <cimport> end
@@ -55,8 +55,8 @@ local function nelibc_format_general_double(value: cdouble, precision: cint,
 local function nelibc_grouping_size(position: cint): cint <cimport> end
 local function nelibc_grouping_separator_length(): cint <cimport> end
 local function nelibc_grouping_separator_byte(index: cint): cint <cimport> end
-local function openat(dirfd: cint, pathname: pointer <const>, flags: cint, mode: cuint): cint <cimport> end
-local function unlinkat(dirfd: cint, pathname: pointer <const>, flags: cint): cint <cimport> end
+local function openat(dirfd: cint, pathname: *const void, flags: cint, mode: cuint): cint <cimport> end
+local function unlinkat(dirfd: cint, pathname: *const void, flags: cint): cint <cimport> end
 local function getpid(): cint <cimport> end
 local function nelibc_raw_fcntl(fd: cint, command: cint, argument: culong): cint <cimport> end
 local function close(fd: cint): cint <cimport> end
@@ -66,11 +66,11 @@ local function nelibc_free(ptr: pointer): void <cimport> end
 local function nelibc_stdio_lock(word: *cint, owner: *cint, depth: *cint): void <cimport> end
 local function nelibc_stdio_trylock(word: *cint, owner: *cint, depth: *cint): cint <cimport> end
 local function nelibc_stdio_unlock(word: *cint, owner: *cint, depth: *cint): void <cimport> end
-local function nelibc_host_format_write(stream: pointer, buffer: pointer <const>, count: csize): csize <cimport> end
-local function memcpy(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
-local function memmove(dest: pointer, src: pointer <const>, n: csize): pointer <cimport> end
+local function nelibc_host_format_write(stream: pointer, buffer: *const void, count: csize): csize <cimport> end
+local function memcpy(dest: pointer, src: *const void, n: csize): pointer <cimport> end
+local function memmove(dest: pointer, src: *const void, n: csize): pointer <cimport> end
 local function memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
-local function mbrtowc(wide: *cint, input: *[0]cchar <const>, count: csize,
+local function mbrtowc(wide: *cint, input: *const [0]cchar, count: csize,
     state: pointer): csize <cimport> end
 local function wcrtomb(output: *[0]cchar, wide: cint, state: pointer): csize <cimport> end
 local function wcsrtombs(output: *[0]cchar, input: *[0]*[0]cint,
@@ -80,11 +80,11 @@ local function wcsnrtombs(output: *[0]cchar, input: *[0]*[0]cint,
 local function mbsrtowcs(output: *[0]cint, input: *[0]*[0]cchar,
     count: csize, state: pointer): csize <cimport> end
 local function iswspace(wide: cint): cint <cimport> end
-local function wcstoll(text: *[0]cint <const>, end_text: **cint, base: cint): clonglong <cimport> end
-local function wcstoull(text: *[0]cint <const>, end_text: **cint, base: cint): culonglong <cimport> end
-local function wcstof(text: *[0]cint <const>, end_text: **cint): cfloat <cimport> end
-local function wcstod(text: *[0]cint <const>, end_text: **cint): cdouble <cimport> end
-local function wcstold(text: *[0]cint <const>, end_text: **cint): clongdouble <cimport> end
+local function wcstoll(text: *const [0]cint, end_text: **cint, base: cint): clonglong <cimport> end
+local function wcstoull(text: *const [0]cint, end_text: **cint, base: cint): culonglong <cimport> end
+local function wcstof(text: *const [0]cint, end_text: **cint): cfloat <cimport> end
+local function wcstod(text: *const [0]cint, end_text: **cint): cdouble <cimport> end
+local function wcstold(text: *const [0]cint, end_text: **cint): clongdouble <cimport> end
 
 -- Standalone FILE ABI. Keep this record in sync with
 -- include/nelibc_stdio_standalone.h.
@@ -287,7 +287,7 @@ local function read_bytes(stream: *FILE, buffer: pointer, count: csize): csize <
       local amount: csize = available
       if amount > wanted then amount = wanted end
       local cursor: pointer = (@pointer)((@usize)(buffer) + offset)
-      local source: pointer <const> = (@pointer)((@usize)(stream.user_buffer) + stream.read_position)
+      local source: *const void = (@pointer)((@usize)(stream.user_buffer) + stream.read_position)
       memcpy(cursor, source, amount)
       stream.read_position = stream.read_position + amount
       offset = offset + amount
@@ -312,7 +312,7 @@ local function read_bytes(stream: *FILE, buffer: pointer, count: csize): csize <
     local amount: csize = available
     if amount > wanted then amount = wanted end
     local cursor: pointer = (@pointer)((@usize)(buffer) + offset)
-    local source: pointer <const> = (@pointer)((@usize)(stream_buffer(stream)) + stream.read_position)
+    local source: *const void = (@pointer)((@usize)(stream_buffer(stream)) + stream.read_position)
     memcpy(cursor, source, amount)
     stream.read_position = stream.read_position + amount
     offset = offset + amount
@@ -320,7 +320,7 @@ local function read_bytes(stream: *FILE, buffer: pointer, count: csize): csize <
   return offset
 end
 
-local function write_bytes(stream: *FILE, buffer: pointer <const>, count: csize): csize <inline>
+local function write_bytes(stream: *FILE, buffer: *const void, count: csize): csize <inline>
   if (stream.flags & WRITABLE) == 0 then
     stream.flags = stream.flags | STREAM_ERROR
     return 0
@@ -727,7 +727,7 @@ local function fgetws(output: *[0]cint, count: cint, stream: *FILE): *[0]cint
   return result
 end
 
-local function fputws_unlocked(input: *[0]cint <const>, stream: *FILE): cint
+local function fputws_unlocked(input: *const [0]cint, stream: *FILE): cint
     <cexport, codename 'fputws_unlocked'>
   if input == nilptr then return -1 end
   local index: csize = 0
@@ -738,14 +738,14 @@ local function fputws_unlocked(input: *[0]cint <const>, stream: *FILE): cint
   return 0
 end
 
-local function fputws(input: *[0]cint <const>, stream: *FILE): cint <cexport, codename 'fputws'>
+local function fputws(input: *const [0]cint, stream: *FILE): cint <cexport, codename 'fputws'>
   stream_lock(stream)
   local result = fputws_unlocked(input, stream)
   stream_unlock(stream)
   return result
 end
 
-local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
+local function vfwscanf(stream: *FILE, format: *const [0]cint,
     arguments: cvalist): cint <cexport, codename 'vfwscanf'>
   if stream == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -1412,7 +1412,7 @@ local function vfwscanf(stream: *FILE, format: *[0]cint <const>,
 end
 
 
-local function scan_wide_set_contains(format: *[0]cchar <const>, start: csize,
+local function scan_wide_set_contains(format: *const [0]cchar, start: csize,
     finish: csize, invert: boolean, character: cint): boolean <inline>
   local in_set: boolean = false
   local index: csize = start
@@ -1424,7 +1424,7 @@ local function scan_wide_set_contains(format: *[0]cchar <const>, start: csize,
     local first: cint = 0
     local next_index: csize = index
     local state: [16]culong = {}
-    local converted: csize = mbrtowc(&first, &format[index], finish - index,
+    local converted: csize = mbrtowc(&first, (@*[0]cchar)(&format[index]), finish - index,
         (@pointer)(&state[0]))
     if converted == 0 or converted == ~0_csize or converted == ~1_csize then
       first = (@cint)(format[index])
@@ -1435,7 +1435,7 @@ local function scan_wide_set_contains(format: *[0]cchar <const>, start: csize,
       local last: cint = 0
       local after_last: csize = next_index + 1
       local end_state: [16]culong = {}
-      local end_converted: csize = mbrtowc(&last, &format[after_last],
+      local end_converted: csize = mbrtowc(&last, (@*[0]cchar)(&format[after_last]),
           finish - after_last, (@pointer)(&end_state[0]))
       if end_converted ~= 0 and end_converted ~= ~0_csize and end_converted ~= ~1_csize then
         if first <= character and character <= last then in_set = true end
@@ -1452,7 +1452,7 @@ local function scan_wide_set_contains(format: *[0]cchar <const>, start: csize,
   return in_set ~= invert
 end
 
-local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
+local function vfscanf(stream: *FILE, format: *const [0]cchar,
     arguments: cvalist): cint <cexport, codename 'vfscanf'>
   if stream == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -2165,7 +2165,7 @@ local function vfscanf(stream: *FILE, format: *[0]cchar <const>,
 end
 
 
-local function fscanf(stream: *FILE, format: *[0]cchar <const>, ...: cvarargs): cint
+local function fscanf(stream: *FILE, format: *const [0]cchar, ...: cvarargs): cint
     <cexport, codename 'fscanf'>
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -2174,12 +2174,12 @@ local function fscanf(stream: *FILE, format: *[0]cchar <const>, ...: cvarargs): 
   return result
 end
 
-local function vscanf(format: *[0]cchar <const>, arguments: cvalist): cint
+local function vscanf(format: *const [0]cchar, arguments: cvalist): cint
     <cexport, codename 'vscanf'>
   return vfscanf(&stdin_FILE, format, arguments)
 end
 
-local function scanf(format: *[0]cchar <const>, ...: cvarargs): cint
+local function scanf(format: *const [0]cchar, ...: cvarargs): cint
     <cexport, codename 'scanf'>
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -2188,7 +2188,7 @@ local function scanf(format: *[0]cchar <const>, ...: cvarargs): cint
   return result
 end
 
-local function fwscanf(stream: *FILE, format: *[0]cint <const>, ...: cvarargs): cint
+local function fwscanf(stream: *FILE, format: *const [0]cint, ...: cvarargs): cint
     <cexport, codename 'fwscanf'>
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -2197,12 +2197,12 @@ local function fwscanf(stream: *FILE, format: *[0]cint <const>, ...: cvarargs): 
   return result
 end
 
-local function vwscanf(format: *[0]cint <const>, arguments: cvalist): cint
+local function vwscanf(format: *const [0]cint, arguments: cvalist): cint
     <cexport, codename 'vwscanf'>
   return vfwscanf(&stdin_FILE, format, arguments)
 end
 
-local function wscanf(format: *[0]cint <const>, ...: cvarargs): cint
+local function wscanf(format: *const [0]cint, ...: cvarargs): cint
     <cexport, codename 'wscanf'>
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -2346,7 +2346,7 @@ local function fread(buffer: pointer, size: csize, count: csize, stream: *FILE):
   return bytes_read // size
 end
 
-local function fwrite(buffer: pointer <const>, size: csize, count: csize, stream: *FILE): csize <cexport, codename 'fwrite'>
+local function fwrite(buffer: *const void, size: csize, count: csize, stream: *FILE): csize <cexport, codename 'fwrite'>
   if size == 0 or count == 0 then return 0 end
   if count > MAX_CSIZE // size then
     nelibc_errno_location()[0] = 75 -- EOVERFLOW
@@ -2376,7 +2376,7 @@ local function fputc_unlocked(character: cint, stream: *FILE): cint <inline>
   return (@cint)(value)
 end
 
-local function fputs(string: cstring <const>, stream: *FILE): cint <cexport, codename 'fputs'>
+local function fputs(string: *const [0]cchar, stream: *FILE): cint <cexport, codename 'fputs'>
   local string: *[0]cchar = (@*[0]cchar)(string)
   local bytes: *[0]byte = (@*[0]byte)(string)
   local length: csize = 0
@@ -2388,7 +2388,7 @@ local function fputs(string: cstring <const>, stream: *FILE): cint <cexport, cod
   return 0
 end
 
-local function fputs_unlocked(string: *[0]cchar <const>, stream: *FILE): cint
+local function fputs_unlocked(string: *const [0]cchar, stream: *FILE): cint
     <cexport, codename 'fputs_unlocked'>
   local bytes: *[0]byte = (@*[0]byte)(string)
   local length: csize = 0
@@ -2406,7 +2406,7 @@ local function putchar_unlocked(character: cint): cint <cexport, codename 'putch
   return fputc_unlocked(character, &stdout_FILE)
 end
 
-local function puts(string: cstring <const>): cint <cexport, codename 'puts'>
+local function puts(string: *const [0]cchar): cint <cexport, codename 'puts'>
   local string: *[0]cchar = (@*[0]cchar)(string)
   stream_lock(&stdout_FILE)
   if fputs(string, &stdout_FILE) == -1 or fputc(10, &stdout_FILE) == -1 then stream_unlock(&stdout_FILE); return -1 end
@@ -2446,7 +2446,7 @@ local function funlockfile(stream: *FILE): void <cexport, codename 'funlockfile'
   stream_unlock(stream)
 end
 
-local function remove(pathname: cstring <const>): cint <cexport, codename 'remove'>
+local function remove(pathname: *const [0]cchar): cint <cexport, codename 'remove'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   if pathname == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -2459,7 +2459,7 @@ local function remove(pathname: cstring <const>): cint <cexport, codename 'remov
   return -1
 end
 
-local function fopen(pathname: cstring <const>, mode: cstring <const>): *FILE <cexport, codename 'fopen'>
+local function fopen(pathname: *const [0]cchar, mode: *const [0]cchar): *FILE <cexport, codename 'fopen'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   local mode: *[0]cchar = (@*[0]cchar)(mode)
   if pathname == nilptr or mode == nilptr then
@@ -2538,7 +2538,7 @@ local function fopen(pathname: cstring <const>, mode: cstring <const>): *FILE <c
   return stream
 end
 
-local function fmemopen(buffer: pointer, size: csize, mode: cstring <const>): *FILE <cexport, codename 'fmemopen'>
+local function fmemopen(buffer: pointer, size: csize, mode: *const [0]cchar): *FILE <cexport, codename 'fmemopen'>
   local mode: *[0]cchar = (@*[0]cchar)(mode)
   if size == 0 or mode == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -2669,7 +2669,7 @@ local function open_wmemstream(buffer: **cint, size: *csize): *FILE
   return stream
 end
 
-local function fdopen(fd: cint, mode: cstring <const>): *FILE <cexport, codename 'fdopen'>
+local function fdopen(fd: cint, mode: *const [0]cchar): *FILE <cexport, codename 'fdopen'>
   local mode: *[0]cchar = (@*[0]cchar)(mode)
   if mode == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -2883,7 +2883,7 @@ local function close_stream(stream: *FILE, release_stream: boolean): cint
   return result
 end
 
-local function vswscanf(input: *[0]cint <const>, format: *[0]cint <const>,
+local function vswscanf(input: *const [0]cint, format: *const [0]cint,
     arguments: cvalist): cint <cexport, codename 'vswscanf'>
   if input == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -2926,7 +2926,7 @@ local function vswscanf(input: *[0]cint <const>, format: *[0]cint <const>,
   return result
 end
 
-local function vsscanf(input: *[0]cchar <const>, format: *[0]cchar <const>,
+local function vsscanf(input: *const [0]cchar, format: *const [0]cchar,
     arguments: cvalist): cint <cexport, codename 'vsscanf'>
   if input == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -2954,7 +2954,7 @@ local function vsscanf(input: *[0]cchar <const>, format: *[0]cchar <const>,
   return result
 end
 
-local function sscanf(input: *[0]cchar <const>, format: *[0]cchar <const>,
+local function sscanf(input: *const [0]cchar, format: *const [0]cchar,
     ...: cvarargs): cint <cexport, codename 'sscanf'>
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -2963,7 +2963,7 @@ local function sscanf(input: *[0]cchar <const>, format: *[0]cchar <const>,
   return result
 end
 
-local function swscanf(input: *[0]cint <const>, format: *[0]cint <const>,
+local function swscanf(input: *const [0]cint, format: *const [0]cint,
     ...: cvarargs): cint <cexport, codename 'swscanf'>
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -2978,7 +2978,7 @@ local function fclose(stream: *FILE): cint <cexport, codename 'fclose'>
   return close_stream(stream, true)
 end
 
-local function freopen(pathname: cstring <const>, mode: cstring <const>, stream: *FILE): *FILE <cexport, codename 'freopen'>
+local function freopen(pathname: *const [0]cchar, mode: *const [0]cchar, stream: *FILE): *FILE <cexport, codename 'freopen'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
   local mode: *[0]cchar = (@*[0]cchar)(mode)
   if stream == nilptr then
@@ -3109,7 +3109,7 @@ local function setlinebuf(stream: *FILE): void <cexport, codename 'setlinebuf'>
   setvbuf(stream, nilptr, 1, 0)
 end
 
-local function emit_bytes(stream: *FILE, bytes: pointer <const>, count: csize): csize <inline>
+local function emit_bytes(stream: *FILE, bytes: *const void, count: csize): csize <inline>
   return write_bytes(stream, bytes, count)
 end
 
@@ -3137,7 +3137,7 @@ local function grouping_separator_count(digit_count: csize): csize <inline>
   return separators
 end
 
-local function format_wide_string(input: *[0]cint <const>, precision_set: boolean,
+local function format_wide_string(input: *const [0]cint, precision_set: boolean,
     precision: cint, bytes_out: **cchar, byte_length_out: *csize,
     wide_length_out: *csize): boolean <inline>
   local bytes_pointer: *[0]*cchar = (@*[0]*cchar)(bytes_out)
@@ -3180,7 +3180,7 @@ local function format_wide_string(input: *[0]cint <const>, precision_set: boolea
   return true
 end
 
-local function format_wide_format(format: *[0]cint <const>,
+local function format_wide_format(format: *const [0]cint,
     format_bytes_out: **cchar): boolean <inline>
   local format_bytes_pointer: *[0]*cchar = (@*[0]*cchar)(format_bytes_out)
   local source: *[0]cint = (@*[0]cint)(format)
@@ -3279,7 +3279,7 @@ local function format_wide_format(format: *[0]cint <const>,
   return true
 end
 
-local function vfprintf(stream: *FILE, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vfprintf'>
+local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvalist): cint <cexport, codename 'vfprintf'>
   local format: *[0]cchar = (@*[0]cchar)(format)
   if stream == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -3294,7 +3294,7 @@ local function vfprintf(stream: *FILE, format: cstring <const>, arguments: cvali
       local start: csize = index
       while format[index] ~= 0 and format[index] ~= 37 do index = index + 1 end
       local length: csize = index - start
-      local data: pointer <const> = (@pointer)((@usize)(format) + start)
+      local data: *const void = (@pointer)((@usize)(format) + start)
       local result: csize = emit_bytes(stream, data, length)
       written = written + result
       if result ~= length then stream_unlock(stream); return -1 end
@@ -4202,7 +4202,7 @@ local function vfprintf(stream: *FILE, format: cstring <const>, arguments: cvali
 end
 
 local function nelibc_vfprintf_host(host_stream: pointer,
-    format: *[0]cchar <const>, arguments: cvalist): cint
+    format: *const [0]cchar, arguments: cvalist): cint
     <cexport, codename 'nelibc_vfprintf_host'>
   if host_stream == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -4214,7 +4214,7 @@ local function nelibc_vfprintf_host(host_stream: pointer,
   return vfprintf(&stream, format, arguments)
 end
 
-local function fprintf(stream: *FILE, format: cstring <const>, ...: cvarargs): cint <cexport, codename 'fprintf'>
+local function fprintf(stream: *FILE, format: *const [0]cchar, ...: cvarargs): cint <cexport, codename 'fprintf'>
   local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -4223,7 +4223,7 @@ local function fprintf(stream: *FILE, format: cstring <const>, ...: cvarargs): c
   return result
 end
 
-local function printf(format: cstring <const>, ...: cvarargs): cint <cexport, codename 'printf'>
+local function printf(format: *const [0]cchar, ...: cvarargs): cint <cexport, codename 'printf'>
   local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -4232,18 +4232,18 @@ local function printf(format: cstring <const>, ...: cvarargs): cint <cexport, co
   return result
 end
 
-local function vprintf(format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vprintf'>
+local function vprintf(format: *const [0]cchar, arguments: cvalist): cint <cexport, codename 'vprintf'>
   local format: *[0]cchar = (@*[0]cchar)(format)
   return vfprintf(&stdout_FILE, format, arguments)
 end
 
-local function vdprintf(fd: cint, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vdprintf'>
+local function vdprintf(fd: cint, format: *const [0]cchar, arguments: cvalist): cint <cexport, codename 'vdprintf'>
   local format: *[0]cchar = (@*[0]cchar)(format)
   local stream: FILE = {fd = -3, flags = WRITABLE, read_position = (@csize)(fd)}
   return vfprintf(&stream, format, arguments)
 end
 
-local function dprintf(fd: cint, format: cstring <const>, ...: cvarargs): cint <cexport, codename 'dprintf'>
+local function dprintf(fd: cint, format: *const [0]cchar, ...: cvarargs): cint <cexport, codename 'dprintf'>
   local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -4252,7 +4252,7 @@ local function dprintf(fd: cint, format: cstring <const>, ...: cvarargs): cint <
   return result
 end
 
-local function vsnprintf(buffer: *[0]cchar, size: csize, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vsnprintf'>
+local function vsnprintf(buffer: *[0]cchar, size: csize, format: *const [0]cchar, arguments: cvalist): cint <cexport, codename 'vsnprintf'>
   local format: *[0]cchar = (@*[0]cchar)(format)
   if size ~= 0 and buffer == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -4268,7 +4268,7 @@ local function vsnprintf(buffer: *[0]cchar, size: csize, format: cstring <const>
   return result
 end
 
-local function format_wide_output(format: *[0]cint <const>, arguments: cvalist,
+local function format_wide_output(format: *const [0]cint, arguments: cvalist,
     wide_output: **cint, wide_length_output: *csize): boolean
   local wide_output_pointer: *[0]*cint = (@*[0]*cint)(wide_output)
   local wide_length_pointer: *[0]csize = (@*[0]csize)(wide_length_output)
@@ -4344,7 +4344,7 @@ local function format_wide_output(format: *[0]cint <const>, arguments: cvalist,
   return true
 end
 
-local function vswprintf(buffer: *[0]cint, size: csize, format: *[0]cint <const>,
+local function vswprintf(buffer: *[0]cint, size: csize, format: *const [0]cint,
     arguments: cvalist): cint <cexport, codename 'vswprintf'>
   if format == nilptr or (size ~= 0 and buffer == nilptr) then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -4375,7 +4375,7 @@ local function vswprintf(buffer: *[0]cint, size: csize, format: *[0]cint <const>
   return (@cint)(wide_count)
 end
 
-local function swprintf(buffer: *[0]cint, size: csize, format: *[0]cint <const>,
+local function swprintf(buffer: *[0]cint, size: csize, format: *const [0]cint,
     ...: cvarargs): cint <cexport, codename 'swprintf'>
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -4384,7 +4384,7 @@ local function swprintf(buffer: *[0]cint, size: csize, format: *[0]cint <const>,
   return result
 end
 
-local function vfwprintf(stream: *FILE, format: *[0]cint <const>,
+local function vfwprintf(stream: *FILE, format: *const [0]cint,
     arguments: cvalist): cint <cexport, codename 'vfwprintf'>
   if stream == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -4404,7 +4404,7 @@ local function vfwprintf(stream: *FILE, format: *[0]cint <const>,
   return (@cint)(wide_count)
 end
 
-local function fwprintf(stream: *FILE, format: *[0]cint <const>,
+local function fwprintf(stream: *FILE, format: *const [0]cint,
     ...: cvarargs): cint <cexport, codename 'fwprintf'>
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -4413,12 +4413,12 @@ local function fwprintf(stream: *FILE, format: *[0]cint <const>,
   return result
 end
 
-local function vwprintf(format: *[0]cint <const>, arguments: cvalist): cint
+local function vwprintf(format: *const [0]cint, arguments: cvalist): cint
     <cexport, codename 'vwprintf'>
   return vfwprintf(&stdout_FILE, format, arguments)
 end
 
-local function wprintf(format: *[0]cint <const>, ...: cvarargs): cint
+local function wprintf(format: *const [0]cint, ...: cvarargs): cint
     <cexport, codename 'wprintf'>
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -4427,7 +4427,7 @@ local function wprintf(format: *[0]cint <const>, ...: cvarargs): cint
   return result
 end
 
-local function snprintf(buffer: *[0]cchar, size: csize, format: cstring <const>, ...: cvarargs): cint <cexport, codename 'snprintf'>
+local function snprintf(buffer: *[0]cchar, size: csize, format: *const [0]cchar, ...: cvarargs): cint <cexport, codename 'snprintf'>
   local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -4436,7 +4436,7 @@ local function snprintf(buffer: *[0]cchar, size: csize, format: cstring <const>,
   return result
 end
 
-local function vasprintf(output: *[0]*[0]cchar, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vasprintf'>
+local function vasprintf(output: *[0]*[0]cchar, format: *const [0]cchar, arguments: cvalist): cint <cexport, codename 'vasprintf'>
   local format: *[0]cchar = (@*[0]cchar)(format)
   if output == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -4463,7 +4463,7 @@ local function vasprintf(output: *[0]*[0]cchar, format: cstring <const>, argumen
   return result
 end
 
-local function asprintf(output: *[0]*[0]cchar, format: cstring <const>, ...: cvarargs): cint <cexport, codename 'asprintf'>
+local function asprintf(output: *[0]*[0]cchar, format: *const [0]cchar, ...: cvarargs): cint <cexport, codename 'asprintf'>
   local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -4472,12 +4472,12 @@ local function asprintf(output: *[0]*[0]cchar, format: cstring <const>, ...: cva
   return result
 end
 
-local function vsprintf(buffer: *[0]cchar, format: cstring <const>, arguments: cvalist): cint <cexport, codename 'vsprintf'>
+local function vsprintf(buffer: *[0]cchar, format: *const [0]cchar, arguments: cvalist): cint <cexport, codename 'vsprintf'>
   local format: *[0]cchar = (@*[0]cchar)(format)
   return vsnprintf(buffer, MAX_CSIZE, format, arguments)
 end
 
-local function sprintf(buffer: *[0]cchar, format: cstring <const>, ...: cvarargs): cint <cexport, codename 'sprintf'>
+local function sprintf(buffer: *[0]cchar, format: *const [0]cchar, ...: cvarargs): cint <cexport, codename 'sprintf'>
   local format_array: *[0]cchar = (@*[0]cchar)(format)
   local arguments: cvalist
   C.va_start(arguments, format)
@@ -4670,7 +4670,7 @@ local function fgetpos(stream: *FILE, position: *[0]clong): cint <cexport, coden
   return 0
 end
 
-local function fsetpos(stream: *FILE, position: *[0]clong <const>): cint <cexport, codename 'fsetpos'>
+local function fsetpos(stream: *FILE, position: *const [0]clong): cint <cexport, codename 'fsetpos'>
   if stream == nilptr or position == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -4685,7 +4685,7 @@ end
 
 local function nelibc_strerror(errnum: cint): *[0]cchar <cimport> end
 
-local function perror(prefix: cstring <const>): void <cexport, codename 'perror'>
+local function perror(prefix: *const [0]cchar): void <cexport, codename 'perror'>
   local prefix: *[0]cchar = (@*[0]cchar)(prefix)
   local errno_slot: *[0]cint = nelibc_errno_location()
   local saved_errno: cint = errno_slot[0]

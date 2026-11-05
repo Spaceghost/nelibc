@@ -311,14 +311,14 @@ local function nelibc_atomic_load_pointer(value: *[0]pointer): pointer <cimport>
 local function nelibc_atomic_store_pointer(value: *[0]pointer, next: pointer): void <cimport> end
 local function nelibc_malloc(size: csize): pointer <cimport> end
 local function nelibc_free(ptr: pointer): void <cimport> end
-local function openat(dirfd: cint, pathname: pointer <const>, flags: cint, mode: cuint): cint <cimport> end
+local function openat(dirfd: cint, pathname: *const void, flags: cint, mode: cuint): cint <cimport> end
 local function close(fd: cint): cint <cimport> end
 local function ftruncate(fd: cint, length: clong): cint <cimport> end
 local function lseek(fd: cint, offset: clong, whence: cint): clong <cimport> end
 local function mmap(address: pointer, length: csize, protection: cint, flags: cint, fd: cint, offset: clong): pointer <cimport> end
 local function munmap(address: pointer, length: csize): cint <cimport> end
-local function unlink(pathname: pointer <const>): cint <cimport> end
-local function strlen(string: *[0]cchar <const>): csize <cimport> end
+local function unlink(pathname: *const void): cint <cimport> end
+local function strlen(string: *const [0]cchar): csize <cimport> end
 
 -- Async cancellation must not run cleanup handlers while this thread owns a
 -- libc lock that those handlers or TLS destructors may need. If the reserved
@@ -1172,7 +1172,7 @@ local function nelibc_pthread_cancel_signal(): void <cexport, codename 'nelibc_p
   pthread_context_exit(context, PTHREAD_CANCELED)
 end
 
-local function pthread_sigmask(how: cint, set: pointer <const>, oldset: pointer): cint <cexport, codename 'pthread_sigmask'>
+local function pthread_sigmask(how: cint, set: *const void, oldset: pointer): cint <cexport, codename 'pthread_sigmask'>
   local kernel_set: culong = 0_culong
   local set_pointer: pointer = nilptr
   if set ~= nilptr then
@@ -1259,7 +1259,7 @@ local function pthread_trampoline(argument: pointer): cint <cexport, codename 'n
   return 0
 end
 
-local function pthread_attr_valid(attr: *PthreadAttr): boolean <inline>
+local function pthread_attr_valid(attr: *const PthreadAttr): boolean <inline>
   return attr ~= nilptr and attr.magic == PTHREAD_ATTR_MAGIC
 end
 
@@ -1296,7 +1296,7 @@ local function pthread_default_attr_ensure_initialized(): void <inline>
 end
 
 local function pthread_attr_copy(destination: *PthreadAttr,
-    source: *PthreadAttr): void <inline>
+    source: *const PthreadAttr): void <inline>
   destination.magic = source.magic
   destination.detachstate = source.detachstate
   destination.scope = source.scope
@@ -1327,7 +1327,7 @@ local function pthread_getattr_default_np(attr: *PthreadAttr): cint
   return 0
 end
 
-local function pthread_setattr_default_np(attr: *PthreadAttr <const>): cint
+local function pthread_setattr_default_np(attr: *const PthreadAttr): cint
     <cexport, codename 'pthread_setattr_default_np'>
   if not pthread_attr_valid(attr) or attr.stackaddr ~= nilptr then return 22 end -- EINVAL
   if attr.detachstate ~= 0 and attr.detachstate ~= 1 then return 22 end -- EINVAL
@@ -3634,9 +3634,9 @@ local function nelibc_thread_fork_child(): void <cexport, codename 'nelibc_threa
   end
 end
 
-local function named_sem_build_path(name: *[0]cchar <const>, path: *[0]cchar): cint
+local function named_sem_build_path(name: *const [0]cchar, path: *[0]cchar): cint
   if name == nilptr or name[0] ~= 47_cchar then return -1 end
-  local name_length = strlen(name)
+  local name_length = strlen((@*[0]cchar)(name))
   if name_length < 2_csize or name_length > 252_csize then return -1 end
   for i: csize = 1, name_length - 1_csize do
     if name[i] == 47_cchar then return -1 end
@@ -3654,7 +3654,7 @@ local function named_sem_build_path(name: *[0]cchar <const>, path: *[0]cchar): c
   return (@cint)(name_length + 12_csize)
 end
 
-local function nelibc_sem_open_impl(name: cstring <const>, oflag: cint,
+local function nelibc_sem_open_impl(name: *const [0]cchar, oflag: cint,
                                     mode: cuint, value: cuint): *Semaphore <cexport, codename 'nelibc_sem_open_impl'>
   local name: *[0]cchar = (@*[0]cchar)(name)
   local path: [265]cchar = {}
@@ -3796,7 +3796,7 @@ local function sem_close(sem: *Semaphore): cint <cexport, codename 'sem_close'>
   return 0
 end
 
-local function sem_unlink(name: cstring <const>): cint <cexport, codename 'sem_unlink'>
+local function sem_unlink(name: *const [0]cchar): cint <cexport, codename 'sem_unlink'>
   local name: *[0]cchar = (@*[0]cchar)(name)
   local path: [265]cchar = {}
   if named_sem_build_path(name, &path[0]) < 0 then nelibc_errno_location()[0] = 22; return -1 end
@@ -4331,7 +4331,7 @@ local function pthread_getaffinity_np(thread: pointer, cpusetsize: csize,
 end
 
 local function pthread_setaffinity_np(thread: pointer, cpusetsize: csize,
-    cpuset: pointer <const>): cint <cexport, codename 'pthread_setaffinity_np'>
+    cpuset: *const void): cint <cexport, codename 'pthread_setaffinity_np'>
   local tid: cint
   local thread_error = pthread_target_tid(thread, &tid)
   if thread_error ~= 0 then return thread_error end
@@ -4402,7 +4402,7 @@ local function pthread_getname_np(thread: pointer, name: *[0]cchar,
 end
 
 local function pthread_setname_np(thread: pointer,
-    name: cstring <const>): cint <cexport, codename 'pthread_setname_np'>
+    name: *const [0]cchar): cint <cexport, codename 'pthread_setname_np'>
   local name: *[0]cchar = (@*[0]cchar)(name)
   if name == nilptr then return 22 end -- EINVAL
   local name_length: csize = 0

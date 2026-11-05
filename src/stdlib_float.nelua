@@ -1505,7 +1505,7 @@ local function lower_ascii(character: cchar): cchar <inline>
   return character
 end
 
-local function matches(text: *[0]cchar <const>, start: csize, word: *[0]cchar <const>): boolean <inline>
+local function matches(text: *const [0]cchar, start: csize, word: *const [0]cchar): boolean <inline>
   local index: csize = 0
   while word[index] ~= 0 do
     if lower_ascii(text[start + index]) ~= word[index] then return false end
@@ -1514,10 +1514,10 @@ local function matches(text: *[0]cchar <const>, start: csize, word: *[0]cchar <c
   return true
 end
 
-local function strtod_impl(text: *[0]cchar <const>, end_text: **cchar, precision: cint): clongdouble
+local function strtod_impl(text: *const [0]cchar, end_text: **cchar, precision: cint): clongdouble
   local end_pointer: *[0]*cchar = (@*[0]*cchar)(end_text)
   if text == nilptr then
-    if end_text ~= nilptr then end_pointer[0] = text end
+    if end_text ~= nilptr then end_pointer[0] = (@*cchar)(text) end
     nelibc_errno_location()[0] = 22 -- EINVAL
     return 0.0_cdouble
   end
@@ -1529,7 +1529,7 @@ local function strtod_impl(text: *[0]cchar <const>, end_text: **cchar, precision
   if matches(text, cursor, 'inf'_cstring) then
     cursor = cursor + 3
     if matches(text, cursor, 'inity'_cstring) then cursor = cursor + 5 end
-    if end_text ~= nilptr then end_pointer[0] = &text[cursor] end
+    if end_text ~= nilptr then end_pointer[0] = (@*cchar)(&text[cursor]) end
     local infinity: cdouble = nelibc_double_from_bits(0x7FF0000000000000_culonglong)
     if negative then return -infinity end
     return infinity
@@ -1541,7 +1541,7 @@ local function strtod_impl(text: *[0]cchar <const>, end_text: **cchar, precision
       while text[close] ~= 0 and text[close] ~= 41 do close = close + 1 end
       if text[close] == 41 then cursor = close + 1 end
     end
-    if end_text ~= nilptr then end_pointer[0] = &text[cursor] end
+    if end_text ~= nilptr then end_pointer[0] = (@*cchar)(&text[cursor]) end
     local not_a_number: cdouble = nelibc_double_from_bits(0x7FF8000000000000_culonglong)
     if negative then return -not_a_number end
     return not_a_number
@@ -1847,7 +1847,7 @@ local function strtod_impl(text: *[0]cchar <const>, end_text: **cchar, precision
     exact_integer_initialized = true
   end
   if not saw_digit then
-    if end_text ~= nilptr then end_pointer[0] = text end
+    if end_text ~= nilptr then end_pointer[0] = (@*cchar)(text) end
     return 0.0_cdouble
   end
 
@@ -1908,7 +1908,7 @@ local function strtod_impl(text: *[0]cchar <const>, end_text: **cchar, precision
       end
     end
   end
-  if end_text ~= nilptr then end_pointer[0] = &text[cursor] end
+  if end_text ~= nilptr then end_pointer[0] = (@*cchar)(&text[cursor]) end
   if not saw_nonzero then
     if negative then return -0.0_cdouble end
     return 0.0_cdouble
@@ -1989,12 +1989,12 @@ local function strtod_impl(text: *[0]cchar <const>, end_text: **cchar, precision
   return result
 end
 
-local function strtod(text: cstring <const>, end_text: **cchar): cdouble <cexport, codename 'strtod'>
+local function strtod(text: *const [0]cchar, end_text: **cchar): cdouble <cexport, codename 'strtod'>
   local text: *[0]cchar = (@*[0]cchar)(text)
   return (@cdouble)(strtod_impl(text, end_text, 53))
 end
 
-local function strtof_impl(text: *[0]cchar <const>, end_text: **cchar): cfloat <inline>
+local function strtof_impl(text: *const [0]cchar, end_text: **cchar): cfloat <inline>
   local widened: cdouble = (@cdouble)(strtod_impl(text, end_text, 24))
   local result: cfloat = (@cfloat)(widened)
   if (widened > 3.4028234663852886e38_cdouble and widened <= 1.7976931348623157e308_cdouble) or
@@ -2008,21 +2008,21 @@ local function strtof_impl(text: *[0]cchar <const>, end_text: **cchar): cfloat <
   return result
 end
 
-local function strtof(text: cstring <const>, end_text: **cchar): cfloat <cexport, codename 'strtof'>
+local function strtof(text: *const [0]cchar, end_text: **cchar): cfloat <cexport, codename 'strtof'>
   local text: *[0]cchar = (@*[0]cchar)(text)
   return strtof_impl(text, end_text)
 end
 
-local function strtold(text: cstring <const>, end_text: **cchar): clongdouble <cexport, codename 'strtold'>
+local function strtold(text: *const [0]cchar, end_text: **cchar): clongdouble <cexport, codename 'strtold'>
   local text: *[0]cchar = (@*[0]cchar)(text)
   return strtod_impl(text, end_text, 64)
 end
 
-local function strtof_l(text: *[0]cchar <const>, end_text: **cchar, locale: C.locale_t): cfloat
+local function strtof_l(text: *const [0]cchar, end_text: **cchar, locale: C.locale_t): cfloat
     <cexport, codename 'strtof_l'>
   local previous: C.locale_t = uselocale(locale)
   if previous == (@C.locale_t)(0) then
-    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = text end
+    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = (@*cchar)(text) end
     nelibc_errno_location()[0] = 22 -- EINVAL
     return 0.0_cfloat
   end
@@ -2031,11 +2031,11 @@ local function strtof_l(text: *[0]cchar <const>, end_text: **cchar, locale: C.lo
   return result
 end
 
-local function strtod_l(text: *[0]cchar <const>, end_text: **cchar, locale: C.locale_t): cdouble
+local function strtod_l(text: *const [0]cchar, end_text: **cchar, locale: C.locale_t): cdouble
     <cexport, codename 'strtod_l'>
   local previous: C.locale_t = uselocale(locale)
   if previous == (@C.locale_t)(0) then
-    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = text end
+    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = (@*cchar)(text) end
     nelibc_errno_location()[0] = 22 -- EINVAL
     return 0.0_cdouble
   end
@@ -2044,11 +2044,11 @@ local function strtod_l(text: *[0]cchar <const>, end_text: **cchar, locale: C.lo
   return result
 end
 
-local function strtold_l(text: *[0]cchar <const>, end_text: **cchar, locale: C.locale_t): clongdouble
+local function strtold_l(text: *const [0]cchar, end_text: **cchar, locale: C.locale_t): clongdouble
     <cexport, codename 'strtold_l'>
   local previous: C.locale_t = uselocale(locale)
   if previous == (@C.locale_t)(0) then
-    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = text end
+    if end_text ~= nilptr then (@*[0]*cchar)(end_text)[0] = (@*cchar)(text) end
     nelibc_errno_location()[0] = 22 -- EINVAL
     return 0.0_clongdouble
   end

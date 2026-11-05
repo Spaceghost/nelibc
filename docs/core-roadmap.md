@@ -19,6 +19,32 @@ archive; it does not certify every behavior required by C or POSIX.
 
 ## Current evidence
 
+### Gate run, 2026-11-05 (`*const` migration, Nelua `1ad3d5ce`)
+
+Recorded in the Incus container `nelibc-writ` on bak (Debian 12, glibc 2.36,
+GCC 12.2, Zig 0.17.0, Nelua `1ad3d5ce` at `/opt/nelua-1ad3d5ce/nelua`, Bend
+2.0.39), as the unprivileged `build` user, one target at a time, on the
+migrated tree (this commit's sources applied over main `bb21861`). The 155
+targets of the 2026-11-05 platform-operation gate (`sys-ops-check`,
+`smoke-matrix`, `dogfood-matrix`, `host-matrix`, `host-snapshot-matrix`,
+`host-bend-*`, and the shootouts, no TinyCC profile) all passed; logs in
+`/work/artifacts/gate-mig8-20261105-1956/`. The same 112 non-shootout targets had passed
+on the unmigrated tree with Nelua `2813b433` first
+(`/work/artifacts/gate-full-20261105-1926/`), so the compiler move and the
+source migration were observed separately.
+
+The migration itself: every `cstring <const>`, `*[0]T <const>`,
+`pointer <const>` and `*Record <const>` parameter shim became a real
+`*const` pointer type (the fork's `const T*` mapping), the 26 `## cemitdefn`
+wide-character wrappers in `memory.nelua` became exported Nelua functions,
+and explicit casts mark the places where C's `strchr`-style contract returns
+a mutable pointer into const input. Nelua `1ad3d5ce` also emits constant
+top-scope initializers (`nilptr`, `&global`, record literals of those) as C
+static initializers; before that `tzname`, `all_streams` and the default
+`struct tm` values were assigned inside a `nelua_main` nothing calls under
+`noentrypoint`. The build now compiles every module without the
+"top scope statements are emitted into `nelua_main`" warning.
+
 ### Gate run, 2026-11-04 (main `5c54547`)
 
 Recorded in the Incus container `nelibc-writ` on bak (Debian 12, glibc 2.36,
