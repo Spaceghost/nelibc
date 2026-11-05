@@ -216,6 +216,11 @@ Recorded on 2026-11-04 in an Incus container (Debian 12, bak) with Nelua
   1`, `2`, `4`, and `8`. Each worker ran first to its pool wait and the main
   lane then finished the rows itself, so this shows the pool's threads
   being created and scheduled as lanes, not a parallel speedup.
+- `make sys-ops-check`: the generated operation header, Linux number table,
+  and per-module `SYS_*` blocks match `tools/sys_ops.py`; the host archive
+  holds no Linux syscall number (the dispatcher switches on `NELIBC_SYS_*`).
+  Rerun 2026-11-05 on main `fd11a1c` with the whole non-TinyCC gate (155
+  targets, logs under `/work/artifacts/gate-20261105-0109-ops/`).
 - `make host-bend-hello-zig`: the emitted `IO.print("hi")` program linked
   against `libnelibc-host-zig.a` and `tools/host_linux.c` prints `hi` and
   exits 0.

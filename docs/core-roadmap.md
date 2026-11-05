@@ -87,6 +87,23 @@ same tree rebuilt the standalone archive at the same moment (`ar: file
 truncated`) and passed when rerun alone. `lib-adapter-symbols` needs the
 TinyCC archive and stays unrun with the rest of the TinyCC profile.
 
+### Platform operations, 2026-11-05
+
+The modules stopped naming Linux syscalls: `tools/sys_ops.py` generates the
+`NELIBC_SYS_*` vocabulary (`include/nelibc_sys.h`, 230 operations), the
+Linux x86-64 number table (`src/sys/linux_x86_64_ops.c`), and the `SYS_*`
+constant block each Nelua module uses; `make sys-ops-check` fails when any
+of them is stale. The host profile answers the operations by name and its
+callback is `thread_area_set` (the architecture's thread register), with no
+Linux number in `src/host/`. Main `fd11a1c` was gated in the same container
+as the `build` user, one target at a time: all 155 non-TinyCC targets
+(the 152 above plus `sys-ops-check`, `host-bend-parallel-zig`, and the
+`unistd-cancel` standalone pair now in the list) passed (logs under
+`/work/artifacts/gate-20261105-0109-ops/`), and the `host.yml` workflow
+passed on the same commit. The first push failed its CI link because
+`zig cc` instruments the table index with UBSan by default; the ops object
+now compiles with `-fno-sanitize=all` like the other freestanding objects.
+
 Hybrid archives now leave `fork` and `pthread_atfork` to the host libc. The
 Nelua raw-syscall fork and Nelibc atfork registry remain available in standalone
 builds; the hybrid unistd objects localize those symbols so glibc and musl can
