@@ -12,7 +12,7 @@ asked, never force-push.
 
 Never compile or run tests on the workstation. Every build and every smoke,
 diff, and shootout runs inside the Incus container `nelibc-writ` on bak
-(Debian 12; Nelua `1ad3d5ce` at `/opt/nelua-1ad3d5ce/nelua`, Zig 0.17.0 at
+(Debian 12; Nelua `9cd1b74a` at `/opt/nelua-9cd1b74a/nelua`, Zig 0.17.0 at
 `/opt/zig/zig`, GCC 12.2, TinyCC 0.9.27, musl-gcc, Bend 2.0.39 at
 `/opt/bend-2.0.39/bend/bin/bend`). The checkout is `/work/nelibc`, a clone of
 `origin/main`; push, then `git pull` there. Run the matrix as the
@@ -23,7 +23,7 @@ make them succeed instead.
 ```sh
 ssh bak incus exec nelibc-writ -- su build -c 'cd /work/nelibc && git pull -q && \
   TMPDIR=/work/tmp ZIG_GLOBAL_CACHE_DIR=/work/zig-cache \
-  make smoke-matrix "NELUA=/opt/nelua-1ad3d5ce/nelua --cache-dir /work/nelua-cache" ZIG=/opt/zig/zig'
+  make smoke-matrix "NELUA=/opt/nelua-9cd1b74a/nelua --cache-dir /work/nelua-cache" ZIG=/opt/zig/zig'
 ```
 
 Debian's packaged TinyCC 0.9.27 cannot build the TinyCC profile (see the

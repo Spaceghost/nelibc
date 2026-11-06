@@ -19,6 +19,20 @@ archive; it does not certify every behavior required by C or POSIX.
 
 ## Current evidence
 
+### Gate run, 2026-11-06 (Nelua `9cd1b74a`, no source change)
+
+Recorded in the Incus container `nelibc-writ` on bak (Debian 12, glibc 2.36,
+GCC 12.2, Zig 0.17.0, Nelua `9cd1b74a` at `/opt/nelua-9cd1b74a/nelua`, Bend
+2.0.39), as the unprivileged `build` user, one target at a time, on main
+`b17ec18` with a fresh compiler cache. The same 155 targets as the 2026-11-05
+gate all exited 0 and no log contains a Nelua warning; logs in
+`/work/artifacts/gate-fork9cd1-20261106-2028/`. Nelua `9cd1b74a` adds variant
+`==`/`tostring`/`visit`, nelua-bindgen `--exclude`/`--opaque`/`--config`,
+named nested closures with `<byref>`, and editor grammars over `1ad3d5ce`;
+nelibc uses none of them yet, so this run only shows the compiler move is
+neutral for the library. The pin in `AGENTS.md` and
+`.github/workflows/host.yml` moves to `9cd1b74a` on this evidence.
+
 ### Gate run, 2026-11-05 (`*const` migration, Nelua `1ad3d5ce`)
 
 Recorded in the Incus container `nelibc-writ` on bak (Debian 12, glibc 2.36,
