@@ -19,6 +19,18 @@ archive; it does not certify every behavior required by C or POSIX.
 
 ## Current evidence
 
+### Gate run, 2026-11-06 (Nelua `b8ea333e`, no source change)
+
+Same container, user and target list as the runs below, on main `4c68b8e`
+with a fresh compiler cache and Nelua `b8ea333e` at
+`/opt/nelua-b8ea333e/nelua`: 155/155 targets exited 0 and no log contains a
+warning; logs in `/work/artifacts/gate-forkb8ea-20261106-2252/`. `b8ea333e`
+adds `orelse`, `if local` and the errmsg/ok kinds of `?` to the compiler,
+makes `orelse` a reserved word, and changes two C-generator paths (numeric
+`for` bound scoping and immediately invoked capturing closures); nelibc's
+sources use none of the new syntax and the gate shows the generator changes
+are neutral for them. The pin moves to `b8ea333e` on this evidence.
+
 ### Gate run, 2026-11-06 (Nelua `cde61925`, no source change)
 
 Same container, user and target list as the `9cd1b74a` run below, on main
