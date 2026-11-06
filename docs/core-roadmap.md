@@ -19,6 +19,17 @@ archive; it does not certify every behavior required by C or POSIX.
 
 ## Current evidence
 
+### Gate run, 2026-11-06 (Nelua `cde61925`, no source change)
+
+Same container, user and target list as the `9cd1b74a` run below, on main
+`add2e1a` with a fresh compiler cache and Nelua `cde61925` at
+`/opt/nelua-cde61925/nelua`: 155/155 targets exited 0 and no log contains a
+warning; logs in `/work/artifacts/gate-forkcde6-20261106-2121/`. `cde61925`
+adds optional types (`T?`, `expr?`) to the compiler; the `?` type operator
+moved from prefix to postfix and the analyzer gained a boolean-context check,
+neither of which nelibc's sources exercise. The pin moves to `cde61925` on
+this evidence.
+
 ### Gate run, 2026-11-06 (Nelua `9cd1b74a`, no source change)
 
 Recorded in the Incus container `nelibc-writ` on bak (Debian 12, glibc 2.36,

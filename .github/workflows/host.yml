@@ -1,7 +1,7 @@
 name: host profile
 # Runs on the self-hosted bak runner (Incus container gh-runners on bak), which
 # carries the pinned toolchains under /opt: Nelua (Spaceghost/nelua-lang
-# 9cd1b74a), Zig 0.17.0, and Bend 2.0.39. GPU work does not belong here; the
+# cde61925), Zig 0.17.0, and Bend 2.0.39. GPU work does not belong here; the
 # alienware runners are reserved for jobs that need a GPU.
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: [self-hosted, linux, x64, bak]
     timeout-minutes: 40
     env:
-      NELUA: /opt/nelua-9cd1b74a/nelua
+      NELUA: /opt/nelua-cde61925/nelua
       ZIG: /opt/zig/zig
       BEND: /opt/bend-2.0.39/bend/bin/bend
     steps:
