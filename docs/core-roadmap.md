@@ -19,6 +19,19 @@ archive; it does not certify every behavior required by C or POSIX.
 
 ## Current evidence
 
+### Gate run, 2026-11-07 (Nelua `dabbd9ef`, no source change)
+
+Same container, user and target list as the runs below, on main `28879ed`
+with a fresh compiler cache and Nelua `dabbd9ef` at
+`/opt/nelua-dabbd9ef/nelua`: 155/155 targets exited 0 and no log contains a
+warning; logs in `/work/artifacts/gate-forkdabb-20261107-0001/`. `dabbd9ef`
+completes optional types (constant optionals as C static initializers,
+bindgen `--nullable-returns`, editor grammars) and changes one emitter path
+nelibc does exercise: a comptime string converted to `cstring` is now
+emitted as a C string literal instead of a `nelua_string2cstring` call, so
+this run is the evidence that the change is neutral for every profile. The
+pin moves to `dabbd9ef` on this evidence.
+
 ### Gate run, 2026-11-06 (Nelua `b8ea333e`, no source change)
 
 Same container, user and target list as the runs below, on main `4c68b8e`
