@@ -42,6 +42,21 @@ static void *change_thread_fenv(void *unused) {
 }
 
 int main(void) {
+  /* C17 7.12.3: classification and comparison macros raise no exception,
+   * not even for an infinity or a NaN. */
+  {
+    volatile double infinite = INFINITY, quiet_nan = NAN, tiny = 0x1p-1060, one = 1.0;
+    volatile long double long_infinite = INFINITY;
+    if (feclearexcept(FE_ALL_EXCEPT) != 0) return 600;
+    if (!isinf(infinite) || !isinf(long_infinite) || isfinite(infinite) || !isnan(quiet_nan) ||
+        isnormal(tiny) || !isnormal(one) || fpclassify(tiny) != FP_SUBNORMAL ||
+        fpclassify(long_infinite) != FP_INFINITE || isless(quiet_nan, one) ||
+        isgreater(quiet_nan, one) || !isunordered(quiet_nan, one) ||
+        !islessgreater(one, infinite) || !isgreaterequal(infinite, one) ||
+        !islessequal(one, one) || signbit(-infinite) == 0)
+      return 601;
+    if (fetestexcept(FE_ALL_EXCEPT) != 0) return 602;
+  }
   fenv_t saved_environment;
   fenv_t clean_environment;
   fexcept_t saved_flags = 0;

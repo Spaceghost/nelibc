@@ -2204,6 +2204,19 @@ int main(int argc, char **argv) {
       setlocale(LC_CTYPE, "C") == NULL || strcmp(nl_langinfo(CODESET), "ASCII") != 0) return 80;
   freelocale(langinfo_de);
   freelocale(langinfo_utf8);
+  /* <math.h> classification evaluates once (no-exception checks are in
+   * tools/math_core_standalone_smoke.c, which links fenv); MB_CUR_MAX
+   * follows LC_CTYPE; the XSI constants and math_errhandling. */
+  {
+    volatile double one = 1.0;
+    int evaluations = 0;
+    if (!isnormal((++evaluations, one)) || evaluations != 1) return 507;
+    if (math_errhandling != (MATH_ERRNO | MATH_ERREXCEPT) || M_PI != 3.14159265358979323846 ||
+        sizeof(float_t) != sizeof(float) || sizeof(double_t) != sizeof(double)) return 508;
+    if (setlocale(LC_CTYPE, "C") == NULL || MB_CUR_MAX != 1 ||
+        setlocale(LC_CTYPE, "C.UTF-8") == NULL || MB_CUR_MAX != 4 ||
+        setlocale(LC_CTYPE, "C") == NULL || MB_CUR_MAX != 1) return 509;
+  }
   /* <search.h>: an AVL tree through tsearch/tfind/tdelete/twalk, the
    * hsearch table across a resize, lsearch/lfind, insque/remque. */
   {

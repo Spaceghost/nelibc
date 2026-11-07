@@ -446,6 +446,33 @@ Gate for `standalone-batch-2` and `search-h` together: the 159-target list
 `libc-test-standalone-zig`) on `9f3ba3e`, Nelua `dabbd9ef`: 159/159 exited
 0, no warnings; logs in `/work/artifacts/gate-searchh-20261107-1323/`.
 
+**Fixed** (branch `math-macros`): `<math.h>`, `MB_CUR_MAX`, wide `%s`.
+- The standalone `isinf` and `isfinite` computed `(x) - (x)`, which raises
+  `FE_INVALID` for an infinity, and the classification macros evaluated
+  their argument more than once; C17 7.12.3 forbids both. With GCC and
+  clang they are now the compiler builtins (`__builtin_fpclassify`,
+  `__builtin_isinf`, ...), which evaluate once and raise nothing; TinyCC
+  keeps the old expressions, documented as such. Added `isnormal`, the
+  `isgreater` family, `float_t`/`double_t`, `math_errhandling`
+  (`MATH_ERRNO | MATH_ERREXCEPT`: Nelibc's math sets both) and the XSI
+  `M_*` constants and `MAXFLOAT`. `tools/math_core_standalone_smoke.c`
+  checks that classifying infinities and NaNs leaves the flags clear
+  (600-602).
+- `MB_CUR_MAX` is `__ctype_get_mb_cur_max()`: 4 under a UTF-8 `LC_CTYPE`,
+  1 in the strict ASCII C locale (checks 507-509).
+- In `swprintf`, the precision and width of `%s` count wide characters
+  (C17 7.29.2.1), and `vswprintf`'s sizing pass counted bytes while the
+  writing pass counted characters, so `"%.1s"` of `"\xc3\x80!"` overran
+  the byte buffer by its terminator and failed. Both passes count
+  characters now; invalid input is `EILSEQ`.
+
+`math/fpclassify`, `math/isless`, `functional/snprintf` and
+`functional/swprintf` pass (gcc 307, zig 308, from 300 / 301).
+`functional/clocale_mbfuncs` now builds and fails: Nelibc's C locale is
+strict ASCII and `mbrtowc` rejects bytes 0x80-0xff, where musl (and POSIX
+Issue 8's single-byte POSIX locale) maps every byte. glibc 2.36 fails it too.
+This is a recorded divergence, not changed here.
+
 Gate coverage note (2026-11-07): AGENTS.md lists `libc-test-gcc` and
 `libc-test-zig` in the gate, but the container's gate script ran only the
 155 smoke, diff, host and shootout targets. The `<limits.h>` change in

@@ -14,6 +14,9 @@ typedef struct { long long quot; long long rem; } lldiv_t;
 #define EXIT_FAILURE 1
 #define RAND_MAX 2147483647
 
+size_t __ctype_get_mb_cur_max(void);
+#define MB_CUR_MAX (__ctype_get_mb_cur_max())
+
 void *malloc(size_t size);
 void *calloc(size_t count, size_t size);
 void *realloc(void *ptr, size_t size);

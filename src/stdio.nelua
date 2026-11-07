@@ -3447,12 +3447,35 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       if string_pointer == nilptr then string_pointer = (@pointer)('(null)'_cstring) end
       local string_bytes: *[0]byte = (@*[0]byte)(string_pointer)
       local string_length: csize = 0
-      while string_bytes[string_length] ~= 0 and
-          (not precision_set or string_length < (@csize)(precision)) do
-        string_length = string_length + 1
+      -- Characters the field holds, for the width: bytes for printf, wide
+      -- characters for wprintf (C17 7.29.2.1: there the precision and width
+      -- count wide characters, so "%.1s" of "\xc3\x80!" writes one).
+      local field_characters: csize = 0
+      if (stream.flags & WIDE_FORMAT) ~= 0 then
+        local state: [16]culong = {}
+        while string_bytes[string_length] ~= 0 and
+            (not precision_set or field_characters < (@csize)(precision)) do
+          local character: cint = 0
+          local used: csize = mbrtowc(&character, (@*const [0]cchar)(&string_bytes[string_length]),
+              4, (@pointer)(&state[0]))
+          if used == ~0_csize or used == ~1_csize then
+            nelibc_errno_location()[0] = 84 -- EILSEQ
+            stream_unlock(stream)
+            return -1
+          end
+          if used == 0 then break end
+          string_length = string_length + used
+          field_characters = field_characters + 1
+        end
+      else
+        while string_bytes[string_length] ~= 0 and
+            (not precision_set or string_length < (@csize)(precision)) do
+          string_length = string_length + 1
+        end
+        field_characters = string_length
       end
       local pad: csize = 0
-      if width > (@cint)(string_length) then pad = (@csize)(width - (@cint)(string_length)) end
+      if width > (@cint)(field_characters) then pad = (@csize)(width - (@cint)(field_characters)) end
       if not left_align then written = written + emit_padding(stream, 32, pad) end
       written = written + emit_bytes(stream, string_pointer, string_length)
       if left_align then written = written + emit_padding(stream, 32, pad) end
@@ -4436,7 +4459,10 @@ local function format_wide_output(format: *const [0]cint, arguments: cvalist,
   local format_bytes: *[0]cchar = nilptr
   if not format_wide_format(format, &format_bytes) then return false end
 
-  local count_stream: FILE = {fd = -2, flags = WRITABLE | FORMAT_COUNT_ONLY}
+  -- Count with the same wide rules as the writing pass below: a %s precision
+  -- counted in bytes here would undersize the buffer for "%.1s" of a
+  -- two-byte character, and the terminator would land past its end.
+  local count_stream: FILE = {fd = -2, flags = WRITABLE | FORMAT_COUNT_ONLY | WIDE_FORMAT}
   local count_arguments: cvalist
   nelibc_va_copy(count_arguments, arguments)
   local byte_count: cint = vfprintf(&count_stream, (@cstring)(format_bytes), count_arguments)

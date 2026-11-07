@@ -261,6 +261,27 @@ double nexttoward(double from, long double to);
 #define FP_NORMAL 4
 #define FP_ILOGB0 (-2147483647 - 1)
 #define FP_ILOGBNAN (-2147483647 - 1)
+/* C17 7.12.3: the classification and comparison macros evaluate their
+ * argument once and raise no floating-point exception (an infinity minus
+ * itself would raise FE_INVALID; an ordered comparison of a NaN raises it
+ * too). GCC and clang provide exactly that as builtins. */
+#if !defined(__TINYC__)
+#define fpclassify(value) \
+  __builtin_fpclassify(FP_NAN, FP_INFINITE, FP_NORMAL, FP_SUBNORMAL, FP_ZERO, value)
+#define isnan(value) __builtin_isnan(value)
+#define isinf(value) __builtin_isinf(value)
+#define isfinite(value) __builtin_isfinite(value)
+#define isnormal(value) __builtin_isnormal(value)
+#define signbit(value) __builtin_signbit(value)
+#define isgreater(x, y) __builtin_isgreater(x, y)
+#define isgreaterequal(x, y) __builtin_isgreaterequal(x, y)
+#define isless(x, y) __builtin_isless(x, y)
+#define islessequal(x, y) __builtin_islessequal(x, y)
+#define islessgreater(x, y) __builtin_islessgreater(x, y)
+#define isunordered(x, y) __builtin_isunordered(x, y)
+#else
+/* TinyCC has no such builtins: these evaluate the argument more than once
+ * and isinf/isfinite raise FE_INVALID on an infinity. */
 #define isnan(value) ((value) != (value))
 #define isinf(value) (((value) == (value)) && (value) != 0 && ((value) - (value)) != 0)
 #define isfinite(value) (((value) == (value)) && !isinf(value))
@@ -272,10 +293,42 @@ double nexttoward(double from, long double to);
     sizeof(value) == sizeof(long double) ? \
     ((value) < LDBL_MIN && (value) > -LDBL_MIN ? FP_SUBNORMAL : FP_NORMAL) : \
     ((value) < DBL_MIN && (value) > -DBL_MIN ? FP_SUBNORMAL : FP_NORMAL)))
-#if defined(__TINYC__)
+#define isnormal(value) (fpclassify(value) == FP_NORMAL)
 #define signbit(value) ((value) < 0 || ((value) == 0 && (1.0 / (value)) < 0))
-#else
-#define signbit(value) __builtin_signbit(value)
+#define isunordered(x, y) (isnan(x) || isnan(y))
+#define isgreater(x, y) (!isunordered(x, y) && (x) > (y))
+#define isgreaterequal(x, y) (!isunordered(x, y) && (x) >= (y))
+#define isless(x, y) (!isunordered(x, y) && (x) < (y))
+#define islessequal(x, y) (!isunordered(x, y) && (x) <= (y))
+#define islessgreater(x, y) (!isunordered(x, y) && ((x) < (y) || (x) > (y)))
+#endif
+
+/* SSE arithmetic on x86-64: FLT_EVAL_METHOD 0. */
+typedef float float_t;
+typedef double double_t;
+
+/* Nelibc's math functions set errno and raise the exception (as glibc). */
+#define MATH_ERRNO 1
+#define MATH_ERREXCEPT 2
+#define math_errhandling (MATH_ERRNO | MATH_ERREXCEPT)
+
+/* XSI constants, in the namespaces where glibc and musl define them. */
+#if defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) || defined(_BSD_SOURCE) || \
+    defined(_DEFAULT_SOURCE) || (!defined(_POSIX_C_SOURCE) && !defined(__STRICT_ANSI__))
+#define M_E 2.7182818284590452354
+#define M_LOG2E 1.4426950408889634074
+#define M_LOG10E 0.43429448190325182765
+#define M_LN2 0.69314718055994530942
+#define M_LN10 2.30258509299404568402
+#define M_PI 3.14159265358979323846
+#define M_PI_2 1.57079632679489661923
+#define M_PI_4 0.78539816339744830962
+#define M_1_PI 0.31830988618379067154
+#define M_2_PI 0.63661977236758134308
+#define M_2_SQRTPI 1.12837916709551257390
+#define M_SQRT2 1.41421356237309504880
+#define M_SQRT1_2 0.70710678118654752440
+#define MAXFLOAT 3.40282346638528859812e+38F
 #endif
 
 #else
