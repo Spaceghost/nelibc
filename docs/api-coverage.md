@@ -98,6 +98,15 @@ is not, and multibyte characters are handled only as described in
 the TinyCC archive includes the module but its smoke is not run. Hybrid
 archives use the host's regex.
 
+Standalone `<pwd.h>` and `<grp.h>` (`getpwnam`, `getpwuid`, their `_r`
+forms, `getpwent` and kin, `fgetpwent`, `putpwent`, and the `<grp.h>`
+counterparts plus `getgrouplist` and `initgroups`) read `/etc/passwd` and
+`/etc/group` after musl 1.2.5's parser, with the differences listed in
+`docs/libc-test.md`; there is no NSS or nscd. The Zig and GCC standalone
+syscall smokes cover them against fixture files; the TinyCC archive includes
+the module but its smoke is not run. Hybrid archives use the host's
+functions. `docs/musl-1.2.5-api-coverage.csv` was not regenerated for them.
+
 Standalone stdio now implements `fwide`, wide-character stream and string I/O,
 the corresponding unlocked calls, `getwc`/`putwc` aliases, and one-character
 `ungetwc` pushback. Its stream state tracks orientation and multibyte conversion
