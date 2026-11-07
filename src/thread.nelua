@@ -281,6 +281,12 @@ local initial_thread_context: PthreadContext = {}
 local initial_thread_identity: pointer = nilptr
 local initial_thread_tid: cint = 0
 local named_semaphore_handles: *NamedSemaphoreHandle = nilptr
+-- Threads alive in the process, the initial one included. When the last one
+-- leaves through pthread_exit (or returns from its start routine) the
+-- process exits as if exit(0) were called (POSIX pthread_exit), which runs
+-- the atexit handlers and destructors.
+local pthread_live_threads: [1]cint = {1}
+local function exit(status: cint): void <cimport> end
 local named_semaphore_handles_lock: cint = 0
 local pthread_objects: *PthreadObject = nilptr
 local pthread_objects_lock: cint = 0
@@ -1141,6 +1147,10 @@ local function pthread_context_exit(context: *PthreadContext, result: pointer): 
     pthread_finish(context)
   else
     pthread_key_run_destructors()
+  end
+  if nelibc_atomic_fetch_add_int((@*[0]cint)(&pthread_live_threads), -1) == 1 then
+    nelibc_atomic_fetch_add_int((@*[0]cint)(&pthread_live_threads), 1)
+    exit(0)
   end
   nelibc_sys3(SYS_EXIT, 0_culong, 0_culong, 0_culong)
   while true do end
@@ -3527,6 +3537,7 @@ local function nelibc_thread_fork_parent(): void <cexport, codename 'nelibc_thre
 end
 
 local function nelibc_thread_fork_child(): void <cexport, codename 'nelibc_thread_fork_child'>
+  nelibc_atomic_store_int((@*[0]cint)(&pthread_live_threads), 1) -- only the forking thread survives
   local context = nelibc_thread_current_pthread_context()
   local current_object: *PthreadObject = nilptr
   if context ~= nilptr then current_object = (@*PthreadObject)(context.object) end
@@ -3923,7 +3934,8 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   if signal_error ~= 0 then return signal_error end
   pthread_current_context()
   local object = nelibc_malloc(1024_csize)
-  if object == nilptr then return 12 end -- ENOMEM
+  -- POSIX gives EAGAIN, not ENOMEM, when pthread_create lacks resources.
+  if object == nilptr then return 11 end -- EAGAIN
   local tid_word = nelibc_thread_tid_slot_alloc()
   if tid_word == nilptr then
     nelibc_free(object)
@@ -3975,6 +3987,7 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
   end
   state.handle.state = 0
   state.handle.tid_word = tid_word
+  nelibc_atomic_fetch_add_int((@*[0]cint)(&pthread_live_threads), 1)
   if thread_spawn(&state.handle, (@pointer)(pthread_trampoline), &state.context,
                   stacksize, stackaddr, guardsize, object, &state.context,
                   attr ~= nilptr and attr.detachstate == 1) ~= 0 then
@@ -3982,7 +3995,9 @@ local function pthread_create(thread: *[0]pointer, attr: *PthreadAttr, start: fu
     pthread_robust_slot_release(state.context.robust_slot)
     nelibc_thread_tid_slot_release(tid_word)
     nelibc_free(object)
-    if error_code == 0 then return 11 end -- EAGAIN
+    nelibc_atomic_fetch_add_int((@*[0]cint)(&pthread_live_threads), -1)
+    -- a stack or TLS map that fails with ENOMEM is a lack of resources too
+    if error_code == 0 or error_code == 12 then return 11 end -- EAGAIN
     return error_code
   end
   if stackaddr ~= nilptr then

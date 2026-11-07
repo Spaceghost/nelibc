@@ -495,11 +495,16 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
   deadlocks.
 - `regression/pthread_create-oom` (zig): `pthread_create should fail with
   EAGAIN but failed with 12 (Cannot allocate memory)` (line 24): POSIX
-  specifies `EAGAIN` for lack of resources.
+  specifies `EAGAIN` for lack of resources. **Fixed** (branch `pthread-create-eagain`): a failed
+  object allocation or stack/TLS map now returns `EAGAIN`.
 - `regression/pthread_exit-dtor` (zig): `atexit handler was not run after
   last thread exited (exited=1, signal=0, status=0, want exit status=1)`
   (line 64): when the last thread calls `pthread_exit`, the process exits
-  with status 0 without running `atexit` handlers.
+  with status 0 without running `atexit` handlers. **Fixed** (same branch): nelibc counts live threads; when the
+  last one leaves through `pthread_exit` or by returning from its start
+  routine, the process exits as if `exit(0)` were called (atexit handlers,
+  destructors, stdio flush), as POSIX requires. The count resets to 1 in a
+  fork child. gcc 283, zig 284.
 - `functional/pthread_robust` (zig): `pthread_mutex_destroy(&mtx) failed:
   ... Device or resource busy (destroying mutex)` (line 61), for all four
   pshared/PI combinations. The test destroys a robust mutex it has just
