@@ -2298,8 +2298,12 @@ int main(int argc, char **argv) {
       wcscmp(wide_memory, L"wide Xemory stream") != 0)
     return 293;
   free(wide_memory);
+  /* %Lf of a value that is a double is exact; anything wider is refused. */
+  if (swprintf(formatted_wide, 32, L"%Lf|%La|%.1Le", 1.0L, 1.0L, 2.5L) != 23 ||
+      wcscmp(formatted_wide, L"1.000000|0x1p+0|2.5e+00") != 0)
+    return 291;
   errno = 0;
-  if (swprintf(formatted_wide, 32, L"%Lf", 1.0L) >= 0 || errno != EINVAL)
+  if (swprintf(formatted_wide, 32, L"%Lf", 1.0L / 3.0L) >= 0 || errno != EINVAL)
     return 291;
   wchar_t truncated_wide[3] = {L'X', L'X', L'X'};
   errno = 0;
