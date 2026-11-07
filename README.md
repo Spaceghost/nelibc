@@ -90,6 +90,7 @@ and profile-specific commands.
 | [API inventory](docs/musl-1.2.5-api-coverage.csv) | Function and symbol coverage |
 | [Coverage notes](docs/api-coverage.md) | How coverage is measured |
 | [Core roadmap](docs/core-roadmap.md) | Priorities and missing core pieces |
+| [libc-test](docs/libc-test.md) | musl libc-test as a conformance gate; what fails and why |
 | [Implementation catalog](docs/implementation-catalog.md) | Implementations and consumer checks |
 
 Refresh local per-profile coverage with `make api-coverage`.
