@@ -441,6 +441,11 @@ header. `functional/search_hsearch`, `search_insque`, `search_lsearch` and
 `tools/syscall_smoke.c` cover 257 shuffled keys with half deleted and an
 in-order walk, a 100-key table grown from 8 slots, and the list helpers.
 
+Gate for `standalone-batch-2` and `search-h` together: the 159-target list
+(the 155 plus `libc-test-gcc`, `libc-test-zig`, `libc-test-standalone-gcc`,
+`libc-test-standalone-zig`) on `9f3ba3e`, Nelua `dabbd9ef`: 159/159 exited
+0, no warnings; logs in `/work/artifacts/gate-searchh-20261107-1323/`.
+
 Gate coverage note (2026-11-07): AGENTS.md lists `libc-test-gcc` and
 `libc-test-zig` in the gate, but the container's gate script ran only the
 155 smoke, diff, host and shootout targets. The `<limits.h>` change in
