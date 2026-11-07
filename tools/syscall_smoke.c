@@ -851,8 +851,12 @@ static int termios_smoke(void) {
   if (tcsetattr(slave, 3, &raw) != -1 || errno != EINVAL) return 613;
 
   struct termios sp = back;
-  if (cfsetospeed(&sp, B9600) != 0 || cfgetospeed(&sp) != B9600 || cfgetispeed(&sp) != B9600) return 614;
+  if (cfsetospeed(&sp, B9600) != 0 || cfgetospeed(&sp) != B9600) return 614;
+#ifdef NELIBC_STANDALONE
+  /* one speed for both directions (musl); glibc keeps a separate input speed */
+  if (cfgetispeed(&sp) != B9600) return 614;
   if (cfsetispeed(&sp, 0) != 0 || cfgetispeed(&sp) != B9600) return 614;
+#endif
   errno = 0;
   if (cfsetospeed(&sp, 12345) != -1 || errno != EINVAL || cfgetospeed(&sp) != B9600) return 615;
   if (cfsetspeed(&sp, B115200) != 0 || cfgetospeed(&sp) != B115200) return 615;
