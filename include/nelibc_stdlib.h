@@ -7,10 +7,20 @@
 #include <locale.h>
 #endif
 
-void exit(int status);
-void _Exit(int status);
+/* C11 declares these _Noreturn; the GNU attribute says the same in every
+ * dialect GCC, clang and TinyCC accept, and matches glibc's declarations. */
+#ifndef NELIBC_NORETURN
+#if defined(__GNUC__) || defined(__clang__) || defined(__TINYC__)
+#define NELIBC_NORETURN __attribute__((__noreturn__))
+#else
+#define NELIBC_NORETURN
+#endif
+#endif
+
+NELIBC_NORETURN void exit(int status);
+NELIBC_NORETURN void _Exit(int status);
 int atexit(void (*function)(void));
-void abort(void);
+NELIBC_NORETURN void abort(void);
 int system(const char *command);
 int getsubopt(char **optionp, char *const *tokens, char **valuep);
 int mblen(const char *text, size_t size);

@@ -332,7 +332,14 @@ int execvp(const char *file, char *const argv[]);
 int execvpe(const char *file, char *const argv[], char *const envp[]);
 #endif
 int execveat(int dirfd, const char *pathname, char *const argv[], char *const envp[], int flags);
-void _exit(int status);
+#ifndef NELIBC_NORETURN
+#if defined(__GNUC__) || defined(__clang__) || defined(__TINYC__)
+#define NELIBC_NORETURN __attribute__((__noreturn__))
+#else
+#define NELIBC_NORETURN
+#endif
+#endif
+NELIBC_NORETURN void _exit(int status);
 
 /* POSIX socket interfaces implemented with Linux x86_64 syscalls. */
 int socket(int domain, int type, int protocol);
