@@ -1,0 +1,351 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- <search.h> for the standalone profile, after musl 1.2.5 src/search (MIT):
+-- hcreate/hsearch/hdestroy (and the GNU _r forms) as an open-addressing
+-- table with triangular probing, tsearch/tfind/tdelete/twalk/tdestroy as an
+-- AVL tree, lsearch/lfind, insque/remque. Hybrid builds use the host's.
+
+local function malloc(size: csize): pointer <cimport> end
+local function calloc(count: csize, size: csize): pointer <cimport> end
+local function free(value: pointer): void <cimport> end
+local function strcmp(left: *const [0]cchar, right: *const [0]cchar): cint <cimport> end
+local function memcpy(destination: pointer, source: pointer, size: csize): pointer <cimport> end
+
+-- ENTRY {char *key; void *data;}; ACTION FIND = 0, ENTER = 1.
+local Entry: type = @record{key: *[0]cchar, data: pointer}
+local HashTable: type = @record{entries: *[0]Entry, mask: csize, used: csize}
+-- struct hsearch_data {struct __tab *__tab; unsigned __unused1, __unused2;}
+local HsearchData: type = @record{table: *HashTable, unused1: cuint, unused2: cuint}
+
+local HASH_MINSIZE: csize <comptime> = 8
+local HASH_MAXSIZE: csize <comptime> = 0x8000000000000000
+
+local global_table: HsearchData
+
+local function key_hash(key: *[0]cchar): csize
+  local hash: csize = 0
+  local index: csize = 0
+  while key[index] ~= 0_cchar do
+    hash = 31 * hash + (@csize)((@byte)(key[index]))
+    index = index + 1
+  end
+  return hash
+end
+
+local function hash_resize(count: csize, data: *HsearchData): boolean
+  local table = data.table
+  local old_size: csize = table.mask + 1
+  local old_entries = table.entries
+  if count > HASH_MAXSIZE then count = HASH_MAXSIZE end
+  local new_size: csize = HASH_MINSIZE
+  while new_size < count do new_size = new_size * 2 end
+  local entries = (@*[0]Entry)(calloc(new_size, #Entry))
+  if entries == nilptr then return false end -- calloc set ENOMEM
+  table.entries = entries
+  table.mask = new_size - 1
+  if old_entries == nilptr then return true end
+  for index: csize = 0, old_size - 1 do
+    if old_entries[index].key ~= nilptr then
+      local probe: csize = key_hash(old_entries[index].key)
+      local step: csize = 1
+      while entries[probe & table.mask].key ~= nilptr do
+        probe = probe + step
+        step = step + 1
+      end
+      entries[probe & table.mask] = old_entries[index]
+    end
+  end
+  free(old_entries)
+  return true
+end
+
+local function hash_lookup(key: *[0]cchar, hash: csize, data: *HsearchData): *Entry
+  local table = data.table
+  local probe: csize = hash
+  local step: csize = 1
+  while true do
+    local entry = &table.entries[probe & table.mask]
+    if entry.key == nilptr or strcmp(entry.key, key) == 0 then return entry end
+    probe = probe + step
+    step = step + 1
+  end
+  return nilptr
+end
+
+local function hcreate_r(count: csize, data: *HsearchData): cint <cexport, codename 'hcreate_r'>
+  data.table = (@*HashTable)(calloc(1, #HashTable))
+  if data.table == nilptr then return 0 end
+  if not hash_resize(count, data) then
+    free(data.table)
+    data.table = nilptr
+    return 0
+  end
+  return 1
+end
+
+local function hdestroy_r(data: *HsearchData): void <cexport, codename 'hdestroy_r'>
+  if data.table ~= nilptr then free(data.table.entries) end
+  free(data.table)
+  data.table = nilptr
+end
+
+local function hsearch_r(item: Entry, action: cint, result: *[0]*Entry, data: *HsearchData): cint
+    <cexport, codename 'hsearch_r'>
+  local hash = key_hash(item.key)
+  local entry = hash_lookup(item.key, hash, data)
+  if entry.key ~= nilptr then
+    result[0] = entry
+    return 1
+  end
+  if action == 0 then -- FIND
+    result[0] = nilptr
+    return 0
+  end
+  $entry = item
+  local table = data.table
+  table.used = table.used + 1
+  if table.used > table.mask - table.mask // 4 then
+    if not hash_resize(2 * table.used, data) then
+      table.used = table.used - 1
+      entry.key = nilptr
+      result[0] = nilptr
+      return 0
+    end
+    entry = hash_lookup(item.key, hash, data)
+  end
+  result[0] = entry
+  return 1
+end
+
+local function hcreate(count: csize): cint <cexport, codename 'hcreate'>
+  return hcreate_r(count, &global_table)
+end
+
+local function hdestroy(): void <cexport, codename 'hdestroy'>
+  hdestroy_r(&global_table)
+end
+
+local function hsearch(item: Entry, action: cint): *Entry <cexport, codename 'hsearch'>
+  local result: [1]*Entry
+  hsearch_r(item, action, (@*[0]*Entry)(&result), &global_table)
+  return result[0]
+end
+
+-- AVL tree. A node starts with its key, so the pointer tsearch returns can
+-- be dereferenced as a pointer to the key (POSIX).
+local TreeNode: type = @record{key: pointer, child: [2]*TreeNode, height: cint}
+local Compare: type = @function(pointer, pointer): cint
+-- An AVL tree of 2^64 nodes is at most 64 * 3 / 2 = 96 levels deep: the
+-- path arrays below hold that many slots (one more for tdelete's sentinel).
+
+local function tree_height(node: *TreeNode): cint <inline>
+  if node == nilptr then return 0 end
+  return node.height
+end
+
+-- Rotate at x towards its shallower side; dir is the deeper side.
+local function tree_rotate(slot: **TreeNode, x: *TreeNode, dir: cint): cint
+  local y = x.child[dir]
+  local z = y.child[1 - dir]
+  local old_height = x.height
+  local hz = tree_height(z)
+  if hz > tree_height(y.child[dir]) then
+    x.child[dir] = z.child[1 - dir]
+    y.child[1 - dir] = z.child[dir]
+    z.child[1 - dir] = x
+    z.child[dir] = y
+    x.height = hz
+    y.height = hz
+    z.height = hz + 1
+  else
+    x.child[dir] = z
+    y.child[1 - dir] = x
+    x.height = hz + 1
+    y.height = hz + 2
+    z = y
+  end
+  $slot = z
+  return z.height - old_height
+end
+
+-- Rebalance *slot; nonzero when its height changed.
+local function tree_balance(slot: **TreeNode): cint
+  local node = $slot
+  local h0 = tree_height(node.child[0])
+  local h1 = tree_height(node.child[1])
+  if h0 - h1 >= -1 and h0 - h1 <= 1 then
+    local old_height = node.height
+    if h0 < h1 then node.height = h1 + 1 else node.height = h0 + 1 end
+    return node.height - old_height
+  end
+  return tree_rotate(slot, node, h0 < h1 and 1 or 0)
+end
+
+local function tsearch(key: pointer, root: **TreeNode, compare: Compare): pointer
+    <cexport, codename 'tsearch'>
+  if root == nilptr then return nilptr end
+  local path: [96]**TreeNode
+  local depth: cint = 0
+  path[depth] = root
+  depth = depth + 1
+  local node = $root
+  while node ~= nilptr do
+    local order = compare(key, node.key)
+    if order == 0 then return node end
+    local side: cint = order > 0 and 1 or 0
+    path[depth] = &node.child[side]
+    depth = depth + 1
+    node = node.child[side]
+  end
+  local fresh = (@*TreeNode)(malloc(#TreeNode))
+  if fresh == nilptr then return nilptr end
+  fresh.key = key
+  fresh.child[0] = nilptr
+  fresh.child[1] = nilptr
+  fresh.height = 1
+  depth = depth - 1
+  $path[depth] = fresh
+  while depth > 0 do
+    depth = depth - 1
+    if tree_balance(path[depth]) == 0 then break end
+  end
+  return fresh
+end
+
+local function tfind(key: pointer, root: *const *TreeNode, compare: Compare): pointer
+    <cexport, codename 'tfind'>
+  if root == nilptr then return nilptr end
+  local node = $root
+  while node ~= nilptr do
+    local order = compare(key, node.key)
+    if order == 0 then break end
+    node = node.child[order > 0 and 1 or 0]
+  end
+  return node
+end
+
+-- Returns the deleted node's parent, or an arbitrary non-null pointer (the
+-- root slot) when the root was deleted; null when the key is absent.
+local function tdelete(key: pointer, root: **TreeNode, compare: Compare): pointer
+    <cexport, codename 'tdelete'>
+  if root == nilptr then return nilptr end
+  local path: [97]**TreeNode
+  local depth: cint = 0
+  path[depth] = root
+  depth = depth + 1
+  path[depth] = root
+  depth = depth + 1
+  local node = $root
+  while true do
+    if node == nilptr then return nilptr end
+    local order = compare(key, node.key)
+    if order == 0 then break end
+    local side: cint = order > 0 and 1 or 0
+    path[depth] = &node.child[side]
+    depth = depth + 1
+    node = node.child[side]
+  end
+  local parent: pointer = (@pointer)($path[depth - 2])
+  local child: *TreeNode
+  if node.child[0] ~= nilptr then
+    -- Remove the in-order predecessor instead and move its key up.
+    local deleted = node
+    path[depth] = &node.child[0]
+    depth = depth + 1
+    node = node.child[0]
+    while node.child[1] ~= nilptr do
+      path[depth] = &node.child[1]
+      depth = depth + 1
+      node = node.child[1]
+    end
+    deleted.key = node.key
+    child = node.child[0]
+  else
+    child = node.child[1]
+  end
+  free(node)
+  depth = depth - 1
+  $path[depth] = child
+  while true do
+    depth = depth - 1
+    if depth == 0 then break end
+    if tree_balance(path[depth]) == 0 then break end
+  end
+  return parent
+end
+
+-- VISIT: preorder 0, postorder 1, endorder 2, leaf 3.
+local Visit: type = @function(pointer, cint, cint): void
+
+local function tree_walk(node: *TreeNode, action: Visit, depth: cint): void
+  if node == nilptr then return end
+  if node.height == 1 then
+    action(node, 3, depth)
+  else
+    action(node, 0, depth)
+    tree_walk(node.child[0], action, depth + 1)
+    action(node, 1, depth)
+    tree_walk(node.child[1], action, depth + 1)
+    action(node, 2, depth)
+  end
+end
+
+local function twalk(root: *TreeNode, action: Visit): void <cexport, codename 'twalk'>
+  if action == nilptr then return end
+  tree_walk(root, action, 0)
+end
+
+local function tdestroy(root: *TreeNode, free_key: function(pointer): void): void
+    <cexport, codename 'tdestroy'>
+  if root == nilptr then return end
+  tdestroy(root.child[0], free_key)
+  tdestroy(root.child[1], free_key)
+  if free_key ~= nilptr then free_key(root.key) end
+  free(root)
+end
+
+local function lfind(key: pointer, base: pointer, count: *csize, width: csize,
+    compare: Compare): pointer <cexport, codename 'lfind'>
+  local bytes = (@*[0]byte)(base)
+  local total = $count
+  local index: csize = 0
+  while index < total do
+    local element: pointer = &bytes[index * width]
+    if compare(key, element) == 0 then return element end
+    index = index + 1
+  end
+  return nilptr
+end
+
+local function lsearch(key: pointer, base: pointer, count: *csize, width: csize,
+    compare: Compare): pointer <cexport, codename 'lsearch'>
+  local found = lfind(key, base, count, width, compare)
+  if found ~= nilptr then return found end
+  local bytes = (@*[0]byte)(base)
+  local total = $count
+  $count = total + 1
+  return memcpy(&bytes[total * width], key, width)
+end
+
+-- insque/remque on any record whose first two members are the next and
+-- previous pointers (struct qelem).
+local QueueNode: type = @record{next: *QueueNode, previous: *QueueNode}
+
+local function insque(element: *QueueNode, predecessor: *QueueNode): void
+    <cexport, codename 'insque'>
+  if predecessor == nilptr then
+    element.next = nilptr
+    element.previous = nilptr
+    return
+  end
+  element.next = predecessor.next
+  element.previous = predecessor
+  predecessor.next = element
+  if element.next ~= nilptr then element.next.previous = element end
+end
+
+local function remque(element: *QueueNode): void <cexport, codename 'remque'>
+  if element.next ~= nilptr then element.next.previous = element.previous end
+  if element.previous ~= nilptr then element.previous.next = element.next end
+end

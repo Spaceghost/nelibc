@@ -76,6 +76,7 @@ extern int __nelibc_set_localtime_path(const char *path);
 #include <wchar.h>
 #include <locale.h>
 #include <langinfo.h>
+#include <search.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <math.h>
@@ -723,6 +724,26 @@ static void order_atexit(void) { if (order_fd >= 0 && write(order_fd, "A", 1) !=
 __attribute__((destructor)) static void smoke_destructor(void) {
   if (order_fd >= 0 && write(order_fd, "D", 1) != 1) _exit(7);
 }
+
+#ifdef NELIBC_STANDALONE
+/* <search.h> helpers for the standalone checks below. */
+static int search_int_compare(const void *left, const void *right) {
+  int a = *(const int *)left, b = *(const int *)right;
+  return (a > b) - (a < b);
+}
+static int search_walk_count;
+static int search_walk_last;
+static int search_walk_sorted;
+static void search_walk(const void *node, VISIT visit, int depth) {
+  (void)depth;
+  if (visit == postorder || visit == leaf) {
+    int value = **(int *const *)node;
+    if (search_walk_count > 0 && value <= search_walk_last) search_walk_sorted = 0;
+    search_walk_last = value;
+    ++search_walk_count;
+  }
+}
+#endif
 
 int main(int argc, char **argv) {
   if (!constructor_ran) return 501;
@@ -2153,6 +2174,62 @@ int main(int argc, char **argv) {
       setlocale(LC_CTYPE, "C") == NULL || strcmp(nl_langinfo(CODESET), "ASCII") != 0) return 80;
   freelocale(langinfo_de);
   freelocale(langinfo_utf8);
+  /* <search.h>: an AVL tree through tsearch/tfind/tdelete/twalk, the
+   * hsearch table across a resize, lsearch/lfind, insque/remque. */
+  {
+    static int search_keys[257];
+    void *search_root = NULL;
+    for (int i = 0; i < 257; ++i) {
+      search_keys[i] = (i * 97) % 257; /* a permutation of 0..256 */
+      int *const *added = tsearch(&search_keys[i], &search_root, search_int_compare);
+      if (added == NULL || *added != &search_keys[i]) return 81;
+    }
+    int probe = 128;
+    int *const *found = tfind(&probe, &search_root, search_int_compare);
+    if (found == NULL || **found != 128 ||
+        tsearch(&probe, &search_root, search_int_compare) != (void *)found) return 82;
+    for (int value = 0; value < 257; value += 2) {
+      probe = value;
+      if (tdelete(&probe, &search_root, search_int_compare) == NULL) return 83;
+    }
+    probe = 2;
+    search_walk_count = 0; search_walk_sorted = 1;
+    twalk(search_root, search_walk);
+    if (tfind(&probe, &search_root, search_int_compare) != NULL ||
+        tdelete(&probe, &search_root, search_int_compare) != NULL ||
+        search_walk_count != 128 || !search_walk_sorted) return 83;
+    tdestroy(search_root, NULL);
+
+    static char search_names[100][8];
+    if (hcreate(4) == 0) return 84;
+    for (int i = 0; i < 100; ++i) {
+      snprintf(search_names[i], sizeof search_names[i], "k%d", i);
+      ENTRY item = {search_names[i], &search_keys[i]};
+      if (hsearch(item, ENTER) == NULL) return 84;
+    }
+    ENTRY query = {"k57", NULL};
+    ENTRY *hit = hsearch(query, FIND);
+    query.key = "k100";
+    if (hit == NULL || hit->data != &search_keys[57] || hsearch(query, FIND) != NULL) return 85;
+    hdestroy();
+
+    int search_array[4] = {5, 3, 9, 0};
+    size_t search_count = 3;
+    probe = 9;
+    if (lfind(&probe, search_array, &search_count, sizeof(int), search_int_compare) != &search_array[2])
+      return 86;
+    probe = 7;
+    if (lfind(&probe, search_array, &search_count, sizeof(int), search_int_compare) != NULL ||
+        lsearch(&probe, search_array, &search_count, sizeof(int), search_int_compare) != &search_array[3] ||
+        search_count != 4 || search_array[3] != 7) return 86;
+    struct { void *next, *previous; } q_a, q_b, q_c;
+    insque(&q_a, NULL);
+    insque(&q_b, &q_a);
+    insque(&q_c, &q_b);
+    remque(&q_b);
+    if (q_a.next != &q_c || q_c.previous != &q_a || q_a.previous != NULL || q_c.next != NULL)
+      return 86;
+  }
   char narrow_scan_word[8] = {0};
   int narrow_scan_count = -1;
   if (sscanf("alpha rest", "%5s%n", narrow_scan_word, &narrow_scan_count) != 1 ||

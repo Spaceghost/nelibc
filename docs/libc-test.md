@@ -430,6 +430,17 @@ are `""`. A per-thread locale from `uselocale` is honoured. Hybrid builds
 (`M_PI`) also include `<langinfo.h>` and now stop at those identifiers.
 Checks 78 to 80 in `tools/syscall_smoke.c`.
 
+**Fixed** (branch `search-h`): `<search.h>`. `src/search_standalone.nelua`
+follows musl 1.2.5: `hcreate`/`hsearch`/`hdestroy` and the GNU `_r` forms as
+an open-addressing table with triangular probing that doubles at three
+quarters full; `tsearch`/`tfind`/`tdelete`/`twalk`/`tdestroy` as an AVL tree
+(`tdelete` returns the parent, or the root slot when the root goes);
+`lsearch`/`lfind`; `insque`/`remque`. Hybrid builds include the host's
+header. `functional/search_hsearch`, `search_insque`, `search_lsearch` and
+`search_tsearch` pass in both runs (gcc 292, zig 293); checks 81 to 86 in
+`tools/syscall_smoke.c` cover 257 shuffled keys with half deleted and an
+in-order walk, a 100-key table grown from 8 slots, and the list helpers.
+
 Gate coverage note (2026-11-07): AGENTS.md lists `libc-test-gcc` and
 `libc-test-zig` in the gate, but the container's gate script ran only the
 155 smoke, diff, host and shootout targets. The `<limits.h>` change in
