@@ -17,6 +17,12 @@
 #endif
 int memfd_create(const char *name, unsigned int flags);
 
+#ifdef NELIBC_STANDALONE
+/* POSIX shared memory objects: files under /dev/shm (musl). */
+int shm_open(const char *name, int oflag, mode_t mode);
+int shm_unlink(const char *name);
+#endif
+
 /* Supply Linux extension constants hidden by strict feature-test modes. */
 #ifndef PROT_NONE
 #define PROT_NONE 0x0
