@@ -79,6 +79,11 @@ comm -13 expected.sorted failures.txt > new-failures.txt
 comm -23 expected.sorted failures.txt > now-passing.txt
 
 total=$(find src -name '*.exe' | wc -l)
+# The zig binaries link the whole archive: 344 of them take over 2 GB. The
+# results are recorded above, so drop the binaries and objects unless asked
+# to keep them (KEEP_BINARIES=1); REPORT, logs and *.err stay.
+[ -n "${KEEP_BINARIES:-}" ] || find src \( -name '*.exe' -o -name '*.o' -o -name '*.lo' \
+  -o -name '*.so' -o -name '*.a' \) -delete
 echo "libc-test $PROFILE: $total test binaries, $(wc -l < failures.txt) failing, $(wc -l < expected.sorted) expected"
 if [ -s now-passing.txt ]; then
   echo "now passing (remove from $EXPECTED):"

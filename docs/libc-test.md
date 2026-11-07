@@ -459,7 +459,7 @@ Gate for `standalone-batch-2` and `search-h` together: the 159-target list
   checks that classifying infinities and NaNs leaves the flags clear
   (600-602).
 - `MB_CUR_MAX` is `__ctype_get_mb_cur_max()`: 4 under a UTF-8 `LC_CTYPE`,
-  1 in the strict ASCII C locale (checks 507-509).
+  1 in the strict ASCII C locale (checks 521-523).
 - In `swprintf`, the precision and width of `%s` count wide characters
   (C17 7.29.2.1), and `vswprintf`'s sizing pass counted bytes while the
   writing pass counted characters, so `"%.1s"` of `"\xc3\x80!"` overran
