@@ -2011,6 +2011,16 @@ int main(int argc, char **argv) {
   };
   if (mktime(&winter_as_daylight) != (time_t)1579114800 || winter_as_daylight.tm_hour != 11 ||
       winter_as_daylight.tm_isdst != 0) return 624;
+  /* from late October and late April the six-month samples stay in the same
+   * season; the other kind of offset must still be found */
+  struct tm october_as_standard = {
+    .tm_sec = 0, .tm_min = 0, .tm_hour = 12, .tm_mday = 24,
+    .tm_mon = 9, .tm_year = 120, .tm_isdst = 0
+  };
+  struct tm april_as_standard = october_as_standard;
+  april_as_standard.tm_mday = 25; april_as_standard.tm_mon = 3;
+  if (mktime(&october_as_standard) != (time_t)1603569600 || october_as_standard.tm_hour != 13 ||
+      mktime(&april_as_standard) != (time_t)1587844800 || april_as_standard.tm_hour != 13) return 625;
   if (unsetenv("TZ") != 0 || localtime_r(&epoch, &utc_broken_down) == NULL ||
       utc_broken_down.tm_zone == NULL) return 405;
 #ifdef NELIBC_TESTING
