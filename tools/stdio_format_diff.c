@@ -48,10 +48,14 @@ int main(void) {
   if (printf("counts:%d:%d:%ld:%lld:%td:%td:%jd\n", written_hh, written_h,
              written_l, written_ll, written_z, written_t, written_j) < 0) return 6;
 
-  /* Hexadecimal floats: zero, negative zero, normals and subnormals. */
+  /* Hexadecimal floats: zero, negative zero, normals, a precision cut and a
+     round-half-even tie.  No subnormal here: glibc prints 0x1p-1074 as
+     0x0.0000000000001p-1022 while musl normalizes it to 0x1p-1074, both
+     conforming, so a host diff cannot pin it.  The glibc form nelibc uses is
+     checked in tools/syscall_smoke.c under NELIBC_STANDALONE instead. */
   static char big[4096];
-  length = sprintf(big, "%a|%A|%a|%a|%a|%.3a|%.0a", 0.0, -0.0, 1.0, 0x1p-1022,
-                   0x1p-1074, 0x1.fffp+3, 1.5);
+  length = sprintf(big, "%a|%A|%a|%a|%.3a|%.0a", 0.0, -0.0, 1.0, 0x1p-1022,
+                   0x1.fffp+3, 1.5);
   if (length < 0 || emit("sprintf-hexfloat", length, big)) return 7;
 
   /* Fixed notation at any precision: 2^-1021 has 1021 fraction digits. */
