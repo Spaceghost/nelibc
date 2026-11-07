@@ -1,6 +1,7 @@
 /* Standalone profile, after musl 1.2.5: popen and pclose (src/stdio),
  * <mntent.h> (src/misc/mntent.c, with its octal unescaping), mktemp
- * (src/temp/mktemp.c) and daemon (src/legacy/daemon.c).
+ * (src/temp/mktemp.c) and daemon (src/legacy/daemon.c); shm_open, shm_unlink,
+ * dn_expand and dn_skipname (below).
  *
  * popen runs /bin/sh -c CMD through posix_spawn with one end of a pipe as the
  * child's standard input or output; the child also closes the streams of
@@ -258,4 +259,101 @@ int daemon(int nochdir, int noclose)
 	default: _exit(0);
 	}
 	return 0;
+}
+
+/* shm_open and shm_unlink (src/mman/shm_open.c, with __shm_mapname: leading
+ * slashes skipped; no inner slash; not empty, ".", or ".."; ENAMETOOLONG past
+ * NAME_MAX), and dn_expand and dn_skipname (src/network/dn_expand.c,
+ * dn_skipname.c). */
+#include <pthread.h>
+
+#ifndef NAME_MAX
+#define NAME_MAX 255
+#endif
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW 0400000
+#endif
+#ifndef O_NONBLOCK
+#define O_NONBLOCK 04000
+#endif
+
+static char *shm_mapname(const char *name, char *buf)
+{
+	const char *p;
+	while (*name == '/') name++;
+	for (p = name; *p && *p != '/'; p++) { }
+	if (*p || p == name || (p - name <= 2 && name[0] == '.' && p[-1] == '.')) {
+		errno = EINVAL;
+		return 0;
+	}
+	if (p - name > NAME_MAX) {
+		errno = ENAMETOOLONG;
+		return 0;
+	}
+	memcpy(buf, "/dev/shm/", 9);
+	memcpy(buf + 9, name, p - name + 1);
+	return buf;
+}
+
+int shm_open(const char *name, int flag, mode_t mode)
+{
+	int cs, fd;
+	char buf[NAME_MAX + 10];
+	if (!(name = shm_mapname(name, buf))) return -1;
+	/* not a cancellation point (musl) */
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &cs);
+	fd = open(name, flag | O_NOFOLLOW | O_CLOEXEC | O_NONBLOCK, mode);
+	pthread_setcancelstate(cs, 0);
+	return fd;
+}
+
+int shm_unlink(const char *name)
+{
+	char buf[NAME_MAX + 10];
+	if (!(name = shm_mapname(name, buf))) return -1;
+	return unlink(name);
+}
+
+int dn_expand(const unsigned char *base, const unsigned char *end,
+	const unsigned char *src, char *dest, int space)
+{
+	const unsigned char *p = src;
+	char *dend, *dbegin = dest;
+	int len = -1, i, j;
+	if (p == end || space <= 0) return -1;
+	dend = dest + (space > 254 ? 254 : space);
+	/* an iteration bound detects reference loops */
+	for (i = 0; i < end - base; i += 2) {
+		if (*p & 0xc0) {
+			if (p + 1 == end) return -1;
+			j = ((p[0] & 0x3f) << 8) | p[1];
+			if (len < 0) len = p + 2 - src;
+			if (j >= end - base) return -1;
+			p = base + j;
+		} else if (*p) {
+			if (dest != dbegin) *dest++ = '.';
+			j = *p++;
+			if (j >= end - p || j >= dend - dest) return -1;
+			while (j--) *dest++ = *p++;
+		} else {
+			*dest = 0;
+			if (len < 0) len = p + 1 - src;
+			return len;
+		}
+	}
+	return -1;
+}
+
+int dn_skipname(const unsigned char *s, const unsigned char *end)
+{
+	const unsigned char *p = s;
+	while (p < end)
+		if (!*p) return p - s + 1;
+		else if (*p >= 192)
+			if (p + 1 < end) return p - s + 2;
+			else break;
+		else
+			if (end - p < *p + 1) break;
+			else p += *p + 1;
+	return -1;
 }
