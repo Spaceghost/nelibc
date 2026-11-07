@@ -1,0 +1,276 @@
+-- Small POSIX families for the standalone profile, after musl 1.2.5:
+--   <libgen.h>      basename, dirname (src/misc/basename.c, dirname.c)
+--   <stdlib.h>      drand48 erand48 lrand48 nrand48 mrand48 jrand48 srand48
+--                   seed48 lcong48 (src/prng/*48.c); random srandom initstate
+--                   setstate (src/prng/random.c)
+--   <sys/statvfs.h> statvfs, fstatvfs (src/stat/statvfs.c)
+-- Differences from musl: seed48 and srand48 put the multiplier and addend
+-- back to their defaults, as POSIX and glibc specify (musl keeps the values
+-- an earlier lcong48 set); random and the 48 family take no lock (POSIX does
+-- not require them to be thread-safe; musl locks random).
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function nelibc_sys3(op: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+
+local SYS_STATFS: culong <comptime> = 102
+local SYS_FSTATFS: culong <comptime> = 103
+
+----------------------------------------------------------------------
+-- <libgen.h>
+----------------------------------------------------------------------
+
+local dot: [2]cchar = {46, 0}
+local slash: [2]cchar = {47, 0}
+
+local function cstrlen(s: *[0]cchar): csize
+  local n: csize = 0
+  while s[n] ~= 0 do n = n + 1 end
+  return n
+end
+
+local function basename(s: *[0]cchar): *[0]cchar <cexport, codename 'basename'>
+  if s == nilptr or s[0] == 0 then return &dot end
+  local i: csize = cstrlen(s) - 1
+  while i > 0 and s[i] == 47 do s[i] = 0; i = i - 1 end
+  while i > 0 and s[i - 1] ~= 47 do i = i - 1 end
+  return (@*[0]cchar)(&s[i])
+end
+
+local function dirname(s: *[0]cchar): *[0]cchar <cexport, codename 'dirname'>
+  if s == nilptr or s[0] == 0 then return &dot end
+  local i: csize = cstrlen(s) - 1
+  while s[i] == 47 do
+    if i == 0 then return &slash end
+    i = i - 1
+  end
+  while s[i] ~= 47 do
+    if i == 0 then return &dot end
+    i = i - 1
+  end
+  while s[i] == 47 do
+    if i == 0 then return &slash end
+    i = i - 1
+  end
+  s[i + 1] = 0
+  return s
+end
+
+----------------------------------------------------------------------
+-- The 48-bit linear congruential family
+----------------------------------------------------------------------
+
+-- xi[3], then the multiplier a[3] and the addend c, as lcong48 takes them.
+local seed48_state: [7]cushort = {0, 0, 0, 0xe66d, 0xdeec, 0x5, 0xb}   -- xi starts at 0 (musl; lrand48 gives 0 first)
+
+local function rand48_step(xi: *[0]cushort, lc: *[0]cushort): uint64
+  local x: uint64 = (@uint64)(xi[0]) | ((@uint64)(xi[1]) << 16) | ((@uint64)(xi[2]) << 32)
+  local a: uint64 = (@uint64)(lc[0]) | ((@uint64)(lc[1]) << 16) | ((@uint64)(lc[2]) << 32)
+  x = a * x + (@uint64)(lc[3])
+  xi[0] = (@cushort)(x & 0xffff)
+  xi[1] = (@cushort)((x >> 16) & 0xffff)
+  xi[2] = (@cushort)((x >> 32) & 0xffff)
+  return x & 0xffffffffffff
+end
+
+local function lc_params(): *[0]cushort
+  return (@*[0]cushort)(&seed48_state[3])
+end
+
+local function erand48(s: *[0]cushort): float64 <cexport, codename 'erand48'>
+  local bits: uint64 = 0x3ff0000000000000 | (rand48_step(s, lc_params()) << 4)
+  local f: float64 = $(@*float64)(&bits)
+  return f - 1.0
+end
+
+local function drand48(): float64 <cexport, codename 'drand48'>
+  return erand48((@*[0]cushort)(&seed48_state[0]))
+end
+
+local function nrand48(s: *[0]cushort): clong <cexport, codename 'nrand48'>
+  return (@clong)(rand48_step(s, lc_params()) >> 17)
+end
+
+local function lrand48(): clong <cexport, codename 'lrand48'>
+  return nrand48((@*[0]cushort)(&seed48_state[0]))
+end
+
+local function jrand48(s: *[0]cushort): clong <cexport, codename 'jrand48'>
+  return (@clong)((@int32)((@uint32)((rand48_step(s, lc_params()) >> 16) & 0xffffffff)))
+end
+
+local function mrand48(): clong <cexport, codename 'mrand48'>
+  return jrand48((@*[0]cushort)(&seed48_state[0]))
+end
+
+local seed48_previous: [3]cushort
+
+local function seed48(s: *[0]cushort): *[0]cushort <cexport, codename 'seed48'>
+  for k = 0, < 3 do seed48_previous[k] = seed48_state[k] end
+  for k = 0, < 3 do seed48_state[k] = s[k] end
+  -- POSIX: the multiplier and addend go back to their defaults
+  seed48_state[3] = 0xe66d; seed48_state[4] = 0xdeec; seed48_state[5] = 0x5; seed48_state[6] = 0xb
+  return &seed48_previous
+end
+
+local function srand48(seed: clong): void <cexport, codename 'srand48'>
+  local s: [3]cushort = {0x330e, (@cushort)(seed & 0xffff), (@cushort)((seed >> 16) & 0xffff)}
+  seed48(&s)
+end
+
+local function lcong48(p: *[0]cushort): void <cexport, codename 'lcong48'>
+  for k = 0, < 7 do seed48_state[k] = p[k] end
+end
+
+----------------------------------------------------------------------
+-- random(): the additive generator glibc and musl share
+----------------------------------------------------------------------
+
+-- The default state is what srandom(1) gives with 31 words (word 0 holds
+-- n, i and j once saved).
+local random_init: [32]uint32 = {
+  0x00000000, 0x5851f42d, 0xc0b18ccf, 0xcbb5f646, 0xc7033129, 0x30705b04, 0x20fd5db4, 0x9a8b7f78,
+  0x502959d8, 0xab894868, 0x6c0356a7, 0x88cdb7ff, 0xb477d43f, 0x70a3a52b, 0xa8e4baf1, 0xfd8341fc,
+  0x8ae16fd9, 0x742d2f7a, 0x0d1f0796, 0x76035e09, 0x40f7702c, 0x6fa72ca5, 0xaaa84157, 0x58a0df74,
+  0xc74a0364, 0xae533cc4, 0x04185faf, 0x6de3b115, 0x0cab8628, 0xf043bfa4, 0x398150e9, 0x37521657
+}
+local rnd_n: integer = 31
+local rnd_i: integer = 3
+local rnd_j: integer = 0
+local rnd_x: *[0]uint32 = nilptr   -- state + 1
+
+local function rnd_state(): *[0]uint32
+  if rnd_x == nilptr then rnd_x = (@*[0]uint32)(&random_init[1]) end
+  return rnd_x
+end
+
+local function lcg31(x: uint32): uint32
+  return (1103515245_u32 * x + 12345_u32) & 0x7fffffff
+end
+
+local function lcg64(x: uint64): uint64
+  return 6364136223846793005_u64 * x + 1
+end
+
+local function word_before(x: *[0]uint32): *uint32
+  return (@*uint32)((@usize)(x) - 4)
+end
+
+local function savestate(): *[0]cchar
+  local x = rnd_state()
+  $word_before(x) = (@uint32)((rnd_n << 16) | (rnd_i << 8) | rnd_j)
+  return (@*[0]cchar)(word_before(x))
+end
+
+local function loadstate(state: *[0]uint32)
+  rnd_x = (@*[0]uint32)(&state[1])
+  local w = state[0]
+  rnd_n = (@integer)(w >> 16)
+  rnd_i = (@integer)((w >> 8) & 0xff)
+  rnd_j = (@integer)(w & 0xff)
+end
+
+local function srandom_unlocked(seed: cuint)
+  local x = rnd_state()
+  local s: uint64 = seed
+  if rnd_n == 0 then x[0] = (@uint32)(s); return end
+  rnd_i = (rnd_n == 31 or rnd_n == 7) and 3 or 1
+  rnd_j = 0
+  for k = 0, < rnd_n do
+    s = lcg64(s)
+    x[k] = (@uint32)(s >> 32)
+  end
+  -- at least one odd number
+  x[0] = x[0] | 1
+end
+
+local function srandom(seed: cuint): void <cexport, codename 'srandom'>
+  srandom_unlocked(seed)
+end
+
+local function initstate(seed: cuint, state: *[0]cchar, size: csize): *[0]cchar <cexport, codename 'initstate'>
+  if size < 8 then return nilptr end
+  local old = savestate()
+  if size < 32 then rnd_n = 0
+  elseif size < 64 then rnd_n = 7
+  elseif size < 128 then rnd_n = 15
+  elseif size < 256 then rnd_n = 31
+  else rnd_n = 63 end
+  rnd_x = (@*[0]uint32)((@usize)(state) + 4)
+  srandom_unlocked(seed)
+  savestate()
+  return old
+end
+
+local function setstate(state: *[0]cchar): *[0]cchar <cexport, codename 'setstate'>
+  local old = savestate()
+  loadstate((@*[0]uint32)(state))
+  return old
+end
+
+local function random(): clong <cexport, codename 'random'>
+  local x = rnd_state()
+  if rnd_n == 0 then
+    x[0] = lcg31(x[0])
+    return (@clong)(x[0])
+  end
+  x[rnd_i] = x[rnd_i] + x[rnd_j]
+  local k: clong = (@clong)(x[rnd_i] >> 1)
+  rnd_i = rnd_i + 1
+  if rnd_i == rnd_n then rnd_i = 0 end
+  rnd_j = rnd_j + 1
+  if rnd_j == rnd_n then rnd_j = 0 end
+  return k
+end
+
+----------------------------------------------------------------------
+-- statvfs
+----------------------------------------------------------------------
+
+local KStatfs: type = @record{
+  f_type: clong, f_bsize: clong, f_blocks: culong, f_bfree: culong, f_bavail: culong,
+  f_files: culong, f_ffree: culong, f_fsid: [2]cint, f_namelen: clong, f_frsize: clong,
+  f_flags: clong, f_spare: [4]clong,
+}
+
+local Statvfs: type = @record{
+  f_bsize: culong, f_frsize: culong, f_blocks: culong, f_bfree: culong, f_bavail: culong,
+  f_files: culong, f_ffree: culong, f_favail: culong, f_fsid: culong, f_flag: culong,
+  f_namemax: culong, f_type: cuint, reserved: [5]cint,
+}
+## static_assert(Statvfs.value.size == 112, 'struct statvfs must be 112 bytes')
+
+local function fixup(o: *Statvfs, k: *KStatfs)
+  $o = (@Statvfs){}
+  o.f_bsize = (@culong)(k.f_bsize)
+  o.f_frsize = (@culong)(k.f_frsize ~= 0 and k.f_frsize or k.f_bsize)
+  o.f_blocks = k.f_blocks; o.f_bfree = k.f_bfree; o.f_bavail = k.f_bavail
+  o.f_files = k.f_files; o.f_ffree = k.f_ffree; o.f_favail = k.f_ffree
+  o.f_fsid = (@culong)((@cuint)(k.f_fsid[0]))
+  o.f_flag = (@culong)(k.f_flags)
+  o.f_namemax = (@culong)(k.f_namelen)
+  o.f_type = (@cuint)(k.f_type)
+end
+
+local function result_of(r: clong): cint
+  if r < 0 and r >= -4095 then
+    nelibc_errno_location()[0] = (@cint)(-r)
+    return -1
+  end
+  return 0
+end
+
+local function statvfs(path: *const [0]cchar, out: *Statvfs): cint <cexport, codename 'statvfs'>
+  local k: KStatfs
+  local rc = result_of(nelibc_sys3(SYS_STATFS, (@culong)((@usize)(path)), (@culong)((@usize)(&k)), 0))
+  if rc == 0 then fixup(out, &k) end
+  return rc
+end
+
+local function fstatvfs(fd: cint, out: *Statvfs): cint <cexport, codename 'fstatvfs'>
+  local k: KStatfs
+  local rc = result_of(nelibc_sys3(SYS_FSTATFS, (@culong)(fd), (@culong)((@usize)(&k)), 0))
+  if rc == 0 then fixup(out, &k) end
+  return rc
+end
