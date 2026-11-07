@@ -914,6 +914,12 @@ libc-test-gcc: $(OUT)/libnelibc-gcc.a tools/libc_test.sh tools/libc_test_expecte
 	tools/libc_test.sh gcc $(LIBC_TEST) $(OUT)/libc-test-gcc
 libc-test-zig: $(OUT)/libnelibc-zig.a tools/libc_test.sh tools/libc_test_expected_zig.txt
 	ZIG="$(ZIG)" ZIGFLAGS="$(ZIGFLAGS)" tools/libc_test.sh zig $(LIBC_TEST) $(OUT)/libc-test-zig
+# The same suite against the standalone archives: Nelibc's headers only, a
+# static link with Nelibc's _start, libc-test's runner built the same way.
+libc-test-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a tools/libc_test_standalone.sh tools/libc_test_expected_standalone_gcc.txt
+	tools/libc_test_standalone.sh gcc $(LIBC_TEST) $(OUT)/libc-test-standalone-gcc
+libc-test-standalone-zig: $(OUT)/libnelibc-standalone-zig.a tools/libc_test_standalone.sh tools/libc_test_expected_standalone_zig.txt
+	ZIG="$(ZIG)" ZIGFLAGS="$(ZIGFLAGS)" tools/libc_test_standalone.sh zig $(LIBC_TEST) $(OUT)/libc-test-standalone-zig
 
 lib-consumer-matrix: lib-adapter-symbols lib-consumer-zig lib-consumer-gcc lib-consumer-zig-musl musl-malloc-smoke-zig-musl lib-consumer-tcc getopt-diff-zig getopt-long-diff-zig getsubopt-diff-zig strerror-r-diff-zig multibyte-diff-matrix wide-int-diff-matrix wide-string-diff-matrix rand-r-diff-matrix strtok-thread-matrix strtok-diff-matrix strverscmp-diff-matrix
 
