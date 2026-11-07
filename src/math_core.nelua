@@ -1129,10 +1129,11 @@ local function long_double_underflow(): clongdouble
   return nelibc_fp_barrierl_hw(long_double_pow2(-16382_cint)) * long_double_pow2(-16382_cint)
 end
 
--- glibc raises UNDERFLOW for every subnormal exp result, even an exact one.
-local function long_double_subnormal_result(result: clongdouble): clongdouble
+-- glibc raises UNDERFLOW for every inexact subnormal exp result; exact ones
+-- (exp2l of an integer) stay silent.
+local function long_double_subnormal_result(result: clongdouble, exact: boolean): clongdouble
   local bits: LongDoubleBits = {value = result}
-  if (bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort and
+  if not exact and (bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort and
       bits.parts.significand ~= 0_culonglong then
     math_range_error()
     force_evall(nelibc_fp_barrierl_hw(long_double_pow2(-16382_cint)) * long_double_pow2(-16382_cint))
@@ -1154,7 +1155,7 @@ local function expl(value: clongdouble): clongdouble <cexport, codename 'expl'>
     math_range_error()
     return result
   end
-  return long_double_subnormal_result(result)
+  return long_double_subnormal_result(result, false)
 end
 
 local function exp2l(value: clongdouble): clongdouble <cexport, codename 'exp2l'>
@@ -1173,7 +1174,7 @@ local function exp2l(value: clongdouble): clongdouble <cexport, codename 'exp2l'
     math_range_error()
     return result
   end
-  return long_double_subnormal_result(result)
+  return long_double_subnormal_result(result, value == floorl(value))
 end
 
 local function expm1l(value: clongdouble): clongdouble <cexport, codename 'expm1l'>
@@ -5388,6 +5389,353 @@ local lgamma_w: [7]cdouble = {
 }
 
 -- sin(pi*x) for the reflection formulas; x is reduced modulo 2 first.
+-- lgammal_r, lgammal and tgammal follow musl 1.2.5 src/math/lgammal.c and
+-- tgammal.c (the ld80 variants, OpenBSD/Moshier). Nelua converts decimal
+-- literals through binary64, so every binary80 coefficient is spelled as its
+-- exact bit pattern (tools/gen_musl_tables.py has the encoder).
+local function ld80(significand: culonglong, sign_exponent: cushort): clongdouble <inline>
+  local bits: LongDoubleBits = {parts = {significand = significand, sign_exponent = sign_exponent}}
+  return bits.value
+end
+
+-- sin(pi*x) assuming x > 2^-1000; if sin(pi*x) == 0 the sign is arbitrary.
+local function lgammal_sin_pi(x: clongdouble): clongdouble
+  x = x * 0.5_clongdouble
+  x = 2_clongdouble * (x - floorl(x)) -- x mod 2.0
+  local n = (@cint)(x * 4_clongdouble)
+  n = (n + 1_cint) // 2_cint
+  x = x - (@clongdouble)(n) * 0.5_clongdouble
+  x = x * nelibc_x87_pi()
+  if n == 1_cint then return cosl(x) end
+  if n == 2_cint then return sinl(-x) end
+  if n == 3_cint then return -cosl(x) end
+  return sinl(x)
+end
+
+local function lgammal_r(value: clongdouble, sign_result: *[0]cint): clongdouble
+    <cexport, codename 'lgammal_r'>
+  local a0 = ld80(0x9E94C7302246C2A8_culonglong, 0xC008_cushort)
+  local a1 = ld80(0xE811ED79A7063DDF_culonglong, 0x4009_cushort)
+  local a2 = ld80(0x964BBAC9559EAC31_culonglong, 0x400A_cushort)
+  local a3 = ld80(0xDC1ACEEC4B3BA538_culonglong, 0x4008_cushort)
+  local a4 = ld80(0xE31280572629A7F8_culonglong, 0x4005_cushort)
+  local a5 = ld80(0xF115D0E13AEA5AAC_culonglong, 0x4000_cushort)
+  local b0 = ld80(0x805BE51545C76426_culonglong, 0x400C_cushort)
+  local b1 = ld80(0xA05DBD87D12E640B_culonglong, 0x400C_cushort)
+  local b2 = ld80(0x8E4AB3272A55A21D_culonglong, 0x400B_cushort)
+  local b3 = ld80(0xD4ACA5204E78D8C0_culonglong, 0x4008_cushort)
+  local b4 = ld80(0xF1B2AA9F4861B5CB_culonglong, 0x4004_cushort)
+  local tc = ld80(0xBB16C31AB5F1FB71_culonglong, 0x3FFF_cushort)
+  local tf = ld80(0xF8CDCDE61C521000_culonglong, 0xBFFB_cushort)
+  local tt = ld80(0xF84AE446AD360AC8_culonglong, 0x3FC4_cushort)
+  local g0 = ld80(0x867F0E7C29340760_culonglong, 0x3FC5_cushort)
+  local g1 = ld80(0xA0353CB55C121785_culonglong, 0x400B_cushort)
+  local g2 = ld80(0x89F26A0FC9F11345_culonglong, 0x400C_cushort)
+  local g3 = ld80(0xAAC17DCD67444A43_culonglong, 0x400B_cushort)
+  local g4 = ld80(0xB5EDAD4A2B6AF60D_culonglong, 0x4009_cushort)
+  local g5 = ld80(0x9A2C6D7DA4A7143C_culonglong, 0x4006_cushort)
+  local g6 = ld80(0x8ABC66E1056EBB97_culonglong, 0x4001_cushort)
+  local h0 = ld80(0xA58F65AF2D6352AF_culonglong, 0x400C_cushort)
+  local h1 = ld80(0xA7CE6EDDA9979471_culonglong, 0x400D_cushort)
+  local h2 = ld80(0x805C4B9F648BE3D4_culonglong, 0x400D_cushort)
+  local h3 = ld80(0xB7682D0BD0041DB4_culonglong, 0x400B_cushort)
+  local h4 = ld80(0xF41B2AA4D08C27AA_culonglong, 0x4008_cushort)
+  local h5 = ld80(0x80D986849A094970_culonglong, 0x4005_cushort)
+  local u0 = ld80(0xB1B96F0070C4A41B_culonglong, 0xC005_cushort)
+  local u1 = ld80(0xAB00B4302BB3CBF1_culonglong, 0x4008_cushort)
+  local u2 = ld80(0xFF54090C5581BF2A_culonglong, 0x4009_cushort)
+  local u3 = ld80(0xEEF72A378D76FD0C_culonglong, 0x4009_cushort)
+  local u4 = ld80(0xBA2D37BF660E26EB_culonglong, 0x4008_cushort)
+  local u5 = ld80(0xE2738851DB576BEE_culonglong, 0x4005_cushort)
+  local u6 = ld80(0x8F80321770681672_culonglong, 0x4001_cushort)
+  local v0 = ld80(0x8FDA96EE56155B39_culonglong, 0x4009_cushort)
+  local v1 = ld80(0xD47B13801C9ABE6B_culonglong, 0x400A_cushort)
+  local v2 = ld80(0xECAA1B7760BA7C84_culonglong, 0x400A_cushort)
+  local v3 = ld80(0xF5CE67685BED2E20_culonglong, 0x4009_cushort)
+  local v4 = ld80(0xED116565A2F267A3_culonglong, 0x4007_cushort)
+  local v5 = ld80(0xB45C0DD3D2AA7F6A_culonglong, 0x4004_cushort)
+  local s0 = ld80(0xB194321B770C93B4_culonglong, 0x4013_cushort)
+  local s1 = ld80(0xEE1FD18F72CBB4CD_culonglong, 0xC014_cushort)
+  local s2 = ld80(0xC89C01657BB2F73A_culonglong, 0xC015_cushort)
+  local s3 = ld80(0xCA943F86A403F6BE_culonglong, 0xC014_cushort)
+  local s4 = ld80(0xAD371282903EB2E4_culonglong, 0xC012_cushort)
+  local s5 = ld80(0xF4AA443706E810E3_culonglong, 0xC00E_cushort)
+  local s6 = ld80(0xD29DA60F5DFA05EF_culonglong, 0xC009_cushort)
+  local r0 = ld80(0x8FBC72CDBD6AA4C7_culonglong, 0xC017_cushort)
+  local r1 = ld80(0xD6C87E69FFDB436A_culonglong, 0xC017_cushort)
+  local r2 = ld80(0xF42D96F3D84BACAE_culonglong, 0xC016_cushort)
+  local r3 = ld80(0x838BFC9A902FB887_culonglong, 0xC015_cushort)
+  local r4 = ld80(0x87D5CC4AA7C1EF90_culonglong, 0xC012_cushort)
+  local r5 = ld80(0xEC8AB16E428C6E2C_culonglong, 0xC00D_cushort)
+  local r6 = ld80(0xE1198B5AF4A1810D_culonglong, 0xC007_cushort)
+  local w0 = ld80(0xD67F1C864BEB4A69_culonglong, 0x3FFD_cushort)
+  local w1 = ld80(0xAAAAAAAAAAAA9FCC_culonglong, 0x3FFB_cushort)
+  local w2 = ld80(0xB60B60B603A84D88_culonglong, 0xBFF6_cushort)
+  local w3 = ld80(0xD00D009230E5F8F2_culonglong, 0x3FF4_cushort)
+  local w4 = ld80(0x9C09844E9FCE8B20_culonglong, 0xBFF4_cushort)
+  local w5 = ld80(0xDC88D492AAD13BDC_culonglong, 0x3FF4_cushort)
+  local w6 = ld80(0xF6853DA103043D91_culonglong, 0xBFF5_cushort)
+  local w7 = ld80(0xA01291C2CC08D984_culonglong, 0x3FF7_cushort)
+  local x = value
+  local bits: LongDoubleBits = {value = x}
+  local ix = ((@cuint)(bits.parts.sign_exponent & 0x7fff_cushort) << 16) |
+    (@cuint)(bits.parts.significand >> 48)
+  local sign = (bits.parts.sign_exponent & 0x8000_cushort) ~= 0_cushort
+  sign_result[0] = 1_cint
+  -- purge off +-inf, NaN, +-0, tiny and negative arguments
+  if ix >= 0x7fff0000_cuint then return x * x end
+  if ix < 0x3fc08000_cuint then -- |x| < 2^-63: -log(|x|)
+    if sign then
+      sign_result[0] = -1_cint
+      x = -x
+    end
+    return -logl(x)
+  end
+  local nadj: clongdouble = 0_clongdouble
+  if sign then
+    x = -x
+    local t = lgammal_sin_pi(x)
+    if t == 0_clongdouble then -- negative integer: pole, DIVBYZERO
+      math_range_error()
+      return 1_clongdouble / (x - x)
+    end
+    if t > 0_clongdouble then
+      sign_result[0] = -1_cint
+    else
+      t = -t
+    end
+    nadj = logl(nelibc_x87_pi() / (t * x))
+  end
+  local r: clongdouble = 0_clongdouble
+  if (ix == 0x3fff8000_cuint or ix == 0x40008000_cuint) and
+      bits.parts.significand == 0x8000000000000000_culonglong then
+    r = 0_clongdouble -- lgamma(1) = lgamma(2) = 0
+  elseif ix < 0x40008000_cuint then -- x < 2.0
+    local y: clongdouble
+    local i: cint
+    if ix <= 0x3ffee666_cuint then -- 8.99993896484375e-1: lgamma(x) = lgamma(x+1) - log(x)
+      r = -logl(x)
+      if ix >= 0x3ffebb4a_cuint then -- 7.31597900390625e-1
+        y = x - 1_clongdouble
+        i = 0_cint
+      elseif ix >= 0x3ffced33_cuint then -- 2.31639862060546875e-1
+        y = x - (tc - 1_clongdouble)
+        i = 1_cint
+      else -- x < 0.23
+        y = x
+        i = 2_cint
+      end
+    else
+      r = 0_clongdouble
+      if ix >= 0x3fffdda6_cuint then -- [1.7316, 2]
+        y = x - 2_clongdouble
+        i = 0_cint
+      elseif ix >= 0x3fff9da6_cuint then -- [1.23, 1.73]
+        y = x - tc
+        i = 1_cint
+      else -- [0.9, 1.23]
+        y = x - 1_clongdouble
+        i = 2_cint
+      end
+    end
+    if i == 0_cint then
+      local p1 = a0 + y * (a1 + y * (a2 + y * (a3 + y * (a4 + y * a5))))
+      local p2 = b0 + y * (b1 + y * (b2 + y * (b3 + y * (b4 + y))))
+      r = r + 0.5_clongdouble * y + y * p1 / p2
+    elseif i == 1_cint then
+      local p1 = g0 + y * (g1 + y * (g2 + y * (g3 + y * (g4 + y * (g5 + y * g6)))))
+      local p2 = h0 + y * (h1 + y * (h2 + y * (h3 + y * (h4 + y * (h5 + y)))))
+      local p = tt + y * p1 / p2
+      r = r + (tf + p)
+    else
+      local p1 = y * (u0 + y * (u1 + y * (u2 + y * (u3 + y * (u4 + y * (u5 + y * u6))))))
+      local p2 = v0 + y * (v1 + y * (v2 + y * (v3 + y * (v4 + y * (v5 + y)))))
+      r = r + (-0.5_clongdouble * y + p1 / p2)
+    end
+  elseif ix < 0x40028000_cuint then -- x < 8.0
+    local i = (@cint)(x)
+    local y = x - (@clongdouble)(i)
+    local p = y * (s0 + y * (s1 + y * (s2 + y * (s3 + y * (s4 + y * (s5 + y * s6))))))
+    local q = r0 + y * (r1 + y * (r2 + y * (r3 + y * (r4 + y * (r5 + y * (r6 + y))))))
+    r = 0.5_clongdouble * y + p / q
+    local z: clongdouble = 1_clongdouble
+    -- lgamma(1+s) = log(s) + lgamma(s)
+    if i >= 7_cint then z = z * (y + 6_clongdouble) end
+    if i >= 6_cint then z = z * (y + 5_clongdouble) end
+    if i >= 5_cint then z = z * (y + 4_clongdouble) end
+    if i >= 4_cint then z = z * (y + 3_clongdouble) end
+    if i >= 3_cint then
+      z = z * (y + 2_clongdouble)
+      r = r + logl(z)
+    end
+  elseif ix < 0x40418000_cuint then -- 8.0 <= x < 2^66
+    local t = logl(x)
+    local z = 1_clongdouble / x
+    local y = z * z
+    local w = w0 + z * (w1 + y * (w2 + y * (w3 + y * (w4 + y * (w5 + y * (w6 + y * w7))))))
+    r = (x - 0.5_clongdouble) * (t - 1_clongdouble) + w
+  else -- 2^66 <= x <= inf
+    r = x * (logl(x) - 1_clongdouble)
+  end
+  if sign then r = nadj - r end
+  return r
+end
+
+local function lgammal(value: clongdouble): clongdouble <cexport, codename 'lgammal'>
+  local sign: cint = 1
+  local result = lgammal_r(value, &sign)
+  signgam = sign
+  return result
+end
+
+-- Gamma function computed by Stirling's formula, 13 <= x (musl tgammal.c stirf).
+local function tgammal_stirling(x: clongdouble): clongdouble
+  local stir0 = ld80(0xBB5D54E369F76EDE_culonglong, 0x3FF4_cushort)
+  local stir1 = ld80(0xC64B44430295C395_culonglong, 0xBFEF_cushort)
+  local stir2 = ld80(0x9BFB5E477C59BA6F_culonglong, 0xBFF4_cushort)
+  local stir3 = ld80(0x9293B11D1A395704_culonglong, 0x3FF1_cushort)
+  local stir4 = ld80(0xCD8798B21A2130B7_culonglong, 0x3FF4_cushort)
+  local stir5 = ld80(0xF09E6A087023BEF3_culonglong, 0xBFF2_cushort)
+  local stir6 = ld80(0xAFB934785AC83A1C_culonglong, 0xBFF6_cushort)
+  local stir7 = ld80(0xE38E38E3906EC3C9_culonglong, 0x3FF6_cushort)
+  local stir8 = ld80(0xAAAAAAAAAAAAA1D5_culonglong, 0x3FFB_cushort)
+  local big0 = ld80(0x923B0241CE01C3F2_culonglong, 0x3FF1_cushort)
+  local big1 = ld80(0xCD87FB43A79620E4_culonglong, 0x3FF4_cushort)
+  local big2 = ld80(0xF09E7232FD42CAB1_culonglong, 0xBFF2_cushort)
+  local big3 = ld80(0xAFB93476D5A63DF2_culonglong, 0xBFF6_cushort)
+  local big4 = ld80(0xE38E38E38E38E38E_culonglong, 0x3FF6_cushort)
+  local big5 = ld80(0xAAAAAAAAAAAAAAAB_culonglong, 0x3FFB_cushort)
+  local sqtpi = ld80(0xA06C98FFB1382CB3_culonglong, 0x4000_cushort)
+  local w = 1_clongdouble / x
+  if x > 1024_clongdouble then
+    -- rational coefficients from the analytical expansion
+    w = (((((big0) * w + big1) * w + big2) * w + big3) * w + big4) * w + big5
+    w = w * (1_clongdouble / x) + 1_clongdouble
+  else
+    w = 1_clongdouble + w * (((((((((stir0) * w + stir1) * w + stir2) * w + stir3) * w + stir4) * w + stir5) * w + stir6) * w + stir7) * w + stir8)
+  end
+  local y = expl(x)
+  if x > 1024_clongdouble then -- avoid overflow in powl
+    local v = powl(x, 0.5_clongdouble * x - 0.25_clongdouble)
+    y = v * (v / y)
+  else
+    y = powl(x, x - 0.5_clongdouble) / y
+  end
+  return sqtpi * y * w
+end
+
+local function tgammal(value: clongdouble): clongdouble <cexport, codename 'tgammal'>
+  local p0 = ld80(0xB0B22BDA3F22434A_culonglong, 0x3FF0_cushort)
+  local p1 = ld80(0xEE2E335BE82FF5AA_culonglong, 0x3FF3_cushort)
+  local p2 = ld80(0x861BC7173757BE6C_culonglong, 0x3FF7_cushort)
+  local p3 = ld80(0xC368B16651967F43_culonglong, 0x3FF9_cushort)
+  local p4 = ld80(0xE3F48C3A8EB59549_culonglong, 0x3FFB_cushort)
+  local p5 = ld80(0xB9D4C8E423AF8D75_culonglong, 0x3FFD_cushort)
+  local p6 = ld80(0xD67A16C819B329CF_culonglong, 0x3FFE_cushort)
+  local p7 = ld80(0x8000000000000000_culonglong, 0x3FFF_cushort)
+  local q0 = ld80(0xEA6712682DE85473_culonglong, 0xBFEE_cushort)
+  local q1 = ld80(0xF60EA2DDC2F0334B_culonglong, 0x3FF2_cushort)
+  local q2 = ld80(0xA23DA6911853BEED_culonglong, 0xBFF5_cushort)
+  local q3 = ld80(0xD08F5DFD7CB1296E_culonglong, 0xBFF4_cushort)
+  local q4 = ld80(0xE338D7BC79890417_culonglong, 0x3FF9_cushort)
+  local q5 = ld80(0xBDCDD58036983295_culonglong, 0xBFFA_cushort)
+  local q6 = ld80(0xE5BC4AD33AB775EF_culonglong, 0xBFFC_cushort)
+  local q7 = ld80(0xD47CFD572EC7E458_culonglong, 0x3FFD_cushort)
+  local q8 = ld80(0x8000000000000000_culonglong, 0x3FFF_cushort)
+  local s0 = ld80(0x9C7E25E5D6D3BAEB_culonglong, 0xBFF5_cushort)
+  local s1 = ld80(0xEC9AC74ECEB4FE9A_culonglong, 0x3FF7_cushort)
+  local s2 = ld80(0x9DA5B0E9DFEF9225_culonglong, 0xBFF8_cushort)
+  local s3 = ld80(0xACD787DCEC1710B0_culonglong, 0xBFFA_cushort)
+  local s4 = ld80(0xAA89190575156B8D_culonglong, 0x3FFC_cushort)
+  local s5 = ld80(0xAC0AF47D126BF183_culonglong, 0xBFFA_cushort)
+  local s6 = ld80(0xA7E7A01357D17BF6_culonglong, 0xBFFE_cushort)
+  local s7 = ld80(0x93C467E37DB0C7A9_culonglong, 0x3FFE_cushort)
+  local s8 = ld80(0x8000000000000000_culonglong, 0x3FFF_cushort)
+  local sn0 = ld80(0x948DB9F702DE5DD1_culonglong, 0x3FF5_cushort)
+  local sn1 = ld80(0xEC9CC5F1DD68989B_culonglong, 0x3FF7_cushort)
+  local sn2 = ld80(0x9DA5386F18F02CA1_culonglong, 0x3FF8_cushort)
+  local sn3 = ld80(0xACD787D141DD783F_culonglong, 0xBFFA_cushort)
+  local sn4 = ld80(0xAA891905D76D7A5B_culonglong, 0xBFFC_cushort)
+  local sn5 = ld80(0xAC0AF47D12347F64_culonglong, 0xBFFA_cushort)
+  local sn6 = ld80(0xA7E7A01357D15E26_culonglong, 0x3FFE_cushort)
+  local sn7 = ld80(0x93C467E37DB0C7AA_culonglong, 0x3FFE_cushort)
+  local sn8 = ld80(0x8000000000000000_culonglong, 0xBFFF_cushort)
+  local maxgaml = ld80(0xDB6E8F5C28F5C28F_culonglong, 0x4009_cushort)
+  local pil = ld80(0xC90FDAA22168C235_culonglong, 0x4000_cushort)
+  local x = value
+  if is_nan80(x) then return x + x end
+  if is_infinite80(x) then
+    if x > 0_clongdouble then return x end
+    math_domain_error()
+    return x - x -- NaN with INVALID
+  end
+  local q = fabsl(x)
+  if q > 13_clongdouble then
+    local z: clongdouble
+    if x < 0_clongdouble then
+      local p = floorl(q)
+      z = q - p
+      if z == 0_clongdouble then -- negative integer
+        math_domain_error()
+        return 0_clongdouble / z
+      end
+      if q > maxgaml then
+        math_range_error()
+        z = 0_clongdouble
+      else
+        if z > 0.5_clongdouble then
+          p = p + 1_clongdouble
+          z = q - p
+        end
+        z = q * sinl(pil * z)
+        z = fabsl(z) * tgammal_stirling(q)
+        z = pil / z
+      end
+      if 0.5_clongdouble * p == floorl(q * 0.5_clongdouble) then z = -z end
+    elseif x > maxgaml then
+      math_range_error()
+      z = x * long_double_pow2(16383_cint)
+    else
+      z = tgammal_stirling(x)
+      if is_infinite80(z) then math_range_error() end
+    end
+    return z
+  end
+  local z: clongdouble = 1_clongdouble
+  while x >= 3_clongdouble do
+    x = x - 1_clongdouble
+    z = z * x
+  end
+  while x < -0.03125_clongdouble do
+    z = z / x
+    x = x + 1_clongdouble
+  end
+  if x <= 0.03125_clongdouble then
+    -- z == 1 if x was originally +-0
+    if x == 0_clongdouble then
+      if z ~= 1_clongdouble then
+        math_domain_error()
+        return x / x
+      end
+      math_range_error() -- +-0: +-inf with DIVBYZERO below
+    end
+    if x < 0_clongdouble then
+      x = -x
+      return z / (x * (((((((((sn0) * x + sn1) * x + sn2) * x + sn3) * x + sn4) * x + sn5) * x + sn6) * x + sn7) * x + sn8))
+    end
+    return z / (x * (((((((((s0) * x + s1) * x + s2) * x + s3) * x + s4) * x + s5) * x + s6) * x + s7) * x + s8))
+  end
+  while x < 2_clongdouble do
+    z = z / x
+    x = x + 1_clongdouble
+  end
+  if x == 2_clongdouble then return z end
+  x = x - 2_clongdouble
+  local p = (((((((p0) * x + p1) * x + p2) * x + p3) * x + p4) * x + p5) * x + p6) * x + p7
+  local qq = ((((((((q0) * x + q1) * x + q2) * x + q3) * x + q4) * x + q5) * x + q6) * x + q7) * x + q8
+  return z * p / qq
+end
+
 local function gamma_sin_pi(value: cdouble): cdouble
   local x = 2_cdouble * (value * 0.5_cdouble - round_binary64(value * 0.5_cdouble, 1_cint))
   local n = (@cint)(x * 4_cdouble)
@@ -5629,131 +5977,6 @@ end
 local function tgammaf(value: cfloat): cfloat <cexport, codename 'tgammaf'>
   local result = (@cfloat)(tgamma((@cdouble)(value)))
   if is_infinite32(result) or (result == 0_cfloat and value ~= 0_cfloat) then math_range_error() end
-  return result
-end
-
-local function gamma_lanczos_long_positive(value: clongdouble): clongdouble
-  -- Stirling's expansion after shifting the argument to 16. Coefficients are
-  -- kept as exact integer ratios so Nelua's decimal-literal conversion does
-  -- not silently limit binary80 constants to binary64 precision.
-  local numerators: [12]clonglong = {
-    1_clonglong, -1_clonglong, 1_clonglong, -1_clonglong,
-    1_clonglong, -691_clonglong, 1_clonglong, -3617_clonglong,
-    43867_clonglong, -174611_clonglong, 77683_clonglong, -236364091_clonglong
-  }
-  local denominators: [12]clonglong = {
-    12_clonglong, 360_clonglong, 1260_clonglong, 1680_clonglong,
-    1188_clonglong, 360360_clonglong, 156_clonglong, 122400_clonglong,
-    244188_clonglong, 125400_clonglong, 5796_clonglong, 1506960_clonglong
-  }
-  local shifted = value
-  local recurrence: clongdouble = 0_clongdouble
-  while shifted < 16_clongdouble do
-    recurrence = recurrence - logl(shifted)
-    shifted = shifted + 1_clongdouble
-  end
-  local inverse = 1_clongdouble / shifted
-  local inverse_power = inverse
-  local inverse_square = inverse * inverse
-  local correction: clongdouble = 0_clongdouble
-  for i = 0, 11 do
-    local coefficient = (@clongdouble)(numerators[i]) / (@clongdouble)(denominators[i])
-    correction = correction + coefficient * inverse_power
-    inverse_power = inverse_power * inverse_square
-  end
-  local pi = nelibc_x87_pi()
-  local half_log_two_pi = 0.5_clongdouble * logl(2_clongdouble * pi)
-  local z = shifted - 0.5_clongdouble
-  local result = recurrence + z * logl(shifted) - shifted + half_log_two_pi + correction
-  if is_infinite80(result) then math_range_error() end
-  return result
-end
-
-local function gamma_sin_pi_long(value: clongdouble): clongdouble
-  if value >= 0x1p64_clongdouble then return 0_clongdouble end
-  local reduced = value - 2_clongdouble * (@clongdouble)((@culonglong)(value * 0.5_clongdouble))
-  return sinl(nelibc_x87_pi() * reduced)
-end
-
-local function lgammal_r(value: clongdouble, sign_result: *[0]cint): clongdouble
-    <cexport, codename 'lgammal_r'>
-  sign_result[0] = 1
-  if is_nan80(value) or is_infinite80(value) then return value * value end
-  local magnitude = fabsl(value)
-  if magnitude == 0_clongdouble then
-    math_range_error()
-    local infinity: LongDoubleBits = {
-      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
-    }
-    return infinity.value
-  end
-  if value == 1_clongdouble or value == 2_clongdouble then return 0_clongdouble end
-  if value > 0_clongdouble then return gamma_lanczos_long_positive(value) end
-  if magnitude < 0x1p-64_clongdouble then
-    sign_result[0] = -1
-    return -logl(magnitude)
-  end
-  if magnitude == truncl(magnitude) then
-    math_range_error()
-    local infinity: LongDoubleBits = {
-      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
-    }
-    return infinity.value
-  end
-  local sine = gamma_sin_pi_long(magnitude)
-  if sine == 0_clongdouble then
-    math_range_error()
-    local infinity: LongDoubleBits = {
-      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
-    }
-    return infinity.value
-  end
-  if sine > 0_clongdouble then sign_result[0] = -1 end
-  return logl(nelibc_x87_pi()) - logl(magnitude) - logl(fabsl(sine)) -
-    gamma_lanczos_long_positive(magnitude)
-end
-
-local function lgammal(value: clongdouble): clongdouble <cexport, codename 'lgammal'>
-  local sign: cint = 1
-  local result = lgammal_r(value, &sign)
-  signgam = sign
-  return result
-end
-
-local function tgammal(value: clongdouble): clongdouble <cexport, codename 'tgammal'>
-  if is_nan80(value) then return value + value end
-  if is_infinite80(value) then
-    if value > 0_clongdouble then return value end
-    math_domain_error()
-    return sqrtl(-1_clongdouble)
-  end
-  if value == 0_clongdouble then
-    math_range_error()
-    local sign_exponent: cushort = 0x7fff_cushort
-    if is_negative_zero80(value) then sign_exponent = 0xffff_cushort end
-    local infinity: LongDoubleBits = {
-      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = sign_exponent}
-    }
-    return infinity.value
-  end
-  local sign: cint = 1
-  local logarithm = lgammal_r(value, &sign)
-  if is_infinite80(logarithm) then
-    if value < 0_clongdouble and fabsl(value) == truncl(fabsl(value)) then
-      math_domain_error()
-      return sqrtl(-1_clongdouble)
-    end
-    if value > 0_clongdouble then return expl(logarithm) end
-    math_range_error()
-    if sign < 0_cint then
-      local negative_zero: LongDoubleBits = {parts = {significand = 0_culonglong, sign_exponent = 0x8000_cushort}}
-      return negative_zero.value
-    end
-    return 0_clongdouble
-  end
-  local result = expl(logarithm)
-  if sign < 0_cint then result = -result end
-  if is_infinite80(result) or result == 0_clongdouble then math_range_error() end
   return result
 end
 
