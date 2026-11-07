@@ -512,6 +512,14 @@ int access(const char *pathname, int mode);
 int isatty(int fd);
 int tcdrain(int fd);
 #ifdef NELIBC_STANDALONE
+/* src/exec_adapter.c and src/syscall_adapter.c (standalone only). */
+int execl(const char *path, const char *arg, ...);
+int execle(const char *path, const char *arg, ...);
+int execlp(const char *file, const char *arg, ...);
+pid_t vfork(void);
+long syscall(long number, ...);
+#endif
+#ifdef NELIBC_STANDALONE
 /* src/termios_standalone.nelua: TIOCGPGRP and TIOCSPGRP. */
 pid_t tcgetpgrp(int fd);
 int tcsetpgrp(int fd, pid_t pgrp);

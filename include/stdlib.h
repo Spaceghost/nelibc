@@ -22,6 +22,21 @@ void *calloc(size_t count, size_t size);
 void *realloc(void *ptr, size_t size);
 void free(void *ptr);
 
+/* The 48-bit generators and random(), src/extras_standalone.nelua. */
+double drand48(void);
+double erand48(unsigned short [3]);
+long lrand48(void);
+long nrand48(unsigned short [3]);
+long mrand48(void);
+long jrand48(unsigned short [3]);
+void srand48(long);
+unsigned short *seed48(unsigned short [3]);
+void lcong48(unsigned short [7]);
+long random(void);
+void srandom(unsigned int);
+char *initstate(unsigned int, char *, size_t);
+char *setstate(char *);
+
 /* Pseudo-terminals, src/termios_standalone.nelua. */
 int posix_openpt(int flags);
 int grantpt(int fd);

@@ -45,7 +45,7 @@ $(OUT)/sys-linux-x86_64-host-gcc-asm.o: src/sys/linux_x86_64.S | $(OUT)
 # host-compiled ones above. The dispatcher defines nelibc_sys3/6 itself.
 define host-archive
 	cp $< $@
-	$(AR) d $@ start-linux-x86_64-standalone-$(1).o sys-linux-x86_64-standalone-$(1)-asm.o sys-ops-standalone-$(1).o environment-adapter-standalone-$(1).o
+	$(AR) d $@ start-linux-x86_64-standalone-$(1).o sys-linux-x86_64-standalone-$(1)-asm.o sys-ops-standalone-$(1).o environment-adapter-standalone-$(1).o syscall-adapter-standalone-$(1).o
 	$(AR) rs $@ $(OUT)/sys-linux-x86_64-host-$(1)-asm.o $(OUT)/environment-adapter-host-$(1).o $(OUT)/host-syscall-$(1).o $(OUT)/host-boot-$(1).o
 endef
 
