@@ -520,6 +520,52 @@ runs (gcc 292 to 300, zig 293 to 301); checks 87 to 91 and 504 in
 `tools/syscall_smoke.c` cover the error codes, spans, back-references, the
 flags, `regerror` and a UTF-8 locale.
 
+**Fixed** (branch `pwd-grp`): `<pwd.h>` and `<grp.h>`.
+`src/pwd_standalone.nelua` follows musl 1.2.5's `src/passwd`: `getpwnam`,
+`getpwuid`, `getpwnam_r`, `getpwuid_r`, `setpwent`/`getpwent`/`endpwent`,
+`fgetpwent`, `putpwent`; `getgrnam`, `getgrgid`, `getgrnam_r`, `getgrgid_r`,
+`setgrent`/`getgrent`/`endgrent`, `fgetgrent`, `putgrent`, `getgrouplist`,
+`initgroups`. They read `/etc/passwd` and `/etc/group` as bytes; there is no
+NSS, nscd, or shadow (`<shadow.h>`) support, and hybrid builds include the
+host's headers and use its NSS. As in musl: a field ends at `:` and the last
+one (shell, member list) runs to the end of the line, so extra colons stay in
+it; `#` starts no comment; a line with too few fields is skipped; a numeric
+field is decimal digits only, empty reads as 0, and a sign, space or other
+byte before the next `:` drops the line; a NUL byte ends the line; a missing
+file (`ENOENT`, `ENOTDIR`) is "not found" (0 and a NULL result), any other
+`fopen` failure or a read error is returned (`_r`) or left in `errno`; a
+lookup that finds nothing leaves `errno` as it was; the non-`_r` functions
+share static storage that the next call overwrites; `setpwent` closes the
+stream and the next `getpwent` reopens the file; `getgrouplist` puts the
+primary group first, adds each group naming the user in file order without
+removing duplicates, and returns -1 with the needed count in `*ngroups` when
+the array is short. Differences from musl, all on malformed files or sizes:
+a last line without a newline keeps its last byte (musl drops it); an empty
+name field is the empty name (musl folds the next field into it) and an
+empty line is skipped (musl reads past the line's end); a number above
+4294967295 saturates to 4294967295 as glibc does (musl wraps, so
+`4294967296` reads as uid 0); empty members (`a,,b`, a trailing comma) are
+skipped as glibc does (musl yields `a` and `,b` and reads past a trailing
+comma); the `_r` functions return `ERANGE` exactly when the entry does not
+fit (the line's bytes, plus for a group a pointer-aligned `gr_mem` array;
+musl compares with its line buffer's capacity and asks 32 spare bytes for a
+group); a line too long for memory is `ENOMEM`, not a truncated entry;
+`initgroups` sizes its list from `getgrouplist` (musl stops at 32 groups),
+and the kernel's `NGROUPS_MAX` (65536) applies. `regression/getpwnam_r-crash`
+and `getpwnam_r-errno` pass in both runs (gcc 303 to 305, zig 304 to 306;
+the 300/301 above predate the `thread-cancel` merge, which added three).
+Checks 505 to 520 in `tools/syscall_smoke.c` read fixture files through the
+test-only `__nelibc_set_passwd_path` and `__nelibc_set_group_path` (exported
+only by the `NELIBC_TESTING` build of the module that the zig and gcc smokes
+link; the TinyCC archive includes the module but its smoke is not run): every
+rule above, `ERANGE` at the exact size (also from a misaligned buffer), a
+directory as the database (`EISDIR`), a missing file and an `ENOTDIR` path,
+enumeration and restart, `putpwent`/`putgrent` read back with
+`fgetpwent`/`fgetgrent`, and `getgrouplist` and `initgroups` over 70 groups
+(as the unprivileged `build` user `initgroups` fails in `setgroups` with
+`EPERM`, which is what the check asserts; a successful `initgroups` was not
+observed).
+
 #### Missing symbols
 
 Link failures, GCC run: `daemon` (`regression/daemon-failure`), `t_vmfill`
