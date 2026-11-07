@@ -1570,6 +1570,13 @@ int main(int argc, char **argv) {
       localtime_r(&epoch, &utc_broken_down) != &utc_broken_down ||
       utc_broken_down.tm_hour != 9 || strcmp(utc_broken_down.tm_zone, "JST") != 0 ||
       unsetenv("TZDIR") != 0) return 495;
+  /* An unknown zone keeps its leading name at UTC (glibc): Foo/Bar and :Foo. */
+  if (setenv("TZ", "Foo/Bar", 1) != 0 ||
+      localtime_r(&epoch, &utc_broken_down) != &utc_broken_down ||
+      utc_broken_down.tm_gmtoff != 0 || strcmp(utc_broken_down.tm_zone, "Foo") != 0) return 498;
+  if (setenv("TZ", ":Foo", 1) != 0 ||
+      localtime_r(&epoch, &utc_broken_down) != &utc_broken_down ||
+      utc_broken_down.tm_gmtoff != 0 || strcmp(utc_broken_down.tm_zone, "Foo") != 0) return 499;
   if (setenv("TZ", "EST5", 1) != 0) return 413;
   if (setenv("TZ", "UTC0", 1) != 0) return 424;
   tzset();

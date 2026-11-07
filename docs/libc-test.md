@@ -355,6 +355,9 @@ rather than by libc-test:
   zone-file reader now saves and restores `errno`, and the tzset cache counts
   "still no file" as unchanged instead of rerunning `tzset` on every call.
   `tools/syscall_smoke.c` checks `TZ=Japan` and `TZDIR` with `TZ=Tokyo`.
+- An unknown zone (`TZ=Foo/Bar`, `TZ=:Foo`) printed `UTC`; glibc keeps the
+  name's leading letters at offset 0 (`Foo`, `+0000`), and so does Nelibc now
+  (follow-up on branch `tz-unknown-name`, checks 498 and 499).
 
 Gate: the 155-target list on `8b286be`, Nelua `dabbd9ef`: 155/155 exited 0,
 no warnings; logs in `/work/artifacts/gate-sh2-20261107-1110/`.

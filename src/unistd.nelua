@@ -1979,6 +1979,37 @@ local localtime_result: Tm = {
   tm_isdst = 0_cint, tm_gmtoff = 0_clong, tm_zone = (@pointer)(&utc_zone[0])
 }
 
+-- The [+-]hh[:mm] offset after a POSIX zone name; false when malformed.
+-- The sign is reversed by POSIX: EST5 means UTC-05:00.
+local function tz_parse_fixed_offset(zone: *const [0]cchar, start: csize): (boolean, clonglong)
+  local index: csize = start
+  local sign: clonglong = 1_clonglong
+  if zone[index] == 45_cchar then sign = -1_clonglong; index = index + 1
+  elseif zone[index] == 43_cchar then index = index + 1
+  elseif zone[index] < 48_cchar or zone[index] > 57_cchar then return false, 0_clonglong end
+  local hours: clonglong = 0_clonglong
+  local digits: cint = 0_cint
+  while zone[index] >= 48_cchar and zone[index] <= 57_cchar do
+    hours = hours * 10_clonglong + (@clonglong)(zone[index] - 48_cchar)
+    index = index + 1; digits = digits + 1_cint
+    if hours > 24_clonglong then return false, 0_clonglong end
+  end
+  if digits == 0_cint then return false, 0_clonglong end
+  local minutes: clonglong = 0_clonglong
+  if zone[index] == 58_cchar then
+    index = index + 1
+    if zone[index] < 48_cchar or zone[index] > 57_cchar then return false, 0_clonglong end
+    minutes = (@clonglong)(zone[index] - 48_cchar) * 10_clonglong
+    index = index + 1
+    if zone[index] < 48_cchar or zone[index] > 57_cchar then return false, 0_clonglong end
+    minutes = minutes + (@clonglong)(zone[index] - 48_cchar)
+    index = index + 1
+    if minutes > 59_clonglong then return false, 0_clonglong end
+  end
+  if zone[index] ~= 0_cchar then return false, 0_clonglong end
+  return true, -sign * (hours * 3600_clonglong + minutes * 60_clonglong)
+end
+
 -- Parse the fixed-offset form of POSIX TZ (for example EST5 or JST-9).
 -- The sign is reversed by POSIX: EST5 means UTC-05:00.
 local function localtime_r_core(timer: *const [0]clong, result: *Tm): *Tm
@@ -2005,40 +2036,21 @@ local function localtime_r_core(timer: *const [0]clong, result: *Tm): *Tm
     local_zone[0] = 85_cchar; local_zone[1] = 84_cchar
     local_zone[2] = 67_cchar; local_zone[3] = 0_cchar
   else
-    local index: csize = 0
+    -- An unknown zone keeps its leading name at UTC, as in glibc:
+    -- TZ=Foo/Bar and TZ=:Foo both give "Foo", +0000.
+    local first: csize = 0
+    if zone[0] == 58_cchar then first = 1 end
+    local index: csize = first
     while index < copy_length and ((zone[index] >= 65_cchar and zone[index] <= 90_cchar) or
         (zone[index] >= 97_cchar and zone[index] <= 122_cchar)) do
-      local_zone[index] = zone[index]
+      local_zone[index - first] = zone[index]
       index = index + 1
     end
-    if index == 0 then return gmtime_r(timer, result) end
-    local_zone[index] = 0_cchar
-    if zone[index] ~= 0_cchar then
-      local sign: clonglong = 1_clonglong
-      if zone[index] == 45_cchar then sign = -1_clonglong; index = index + 1
-      elseif zone[index] == 43_cchar then index = index + 1
-      elseif zone[index] < 48_cchar or zone[index] > 57_cchar then return gmtime_r(timer, result) end
-      local hours: clonglong = 0_clonglong
-      local digits: cint = 0_cint
-      while zone[index] >= 48_cchar and zone[index] <= 57_cchar do
-        hours = hours * 10_clonglong + (@clonglong)(zone[index] - 48_cchar)
-        index = index + 1; digits = digits + 1_cint
-        if hours > 24_clonglong then return gmtime_r(timer, result) end
-      end
-      if digits == 0_cint then return gmtime_r(timer, result) end
-      local minutes: clonglong = 0_clonglong
-      if zone[index] == 58_cchar then
-        index = index + 1
-        if zone[index] < 48_cchar or zone[index] > 57_cchar then return gmtime_r(timer, result) end
-        minutes = (@clonglong)(zone[index] - 48_cchar) * 10_clonglong
-        index = index + 1
-        if zone[index] < 48_cchar or zone[index] > 57_cchar then return gmtime_r(timer, result) end
-        minutes = minutes + (@clonglong)(zone[index] - 48_cchar)
-        index = index + 1
-        if minutes > 59_clonglong then return gmtime_r(timer, result) end
-      end
-      if zone[index] ~= 0_cchar then return gmtime_r(timer, result) end
-      offset = -sign * (hours * 3600_clonglong + minutes * 60_clonglong)
+    if index == first then return gmtime_r(timer, result) end
+    local_zone[index - first] = 0_cchar
+    if first == 0 and zone[index] ~= 0_cchar then
+      local parsed: boolean, parsed_offset: clonglong = tz_parse_fixed_offset(zone, index)
+      if parsed then offset = parsed_offset end
     end
   end
   local timestamp: clonglong = (@clonglong)(timer[0])
