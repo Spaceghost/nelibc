@@ -84,6 +84,21 @@ nelibc_fenv_raise_hw:
 .Lnelibc_fenv_min:    .quad 0x0010000000000000  /* DBL_MIN */
 .text
 
+/* Identity functions musl's FORCE_EVAL/fp_barrier idioms call through: an
+   opaque call makes the compiler evaluate an operation kept only for its
+   floating-point flags and stops it from folding one at compile time. */
+.globl nelibc_fp_barrier_hw
+.type nelibc_fp_barrier_hw,@function
+nelibc_fp_barrier_hw:
+  ret
+.size nelibc_fp_barrier_hw, .-nelibc_fp_barrier_hw
+
+.globl nelibc_fp_barrierf_hw
+.type nelibc_fp_barrierf_hw,@function
+nelibc_fp_barrierf_hw:
+  ret
+.size nelibc_fp_barrierf_hw, .-nelibc_fp_barrierf_hw
+
 .globl nelibc_sqrt_hw
 .type nelibc_sqrt_hw,@function
 nelibc_sqrt_hw:

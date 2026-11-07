@@ -442,8 +442,419 @@ local function nelibc_fmod_hw(x: cdouble, y: cdouble): cdouble <cimport> end
 local function nelibc_remainder_hw(x: cdouble, y: cdouble): cdouble <cimport> end
 local function nelibc_remquo_hw(x: cdouble, y: cdouble, quotient: *[0]cint): cdouble <cimport> end
 
+-- Tables generated from musl 1.2.5 exp_data.c and pow_data.c (Copyright
+-- (c) 2018, Arm Limited, MIT); see tools/gen_musl_tables.py.
+local exp_data_tab: [256]culonglong = {
+  0x0_culonglong, 0x3ff0000000000000_culonglong,
+  0x3c9b3b4f1a88bf6e_culonglong, 0x3feff63da9fb3335_culonglong,
+  0xbc7160139cd8dc5d_culonglong, 0x3fefec9a3e778061_culonglong,
+  0xbc905e7a108766d1_culonglong, 0x3fefe315e86e7f85_culonglong,
+  0x3c8cd2523567f613_culonglong, 0x3fefd9b0d3158574_culonglong,
+  0xbc8bce8023f98efa_culonglong, 0x3fefd06b29ddf6de_culonglong,
+  0x3c60f74e61e6c861_culonglong, 0x3fefc74518759bc8_culonglong,
+  0x3c90a3e45b33d399_culonglong, 0x3fefbe3ecac6f383_culonglong,
+  0x3c979aa65d837b6d_culonglong, 0x3fefb5586cf9890f_culonglong,
+  0x3c8eb51a92fdeffc_culonglong, 0x3fefac922b7247f7_culonglong,
+  0x3c3ebe3d702f9cd1_culonglong, 0x3fefa3ec32d3d1a2_culonglong,
+  0xbc6a033489906e0b_culonglong, 0x3fef9b66affed31b_culonglong,
+  0xbc9556522a2fbd0e_culonglong, 0x3fef9301d0125b51_culonglong,
+  0xbc5080ef8c4eea55_culonglong, 0x3fef8abdc06c31cc_culonglong,
+  0xbc91c923b9d5f416_culonglong, 0x3fef829aaea92de0_culonglong,
+  0x3c80d3e3e95c55af_culonglong, 0x3fef7a98c8a58e51_culonglong,
+  0xbc801b15eaa59348_culonglong, 0x3fef72b83c7d517b_culonglong,
+  0xbc8f1ff055de323d_culonglong, 0x3fef6af9388c8dea_culonglong,
+  0x3c8b898c3f1353bf_culonglong, 0x3fef635beb6fcb75_culonglong,
+  0xbc96d99c7611eb26_culonglong, 0x3fef5be084045cd4_culonglong,
+  0x3c9aecf73e3a2f60_culonglong, 0x3fef54873168b9aa_culonglong,
+  0xbc8fe782cb86389d_culonglong, 0x3fef4d5022fcd91d_culonglong,
+  0x3c8a6f4144a6c38d_culonglong, 0x3fef463b88628cd6_culonglong,
+  0x3c807a05b0e4047d_culonglong, 0x3fef3f49917ddc96_culonglong,
+  0x3c968efde3a8a894_culonglong, 0x3fef387a6e756238_culonglong,
+  0x3c875e18f274487d_culonglong, 0x3fef31ce4fb2a63f_culonglong,
+  0x3c80472b981fe7f2_culonglong, 0x3fef2b4565e27cdd_culonglong,
+  0xbc96b87b3f71085e_culonglong, 0x3fef24dfe1f56381_culonglong,
+  0x3c82f7e16d09ab31_culonglong, 0x3fef1e9df51fdee1_culonglong,
+  0xbc3d219b1a6fbffa_culonglong, 0x3fef187fd0dad990_culonglong,
+  0x3c8b3782720c0ab4_culonglong, 0x3fef1285a6e4030b_culonglong,
+  0x3c6e149289cecb8f_culonglong, 0x3fef0cafa93e2f56_culonglong,
+  0x3c834d754db0abb6_culonglong, 0x3fef06fe0a31b715_culonglong,
+  0x3c864201e2ac744c_culonglong, 0x3fef0170fc4cd831_culonglong,
+  0x3c8fdd395dd3f84a_culonglong, 0x3feefc08b26416ff_culonglong,
+  0xbc86a3803b8e5b04_culonglong, 0x3feef6c55f929ff1_culonglong,
+  0xbc924aedcc4b5068_culonglong, 0x3feef1a7373aa9cb_culonglong,
+  0xbc9907f81b512d8e_culonglong, 0x3feeecae6d05d866_culonglong,
+  0xbc71d1e83e9436d2_culonglong, 0x3feee7db34e59ff7_culonglong,
+  0xbc991919b3ce1b15_culonglong, 0x3feee32dc313a8e5_culonglong,
+  0x3c859f48a72a4c6d_culonglong, 0x3feedea64c123422_culonglong,
+  0xbc9312607a28698a_culonglong, 0x3feeda4504ac801c_culonglong,
+  0xbc58a78f4817895b_culonglong, 0x3feed60a21f72e2a_culonglong,
+  0xbc7c2c9b67499a1b_culonglong, 0x3feed1f5d950a897_culonglong,
+  0x3c4363ed60c2ac11_culonglong, 0x3feece086061892d_culonglong,
+  0x3c9666093b0664ef_culonglong, 0x3feeca41ed1d0057_culonglong,
+  0x3c6ecce1daa10379_culonglong, 0x3feec6a2b5c13cd0_culonglong,
+  0x3c93ff8e3f0f1230_culonglong, 0x3feec32af0d7d3de_culonglong,
+  0x3c7690cebb7aafb0_culonglong, 0x3feebfdad5362a27_culonglong,
+  0x3c931dbdeb54e077_culonglong, 0x3feebcb299fddd0d_culonglong,
+  0xbc8f94340071a38e_culonglong, 0x3feeb9b2769d2ca7_culonglong,
+  0xbc87deccdc93a349_culonglong, 0x3feeb6daa2cf6642_culonglong,
+  0xbc78dec6bd0f385f_culonglong, 0x3feeb42b569d4f82_culonglong,
+  0xbc861246ec7b5cf6_culonglong, 0x3feeb1a4ca5d920f_culonglong,
+  0x3c93350518fdd78e_culonglong, 0x3feeaf4736b527da_culonglong,
+  0x3c7b98b72f8a9b05_culonglong, 0x3feead12d497c7fd_culonglong,
+  0x3c9063e1e21c5409_culonglong, 0x3feeab07dd485429_culonglong,
+  0x3c34c7855019c6ea_culonglong, 0x3feea9268a5946b7_culonglong,
+  0x3c9432e62b64c035_culonglong, 0x3feea76f15ad2148_culonglong,
+  0xbc8ce44a6199769f_culonglong, 0x3feea5e1b976dc09_culonglong,
+  0xbc8c33c53bef4da8_culonglong, 0x3feea47eb03a5585_culonglong,
+  0xbc845378892be9ae_culonglong, 0x3feea34634ccc320_culonglong,
+  0xbc93cedd78565858_culonglong, 0x3feea23882552225_culonglong,
+  0x3c5710aa807e1964_culonglong, 0x3feea155d44ca973_culonglong,
+  0xbc93b3efbf5e2228_culonglong, 0x3feea09e667f3bcd_culonglong,
+  0xbc6a12ad8734b982_culonglong, 0x3feea012750bdabf_culonglong,
+  0xbc6367efb86da9ee_culonglong, 0x3fee9fb23c651a2f_culonglong,
+  0xbc80dc3d54e08851_culonglong, 0x3fee9f7df9519484_culonglong,
+  0xbc781f647e5a3ecf_culonglong, 0x3fee9f75e8ec5f74_culonglong,
+  0xbc86ee4ac08b7db0_culonglong, 0x3fee9f9a48a58174_culonglong,
+  0xbc8619321e55e68a_culonglong, 0x3fee9feb564267c9_culonglong,
+  0x3c909ccb5e09d4d3_culonglong, 0x3feea0694fde5d3f_culonglong,
+  0xbc7b32dcb94da51d_culonglong, 0x3feea11473eb0187_culonglong,
+  0x3c94ecfd5467c06b_culonglong, 0x3feea1ed0130c132_culonglong,
+  0x3c65ebe1abd66c55_culonglong, 0x3feea2f336cf4e62_culonglong,
+  0xbc88a1c52fb3cf42_culonglong, 0x3feea427543e1a12_culonglong,
+  0xbc9369b6f13b3734_culonglong, 0x3feea589994cce13_culonglong,
+  0xbc805e843a19ff1e_culonglong, 0x3feea71a4623c7ad_culonglong,
+  0xbc94d450d872576e_culonglong, 0x3feea8d99b4492ed_culonglong,
+  0x3c90ad675b0e8a00_culonglong, 0x3feeaac7d98a6699_culonglong,
+  0x3c8db72fc1f0eab4_culonglong, 0x3feeace5422aa0db_culonglong,
+  0xbc65b6609cc5e7ff_culonglong, 0x3feeaf3216b5448c_culonglong,
+  0x3c7bf68359f35f44_culonglong, 0x3feeb1ae99157736_culonglong,
+  0xbc93091fa71e3d83_culonglong, 0x3feeb45b0b91ffc6_culonglong,
+  0xbc5da9b88b6c1e29_culonglong, 0x3feeb737b0cdc5e5_culonglong,
+  0xbc6c23f97c90b959_culonglong, 0x3feeba44cbc8520f_culonglong,
+  0xbc92434322f4f9aa_culonglong, 0x3feebd829fde4e50_culonglong,
+  0xbc85ca6cd7668e4b_culonglong, 0x3feec0f170ca07ba_culonglong,
+  0x3c71affc2b91ce27_culonglong, 0x3feec49182a3f090_culonglong,
+  0x3c6dd235e10a73bb_culonglong, 0x3feec86319e32323_culonglong,
+  0xbc87c50422622263_culonglong, 0x3feecc667b5de565_culonglong,
+  0x3c8b1c86e3e231d5_culonglong, 0x3feed09bec4a2d33_culonglong,
+  0xbc91bbd1d3bcbb15_culonglong, 0x3feed503b23e255d_culonglong,
+  0x3c90cc319cee31d2_culonglong, 0x3feed99e1330b358_culonglong,
+  0x3c8469846e735ab3_culonglong, 0x3feede6b5579fdbf_culonglong,
+  0xbc82dfcd978e9db4_culonglong, 0x3feee36bbfd3f37a_culonglong,
+  0x3c8c1a7792cb3387_culonglong, 0x3feee89f995ad3ad_culonglong,
+  0xbc907b8f4ad1d9fa_culonglong, 0x3feeee07298db666_culonglong,
+  0xbc55c3d956dcaeba_culonglong, 0x3feef3a2b84f15fb_culonglong,
+  0xbc90a40e3da6f640_culonglong, 0x3feef9728de5593a_culonglong,
+  0xbc68d6f438ad9334_culonglong, 0x3feeff76f2fb5e47_culonglong,
+  0xbc91eee26b588a35_culonglong, 0x3fef05b030a1064a_culonglong,
+  0x3c74ffd70a5fddcd_culonglong, 0x3fef0c1e904bc1d2_culonglong,
+  0xbc91bdfbfa9298ac_culonglong, 0x3fef12c25bd71e09_culonglong,
+  0x3c736eae30af0cb3_culonglong, 0x3fef199bdd85529c_culonglong,
+  0x3c8ee3325c9ffd94_culonglong, 0x3fef20ab5fffd07a_culonglong,
+  0x3c84e08fd10959ac_culonglong, 0x3fef27f12e57d14b_culonglong,
+  0x3c63cdaf384e1a67_culonglong, 0x3fef2f6d9406e7b5_culonglong,
+  0x3c676b2c6c921968_culonglong, 0x3fef3720dcef9069_culonglong,
+  0xbc808a1883ccb5d2_culonglong, 0x3fef3f0b555dc3fa_culonglong,
+  0xbc8fad5d3ffffa6f_culonglong, 0x3fef472d4a07897c_culonglong,
+  0xbc900dae3875a949_culonglong, 0x3fef4f87080d89f2_culonglong,
+  0x3c74a385a63d07a7_culonglong, 0x3fef5818dcfba487_culonglong,
+  0xbc82919e2040220f_culonglong, 0x3fef60e316c98398_culonglong,
+  0x3c8e5a50d5c192ac_culonglong, 0x3fef69e603db3285_culonglong,
+  0x3c843a59ac016b4b_culonglong, 0x3fef7321f301b460_culonglong,
+  0xbc82d52107b43e1f_culonglong, 0x3fef7c97337b9b5f_culonglong,
+  0xbc892ab93b470dc9_culonglong, 0x3fef864614f5a129_culonglong,
+  0x3c74b604603a88d3_culonglong, 0x3fef902ee78b3ff6_culonglong,
+  0x3c83c5ec519d7271_culonglong, 0x3fef9a51fbc74c83_culonglong,
+  0xbc8ff7128fd391f0_culonglong, 0x3fefa4afa2a490da_culonglong,
+  0xbc8dae98e223747d_culonglong, 0x3fefaf482d8e67f1_culonglong,
+  0x3c8ec3bc41aa2008_culonglong, 0x3fefba1bee615a27_culonglong,
+  0x3c842b94c3a9eb32_culonglong, 0x3fefc52b376bba97_culonglong,
+  0x3c8a64a931d185ee_culonglong, 0x3fefd0765b6e4540_culonglong,
+  0xbc8e37bae43be3ed_culonglong, 0x3fefdbfdad9cbe14_culonglong,
+  0x3c77893b4d91cd9d_culonglong, 0x3fefe7c1819e90d8_culonglong,
+  0x3c5305c14160cc89_culonglong, 0x3feff3c22b8f71f1_culonglong,
+}
+local pow_log_invc: [128]cdouble = {
+  0x1.6A00000000000P+0_cdouble, 0x1.6800000000000P+0_cdouble,
+  0x1.6600000000000P+0_cdouble, 0x1.6400000000000P+0_cdouble,
+  0x1.6200000000000P+0_cdouble, 0x1.6000000000000P+0_cdouble,
+  0x1.5E00000000000P+0_cdouble, 0x1.5C00000000000P+0_cdouble,
+  0x1.5A00000000000P+0_cdouble, 0x1.5800000000000P+0_cdouble,
+  0x1.5600000000000P+0_cdouble, 0x1.5600000000000P+0_cdouble,
+  0x1.5400000000000P+0_cdouble, 0x1.5200000000000P+0_cdouble,
+  0x1.5000000000000P+0_cdouble, 0x1.4E00000000000P+0_cdouble,
+  0x1.4C00000000000P+0_cdouble, 0x1.4A00000000000P+0_cdouble,
+  0x1.4A00000000000P+0_cdouble, 0x1.4800000000000P+0_cdouble,
+  0x1.4600000000000P+0_cdouble, 0x1.4400000000000P+0_cdouble,
+  0x1.4200000000000P+0_cdouble, 0x1.4000000000000P+0_cdouble,
+  0x1.4000000000000P+0_cdouble, 0x1.3E00000000000P+0_cdouble,
+  0x1.3C00000000000P+0_cdouble, 0x1.3A00000000000P+0_cdouble,
+  0x1.3A00000000000P+0_cdouble, 0x1.3800000000000P+0_cdouble,
+  0x1.3600000000000P+0_cdouble, 0x1.3400000000000P+0_cdouble,
+  0x1.3400000000000P+0_cdouble, 0x1.3200000000000P+0_cdouble,
+  0x1.3000000000000P+0_cdouble, 0x1.3000000000000P+0_cdouble,
+  0x1.2E00000000000P+0_cdouble, 0x1.2C00000000000P+0_cdouble,
+  0x1.2C00000000000P+0_cdouble, 0x1.2A00000000000P+0_cdouble,
+  0x1.2800000000000P+0_cdouble, 0x1.2600000000000P+0_cdouble,
+  0x1.2600000000000P+0_cdouble, 0x1.2400000000000P+0_cdouble,
+  0x1.2400000000000P+0_cdouble, 0x1.2200000000000P+0_cdouble,
+  0x1.2000000000000P+0_cdouble, 0x1.2000000000000P+0_cdouble,
+  0x1.1E00000000000P+0_cdouble, 0x1.1C00000000000P+0_cdouble,
+  0x1.1C00000000000P+0_cdouble, 0x1.1A00000000000P+0_cdouble,
+  0x1.1A00000000000P+0_cdouble, 0x1.1800000000000P+0_cdouble,
+  0x1.1600000000000P+0_cdouble, 0x1.1600000000000P+0_cdouble,
+  0x1.1400000000000P+0_cdouble, 0x1.1400000000000P+0_cdouble,
+  0x1.1200000000000P+0_cdouble, 0x1.1000000000000P+0_cdouble,
+  0x1.1000000000000P+0_cdouble, 0x1.0E00000000000P+0_cdouble,
+  0x1.0E00000000000P+0_cdouble, 0x1.0C00000000000P+0_cdouble,
+  0x1.0C00000000000P+0_cdouble, 0x1.0A00000000000P+0_cdouble,
+  0x1.0A00000000000P+0_cdouble, 0x1.0800000000000P+0_cdouble,
+  0x1.0800000000000P+0_cdouble, 0x1.0600000000000P+0_cdouble,
+  0x1.0400000000000P+0_cdouble, 0x1.0400000000000P+0_cdouble,
+  0x1.0200000000000P+0_cdouble, 0x1.0200000000000P+0_cdouble,
+  0x1.0000000000000P+0_cdouble, 0x1.0000000000000P+0_cdouble,
+  0x1.FC00000000000P-1_cdouble, 0x1.F800000000000P-1_cdouble,
+  0x1.F400000000000P-1_cdouble, 0x1.F000000000000P-1_cdouble,
+  0x1.EC00000000000P-1_cdouble, 0x1.E800000000000P-1_cdouble,
+  0x1.E400000000000P-1_cdouble, 0x1.E200000000000P-1_cdouble,
+  0x1.DE00000000000P-1_cdouble, 0x1.DA00000000000P-1_cdouble,
+  0x1.D600000000000P-1_cdouble, 0x1.D400000000000P-1_cdouble,
+  0x1.D000000000000P-1_cdouble, 0x1.CC00000000000P-1_cdouble,
+  0x1.CA00000000000P-1_cdouble, 0x1.C600000000000P-1_cdouble,
+  0x1.C400000000000P-1_cdouble, 0x1.C000000000000P-1_cdouble,
+  0x1.BE00000000000P-1_cdouble, 0x1.BA00000000000P-1_cdouble,
+  0x1.B800000000000P-1_cdouble, 0x1.B400000000000P-1_cdouble,
+  0x1.B200000000000P-1_cdouble, 0x1.AE00000000000P-1_cdouble,
+  0x1.AC00000000000P-1_cdouble, 0x1.AA00000000000P-1_cdouble,
+  0x1.A600000000000P-1_cdouble, 0x1.A400000000000P-1_cdouble,
+  0x1.A000000000000P-1_cdouble, 0x1.9E00000000000P-1_cdouble,
+  0x1.9C00000000000P-1_cdouble, 0x1.9A00000000000P-1_cdouble,
+  0x1.9600000000000P-1_cdouble, 0x1.9400000000000P-1_cdouble,
+  0x1.9200000000000P-1_cdouble, 0x1.9000000000000P-1_cdouble,
+  0x1.8C00000000000P-1_cdouble, 0x1.8A00000000000P-1_cdouble,
+  0x1.8800000000000P-1_cdouble, 0x1.8600000000000P-1_cdouble,
+  0x1.8400000000000P-1_cdouble, 0x1.8200000000000P-1_cdouble,
+  0x1.7E00000000000P-1_cdouble, 0x1.7C00000000000P-1_cdouble,
+  0x1.7A00000000000P-1_cdouble, 0x1.7800000000000P-1_cdouble,
+  0x1.7600000000000P-1_cdouble, 0x1.7400000000000P-1_cdouble,
+  0x1.7200000000000P-1_cdouble, 0x1.7000000000000P-1_cdouble,
+  0x1.6E00000000000P-1_cdouble, 0x1.6C00000000000P-1_cdouble,
+}
+local pow_log_logc: [128]cdouble = {
+  -0x1.62C82F2B9C800P-2_cdouble, -0x1.5D1BDBF580800P-2_cdouble,
+  -0x1.5767717455800P-2_cdouble, -0x1.51AAD872DF800P-2_cdouble,
+  -0x1.4BE5F95777800P-2_cdouble, -0x1.4618BC21C6000P-2_cdouble,
+  -0x1.404308686A800P-2_cdouble, -0x1.3A64C55694800P-2_cdouble,
+  -0x1.347DD9A988000P-2_cdouble, -0x1.2E8E2BAE12000P-2_cdouble,
+  -0x1.2895A13DE8800P-2_cdouble, -0x1.2895A13DE8800P-2_cdouble,
+  -0x1.22941FBCF7800P-2_cdouble, -0x1.1C898C1699800P-2_cdouble,
+  -0x1.1675CABABA800P-2_cdouble, -0x1.1058BF9AE4800P-2_cdouble,
+  -0x1.0A324E2739000P-2_cdouble, -0x1.0402594B4D000P-2_cdouble,
+  -0x1.0402594B4D000P-2_cdouble, -0x1.FB9186D5E4000P-3_cdouble,
+  -0x1.EF0ADCBDC6000P-3_cdouble, -0x1.E27076E2AF000P-3_cdouble,
+  -0x1.D5C216B4FC000P-3_cdouble, -0x1.C8FF7C79AA000P-3_cdouble,
+  -0x1.C8FF7C79AA000P-3_cdouble, -0x1.BC286742D9000P-3_cdouble,
+  -0x1.AF3C94E80C000P-3_cdouble, -0x1.A23BC1FE2B000P-3_cdouble,
+  -0x1.A23BC1FE2B000P-3_cdouble, -0x1.9525A9CF45000P-3_cdouble,
+  -0x1.87FA06520D000P-3_cdouble, -0x1.7AB890210E000P-3_cdouble,
+  -0x1.7AB890210E000P-3_cdouble, -0x1.6D60FE719D000P-3_cdouble,
+  -0x1.5FF3070A79000P-3_cdouble, -0x1.5FF3070A79000P-3_cdouble,
+  -0x1.526E5E3A1B000P-3_cdouble, -0x1.44D2B6CCB8000P-3_cdouble,
+  -0x1.44D2B6CCB8000P-3_cdouble, -0x1.371FC201E9000P-3_cdouble,
+  -0x1.29552F81FF000P-3_cdouble, -0x1.1B72AD52F6000P-3_cdouble,
+  -0x1.1B72AD52F6000P-3_cdouble, -0x1.0D77E7CD09000P-3_cdouble,
+  -0x1.0D77E7CD09000P-3_cdouble, -0x1.FEC9131DBE000P-4_cdouble,
+  -0x1.E27076E2B0000P-4_cdouble, -0x1.E27076E2B0000P-4_cdouble,
+  -0x1.C5E548F5BC000P-4_cdouble, -0x1.A926D3A4AE000P-4_cdouble,
+  -0x1.A926D3A4AE000P-4_cdouble, -0x1.8C345D631A000P-4_cdouble,
+  -0x1.8C345D631A000P-4_cdouble, -0x1.6F0D28AE56000P-4_cdouble,
+  -0x1.51B073F062000P-4_cdouble, -0x1.51B073F062000P-4_cdouble,
+  -0x1.341D7961BE000P-4_cdouble, -0x1.341D7961BE000P-4_cdouble,
+  -0x1.16536EEA38000P-4_cdouble, -0x1.F0A30C0118000P-5_cdouble,
+  -0x1.F0A30C0118000P-5_cdouble, -0x1.B42DD71198000P-5_cdouble,
+  -0x1.B42DD71198000P-5_cdouble, -0x1.77458F632C000P-5_cdouble,
+  -0x1.77458F632C000P-5_cdouble, -0x1.39E87B9FEC000P-5_cdouble,
+  -0x1.39E87B9FEC000P-5_cdouble, -0x1.F829B0E780000P-6_cdouble,
+  -0x1.F829B0E780000P-6_cdouble, -0x1.7B91B07D58000P-6_cdouble,
+  -0x1.FC0A8B0FC0000P-7_cdouble, -0x1.FC0A8B0FC0000P-7_cdouble,
+  -0x1.FE02A6B100000P-8_cdouble, -0x1.FE02A6B100000P-8_cdouble,
+  0x0.0000000000000P+0_cdouble, 0x0.0000000000000P+0_cdouble,
+  0x1.0101575890000P-7_cdouble, 0x1.0205658938000P-6_cdouble,
+  0x1.8492528C90000P-6_cdouble, 0x1.0415D89E74000P-5_cdouble,
+  0x1.466AED42E0000P-5_cdouble, 0x1.894AA149FC000P-5_cdouble,
+  0x1.CCB73CDDDC000P-5_cdouble, 0x1.EEA31C006C000P-5_cdouble,
+  0x1.1973BD1466000P-4_cdouble, 0x1.3BDF5A7D1E000P-4_cdouble,
+  0x1.5E95A4D97A000P-4_cdouble, 0x1.700D30AEAC000P-4_cdouble,
+  0x1.9335E5D594000P-4_cdouble, 0x1.B6AC88DAD6000P-4_cdouble,
+  0x1.C885801BC4000P-4_cdouble, 0x1.EC739830A2000P-4_cdouble,
+  0x1.FE89139DBE000P-4_cdouble, 0x1.1178E8227E000P-3_cdouble,
+  0x1.1AA2B7E23F000P-3_cdouble, 0x1.2D1610C868000P-3_cdouble,
+  0x1.365FCB0159000P-3_cdouble, 0x1.4913D8333B000P-3_cdouble,
+  0x1.527E5E4A1B000P-3_cdouble, 0x1.6574EBE8C1000P-3_cdouble,
+  0x1.6F0128B757000P-3_cdouble, 0x1.7898D85445000P-3_cdouble,
+  0x1.8BEAFEB390000P-3_cdouble, 0x1.95A5ADCF70000P-3_cdouble,
+  0x1.A93ED3C8AE000P-3_cdouble, 0x1.B31D8575BD000P-3_cdouble,
+  0x1.BD087383BE000P-3_cdouble, 0x1.C6FFBC6F01000P-3_cdouble,
+  0x1.DB13DB0D49000P-3_cdouble, 0x1.E530EFFE71000P-3_cdouble,
+  0x1.EF5ADE4DD0000P-3_cdouble, 0x1.F991C6CB3B000P-3_cdouble,
+  0x1.07138604D5800P-2_cdouble, 0x1.0C42D67616000P-2_cdouble,
+  0x1.1178E8227E800P-2_cdouble, 0x1.16B5CCBACF800P-2_cdouble,
+  0x1.1BF99635A6800P-2_cdouble, 0x1.214456D0EB800P-2_cdouble,
+  0x1.2BEF07CDC9000P-2_cdouble, 0x1.314F1E1D36000P-2_cdouble,
+  0x1.36B6776BE1000P-2_cdouble, 0x1.3C25277333000P-2_cdouble,
+  0x1.419B423D5E800P-2_cdouble, 0x1.4718DC271C800P-2_cdouble,
+  0x1.4C9E09E173000P-2_cdouble, 0x1.522AE0738A000P-2_cdouble,
+  0x1.57BF753C8D000P-2_cdouble, 0x1.5D5BDDF596000P-2_cdouble,
+}
+local pow_log_logctail: [128]cdouble = {
+  0x1.AB42428375680P-48_cdouble, -0x1.CA508D8E0F720P-46_cdouble,
+  -0x1.362A4D5B6506DP-45_cdouble, -0x1.684E49EB067D5P-49_cdouble,
+  -0x1.41B6993293EE0P-47_cdouble, 0x1.3D82F484C84CCP-46_cdouble,
+  0x1.C42F3ED820B3AP-50_cdouble, 0x1.0B1C686519460P-45_cdouble,
+  0x1.5594DD4C58092P-45_cdouble, 0x1.67B1E99B72BD8P-45_cdouble,
+  0x1.5CA14B6CFB03FP-46_cdouble, 0x1.5CA14B6CFB03FP-46_cdouble,
+  -0x1.65A242853DA76P-46_cdouble, -0x1.FAFBC68E75404P-46_cdouble,
+  0x1.F1FC63382A8F0P-46_cdouble, -0x1.6A8C4FD055A66P-45_cdouble,
+  -0x1.C6BEE7EF4030EP-47_cdouble, -0x1.036B89EF42D7FP-48_cdouble,
+  -0x1.036B89EF42D7FP-48_cdouble, 0x1.D572AAB993C87P-47_cdouble,
+  0x1.B26B79C86AF24P-45_cdouble, -0x1.72F4F543FFF10P-46_cdouble,
+  0x1.1BA91BBCA681BP-45_cdouble, 0x1.7794F689F8434P-45_cdouble,
+  0x1.7794F689F8434P-45_cdouble, 0x1.94EB0318BB78FP-46_cdouble,
+  0x1.A4E633FCD9066P-52_cdouble, -0x1.58C64DC46C1EAP-45_cdouble,
+  -0x1.58C64DC46C1EAP-45_cdouble, -0x1.AD1D904C1D4E3P-45_cdouble,
+  0x1.BBDBF7FDBFA09P-45_cdouble, 0x1.BDB9072534A58P-45_cdouble,
+  0x1.BDB9072534A58P-45_cdouble, -0x1.0E46AA3B2E266P-46_cdouble,
+  -0x1.E9E439F105039P-46_cdouble, -0x1.E9E439F105039P-46_cdouble,
+  -0x1.0DE8B90075B8FP-45_cdouble, 0x1.70CC16135783CP-46_cdouble,
+  0x1.70CC16135783CP-46_cdouble, 0x1.178864D27543AP-48_cdouble,
+  -0x1.48D301771C408P-45_cdouble, -0x1.E80A41811A396P-45_cdouble,
+  -0x1.E80A41811A396P-45_cdouble, 0x1.A699688E85BF4P-47_cdouble,
+  0x1.A699688E85BF4P-47_cdouble, -0x1.575545CA333F2P-45_cdouble,
+  0x1.A342C2AF0003CP-45_cdouble, 0x1.A342C2AF0003CP-45_cdouble,
+  -0x1.D0C57585FBE06P-46_cdouble, 0x1.53935E85BAAC8P-45_cdouble,
+  0x1.53935E85BAAC8P-45_cdouble, 0x1.37C294D2F5668P-46_cdouble,
+  0x1.37C294D2F5668P-46_cdouble, -0x1.69737C93373DAP-45_cdouble,
+  0x1.F025B61C65E57P-46_cdouble, 0x1.F025B61C65E57P-46_cdouble,
+  0x1.C5EDACCF913DFP-45_cdouble, 0x1.C5EDACCF913DFP-45_cdouble,
+  0x1.47C5E768FA309P-46_cdouble, 0x1.D599E83368E91P-45_cdouble,
+  0x1.D599E83368E91P-45_cdouble, 0x1.C827AE5D6704CP-46_cdouble,
+  0x1.C827AE5D6704CP-46_cdouble, -0x1.CFC4634F2A1EEP-45_cdouble,
+  -0x1.CFC4634F2A1EEP-45_cdouble, 0x1.502B7F526FEAAP-48_cdouble,
+  0x1.502B7F526FEAAP-48_cdouble, -0x1.980267C7E09E4P-45_cdouble,
+  -0x1.980267C7E09E4P-45_cdouble, -0x1.88D5493FAA639P-45_cdouble,
+  -0x1.F1E7CF6D3A69CP-50_cdouble, -0x1.F1E7CF6D3A69CP-50_cdouble,
+  -0x1.9E23F0DDA40E4P-46_cdouble, -0x1.9E23F0DDA40E4P-46_cdouble,
+  0x0.0000000000000P+0_cdouble, 0x0.0000000000000P+0_cdouble,
+  -0x1.0C76B999D2BE8P-46_cdouble, -0x1.3DC5B06E2F7D2P-45_cdouble,
+  -0x1.AA0BA325A0C34P-45_cdouble, 0x1.111C05CF1D753P-47_cdouble,
+  -0x1.C167375BDFD28P-45_cdouble, -0x1.97995D05A267DP-46_cdouble,
+  -0x1.A68F247D82807P-46_cdouble, -0x1.E113E4FC93B7BP-47_cdouble,
+  -0x1.5325D560D9E9BP-45_cdouble, 0x1.CC85EA5DB4ED7P-45_cdouble,
+  -0x1.C69063C5D1D1EP-45_cdouble, 0x1.C1E8DA99DED32P-49_cdouble,
+  0x1.3115C3ABD47DAP-45_cdouble, -0x1.390802BF768E5P-46_cdouble,
+  0x1.646D1C65AACD3P-45_cdouble, -0x1.DC068AFE645E0P-45_cdouble,
+  -0x1.534D64FA10AFDP-45_cdouble, 0x1.1EF78CE2D07F2P-45_cdouble,
+  0x1.CA78E44389934P-45_cdouble, 0x1.39D6CCB81B4A1P-47_cdouble,
+  0x1.62FA8234B7289P-51_cdouble, 0x1.5837954FDB678P-45_cdouble,
+  0x1.633E8E5697DC7P-45_cdouble, 0x1.9CF8B2C3C2E78P-46_cdouble,
+  -0x1.5118DE59C21E1P-45_cdouble, -0x1.C661070914305P-46_cdouble,
+  -0x1.73D54AAE92CD1P-47_cdouble, 0x1.7F22858A0FF6FP-47_cdouble,
+  -0x1.8724350562169P-45_cdouble, -0x1.C358D4EACE1AAP-47_cdouble,
+  -0x1.D4BC4595412B6P-45_cdouble, -0x1.1EC72C5962BD2P-48_cdouble,
+  -0x1.AFF2AF715B035P-45_cdouble, 0x1.212276041F430P-51_cdouble,
+  -0x1.A211565BB8E11P-51_cdouble, 0x1.BCBECCA0CDF30P-46_cdouble,
+  0x1.89CDB16ED4E91P-48_cdouble, 0x1.7188B163CEAE9P-45_cdouble,
+  -0x1.C210E63A5F01CP-45_cdouble, 0x1.B9ACDF7A51681P-45_cdouble,
+  0x1.CA6ED5147BDB7P-45_cdouble, 0x1.A87DEBA46BAEAP-47_cdouble,
+  0x1.A9CFA4A5004F4P-45_cdouble, -0x1.8E27AD3213CB8P-45_cdouble,
+  0x1.16ECDB0F177C8P-46_cdouble, 0x1.83B54B606BD5CP-46_cdouble,
+  0x1.8E436EC90E09DP-47_cdouble, -0x1.F27CE0967D675P-45_cdouble,
+  -0x1.E20891B0AD8A4P-45_cdouble, 0x1.EBE708164C759P-45_cdouble,
+  0x1.FADEDEE5D40EFP-46_cdouble, -0x1.A0B2A08A465DCP-47_cdouble,
+}
+
+local function nelibc_fp_barrier_hw(value: cdouble): cdouble <cimport> end
+local function nelibc_fp_barrierf_hw(value: cfloat): cfloat <cimport> end
+
+local function bits_of_double(value: cdouble): culonglong <inline>
+  local representation: DoubleBits = {value = value}
+  return representation.bits
+end
+
+local function bits_of_float(value: cfloat): cuint <inline>
+  local representation: FloatBits = {value = value}
+  return representation.bits
+end
+
+-- Sign and exponent bits of a double (musl's top12).
+local function top12(value: cdouble): cuint <inline>
+  return (@cuint)(bits_of_double(value) >> 52)
+end
+
+-- musl's FORCE_EVAL and fp_barrier: an opaque call keeps the compiler from
+-- dropping an operation performed only for the floating-point flags it
+-- raises, or from folding a constant expression that must raise them.
+local function force_eval(value: cdouble): void <inline>
+  nelibc_fp_barrier_hw(value)
+end
+
+local function force_evalf(value: cfloat): void <inline>
+  nelibc_fp_barrierf_hw(value)
+end
+
+-- musl's __math_invalid/__math_divzero/__math_oflow/__math_uflow, plus the
+-- errno that glibc's MATH_ERRNO contract expects.
+local function math_invalid(x: cdouble): cdouble <inline>
+  math_domain_error()
+  return (x - x) / (x - x)
+end
+
+local function math_divzero(negative: boolean): cdouble <inline>
+  math_range_error()
+  local one: cdouble = 1_cdouble
+  if negative then one = -1_cdouble end
+  return nelibc_fp_barrier_hw(one) / 0_cdouble
+end
+
+local function math_xflow(negative: boolean, y: cdouble): cdouble <inline>
+  math_range_error()
+  local scaled = y
+  if negative then scaled = -y end
+  return nelibc_fp_barrier_hw(scaled) * y
+end
+
+local function math_oflow(negative: boolean): cdouble <inline>
+  return math_xflow(negative, 0x1p769_cdouble)
+end
+
+local function math_uflow(negative: boolean): cdouble <inline>
+  return math_xflow(negative, 0x1p-767_cdouble)
+end
+
+local function raise_invalid(): void <inline>
+  force_eval(nelibc_fp_barrier_hw(0_cdouble) / 0_cdouble)
+end
+
+-- A float wrapper around a double kernel returns a subnormal argument
+-- unchanged for the odd functions that behave like x near zero; the result
+-- is still inexact and must raise underflow, which the exact conversion
+-- back to float would not.
+local function is_subnormal32(value: cfloat): boolean <inline>
+  return (bits_of_float(value) & 0x7F800000_cuint) == 0_cuint and value ~= 0_cfloat
+end
+
+local function float_subnormal_result(value: cfloat): cfloat <inline>
+  force_evalf(value * value)
+  return value
+end
+
 local function sqrt(value: cdouble): cdouble <cexport, codename 'sqrt'>
-  if value < 0_cdouble then math_domain_error() end
+  -- Test the sign through the bits: an ordered comparison with a quiet NaN
+  -- would raise INVALID, which sqrt(NaN) must not do.
+  if (bits_of_double(value) >> 63) ~= 0_culonglong and value ~= 0_cdouble and
+      not is_nan64(value) then
+    math_domain_error()
+  end
   return nelibc_sqrt_hw(value)
 end
 
@@ -452,7 +863,7 @@ local function sqrtf(value: cfloat): cfloat <cexport, codename 'sqrtf'>
 end
 
 local function sqrtl(value: clongdouble): clongdouble <cexport, codename 'sqrtl'>
-  if value < 0_clongdouble then math_domain_error() end
+  if not is_nan80(value) and value < 0_clongdouble then math_domain_error() end
   return nelibc_sqrtl_hw(value)
 end
 
@@ -479,10 +890,14 @@ local function ilogb(value: cdouble): cint <cexport, codename 'ilogb'>
   local bits = representation.bits & 0x7FFFFFFFFFFFFFFF_culonglong
   local field = (@cint)((bits >> 52) & 0x7FF_culonglong)
   if field == 0x7FF_cint then
+    raise_invalid()
     if (bits & 0x000FFFFFFFFFFFFF_culonglong) ~= 0_culonglong then return (-2147483647_cint - 1_cint) end
     return 2147483647_cint
   end
-  if bits == 0_culonglong then return (-2147483647_cint - 1_cint) end
+  if bits == 0_culonglong then
+    raise_invalid()
+    return (-2147483647_cint - 1_cint)
+  end
   if field ~= 0_cint then return field - 1023_cint end
   local fraction = bits & 0x000FFFFFFFFFFFFF_culonglong
   local shifts: cint = 0_cint
@@ -498,10 +913,14 @@ local function ilogbf(value: cfloat): cint <cexport, codename 'ilogbf'>
   local bits = representation.bits & 0x7FFFFFFF_cuint
   local field = (@cint)((bits >> 23) & 0xFF_cuint)
   if field == 0xFF_cint then
+    raise_invalid()
     if (bits & 0x007FFFFF_cuint) ~= 0_cuint then return (-2147483647_cint - 1_cint) end
     return 2147483647_cint
   end
-  if bits == 0_cuint then return (-2147483647_cint - 1_cint) end
+  if bits == 0_cuint then
+    raise_invalid()
+    return (-2147483647_cint - 1_cint)
+  end
   if field ~= 0_cint then return field - 127_cint end
   local fraction = bits & 0x007FFFFF_cuint
   local shifts: cint = 0_cint
@@ -513,24 +932,33 @@ local function ilogbf(value: cfloat): cint <cexport, codename 'ilogbf'>
 end
 
 local function ilogbl(value: clongdouble): cint <cexport, codename 'ilogbl'>
+  if value == 0_clongdouble or not is_finite80(value) then raise_invalid() end
   return nelibc_ilogbl_hw(value)
 end
 
 local function logb(value: cdouble): cdouble <cexport, codename 'logb'>
-  if value ~= value then return value + value end
-  if is_infinite64(value) then return double_from_bits(0x7FF0000000000000_culonglong) end
-  if value == 0_cdouble then return double_from_bits(0xFFF0000000000000_culonglong) end
+  if not is_finite64(value) then return value * value end
+  if value == 0_cdouble then
+    math_range_error()
+    return -1_cdouble / (value * value)
+  end
   return (@cdouble)(ilogb(value))
 end
 
 local function logbf(value: cfloat): cfloat <cexport, codename 'logbf'>
-  if is_nan32(value) then return value + value end
-  if is_infinite32(value) then return float_from_bits(0x7F800000_cuint) end
-  if value == 0_cfloat then return float_from_bits(0xFF800000_cuint) end
+  if not is_finite32(value) then return value * value end
+  if value == 0_cfloat then
+    math_range_error()
+    return -1_cfloat / (value * value)
+  end
   return (@cfloat)(ilogbf(value))
 end
 
 local function logbl(value: clongdouble): clongdouble <cexport, codename 'logbl'>
+  if value == 0_clongdouble then
+    math_range_error()
+    return -1_clongdouble / (value * value)
+  end
   return nelibc_logbl_hw(value)
 end
 
@@ -980,39 +1408,36 @@ local function scalblnf(value: cfloat, exponent: clong): cfloat <cexport, codena
 end
 
 local function scalb(value: cdouble, exponent: cdouble): cdouble <cexport, codename 'scalb'>
-  if is_nan64(value) or is_nan64(exponent) then return value + exponent end
+  if is_nan64(value) or is_nan64(exponent) then return value * exponent end
   if is_infinite64(exponent) then
     if (value == 0_cdouble and exponent > 0_cdouble) or
         (is_infinite64(value) and exponent < 0_cdouble) then
-      math_domain_error()
-      return sqrt(-1_cdouble)
+      return math_invalid(value)
     end
     if exponent > 0_cdouble then return value * exponent end
     return value / (-exponent)
   end
-  if not is_integer64(exponent) then
-    math_domain_error()
-    return sqrt(-1_cdouble)
-  end
+  -- rint raises INEXACT for a fractional exponent before the INVALID below.
+  if rint(exponent) ~= exponent then return math_invalid(exponent) end
   if exponent > 65000_cdouble then return scalbn(value, 65000_cint) end
   if exponent < -65000_cdouble then return scalbn(value, -65000_cint) end
   return scalbn(value, (@cint)(exponent))
 end
 
 local function scalbf(value: cfloat, exponent: cfloat): cfloat <cexport, codename 'scalbf'>
-  if is_nan32(value) or is_nan32(exponent) then return value + exponent end
+  if is_nan32(value) or is_nan32(exponent) then return value * exponent end
   if is_infinite32(exponent) then
     if (value == 0_cfloat and exponent > 0_cfloat) or
         (is_infinite32(value) and exponent < 0_cfloat) then
       math_domain_error()
-      return sqrtf(-1_cfloat)
+      return (value - value) / (value - value)
     end
     if exponent > 0_cfloat then return value * exponent end
     return value / (-exponent)
   end
-  if not is_integer64((@cdouble)(exponent)) then
+  if rintf(exponent) ~= exponent then
     math_domain_error()
-    return sqrtf(-1_cfloat)
+    return (exponent - exponent) / (exponent - exponent)
   end
   if exponent > 65000_cfloat then return scalbnf(value, 65000_cint) end
   if exponent < -65000_cfloat then return scalbnf(value, -65000_cint) end
@@ -2276,55 +2701,115 @@ end
 -- Range-reduced Taylor kernel. The residual is close to [-ln(2)/2, ln(2)/2];
 -- the split ln(2) constants keep the reduction accurate for the full binary64
 -- exponent range. Scaling uses the same x86-64 primitive as ldexp.
-local function exp_core(value: cdouble): cdouble
-  if value ~= value then return value + value end
-  if is_infinite64(value) then
-    if value < 0_cdouble then return 0_cdouble end
-    return value
-  end
-  if value > 710_cdouble then
-    math_range_error()
-    return nelibc_exp_overflow_hw()
-  end
-  if value < -746_cdouble then
-    math_range_error()
-    return nelibc_exp_underflow_hw()
-  end
+-- exp, exp2 and the exp step of pow follow musl 1.2.5 src/math/exp.c,
+-- exp2.c and pow.c (Copyright (c) 2018, Arm Limited, MIT): 2^(k/128) from a
+-- 128-entry table of (tail, scale) pairs times a degree-5 polynomial in the
+-- reduced argument. exp_data_tab is musl's __exp_data.tab verbatim.
+local exp_invln2n: cdouble = 0x1.71547652B82FEP+7_cdouble -- 128/ln2
+local exp_negln2hin: cdouble = -0x1.62E42FEFA0000P-8_cdouble
+local exp_negln2lon: cdouble = -0x1.CF79ABC9E3B3AP-47_cdouble
+local exp_shift: cdouble = 0x1.8P+52_cdouble
+local exp_poly_c2: cdouble = 0x1.FFFFFFFFFFDBDP-2_cdouble
+local exp_poly_c3: cdouble = 0x1.555555555543CP-3_cdouble
+local exp_poly_c4: cdouble = 0x1.55555CF172B91P-5_cdouble
+local exp_poly_c5: cdouble = 0x1.1111167A4D017P-7_cdouble
+local exp2_shift: cdouble = 0x1.8P+45_cdouble -- 0x1.8p52 / 128
+local exp2_poly_c1: cdouble = 0x1.62E42FEFA39EFP-1_cdouble
+local exp2_poly_c2: cdouble = 0x1.EBFBDFF82C424P-3_cdouble
+local exp2_poly_c3: cdouble = 0x1.C6B08D70CF4B5P-5_cdouble
+local exp2_poly_c4: cdouble = 0x1.3B2ABD24650CCP-7_cdouble
+local exp2_poly_c5: cdouble = 0x1.5D7E09B4E3A84P-10_cdouble
 
-  local scale_value = value * 0x1.71547652B82FEP+0_cdouble
-  local scale: cint = (@cint)(round_binary64(scale_value, 3_cint))
-  local residual = (value - (@cdouble)(scale) * 0x1.62E42FEE00000P-1_cdouble) -
-    (@cdouble)(scale) * 0x1.A39EF35793C76P-33_cdouble
-  local polynomial: cdouble = 4.110317623312165E-19_cdouble -- 1/20!
-  polynomial = 8.22063524662433E-18_cdouble + residual * polynomial -- 1/19!
-  polynomial = 1.5619206968586225E-16_cdouble + residual * polynomial -- 1/18!
-  polynomial = 2.8114572543455206E-15_cdouble + residual * polynomial -- 1/17!
-  polynomial = 4.7794773323873853E-14_cdouble + residual * polynomial -- 1/16!
-  polynomial = 7.6471637318198164E-13_cdouble + residual * polynomial -- 1/15!
-  polynomial = 1.1470745597729725E-11_cdouble + residual * polynomial -- 1/14!
-  polynomial = 1.6059043836821613E-10_cdouble + residual * polynomial -- 1/13!
-  polynomial = 2.08767569878681E-9_cdouble + residual * polynomial -- 1/12!
-  polynomial = 2.505210838544172E-8_cdouble + residual * polynomial -- 1/11!
-  polynomial = 2.7557319223985893E-7_cdouble + residual * polynomial -- 1/10!
-  polynomial = 2.755731922398589E-6_cdouble + residual * polynomial -- 1/9!
-  polynomial = 2.48015873015873E-5_cdouble + residual * polynomial -- 1/8!
-  polynomial = 1.984126984126984E-4_cdouble + residual * polynomial -- 1/7!
-  polynomial = 1.388888888888889E-3_cdouble + residual * polynomial -- 1/6!
-  polynomial = 8.333333333333333E-3_cdouble + residual * polynomial -- 1/5!
-  polynomial = 4.166666666666667E-2_cdouble + residual * polynomial -- 1/4!
-  polynomial = 1.6666666666666667E-1_cdouble + residual * polynomial -- 1/3!
-  polynomial = 0.5_cdouble + residual * polynomial -- 1/2!
-  local result = ldexp(1_cdouble + residual + residual * residual * polynomial, scale)
-  local result_bits: DoubleBits = {value = result}
-  local result_field = result_bits.bits & 0x7FF0000000000000_culonglong
-  if result_field == 0x7FF0000000000000_culonglong or result_field == 0_culonglong then
-    math_range_error()
+-- Results near overflow or underflow: scale*(1+tmp) without an intermediate
+-- rounding. The exponent of scale may have run into the sign bit, so sbits
+-- is adjusted before use. ki with bit 31 clear means k > 0 (overflow side).
+local function exp_specialcase(tmp: cdouble, sbits: culonglong, ki: culonglong,
+    base_two: boolean): cdouble
+  if (ki & 0x80000000_culonglong) == 0_culonglong then
+    local y: cdouble
+    if base_two then
+      -- exp2: the exponent of scale might have overflowed by 1.
+      local scale = double_from_bits(sbits - (1_culonglong << 52))
+      y = 2_cdouble * (scale + scale * tmp)
+    else
+      -- exp: the exponent of scale might have overflowed by up to 460.
+      local scale = double_from_bits(sbits - (1009_culonglong << 52))
+      y = 0x1p1009_cdouble * (scale + scale * tmp)
+    end
+    if is_infinite64(y) then math_range_error() end
+    return y
   end
+  -- k < 0: the result may be subnormal.
+  local scale = double_from_bits(sbits + (1022_culonglong << 52))
+  local y = scale + scale * tmp
+  if fabs(y) < 1_cdouble then
+    -- Round y to the final precision before scaling into the subnormal range
+    -- so the double rounding cannot add 0.5 ulp of error.
+    local one: cdouble = 1_cdouble
+    if y < 0_cdouble then one = -1_cdouble end
+    local lo = scale - y + scale * tmp
+    local hi = one + y
+    lo = one - hi + y + lo
+    y = (hi + lo) - one
+    -- Fix the sign of zero.
+    if y == 0_cdouble then y = double_from_bits(sbits & 0x8000000000000000_culonglong) end
+    -- The underflow exception needs to be signaled explicitly.
+    force_eval(nelibc_fp_barrier_hw(0x1p-1022_cdouble) * 0x1p-1022_cdouble)
+  end
+  local result = 0x1p-1022_cdouble * y
+  if result == 0_cdouble then math_range_error() end
   return result
 end
 
+-- sign*exp(x+xtail) with |xtail| < 2^-15 and |xtail| <= |x| (musl exp_inline).
+local function exp_inline(x: cdouble, xtail: cdouble, negative: boolean): cdouble
+  local abstop = top12(x) & 0x7FF_cuint
+  local special = false
+  if abstop < 0x3C9_cuint then
+    -- |x| < 2^-54: 1+x rounds correctly without a spurious underflow.
+    local one = 1_cdouble + x
+    if negative then return -one end
+    return one
+  end
+  if abstop >= 0x408_cuint then
+    if abstop >= 0x409_cuint then
+      -- |x| >= 1024, infinity or NaN.
+      local bits = bits_of_double(x)
+      if bits == 0xFFF0000000000000_culonglong then return 0_cdouble end
+      if abstop >= 0x7FF_cuint then return 1_cdouble + x end
+      if (bits >> 63) ~= 0_culonglong then return math_uflow(negative) end
+      return math_oflow(negative)
+    end
+    -- 512 <= |x| < 1024 may overflow or underflow the scale.
+    special = true
+  end
+  -- exp(x) = 2^(k/128) * exp(r) with r in [-ln2/256, ln2/256].
+  local z = exp_invln2n * x
+  local kd = z + exp_shift
+  local ki = bits_of_double(kd)
+  kd = kd - exp_shift
+  local r = x + kd * exp_negln2hin + kd * exp_negln2lon
+  r = r + xtail
+  local idx = 2_culonglong * (ki % 128_culonglong)
+  local bias: culonglong = 0_culonglong
+  if negative then bias = 0x800_culonglong << 7 end
+  local top = (ki + bias) << 45
+  local tail = double_from_bits(exp_data_tab[idx])
+  local sbits = exp_data_tab[idx + 1] + top
+  local r2 = r * r
+  local tmp = tail + r + r2 * (exp_poly_c2 + r * exp_poly_c3) +
+    r2 * r2 * (exp_poly_c4 + r * exp_poly_c5)
+  if special then return exp_specialcase(tmp, sbits, ki, false) end
+  local scale = double_from_bits(sbits)
+  return scale + scale * tmp
+end
+
+local function exp_core(value: cdouble): cdouble <inline>
+  return exp_inline(value, 0_cdouble, false)
+end
+
 local function exp(value: cdouble): cdouble <cexport, codename 'exp'>
-  return exp_core(value)
+  return exp_inline(value, 0_cdouble, false)
 end
 
 local function expf(value: cfloat): cfloat <cexport, codename 'expf'>
@@ -2419,32 +2904,35 @@ end
 -- which loses many bits for ordinary fractions.
 
 local function exp2(value: cdouble): cdouble <cexport, codename 'exp2'>
-  if value ~= value then return value + value end
-  if is_infinite64(value) then
-    if value < 0_cdouble then return 0_cdouble end
-    return value
+  local abstop = top12(value) & 0x7FF_cuint
+  local special = false
+  if abstop < 0x3C9_cuint then return 1_cdouble + value end
+  if abstop >= 0x408_cuint then
+    local bits = bits_of_double(value)
+    if abstop >= 0x409_cuint then
+      if bits == 0xFFF0000000000000_culonglong then return 0_cdouble end
+      if abstop >= 0x7FF_cuint then return 1_cdouble + value end
+      if (bits >> 63) == 0_culonglong then return math_oflow(false) end
+      -- x <= -1075 underflows to zero; closer to -1024 is still subnormal.
+      if bits >= 0xC090CC0000000000_culonglong then return math_uflow(false) end
+    end
+    if (bits & 0x7FFFFFFFFFFFFFFF_culonglong) > 0x408D000000000000_culonglong then special = true end -- |x| > 928
   end
-  if value > 1024_cdouble then
-    math_range_error()
-    return nelibc_exp_overflow_hw()
-  end
-  if value < -1075_cdouble then
-    math_range_error()
-    return nelibc_exp_underflow_hw()
-  end
-  local scale: cint = (@cint)(round_binary64(value, 3_cint))
-  local residual = value - (@cdouble)(scale)
-  local z = residual * 0x1.62E42FEE00000P-1_cdouble +
-    residual * 0x1.A39EF35793C76P-33_cdouble
-  local term: cdouble = 1_cdouble
-  local sum: cdouble = 1_cdouble
-  local n: cint = 1_cint
-  while n <= 20_cint do
-    term = term * z / (@cdouble)(n)
-    sum = sum + term
-    n = n + 1_cint
-  end
-  return ldexp(sum, scale)
+  -- exp2(x) = 2^(k/128) * 2^r with r in [-1/256, 1/256].
+  local kd = value + exp2_shift
+  local ki = bits_of_double(kd)
+  kd = kd - exp2_shift
+  local r = value - kd
+  local idx = 2_culonglong * (ki % 128_culonglong)
+  local top = ki << 45
+  local tail = double_from_bits(exp_data_tab[idx])
+  local sbits = exp_data_tab[idx + 1] + top
+  local r2 = r * r
+  local tmp = tail + r * exp2_poly_c1 + r2 * (exp2_poly_c2 + r * exp2_poly_c3) +
+    r2 * r2 * (exp2_poly_c4 + r * exp2_poly_c5)
+  if special then return exp_specialcase(tmp, sbits, ki, true) end
+  local scale = double_from_bits(sbits)
+  return scale + scale * tmp
 end
 
 local function exp2f(value: cfloat): cfloat <cexport, codename 'exp2f'>
@@ -2483,7 +2971,8 @@ local function integer_power_of_ten(exponent: cint): cdouble
 end
 
 local function exp10(value: cdouble): cdouble <cexport, codename 'exp10'>
-  if value ~= value or is_infinite64(value) then
+  if is_nan64(value) then return value + value end
+  if is_infinite64(value) then
     if value < 0_cdouble then return 0_cdouble end
     return value
   end
@@ -2609,86 +3098,169 @@ end
 
 -- Compute exp(value - ln(2)) without losing the low subtraction bits near the
 -- binary64 overflow boundary, where exp(value) itself no longer fits.
-local function exp_minus_ln2(value: cdouble): cdouble
-  local negative_ln2_hi = -0x1.62E42FEE00000P-1_cdouble
-  local high = value + negative_ln2_hi
-  local b_virtual = high - value
-  local a_virtual = high - b_virtual
-  local b_roundoff = negative_ln2_hi - b_virtual
-  local a_roundoff = value - a_virtual
-  local correction = (a_roundoff + b_roundoff) - 0x1.A39EF35793C76P-33_cdouble
-  return exp_core(high) * (1_cdouble + correction)
+-- expm1 follows musl 1.2.5 src/math/expm1.c (fdlibm s_expm1.c, Sun
+-- Microsystems; see the notice above).
+local expm1_ln2_hi: cdouble = 6.93147180369123816490e-01_cdouble
+local expm1_ln2_lo: cdouble = 1.90821492927058770002e-10_cdouble
+local expm1_invln2: cdouble = 1.44269504088896338700e+00_cdouble
+local expm1_q1: cdouble = -3.33333333333331316428e-02_cdouble
+local expm1_q2: cdouble = 1.58730158725481460165e-03_cdouble
+local expm1_q3: cdouble = -7.93650757867487942473e-05_cdouble
+local expm1_q4: cdouble = 4.00821782732936239552e-06_cdouble
+local expm1_q5: cdouble = -2.01099218183624371326e-07_cdouble
+
+local function expm1(value: cdouble): cdouble <cexport, codename 'expm1'>
+  local bits = bits_of_double(value)
+  local hx = (@cuint)(bits >> 32) & 0x7FFFFFFF_cuint
+  local negative = (bits >> 63) ~= 0_culonglong
+  local x = value
+  if hx >= 0x4043687A_cuint then -- |x| >= 56 ln2
+    if is_nan64(x) then return x end
+    if negative then return -1_cdouble end
+    if x > 7.09782712893383973096e+02_cdouble then
+      math_range_error()
+      return x * 0x1p1023_cdouble
+    end
+  end
+  local k: cint = 0_cint
+  local c: cdouble = 0_cdouble
+  if hx > 0x3FD62E42_cuint then -- |x| > 0.5 ln2
+    local hi: cdouble
+    local lo: cdouble
+    if hx < 0x3FF0A2B2_cuint then -- |x| < 1.5 ln2
+      if not negative then
+        hi = x - expm1_ln2_hi
+        lo = expm1_ln2_lo
+        k = 1_cint
+      else
+        hi = x + expm1_ln2_hi
+        lo = -expm1_ln2_lo
+        k = -1_cint
+      end
+    else
+      local half: cdouble = 0.5_cdouble
+      if negative then half = -0.5_cdouble end
+      k = (@cint)(expm1_invln2 * x + half)
+      local t = (@cdouble)(k)
+      hi = x - t * expm1_ln2_hi -- t*ln2_hi is exact here
+      lo = t * expm1_ln2_lo
+    end
+    x = hi - lo
+    c = (hi - x) - lo
+  elseif hx < 0x3C900000_cuint then -- |x| < 2^-54
+    if hx < 0x00100000_cuint then force_evalf((@cfloat)(x)) end
+    return x
+  end
+  local hfx = 0.5_cdouble * x
+  local hxs = x * hfx
+  local r1 = 1_cdouble + hxs * (expm1_q1 + hxs * (expm1_q2 + hxs *
+    (expm1_q3 + hxs * (expm1_q4 + hxs * expm1_q5))))
+  local t = 3_cdouble - r1 * hfx
+  local e = hxs * ((r1 - t) / (6_cdouble - x * t))
+  if k == 0_cint then return x - (x * e - hxs) end
+  e = x * (e - c) - c
+  e = e - hxs
+  if k == -1_cint then return 0.5_cdouble * (x - e) - 0.5_cdouble end
+  if k == 1_cint then
+    if x < -0.25_cdouble then return -2_cdouble * (e - (x + 0.5_cdouble)) end
+    return 1_cdouble + 2_cdouble * (x - e)
+  end
+  local twopk = double_from_bits((@culonglong)(0x3FF_cint + k) << 52)
+  if k < 0_cint or k > 56_cint then
+    local y = x - e + 1_cdouble
+    if k == 1024_cint then
+      y = y * 2_cdouble * 0x1p1023_cdouble
+    else
+      y = y * twopk
+    end
+    return y - 1_cdouble
+  end
+  local two_minus_k = double_from_bits((@culonglong)(0x3FF_cint - k) << 52)
+  if k < 20_cint then return (x - e + (1_cdouble - two_minus_k)) * twopk end
+  return (x - (e + two_minus_k) + 1_cdouble) * twopk
 end
 
+-- musl __expo2: exp(x - k ln2) * 2^(k-1) for |x| beyond log(DBL_MAX), with k
+-- odd so that the final scaling overflows with the right sign in every
+-- rounding mode.
+local function expo2(x: cdouble, sign: cdouble): cdouble
+  local scale = double_from_bits((@culonglong)(0x3FF_cint + 1021_cint) << 52)
+  return exp(x - 0x1.62066151ADD8BP+10_cdouble) * (sign * scale) * scale
+end
+
+-- sinh, cosh and tanh follow musl 1.2.5 src/math/sinh.c, cosh.c, tanh.c.
 local function sinh(value: cdouble): cdouble <cexport, codename 'sinh'>
-  if value ~= value or is_infinite64(value) then return value + value end
-  if fabs(value) < 0x1p-27_cdouble then return value end
-  if fabs(value) < 0.5_cdouble then
-    local square = value * value
-    return value + value * square * (1_cdouble / 6_cdouble + square *
-      (1_cdouble / 120_cdouble + square * (1_cdouble / 5040_cdouble +
-      square * (1_cdouble / 362880_cdouble + square *
-      (1_cdouble / 39916800_cdouble + square / 6227020800_cdouble)))))
-  end
-  local magnitude = fabs(value)
-  if magnitude > 20_cdouble then
-    local result: cdouble
-    if magnitude <= 709_cdouble then
-      result = 0.5_cdouble * exp_core(magnitude)
-    else
-      result = exp_minus_ln2(magnitude)
+  local bits = bits_of_double(value)
+  local h: cdouble = 0.5_cdouble
+  if (bits >> 63) ~= 0_culonglong then h = -h end
+  bits = bits & 0x7FFFFFFFFFFFFFFF_culonglong
+  local absx = double_from_bits(bits)
+  local w = (@cuint)(bits >> 32)
+  if w < 0x40862E42_cuint then -- |x| < log(DBL_MAX)
+    local t = expm1(absx)
+    if w < 0x3FF00000_cuint then
+      -- |x| < 2^-26: expm1 raised inexact and underflow; avoid a second one.
+      if w < 0x3FF00000_cuint - (26_cuint << 20) then return value end
+      return h * (2_cdouble * t - t * t / (t + 1_cdouble))
     end
-    if value < 0_cdouble then return -result end
-    return result
+    return h * (t + t / (t + 1_cdouble))
   end
-  local exponential = exp_core(magnitude)
-  local result = 0.5_cdouble * (exponential - 1_cdouble / exponential)
-  if value < 0_cdouble then return -result end
+  local result = expo2(absx, 2_cdouble * h)
+  if is_infinite64(result) and not is_infinite64(value) then math_range_error() end
   return result
 end
 
 local function cosh(value: cdouble): cdouble <cexport, codename 'cosh'>
-  if value ~= value then return value + value end
-  if is_infinite64(value) then return double_from_bits(0x7FF0000000000000_culonglong) end
-  local magnitude = fabs(value)
-  if magnitude < 0x1p-27_cdouble then return 1_cdouble end
-  if magnitude > 20_cdouble then
-    if magnitude <= 709_cdouble then return 0.5_cdouble * exp_core(magnitude) end
-    return exp_minus_ln2(magnitude)
+  local bits = bits_of_double(value) & 0x7FFFFFFFFFFFFFFF_culonglong
+  local x = double_from_bits(bits)
+  local w = (@cuint)(bits >> 32)
+  if w < 0x3FE62E42_cuint then -- |x| < log(2)
+    if w < 0x3FF00000_cuint - (26_cuint << 20) then
+      force_eval(x + 0x1p120_cdouble) -- raise inexact if x != 0
+      return 1_cdouble
+    end
+    local t = expm1(x)
+    return 1_cdouble + t * t / (2_cdouble * (1_cdouble + t))
   end
-  local exponential = exp_core(magnitude)
-  return 0.5_cdouble * (exponential + 1_cdouble / exponential)
-end
-
-local function tanh(value: cdouble): cdouble <cexport, codename 'tanh'>
-  if value ~= value then return value + value end
-  if is_infinite64(value) then
-    if value < 0_cdouble then return -1_cdouble end
-    return 1_cdouble
+  if w < 0x40862E42_cuint then -- |x| < log(DBL_MAX)
+    local t = exp(x)
+    return 0.5_cdouble * (t + 1_cdouble / t)
   end
-  local magnitude = fabs(value)
-  if magnitude < 0x1p-27_cdouble then return value end
-  if magnitude < 0.125_cdouble then
-    local square = value * value
-    return value + value * square * (-1_cdouble / 3_cdouble + square *
-      (2_cdouble / 15_cdouble + square * (-17_cdouble / 315_cdouble +
-      square * (62_cdouble / 2835_cdouble + square *
-      (-1382_cdouble / 155925_cdouble + square *
-      (21844_cdouble / 6081075_cdouble + square *
-      (-929569_cdouble / 638512875_cdouble + square *
-      (6404582_cdouble / 10854718875_cdouble))))))))
-  end
-  if magnitude > 20_cdouble then
-    if value < 0_cdouble then return -1_cdouble end
-    return 1_cdouble
-  end
-  local exponential = exp_core(2_cdouble * magnitude)
-  local result = (exponential - 1_cdouble) / (exponential + 1_cdouble)
-  if value < 0_cdouble then return -result end
+  local result = expo2(x, 1_cdouble)
+  if is_infinite64(result) and not is_infinite64(value) then math_range_error() end
   return result
 end
 
+local function tanh(value: cdouble): cdouble <cexport, codename 'tanh'>
+  local bits = bits_of_double(value)
+  local negative = (bits >> 63) ~= 0_culonglong
+  bits = bits & 0x7FFFFFFFFFFFFFFF_culonglong
+  local x = double_from_bits(bits)
+  local w = (@cuint)(bits >> 32)
+  local t: cdouble
+  if w > 0x3FE193EA_cuint then -- |x| > log(3)/2 ~= 0.5493 or NaN
+    if w > 0x40340000_cuint then -- |x| > 20 or NaN: avoid raising overflow
+      t = 1_cdouble - 0_cdouble / x
+    else
+      t = expm1(2_cdouble * x)
+      t = 1_cdouble - 2_cdouble / (t + 2_cdouble)
+    end
+  elseif w > 0x3FD058AE_cuint then -- |x| > log(5/3)/2 ~= 0.2554
+    t = expm1(2_cdouble * x)
+    t = t / (t + 2_cdouble)
+  elseif w >= 0x00100000_cuint then -- |x| >= 0x1p-1022
+    t = expm1(-2_cdouble * x)
+    t = -t / (t + 2_cdouble)
+  else -- subnormal: raise inexact and underflow
+    force_evalf((@cfloat)(x))
+    t = x
+  end
+  if negative then return -t end
+  return t
+end
+
 local function sinhf(value: cfloat): cfloat <cexport, codename 'sinhf'>
+  if is_subnormal32(value) then return float_subnormal_result(value) end
   local result = (@cfloat)(sinh((@cdouble)(value)))
   if is_infinite32(result) and not is_infinite32(value) then math_range_error() end
   return result
@@ -2701,6 +3273,7 @@ local function coshf(value: cfloat): cfloat <cexport, codename 'coshf'>
 end
 
 local function tanhf(value: cfloat): cfloat <cexport, codename 'tanhf'>
+  if is_subnormal32(value) then return float_subnormal_result(value) end
   return (@cfloat)(tanh((@cdouble)(value)))
 end
 
@@ -2736,6 +3309,11 @@ local function atan(value: cdouble): cdouble <cexport, codename 'atan'>
   if x >= 0x1p66_cdouble then
     if negative then return -atan_high[3] end
     return atan_high[3]
+  end
+  if x < 0x1p-27_cdouble then
+    -- atan(x) rounds to x; raise underflow only for a subnormal argument.
+    if x < 0x1p-1022_cdouble then force_evalf((@cfloat)(value)) end
+    return value
   end
 
   local id: cint = -1_cint
@@ -2775,68 +3353,62 @@ local function atan(value: cdouble): cdouble <cexport, codename 'atan'>
   return result
 end
 
+-- atan2 follows musl 1.2.5 src/math/atan2.c (fdlibm e_atan2.c).
 local function atan2(y: cdouble, x: cdouble): cdouble
     <cexport, codename 'atan2'>
   if is_nan64(x) or is_nan64(y) then return x + y end
   local pi = 0x1.921FB54442D18P+1_cdouble
-  local half_pi = 0x1.921FB54442D18P+0_cdouble
-  local quarter_pi = 0x1.921FB54442D18P-1_cdouble
-  local ay = fabs(y)
-  local ax = fabs(x)
-  local y_negative = y < 0_cdouble or is_negative_zero64(y)
-  local x_negative = x < 0_cdouble or is_negative_zero64(x)
-
-  if ay == 0_cdouble then
-    if x_negative then
-      if y_negative then return -pi end
-      return pi
-    end
-    return y
+  local pi_lo = 0x1.1A62633145C07P-53_cdouble
+  local xbits = bits_of_double(x)
+  local ybits = bits_of_double(y)
+  if xbits == 0x3FF0000000000000_culonglong then return atan(y) end
+  -- m = 2*sign(x) + sign(y)
+  local m = (@cuint)(((ybits >> 63) & 1_culonglong) | ((xbits >> 62) & 2_culonglong))
+  local ix = xbits & 0x7FFFFFFFFFFFFFFF_culonglong
+  local iy = ybits & 0x7FFFFFFFFFFFFFFF_culonglong
+  if iy == 0_culonglong then
+    if m == 0_cuint or m == 1_cuint then return y end -- atan(+-0, +anything) = +-0
+    if m == 2_cuint then return pi end -- atan(+0, -anything) = pi
+    return -pi -- atan(-0, -anything) = -pi
   end
-  if ax == 0_cdouble then
-    if y_negative then return -half_pi end
-    return half_pi
+  if ix == 0_culonglong then
+    if (m & 1_cuint) ~= 0_cuint then return -pi / 2_cdouble end
+    return pi / 2_cdouble
   end
-  if is_infinite64(ay) then
-    if is_infinite64(ax) then
-      if x_negative then
-        if y_negative then return -3_cdouble * quarter_pi end
-        return 3_cdouble * quarter_pi
-      end
-      if y_negative then return -quarter_pi end
-      return quarter_pi
+  if ix == 0x7FF0000000000000_culonglong then
+    if iy == 0x7FF0000000000000_culonglong then
+      if m == 0_cuint then return pi / 4_cdouble end
+      if m == 1_cuint then return -pi / 4_cdouble end
+      if m == 2_cuint then return 3_cdouble * pi / 4_cdouble end
+      return -3_cdouble * pi / 4_cdouble
     end
-    if y_negative then return -half_pi end
-    return half_pi
+    if m == 0_cuint then return 0_cdouble end
+    if m == 1_cuint then return -0_cdouble end
+    if m == 2_cuint then return pi end
+    return -pi
   end
-  if is_infinite64(ax) then
-    if x_negative then
-      if y_negative then return -pi end
-      return pi
-    end
-    if y_negative then return -0_cdouble end
-    return 0_cdouble
+  local ixh = (@cuint)(ix >> 32)
+  local iyh = (@cuint)(iy >> 32)
+  -- |y/x| > 2^64
+  if ixh + (64_cuint << 20) < iyh or iy == 0x7FF0000000000000_culonglong then
+    if (m & 1_cuint) ~= 0_cuint then return -pi / 2_cdouble end
+    return pi / 2_cdouble
   end
-
-  local angle: cdouble
-  if ax > ay then
-    angle = atan(ay / ax)
-    if x_negative then
-      if y_negative then return angle - pi end
-      return pi - angle
-    end
+  -- z = atan(|y/x|) without spurious underflow
+  local z: cdouble
+  if (m & 2_cuint) ~= 0_cuint and iyh + (64_cuint << 20) < ixh then -- |y/x| < 2^-64, x < 0
+    z = 0_cdouble
   else
-    angle = half_pi - atan(ax / ay)
-    if x_negative then
-      if y_negative then return angle - pi end
-      return pi - angle
-    end
+    z = atan(fabs(y / x))
   end
-  if y_negative then return -angle end
-  return angle
+  if m == 0_cuint then return z end -- atan(+,+)
+  if m == 1_cuint then return -z end -- atan(-,+)
+  if m == 2_cuint then return pi - (z - pi_lo) end -- atan(+,-)
+  return (z - pi_lo) - pi -- atan(-,-)
 end
 
 local function atanf(value: cfloat): cfloat <cexport, codename 'atanf'>
+  if is_subnormal32(value) then return float_subnormal_result(value) end
   return (@cfloat)(atan((@cdouble)(value)))
 end
 
@@ -2845,28 +3417,90 @@ local function atan2f(y: cfloat, x: cfloat): cfloat
   return (@cfloat)(atan2((@cdouble)(y), (@cdouble)(x)))
 end
 
+-- asin and acos follow musl 1.2.5 src/math/asin.c and acos.c (fdlibm
+-- e_asin.c, e_acos.c).
+local asin_pio2_hi: cdouble = 1.57079632679489655800e+00_cdouble
+local asin_pio2_lo: cdouble = 6.12323399573676603587e-17_cdouble
+
+local function asin_acos_r(z: cdouble): cdouble <inline>
+  local p = z * (1.66666666666666657415e-01_cdouble + z * (-3.25565818622400915405e-01_cdouble +
+    z * (2.01212532134862925881e-01_cdouble + z * (-4.00555345006794114027e-02_cdouble +
+    z * (7.91534994289814532176e-04_cdouble + z * 3.47933107596021167570e-05_cdouble)))))
+  local q = 1_cdouble + z * (-2.40339491173441421878e+00_cdouble + z *
+    (2.02094576023350569471e+00_cdouble + z * (-6.88283971605453293030e-01_cdouble +
+    z * 7.70381505559019352791e-02_cdouble)))
+  return p / q
+end
+
 local function asin(value: cdouble): cdouble <cexport, codename 'asin'>
-  if is_nan64(value) then return value + value end
-  if value < -1_cdouble or value > 1_cdouble then
-    math_domain_error()
-    return double_from_bits(0x7FF8000000000000_culonglong)
+  local bits = bits_of_double(value)
+  local hx = (@cuint)(bits >> 32)
+  local ix = hx & 0x7FFFFFFF_cuint
+  local x = value
+  if ix >= 0x3FF00000_cuint then -- |x| >= 1 or NaN
+    if is_nan64(x) then return x + x end
+    local lx = (@cuint)(bits & 0xFFFFFFFF_culonglong)
+    if ((ix - 0x3FF00000_cuint) | lx) == 0_cuint then
+      return x * asin_pio2_hi + 0x1p-120_cdouble -- asin(+-1) = +-pi/2 with inexact
+    end
+    return math_invalid(x)
   end
-  -- This product keeps useful relative precision near both endpoints.
-  local complement = sqrt((1_cdouble - value) * (1_cdouble + value))
-  return atan2(value, complement)
+  if ix < 0x3FE00000_cuint then -- |x| < 0.5
+    -- 0x1p-1022 <= |x| < 0x1p-26: avoid raising underflow
+    if ix < 0x3E500000_cuint and ix >= 0x00100000_cuint then return x end
+    return x + x * asin_acos_r(x * x)
+  end
+  -- 1 > |x| >= 0.5
+  local z = (1_cdouble - fabs(x)) * 0.5_cdouble
+  local s = sqrt(z)
+  local r = asin_acos_r(z)
+  if ix >= 0x3FEF3333_cuint then -- |x| > 0.975
+    x = asin_pio2_hi - (2_cdouble * (s + s * r) - asin_pio2_lo)
+  else
+    local f = double_from_bits(bits_of_double(s) & 0xFFFFFFFF00000000_culonglong)
+    local c = (z - f * f) / (s + f) -- f + c = sqrt(z)
+    x = 0.5_cdouble * asin_pio2_hi - (2_cdouble * s * r - (asin_pio2_lo - 2_cdouble * c) -
+      (0.5_cdouble * asin_pio2_hi - 2_cdouble * f))
+  end
+  if (hx >> 31) ~= 0_cuint then return -x end
+  return x
 end
 
 local function acos(value: cdouble): cdouble <cexport, codename 'acos'>
-  if is_nan64(value) then return value + value end
-  if value < -1_cdouble or value > 1_cdouble then
-    math_domain_error()
-    return double_from_bits(0x7FF8000000000000_culonglong)
+  local bits = bits_of_double(value)
+  local hx = (@cuint)(bits >> 32)
+  local ix = hx & 0x7FFFFFFF_cuint
+  local x = value
+  if ix >= 0x3FF00000_cuint then -- |x| >= 1 or NaN
+    if is_nan64(x) then return x + x end
+    local lx = (@cuint)(bits & 0xFFFFFFFF_culonglong)
+    if ((ix - 0x3FF00000_cuint) | lx) == 0_cuint then
+      if (hx >> 31) ~= 0_cuint then return 2_cdouble * asin_pio2_hi + 0x1p-120_cdouble end
+      return 0_cdouble
+    end
+    return math_invalid(x)
   end
-  local complement = sqrt((1_cdouble - value) * (1_cdouble + value))
-  return atan2(complement, value)
+  if ix < 0x3FE00000_cuint then -- |x| < 0.5
+    if ix <= 0x3C600000_cuint then return asin_pio2_hi + 0x1p-120_cdouble end -- |x| < 2^-57
+    return asin_pio2_hi - (x - (asin_pio2_lo - x * asin_acos_r(x * x)))
+  end
+  if (hx >> 31) ~= 0_cuint then -- x < -0.5
+    local z = (1_cdouble + x) * 0.5_cdouble
+    local s = sqrt(z)
+    local w = asin_acos_r(z) * s - asin_pio2_lo
+    return 2_cdouble * (asin_pio2_hi - (s + w))
+  end
+  -- x > 0.5
+  local z = (1_cdouble - x) * 0.5_cdouble
+  local s = sqrt(z)
+  local df = double_from_bits(bits_of_double(s) & 0xFFFFFFFF00000000_culonglong)
+  local c = (z - df * df) / (s + df)
+  local w = asin_acos_r(z) * s + c
+  return 2_cdouble * (df + w)
 end
 
 local function asinf(value: cfloat): cfloat <cexport, codename 'asinf'>
+  if is_subnormal32(value) then return float_subnormal_result(value) end
   return (@cfloat)(asin((@cdouble)(value)))
 end
 
@@ -3067,95 +3701,78 @@ local function log1pf(value: cfloat): cfloat <cexport, codename 'log1pf'>
   return (@cfloat)(log1p((@cdouble)(value)))
 end
 
-local function expm1(value: cdouble): cdouble <cexport, codename 'expm1'>
-  if value ~= value then return value + value end
-  if is_infinite64(value) then
-    if value < 0_cdouble then return -1_cdouble end
-    return value
-  end
-  if fabs(value) >= 1_cdouble then return exp_core(value) - 1_cdouble end
-
-  local term = value
-  local sum = value
-  local n: cint = 2_cint
-  while n <= 22_cint do
-    term = term * value / (@cdouble)(n)
-    sum = sum + term
-    n = n + 1_cint
-  end
-  return sum
-end
 
 local function expm1f(value: cfloat): cfloat <cexport, codename 'expm1f'>
+  if is_subnormal32(value) then return float_subnormal_result(value) end
   return (@cfloat)(expm1((@cdouble)(value)))
 end
 
-
+-- asinh, acosh and atanh follow musl 1.2.5 src/math/asinh.c, acosh.c,
+-- atanh.c.
 local function asinh(value: cdouble): cdouble <cexport, codename 'asinh'>
-  if value ~= value or is_infinite64(value) or value == 0_cdouble then return value end
-  local magnitude = fabs(value)
-  if magnitude < 0x1p-27_cdouble then return value end
-  local result: cdouble
-  if magnitude >= 0x1p512_cdouble then
-    result = log(magnitude) + 0.693147180559945309417232121458176568_cdouble
-    if value < 0_cdouble then result = -result end
-  else
-    local square = magnitude * magnitude
-    result = log1p_core(magnitude + square / (1_cdouble + sqrt(square + 1_cdouble)))
-    if value < 0_cdouble then result = -result end
+  local bits = bits_of_double(value)
+  local e = (@cuint)((bits >> 52) & 0x7FF_culonglong)
+  local negative = (bits >> 63) ~= 0_culonglong
+  local x = double_from_bits(bits & 0x7FFFFFFFFFFFFFFF_culonglong)
+  if e >= 0x3FF_cuint + 26_cuint then -- |x| >= 0x1p26, infinity or NaN
+    x = log(x) + 0.693147180559945309417232121458176568_cdouble
+  elseif e >= 0x3FF_cuint + 1_cuint then -- |x| >= 2
+    x = log(2_cdouble * x + 1_cdouble / (sqrt(x * x + 1_cdouble) + x))
+  elseif e >= 0x3FF_cuint - 26_cuint then -- |x| >= 0x1p-26
+    x = log1p(x + x * x / (sqrt(x * x + 1_cdouble) + 1_cdouble))
+  else -- |x| < 0x1p-26: raise inexact if x != 0
+    force_eval(x + 0x1p120_cdouble)
   end
-  return result
+  if negative then return -x end
+  return x
 end
 
 
 local function acosh(value: cdouble): cdouble <cexport, codename 'acosh'>
-  if value ~= value then return value + value end
-  if value < 1_cdouble then
-    math_domain_error()
-    return double_from_bits(0x7FF8000000000000_culonglong)
+  if is_nan64(value) then return value + value end
+  if value < 1_cdouble then return math_invalid(value) end
+  local e = (@cuint)((bits_of_double(value) >> 52) & 0x7FF_culonglong)
+  if e < 0x3FF_cuint + 1_cuint then -- 1 <= x < 2
+    local t = value - 1_cdouble
+    return log1p(t + sqrt(t * t + 2_cdouble * t))
   end
-  if value == 1_cdouble then return 0_cdouble end
-  if is_infinite64(value) then return value end
-  if value >= 0x1p512_cdouble then
-    return log(value) + 0.693147180559945309417232121458176568_cdouble
+  if e < 0x3FF_cuint + 26_cuint then -- x < 0x1p26
+    return log(2_cdouble * value - 1_cdouble / (value + sqrt(value * value - 1_cdouble)))
   end
-  if value < 2_cdouble then
-    local delta = value - 1_cdouble
-    return log1p_core(delta + sqrt(delta * (delta + 2_cdouble)))
-  end
-  -- acosh(1+2t²) = 2 asinh(t) avoids overflowing intermediate squares.
-  return 2_cdouble * asinh(sqrt((value - 1_cdouble) * 0.5_cdouble))
+  -- x >= 0x1p26 or infinity
+  return log(value) + 0.693147180559945309417232121458176568_cdouble
 end
 
 local function atanh(value: cdouble): cdouble <cexport, codename 'atanh'>
-  if value ~= value then return value + value end
-  if value == 0_cdouble then return value end
-  local magnitude = fabs(value)
-  if magnitude == 1_cdouble then
-    math_range_error()
-    if value < 0_cdouble then return double_from_bits(0xFFF0000000000000_culonglong) end
-    return double_from_bits(0x7FF0000000000000_culonglong)
+  local bits = bits_of_double(value)
+  local e = (@cuint)((bits >> 52) & 0x7FF_culonglong)
+  local negative = (bits >> 63) ~= 0_culonglong
+  local y = double_from_bits(bits & 0x7FFFFFFFFFFFFFFF_culonglong)
+  if e < 0x3FF_cuint - 1_cuint then -- |x| < 0.5
+    if e < 0x3FF_cuint - 32_cuint then
+      -- |x| < 2^-32: atanh(x) rounds to x; raise underflow for subnormals.
+      if e == 0_cuint then force_evalf((@cfloat)(y)) end
+    else
+      y = 0.5_cdouble * log1p(2_cdouble * y + 2_cdouble * y * y / (1_cdouble - y))
+    end
+  else
+    if not is_nan64(y) then
+      if y > 1_cdouble then
+        math_domain_error()
+      elseif y == 1_cdouble then
+        math_range_error()
+      end
+    end
+    -- y/(1-y) is negative past 1 (INVALID in log1p) and infinite at 1
+    -- (DIVBYZERO here).
+    y = 0.5_cdouble * log1p(2_cdouble * (y / (1_cdouble - y)))
   end
-  if magnitude > 1_cdouble then
-    math_domain_error()
-    return double_from_bits(0x7FF8000000000000_culonglong)
-  end
-  if magnitude < 0.125_cdouble then
-    local square = value * value
-    return value + value * square * (1_cdouble / 3_cdouble + square *
-      (1_cdouble / 5_cdouble + square * (1_cdouble / 7_cdouble + square *
-      (1_cdouble / 9_cdouble + square * (1_cdouble / 11_cdouble + square *
-      (1_cdouble / 13_cdouble + square * (1_cdouble / 15_cdouble + square *
-      (1_cdouble / 17_cdouble + square / 19_cdouble))))))))
-  end
-  -- log1p retains the correction lost when 1+x rounds near either endpoint.
-  local result = 0.5_cdouble * log1p_core((2_cdouble * magnitude) /
-    (1_cdouble - magnitude))
-  if value < 0_cdouble then return -result end
-  return result
+  if negative then return -y end
+  return y
 end
 
 local function asinhf(value: cfloat): cfloat <cexport, codename 'asinhf'>
+  if is_subnormal32(value) then return float_subnormal_result(value) end
   return (@cfloat)(asinh((@cdouble)(value)))
 end
 
@@ -3164,136 +3781,173 @@ local function acoshf(value: cfloat): cfloat <cexport, codename 'acoshf'>
 end
 
 local function atanhf(value: cfloat): cfloat <cexport, codename 'atanhf'>
+  if is_subnormal32(value) then return float_subnormal_result(value) end
   return (@cfloat)(atanh((@cdouble)(value)))
 end
 
 
 -- Keep the log/exponent product in x86 extended precision. Doing the whole
 -- composition in binary64 magnifies log's last-bit error for large exponents.
-local function pow_wide(base: cdouble, exponent: cdouble): cdouble
-  local fraction_exponent: cint = 0_cint
-  local fraction = frexp(base, &fraction_exponent)
-  local mantissa = (@clongdouble)(fraction) * 2.0_clongdouble
-  fraction_exponent = fraction_exponent - 1_cint
-  if mantissa > 1.414213562373095048801688724209698079_clongdouble then
-    mantissa = mantissa * 0.5_clongdouble
-    fraction_exponent = fraction_exponent + 1_cint
-  end
-  local z = (mantissa - 1.0_clongdouble) / (mantissa + 1.0_clongdouble)
-  local z_squared = z * z
-  local polynomial = 1.0_clongdouble / 81.0_clongdouble
-  local denominator: cint = 79_cint
-  while denominator >= 3_cint do
-    polynomial = 1.0_clongdouble / (@clongdouble)(denominator) + z_squared * polynomial
-    denominator = denominator - 2_cint
-  end
-  local log_mantissa = 2.0_clongdouble * z * (1.0_clongdouble + z_squared * polynomial)
-  local log_base = log_mantissa + (@clongdouble)(fraction_exponent) *
-    0.693147180559945309417232121458176568_clongdouble
-  local wide_argument = (@clongdouble)(exponent) * log_base
-  if wide_argument > 710.0_clongdouble then
-    math_range_error()
-    return double_from_bits(0x7FF0000000000000_culonglong)
-  end
-  if wide_argument < -750.0_clongdouble then
-    math_range_error()
-    return 0_cdouble
-  end
-  local scaled_argument = wide_argument * 1.442695040888963407359924681001892137_clongdouble
-  local scale: cint
-  if scaled_argument >= 0.0_clongdouble then
-    scale = (@cint)(scaled_argument + 0.5_clongdouble)
-  else
-    scale = (@cint)(scaled_argument - 0.5_clongdouble)
-  end
-  local residual = wide_argument - (@clongdouble)(scale) *
-    0.693147180559945309417232121458176568_clongdouble
-  local sum = 1.0_clongdouble
-  local term = 1.0_clongdouble
-  for i = 1, 32 do
-    term = term * residual / (@clongdouble)(i)
-    sum = sum + term
-  end
-  if scale > 0_cint then
-    for i = 1, scale do sum = sum * 2.0_clongdouble end
-  elseif scale < 0_cint then
-    for i = scale, -1_cint do sum = sum * 0.5_clongdouble end
-  end
-  local result = (@cdouble)(sum)
-  if is_infinite64(result) or result == 0_cdouble then math_range_error() end
+-- pow follows musl 1.2.5 src/math/pow.c (Copyright (c) 2018, Arm Limited,
+-- MIT): log(x) to about 68 bits as a double-double from a 128-entry table
+-- plus a degree-8 polynomial, then exp_inline on the double-double product.
+-- pow_log_* are musl's __pow_log_data.tab columns verbatim. Worst-case
+-- error documented by musl: 0.54 ulp.
+local pow_ln2hi: cdouble = 0x1.62E42FEFA3800P-1_cdouble
+local pow_ln2lo: cdouble = 0x1.EF35793C76730P-45_cdouble
+-- musl's poly[] with the evaluation scaling (*-2, *4, *-8) folded in.
+local pow_a0: cdouble = -0x1P-1_cdouble
+local pow_a1: cdouble = -0x1.555555555556P-1_cdouble
+local pow_a2: cdouble = 0x1.0000000000006P-1_cdouble
+local pow_a3: cdouble = 0x1.999999959554EP-1_cdouble
+local pow_a4: cdouble = -0x1.555555529A47AP-1_cdouble
+local pow_a5: cdouble = -0x1.2495B9B4845E9P+0_cdouble
+local pow_a6: cdouble = 0x1.0002B8B263FC3P+0_cdouble
+
+local PowLog: type = @record{hi: cdouble, lo: cdouble}
+
+-- hi + lo = log(x) with about 15 extra bits in lo. ix is the bit pattern of
+-- x, normalized in the subnormal range using the sign bit for the exponent.
+local function pow_log_inline(ix: culonglong): PowLog
+  -- x = 2^k z with z in [OFF, 2*OFF) exact; the ith of 128 subintervals
+  -- holds z and c is near its center.
+  local tmp = ix - 0x3FE6955500000000_culonglong
+  local i = (@cint)((tmp >> 45) % 128_culonglong)
+  local k = (@cint)(tmp >> 52) -- arithmetic shift of the signed exponent
+  if k >= 2048_cint then k = k - 4096_cint end
+  local iz = ix - (tmp & (0xFFF_culonglong << 52))
+  local z = double_from_bits(iz)
+  local kd = (@cdouble)(k)
+  -- log(x) = k*Ln2 + log(c) + log1p(z/c-1)
+  local invc = pow_log_invc[i]
+  local logc = pow_log_logc[i]
+  local logctail = pow_log_logctail[i]
+  -- Split z so that rhi, rlo and rhi*rhi are exact and |rlo| <= |r|.
+  local zhi = double_from_bits((iz + (1_culonglong << 31)) & 0xFFFFFFFF00000000_culonglong)
+  local zlo = z - zhi
+  local rhi = zhi * invc - 1_cdouble
+  local rlo = zlo * invc
+  local r = rhi + rlo
+  -- k*Ln2 + log(c) + r
+  local t1 = kd * pow_ln2hi + logc
+  local t2 = t1 + r
+  local lo1 = kd * pow_ln2lo + logctail
+  local lo2 = t1 - t2 + r
+  local ar = pow_a0 * r
+  local ar2 = r * ar
+  local ar3 = r * ar2
+  -- k*Ln2 + log(c) + r + A[0]*r*r
+  local arhi = pow_a0 * rhi
+  local arhi2 = rhi * arhi
+  local hi = t2 + arhi2
+  local lo3 = rlo * (ar + arhi)
+  local lo4 = t2 - hi + arhi2
+  -- p = log1p(r) - r - A[0]*r*r
+  local p = ar3 * (pow_a1 + r * pow_a2 + ar2 * (pow_a3 + r * pow_a4 +
+    ar2 * (pow_a5 + r * pow_a6)))
+  local lo = lo1 + lo2 + lo3 + lo4 + p
+  local y = hi + lo
+  local result: PowLog = {hi = y, lo = hi - y + lo}
   return result
 end
 
-local function pow(value: cdouble, exponent: cdouble): cdouble
+-- 0 if y is not an integer, 1 if odd, 2 if even; iy is a non-zero finite
+-- bit pattern.
+local function pow_checkint(iy: culonglong): cint
+  local e = (@cint)((iy >> 52) & 0x7FF_culonglong)
+  if e < 0x3FF_cint then return 0_cint end
+  if e > 0x3FF_cint + 52_cint then return 2_cint end
+  local shift = 0x3FF_cint + 52_cint - e
+  if (iy & ((1_culonglong << shift) - 1_culonglong)) ~= 0_culonglong then return 0_cint end
+  if (iy & (1_culonglong << shift)) ~= 0_culonglong then return 1_cint end
+  return 2_cint
+end
+
+local function pow_zero_inf_nan(i: culonglong): boolean <inline>
+  local magnitude = i & 0x7FFFFFFFFFFFFFFF_culonglong
+  return magnitude == 0_culonglong or magnitude >= 0x7FF0000000000000_culonglong
+end
+
+local function pow(x: cdouble, y: cdouble): cdouble
     <cexport, codename 'pow'>
-  if exponent == 0_cdouble or value == 1_cdouble then return 1_cdouble end
-  if is_nan64(value) or is_nan64(exponent) then return value + exponent end
-  local absolute = fabs(value)
-  local odd = is_odd_integer64(exponent)
-  if is_infinite64(exponent) then
-    if absolute == 1_cdouble then return 1_cdouble end
-    if (absolute > 1_cdouble) == (exponent > 0_cdouble) then
-      return double_from_bits(0x7FF0000000000000_culonglong)
-    end
-    return 0_cdouble
-  end
-  if is_infinite64(value) then
-    if value < 0_cdouble and not is_integer64(exponent) then
-      math_domain_error()
-      return double_from_bits(0x7FF8000000000000_culonglong)
-    end
-    if exponent > 0_cdouble then
-      if value < 0_cdouble and odd then
-        return double_from_bits(0xFFF0000000000000_culonglong)
+  local negative_result = false
+  local ix = bits_of_double(x)
+  local iy = bits_of_double(y)
+  local topx = top12(x)
+  local topy = top12(y)
+  local atopy = topy & 0x7FF_cuint
+  if topx == 0_cuint or topx >= 0x7FF_cuint or atopy < 0x3BE_cuint or atopy >= 0x43E_cuint then
+    -- x < 0x1p-1022, negative, infinite or NaN; or |y| < 2^-65, |y| >= 2^63
+    -- or NaN. Beyond |y| ~ 0x1.749p62, pow is inf or 0; below 0x1.e7b6p-65
+    -- it is +-1.
+    if pow_zero_inf_nan(iy) then
+      if (iy & 0x7FFFFFFFFFFFFFFF_culonglong) == 0_culonglong then
+        if is_signaling_nan(x) then return x + y end
+        return 1_cdouble
       end
-      return double_from_bits(0x7FF0000000000000_culonglong)
-    end
-    if value < 0_cdouble and odd then
-      return double_from_bits(0x8000000000000000_culonglong)
-    end
-    return 0_cdouble
-  end
-  if value == 0_cdouble then
-    if exponent > 0_cdouble then
-      if is_negative_zero64(value) and odd then
-        return double_from_bits(0x8000000000000000_culonglong)
+      if ix == 0x3FF0000000000000_culonglong then
+        if is_signaling_nan(y) then return x + y end
+        return 1_cdouble
       end
-      return 0_cdouble
+      if (ix & 0x7FFFFFFFFFFFFFFF_culonglong) > 0x7FF0000000000000_culonglong or
+          (iy & 0x7FFFFFFFFFFFFFFF_culonglong) > 0x7FF0000000000000_culonglong then
+        return x + y
+      end
+      if (ix & 0x7FFFFFFFFFFFFFFF_culonglong) == 0x3FF0000000000000_culonglong then return 1_cdouble end
+      if ((ix & 0x7FFFFFFFFFFFFFFF_culonglong) < 0x3FF0000000000000_culonglong) ==
+          ((iy >> 63) == 0_culonglong) then
+        return 0_cdouble -- |x| < 1 and y == inf, or |x| > 1 and y == -inf
+      end
+      return y * y
     end
-    math_range_error()
-    if is_negative_zero64(value) and odd then
-      return double_from_bits(0xFFF0000000000000_culonglong)
+    if pow_zero_inf_nan(ix) then
+      local x2 = x * x
+      if (ix >> 63) ~= 0_culonglong and pow_checkint(iy) == 1_cint then x2 = -x2 end
+      if (iy >> 63) ~= 0_culonglong then
+        -- pow(+-0, negative) is a pole: DIVBYZERO from the division.
+        if (ix & 0x7FFFFFFFFFFFFFFF_culonglong) == 0_culonglong then math_range_error() end
+        return nelibc_fp_barrier_hw(1_cdouble / x2)
+      end
+      return x2
     end
-    return double_from_bits(0x7FF0000000000000_culonglong)
-  end
-  if value < 0_cdouble and not is_integer64(exponent) then
-    math_domain_error()
-    return double_from_bits(0x7FF8000000000000_culonglong)
+    -- x and y are non-zero and finite.
+    if (ix >> 63) ~= 0_culonglong then
+      -- Finite x < 0.
+      local yint = pow_checkint(iy)
+      if yint == 0_cint then return math_invalid(x) end
+      if yint == 1_cint then negative_result = true end
+      ix = ix & 0x7FFFFFFFFFFFFFFF_culonglong
+      topx = topx & 0x7FF_cuint
+    end
+    if atopy < 0x3BE_cuint or atopy >= 0x43E_cuint then
+      -- y is not odd here, so the result is positive.
+      if ix == 0x3FF0000000000000_culonglong then return 1_cdouble end
+      if atopy < 0x3BE_cuint then
+        -- |y| < 2^-65: x^y ~= 1 + y*log(x)
+        if ix > 0x3FF0000000000000_culonglong then return 1_cdouble + y end
+        return 1_cdouble - y
+      end
+      if (ix > 0x3FF0000000000000_culonglong) == (topy < 0x800_cuint) then
+        return math_oflow(false)
+      end
+      return math_uflow(false)
+    end
+    if topx == 0_cuint then
+      -- Normalize subnormal x so its exponent becomes negative.
+      ix = bits_of_double(x * 0x1p52_cdouble) & 0x7FFFFFFFFFFFFFFF_culonglong
+      ix = ix - (52_culonglong << 52)
+    end
   end
 
-  local result: cdouble
-  if is_integer64(exponent) and fabs(exponent) <= 64_cdouble then
-    local integer_exponent = (@cint)(fabs(exponent))
-    local power: cuint = (@cuint)(integer_exponent)
-    local base = absolute
-    result = 1_cdouble
-    while power ~= 0_cuint do
-      if (power & 1_cuint) ~= 0_cuint then result = result * base end
-      power = power >> 1
-      if power ~= 0_cuint then base = base * base end
-    end
-    if exponent < 0_cdouble then result = 1_cdouble / result end
-    if value < 0_cdouble and odd then result = -result end
-  else
-    result = pow_wide(absolute, exponent)
-    if value < 0_cdouble and odd then result = -result end
-  end
-  if is_infinite64(result) and not is_infinite64(value) and not is_infinite64(exponent) then
-    math_range_error()
-  elseif result == 0_cdouble and value ~= 0_cdouble then
-    math_range_error()
-  end
-  return result
+  local lg = pow_log_inline(ix)
+  -- y*log(x) as a double-double without fma.
+  local yhi = double_from_bits(iy & 0xFFFFFFFFF8000000_culonglong)
+  local ylo = y - yhi
+  local lhi = double_from_bits(bits_of_double(lg.hi) & 0xFFFFFFFFF8000000_culonglong)
+  local llo = lg.hi - lhi + lg.lo
+  local ehi = yhi * lhi
+  local elo = ylo * lhi + y * llo -- |elo| < |ehi| * 2^-25
+  return exp_inline(ehi, elo, negative_result)
 end
 
 local function powf(value: cfloat, exponent: cfloat): cfloat
@@ -3901,7 +4555,16 @@ local function sin(value: cdouble): cdouble <cexport, codename 'sin'>
     math_domain_error()
     return value - value
   end
-  if fabs(value) < 0x1p-27_cdouble then return value end
+  local ix = (@cuint)(bits_of_double(value) >> 32) & 0x7FFFFFFF_cuint
+  if ix < 0x3E500000_cuint then -- |x| < 2^-26
+    -- sin(x) rounds to x: raise inexact if x != 0 and underflow if subnormal.
+    if ix < 0x00100000_cuint then
+      force_eval(value / 0x1p120_cdouble)
+    else
+      force_eval(value + 0x1p120_cdouble)
+    end
+    return value
+  end
   local quadrant: cint = 0_cint
   local x: cdouble = value
   local y: cdouble = 0_cdouble
@@ -4058,6 +4721,7 @@ local function tanl(value: clongdouble): clongdouble <cexport, codename 'tanl'>
 end
 
 local function sinf(value: cfloat): cfloat <cexport, codename 'sinf'>
+  if is_subnormal32(value) then return float_subnormal_result(value) end
   return (@cfloat)(sin((@cdouble)(value)))
 end
 
@@ -4312,19 +4976,82 @@ local function cosf(value: cfloat): cfloat <cexport, codename 'cosf'>
   return (@cfloat)(cos((@cdouble)(value)))
 end
 
+-- tan follows musl 1.2.5 src/math/tan.c and __tan.c (fdlibm k_tan.c).
+local tan_t: [13]cdouble = {
+  3.33333333333334091986e-01_cdouble, 1.33333333333201242699e-01_cdouble,
+  5.39682539762260521377e-02_cdouble, 2.18694882948595424599e-02_cdouble,
+  8.86323982359930005737e-03_cdouble, 3.59207910759131235356e-03_cdouble,
+  1.45620945432529025516e-03_cdouble, 5.88041240820264096874e-04_cdouble,
+  2.46463134818469906812e-04_cdouble, 7.81794442939557092300e-05_cdouble,
+  7.14072491382608190305e-05_cdouble, -1.85586374855275456654e-05_cdouble,
+  2.59073051863633712884e-05_cdouble,
+}
+
+-- tan(x+y) for |x| <= pi/4 with y the reduction tail; odd selects -1/tan.
+local function tan_kernel(x: cdouble, y: cdouble, odd: cint): cdouble
+  local hx = (@cuint)(bits_of_double(x) >> 32)
+  local big = (hx & 0x7FFFFFFF_cuint) >= 0x3FE59428_cuint -- |x| >= 0.6744
+  local negative = false
+  if big then
+    negative = (hx >> 31) ~= 0_cuint
+    if negative then
+      x = -x
+      y = -y
+    end
+    x = (0x1.921FB54442D18P-1_cdouble - x) + (0x1.1A62633145C07P-55_cdouble - y)
+    y = 0_cdouble
+  end
+  local z = x * x
+  local w = z * z
+  -- x^5*(T[1]+x^2*T[2]+...) split into even and odd parts
+  local r = tan_t[1] + w * (tan_t[3] + w * (tan_t[5] + w * (tan_t[7] + w *
+    (tan_t[9] + w * tan_t[11]))))
+  local v = z * (tan_t[2] + w * (tan_t[4] + w * (tan_t[6] + w * (tan_t[8] + w *
+    (tan_t[10] + w * tan_t[12])))))
+  local s = z * x
+  r = y + z * (s * (r + v) + y) + s * tan_t[0]
+  w = x + r
+  if big then
+    s = (@cdouble)(1_cint - 2_cint * odd)
+    v = s - 2_cdouble * (x + (r - w * w / (w + s)))
+    if negative then return -v end
+    return v
+  end
+  if odd == 0_cint then return w end
+  -- -1.0/(x+r) has up to 2 ulp of error, so compute it accurately.
+  local w0 = double_from_bits(bits_of_double(w) & 0xFFFFFFFF00000000_culonglong)
+  v = r - (w0 - x) -- w0 + v = r + x
+  local a = -1_cdouble / w
+  local a0 = double_from_bits(bits_of_double(a) & 0xFFFFFFFF00000000_culonglong)
+  return a0 + a * (1_cdouble + a0 * w0 + a0 * v)
+end
+
 local function tan(value: cdouble): cdouble <cexport, codename 'tan'>
-  if value ~= value then return value + value end
-  if is_infinite64(value) then
-    math_domain_error()
+  local ix = (@cuint)(bits_of_double(value) >> 32) & 0x7FFFFFFF_cuint
+  if ix <= 0x3FE921FB_cuint then -- |x| ~<= pi/4
+    if ix < 0x3E400000_cuint then -- |x| < 2^-27
+      if ix < 0x00100000_cuint then
+        force_eval(value / 0x1p120_cdouble)
+      else
+        force_eval(value + 0x1p120_cdouble)
+      end
+      return value
+    end
+    return tan_kernel(value, 0_cdouble, 0_cint)
+  end
+  if ix >= 0x7FF00000_cuint then -- infinity or NaN
+    if is_infinite64(value) then math_domain_error() end
     return value - value
   end
-  if fabs(value) < 0x1p-27_cdouble then return value end
-  local result = sin(value) / cos(value)
-  if is_infinite64(result) then math_range_error() end
-  return result
+  local quadrant: cint = 0_cint
+  local x: cdouble = 0_cdouble
+  local y: cdouble = 0_cdouble
+  reduce_pio2(value, &quadrant, &x, &y)
+  return tan_kernel(x, y, quadrant & 1_cint)
 end
 
 local function tanf(value: cfloat): cfloat <cexport, codename 'tanf'>
+  if is_subnormal32(value) then return float_subnormal_result(value) end
   local result = (@cfloat)(tan((@cdouble)(value)))
   if is_infinite32(result) and value == value and not is_infinite32(value) then
     math_range_error()
