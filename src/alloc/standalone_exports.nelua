@@ -10,6 +10,7 @@ local function nelibc_free(ptr: pointer): void <cimport> end
 local function nelibc_aligned_alloc(alignment: csize, size: csize): pointer <cimport> end
 local function nelibc_posix_memalign(output: *[0]pointer, alignment: csize, size: csize): cint <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_malloc_usable_size(ptr: pointer): csize <cimport> end
 
 local function malloc(size: csize): pointer <cexport, codename 'malloc'>
   return nelibc_malloc(size)
@@ -51,4 +52,8 @@ local function memalign(alignment: csize, size: csize): pointer <cexport, codena
     return nilptr
   end
   return output
+end
+
+local function malloc_usable_size(ptr: pointer): csize <cexport, codename 'malloc_usable_size'>
+  return nelibc_malloc_usable_size(ptr)
 end

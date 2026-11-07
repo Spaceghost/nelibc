@@ -26,6 +26,24 @@ unsigned long long nelibc_va_arg_unsigned_long_long(va_list arguments) {
 size_t nelibc_va_arg_size(va_list arguments) { return va_arg(arguments, size_t); }
 unsigned int nelibc_va_arg_unsigned_int(va_list arguments) { return va_arg(arguments, unsigned int); }
 double nelibc_va_arg_double(va_list arguments) { return va_arg(arguments, double); }
+/* x87 80-bit layout: 64-bit mantissa with an explicit integer bit, then a
+ * 16-bit sign+exponent word. Read the bytes so no classification happens. */
+void nelibc_va_arg_long_double_bits(va_list arguments, unsigned long long *mantissa,
+                                    unsigned *sign_exponent) {
+  long double value = va_arg(arguments, long double);
+  const unsigned char *raw = (const unsigned char *)&value;
+  unsigned long long bits = 0;
+  for (int index = 7; index >= 0; --index) bits = (bits << 8) | raw[index];
+  *mantissa = bits;
+  *sign_exponent = (unsigned)raw[8] | ((unsigned)raw[9] << 8);
+}
+/* The double a long double argument equals, with exact set when nothing was lost. */
+double nelibc_va_arg_long_double_as_double(va_list arguments, int *exact) {
+  long double value = va_arg(arguments, long double);
+  double narrowed = (double)value;
+  *exact = (value != value) || ((long double)narrowed == value);
+  return narrowed;
+}
 void nelibc_va_copy(va_list destination, va_list source) {
   va_copy(destination, source);
 }

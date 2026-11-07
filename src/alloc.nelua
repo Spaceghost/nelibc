@@ -318,6 +318,18 @@ local function nelibc_free(ptr: pointer): void <cexport, codename 'nelibc_free'>
   allocator_unlock()
 end
 
+-- The size the caller asked for. It may undercount the slab class or page
+-- rounding, which malloc_usable_size permits; callers only rely on being
+-- able to use at least this many bytes.
+local function nelibc_malloc_usable_size(ptr: pointer): csize
+    <cexport, codename 'nelibc_malloc_usable_size'>
+  if ptr == nilptr then return 0 end
+  local user_address = (@usize)(ptr)
+  local header_slot: *[0]usize = (@*[0]usize)(user_address - (@usize)(HEADER_SLOT_SIZE))
+  local header: *AllocationHeader = (@*AllocationHeader)(header_slot[0])
+  return header.requested_size
+end
+
 -- Safe provenance test for hybrid adapters: never read metadata before an
 -- untrusted pointer; compare only against mappings Nelibc recorded itself.
 local function nelibc_allocator_owns(ptr: pointer): cint

@@ -262,8 +262,15 @@ local function fnmatch_named_class(pattern: *[0]cchar <const>, start: csize,
   return matched
 end
 
+-- Match one character against the bracket expression starting after '['.
+-- Returns 1 on a match, 0 on no match, and -1 when the expression is not a
+-- bracket expression at all (unterminated, an unknown class, or a bad byte
+-- sequence), in which case the caller treats '[' as a literal character.
+-- A backslash inside the brackets is an ordinary member (XBD 9.3.5), so
+-- "[\]" is the set {'\'} and "[]\]" is the set {']', '\'}; FNM_NOESCAPE
+-- therefore makes no difference here.
 local function fnmatch_bracket(pattern: *[0]cchar <const>, start: csize,
-    character: cint, flags: cint, end_index: *[0]csize): boolean <inline>
+    character: cint, flags: cint, end_index: *[0]csize): cint <inline>
   local index = start
   local invert = false
   if pattern[index] == 33 or pattern[index] == 94 then
@@ -276,7 +283,8 @@ local function fnmatch_bracket(pattern: *[0]cchar <const>, start: csize,
   while pattern[index] ~= 0 do
     if pattern[index] == 93 and not first_item then
       end_index[0] = index + 1
-      return matched ~= invert and have_item
+      if matched ~= invert and have_item then return 1 end
+      return 0
     end
     if pattern[index] == 91 and pattern[index + 1] == 58 then
       local class_end: csize = index + 2
@@ -285,7 +293,7 @@ local function fnmatch_bracket(pattern: *[0]cchar <const>, start: csize,
       elseif class_end > index + 2 then
         -- The named class is valid but does not contain this byte.
       else
-        return false
+        return -1
       end
       index = class_end
       have_item = true
@@ -293,23 +301,17 @@ local function fnmatch_bracket(pattern: *[0]cchar <const>, start: csize,
       continue
     end
     local first: cint = 0
-    if pattern[index] == 92 and (flags & 2) == 0 and pattern[index + 1] ~= 0 then
-      index = index + 1
-    end
     local first_width = fnmatch_next_character(pattern, index, &first)
     if first_width == 0 or first_width == ~0_csize or first_width == ~1_csize then
-      return false
+      return -1
     end
     index = index + first_width
     if pattern[index] == 45 and pattern[index + 1] ~= 0 and pattern[index + 1] ~= 93 then
       index = index + 1
-      if pattern[index] == 92 and (flags & 2) == 0 and pattern[index + 1] ~= 0 then
-        index = index + 1
-      end
       local last: cint = 0
       local last_width = fnmatch_next_character(pattern, index, &last)
       if last_width == 0 or last_width == ~0_csize or last_width == ~1_csize then
-        return false
+        return -1
       end
       index = index + last_width
       if (flags & 16) ~= 0 then
@@ -330,7 +332,7 @@ local function fnmatch_bracket(pattern: *[0]cchar <const>, start: csize,
     have_item = true
     first_item = false
   end
-  return false
+  return -1
 end
 
 local function fnmatch(pattern: *const [0]cchar, text: *const [0]cchar, flags: cint): cint
@@ -379,18 +381,28 @@ local function fnmatch(pattern: *const [0]cchar, text: *const [0]cchar, flags: c
       end
     elseif pattern_byte == 91 then
       local component_start = string_index == 0 or ((flags & 1) ~= 0 and s[string_index - 1] == 47)
+      local bracket_result: cint = 0
       if string_byte ~= 0 and ((flags & 1) == 0 or string_byte ~= 47) and
           not ((flags & 4) ~= 0 and component_start and string_byte == 46) then
         local actual: cint = 0
         local width = fnmatch_next_character(s, string_index, &actual)
         if width == 0 or width == ~0_csize or width == ~1_csize then return 1 end
         local after_bracket: csize = pattern_index
-        if fnmatch_bracket(p, pattern_index + 1, actual, flags,
-            &after_bracket) then
+        bracket_result = fnmatch_bracket(p, pattern_index + 1, actual, flags, &after_bracket)
+        if bracket_result == 1 then
           pattern_index = after_bracket
           string_index = string_index + width
           continue
         end
+      else
+        local probe: csize = pattern_index
+        bracket_result = fnmatch_bracket(p, pattern_index + 1, 0, flags, &probe)
+      end
+      if bracket_result < 0 and string_byte == 91 then
+        -- Not a bracket expression: '[' matches itself (XCU 2.13.1).
+        pattern_index = pattern_index + 1
+        string_index = string_index + 1
+        continue
       end
     else
       if pattern_byte == 92 and (flags & 2) == 0 and p[pattern_index + 1] ~= 0 then

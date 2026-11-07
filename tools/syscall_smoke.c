@@ -2009,6 +2009,32 @@ int main(int argc, char **argv) {
   if (sscanf("a 19", "%*c %d", &narrow_scan_int) != 1 ||
       narrow_scan_int != 19)
     return 312;
+  /* musl libc-test functional/sscanf and fscanf: %Nc needs N characters, a
+   * bare 0x prefix matches nothing, an exponent needs digits, and %n after a
+   * failed conversion is not stored. */
+  char scan_eight_a[10] = "XXXXXXXXX", scan_eight_b[10] = {0};
+  if (sscanf("hello, world\n", "%8c%8c", scan_eight_a, scan_eight_b) != 1 ||
+      memcmp(scan_eight_a, "hello, wX", 9) != 0) return 144;
+  int scan_x = -1, scan_y = -1;
+  if (sscanf(" 0x12 0x34", "%5i%2i", &scan_x, &scan_y) != 1 || scan_x != 0x12 || scan_y != -1) return 145;
+  double scan_d = -1;
+  if (sscanf("10e", "%lf", &scan_d) != 0 || sscanf("", "%lf\n", &scan_d) != -1 || scan_d != -1) return 146;
+  char scan_hexfloat_text[] = "0x1p 12";
+  FILE *scan_stream = fmemopen(scan_hexfloat_text, sizeof scan_hexfloat_text - 1, "r");
+  int scan_n = -1;
+  scan_x = -1;
+  if (scan_stream == NULL || fscanf(scan_stream, "%lf%n %d", &scan_d, &scan_n, &scan_x) != 0 ||
+      scan_d != -1 || scan_n != -1 || scan_x != -1 || ftell(scan_stream) != 4 ||
+      feof(scan_stream) || fgetc(scan_stream) != ' ' || fclose(scan_stream) != 0) return 147;
+  char scan_hex_text[] = "0xx";
+  unsigned scan_u = (unsigned)-1;
+  scan_n = -1;
+  scan_stream = fmemopen(scan_hex_text, 3, "r");
+  if (scan_stream == NULL || fscanf(scan_stream, "%x%n", &scan_u, &scan_n) != 0 ||
+      scan_u != (unsigned)-1 || scan_n != -1 || ftell(scan_stream) != 2 || feof(scan_stream) ||
+      fgetc(scan_stream) != 'x' || fclose(scan_stream) != 0) return 148;
+  if (sscanf("56789 0123 56a72", "%2d%d%*d %[0123456789]\n", &scan_x, &scan_y, scan_eight_a) != 3 ||
+      scan_x != 56 || scan_y != 789 || strcmp(scan_eight_a, "56") != 0) return 149;
   char narrow_scan_word[8] = {0};
   int narrow_scan_count = -1;
   if (sscanf("alpha rest", "%5s%n", narrow_scan_word, &narrow_scan_count) != 1 ||
@@ -2240,6 +2266,11 @@ int main(int argc, char **argv) {
   if (call_vswprintf(formatted_wide, 32, L"x%04d", 7) != 5 ||
       wcscmp(formatted_wide, L"x0007") != 0)
     return 289;
+  /* musl libc-test functional/swprintf: on overflow the buffer still holds
+   * what fit, terminated. */
+  wcscpy(formatted_wide, L"xxxxxxxx");
+  if (swprintf(formatted_wide, 4, L"%d", 123456) >= 0 ||
+      wcscmp(formatted_wide, L"123") != 0 || formatted_wide[5] != L'x') return 150;
   FILE *formatted_stream = tmpfile();
   int stream_wide_count = -1;
   if (formatted_stream == NULL ||

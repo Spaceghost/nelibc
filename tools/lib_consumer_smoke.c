@@ -21,6 +21,7 @@
 #include <sys/signalfd.h>
 #include <locale.h>
 #include <malloc.h>
+#include <fnmatch.h>
 #include <wchar.h>
 #include <wctype.h>
 #include <semaphore.h>
@@ -1938,6 +1939,112 @@ static int string_locale_object_probe(void) {
   return 0;
 }
 
+/* musl libc-test functional/strftime: POSIX flags, widths and the + sign on
+ * wide years, plus the ISO week of a day early in January. */
+static int strftime_check(const char *format, const struct tm *value, const char *expected) {
+  char text[100];
+  size_t length = strftime(text, sizeof text, format, value);
+  if (length == 0) return expected[0] != 0;
+  return strcmp(text, expected) != 0;
+}
+
+static int strftime_posix_probe(void) {
+  struct tm y2016 = {.tm_sec = 45, .tm_min = 23, .tm_hour = 13, .tm_mday = 3, .tm_mon = 0,
+                     .tm_year = 2016 - 1900, .tm_wday = 0, .tm_yday = 2};
+  struct tm y10009 = {.tm_sec = 53, .tm_min = 17, .tm_hour = 5, .tm_mday = 5, .tm_mon = 0,
+                      .tm_year = 10009 - 1900, .tm_wday = 1, .tm_yday = 4};
+  struct tm y0 = {.tm_hour = 12, .tm_mday = 23, .tm_mon = 1, .tm_year = 0 - 1900,
+                  .tm_wday = 3, .tm_yday = 53};
+  struct tm yneg = {.tm_mday = 1, .tm_mon = 0, .tm_year = -123 - 1900, .tm_wday = 1, .tm_yday = 0};
+  struct tm ymax = {.tm_mday = 1, .tm_mon = 0, .tm_year = INT_MAX, .tm_wday = 3, .tm_yday = 0};
+  if (strftime_check("%c", &y2016, "Sun Jan  3 13:23:45 2016") ||
+      strftime_check("%c", &y10009, "Mon Jan  5 05:17:53 +10009") ||
+      strftime_check("%c", &y0, "Wed Feb 23 12:00:00 0000")) return 1;
+  if (strftime_check("%C", &y2016, "20") || strftime_check("%03C", &y2016, "020") ||
+      strftime_check("%+3C", &y2016, "+20") || strftime_check("%C", &y10009, "100") ||
+      strftime_check("%C", &y0, "00") || strftime_check("%01C", &y0, "0")) return 2;
+  if (strftime_check("%F", &y2016, "2016-01-03") || strftime_check("%012F", &y2016, "002016-01-03") ||
+      strftime_check("%+10F", &y2016, "2016-01-03") || strftime_check("%+11F", &y2016, "+2016-01-03") ||
+      strftime_check("%F", &y10009, "+10009-01-05") || strftime_check("%011F", &y10009, "10009-01-05") ||
+      strftime_check("%F", &y0, "0000-02-23") || strftime_check("%01F", &y0, "0-02-23") ||
+      strftime_check("%06F", &y0, "0-02-23") || strftime_check("%010F", &y0, "0000-02-23") ||
+      strftime_check("%F", &yneg, "-123-01-01") || strftime_check("%011F", &yneg, "-0123-01-01")) return 3;
+  if (strftime_check("%g", &y2016, "15") || strftime_check("%g", &y10009, "09") ||
+      strftime_check("%G", &y2016, "2015") || strftime_check("%+5G", &y2016, "+2015") ||
+      strftime_check("%04G", &y10009, "10009")) return 4;
+  if (strftime_check("%U", &y2016, "01") || strftime_check("%U", &y10009, "01") ||
+      strftime_check("%U", &y0, "08") || strftime_check("%V", &y2016, "53") ||
+      strftime_check("%V", &y10009, "02") || strftime_check("%V", &y0, "08") ||
+      strftime_check("%W", &y2016, "00") || strftime_check("%W", &y10009, "01") ||
+      strftime_check("%W", &y0, "08")) return 5;
+  if (strftime_check("%Y", &y2016, "2016") || strftime_check("%05Y", &y2016, "02016") ||
+      strftime_check("%+4Y", &y2016, "2016") || strftime_check("%+5Y", &y2016, "+2016") ||
+      strftime_check("%Y", &y10009, "+10009") || strftime_check("%05Y", &y10009, "10009") ||
+      strftime_check("%Y", &y0, "0000") || strftime_check("%02Y", &y0, "00") ||
+      strftime_check("%+5Y", &y0, "+0000") || strftime_check("%Y", &yneg, "-123") ||
+      strftime_check("%+4Y", &yneg, "-123") || strftime_check("%+5Y", &yneg, "-0123") ||
+      strftime_check("%y", &ymax, "47") || strftime_check("%Y", &ymax, "+2147485547") ||
+      strftime_check("%011Y", &ymax, "02147485547")) return 6;
+  /* GNU/BSD padding flags on the plain numeric directives. */
+  if (strftime_check("%-d|%_d|%0e|%-j|%_j|%-H", &y2016, "3| 3|03|3|  3|13") ||
+      strftime_check("%s", &y2016, "1451827425") || strftime_check("%s", &y10009, "253686748673")) return 7;
+  return 0;
+}
+
+/* musl libc-test functional/fnmatch: a backslash inside brackets is a
+ * member, and a '[' that opens no bracket expression matches itself. */
+static int fnmatch_bracket_probe(void) {
+  if (fnmatch("[[?*\\]", "\\", 0) != 0 || fnmatch("[]?*\\]", "]", 0) != 0 ||
+      fnmatch("[/b", "[/b", 0) != 0 || fnmatch("[/b", "/b", 0) != FNM_NOMATCH) return 1;
+  if (fnmatch("[\\]", "\\", 0) != 0 || fnmatch("[\\]x", "\\x", 0) != 0 ||
+      fnmatch("[a-c]", "b", 0) != 0 || fnmatch("[!a-c]", "b", 0) != FNM_NOMATCH ||
+      fnmatch("[[:alpha:]]", "q", 0) != 0 || fnmatch("[[:bogus:]]", "[", 0) != FNM_NOMATCH ||
+      fnmatch("*[![:digit:]]*/[[:d-d]", "a/[", FNM_PATHNAME) != FNM_NOMATCH) return 2;
+  return 0;
+}
+
+/* %La on x87 long double, including the encodings the FPU never makes
+ * (musl libc-test regression/fpclassify-invalid-ld80); %Lf for values that
+ * are doubles; %Ld as glibc reads it. */
+static int long_double_format_probe(void) {
+  char text[64];
+  union { long double f; struct { uint64_t m; uint16_t se; } i; } u;
+  if (snprintf(text, sizeof text, "%La", 1.0L) < 0 || strcmp(text, "0x1p+0") != 0) return 1;
+  if (snprintf(text, sizeof text, "%La|%.1La|%.0La|%LA", 1.5L, 0x1.08p+3L, 1.5L, -2.0L) < 0 ||
+      strcmp(text, "0x1.8p+0|0x1.0p+3|0x2p+0|-0X1P+1") != 0) return 2;
+  if (snprintf(text, sizeof text, "%La", 0x1.0000000000000002p-16382L) < 0 ||
+      strcmp(text, "0x1.0000000000000002p-16382") != 0) return 3;
+  u.f = 0; u.i.m = (uint64_t)1 << 63;
+  if (snprintf(text, sizeof text, "%La", u.f) < 0 || strcmp(text, "0x1p-16382") != 0) return 4;
+  u.i.m++;
+  if (snprintf(text, sizeof text, "%La", u.f) < 0 || strcmp(text, "0x1.0000000000000002p-16382") != 0) return 5;
+  u.f = 1; u.i.m = 0;
+  if (snprintf(text, sizeof text, "%La", u.f) < 0 || strcmp(text, "nan") != 0) return 6;
+  long double infinite = strtold("inf", NULL);
+  u.f = infinite; u.i.m = 0;
+  if (snprintf(text, sizeof text, "%La", u.f) < 0 || strcmp(text, "nan") != 0) return 7;
+  if (snprintf(text, sizeof text, "%La|%La", 0.0L, infinite) < 0 || strcmp(text, "0x0p+0|inf") != 0) return 8;
+  if (snprintf(text, sizeof text, "%Lf|%.3Le|%Lg|%Ld|%Lu", 1.5L, 1234.5L, 0.25L, -7LL, 9ULL) < 0 ||
+      strcmp(text, "1.500000|1.234e+03|0.25|-7|9") != 0) return 9;
+  errno = 0;
+  if (snprintf(text, sizeof text, "%Lf", 1.0L / 3.0L) != -1 || errno != EINVAL) return 10;
+  return 0;
+}
+
+static int malloc_usable_size_probe(void) {
+  if (malloc_usable_size(NULL) != 0) return 1;
+  char *block = malloc(100);
+  if (block == NULL) return 2;
+  size_t usable = malloc_usable_size(block);
+  if (usable < 100 || usable > 100 + 65536) return 3;
+  memset(block, 0x5a, usable);
+  char *grown = realloc(block, 3000);
+  if (grown == NULL) return 4;
+  if (malloc_usable_size(grown) < 3000) return 5;
+  free(grown);
+  return 0;
+}
+
 int main(int argc, char **argv) {
   int byte_order_result = byte_order_probe();
   if (byte_order_result != 0) return 640 + byte_order_result;
@@ -1949,6 +2056,14 @@ int main(int argc, char **argv) {
   if (signal_set_result != 0) return 680 + signal_set_result;
   int string_locale_result = string_locale_object_probe();
   if (string_locale_result != 0) return 690 + string_locale_result;
+  int strftime_posix_result = strftime_posix_probe();
+  if (strftime_posix_result != 0) return 700 + strftime_posix_result;
+  int fnmatch_bracket_result = fnmatch_bracket_probe();
+  if (fnmatch_bracket_result != 0) return 710 + fnmatch_bracket_result;
+  int long_double_format_result = long_double_format_probe();
+  if (long_double_format_result != 0) return 720 + long_double_format_result;
+  int malloc_usable_size_result = malloc_usable_size_probe();
+  if (malloc_usable_size_result != 0) return 730 + malloc_usable_size_result;
   int locale_float_parser_result = locale_float_parser_probe();
   if (locale_float_parser_result != 0) return 89 + locale_float_parser_result;
   void *minimal_aligned = memalign(1, 17);

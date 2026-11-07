@@ -4,6 +4,7 @@
 local function nelibc_malloc(size: csize): pointer <cimport> end
 local function nelibc_hybrid_free(ptr: pointer): void <cimport> end
 local function nelibc_hybrid_realloc(ptr: pointer, size: csize): pointer <cimport> end
+local function nelibc_hybrid_malloc_usable_size(ptr: pointer): csize <cimport> end
 
 local function malloc(size: csize): pointer <cexport, codename 'malloc'>
   return nelibc_malloc(size)
@@ -16,4 +17,11 @@ end
 local function realloc(ptr: pointer, size: csize): pointer
     <cexport, codename 'realloc'>
   return nelibc_hybrid_realloc(ptr, size)
+end
+
+-- glibc's NSS modules call this on memory our malloc handed out; glibc's own
+-- version would read a glibc chunk header there and crash.
+local function malloc_usable_size(ptr: pointer): csize
+    <cexport, codename 'malloc_usable_size'>
+  return nelibc_hybrid_malloc_usable_size(ptr)
 end

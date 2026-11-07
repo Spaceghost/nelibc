@@ -1,5 +1,9 @@
+#define _GNU_SOURCE
 #include <stddef.h>
 #include <stdlib.h>
+#if !defined(NELIBC_STATIC_MUSL)
+#include <dlfcn.h>
+#endif
 
 #include "nelibc_alloc.h"
 
@@ -36,7 +40,27 @@ void *nelibc_hybrid_realloc(void *pointer, size_t size) {
   return nelibc_host_realloc(pointer, size);
 }
 
+#if !defined(NELIBC_STATIC_MUSL)
+/* Pointers Nelibc owns answer from their header; anything else is asked of
+ * the host allocator, found past our own definition of the symbol. */
+size_t nelibc_hybrid_malloc_usable_size(void *pointer) {
+  if (pointer == NULL) return 0;
+  if (nelibc_allocator_owns(pointer)) return nelibc_malloc_usable_size(pointer);
+  static size_t (*host_usable_size)(void *);
+  if (host_usable_size == NULL)
+    host_usable_size = (size_t (*)(void *))dlsym(RTLD_NEXT, "malloc_usable_size");
+  return host_usable_size != NULL ? host_usable_size(pointer) : 0;
+}
+#endif
+
 #if defined(NELIBC_STATIC_MUSL)
+/* Static musl: every malloc in the image is ours, so a foreign pointer has
+ * no owner to ask. */
+size_t nelibc_hybrid_malloc_usable_size(void *pointer) {
+  if (pointer == NULL || !nelibc_allocator_owns(pointer)) return 0;
+  return nelibc_malloc_usable_size(pointer);
+}
+
 /* Linker --wrap=free/realloc bridges public calls into the hybrid dispatcher. */
 void __wrap_free(void *pointer) { nelibc_hybrid_free(pointer); }
 void *__wrap_realloc(void *pointer, size_t size) {

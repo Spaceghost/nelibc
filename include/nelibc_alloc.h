@@ -9,6 +9,7 @@ void *nelibc_calloc(size_t count, size_t size);
 void *nelibc_realloc(void *ptr, size_t size);
 void *nelibc_reallocarray(void *ptr, size_t count, size_t size);
 void nelibc_free(void *ptr);
+size_t nelibc_malloc_usable_size(void *ptr);
 void *nelibc_aligned_alloc(size_t alignment, size_t size);
 int nelibc_posix_memalign(void **memptr, size_t alignment, size_t size);
 /* True only while pointer belongs to a live Nelibc slab or direct mapping. */
@@ -18,6 +19,7 @@ int nelibc_allocator_owns(const void *pointer);
 #ifndef NELIBC_STANDALONE
 void nelibc_hybrid_free(void *pointer);
 void *nelibc_hybrid_realloc(void *pointer, size_t size);
+size_t nelibc_hybrid_malloc_usable_size(void *pointer);
 #endif
 
 #endif

@@ -1786,36 +1786,34 @@ local function tz_read_unsigned(data: *const [0]cchar, offset: csize, width: csi
 end
 
 -- Read TZif v1-v4 transition tables from /etc/localtime or TZ's zone file.
-local function localtime_tzif(timer: *const [0]clong, result: *Tm,
-    path: *const [0]cchar): cint
-  local data: [131072]cchar = {}
-  local fd: clong = syscall_result(nelibc_sys3(
-    SYS_OPENAT, (@culong)(-100_clong), (@culong)((@usize)(path)), 0_culong))
-  if fd < 0 then return 0_cint end
-  local data_length: csize = 0
-  while data_length < 131072 do
-    local amount: clong = syscall_result(nelibc_sys3(
-      SYS_READ, (@culong)(fd), (@culong)((@usize)(&data[data_length])),
-      (@culong)(131072 - data_length)))
-    if amount < 0 then
-      syscall_result(nelibc_sys3(SYS_CLOSE, (@culong)(fd), 0_culong, 0_culong))
-      return 0_cint
-    end
-    if amount == 0 then break end
-    data_length = data_length + (@csize)(amount)
+-- The file is mapped and read in place: zone files reach 100 KiB and the
+-- earlier stack copies of the file and its decoded tables (over 400 KiB)
+-- overflowed callers with small stacks once the compiler inlined this into
+-- localtime_r.
+local TZIF_MAX_SIZE: clong <comptime> = 1048576
+
+local function tz_transition_time(data: *const [0]cchar, block: csize, time_width: csize,
+    index: csize): clonglong <inline>
+  local raw: culonglong = tz_read_unsigned(data, block + index * time_width, time_width)
+  if time_width == 4 and raw >= 0x80000000_culonglong then
+    return (@clonglong)(raw - 0x100000000_culonglong)
   end
-  syscall_result(nelibc_sys3(SYS_CLOSE, (@culong)(fd), 0_culong, 0_culong))
+  return (@clonglong)(raw)
+end
+
+local function localtime_tzif_parse(timer: *const [0]clong, result: *Tm,
+    data: *const [0]cchar, data_length: csize): cint
   if data_length < 44 or data[0] ~= 84_cchar or data[1] ~= 90_cchar or
       data[2] ~= 105_cchar or data[3] ~= 102_cchar then return 0_cint end
 
   local header: csize = 0
   local time_width: csize = 4
-  local time_count: culonglong = tz_read_unsigned(&data[0], 32, 4)
-  local type_count: culonglong = tz_read_unsigned(&data[0], 36, 4)
-  local char_count: culonglong = tz_read_unsigned(&data[0], 40, 4)
-  local leap_count: culonglong = tz_read_unsigned(&data[0], 28, 4)
-  local std_count: culonglong = tz_read_unsigned(&data[0], 24, 4)
-  local gmt_count: culonglong = tz_read_unsigned(&data[0], 20, 4)
+  local time_count: culonglong = tz_read_unsigned(data, 32, 4)
+  local type_count: culonglong = tz_read_unsigned(data, 36, 4)
+  local char_count: culonglong = tz_read_unsigned(data, 40, 4)
+  local leap_count: culonglong = tz_read_unsigned(data, 28, 4)
+  local std_count: culonglong = tz_read_unsigned(data, 24, 4)
+  local gmt_count: culonglong = tz_read_unsigned(data, 20, 4)
   local version: cchar = data[4]
   if version == 50_cchar or version == 51_cchar or version == 52_cchar then
     local block_size: culonglong = time_count * 5_culonglong + type_count * 6_culonglong +
@@ -1825,41 +1823,36 @@ local function localtime_tzif(timer: *const [0]clong, result: *Tm,
     if header + 44 > data_length or data[header] ~= 84_cchar or data[header + 1] ~= 90_cchar or
         data[header + 2] ~= 105_cchar or data[header + 3] ~= 102_cchar then return 0_cint end
     time_width = 8
-    time_count = tz_read_unsigned(&data[0], header + 32, 4)
-    type_count = tz_read_unsigned(&data[0], header + 36, 4)
-    char_count = tz_read_unsigned(&data[0], header + 40, 4)
-    leap_count = tz_read_unsigned(&data[0], header + 28, 4)
-    std_count = tz_read_unsigned(&data[0], header + 24, 4)
-    gmt_count = tz_read_unsigned(&data[0], header + 20, 4)
+    time_count = tz_read_unsigned(data, header + 32, 4)
+    type_count = tz_read_unsigned(data, header + 36, 4)
+    char_count = tz_read_unsigned(data, header + 40, 4)
+    leap_count = tz_read_unsigned(data, header + 28, 4)
+    std_count = tz_read_unsigned(data, header + 24, 4)
+    gmt_count = tz_read_unsigned(data, header + 20, 4)
   end
   if type_count == 0 or type_count > 256 or char_count == 0 or
-      time_count > 32768 then return 0_cint end
+      time_count > (@culonglong)(data_length) then return 0_cint end
   local block_size: culonglong = time_count * (@culonglong)(time_width + 1) +
       type_count * 6_culonglong + char_count + leap_count * (@culonglong)(time_width + 4) +
       std_count + gmt_count
   local block: csize = header + 44
   if block_size > (@culonglong)(data_length - block) then return 0_cint end
-  local indexes: csize = block + (@csize)(time_count * (@culonglong)(time_width))
-  local info: csize = indexes + (@csize)(time_count)
+  local transitions: csize = (@csize)(time_count)
+  local indexes: csize = block + transitions * time_width
+  local info: csize = indexes + transitions
   local abbreviations: csize = info + (@csize)(type_count * 6_culonglong)
-  local times: [32768]clonglong = {}
-  local transition_types: [32768]cuchar = {}
   local types: [256]TzType = {}
   local index: csize = 0
-  while index < (@csize)(time_count) do
-    local raw: culonglong = tz_read_unsigned(&data[0], block + index * time_width, time_width)
-    if time_width == 4 then
-      if raw >= 0x80000000_culonglong then
-        times[index] = (@clonglong)(raw - 0x100000000_culonglong)
-      else times[index] = (@clonglong)(raw) end
-    else times[index] = (@clonglong)(raw) end
-    transition_types[index] = (@cuchar)(data[indexes + index])
-    if index > 0 and times[index] < times[index - 1] then return 0_cint end
+  local previous_time: clonglong = 0_clonglong
+  while index < transitions do
+    local current_time: clonglong = tz_transition_time(data, block, time_width, index)
+    if index > 0 and current_time < previous_time then return 0_cint end
+    previous_time = current_time
     index = index + 1
   end
   index = 0
   while index < (@csize)(type_count) do
-    local raw_offset: culonglong = tz_read_unsigned(&data[0], info + index * 6, 4)
+    local raw_offset: culonglong = tz_read_unsigned(data, info + index * 6, 4)
     if raw_offset >= 0x80000000_culonglong then
       types[index].offset = (@clonglong)(raw_offset - 0x100000000_culonglong)
     else types[index].offset = (@clonglong)(raw_offset) end
@@ -1870,7 +1863,7 @@ local function localtime_tzif(timer: *const [0]clong, result: *Tm,
   end
   local selected: csize = 0
   local timestamp: clonglong = (@clonglong)(timer[0])
-  if time_count > 0 and timestamp < times[0] then
+  if transitions > 0 and timestamp < tz_transition_time(data, block, time_width, 0) then
     index = 0
     while index < (@csize)(type_count) do
       if types[index].is_dst == 0 then selected = index; break end
@@ -1878,8 +1871,8 @@ local function localtime_tzif(timer: *const [0]clong, result: *Tm,
     end
   else
     index = 0
-    while index < (@csize)(time_count) and times[index] <= timestamp do
-      selected = (@csize)(transition_types[index])
+    while index < transitions and tz_transition_time(data, block, time_width, index) <= timestamp do
+      selected = (@csize)((@cint)(data[indexes + index]) & 255_cint)
       if selected >= (@csize)(type_count) then return 0_cint end
       index = index + 1
     end
@@ -1889,8 +1882,10 @@ local function localtime_tzif(timer: *const [0]clong, result: *Tm,
   local footer_offset: clonglong = 0_clonglong
   local footer_is_dst: cint = 0_cint
   local use_footer: boolean = false
-  local after_last_transition: boolean = time_count == 0
-  if time_count > 0 then after_last_transition = timestamp > times[(@csize)(time_count) - 1] end
+  local after_last_transition: boolean = transitions == 0
+  if transitions > 0 then
+    after_last_transition = timestamp > tz_transition_time(data, block, time_width, transitions - 1)
+  end
   if after_last_transition then
     local utc_calendar: Tm = {
       tm_sec = 0_cint, tm_min = 0_cint, tm_hour = 0_cint, tm_mday = 1_cint,
@@ -1898,7 +1893,7 @@ local function localtime_tzif(timer: *const [0]clong, result: *Tm,
       tm_isdst = 0_cint, tm_gmtoff = 0_clong, tm_zone = nilptr
     }
     if gmtime_r(timer, &utc_calendar) == nilptr then return -1_cint end
-    use_footer = tz_apply_footer(&data[0], block + (@csize)(block_size), data_length,
+    use_footer = tz_apply_footer(data, block + (@csize)(block_size), data_length,
       timestamp, (@clonglong)(utc_calendar.tm_year) + 1900_clonglong,
       &footer_offset, &footer_is_dst, &footer_zone)
     if use_footer then
@@ -1930,6 +1925,27 @@ local function localtime_tzif(timer: *const [0]clong, result: *Tm,
   local_zone[name_index] = 0_cchar
   result.tm_zone = (@pointer)(&local_zone[0])
   return 1_cint
+end
+
+local function localtime_tzif(timer: *const [0]clong, result: *Tm,
+    path: *const [0]cchar): cint
+  local fd: clong = syscall_result(nelibc_sys3(
+    SYS_OPENAT, (@culong)(-100_clong), (@culong)((@usize)(path)), 0_culong))
+  if fd < 0 then return 0_cint end
+  local length: clong = syscall_result(nelibc_sys3(SYS_LSEEK, (@culong)(fd), 0_culong, 2_culong))
+  if length <= 0 or length > TZIF_MAX_SIZE then
+    syscall_result(nelibc_sys3(SYS_CLOSE, (@culong)(fd), 0_culong, 0_culong))
+    return 0_cint
+  end
+  -- PROT_READ, MAP_PRIVATE
+  local mapping: clong = nelibc_sys6(SYS_MMAP, 0_culong, (@culong)(length), 1_culong, 2_culong,
+    (@culong)(fd), 0_culong)
+  syscall_result(nelibc_sys3(SYS_CLOSE, (@culong)(fd), 0_culong, 0_culong))
+  if mapping < 0 and mapping >= -4095 then return 0_cint end
+  local status: cint = localtime_tzif_parse(timer, result,
+    (@*const [0]cchar)((@usize)(mapping)), (@csize)(length))
+  nelibc_sys3(SYS_MUNMAP, (@culong)(mapping), (@culong)(length), 0_culong)
+  return status
 end
 
 local localtime_result: Tm = {
@@ -2359,6 +2375,103 @@ local function strftime_append_number(buffer: *[0]cchar, max_size: csize,
     if position[0] + 1 >= max_size then return false end
     buffer[position[0]] = digits[count]
     position[0] = position[0] + 1
+  end
+  return true
+end
+
+-- %Y prints a sign once the year needs more than four digits, as musl does
+-- and as POSIX's "%+4Y" reading of %F requires; %F, %c and %x reuse it.
+local function strftime_append_year(buffer: *[0]cchar, max_size: csize,
+    position: *[0]csize, year: clonglong): boolean <inline>
+  if year >= 10000_clonglong then
+    if not strftime_append_text(buffer, max_size, position, "+") then return false end
+    return strftime_append_number(buffer, max_size, position, year, 1_cint, 48_cchar)
+  end
+  return strftime_append_number(buffer, max_size, position, year, 4_cint, 48_cchar)
+end
+
+local function strftime_numeric_directive(directive: cchar): boolean <inline>
+  return directive == 67_cchar or directive == 100_cchar or directive == 101_cchar or
+    directive == 103_cchar or directive == 71_cchar or directive == 72_cchar or
+    directive == 73_cchar or directive == 106_cchar or directive == 107_cchar or
+    directive == 108_cchar or directive == 109_cchar or directive == 77_cchar or
+    directive == 83_cchar or directive == 117_cchar or directive == 85_cchar or
+    directive == 86_cchar or directive == 119_cchar or directive == 87_cchar or
+    directive == 121_cchar or directive == 89_cchar
+end
+
+-- Rewrite the text a directive left at buffer[start..position) for the POSIX
+-- flag and field width: `-` drops padding, `_` pads with spaces and `0` with
+-- zeros on the numeric directives; a width on %C %F %G %Y zero-pads the year
+-- after its sign, and `+` adds one when the padded year has more than four
+-- digits (two for %C). This is musl's reading of POSIX.1-2008.
+local function strftime_apply_field(buffer: *[0]cchar, max_size: csize, position: *[0]csize,
+    start: csize, directive: cchar, pad_flag: cchar, plus_flag: boolean, width: csize,
+    negative_year: boolean): boolean
+  local field: [64]cchar = {}
+  local length: csize = position[0] - start
+  if length == 0 or length >= 64 then return true end
+  local i: csize = 0
+  while i < length do field[i] = buffer[start + i]; i = i + 1 end
+  local text: csize = 0
+  if pad_flag ~= 0_cchar and strftime_numeric_directive(directive) then
+    local sign_length: csize = 0
+    if field[0] == 45_cchar or field[0] == 43_cchar then sign_length = 1 end
+    local leading: csize = 0
+    while sign_length + leading + 1 < length and
+        (field[sign_length + leading] == 48_cchar or field[sign_length + leading] == 32_cchar) do
+      leading = leading + 1
+    end
+    if pad_flag == 45_cchar then
+      i = 0
+      while sign_length + leading + i < length do
+        field[sign_length + i] = field[sign_length + leading + i]
+        i = i + 1
+      end
+      length = length - leading
+    else
+      local replacement: cchar = 48_cchar
+      if pad_flag == 95_cchar then replacement = 32_cchar end
+      i = 0
+      while i < leading do field[sign_length + i] = replacement; i = i + 1 end
+    end
+  end
+  position[0] = start
+  if width ~= 0 then
+    local count: csize = length
+    if field[text] == 43_cchar or field[text] == 45_cchar then text = text + 1; count = count - 1 end
+    while count > 1 and field[text] == 48_cchar and
+        field[text + 1] >= 48_cchar and field[text + 1] <= 57_cchar do
+      text = text + 1; count = count - 1
+    end
+    if width < count then width = count end
+    local digits: csize = 0
+    while digits < count and field[text + digits] >= 48_cchar and field[text + digits] <= 57_cchar do
+      digits = digits + 1
+    end
+    local sign_threshold: csize = 5
+    if directive == 67_cchar then sign_threshold = 3 end
+    if negative_year then
+      if position[0] + 1 >= max_size then return false end
+      buffer[position[0]] = 45_cchar; position[0] = position[0] + 1
+      width = width - 1
+    elseif plus_flag and digits + (width - count) >= sign_threshold then
+      if position[0] + 1 >= max_size then return false end
+      buffer[position[0]] = 43_cchar; position[0] = position[0] + 1
+      width = width - 1
+    end
+    while width > count do
+      if position[0] + 1 >= max_size then return false end
+      buffer[position[0]] = 48_cchar; position[0] = position[0] + 1
+      width = width - 1
+    end
+    length = text + count
+  end
+  i = text
+  while i < length do
+    if position[0] + 1 >= max_size then return false end
+    buffer[position[0]] = field[i]; position[0] = position[0] + 1
+    i = i + 1
   end
   return true
 end
@@ -2958,7 +3071,8 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
   local iso_year: clonglong = calendar_year
   local iso_weekday: clonglong = time_value.tm_wday
   if iso_weekday == 0_clonglong then iso_weekday = 7_clonglong end
-  local iso_week: clonglong = ((@clonglong)(time_value.tm_yday) + 10_clonglong - iso_weekday) // 7_clonglong
+  -- ISO 8601: week = (ordinal day - ISO weekday + 10) / 7 with the ordinal 1-based.
+  local iso_week: clonglong = ((@clonglong)(time_value.tm_yday) + 1_clonglong + 10_clonglong - iso_weekday) // 7_clonglong
   if iso_week < 1_clonglong then
     iso_year = calendar_year - 1_clonglong
     iso_week = (@clonglong)(iso_weeks_in_year(iso_year))
@@ -2973,6 +3087,22 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
       index = index + 1
     else
       index = index + 1
+      -- POSIX: %[flag][width]directive. Flags - _ 0 pick the padding; + asks
+      -- for a sign on wide years; a width applies only to %C %F %G %Y.
+      local pad_flag: cchar = 0_cchar
+      if format[index] == 45_cchar or format[index] == 95_cchar or format[index] == 48_cchar then
+        pad_flag = format[index]
+        index = index + 1
+      end
+      local plus_flag: boolean = false
+      if format[index] == 43_cchar then plus_flag = true; index = index + 1 end
+      local field_width: csize = 0
+      local width_given: boolean = false
+      while format[index] >= 48_cchar and format[index] <= 57_cchar do
+        if field_width < 100000 then field_width = field_width * 10 + (@csize)(format[index] - 48_cchar) end
+        width_given = true
+        index = index + 1
+      end
       local directive: cchar = format[index]
       if directive == 0_cchar then break end
       index = index + 1
@@ -2981,6 +3111,12 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         if directive == 0_cchar then break end
         index = index + 1
       end
+      if directive == 67_cchar or directive == 70_cchar or directive == 71_cchar or directive == 89_cchar then
+        if field_width == 0 and width_given then field_width = 1 end
+      else
+        field_width = 0
+      end
+      local field_start: csize = position
       if directive == 37_cchar then ok = strftime_append_text(buffer, max_size, &position, "%")
       elseif directive == 110_cchar then ok = strftime_append_text(buffer, max_size, &position, "\n")
       elseif directive == 116_cchar then ok = strftime_append_text(buffer, max_size, &position, "\t")
@@ -3077,8 +3213,7 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         ok = strftime_append_text(buffer, max_size, &position,
           (@*[0]cchar)(time_value.tm_zone))
       elseif directive == 89_cchar then
-        ok = strftime_append_number(buffer, max_size, &position,
-          calendar_year, 4_cint, 48_cchar)
+        ok = strftime_append_year(buffer, max_size, &position, calendar_year)
       elseif directive == 71_cchar then
         ok = strftime_append_number(buffer, max_size, &position, iso_year, 4_cint, 48_cchar)
       elseif directive == 103_cchar then
@@ -3128,8 +3263,7 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
           (@clonglong)(time_value.tm_sec) - (@clonglong)(time_value.tm_gmtoff)
         ok = strftime_append_number(buffer, max_size, &position, epoch_seconds, 1_cint, 48_cchar)
       elseif directive == 70_cchar then
-        ok = strftime_append_number(buffer, max_size, &position,
-          (@clonglong)(time_value.tm_year) + 1900_clonglong, 4_cint, 48_cchar)
+        ok = strftime_append_year(buffer, max_size, &position, calendar_year)
         if ok then ok = strftime_append_text(buffer, max_size, &position, "-") end
         if ok then ok = strftime_append_number(buffer, max_size, &position, (@clonglong)(time_value.tm_mon) + 1_clonglong, 2_cint, 48_cchar) end
         if ok then ok = strftime_append_text(buffer, max_size, &position, "-") end
@@ -3150,8 +3284,7 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
           if ok then ok = strftime_append_text(buffer, max_size, &position, ".") end
           if ok then ok = strftime_append_number(buffer, max_size, &position, (@clonglong)(time_value.tm_mon) + 1_clonglong, 2_cint, 48_cchar) end
           if ok then ok = strftime_append_text(buffer, max_size, &position, ".") end
-          if ok then ok = strftime_append_number(buffer, max_size, &position,
-            (@clonglong)(time_value.tm_year) + 1900_clonglong, 4_cint, 48_cchar) end
+          if ok then ok = strftime_append_year(buffer, max_size, &position, calendar_year) end
         else
           ok = strftime_append_number(buffer, max_size, &position, (@clonglong)(time_value.tm_mon) + 1_clonglong, 2_cint, 48_cchar)
           if ok then ok = strftime_append_text(buffer, max_size, &position, "/") end
@@ -3216,8 +3349,7 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         if ok then ok = strftime_append_text(buffer, max_size, &position, month_abbrev) end
         if german_time then
           if ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
-          if ok then ok = strftime_append_number(buffer, max_size, &position,
-            (@clonglong)(time_value.tm_year) + 1900_clonglong, 4_cint, 48_cchar) end
+          if ok then ok = strftime_append_year(buffer, max_size, &position, calendar_year) end
           if ok then ok = strftime_append_text(buffer, max_size, &position, ", ") end
         else
           if ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
@@ -3230,8 +3362,7 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         if ok then ok = strftime_append_text(buffer, max_size, &position, ":") end
         if ok then ok = strftime_append_number(buffer, max_size, &position, time_value.tm_sec, 2_cint, 48_cchar) end
         if not german_time and ok then ok = strftime_append_text(buffer, max_size, &position, " ") end
-        if not german_time and ok then ok = strftime_append_number(buffer, max_size, &position,
-          (@clonglong)(time_value.tm_year) + 1900_clonglong, 4_cint, 48_cchar) end
+        if not german_time and ok then ok = strftime_append_year(buffer, max_size, &position, calendar_year) end
       elseif directive == 114_cchar then
         local hour12: cint = time_value.tm_hour % 12
         if hour12 == 0 then hour12 = 12 end
@@ -3253,6 +3384,10 @@ local function strftime(buffer: *[0]cchar, max_size: csize,
         local week: cint = (time_value.tm_yday + 7 - weekday_start) // 7
         ok = strftime_append_number(buffer, max_size, &position, week, 2_cint, 48_cchar)
       else ok = false end
+      if ok and (pad_flag ~= 0_cchar or field_width ~= 0) then
+        ok = strftime_apply_field(buffer, max_size, &position, field_start, directive,
+          pad_flag, plus_flag, field_width, calendar_year < 0_clonglong)
+      end
     end
   end
   if not ok then buffer[0] = 0_cchar; return 0 end
