@@ -69,6 +69,9 @@ _Static_assert(offsetof(struct epoll_event, data) == 4, "Linux x86_64 epoll_even
 #include <dirent.h>
 #include <signal.h>
 #include <termios.h>
+#ifdef NELIBC_STANDALONE
+#include <iconv.h>
+#endif
 #include <setjmp.h>
 #ifdef NELIBC_TESTING
 extern int __nelibc_tz_file_signature(const char *path, char signature[56]);
@@ -957,6 +960,53 @@ static int setjmp_smoke(void) {
   if (_setjmp(setjmp_env) == 0) _longjmp(setjmp_env, 5);
   return 0;
 }
+
+
+#ifdef NELIBC_STANDALONE
+static size_t iconv_run(const char *to, const char *from, const char *in, size_t inlen,
+                        char *out, size_t outsize, size_t *outlen, int *err) {
+  iconv_t cd = iconv_open(to, from);
+  if (cd == (iconv_t)-1) { *err = errno; return (size_t)-2; }
+  char *ip = (char *)in, *op = out;
+  size_t il = inlen, ol = outsize;
+  errno = 0;
+  size_t r = iconv(cd, &ip, &il, &op, &ol);
+  *err = errno;
+  *outlen = outsize - ol;
+  iconv_close(cd);
+  return r;
+}
+
+/* iconv beyond libc-test's two tests (checks 626 to 633). */
+static int iconv_smoke(void) {
+  char out[64];
+  size_t n;
+  int err;
+  /* UTF-8 to UTF-16LE with a character outside the BMP: a surrogate pair */
+  if (iconv_run("UTF-16LE", "utf_8", "A\xf0\x9f\x98\x80", 5, out, sizeof out, &n, &err) != 0 || n != 6 ||
+      memcmp(out, "A\0\x3d\xd8\x00\xde", 6) != 0) return 626;
+  /* UTF-16 input with a little-endian byte order mark */
+  if (iconv_run("UTF-8", "UTF-16", "\xff\xfe" "h\0\xe9\0", 6, out, sizeof out, &n, &err) != 0 || n != 3 ||
+      memcmp(out, "h\xc3\xa9", 3) != 0) return 627;
+  /* invalid UTF-8 (overlong, lone continuation, surrogate) is EILSEQ */
+  if (iconv_run("UTF-8", "UTF-8", "\xc0\x80", 2, out, sizeof out, &n, &err) != (size_t)-1 || err != EILSEQ) return 628;
+  if (iconv_run("UTF-8", "UTF-8", "\x80", 1, out, sizeof out, &n, &err) != (size_t)-1 || err != EILSEQ) return 628;
+  if (iconv_run("UTF-8", "UTF-8", "\xed\xa0\x80", 3, out, sizeof out, &n, &err) != (size_t)-1 || err != EILSEQ) return 628;
+  /* a sequence cut off at the end of the input is EINVAL */
+  if (iconv_run("UTF-16BE", "UTF-8", "a\xe2\x82", 3, out, sizeof out, &n, &err) != (size_t)-1 || err != EINVAL ||
+      n != 2) return 629;
+  /* ISO-8859-15 has the euro sign where Latin-1 has the currency sign */
+  if (iconv_run("UTF-8", "ISO8859-15", "\xa4", 1, out, sizeof out, &n, &err) != 0 || n != 3 ||
+      memcmp(out, "\xe2\x82\xac", 3) != 0) return 630;
+  /* unrepresentable characters become '*' and are counted (musl) */
+  if (iconv_run("ASCII", "UTF-8", "x\xc3\xa9y\xe2\x82\xac", 7, out, sizeof out, &n, &err) != 2 || n != 4 ||
+      memcmp(out, "x*y*", 4) != 0) return 631;
+  /* an undefined byte of a code page is EILSEQ; unknown names are EINVAL */
+  if (iconv_run("UTF-8", "CP1252", "\x81", 1, out, sizeof out, &n, &err) != (size_t)-1 || err != EILSEQ) return 632;
+  if (iconv_open("UTF-8", "EBCDIC-NOPE") != (iconv_t)-1 || errno != EINVAL) return 633;
+  return 0;
+}
+#endif
 
 int main(int argc, char **argv) {
   if (!constructor_ran) return 501;
@@ -4036,6 +4086,8 @@ extern int nelibc_standalone_global_collate_mode(void);
       posix_aligned != (void *)(uintptr_t)0x5678 || errno != EDOM) return 32;
 #endif
 #ifdef NELIBC_STANDALONE
+  int iconv_result = iconv_smoke();
+  if (iconv_result != 0) return iconv_result;
   int termios_result = termios_smoke();
   if (termios_result != 0) return termios_result;
 #endif
