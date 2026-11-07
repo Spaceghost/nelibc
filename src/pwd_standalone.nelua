@@ -1,0 +1,847 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- <pwd.h> and <grp.h> for the standalone profile, after musl 1.2.5
+-- src/passwd (MIT): /etc/passwd and /etc/group read line by line, fields
+-- split in place at ':'. Hybrid builds use the host's (and its NSS).
+--
+-- Kept from musl: a field ends at ':' and the last field (shell, member
+-- list) runs to the end of the line; '#' is not a comment; a numeric field
+-- is digits only (no sign, no space), empty reads as 0, and anything after
+-- the digits other than ':' drops the line; a line with too few fields is
+-- skipped; a NUL byte ends the line; a missing /etc/passwd or /etc/group
+-- (ENOENT, ENOTDIR) is "not found", not an error; getgrouplist puts the
+-- primary group first and does not remove duplicates.
+--
+-- Differs from musl (documented in docs/libc-test.md): the last line keeps
+-- its last byte when it has no newline (musl drops it); an empty name field
+-- is the empty name (musl folds the next field into it); an empty line is
+-- skipped (musl reads past it); a numeric field above 4294967295 saturates
+-- to 4294967295 as glibc does (musl wraps, so 4294967296 reads as 0); empty
+-- members of a group list are skipped as glibc does (musl keeps "a,,b" as
+-- "a" and ",b" and reads past a trailing comma); the _r functions return
+-- ERANGE exactly when the entry does not fit (musl compares with its line
+-- buffer's capacity and asks 32 spare bytes for a group); a line too long
+-- for memory is ENOMEM rather than a truncated entry; there is no nscd.
+
+local function malloc(size: csize): pointer <cimport> end
+local function realloc(value: pointer, size: csize): pointer <cimport> end
+local function free(value: pointer): void <cimport> end
+local function strcmp(left: *const [0]cchar, right: *const [0]cchar): cint <cimport> end
+local function memcpy(destination: pointer, source: pointer, size: csize): pointer <cimport> end
+local function fopen(path: *const [0]cchar, mode: *const [0]cchar): pointer <cimport> end
+local function fclose(stream: pointer): cint <cimport> end
+local function fgetc(stream: pointer): cint <cimport> end
+local function ferror(stream: pointer): cint <cimport> end
+local function fputc(character: cint, stream: pointer): cint <cimport> end
+local function flockfile(stream: pointer): void <cimport> end
+local function funlockfile(stream: pointer): void <cimport> end
+local function setgroups(count: csize, groups: *const [0]cuint): cint <cimport> end
+local function pthread_setcancelstate(state: cint, old_state: *[0]cint): cint <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+
+local ENOENT: cint <comptime> = 2
+local EIO: cint <comptime> = 5
+local ENOMEM: cint <comptime> = 12
+local ENOTDIR: cint <comptime> = 20
+local EINVAL: cint <comptime> = 22
+local ERANGE: cint <comptime> = 34
+local PTHREAD_CANCEL_DISABLE: cint <comptime> = 1
+local ID_MAX: culong <comptime> = 0xffffffff
+
+-- struct passwd and struct group, Linux x86-64 layout (musl and glibc agree).
+local Passwd: type = @record{
+  name: *[0]cchar, passwd: *[0]cchar, uid: cuint, gid: cuint,
+  gecos: *[0]cchar, dir: *[0]cchar, shell: *[0]cchar
+}
+local Group: type = @record{
+  name: *[0]cchar, passwd: *[0]cchar, gid: cuint, mem: *[0]*[0]cchar
+}
+
+-- A growable line buffer; `text` holds `length` bytes and a NUL.
+local LineBuffer: type = @record{text: *[0]cchar, capacity: csize, length: csize}
+
+## if NELIBC_TESTING then
+-- Test-only redirection of the two database paths; normal archives do not
+-- export the setters.
+local passwd_path_override: [512]cchar
+local group_path_override: [512]cchar
+
+local function copy_override(path: *const [0]cchar, destination: *[0]cchar): cint
+  if path == nilptr then
+    destination[0] = 0_cchar
+    return 0_cint
+  end
+  local index: csize = 0
+  while index < 511 and path[index] ~= 0_cchar do index = index + 1 end
+  if path[index] ~= 0_cchar or index == 0 then return -1_cint end
+  index = 0
+  while path[index] ~= 0_cchar do
+    destination[index] = path[index]
+    index = index + 1
+  end
+  destination[index] = 0_cchar
+  return 0_cint
+end
+
+-- NULL restores the default path.
+local function nelibc_set_passwd_path(path: *const [0]cchar): cint
+    <cexport, codename '__nelibc_set_passwd_path'>
+  return copy_override(path, (@*[0]cchar)(&passwd_path_override[0]))
+end
+
+local function nelibc_set_group_path(path: *const [0]cchar): cint
+    <cexport, codename '__nelibc_set_group_path'>
+  return copy_override(path, (@*[0]cchar)(&group_path_override[0]))
+end
+
+local function passwd_path(): *const [0]cchar
+  if passwd_path_override[0] ~= 0_cchar then return (@*[0]cchar)(&passwd_path_override[0]) end
+  return "/etc/passwd"
+end
+
+local function group_path(): *const [0]cchar
+  if group_path_override[0] ~= 0_cchar then return (@*[0]cchar)(&group_path_override[0]) end
+  return "/etc/group"
+end
+## else
+local function passwd_path(): *const [0]cchar <inline>
+  return "/etc/passwd"
+end
+
+local function group_path(): *const [0]cchar <inline>
+  return "/etc/group"
+end
+## end
+
+local function errno_get(): cint <inline>
+  return nelibc_errno_location()[0]
+end
+
+local function errno_set(value: cint): void <inline>
+  nelibc_errno_location()[0] = value
+end
+
+-- Read one line, without its newline, into `line`. Returns 1 with a line,
+-- 0 at end of file with nothing read, and -1 with *error set on a read
+-- error or when the line does not fit in memory. A final line without a
+-- newline is returned whole.
+local function read_line(stream: pointer, line: *LineBuffer, failure: *cint): cint
+  line.length = 0
+  local any: boolean = false
+  while true do
+    local character: cint = fgetc(stream)
+    if character == -1 then
+      if ferror(stream) ~= 0 then
+        local code: cint = errno_get()
+        if code == 0 then code = EIO end
+        $failure = code
+        return -1
+      end
+      break
+    end
+    any = true
+    if character == 10 then break end
+    if line.length + 1 >= line.capacity then
+      local capacity: csize = line.capacity * 2
+      if capacity < 128 then capacity = 128 end
+      if capacity <= line.capacity then
+        $failure = ENOMEM
+        return -1
+      end
+      local grown: pointer = realloc(line.text, capacity)
+      if grown == nilptr then
+        $failure = ENOMEM
+        return -1
+      end
+      line.text = (@*[0]cchar)(grown)
+      line.capacity = capacity
+    end
+    line.text[line.length] = (@cchar)(character)
+    line.length = line.length + 1
+  end
+  if not any then return 0 end
+  if line.capacity == 0 then
+    local fresh: pointer = malloc(128)
+    if fresh == nilptr then
+      $failure = ENOMEM
+      return -1
+    end
+    line.text = (@*[0]cchar)(fresh)
+    line.capacity = 128
+  end
+  line.text[line.length] = 0_cchar
+  return 1
+end
+
+-- Index of the next ':' at or after `start`, or -1 at the end of the
+-- string (a NUL byte ends the line, as musl's strchr does).
+local function next_colon(text: *[0]cchar, start: csize): isize
+  local index: csize = start
+  while text[index] ~= 0_cchar do
+    if text[index] == 58_cchar then return (@isize)(index) end
+    index = index + 1
+  end
+  return -1
+end
+
+-- Digits at `position`, advancing it; empty is 0, above 2^32-1 saturates.
+local function parse_id(text: *[0]cchar, position: *csize): cuint
+  local value: culong = 0
+  local index: csize = $position
+  while true do
+    local digit: byte = (@byte)(text[index])
+    if digit < 48 or digit > 57 then break end
+    if value < ID_MAX then
+      value = value * 10 + (@culong)(digit - 48)
+      if value > ID_MAX then value = ID_MAX end
+    end
+    index = index + 1
+  end
+  $position = index
+  return (@cuint)(value)
+end
+
+-- Split a passwd line in place; false when it is not a complete entry.
+local function parse_passwd(text: *[0]cchar, entry: *Passwd): boolean
+  if text[0] == 0_cchar then return false end
+  local colon: isize = next_colon(text, 0)
+  if colon < 0 then return false end
+  local position: csize = (@csize)(colon)
+  entry.name = text
+  text[position] = 0_cchar
+  position = position + 1
+  entry.passwd = &text[position]
+  colon = next_colon(text, position)
+  if colon < 0 then return false end
+  position = (@csize)(colon)
+  text[position] = 0_cchar
+  position = position + 1
+  entry.uid = parse_id(text, &position)
+  if text[position] ~= 58_cchar then return false end
+  text[position] = 0_cchar
+  position = position + 1
+  entry.gid = parse_id(text, &position)
+  if text[position] ~= 58_cchar then return false end
+  text[position] = 0_cchar
+  position = position + 1
+  entry.gecos = &text[position]
+  colon = next_colon(text, position)
+  if colon < 0 then return false end
+  position = (@csize)(colon)
+  text[position] = 0_cchar
+  position = position + 1
+  entry.dir = &text[position]
+  colon = next_colon(text, position)
+  if colon < 0 then return false end
+  position = (@csize)(colon)
+  text[position] = 0_cchar
+  position = position + 1
+  entry.shell = &text[position]
+  return true
+end
+
+-- Split a group line's first three fields in place; on success *members
+-- is the index where the member list begins.
+local function parse_group(text: *[0]cchar, entry: *Group, members: *csize): boolean
+  if text[0] == 0_cchar then return false end
+  local colon: isize = next_colon(text, 0)
+  if colon < 0 then return false end
+  local position: csize = (@csize)(colon)
+  entry.name = text
+  text[position] = 0_cchar
+  position = position + 1
+  entry.passwd = &text[position]
+  colon = next_colon(text, position)
+  if colon < 0 then return false end
+  position = (@csize)(colon)
+  text[position] = 0_cchar
+  position = position + 1
+  entry.gid = parse_id(text, &position)
+  if text[position] ~= 58_cchar then return false end
+  text[position] = 0_cchar
+  $members = position + 1
+  return true
+end
+
+-- Non-empty comma-separated names starting at `start`.
+local function count_members(text: *[0]cchar, start: csize): csize
+  local count: csize = 0
+  local index: csize = start
+  local in_name: boolean = false
+  while text[index] ~= 0_cchar do
+    if text[index] == 44_cchar then
+      in_name = false
+    elseif not in_name then
+      in_name = true
+      count = count + 1
+    end
+    index = index + 1
+  end
+  return count
+end
+
+-- Terminate each member in place and store it in `list` (count + 1 slots).
+local function split_members(text: *[0]cchar, start: csize, list: *[0]*[0]cchar)
+  local count: csize = 0
+  local index: csize = start
+  local in_name: boolean = false
+  while text[index] ~= 0_cchar do
+    if text[index] == 44_cchar then
+      text[index] = 0_cchar
+      in_name = false
+    elseif not in_name then
+      in_name = true
+      list[count] = &text[index]
+      count = count + 1
+    end
+    index = index + 1
+  end
+  list[count] = nilptr
+end
+
+-- The next passwd entry of `stream`: 1 with *entry filled (pointing into
+-- line), 0 at end of file, -1 with *error set.
+local function next_passwd(stream: pointer, entry: *Passwd, line: *LineBuffer, failure: *cint): cint
+  while true do
+    local status: cint = read_line(stream, line, failure)
+    if status <= 0 then return status end
+    if parse_passwd(line.text, entry) then return 1 end
+  end
+  return 0
+end
+
+-- The next group entry; its member list goes to *list (grown with realloc,
+-- *list_slots slots), *member_count members.
+local function next_group(stream: pointer, entry: *Group, line: *LineBuffer,
+    list: **[0]*[0]cchar, list_slots: *csize, member_count: *csize, failure: *cint): cint
+  while true do
+    local status: cint = read_line(stream, line, failure)
+    if status <= 0 then return status end
+    local members: csize = 0
+    if parse_group(line.text, entry, &members) then
+      local count: csize = count_members(line.text, members)
+      if count + 1 > $list_slots then
+        local grown: pointer = realloc($list, (count + 1) * #pointer)
+        if grown == nilptr then
+          $failure = ENOMEM
+          return -1
+        end
+        $list = (@*[0]*[0]cchar)(grown)
+        $list_slots = count + 1
+      end
+      split_members(line.text, members, $list)
+      entry.mem = $list
+      $member_count = count
+      return 1
+    end
+  end
+  return 0
+end
+
+local function cancel_disable(): cint
+  local old: [1]cint
+  old[0] = 0
+  pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, (@*[0]cint)(&old))
+  return old[0]
+end
+
+local function cancel_restore(state: cint): void
+  pthread_setcancelstate(state, nilptr)
+end
+
+-- Open a database for a lookup. Returns the stream, or nilptr with *error
+-- 0 when the file does not exist (musl: "not found") or errno otherwise.
+local function open_database(path: *const [0]cchar, failure: *cint): pointer
+  local stream: pointer = fopen(path, "rbe")
+  if stream == nilptr then
+    local code: cint = errno_get()
+    if code == ENOENT or code == ENOTDIR then code = 0 end
+    $failure = code
+  end
+  return stream
+end
+
+-- Search /etc/passwd by name (when `name` is not NULL) or uid. Returns 0
+-- or an errno value; *found is the entry or NULL. errno is left as it was
+-- unless an error is returned.
+local function lookup_passwd(name: *const [0]cchar, uid: cuint, entry: *Passwd,
+    line: *LineBuffer, found: **Passwd): cint
+  local saved_errno: cint = errno_get()
+  local cancel_state: cint = cancel_disable()
+  $found = nilptr
+  local failure: cint = 0
+  local stream: pointer = open_database(passwd_path(), &failure)
+  if stream ~= nilptr then
+    while true do
+      local status: cint = next_passwd(stream, entry, line, &failure)
+      if status <= 0 then break end
+      if name ~= nilptr then
+        if strcmp(name, entry.name) == 0 then
+          $found = entry
+          break
+        end
+      elseif entry.uid == uid then
+        $found = entry
+        break
+      end
+    end
+    fclose(stream)
+  end
+  cancel_restore(cancel_state)
+  if failure ~= 0 then
+    $found = nilptr
+    errno_set(failure)
+  else
+    errno_set(saved_errno)
+  end
+  return failure
+end
+
+-- Search /etc/group by name or gid; see lookup_passwd.
+local function lookup_group(name: *const [0]cchar, gid: cuint, entry: *Group,
+    line: *LineBuffer, list: **[0]*[0]cchar, list_slots: *csize,
+    member_count: *csize, found: **Group): cint
+  local saved_errno: cint = errno_get()
+  local cancel_state: cint = cancel_disable()
+  $found = nilptr
+  local failure: cint = 0
+  local stream: pointer = open_database(group_path(), &failure)
+  if stream ~= nilptr then
+    while true do
+      local status: cint = next_group(stream, entry, line, list, list_slots, member_count, &failure)
+      if status <= 0 then break end
+      if name ~= nilptr then
+        if strcmp(name, entry.name) == 0 then
+          $found = entry
+          break
+        end
+      elseif entry.gid == gid then
+        $found = entry
+        break
+      end
+    end
+    fclose(stream)
+  end
+  cancel_restore(cancel_state)
+  if failure ~= 0 then
+    $found = nilptr
+    errno_set(failure)
+  else
+    errno_set(saved_errno)
+  end
+  return failure
+end
+
+local function relocate(field: *[0]cchar, from: *[0]cchar, to: *[0]cchar): *[0]cchar <inline>
+  return &to[(@usize)(field) - (@usize)(from)]
+end
+
+local function getpw_r(name: *const [0]cchar, uid: cuint, entry: *Passwd,
+    buffer: *[0]cchar, size: csize, result: **Passwd): cint
+  local line: LineBuffer = {nilptr, 0, 0}
+  local found: *Passwd = nilptr
+  local failure: cint = lookup_passwd(name, uid, entry, &line, &found)
+  if found ~= nilptr and size < line.length + 1 then
+    found = nilptr
+    failure = ERANGE
+  end
+  if found ~= nilptr then
+    memcpy(buffer, line.text, line.length + 1)
+    entry.name = relocate(entry.name, line.text, buffer)
+    entry.passwd = relocate(entry.passwd, line.text, buffer)
+    entry.gecos = relocate(entry.gecos, line.text, buffer)
+    entry.dir = relocate(entry.dir, line.text, buffer)
+    entry.shell = relocate(entry.shell, line.text, buffer)
+  end
+  free(line.text)
+  $result = found
+  if failure ~= 0 then errno_set(failure) end
+  return failure
+end
+
+local function getpwnam_r(name: *const [0]cchar, entry: *Passwd, buffer: *[0]cchar,
+    size: csize, result: **Passwd): cint <cexport, codename 'getpwnam_r'>
+  return getpw_r(name, 0, entry, buffer, size, result)
+end
+
+local function getpwuid_r(uid: cuint, entry: *Passwd, buffer: *[0]cchar,
+    size: csize, result: **Passwd): cint <cexport, codename 'getpwuid_r'>
+  return getpw_r(nilptr, uid, entry, buffer, size, result)
+end
+
+local function getgr_r(name: *const [0]cchar, gid: cuint, entry: *Group,
+    buffer: *[0]cchar, size: csize, result: **Group): cint
+  local line: LineBuffer = {nilptr, 0, 0}
+  local list: *[0]*[0]cchar = nilptr
+  local list_slots: csize = 0
+  local member_count: csize = 0
+  local found: *Group = nilptr
+  local failure: cint = lookup_group(name, gid, entry, &line, &list, &list_slots, &member_count, &found)
+  if found ~= nilptr then
+    -- The member array first, pointer-aligned, then the line's bytes.
+    local pointer_size: csize = #pointer
+    local padding: csize = (pointer_size - (@usize)(buffer) % pointer_size) % pointer_size
+    local array_bytes: csize = (member_count + 1) * pointer_size
+    if size < padding or size - padding < array_bytes or
+        size - padding - array_bytes < line.length + 1 then
+      found = nilptr
+      failure = ERANGE
+    else
+      local array: *[0]*[0]cchar = (@*[0]*[0]cchar)(&buffer[padding])
+      local text: *[0]cchar = &buffer[padding + array_bytes]
+      memcpy(text, line.text, line.length + 1)
+      entry.name = relocate(entry.name, line.text, text)
+      entry.passwd = relocate(entry.passwd, line.text, text)
+      local index: csize = 0
+      while index < member_count do
+        array[index] = relocate(list[index], line.text, text)
+        index = index + 1
+      end
+      array[member_count] = nilptr
+      entry.mem = array
+    end
+  end
+  free(list)
+  free(line.text)
+  $result = found
+  if failure ~= 0 then errno_set(failure) end
+  return failure
+end
+
+local function getgrnam_r(name: *const [0]cchar, entry: *Group, buffer: *[0]cchar,
+    size: csize, result: **Group): cint <cexport, codename 'getgrnam_r'>
+  return getgr_r(name, 0, entry, buffer, size, result)
+end
+
+local function getgrgid_r(gid: cuint, entry: *Group, buffer: *[0]cchar,
+    size: csize, result: **Group): cint <cexport, codename 'getgrgid_r'>
+  return getgr_r(nilptr, gid, entry, buffer, size, result)
+end
+
+-- Static storage of the non-reentrant lookups (each call overwrites it).
+local lookup_pw_entry: Passwd
+local lookup_pw_line: LineBuffer
+local lookup_gr_entry: Group
+local lookup_gr_line: LineBuffer
+local lookup_gr_list: *[0]*[0]cchar
+local lookup_gr_slots: csize
+
+local function getpwnam(name: *const [0]cchar): *Passwd <cexport, codename 'getpwnam'>
+  local found: *Passwd = nilptr
+  lookup_passwd(name, 0, &lookup_pw_entry, &lookup_pw_line, &found)
+  return found
+end
+
+local function getpwuid(uid: cuint): *Passwd <cexport, codename 'getpwuid'>
+  local found: *Passwd = nilptr
+  lookup_passwd(nilptr, uid, &lookup_pw_entry, &lookup_pw_line, &found)
+  return found
+end
+
+local function getgrnam(name: *const [0]cchar): *Group <cexport, codename 'getgrnam'>
+  local found: *Group = nilptr
+  local count: csize = 0
+  lookup_group(name, 0, &lookup_gr_entry, &lookup_gr_line, &lookup_gr_list,
+    &lookup_gr_slots, &count, &found)
+  return found
+end
+
+local function getgrgid(gid: cuint): *Group <cexport, codename 'getgrgid'>
+  local found: *Group = nilptr
+  local count: csize = 0
+  lookup_group(nilptr, gid, &lookup_gr_entry, &lookup_gr_line, &lookup_gr_list,
+    &lookup_gr_slots, &count, &found)
+  return found
+end
+
+-- Read the next entry of `stream` into static storage: NULL at end of file
+-- (errno unchanged) or on a read error (errno set).
+local function stream_passwd(stream: pointer, entry: *Passwd, line: *LineBuffer): *Passwd
+  local saved_errno: cint = errno_get()
+  local cancel_state: cint = cancel_disable()
+  local failure: cint = 0
+  local status: cint = next_passwd(stream, entry, line, &failure)
+  cancel_restore(cancel_state)
+  if status < 0 then
+    errno_set(failure)
+    return nilptr
+  end
+  errno_set(saved_errno)
+  if status == 0 then return nilptr end
+  return entry
+end
+
+local function stream_group(stream: pointer, entry: *Group, line: *LineBuffer,
+    list: **[0]*[0]cchar, list_slots: *csize): *Group
+  local saved_errno: cint = errno_get()
+  local cancel_state: cint = cancel_disable()
+  local failure: cint = 0
+  local count: csize = 0
+  local status: cint = next_group(stream, entry, line, list, list_slots, &count, &failure)
+  cancel_restore(cancel_state)
+  if status < 0 then
+    errno_set(failure)
+    return nilptr
+  end
+  errno_set(saved_errno)
+  if status == 0 then return nilptr end
+  return entry
+end
+
+-- getpwent/getgrent keep their own stream and storage. As in musl, setpwent
+-- closes the stream (the next getpwent reopens the file from its start) and
+-- a file that cannot be opened makes getpwent return NULL with fopen's errno.
+local pwent_stream: pointer
+local pwent_entry: Passwd
+local pwent_line: LineBuffer
+local grent_stream: pointer
+local grent_entry: Group
+local grent_line: LineBuffer
+local grent_list: *[0]*[0]cchar
+local grent_slots: csize
+
+local function setpwent(): void <cexport, codename 'setpwent'>
+  if pwent_stream ~= nilptr then fclose(pwent_stream) end
+  pwent_stream = nilptr
+end
+
+local function endpwent(): void <cexport, codename 'endpwent'>
+  setpwent()
+end
+
+local function getpwent(): *Passwd <cexport, codename 'getpwent'>
+  if pwent_stream == nilptr then
+    pwent_stream = fopen(passwd_path(), "rbe")
+    if pwent_stream == nilptr then return nilptr end
+  end
+  return stream_passwd(pwent_stream, &pwent_entry, &pwent_line)
+end
+
+local function setgrent(): void <cexport, codename 'setgrent'>
+  if grent_stream ~= nilptr then fclose(grent_stream) end
+  grent_stream = nilptr
+end
+
+local function endgrent(): void <cexport, codename 'endgrent'>
+  setgrent()
+end
+
+local function getgrent(): *Group <cexport, codename 'getgrent'>
+  if grent_stream == nilptr then
+    grent_stream = fopen(group_path(), "rbe")
+    if grent_stream == nilptr then return nilptr end
+  end
+  return stream_group(grent_stream, &grent_entry, &grent_line, &grent_list, &grent_slots)
+end
+
+local fgetpwent_entry: Passwd
+local fgetpwent_line: LineBuffer
+local fgetgrent_entry: Group
+local fgetgrent_line: LineBuffer
+local fgetgrent_list: *[0]*[0]cchar
+local fgetgrent_slots: csize
+
+local function fgetpwent(stream: pointer): *Passwd <cexport, codename 'fgetpwent'>
+  if stream == nilptr then
+    errno_set(EINVAL)
+    return nilptr
+  end
+  return stream_passwd(stream, &fgetpwent_entry, &fgetpwent_line)
+end
+
+local function fgetgrent(stream: pointer): *Group <cexport, codename 'fgetgrent'>
+  if stream == nilptr then
+    errno_set(EINVAL)
+    return nilptr
+  end
+  return stream_group(stream, &fgetgrent_entry, &fgetgrent_line, &fgetgrent_list, &fgetgrent_slots)
+end
+
+-- putpwent/putgrent format the whole line first and write it while holding
+-- the stream lock, so a concurrent writer to the same stream cannot
+-- interleave.
+local function text_length(text: *const [0]cchar): csize
+  local length: csize = 0
+  while text[length] ~= 0_cchar do length = length + 1 end
+  return length
+end
+
+local function append_text(line: *[0]cchar, position: *csize, text: *const [0]cchar): void
+  local index: csize = 0
+  while text[index] ~= 0_cchar do
+    line[$position] = text[index]
+    $position = $position + 1
+    index = index + 1
+  end
+end
+
+local function append_byte(line: *[0]cchar, position: *csize, value: byte): void
+  line[$position] = (@cchar)(value)
+  $position = $position + 1
+end
+
+local function append_id(line: *[0]cchar, position: *csize, value: cuint): void
+  local digits: [10]byte
+  local count: csize = 0
+  repeat
+    digits[count] = (@byte)(48 + value % 10)
+    count = count + 1
+    value = value // 10
+  until value == 0
+  while count > 0 do
+    count = count - 1
+    append_byte(line, position, digits[count])
+  end
+end
+
+-- Write the formatted line under the stream's (recursive) lock. Nelua maps
+-- fputs and fwrite to <stdio.h>, whose declarations would clash with these
+-- untyped imports, so the bytes go out through fputc.
+local function write_line(line: *[0]cchar, stream: pointer): cint
+  local status: cint = 0
+  flockfile(stream)
+  local index: csize = 0
+  while line[index] ~= 0_cchar do
+    if fputc((@cint)((@byte)(line[index])), stream) == -1 then
+      status = -1
+      break
+    end
+    index = index + 1
+  end
+  funlockfile(stream)
+  free(line)
+  return status
+end
+
+local function putpwent(entry: *Passwd, stream: pointer): cint <cexport, codename 'putpwent'>
+  if entry == nilptr or stream == nilptr or entry.name == nilptr or entry.passwd == nilptr or
+      entry.gecos == nilptr or entry.dir == nilptr or entry.shell == nilptr then
+    errno_set(EINVAL)
+    return -1
+  end
+  local size: csize = text_length(entry.name) + text_length(entry.passwd) +
+    text_length(entry.gecos) + text_length(entry.dir) + text_length(entry.shell) + 6 + 20 + 1
+  local line: *[0]cchar = (@*[0]cchar)(malloc(size))
+  if line == nilptr then return -1 end -- malloc set ENOMEM
+  local position: csize = 0
+  append_text(line, &position, entry.name)
+  append_byte(line, &position, 58)
+  append_text(line, &position, entry.passwd)
+  append_byte(line, &position, 58)
+  append_id(line, &position, entry.uid)
+  append_byte(line, &position, 58)
+  append_id(line, &position, entry.gid)
+  append_byte(line, &position, 58)
+  append_text(line, &position, entry.gecos)
+  append_byte(line, &position, 58)
+  append_text(line, &position, entry.dir)
+  append_byte(line, &position, 58)
+  append_text(line, &position, entry.shell)
+  append_byte(line, &position, 10)
+  line[position] = 0_cchar
+  return write_line(line, stream)
+end
+
+local function putgrent(entry: *Group, stream: pointer): cint <cexport, codename 'putgrent'>
+  if entry == nilptr or stream == nilptr or entry.name == nilptr or entry.passwd == nilptr then
+    errno_set(EINVAL)
+    return -1
+  end
+  local size: csize = text_length(entry.name) + text_length(entry.passwd) + 3 + 10 + 1 + 1
+  if entry.mem ~= nilptr then
+    local index: csize = 0
+    while entry.mem[index] ~= nilptr do
+      size = size + text_length(entry.mem[index]) + 1
+      index = index + 1
+    end
+  end
+  local line: *[0]cchar = (@*[0]cchar)(malloc(size))
+  if line == nilptr then return -1 end
+  local position: csize = 0
+  append_text(line, &position, entry.name)
+  append_byte(line, &position, 58)
+  append_text(line, &position, entry.passwd)
+  append_byte(line, &position, 58)
+  append_id(line, &position, entry.gid)
+  append_byte(line, &position, 58)
+  if entry.mem ~= nilptr then
+    local index: csize = 0
+    while entry.mem[index] ~= nilptr do
+      if index > 0 then append_byte(line, &position, 44) end
+      append_text(line, &position, entry.mem[index])
+      index = index + 1
+    end
+  end
+  append_byte(line, &position, 10)
+  line[position] = 0_cchar
+  return write_line(line, stream)
+end
+
+-- musl's getgrouplist: groups[0] is `gid`, then the gid of every group
+-- listing `user`, in file order and without removing duplicates. Returns
+-- the count, or -1 when it exceeds *ngroups (which then holds the count
+-- needed and the first *ngroups slots are filled) or on a read error
+-- (errno set, *ngroups unchanged).
+local function getgrouplist(user: *const [0]cchar, gid: cuint, groups: *[0]cuint,
+    ngroups: *cint): cint <cexport, codename 'getgrouplist'>
+  local limit: cint = $ngroups
+  local count: clong = 1
+  if limit >= 1 then groups[0] = gid end
+  local saved_errno: cint = errno_get()
+  local cancel_state: cint = cancel_disable()
+  local failure: cint = 0
+  local stream: pointer = open_database(group_path(), &failure)
+  if stream ~= nilptr then
+    local entry: Group
+    local line: LineBuffer = {nilptr, 0, 0}
+    local list: *[0]*[0]cchar = nilptr
+    local list_slots: csize = 0
+    local member_count: csize = 0
+    while true do
+      local status: cint = next_group(stream, &entry, &line, &list, &list_slots, &member_count, &failure)
+      if status <= 0 then break end
+      local index: csize = 0
+      while index < member_count and strcmp(user, list[index]) ~= 0 do index = index + 1 end
+      if index < member_count then
+        count = count + 1
+        if count <= limit then groups[count - 1] = entry.gid end
+      end
+    end
+    fclose(stream)
+    free(list)
+    free(line.text)
+  end
+  cancel_restore(cancel_state)
+  if failure ~= 0 then
+    errno_set(failure)
+    return -1
+  end
+  errno_set(saved_errno)
+  if count > 0x7fffffff then count = 0x7fffffff end
+  $ngroups = (@cint)(count)
+  if count > limit then return -1 end
+  return (@cint)(count)
+end
+
+-- initgroups sizes its list from getgrouplist instead of musl's fixed
+-- NGROUPS_MAX array; the kernel rejects more than NGROUPS_MAX (EINVAL).
+local function initgroups(user: *const [0]cchar, gid: cuint): cint <cexport, codename 'initgroups'>
+  local capacity: cint = 64
+  while true do
+    local groups: *[0]cuint = (@*[0]cuint)(malloc((@csize)(capacity) * #cuint))
+    if groups == nilptr then return -1 end
+    local count: [1]cint
+    count[0] = capacity
+    local status: cint = getgrouplist(user, gid, groups, &count[0])
+    if status >= 0 then
+      local result: cint = setgroups((@csize)(status), groups)
+      free(groups)
+      return result
+    end
+    free(groups)
+    if count[0] <= capacity then return -1 end -- a read error; errno is set
+    capacity = count[0]
+  end
+  return -1
+end

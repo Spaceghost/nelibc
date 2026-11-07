@@ -77,6 +77,8 @@ extern int __nelibc_set_localtime_path(const char *path);
 #include <locale.h>
 #include <langinfo.h>
 #include <search.h>
+#include <pwd.h>
+#include <grp.h>
 #include <regex.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -743,6 +745,43 @@ static void search_walk(const void *node, VISIT visit, int depth) {
     search_walk_last = value;
     ++search_walk_count;
   }
+}
+#endif
+
+#if defined(NELIBC_STANDALONE) && defined(NELIBC_TESTING)
+/* <pwd.h>/<grp.h> helpers: fixture files under /tmp (make_seek_path) and the
+ * test-only hooks that point the lookups at them. */
+extern int __nelibc_set_passwd_path(const char *path);
+extern int __nelibc_set_group_path(const char *path);
+static int pwd_fixture(char path[64], const char *text, size_t length) {
+  make_seek_path(path);
+  int fd = openat(AT_FDCWD, path, O_CREAT | O_EXCL | O_WRONLY | O_CLOEXEC, 0600);
+  if (fd < 0) return -1;
+  size_t written = 0;
+  while (written < length) {
+    ssize_t chunk = write(fd, text + written, length - written);
+    if (chunk <= 0) { close(fd); return -1; }
+    written += (size_t)chunk;
+  }
+  return close(fd);
+}
+static int pwd_is(const struct passwd *pw, const char *name, const char *passwd,
+    uid_t uid, gid_t gid, const char *gecos, const char *dir, const char *shell) {
+  return pw != NULL && strcmp(pw->pw_name, name) == 0 &&
+      strcmp(pw->pw_passwd, passwd) == 0 && pw->pw_uid == uid &&
+      pw->pw_gid == gid && strcmp(pw->pw_gecos, gecos) == 0 &&
+      strcmp(pw->pw_dir, dir) == 0 && strcmp(pw->pw_shell, shell) == 0;
+}
+/* `members` is a NULL-terminated list. */
+static int group_is(const struct group *gr, const char *name, const char *passwd,
+    gid_t gid, const char *const *members) {
+  if (gr == NULL || strcmp(gr->gr_name, name) != 0 ||
+      strcmp(gr->gr_passwd, passwd) != 0 || gr->gr_gid != gid || gr->gr_mem == NULL)
+    return 0;
+  size_t i = 0;
+  for (; members[i] != NULL; ++i)
+    if (gr->gr_mem[i] == NULL || strcmp(gr->gr_mem[i], members[i]) != 0) return 0;
+  return gr->gr_mem[i] == NULL;
 }
 #endif
 
@@ -2339,6 +2378,233 @@ int main(int argc, char **argv) {
     if (setlocale(LC_CTYPE, "C") == NULL ||
         !REGEX_MATCH("\\xe9", E, "a\xe9", 0, 1, 2)) return 504;
   }
+#ifdef NELIBC_TESTING
+  /* <pwd.h>/<grp.h> against fixture files: musl's field rules, the
+   * differences documented in src/pwd_standalone.nelua, ERANGE at the exact
+   * size, errno left alone on "not found", read errors, enumeration,
+   * fgetpwent/putpwent round trips, getgrouplist, initgroups. */
+  {
+    static const char passwd_text[] =
+        "root:x:0:0:root:/root:/bin/sh\n"
+        "#comment:x:7:7::/:/bin/false\n"
+        "\n"
+        "short:x:1:1:gecos:/home\n"
+        "badnum:x:12a:1::/:/bin/sh\n"
+        "neg:x:-1:1::/:/bin/sh\n"
+        "emptyid:x:::g:/d:\n"
+        "big:x:4294967296:99999999999999999999:a:b:c\n"
+        "colons:x:5:6:g:/h:/bin/sh:extra:more\n"
+        ":x:8:8:noname:/:/bin/sh\n"
+        "nul:x:9:9:g\0:/:/bin/sh\n"
+        "long:x:10:10:"
+        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"
+        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"
+        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"
+        ":/home/long:/bin/sh\n"
+        "last:x:11:11::/last:/bin/zsh";
+    static const char group_text[] =
+        "wheel:x:10:root,alice\n"
+        "empty:x:20:\n"
+        "sparse:x:30:,bob,,carol,\n"
+        "bad:x:4x:alice\n"
+        "nomem:x:40\n"
+        "dup:x:100:alice\n"
+        "alice:x:50:bob,alice\n"
+        "big:x:99999999999:alice";
+    char passwd_path[64], group_path[64], many_path[64], out_path[64], notdir_path[80];
+    if (pwd_fixture(passwd_path, passwd_text, sizeof passwd_text - 1) != 0 ||
+        pwd_fixture(group_path, group_text, sizeof group_text - 1) != 0 ||
+        __nelibc_set_passwd_path(passwd_path) != 0 ||
+        __nelibc_set_group_path(group_path) != 0) return 505;
+    struct passwd pw, *pw_result = NULL;
+    char pw_buffer[512];
+    const size_t root_size = sizeof "root:x:0:0:root:/root:/bin/sh";
+    if (getpwnam_r("root", &pw, pw_buffer, root_size, &pw_result) != 0 ||
+        pw_result != &pw || !pwd_is(&pw, "root", "x", 0, 0, "root", "/root", "/bin/sh") ||
+        getpwuid_r(0, &pw, pw_buffer, sizeof pw_buffer, &pw_result) != 0 ||
+        !pwd_is(pw_result, "root", "x", 0, 0, "root", "/root", "/bin/sh")) return 505;
+    errno = 0;
+    if (getpwnam_r("root", &pw, pw_buffer, root_size - 1, &pw_result) != ERANGE ||
+        pw_result != NULL || errno != ERANGE) return 506;
+    errno = EOWNERDEAD;
+    if (getpwnam_r("nouser", &pw, pw_buffer, sizeof pw_buffer, &pw_result) != 0 ||
+        pw_result != NULL || errno != EOWNERDEAD ||
+        getpwuid_r(12345, &pw, pw_buffer, sizeof pw_buffer, &pw_result) != 0 ||
+        pw_result != NULL || errno != EOWNERDEAD) return 506;
+    errno = 0;
+    if (getpwnam("nouser") != NULL || errno != 0 || getpwuid(9) != NULL ||
+        getpwnam("short") != NULL || getpwnam("badnum") != NULL ||
+        getpwnam("neg") != NULL || getpwnam("nul") != NULL || errno != 0) return 507;
+    if (!pwd_is(getpwnam("#comment"), "#comment", "x", 7, 7, "", "/", "/bin/false") ||
+        !pwd_is(getpwnam("emptyid"), "emptyid", "x", 0, 0, "g", "/d", "") ||
+        !pwd_is(getpwnam("big"), "big", "x", 4294967295u, 4294967295u, "a", "b", "c") ||
+        !pwd_is(getpwuid(5), "colons", "x", 5, 6, "g", "/h", "/bin/sh:extra:more") ||
+        !pwd_is(getpwuid(8), "", "x", 8, 8, "noname", "/", "/bin/sh") ||
+        !pwd_is(getpwnam(""), "", "x", 8, 8, "noname", "/", "/bin/sh") ||
+        !pwd_is(getpwnam("last"), "last", "x", 11, 11, "", "/last", "/bin/zsh")) return 508;
+    struct passwd *long_entry = getpwnam("long");
+    if (long_entry == NULL || strlen(long_entry->pw_gecos) != 300 ||
+        strcmp(long_entry->pw_shell, "/bin/sh") != 0 ||
+        getpwnam_r("long", &pw, pw_buffer, 64, &pw_result) != ERANGE || pw_result != NULL ||
+        getpwnam_r("long", &pw, pw_buffer, sizeof pw_buffer, &pw_result) != 0 ||
+        pw_result != &pw || strlen(pw.pw_gecos) != 300 || pw.pw_uid != 10 ||
+        strcmp(pw.pw_dir, "/home/long") != 0) return 509;
+    static const char *const passwd_order[] = {
+        "root", "#comment", "emptyid", "big", "colons", "", "long", "last"};
+    for (int round = 0; round < 2; ++round) {
+      setpwent();
+      for (size_t i = 0; i < sizeof passwd_order / sizeof *passwd_order; ++i) {
+        struct passwd *entry = getpwent();
+        if (entry == NULL || strcmp(entry->pw_name, passwd_order[i]) != 0) return 510;
+        if (round == 1) break; /* setpwent below restarts mid-file */
+      }
+    }
+    setpwent();
+    for (size_t i = 0; i < sizeof passwd_order / sizeof *passwd_order; ++i)
+      if (getpwent() == NULL) return 510;
+    errno = 0;
+    if (getpwent() != NULL || errno != 0 || getpwent() != NULL) return 510;
+    endpwent();
+
+    struct group gr, *gr_result = NULL;
+    union { char bytes[256]; void *align; } gr_buffer;
+    static const char *const wheel_members[] = {"root", "alice", NULL};
+    static const char *const sparse_members[] = {"bob", "carol", NULL};
+    static const char *const no_members[] = {NULL};
+    /* 3 pointers, then "wheel:x:10:root,alice" and its NUL. */
+    const size_t wheel_size = 3 * sizeof(char *) + sizeof "wheel:x:10:root,alice";
+    if (getgrnam_r("wheel", &gr, gr_buffer.bytes, wheel_size, &gr_result) != 0 ||
+        gr_result != &gr || !group_is(&gr, "wheel", "x", 10, wheel_members) ||
+        (char *)gr.gr_mem < gr_buffer.bytes ||
+        (char *)gr.gr_mem >= gr_buffer.bytes + wheel_size) return 511;
+    errno = 0;
+    if (getgrnam_r("wheel", &gr, gr_buffer.bytes, wheel_size - 1, &gr_result) != ERANGE ||
+        gr_result != NULL || errno != ERANGE ||
+        getgrnam_r("wheel", &gr, gr_buffer.bytes + 1, wheel_size, &gr_result) != ERANGE ||
+        getgrnam_r("wheel", &gr, gr_buffer.bytes + 1, wheel_size + sizeof(char *) - 1,
+            &gr_result) != 0 || !group_is(gr_result, "wheel", "x", 10, wheel_members) ||
+        ((uintptr_t)gr.gr_mem % sizeof(char *)) != 0) return 511;
+    errno = EOWNERDEAD;
+    if (getgrgid_r(30, &gr, gr_buffer.bytes, sizeof gr_buffer.bytes, &gr_result) != 0 ||
+        !group_is(gr_result, "sparse", "x", 30, sparse_members) ||
+        getgrnam_r("nogroup", &gr, gr_buffer.bytes, sizeof gr_buffer.bytes, &gr_result) != 0 ||
+        gr_result != NULL || errno != EOWNERDEAD) return 512;
+    errno = 0;
+    if (!group_is(getgrgid(20), "empty", "x", 20, no_members) ||
+        getgrnam("bad") != NULL || getgrnam("nomem") != NULL || getgrgid(40) != NULL ||
+        !group_is(getgrgid(4294967295u), "big", "x", 4294967295u, (const char *const[]){"alice", NULL}) ||
+        errno != 0) return 512;
+    static const char *const group_order[] = {"wheel", "empty", "sparse", "dup", "alice", "big"};
+    setgrent();
+    for (size_t i = 0; i < sizeof group_order / sizeof *group_order; ++i) {
+      struct group *entry = getgrent();
+      if (entry == NULL || strcmp(entry->gr_name, group_order[i]) != 0) return 513;
+    }
+    if (getgrent() != NULL) return 513;
+    setgrent();
+    struct group *first_group = getgrent();
+    struct group *second_group = first_group == NULL ? NULL : getgrent();
+    if (second_group == NULL || strcmp(second_group->gr_name, "empty") != 0) return 513;
+    endgrent();
+
+    gid_t groups[8];
+    int ngroups = 8;
+    if (getgrouplist("alice", 100, groups, &ngroups) != 5 || ngroups != 5 ||
+        groups[0] != 100 || groups[1] != 10 || groups[2] != 100 || groups[3] != 50 ||
+        groups[4] != 4294967295u) return 514;
+    ngroups = 2;
+    groups[2] = 7;
+    if (getgrouplist("alice", 100, groups, &ngroups) != -1 || ngroups != 5 ||
+        groups[0] != 100 || groups[1] != 10 || groups[2] != 7) return 514;
+    ngroups = 0;
+    if (getgrouplist("bob", 1, groups, &ngroups) != -1 || ngroups != 3) return 514;
+    ngroups = 8;
+    if (getgrouplist("nobody", 3, groups, &ngroups) != 1 || ngroups != 1 || groups[0] != 3)
+      return 514;
+
+    /* A read error: the database is a directory. */
+    if (__nelibc_set_passwd_path("/") != 0 || __nelibc_set_group_path("/") != 0) return 515;
+    errno = 0;
+    ngroups = 8;
+    if (getpwnam_r("root", &pw, pw_buffer, sizeof pw_buffer, &pw_result) != EISDIR ||
+        pw_result != NULL || errno != EISDIR) return 515;
+    errno = 0;
+    if (getpwuid(0) != NULL || errno != EISDIR) return 515;
+    errno = 0;
+    if (getgrgid_r(10, &gr, gr_buffer.bytes, sizeof gr_buffer.bytes, &gr_result) != EISDIR ||
+        gr_result != NULL || errno != EISDIR) return 515;
+    errno = 0;
+    if (getgrouplist("alice", 100, groups, &ngroups) != -1 || errno != EISDIR || ngroups != 8)
+      return 515;
+    /* A missing file (ENOENT) or a path through a file (ENOTDIR) is "not found". */
+    size_t passwd_path_length = strlen(passwd_path);
+    memcpy(notdir_path, passwd_path, passwd_path_length);
+    memcpy(notdir_path + passwd_path_length, "/x", 3);
+    if (__nelibc_set_passwd_path("/nonexistent-nelibc/passwd") != 0 ||
+        __nelibc_set_group_path(notdir_path) != 0) return 516;
+    errno = EOWNERDEAD;
+    if (getpwnam_r("root", &pw, pw_buffer, sizeof pw_buffer, &pw_result) != 0 ||
+        pw_result != NULL || errno != EOWNERDEAD ||
+        getgrnam_r("wheel", &gr, gr_buffer.bytes, sizeof gr_buffer.bytes, &gr_result) != 0 ||
+        gr_result != NULL || errno != EOWNERDEAD) return 516;
+    ngroups = 8;
+    if (getgrouplist("alice", 100, groups, &ngroups) != 1 || ngroups != 1) return 516;
+    errno = 0;
+    if (getpwent() != NULL || errno != ENOENT) return 516;
+    endpwent();
+
+    /* putpwent/putgrent written and read back with fgetpwent/fgetgrent. */
+    make_seek_path(out_path);
+    FILE *out = fopen(out_path, "w+x");
+    struct passwd written_pw = {"user", "*", 1000, 4294967295u, "U, Ser", "/home/user", "/bin/sh"};
+    char *written_members[] = {"a", "bc", NULL};
+    struct group written_gr = {"grp", "", 0, written_members};
+    struct group written_empty = {"none", "x", 7, NULL};
+    if (out == NULL || putpwent(&written_pw, out) != 0 || putgrent(&written_gr, out) != 0 ||
+        putgrent(&written_empty, out) != 0 || fflush(out) != 0) return 517;
+    char file_text[128];
+    rewind(out);
+    size_t file_length = fread(file_text, 1, sizeof file_text - 1, out);
+    file_text[file_length] = 0;
+    if (strcmp(file_text, "user:*:1000:4294967295:U, Ser:/home/user:/bin/sh\n"
+                          "grp::0:a,bc\nnone:x:7:\n") != 0) return 517;
+    rewind(out);
+    if (!pwd_is(fgetpwent(out), "user", "*", 1000, 4294967295u, "U, Ser", "/home/user", "/bin/sh"))
+      return 518;
+    /* fgetpwent skips the group lines (too few fields), then hits EOF. */
+    errno = 0;
+    if (fgetpwent(out) != NULL || errno != 0) return 518;
+    rewind(out);
+    static const char *const written_list[] = {"a", "bc", NULL};
+    /* A passwd line read as a group: the member list is the rest of the line. */
+    static const char *const passwd_as_members[] = {"4294967295:U", " Ser:/home/user:/bin/sh", NULL};
+    if (!group_is(fgetgrent(out), "user", "*", 1000, passwd_as_members)) return 518;
+    if (!group_is(fgetgrent(out), "grp", "", 0, written_list) ||
+        !group_is(fgetgrent(out), "none", "x", 7, no_members) || fgetgrent(out) != NULL)
+      return 518;
+    if (fclose(out) != 0 || unlink(out_path) != 0) return 518;
+
+    /* initgroups sizes its list past 64 groups; unprivileged, setgroups fails. */
+    static char many_text[71 * 24];
+    size_t many_length = 0;
+    for (int i = 0; i < 70; ++i)
+      many_length += (size_t)snprintf(many_text + many_length, sizeof many_text - many_length,
+          "g%d:x:%d:many\n", i, 1000 + i);
+    if (pwd_fixture(many_path, many_text, many_length) != 0 ||
+        __nelibc_set_group_path(many_path) != 0) return 519;
+    gid_t many_groups[80];
+    ngroups = 80;
+    if (getgrouplist("many", 1, many_groups, &ngroups) != 71 || ngroups != 71 ||
+        many_groups[70] != 1069) return 519;
+    if (geteuid() != 0) {
+      errno = 0;
+      if (initgroups("many", 1) != -1 || errno != EPERM) return 519;
+    }
+    if (__nelibc_set_passwd_path(NULL) != 0 || __nelibc_set_group_path(NULL) != 0 ||
+        unlink(passwd_path) != 0 || unlink(group_path) != 0 || unlink(many_path) != 0)
+      return 520;
+  }
+#endif
   char narrow_scan_word[8] = {0};
   int narrow_scan_count = -1;
   if (sscanf("alpha rest", "%5s%n", narrow_scan_word, &narrow_scan_count) != 1 ||
