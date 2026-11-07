@@ -89,6 +89,12 @@ strings, including half-to-even ties at the 63rd fraction digit, the
 smallest subnormal, `LDBL_MAX` in full (4,940 characters) and width/flag
 combinations; `tools/syscall_smoke.c` checks the standalone `swprintf`.
 
+Gate: the 155-target list, container `nelibc-writ`, user `build`, Nelua
+`dabbd9ef`, on `21d45df` (this change merged with the libm slice): 155/155
+targets exited 0 and no log contains a warning; logs in
+`/work/artifacts/gate-ldd2-20261107-0947/`. A first attempt died at target
+48 when the container's disk filled; it produced no failure, only no result.
+
 ### libm slice, 2026-11-07 (musl math ports)
 
 `src/math_core.nelua` carries ports of musl 1.2.5's exp/exp2/pow/log/log2
