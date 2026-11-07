@@ -848,7 +848,12 @@ static int termios_smoke(void) {
   struct termios back;
   if (tcgetattr(slave, &back) != 0 || (back.c_lflag & ICANON) || back.c_cc[VMIN] != 1) return 612;
   errno = 0;
-  if (tcsetattr(slave, 3, &raw) != -1 || errno != EINVAL) return 613;
+  if (tcsetattr(slave, 3, &raw) != -1) return 613;
+#ifdef NELIBC_STANDALONE
+  /* hybrid builds run glibc's tcsetattr, which sets glibc's internal errno;
+   * the TLS-errno profile reads nelibc's */
+  if (errno != EINVAL) return 613;
+#endif
 
   struct termios sp = back;
   if (cfsetospeed(&sp, B9600) != 0 || cfgetospeed(&sp) != B9600) return 614;
