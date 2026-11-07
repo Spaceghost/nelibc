@@ -207,6 +207,9 @@ details follow-up (below) fixed all seven.
   subnormal boundary is kept.
 
 Result: gcc 31 and zig 35 expected failures, no `math/*` test among them.
+Gate: the 155-target list, container `nelibc-writ`, Nelua `dabbd9ef`, on
+`58f9caa`: 155/155 exited 0, no warnings; logs in
+`/work/artifacts/gate-md-20261107-1024/`.
 The zig
 list differs from the gcc list only in four API tests clang rejects at build
 time (`ftw`, `iso646`, `sys_stat`, `sys_wait`).
