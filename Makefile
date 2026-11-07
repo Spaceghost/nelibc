@@ -485,7 +485,7 @@ $(OUT)/libnelibc-zig.a: Makefile zig $(OUT)/inet-zig.o $(OUT)/stdio-format-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_WITH_UNISTD -DNELIBC_USE_GLIBC_CANCEL_WRAPPERS -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin -fno-sanitize=all -c src/stdio_host_adapter.c -o $(OUT)/stdio-host-adapter-zig.o
-	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin -c src/alloc_hybrid_adapter.c -o $(OUT)/alloc-hybrid-adapter-zig.o
+	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin -fno-sanitize=all -c src/alloc_hybrid_adapter.c -o $(OUT)/alloc-hybrid-adapter-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin -c src/fcntl_adapter.c -o $(OUT)/fcntl-adapter-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin -c src/credential_adapter.c -o $(OUT)/credential-adapter-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin -c src/sem_clockwait_glibc.c -o $(OUT)/sem-clockwait-glibc-zig.o
@@ -583,7 +583,7 @@ $(OUT)/libnelibc-zig-musl.a: Makefile zig-musl $(OUT)/inet-zig-musl.o $(OUT)/mal
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_WITH_UNISTD -DNELIBC_USE_MUSL_SYSCALL_CP -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -c src/stdio_host_adapter.c -o $(OUT)/stdio-host-adapter-zig-musl.o
-	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -c src/alloc_hybrid_adapter.c -o $(OUT)/alloc-hybrid-adapter-zig-musl.o
+	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_STATIC_MUSL -c src/alloc_hybrid_adapter.c -o $(OUT)/alloc-hybrid-adapter-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -c src/fcntl_adapter.c -o $(OUT)/fcntl-adapter-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -DNELIBC_STATIC_MUSL -c src/credential_adapter.c -o $(OUT)/credential-adapter-zig-musl.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -c src/sem_clockwait_musl.c -o $(OUT)/sem-clockwait-musl-zig-musl.o
