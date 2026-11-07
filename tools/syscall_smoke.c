@@ -712,7 +712,42 @@ static int positioned_io_smoke(void) {
   return result;
 }
 
+/* Static constructors and destructors (standalone _start and exit). The
+ * destructor reports through a pipe from a forked child: atexit handlers
+ * first, then .fini_array, as glibc orders them. */
+static int constructor_ran;
+static int order_fd = -1;
+__attribute__((constructor)) static void smoke_constructor(void) { constructor_ran = 1; }
+static void order_atexit(void) { if (order_fd >= 0 && write(order_fd, "A", 1) != 1) _exit(8); }
+__attribute__((destructor)) static void smoke_destructor(void) {
+  if (order_fd >= 0 && write(order_fd, "D", 1) != 1) _exit(7);
+}
+
 int main(int argc, char **argv) {
+  if (!constructor_ran) return 501;
+  {
+    int order_pipe[2];
+    if (pipe(order_pipe) != 0) return 502;
+    pid_t order_child = fork();
+    if (order_child == 0) {
+      close(order_pipe[0]);
+      order_fd = order_pipe[1];
+      if (atexit(order_atexit) != 0) _exit(9);
+      exit(0);
+    }
+    close(order_pipe[1]);
+    char order_seen[4] = {0};
+    ssize_t order_length = read(order_pipe[0], order_seen, sizeof order_seen - 1);
+    if (order_length == 1) {
+      ssize_t more = read(order_pipe[0], order_seen + 1, sizeof order_seen - 2);
+      if (more > 0) order_length += more;
+    }
+    close(order_pipe[0]);
+    int order_status = 0;
+    if (order_child < 0 || waitpid(order_child, &order_status, 0) != order_child ||
+        !WIFEXITED(order_status) || WEXITSTATUS(order_status) != 0 ||
+        order_length != 2 || memcmp(order_seen, "AD", 2) != 0) return 503;
+  }
   if (fnmatch("*.c", "main.c", 0) != 0 ||
       fnmatch("a/*.c", "a/b/main.c", FNM_PATHNAME) != FNM_NOMATCH ||
       fnmatch("a/*.c", "a/b/main.c", 0) != 0 ||

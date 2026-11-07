@@ -3,6 +3,7 @@
 
 local function _exit(status: cint): void <cimport> end
 local function fflush(stream: pointer): cint <cimport> end
+local function nelibc_run_fini_array(): void <cimport> end
 
 local exit_handlers: [32]function(): void = {}
 local exit_handler_count: csize = 0
@@ -24,6 +25,8 @@ local function exit(status: cint): void <cexport, codename 'exit'>
     exit_handlers[exit_handler_count] = nilptr
     handler()
   end
+  -- static destructors after the atexit handlers, as glibc orders them
+  nelibc_run_fini_array()
   fflush(nilptr)
   _exit(status)
 end

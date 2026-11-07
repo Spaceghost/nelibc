@@ -446,7 +446,13 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
   standalone `_start` (`src/sys/start_linux_x86_64_standalone.S`) does not
   walk `.preinit_array`/`.init_array`, and nothing in `src/` mentions
   them. Static constructors are silently skipped in every standalone binary;
-  `.fini_array` is likely skipped too (not tested here).
+  `.fini_array` is likely skipped too (not tested here). **Fixed** (branch
+  `init-fini`): `_start` now runs `.preinit_array` then `.init_array` with
+  argc, argv and envp before `main`, and `exit` runs `.fini_array` in
+  reverse after the atexit handlers and before the stdio flush, glibc's
+  order. `functional/tls_align` passes in both runs (gcc 279, zig 280);
+  `tools/syscall_smoke.c` checks that a constructor ran (501) and that a
+  forked child's atexit handler runs before its destructor (503).
 - `regression/ftello-unflushed-append`: `ftello is broken before flush: got
   3, want 7`. After `fdopen(fd, "a")` on a 4-byte file and a 3-byte
   `fwrite`, `ftello` ignores that appends go to the end of the file.

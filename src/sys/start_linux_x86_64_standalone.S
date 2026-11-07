@@ -168,6 +168,16 @@ _start:
   # nelua_main function. Initialize standalone stdio before user main, then
   # pass the argc and argv from the kernel-provided initial stack.
   call nelibc_stdio_init
+  # Static constructors, as glibc and musl run them before main:
+  # .preinit_array then .init_array, in order, each called with argc, argv
+  # and envp. The linker provides the bounds for a static executable; the
+  # weak references resolve to 0 (an empty range) when it does not.
+  leaq __preinit_array_start(%rip), %rbx
+  leaq __preinit_array_end(%rip), %r12
+  call .Lrun_init_range
+  leaq __init_array_start(%rip), %rbx
+  leaq __init_array_end(%rip), %r12
+  call .Lrun_init_range
   movq (%rsp), %rdi
   leaq 8(%rsp), %rsi
   call main
@@ -180,7 +190,54 @@ _start:
   movl $60, %eax
   syscall
   ud2
+# Call each pointer in [%rbx, %r12) with argc, argv, envp. Entered with a
+# call from _start, whose stack is 16-byte aligned at the call, so the return
+# address leaves it 8 off: realign around the calls.
+.Lrun_init_range:
+  subq $8, %rsp
+1:
+  cmpq %r12, %rbx
+  jae 2f
+  movq 16(%rsp), %rdi          # argc, above our return address and pad
+  leaq 24(%rsp), %rsi          # argv
+  movq environ(%rip), %rdx
+  call *(%rbx)
+  addq $8, %rbx
+  jmp 1b
+2:
+  addq $8, %rsp
+  ret
 .size _start, .-_start
+
+# Static destructors for exit: .fini_array in reverse order, after the
+# atexit handlers (glibc's order).
+.globl nelibc_run_fini_array
+.type nelibc_run_fini_array, @function
+nelibc_run_fini_array:
+  pushq %rbx
+  pushq %r12
+  subq $8, %rsp
+  leaq __fini_array_start(%rip), %r12
+  leaq __fini_array_end(%rip), %rbx
+1:
+  cmpq %r12, %rbx
+  jbe 2f
+  subq $8, %rbx
+  call *(%rbx)
+  jmp 1b
+2:
+  addq $8, %rsp
+  popq %r12
+  popq %rbx
+  ret
+.size nelibc_run_fini_array, .-nelibc_run_fini_array
+
+.weak __preinit_array_start
+.weak __preinit_array_end
+.weak __init_array_start
+.weak __init_array_end
+.weak __fini_array_start
+.weak __fini_array_end
 
 .bss
 .globl environ
