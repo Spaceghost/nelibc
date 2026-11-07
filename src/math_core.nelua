@@ -416,7 +416,6 @@ local function nelibc_logbl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_ldexpl_hw(value: clongdouble, exponent: cint, range_error: *[0]cint): clongdouble <cimport> end
 local function nelibc_scalblnl_hw(value: clongdouble, exponent: clong, range_error: *[0]cint): clongdouble <cimport> end
 local function nelibc_roundl_hw(value: clongdouble, mode: cint): clongdouble <cimport> end
-local function nelibc_roundl_away_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_lrintl_hw(value: clongdouble): clonglong <cimport> end
 local function nelibc_lroundl_hw(value: clongdouble): clonglong <cimport> end
 local function nelibc_fmodl_hw(x: clongdouble, y: clongdouble): clongdouble <cimport> end
@@ -774,6 +773,7 @@ local pow_log_logctail: [128]cdouble = {
 }
 
 local function nelibc_fp_barrier_hw(value: cdouble): cdouble <cimport> end
+local function nelibc_fp_barrierl_hw(value: clongdouble): clongdouble <cimport> end
 local function nelibc_fp_barrierf_hw(value: cfloat): cfloat <cimport> end
 
 local function bits_of_double(value: cdouble): culonglong <inline>
@@ -794,6 +794,9 @@ end
 -- musl's FORCE_EVAL and fp_barrier: an opaque call keeps the compiler from
 -- dropping an operation performed only for the floating-point flags it
 -- raises, or from folding a constant expression that must raise them.
+local function force_evall(value: clongdouble): void <inline>
+  nelibc_fp_barrierl_hw(value)
+end
 local function force_eval(value: cdouble): void <inline>
   nelibc_fp_barrier_hw(value)
 end
@@ -1000,8 +1003,29 @@ local function nearbyintl(value: clongdouble): clongdouble <cexport, codename 'n
   return nelibc_roundl_hw(value, 4_cint)
 end
 
+-- roundl follows musl 1.2.5 src/math/roundl.c: the 0x1p63 trick rounds
+-- without raising a spurious INEXACT on values that are already integral.
 local function roundl(value: clongdouble): clongdouble <cexport, codename 'roundl'>
-  return nelibc_roundl_away_hw(value)
+  local bits: LongDoubleBits = {value = value}
+  local biased = (@cint)(bits.parts.sign_exponent & 0x7fff_cushort)
+  local negative = (bits.parts.sign_exponent & 0x8000_cushort) ~= 0_cushort
+  if biased >= 0x3fff_cint + 63_cint then return value end
+  local x = value
+  if negative then x = -x end
+  if biased < 0x3fff_cint - 1_cint then
+    force_evall(x + 0x1P63_clongdouble)
+    return 0_clongdouble * value
+  end
+  local y = x + 0x1P63_clongdouble - 0x1P63_clongdouble - x
+  if y > 0.5_clongdouble then
+    y = y + x - 1_clongdouble
+  elseif y <= -0.5_clongdouble then
+    y = y + x + 1_clongdouble
+  else
+    y = y + x
+  end
+  if negative then y = -y end
+  return y
 end
 
 local function lrintl(value: clongdouble): clong <cexport, codename 'lrintl'>
@@ -1085,25 +1109,52 @@ local function log1pl(value: clongdouble): clongdouble <cexport, codename 'log1p
   return logl(1_clongdouble + value)
 end
 
+local function long_double_pow2(exponent: cint): clongdouble <inline>
+  local bits: LongDoubleBits = {
+    parts = {significand = 0x8000000000000000_culonglong,
+             sign_exponent = (@cushort)(exponent + 0x3fff_cint)}
+  }
+  return bits.value
+end
+
+-- ERANGE plus a real OVERFLOW / UNDERFLOW flag, computed at run time so the
+-- compiler cannot fold the product away.
+local function long_double_overflow(): clongdouble
+  math_range_error()
+  return nelibc_fp_barrierl_hw(long_double_pow2(16383_cint)) * long_double_pow2(16383_cint)
+end
+
+local function long_double_underflow(): clongdouble
+  math_range_error()
+  return nelibc_fp_barrierl_hw(long_double_pow2(-16382_cint)) * long_double_pow2(-16382_cint)
+end
+
+-- glibc raises UNDERFLOW for every subnormal exp result, even an exact one.
+local function long_double_subnormal_result(result: clongdouble): clongdouble
+  local bits: LongDoubleBits = {value = result}
+  if (bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort and
+      bits.parts.significand ~= 0_culonglong then
+    math_range_error()
+    force_evall(nelibc_fp_barrierl_hw(long_double_pow2(-16382_cint)) * long_double_pow2(-16382_cint))
+  end
+  return result
+end
 local function expl(value: clongdouble): clongdouble <cexport, codename 'expl'>
   if is_nan80(value) then return value + value end
   if is_infinite80(value) then
     if value < 0_clongdouble then return 0_clongdouble end
     return value
   end
+  -- ln(LDBL_MAX) = 11356.52..., ln(LDBL_TRUE_MIN) = -11399.49...; beyond
+  -- them the x87 fist step would raise INVALID, so answer directly.
+  if value > 11357_clongdouble then return long_double_overflow() end
+  if value < -11400_clongdouble then return long_double_underflow() end
   local result = nelibc_expl_hw(value)
-  if value < -11400_clongdouble then
+  if is_infinite80(result) or (result == 0_clongdouble and value ~= 0_clongdouble) then
     math_range_error()
-    return 0_clongdouble
+    return result
   end
-  local result_bits: LongDoubleBits = {value = result}
-  if is_infinite80(result) or
-      ((result_bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort and
-       result_bits.parts.significand ~= 0_culonglong) or
-      (result == 0_clongdouble and value ~= 0_clongdouble) then
-    math_range_error()
-  end
-  return result
+  return long_double_subnormal_result(result)
 end
 
 local function exp2l(value: clongdouble): clongdouble <cexport, codename 'exp2l'>
@@ -1112,15 +1163,17 @@ local function exp2l(value: clongdouble): clongdouble <cexport, codename 'exp2l'
     if value < 0_clongdouble then return 0_clongdouble end
     return value
   end
-  local result = nelibc_exp2l_hw(value)
-  local result_bits: LongDoubleBits = {value = result}
-  if is_infinite80(result) or
-      ((result_bits.parts.sign_exponent & 0x7fff_cushort) == 0_cushort and
-       result_bits.parts.significand ~= 0_culonglong) or
-      (result == 0_clongdouble and value ~= 0_clongdouble) then
-    math_range_error()
+  if value > -0x1P-65_clongdouble and value < 0x1P-65_clongdouble then
+    return 1_clongdouble + value
   end
-  return result
+  if value >= 16384_clongdouble then return long_double_overflow() end
+  if value < -16446_clongdouble then return long_double_underflow() end
+  local result = nelibc_exp2l_hw(value)
+  if is_infinite80(result) or (result == 0_clongdouble and value ~= 0_clongdouble) then
+    math_range_error()
+    return result
+  end
+  return long_double_subnormal_result(result)
 end
 
 local function expm1l(value: clongdouble): clongdouble <cexport, codename 'expm1l'>
@@ -1327,13 +1380,7 @@ local function atanhl(value: clongdouble): clongdouble <cexport, codename 'atanh
   if magnitude < 0_clongdouble then magnitude = -magnitude end
   if magnitude == 1_clongdouble then
     math_range_error()
-    local infinity: LongDoubleBits = {
-      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x7fff_cushort}
-    }
-    if value < 0_clongdouble then
-      infinity.parts.sign_exponent = 0xffff_cushort
-    end
-    return infinity.value
+    return value / (magnitude - 1_clongdouble) -- +-inf with DIVBYZERO
   end
   if magnitude > 1_clongdouble then
     math_domain_error()
@@ -2006,12 +2053,9 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
       return 0_clongdouble
     end
     math_range_error()
-    local sign_exponent: cushort = 0x7fff_cushort
-    if is_negative_zero80(value) and odd then sign_exponent = 0xffff_cushort end
-    local infinity: LongDoubleBits = {
-      parts = {significand = 0x8000000000000000_culonglong, sign_exponent = sign_exponent}
-    }
-    return infinity.value
+    local numerator: clongdouble = 1_clongdouble
+    if is_negative_zero80(value) and odd then numerator = -1_clongdouble end
+    return numerator / (value - value) -- +-inf with DIVBYZERO
   end
   if value < 0_clongdouble and not is_integer80(exponent) then
     math_domain_error()
@@ -3512,103 +3556,607 @@ local function acosf(value: cfloat): cfloat <cexport, codename 'acosf'>
   return (@cfloat)(acos((@cdouble)(value)))
 end
 
-local function log(value: cdouble): cdouble <cexport, codename 'log'>
-  if value ~= value then return value + value end
-  if is_infinite64(value) then
-    if value < 0_cdouble then
-      math_domain_error()
-      return nelibc_log_domain_error_hw()
-    end
-    return value
+-- log, log2, log10 and log1p follow musl 1.2.5 src/math/log.c (log_data.c),
+-- log2.c (log2_data.c), log10.c and log1p.c. The log/log2 tables below are
+-- generated by tools/gen_musl_tables.py; the non-FMA table path is used.
+local log_tab_invc: [128]cdouble = {
+  0x1.734F0C3E0DE9FP+0_cdouble, 0x1.713786A2CE91FP+0_cdouble,
+  0x1.6F26008FAB5A0P+0_cdouble, 0x1.6D1A61F138C7DP+0_cdouble,
+  0x1.6B1490BC5B4D1P+0_cdouble, 0x1.69147332F0CBAP+0_cdouble,
+  0x1.6719F18224223P+0_cdouble, 0x1.6524F99A51ED9P+0_cdouble,
+  0x1.63356AA8F24C4P+0_cdouble, 0x1.614B36B9DDC14P+0_cdouble,
+  0x1.5F66452C65C4CP+0_cdouble, 0x1.5D867B5912C4FP+0_cdouble,
+  0x1.5BABCCB5B90DEP+0_cdouble, 0x1.59D61F2D91A78P+0_cdouble,
+  0x1.5805612465687P+0_cdouble, 0x1.56397CEE76BD3P+0_cdouble,
+  0x1.54725E2A77F93P+0_cdouble, 0x1.52AFF42064583P+0_cdouble,
+  0x1.50F22DBB2BDDFP+0_cdouble, 0x1.4F38F4734DED7P+0_cdouble,
+  0x1.4D843CFDE2840P+0_cdouble, 0x1.4BD3EC078A3C8P+0_cdouble,
+  0x1.4A27FC3E0258AP+0_cdouble, 0x1.4880524D48434P+0_cdouble,
+  0x1.46DCE1B192D0BP+0_cdouble, 0x1.453D9D3391854P+0_cdouble,
+  0x1.43A2744B4845AP+0_cdouble, 0x1.420B54115F8FBP+0_cdouble,
+  0x1.40782DA3EF4B1P+0_cdouble, 0x1.3EE8F5D57FE8FP+0_cdouble,
+  0x1.3D5D9A00B4CE9P+0_cdouble, 0x1.3BD60C010C12BP+0_cdouble,
+  0x1.3A5242B75DAB8P+0_cdouble, 0x1.38D22CD9FD002P+0_cdouble,
+  0x1.3755BC5847A1CP+0_cdouble, 0x1.35DCE49AD36E2P+0_cdouble,
+  0x1.34679984DD440P+0_cdouble, 0x1.32F5CCEFFCB24P+0_cdouble,
+  0x1.3187775A10D49P+0_cdouble, 0x1.301C8373E3990P+0_cdouble,
+  0x1.2EB4EBB95F841P+0_cdouble, 0x1.2D50A0219A9D1P+0_cdouble,
+  0x1.2BEF9A8B7FD2AP+0_cdouble, 0x1.2A91C7A0C1BABP+0_cdouble,
+  0x1.293726014B530P+0_cdouble, 0x1.27DFA5757A1F5P+0_cdouble,
+  0x1.268B39B1D3BBFP+0_cdouble, 0x1.2539D838FF5BDP+0_cdouble,
+  0x1.23EB7AAC9083BP+0_cdouble, 0x1.22A012BA940B6P+0_cdouble,
+  0x1.2157996CC4132P+0_cdouble, 0x1.201201DD2FC9BP+0_cdouble,
+  0x1.1ECF4494D480BP+0_cdouble, 0x1.1D8F5528F6569P+0_cdouble,
+  0x1.1C52311577E7CP+0_cdouble, 0x1.1B17C74CB26E9P+0_cdouble,
+  0x1.19E010C2C1AB6P+0_cdouble, 0x1.18AB07BB670BDP+0_cdouble,
+  0x1.1778A25EFBCB6P+0_cdouble, 0x1.1648D354C31DAP+0_cdouble,
+  0x1.151B990275FDDP+0_cdouble, 0x1.13F0EA432D24CP+0_cdouble,
+  0x1.12C8B7210F9DAP+0_cdouble, 0x1.11A3028ECB531P+0_cdouble,
+  0x1.107FBDA8434AFP+0_cdouble, 0x1.0F5EE0F4E6BB3P+0_cdouble,
+  0x1.0E4065D2A9FCEP+0_cdouble, 0x1.0D244632CA521P+0_cdouble,
+  0x1.0C0A77CE2981AP+0_cdouble, 0x1.0AF2F83C636D1P+0_cdouble,
+  0x1.09DDB98A01339P+0_cdouble, 0x1.08CABAF52E7DFP+0_cdouble,
+  0x1.07B9F2F4E28FBP+0_cdouble, 0x1.06AB58C358F19P+0_cdouble,
+  0x1.059EEA5ECF92CP+0_cdouble, 0x1.04949CDD12C90P+0_cdouble,
+  0x1.038C6C6F0ADA9P+0_cdouble, 0x1.02865137932A9P+0_cdouble,
+  0x1.0182427EA7348P+0_cdouble, 0x1.008040614B195P+0_cdouble,
+  0x1.FE01FF726FA1AP-1_cdouble, 0x1.FA11CC261EA74P-1_cdouble,
+  0x1.F6310B081992EP-1_cdouble, 0x1.F25F63CEEADCDP-1_cdouble,
+  0x1.EE9C8039113E7P-1_cdouble, 0x1.EAE8078CBB1ABP-1_cdouble,
+  0x1.E741AA29D0C9BP-1_cdouble, 0x1.E3A91830A99B5P-1_cdouble,
+  0x1.E01E009609A56P-1_cdouble, 0x1.DCA01E577BB98P-1_cdouble,
+  0x1.D92F20B7C9103P-1_cdouble, 0x1.D5CAC66FB5CCEP-1_cdouble,
+  0x1.D272CAA5EDE9DP-1_cdouble, 0x1.CF26E3E6B2CCDP-1_cdouble,
+  0x1.CBE6DA2A77902P-1_cdouble, 0x1.C8B266D37086DP-1_cdouble,
+  0x1.C5894BD5D5804P-1_cdouble, 0x1.C26B533BB9F8CP-1_cdouble,
+  0x1.BF583EEECE73FP-1_cdouble, 0x1.BC4FD75DB96C1P-1_cdouble,
+  0x1.B951E0C864A28P-1_cdouble, 0x1.B65E2C5EF3E2CP-1_cdouble,
+  0x1.B374867C9888BP-1_cdouble, 0x1.B094B211D304AP-1_cdouble,
+  0x1.ADBE885F2EF7EP-1_cdouble, 0x1.AAF1D31603DA2P-1_cdouble,
+  0x1.A82E63FD358A7P-1_cdouble, 0x1.A5740EF09738BP-1_cdouble,
+  0x1.A2C2A90AB4B27P-1_cdouble, 0x1.A01A01393F2D1P-1_cdouble,
+  0x1.9D79F24DB3C1BP-1_cdouble, 0x1.9AE2505C7B190P-1_cdouble,
+  0x1.9852EF297CE2FP-1_cdouble, 0x1.95CBAEEA44B75P-1_cdouble,
+  0x1.934C69DE74838P-1_cdouble, 0x1.90D4F2F6752E6P-1_cdouble,
+  0x1.8E6528EFFD79DP-1_cdouble, 0x1.8BFCE9FCC007CP-1_cdouble,
+  0x1.899C0DABEC30EP-1_cdouble, 0x1.87427AA2317FBP-1_cdouble,
+  0x1.84F00ACB39A08P-1_cdouble, 0x1.82A49E8653E55P-1_cdouble,
+  0x1.8060195F40260P-1_cdouble, 0x1.7E22563E0A329P-1_cdouble,
+  0x1.7BEB377DCB5ADP-1_cdouble, 0x1.79BAA679725C2P-1_cdouble,
+  0x1.77907F2170657P-1_cdouble, 0x1.756CADBD6130CP-1_cdouble,
+}
+local log_tab_logc: [128]cdouble = {
+  -0x1.7CC7F79E69000P-2_cdouble, -0x1.76FEEC20D0000P-2_cdouble,
+  -0x1.713E31351E000P-2_cdouble, -0x1.6B85B38287800P-2_cdouble,
+  -0x1.65D5590807800P-2_cdouble, -0x1.602D076180000P-2_cdouble,
+  -0x1.5A8CA86909000P-2_cdouble, -0x1.54F4356035000P-2_cdouble,
+  -0x1.4F637C36B4000P-2_cdouble, -0x1.49DA7FDA85000P-2_cdouble,
+  -0x1.445923989A800P-2_cdouble, -0x1.3EDF439B0B800P-2_cdouble,
+  -0x1.396CE448F7000P-2_cdouble, -0x1.3401E17BDA000P-2_cdouble,
+  -0x1.2E9E2EF468000P-2_cdouble, -0x1.2941B3830E000P-2_cdouble,
+  -0x1.23EC58CDA8800P-2_cdouble, -0x1.1E9E129279000P-2_cdouble,
+  -0x1.1956D2B48F800P-2_cdouble, -0x1.141679AB9F800P-2_cdouble,
+  -0x1.0EDD094EF9800P-2_cdouble, -0x1.09AA518DB1000P-2_cdouble,
+  -0x1.047E65263B800P-2_cdouble, -0x1.FEB224586F000P-3_cdouble,
+  -0x1.F474A7517B000P-3_cdouble, -0x1.EA4443D103000P-3_cdouble,
+  -0x1.E020D44E9B000P-3_cdouble, -0x1.D60A22977F000P-3_cdouble,
+  -0x1.CC00104959000P-3_cdouble, -0x1.C202956891000P-3_cdouble,
+  -0x1.B81178D811000P-3_cdouble, -0x1.AE2C9CCD3D000P-3_cdouble,
+  -0x1.A45402E129000P-3_cdouble, -0x1.9A877681DF000P-3_cdouble,
+  -0x1.90C6D69483000P-3_cdouble, -0x1.87120A645C000P-3_cdouble,
+  -0x1.7D68FB4143000P-3_cdouble, -0x1.73CB83C627000P-3_cdouble,
+  -0x1.6A39A9B376000P-3_cdouble, -0x1.60B3154B7A000P-3_cdouble,
+  -0x1.5737D76243000P-3_cdouble, -0x1.4DC7B8FC23000P-3_cdouble,
+  -0x1.4462C51D20000P-3_cdouble, -0x1.3B08ABC830000P-3_cdouble,
+  -0x1.31B996B490000P-3_cdouble, -0x1.2875490A44000P-3_cdouble,
+  -0x1.1F3B9F879A000P-3_cdouble, -0x1.160C8252CA000P-3_cdouble,
+  -0x1.0CE7F57F72000P-3_cdouble, -0x1.03CDC49FEA000P-3_cdouble,
+  -0x1.F57BDBC4B8000P-4_cdouble, -0x1.E370896404000P-4_cdouble,
+  -0x1.D17983EF94000P-4_cdouble, -0x1.BF9674ED8A000P-4_cdouble,
+  -0x1.ADC79202F6000P-4_cdouble, -0x1.9C0C3E7288000P-4_cdouble,
+  -0x1.8A646B372C000P-4_cdouble, -0x1.78D01B3AC0000P-4_cdouble,
+  -0x1.674F145380000P-4_cdouble, -0x1.55E0E6D878000P-4_cdouble,
+  -0x1.4485CDEA1E000P-4_cdouble, -0x1.333D94D6AA000P-4_cdouble,
+  -0x1.22079F8C56000P-4_cdouble, -0x1.10E4698622000P-4_cdouble,
+  -0x1.FFA6C6AD20000P-5_cdouble, -0x1.DDA8D4A774000P-5_cdouble,
+  -0x1.BBCECE4850000P-5_cdouble, -0x1.9A1894012C000P-5_cdouble,
+  -0x1.788583302C000P-5_cdouble, -0x1.5715E67D68000P-5_cdouble,
+  -0x1.35C8A49658000P-5_cdouble, -0x1.149E364154000P-5_cdouble,
+  -0x1.E72C082EB8000P-6_cdouble, -0x1.A55F152528000P-6_cdouble,
+  -0x1.63D62CF818000P-6_cdouble, -0x1.228FB8CAA0000P-6_cdouble,
+  -0x1.C317B20F90000P-7_cdouble, -0x1.419355DAA0000P-7_cdouble,
+  -0x1.81203C2EC0000P-8_cdouble, -0x1.0040979240000P-9_cdouble,
+  0x1.FEFF384900000P-9_cdouble, 0x1.7DC41353D0000P-7_cdouble,
+  0x1.3CEA3C4C28000P-6_cdouble, 0x1.B9FC114890000P-6_cdouble,
+  0x1.1B0D8CE110000P-5_cdouble, 0x1.58A5BD001C000P-5_cdouble,
+  0x1.95C8340D88000P-5_cdouble, 0x1.D276AEF578000P-5_cdouble,
+  0x1.07598E598C000P-4_cdouble, 0x1.253F5E30D2000P-4_cdouble,
+  0x1.42EDD8B380000P-4_cdouble, 0x1.606598757C000P-4_cdouble,
+  0x1.7DA76356A0000P-4_cdouble, 0x1.9AB434E1C6000P-4_cdouble,
+  0x1.B78C7BB0D6000P-4_cdouble, 0x1.D431332E72000P-4_cdouble,
+  0x1.F0A3171DE6000P-4_cdouble, 0x1.067152B914000P-3_cdouble,
+  0x1.147858292B000P-3_cdouble, 0x1.2266ECDCA3000P-3_cdouble,
+  0x1.303D7A6C55000P-3_cdouble, 0x1.3DFC33C331000P-3_cdouble,
+  0x1.4BA366B7A8000P-3_cdouble, 0x1.5933928D1F000P-3_cdouble,
+  0x1.66ACD2418F000P-3_cdouble, 0x1.740F8EC669000P-3_cdouble,
+  0x1.815C0F51AF000P-3_cdouble, 0x1.8E92954F68000P-3_cdouble,
+  0x1.9BB3602F84000P-3_cdouble, 0x1.A8BED1C2C0000P-3_cdouble,
+  0x1.B5B515C01D000P-3_cdouble, 0x1.C2967CCBCC000P-3_cdouble,
+  0x1.CF635D5486000P-3_cdouble, 0x1.DC1BD3446C000P-3_cdouble,
+  0x1.E8C01B8CFE000P-3_cdouble, 0x1.F5509C0179000P-3_cdouble,
+  0x1.00E6C121FB800P-2_cdouble, 0x1.071B80E93D000P-2_cdouble,
+  0x1.0D46B9E867000P-2_cdouble, 0x1.13687334BD000P-2_cdouble,
+  0x1.1980D67234800P-2_cdouble, 0x1.1F8FFE0CC8000P-2_cdouble,
+  0x1.2595FD7636800P-2_cdouble, 0x1.2B9300914A800P-2_cdouble,
+  0x1.3187210436000P-2_cdouble, 0x1.377266DEC1800P-2_cdouble,
+  0x1.3D54FFBAF3000P-2_cdouble, 0x1.432EEE32FE000P-2_cdouble,
+}
+local log_tab2_chi: [128]cdouble = {
+  0x1.61000014FB66BP-1_cdouble, 0x1.63000034DB495P-1_cdouble,
+  0x1.650000D94D478P-1_cdouble, 0x1.67000074E6FADP-1_cdouble,
+  0x1.68FFFFEDF0FAEP-1_cdouble, 0x1.6B0000763C5BCP-1_cdouble,
+  0x1.6D0001E5CC1F6P-1_cdouble, 0x1.6EFFFEB05F63EP-1_cdouble,
+  0x1.710000E86978P-1_cdouble, 0x1.72FFFFC67E912P-1_cdouble,
+  0x1.74FFFDF81116AP-1_cdouble, 0x1.770000F679C9P-1_cdouble,
+  0x1.78FFFFA7EC835P-1_cdouble, 0x1.7AFFFFE20C2E6P-1_cdouble,
+  0x1.7CFFFED3FC9P-1_cdouble, 0x1.7EFFFE9261A76P-1_cdouble,
+  0x1.81000049CA3E8P-1_cdouble, 0x1.8300017932C8FP-1_cdouble,
+  0x1.850000633739CP-1_cdouble, 0x1.87000204289C6P-1_cdouble,
+  0x1.88FFFEBF57904P-1_cdouble, 0x1.8B00022BC04DFP-1_cdouble,
+  0x1.8CFFFE50C1B8AP-1_cdouble, 0x1.8EFFFFC918E43P-1_cdouble,
+  0x1.910001EFA5FC7P-1_cdouble, 0x1.9300013467BB9P-1_cdouble,
+  0x1.94FFFE6EE076FP-1_cdouble, 0x1.96FFFDE3C12D1P-1_cdouble,
+  0x1.98FFFF4458A0DP-1_cdouble, 0x1.9AFFFDD982E3EP-1_cdouble,
+  0x1.9CFFFED49FB66P-1_cdouble, 0x1.9F00020F19C51P-1_cdouble,
+  0x1.A10001145B006P-1_cdouble, 0x1.A300007BBF6FAP-1_cdouble,
+  0x1.A500010971D79P-1_cdouble, 0x1.A70001DF52E48P-1_cdouble,
+  0x1.A90001C593352P-1_cdouble, 0x1.AB0002A4F3E4BP-1_cdouble,
+  0x1.ACFFFD7AE1ED1P-1_cdouble, 0x1.AEFFFEE510478P-1_cdouble,
+  0x1.B0FFFDB650D5BP-1_cdouble, 0x1.B2FFFFEAACA57P-1_cdouble,
+  0x1.B4FFFD995BADCP-1_cdouble, 0x1.B7000249E659CP-1_cdouble,
+  0x1.B8FFFF987164P-1_cdouble, 0x1.BAFFFD204CB4FP-1_cdouble,
+  0x1.BCFFFD2415C45P-1_cdouble, 0x1.BEFFFF86309DFP-1_cdouble,
+  0x1.C0FFFE1B57653P-1_cdouble, 0x1.C2FFFF1FA57E3P-1_cdouble,
+  0x1.C4FFFDCBFE424P-1_cdouble, 0x1.C6FFFED54B9F7P-1_cdouble,
+  0x1.C8FFFEB998FD5P-1_cdouble, 0x1.CB0002125219AP-1_cdouble,
+  0x1.CCFFFDD94469CP-1_cdouble, 0x1.CEFFFEAFDC476P-1_cdouble,
+  0x1.D1000169AF82BP-1_cdouble, 0x1.D30000D0FF71DP-1_cdouble,
+  0x1.D4FFFEA790FC4P-1_cdouble, 0x1.D70002EDC87E5P-1_cdouble,
+  0x1.D900021DC82AAP-1_cdouble, 0x1.DAFFFD86B0283P-1_cdouble,
+  0x1.DD000296C4739P-1_cdouble, 0x1.DEFFFE54490F5P-1_cdouble,
+  0x1.E0FFFCDABF694P-1_cdouble, 0x1.E2FFFDB52C8DDP-1_cdouble,
+  0x1.E4FFFF24216EFP-1_cdouble, 0x1.E6FFFE88A5E11P-1_cdouble,
+  0x1.E9000119EFF0DP-1_cdouble, 0x1.EAFFFDFA51744P-1_cdouble,
+  0x1.ED0001A127FA1P-1_cdouble, 0x1.EF00007BABCC4P-1_cdouble,
+  0x1.F0FFFF57A8D02P-1_cdouble, 0x1.F30001EE58AC7P-1_cdouble,
+  0x1.F4FFFF5823494P-1_cdouble, 0x1.F6FFFFCA94C6BP-1_cdouble,
+  0x1.F8FFFE1F9C441P-1_cdouble, 0x1.FAFFFD2E0E37EP-1_cdouble,
+  0x1.FD0001C77E49EP-1_cdouble, 0x1.FEFFFF7E0C331P-1_cdouble,
+  0x1.00FFFF465606EP+0_cdouble, 0x1.02FFFF3867A58P+0_cdouble,
+  0x1.04FFFFDFC0D17P+0_cdouble, 0x1.0700003CD4D82P+0_cdouble,
+  0x1.08FFFF9F2CBE8P+0_cdouble, 0x1.0B000010CDA65P+0_cdouble,
+  0x1.0D00001A4D338P+0_cdouble, 0x1.0EFFFFADAFDFDP+0_cdouble,
+  0x1.110000BBAFD96P+0_cdouble, 0x1.12FFFFAE5F45DP+0_cdouble,
+  0x1.150000DD59AD9P+0_cdouble, 0x1.170000F21559AP+0_cdouble,
+  0x1.18FFFFC275426P+0_cdouble, 0x1.1B000123D3C59P+0_cdouble,
+  0x1.1CFFFF8299EB7P+0_cdouble, 0x1.1EFFFF48AD4P+0_cdouble,
+  0x1.210000C8B86A4P+0_cdouble, 0x1.2300003854303P+0_cdouble,
+  0x1.24FFFFFBCF684P+0_cdouble, 0x1.26FFFF52921D9P+0_cdouble,
+  0x1.2900014933A3CP+0_cdouble, 0x1.2B00014556313P+0_cdouble,
+  0x1.2CFFFEBFE523BP+0_cdouble, 0x1.2F0000BB8AD96P+0_cdouble,
+  0x1.30FFFFB7AE2AFP+0_cdouble, 0x1.32FFFFEAC5F7FP+0_cdouble,
+  0x1.350000CA66756P+0_cdouble, 0x1.3700011FBF721P+0_cdouble,
+  0x1.38FFFF9592FB9P+0_cdouble, 0x1.3B00004DDD242P+0_cdouble,
+  0x1.3CFFFF5B2C957P+0_cdouble, 0x1.3EFFFEAB0B418P+0_cdouble,
+  0x1.410001532AFF4P+0_cdouble, 0x1.4300017478B29P+0_cdouble,
+  0x1.44FFFE795B463P+0_cdouble, 0x1.46FFFE80475EP+0_cdouble,
+  0x1.48FFFEF6FC1E7P+0_cdouble, 0x1.4AFFFE5BEA704P+0_cdouble,
+  0x1.4D000171027DEP+0_cdouble, 0x1.4F0000FF03EE2P+0_cdouble,
+  0x1.5100012DC4BD1P+0_cdouble, 0x1.530001605277AP+0_cdouble,
+  0x1.54FFFECDB704CP+0_cdouble, 0x1.56FFFEF5F54A9P+0_cdouble,
+  0x1.5900017E61012P+0_cdouble, 0x1.5B00003C93E92P+0_cdouble,
+  0x1.5D0001D4919BCP+0_cdouble, 0x1.5EFFFE7B87A89P+0_cdouble,
+}
+local log_tab2_clo: [128]cdouble = {
+  0x1.E026C91425B3CP-56_cdouble, 0x1.DBFEA48005D41P-55_cdouble,
+  0x1.E7FA786D6A5B7P-55_cdouble, 0x1.1FCEA6B54254CP-57_cdouble,
+  -0x1.C7E274C590EFDP-56_cdouble, -0x1.AC16848DCDA01P-55_cdouble,
+  0x1.33F1C9D499311P-55_cdouble, -0x1.E80041AE22D53P-56_cdouble,
+  0x1.BFF6671097952P-56_cdouble, 0x1.C00E226BD8724P-55_cdouble,
+  -0x1.E02916EF101D2P-57_cdouble, -0x1.7FC71CD549C74P-57_cdouble,
+  0x1.1BEC19EF50483P-55_cdouble, -0x1.07E1729CC6465P-56_cdouble,
+  -0x1.08072087B8B1CP-55_cdouble, 0x1.DC0286D9DF9AEP-55_cdouble,
+  0x1.97FD251E54C33P-55_cdouble, -0x1.AFEE9B630F381P-55_cdouble,
+  0x1.9BFBF6B6535BCP-55_cdouble, -0x1.BBF65F3117B75P-55_cdouble,
+  -0x1.9006EA23DCB57P-55_cdouble, -0x1.D00DF38E04B0AP-56_cdouble,
+  -0x1.8007146FF9F05P-55_cdouble, 0x1.3817BD07A7038P-55_cdouble,
+  0x1.93E9176DFB403P-55_cdouble, 0x1.F804E4B980276P-56_cdouble,
+  -0x1.F7EF0D9FF622EP-55_cdouble, -0x1.082AA962638BAP-56_cdouble,
+  -0x1.7801B9164A8EFP-55_cdouble, -0x1.740E08A5A9337P-55_cdouble,
+  0x1.FCE08C19BEP-60_cdouble, -0x1.A3FAA27885B0AP-55_cdouble,
+  0x1.4FF489958DA56P-56_cdouble, 0x1.CBEAB8A2B6D18P-55_cdouble,
+  0x1.8FECADD78793P-55_cdouble, -0x1.F41763DD8ABDBP-55_cdouble,
+  -0x1.EBF0284C27612P-55_cdouble, -0x1.9FD043CFF3F5FP-57_cdouble,
+  -0x1.23EE7129070B4P-55_cdouble, 0x1.A063EE00EDEA3P-57_cdouble,
+  0x1.A06C8381F0AB9P-58_cdouble, -0x1.9011E74233C1DP-56_cdouble,
+  -0x1.9FF1068862A9FP-56_cdouble, 0x1.AFF45D0864F3EP-55_cdouble,
+  0x1.CFE7796C2C3F9P-56_cdouble, -0x1.3FF27EEF22BC4P-57_cdouble,
+  -0x1.CFFB7EE3BEA21P-57_cdouble, -0x1.14103972E0B5CP-55_cdouble,
+  0x1.BC16494B76A19P-55_cdouble, -0x1.4FEEF8D30C6EDP-57_cdouble,
+  -0x1.43F68BCEC4775P-55_cdouble, 0x1.47EA3F053E0ECP-55_cdouble,
+  0x1.383068DF992F1P-56_cdouble, -0x1.8FD8E64180E04P-57_cdouble,
+  0x1.E7EBE1CC7EA72P-55_cdouble, 0x1.EBE39AD9F88FEP-55_cdouble,
+  0x1.57D91A8B95A71P-56_cdouble, 0x1.9C1906970C7DAP-55_cdouble,
+  -0x1.80E37C558FE0CP-58_cdouble, -0x1.F80D64DC10F44P-56_cdouble,
+  -0x1.47C8F94FD5C5CP-56_cdouble, 0x1.C7F1DC521617EP-55_cdouble,
+  0x1.8019EB2FFB153P-55_cdouble, 0x1.E00D2C652CC89P-57_cdouble,
+  -0x1.F8340202D69D2P-56_cdouble, 0x1.B00C1CA1B0864P-56_cdouble,
+  0x1.2FFA8B094AB51P-56_cdouble, -0x1.7F673B1EFBE59P-58_cdouble,
+  -0x1.4808D5E0BC801P-55_cdouble, 0x1.80006D54320B5P-56_cdouble,
+  -0x1.002F860565C92P-58_cdouble, -0x1.540445D35E611P-55_cdouble,
+  -0x1.FFB3139EF9105P-59_cdouble, 0x1.A81ACF2731155P-55_cdouble,
+  0x1.A3F41D4D7C743P-55_cdouble, -0x1.202F41C987875P-57_cdouble,
+  0x1.77DD1F477E74BP-56_cdouble, -0x1.F01199A7CA331P-57_cdouble,
+  0x1.181EE4BCEACB1P-56_cdouble, -0x1.E05370170875AP-57_cdouble,
+  -0x1.A7EAD491C0ADAP-55_cdouble, -0x1.77F69C3FCB2EP-54_cdouble,
+  0x1.7BFFE34CB945BP-54_cdouble, 0x1.20083C0E456CBP-55_cdouble,
+  -0x1.DFFDFBE37751AP-57_cdouble, -0x1.13F7FAEE626EBP-54_cdouble,
+  0x1.07DFA79489FF7P-55_cdouble, -0x1.7040570D66BCP-56_cdouble,
+  0x1.E80D4846D0B62P-55_cdouble, 0x1.DBFFA64FD36EFP-54_cdouble,
+  0x1.A0077701250AEP-54_cdouble, 0x1.DFDF9E2E3DEEEP-55_cdouble,
+  0x1.10030DC3B7273P-54_cdouble, 0x1.97F7980030188P-54_cdouble,
+  -0x1.5F932AB9F8C67P-57_cdouble, 0x1.37FBF9DA75BEBP-54_cdouble,
+  0x1.F806B91FD5B22P-54_cdouble, 0x1.3FFC2EB9FBF33P-54_cdouble,
+  0x1.601E77E2E2E72P-56_cdouble, 0x1.FFCBB767F0C61P-56_cdouble,
+  -0x1.202CA3C02412BP-56_cdouble, -0x1.2808233F21F02P-54_cdouble,
+  -0x1.8FF7E384FDCF2P-55_cdouble, -0x1.5FF51503041C5P-55_cdouble,
+  -0x1.10071885E289DP-55_cdouble, -0x1.1FF5D3FB7B715P-54_cdouble,
+  0x1.57F82228B82BDP-54_cdouble, 0x1.000BAC40DD5CCP-55_cdouble,
+  -0x1.43F9D2DB2A751P-54_cdouble, 0x1.57F6B707638E1P-55_cdouble,
+  0x1.A023A10BF1231P-56_cdouble, 0x1.87F6D66B152BP-54_cdouble,
+  0x1.7F8375F198524P-57_cdouble, 0x1.301E672DC5143P-55_cdouble,
+  0x1.9FF69B8B2895AP-55_cdouble, -0x1.5C0B19BC2F254P-54_cdouble,
+  0x1.B4009F23A2A72P-54_cdouble, -0x1.4FFB7BF0D7D45P-54_cdouble,
+  -0x1.9C06471DC6A3DP-54_cdouble, 0x1.77F890B85531CP-54_cdouble,
+  0x1.004657166A436P-57_cdouble, -0x1.6BFCECE233209P-54_cdouble,
+  -0x1.902720505A1D7P-55_cdouble, 0x1.BBFE60EC96412P-54_cdouble,
+  0x1.87EC581AFEF9P-55_cdouble, -0x1.F41080ABF0CCP-54_cdouble,
+  -0x1.8812AFB254729P-54_cdouble, -0x1.47EB780ED6904P-54_cdouble,
+}
+local log2_tab_invc: [64]cdouble = {
+  0x1.724286BB1ACF8P+0_cdouble, 0x1.6E1F766D2CCA1P+0_cdouble,
+  0x1.6A13D0E30D48AP+0_cdouble, 0x1.661EC32D06C85P+0_cdouble,
+  0x1.623FA951198F8P+0_cdouble, 0x1.5E75BA4CF026CP+0_cdouble,
+  0x1.5AC055A214FB8P+0_cdouble, 0x1.571ED0F166E1EP+0_cdouble,
+  0x1.53909590BF835P+0_cdouble, 0x1.5014FED61ADDDP+0_cdouble,
+  0x1.4CAB88E487BD0P+0_cdouble, 0x1.49539B4334FEEP+0_cdouble,
+  0x1.460CBDFAFD569P+0_cdouble, 0x1.42D664EE4B953P+0_cdouble,
+  0x1.3FB01111DD8A6P+0_cdouble, 0x1.3C995B70C5836P+0_cdouble,
+  0x1.3991C4AB6FD4AP+0_cdouble, 0x1.3698E0CE099B5P+0_cdouble,
+  0x1.33AE48213E7B2P+0_cdouble, 0x1.30D191985BDB1P+0_cdouble,
+  0x1.2E025CAB271D7P+0_cdouble, 0x1.2B404CF13CD82P+0_cdouble,
+  0x1.288B02C7CCB50P+0_cdouble, 0x1.25E2263944DE5P+0_cdouble,
+  0x1.234563D8615B1P+0_cdouble, 0x1.20B46E33EAF38P+0_cdouble,
+  0x1.1E2EEFDCDA3DDP+0_cdouble, 0x1.1BB4A580B3930P+0_cdouble,
+  0x1.19453847F2200P+0_cdouble, 0x1.16E06C0D5D73CP+0_cdouble,
+  0x1.1485F47B7E4C2P+0_cdouble, 0x1.12358AD0085D1P+0_cdouble,
+  0x1.0FEF00F532227P+0_cdouble, 0x1.0DB2077D03A8FP+0_cdouble,
+  0x1.0B7E6D65980D9P+0_cdouble, 0x1.0953EFE7B408DP+0_cdouble,
+  0x1.07325CAC53B83P+0_cdouble, 0x1.05197E40D1B5CP+0_cdouble,
+  0x1.03091C1208EA2P+0_cdouble, 0x1.0101025B37E21P+0_cdouble,
+  0x1.FC07EF9CAA76BP-1_cdouble, 0x1.F4465D3F6F184P-1_cdouble,
+  0x1.ECC079F84107FP-1_cdouble, 0x1.E573A99975AE8P-1_cdouble,
+  0x1.DE5D6F0BD3DE6P-1_cdouble, 0x1.D77B681FF38B3P-1_cdouble,
+  0x1.D0CB5724DE943P-1_cdouble, 0x1.CA4B2DC0E7563P-1_cdouble,
+  0x1.C3F8EE8D6CB51P-1_cdouble, 0x1.BDD2B4F020C4CP-1_cdouble,
+  0x1.B7D6C006015CAP-1_cdouble, 0x1.B20366E2E338FP-1_cdouble,
+  0x1.AC57026295039P-1_cdouble, 0x1.A6D01BC2731DDP-1_cdouble,
+  0x1.A16D3BC3FF18BP-1_cdouble, 0x1.9C2D14967FEADP-1_cdouble,
+  0x1.970E4F47C9902P-1_cdouble, 0x1.920FB3982BCF2P-1_cdouble,
+  0x1.8D30187F759F1P-1_cdouble, 0x1.886E5EBB9F66DP-1_cdouble,
+  0x1.83C97B658B994P-1_cdouble, 0x1.7F405FFC61022P-1_cdouble,
+  0x1.7AD22181415CAP-1_cdouble, 0x1.767DCF99EFF8CP-1_cdouble,
+}
+local log2_tab_logc: [64]cdouble = {
+  -0x1.1095FEECDB000P-1_cdouble, -0x1.08494BD76D000P-1_cdouble,
+  -0x1.00143AEE8F800P-1_cdouble, -0x1.EFEC5360B4000P-2_cdouble,
+  -0x1.DFDD91AB7E000P-2_cdouble, -0x1.CFFAE0CC79000P-2_cdouble,
+  -0x1.C043811FDA000P-2_cdouble, -0x1.B0B67323AE000P-2_cdouble,
+  -0x1.A152F5A2DB000P-2_cdouble, -0x1.9217F5AF86000P-2_cdouble,
+  -0x1.8304DB0719000P-2_cdouble, -0x1.74189F9A9E000P-2_cdouble,
+  -0x1.6552BB5199000P-2_cdouble, -0x1.56B23A29B1000P-2_cdouble,
+  -0x1.483650F5FA000P-2_cdouble, -0x1.39DE937F6A000P-2_cdouble,
+  -0x1.2BAA1538D6000P-2_cdouble, -0x1.1D98340CA4000P-2_cdouble,
+  -0x1.0FA853A40E000P-2_cdouble, -0x1.01D9C32E73000P-2_cdouble,
+  -0x1.E857DA2FA6000P-3_cdouble, -0x1.CD3C8633D8000P-3_cdouble,
+  -0x1.B26034C14A000P-3_cdouble, -0x1.97C1C2F4FE000P-3_cdouble,
+  -0x1.7D6023F800000P-3_cdouble, -0x1.633A71A05E000P-3_cdouble,
+  -0x1.494F5E9570000P-3_cdouble, -0x1.2F9E424E0A000P-3_cdouble,
+  -0x1.162595AFDC000P-3_cdouble, -0x1.F9C9A75BD8000P-4_cdouble,
+  -0x1.C7B575BF9C000P-4_cdouble, -0x1.960C60FF48000P-4_cdouble,
+  -0x1.64CE247B60000P-4_cdouble, -0x1.33F78B2014000P-4_cdouble,
+  -0x1.0387D1A42C000P-4_cdouble, -0x1.A6F9208B50000P-5_cdouble,
+  -0x1.47A954F770000P-5_cdouble, -0x1.D23A8C50C0000P-6_cdouble,
+  -0x1.16A2629780000P-6_cdouble, -0x1.720F8D8E80000P-8_cdouble,
+  0x1.6FE53B1500000P-7_cdouble, 0x1.11CCCE10F8000P-5_cdouble,
+  0x1.C4DFC8C8B8000P-5_cdouble, 0x1.3AA321E574000P-4_cdouble,
+  0x1.918A0D08B8000P-4_cdouble, 0x1.E72E9DA044000P-4_cdouble,
+  0x1.1DCD2507F6000P-3_cdouble, 0x1.476AB03DEA000P-3_cdouble,
+  0x1.7074377E22000P-3_cdouble, 0x1.98EDE8BA94000P-3_cdouble,
+  0x1.C0DB86AD2E000P-3_cdouble, 0x1.E840AAFCEE000P-3_cdouble,
+  0x1.0790AB4678000P-2_cdouble, 0x1.1AC056801C000P-2_cdouble,
+  0x1.2DB11D4FEE000P-2_cdouble, 0x1.406464EC58000P-2_cdouble,
+  0x1.52DBE093AF000P-2_cdouble, 0x1.651902050D000P-2_cdouble,
+  0x1.771D2CDEAF000P-2_cdouble, 0x1.88E9C857D9000P-2_cdouble,
+  0x1.9A80155E16000P-2_cdouble, 0x1.ABE186ED3D000P-2_cdouble,
+  0x1.BD0F2AEA0E000P-2_cdouble, 0x1.CE0A43DBF4000P-2_cdouble,
+}
+local log2_tab2_chi: [64]cdouble = {
+  0x1.6200012B90A8EP-1_cdouble, 0x1.66000045734A6P-1_cdouble,
+  0x1.69FFFC325F2C5P-1_cdouble, 0x1.6E00038B95A04P-1_cdouble,
+  0x1.71FFFE09994E3P-1_cdouble, 0x1.7600015590E1P-1_cdouble,
+  0x1.7A00012655BD5P-1_cdouble, 0x1.7E0003259E9A6P-1_cdouble,
+  0x1.81FFFEDB4B2D2P-1_cdouble, 0x1.860002DFAFCC3P-1_cdouble,
+  0x1.89FFFF78C6B5P-1_cdouble, 0x1.8E00039671566P-1_cdouble,
+  0x1.91FFFE2BF1745P-1_cdouble, 0x1.95FFFCC5C9FD1P-1_cdouble,
+  0x1.9A0003BBA4767P-1_cdouble, 0x1.9DFFFE7B92DA5P-1_cdouble,
+  0x1.A1FFFD72EFDAFP-1_cdouble, 0x1.A5FFFDE04FF95P-1_cdouble,
+  0x1.A9FFFCA5E8D2BP-1_cdouble, 0x1.ADFFFDDAD03EAP-1_cdouble,
+  0x1.B1FFFF10D3D4DP-1_cdouble, 0x1.B5FFFCE21165AP-1_cdouble,
+  0x1.B9FFFD950E674P-1_cdouble, 0x1.BE000139CA8AFP-1_cdouble,
+  0x1.C20005B46DF99P-1_cdouble, 0x1.C600040B9F7AEP-1_cdouble,
+  0x1.CA0006255FD8AP-1_cdouble, 0x1.CDFFFD94C095DP-1_cdouble,
+  0x1.D1FFFF975D6CFP-1_cdouble, 0x1.D5FFFA2561C93P-1_cdouble,
+  0x1.D9FFF9D228B0CP-1_cdouble, 0x1.DE00065BC7E16P-1_cdouble,
+  0x1.E200002F64791P-1_cdouble, 0x1.E600057D7A6D8P-1_cdouble,
+  0x1.EA00027EDC00CP-1_cdouble, 0x1.EE0006CF5CB7CP-1_cdouble,
+  0x1.F2000782B7DCCP-1_cdouble, 0x1.F6000260C450AP-1_cdouble,
+  0x1.F9FFFE88CD533P-1_cdouble, 0x1.FDFFFD50F8689P-1_cdouble,
+  0x1.0200004292367P+0_cdouble, 0x1.05FFFE3E3D668P+0_cdouble,
+  0x1.0A0000A85A757P+0_cdouble, 0x1.0E0001A5F3FCCP+0_cdouble,
+  0x1.11FFFF8AFBAF5P+0_cdouble, 0x1.15FFFE54D91ADP+0_cdouble,
+  0x1.1A00011AC36E1P+0_cdouble, 0x1.1E00019C84248P+0_cdouble,
+  0x1.220000FFE5E6EP+0_cdouble, 0x1.26000269FD891P+0_cdouble,
+  0x1.2A00029A6E6DAP+0_cdouble, 0x1.2DFFFE0293E39P+0_cdouble,
+  0x1.31FFFF7DCF082P+0_cdouble, 0x1.35FFFF05A8B6P+0_cdouble,
+  0x1.3A0002E0EAECCP+0_cdouble, 0x1.3E000043BB236P+0_cdouble,
+  0x1.4200002D187FFP+0_cdouble, 0x1.460000D387CB1P+0_cdouble,
+  0x1.4A00004569F89P+0_cdouble, 0x1.4E000043543F3P+0_cdouble,
+  0x1.51FFFCC027F0FP+0_cdouble, 0x1.55FFFFD87B36FP+0_cdouble,
+  0x1.59FFFF21DF7BAP+0_cdouble, 0x1.5DFFFEBFC3481P+0_cdouble,
+}
+local log2_tab2_clo: [64]cdouble = {
+  0x1.904AB0644B605P-55_cdouble, 0x1.1FF9BEA62F7A9P-57_cdouble,
+  0x1.27ECFCB3C90BAP-55_cdouble, 0x1.8FF8856739326P-55_cdouble,
+  0x1.AFD40275F82B1P-55_cdouble, -0x1.2FD75B4238341P-56_cdouble,
+  0x1.808E67C242B76P-56_cdouble, -0x1.208E426F622B7P-57_cdouble,
+  -0x1.402461EA5C92FP-55_cdouble, 0x1.DF7F4A2F29A1FP-57_cdouble,
+  -0x1.E0453094995FDP-55_cdouble, -0x1.A04F3BEC77B45P-55_cdouble,
+  -0x1.7FA34400E203CP-56_cdouble, -0x1.6FF8005A0695DP-56_cdouble,
+  0x1.0F8C4C4EC7E03P-56_cdouble, 0x1.E7FD9478C4602P-55_cdouble,
+  -0x1.A0C554DCDAE7EP-57_cdouble, 0x1.67DA98CE9B26BP-55_cdouble,
+  -0x1.284C9B54C13DEP-55_cdouble, 0x1.812C8EA602E3CP-58_cdouble,
+  -0x1.EFADDAD27789CP-55_cdouble, 0x1.3CB1719C61237P-58_cdouble,
+  0x1.3F7D94194CEP-56_cdouble, 0x1.50AC4215D9BCP-56_cdouble,
+  0x1.BEEA653E9C1C9P-57_cdouble, -0x1.C079F274A70D6P-56_cdouble,
+  -0x1.A0B4076E84C1FP-56_cdouble, 0x1.8F933F99AB5D7P-55_cdouble,
+  -0x1.82C08665FE1BEP-58_cdouble, -0x1.B04289BD295F3P-56_cdouble,
+  0x1.70251340FA236P-55_cdouble, -0x1.5011E16A4D80CP-56_cdouble,
+  0x1.9802F09EF62EP-55_cdouble, -0x1.E0B75580CF7FAP-56_cdouble,
+  -0x1.C848309459811P-55_cdouble, -0x1.F8027951576F4P-55_cdouble,
+  -0x1.F81D97274538FP-55_cdouble, -0x1.071002727FFDCP-59_cdouble,
+  -0x1.81BDCE1FDA8BP-58_cdouble, 0x1.7F91ACB918E6EP-55_cdouble,
+  0x1.B7FF365324681P-54_cdouble, 0x1.6FA08DDAE957BP-55_cdouble,
+  -0x1.7E2DE80D3FB91P-58_cdouble, -0x1.1823305C5F014P-54_cdouble,
+  -0x1.BFABB6680BAC2P-55_cdouble, -0x1.D7F121737E7EFP-54_cdouble,
+  0x1.C000A0516F5FFP-54_cdouble, -0x1.082FBE4DA5DAP-54_cdouble,
+  -0x1.8FDD04C9CFB43P-55_cdouble, 0x1.CFE2A7994D182P-55_cdouble,
+  -0x1.00273715E8BC5P-56_cdouble, 0x1.B7C39DAB2A6F9P-54_cdouble,
+  0x1.DF1336EDC5254P-56_cdouble, -0x1.E03564CCD31EBP-54_cdouble,
+  0x1.5F0E74BD3A477P-56_cdouble, 0x1.C7DCB149D8833P-54_cdouble,
+  0x1.E08AFCF2D3D28P-56_cdouble, 0x1.20837856599A6P-55_cdouble,
+  -0x1.9FA5C904FBCD2P-55_cdouble, -0x1.81125ED175329P-56_cdouble,
+  0x1.883D8847754DCP-54_cdouble, -0x1.709E731D02807P-55_cdouble,
+  0x1.7F79F68727B02P-55_cdouble, -0x1.180902E30E93EP-54_cdouble,
+}
+
+local log_ln2hi: cdouble = 0x1.62E42FEFA3800P-1_cdouble
+local log_ln2lo: cdouble = 0x1.EF35793C76730P-45_cdouble
+local log_poly1: [11]cdouble = {
+  -0x1P-1_cdouble, 0x1.5555555555577P-2_cdouble, -0x1.FFFFFFFFFFDCBP-3_cdouble,
+  0x1.999999995DD0CP-3_cdouble, -0x1.55555556745A7P-3_cdouble, 0x1.24924A344DE3P-3_cdouble,
+  -0x1.FFFFFA4423D65P-4_cdouble, 0x1.C7184282AD6CAP-4_cdouble, -0x1.999EB43B068FFP-4_cdouble,
+  0x1.78182F7AFD085P-4_cdouble, -0x1.5521375D145CDP-4_cdouble
+}
+local log_poly: [5]cdouble = {
+  -0x1.0000000000001P-1_cdouble, 0x1.555555551305BP-2_cdouble, -0x1.FFFFFFFEB459P-3_cdouble,
+  0x1.999B324F10111P-3_cdouble, -0x1.55575E506C89FP-3_cdouble
+}
+
+local function log(x: cdouble): cdouble <cexport, codename 'log'>
+  if is_nan64(x) then return x + x end
+  local ix = bits_of_double(x)
+  local top = (@cuint)(ix >> 48)
+  -- [1 - 0x1p-4, 1 + 0x1.09p-4): handle inputs close to 1 separately.
+  if ix >= 0x3FEE000000000000_culonglong and ix < 0x3FF1090000000000_culonglong then
+    if ix == 0x3FF0000000000000_culonglong then return 0_cdouble end
+    local r = x - 1_cdouble
+    local r2 = r * r
+    local r3 = r * r2
+    local y = r3 * (log_poly1[1] + r * log_poly1[2] + r2 * log_poly1[3] +
+      r3 * (log_poly1[4] + r * log_poly1[5] + r2 * log_poly1[6] +
+      r3 * (log_poly1[7] + r * log_poly1[8] + r2 * log_poly1[9] + r3 * log_poly1[10])))
+    local w = r * 0x1P27_cdouble
+    local rhi = r + w - w
+    local rlo = r - rhi
+    w = rhi * rhi * log_poly1[0]
+    local hi = r + w
+    local lo = r - hi + w
+    lo = lo + log_poly1[0] * rlo * (rhi + r)
+    y = y + lo
+    y = y + hi
+    return y
   end
-  if value == 0_cdouble then
-    math_range_error()
-    return nelibc_log_pole_hw()
+  if top < 0x0010_cuint or top >= 0x7FF0_cuint then
+    -- x < 0x1p-1022, infinity or negative.
+    if (ix << 1) == 0_culonglong then return math_divzero(true) end
+    if ix == 0x7FF0000000000000_culonglong then return x end
+    if (top & 0x8000_cuint) ~= 0_cuint then return math_invalid(x) end
+    ix = bits_of_double(x * 0x1P52_cdouble)
+    ix = ix - (52_culonglong << 52)
   end
-  if value < 0_cdouble then
-    math_domain_error()
-    return nelibc_log_domain_error_hw()
-  end
-  local exponent: cint = 0_cint
-  local mantissa: cdouble
-  if value >= 0.5_cdouble and value <= 1.5_cdouble then
-    -- Avoid subtracting two rounded ln(2) values around one. Sterbenz's
-    -- lemma makes value-1 exact in this interval.
-    mantissa = value
-  else
-    mantissa = frexp(value, &exponent) * 2_cdouble
-    exponent = exponent - 1_cint
-  end
-  local z = (mantissa - 1_cdouble) / (mantissa + 1_cdouble)
-  local z_squared = z * z
-  local polynomial: cdouble = 1_cdouble / 41_cdouble
-  local denominator: cint = 39_cint
-  while denominator >= 3_cint do
-    polynomial = 1_cdouble / (@cdouble)(denominator) + z_squared * polynomial
-    denominator = denominator - 2_cint
-  end
-  local log_mantissa = 2_cdouble * z * (1_cdouble + z_squared * polynomial)
-  local exponent_double = (@cdouble)(exponent)
-  return (log_mantissa + exponent_double * 0x1.62E42FEE00000P-1_cdouble) +
-    exponent_double * 0x1.A39EF35793C76P-33_cdouble
+  -- x = 2^k z with z in [OFF, 2*OFF); the ith of 128 subintervals holds z.
+  local tmp = ix - 0x3FE6000000000000_culonglong
+  local i = (@cint)((tmp >> 45) & 127_culonglong)
+  local k = (@cint)(tmp >> 52)
+  if k >= 2048_cint then k = k - 4096_cint end
+  local iz = ix - (tmp & (0xFFF_culonglong << 52))
+  local invc = log_tab_invc[i]
+  local logc = log_tab_logc[i]
+  local z = double_from_bits(iz)
+  local r = (z - log_tab2_chi[i] - log_tab2_clo[i]) * invc
+  local kd = (@cdouble)(k)
+  local w = kd * log_ln2hi + logc
+  local hi = w + r
+  local lo = w - hi + r + kd * log_ln2lo
+  local r2 = r * r
+  local y = lo + r2 * log_poly[0] +
+    r * r2 * (log_poly[1] + r * log_poly[2] + r2 * (log_poly[3] + r * log_poly[4])) + hi
+  return y
 end
 
 local function logf(value: cfloat): cfloat <cexport, codename 'logf'>
   return (@cfloat)(log((@cdouble)(value)))
 end
 
-local function log2(value: cdouble): cdouble <cexport, codename 'log2'>
-  if value ~= value then return value + value end
-  if is_infinite64(value) then
-    if value < 0_cdouble then
-      math_domain_error()
-      return nelibc_log_domain_error_hw()
-    end
-    return value
-  end
-  if value == 0_cdouble then
-    math_range_error()
-    return nelibc_log_pole_hw()
-  end
-  if value < 0_cdouble then
-    math_domain_error()
-    return nelibc_log_domain_error_hw()
-  end
-  local exponent: cint = 0_cint
-  local normalized_mantissa = frexp(value, &exponent) * 2_cdouble
-  exponent = exponent - 1_cint
-  if normalized_mantissa == 1_cdouble then return (@cdouble)(exponent) end
-  if value < 0.5_cdouble or value > 1.5_cdouble then
-    return log(value) * 0x1.71547652B82FEP+0_cdouble
-  end
+local log2_invln2hi: cdouble = 0x1.7154765200000P+0_cdouble
+local log2_invln2lo: cdouble = 0x1.705FC2EEFA200P-33_cdouble
+local log2_poly1: [10]cdouble = {
+  -0x1.71547652B82FEP-1_cdouble, 0x1.EC709DC3A03F7P-2_cdouble, -0x1.71547652B7C3FP-2_cdouble,
+  0x1.2776C50F05BE4P-2_cdouble, -0x1.EC709DD768FE5P-3_cdouble, 0x1.A61761EC4E736P-3_cdouble,
+  -0x1.7153FBC64A79BP-3_cdouble, 0x1.484D154F01B4AP-3_cdouble, -0x1.289E4A72C383CP-3_cdouble,
+  0x1.0B32F285AEE66P-3_cdouble
+}
+local log2_poly: [6]cdouble = {
+  -0x1.71547652B8339P-1_cdouble, 0x1.EC709DC3A04BEP-2_cdouble, -0x1.7154764702FFBP-2_cdouble,
+  0x1.2776C50034C48P-2_cdouble, -0x1.EC7B328EA92BCP-3_cdouble, 0x1.A6225E117F92EP-3_cdouble
+}
 
-  local mantissa: cdouble
-  if value >= 0.5_cdouble and value <= 1.5_cdouble then
-    mantissa = value
-    exponent = 0_cint
-  else
-    mantissa = normalized_mantissa
+local function log2(x: cdouble): cdouble <cexport, codename 'log2'>
+  if is_nan64(x) then return x + x end
+  local ix = bits_of_double(x)
+  local top = (@cuint)(ix >> 48)
+  -- [1 - 0x1.5b51p-5, 1 + 0x1.6ab2p-5): inputs close to 1.
+  if ix >= 0x3FEEA4AF00000000_culonglong and ix < 0x3FF0B55900000000_culonglong then
+    if ix == 0x3FF0000000000000_culonglong then return 0_cdouble end
+    local r = x - 1_cdouble
+    local rhi = double_from_bits(bits_of_double(r) & 0xFFFFFFFF00000000_culonglong)
+    local rlo = r - rhi
+    local hi = rhi * log2_invln2hi
+    local lo = rlo * log2_invln2hi + r * log2_invln2lo
+    local r2 = r * r
+    local r4 = r2 * r2
+    local p = r2 * (log2_poly1[0] + r * log2_poly1[1])
+    local y = hi + p
+    lo = lo + (hi - y + p)
+    lo = lo + r4 * (log2_poly1[2] + r * log2_poly1[3] + r2 * (log2_poly1[4] + r * log2_poly1[5]) +
+      r4 * (log2_poly1[6] + r * log2_poly1[7] + r2 * (log2_poly1[8] + r * log2_poly1[9])))
+    y = y + lo
+    return y
   end
-  if mantissa == 1_cdouble then return (@cdouble)(exponent) end
-
-  local z = (mantissa - 1_cdouble) / (mantissa + 1_cdouble)
-  local z_squared = z * z
-  local polynomial: cdouble = 1_cdouble / 41_cdouble
-  local denominator: cint = 39_cint
-  while denominator >= 3_cint do
-    polynomial = 1_cdouble / (@cdouble)(denominator) + z_squared * polynomial
-    denominator = denominator - 2_cint
+  if top < 0x0010_cuint or top >= 0x7FF0_cuint then
+    if (ix << 1) == 0_culonglong then return math_divzero(true) end
+    if ix == 0x7FF0000000000000_culonglong then return x end
+    if (top & 0x8000_cuint) ~= 0_cuint then return math_invalid(x) end
+    ix = bits_of_double(x * 0x1P52_cdouble)
+    ix = ix - (52_culonglong << 52)
   end
-  local log_mantissa = 2_cdouble * z * (1_cdouble + z_squared * polynomial)
-  return (@cdouble)(exponent) + log_mantissa * 0x1.71547652B82FEP+0_cdouble
+  local tmp = ix - 0x3FE6000000000000_culonglong
+  local i = (@cint)((tmp >> 46) & 63_culonglong)
+  local k = (@cint)(tmp >> 52)
+  if k >= 2048_cint then k = k - 4096_cint end
+  local iz = ix - (tmp & (0xFFF_culonglong << 52))
+  local invc = log2_tab_invc[i]
+  local logc = log2_tab_logc[i]
+  local z = double_from_bits(iz)
+  local kd = (@cdouble)(k)
+  local r = (z - log2_tab2_chi[i] - log2_tab2_clo[i]) * invc
+  local rhi = double_from_bits(bits_of_double(r) & 0xFFFFFFFF00000000_culonglong)
+  local rlo = r - rhi
+  local t1 = rhi * log2_invln2hi
+  local t2 = rlo * log2_invln2hi + r * log2_invln2lo
+  local t3 = kd + logc
+  local hi = t3 + t1
+  local lo = t3 - hi + t1 + t2
+  local r2 = r * r
+  local r4 = r2 * r2
+  local p = log2_poly[0] + r * log2_poly[1] + r2 * (log2_poly[2] + r * log2_poly[3]) +
+    r4 * (log2_poly[4] + r * log2_poly[5])
+  local y = lo + r2 * p + hi
+  return y
 end
 
 local function log2f(value: cfloat): cfloat <cexport, codename 'log2f'>
   return (@cfloat)(log2((@cdouble)(value)))
 end
 
-local function log10(value: cdouble): cdouble <cexport, codename 'log10'>
-  return log(value) * 0x1.BCB7B1526E50EP-2_cdouble
+-- Shared fdlibm log(1+f) polynomial (musl log10.c / log1p.c).
+local log_lg1: cdouble = 0x1.5555555555593P-1_cdouble
+local log_lg2: cdouble = 0x1.999999997FA04P-2_cdouble
+local log_lg3: cdouble = 0x1.2492494229359P-2_cdouble
+local log_lg4: cdouble = 0x1.C71C51D8E78AFP-3_cdouble
+local log_lg5: cdouble = 0x1.7466496CB03DEP-3_cdouble
+local log_lg6: cdouble = 0x1.39A09D078C69FP-3_cdouble
+local log_lg7: cdouble = 0x1.2F112DF3E5244P-3_cdouble
+local log10_ivln10hi: cdouble = 0x1.BCB7B15200000P-2_cdouble
+local log10_ivln10lo: cdouble = 0x1.B9438CA9AADD5P-36_cdouble
+local log10_2hi: cdouble = 0x1.34413509F6000P-2_cdouble
+local log10_2lo: cdouble = 0x1.9FEF311F12B36P-42_cdouble
+
+local function log10(x: cdouble): cdouble <cexport, codename 'log10'>
+  if is_nan64(x) then return x + x end
+  local bits = bits_of_double(x)
+  local hx = (@cuint)(bits >> 32)
+  local k: cint = 0_cint
+  if hx < 0x00100000_cuint or (hx >> 31) ~= 0_cuint then
+    if (bits << 1) == 0_culonglong then return math_divzero(true) end
+    if (hx >> 31) ~= 0_cuint then return math_invalid(x) end
+    -- subnormal: scale up
+    k = k - 54_cint
+    x = x * 0x1P54_cdouble
+    bits = bits_of_double(x)
+    hx = (@cuint)(bits >> 32)
+  elseif hx >= 0x7FF00000_cuint then
+    return x
+  elseif hx == 0x3FF00000_cuint and (bits << 32) == 0_culonglong then
+    return 0_cdouble
+  end
+  -- reduce x into [sqrt(2)/2, sqrt(2)]
+  hx = hx + (0x3FF00000_cuint - 0x3FE6A09E_cuint)
+  k = k + (@cint)(hx >> 20) - 0x3FF_cint
+  hx = (hx & 0x000FFFFF_cuint) + 0x3FE6A09E_cuint
+  bits = ((@culonglong)(hx) << 32) | (bits & 0xFFFFFFFF_culonglong)
+  x = double_from_bits(bits)
+  local f = x - 1_cdouble
+  local hfsq = 0.5_cdouble * f * f
+  local s = f / (2_cdouble + f)
+  local z = s * s
+  local w = z * z
+  local t1 = w * (log_lg2 + w * (log_lg4 + w * log_lg6))
+  local t2 = z * (log_lg1 + w * (log_lg3 + w * (log_lg5 + w * log_lg7)))
+  local r = t2 + t1
+  -- hi + lo = f - hfsq + s*(hfsq+R) ~ log(1+f)
+  local hi = f - hfsq
+  hi = double_from_bits(bits_of_double(hi) & 0xFFFFFFFF00000000_culonglong)
+  local lo = f - hi - hfsq + s * (hfsq + r)
+  local val_hi = hi * log10_ivln10hi
+  local dk = (@cdouble)(k)
+  local y = dk * log10_2hi
+  local val_lo = dk * log10_2lo + (lo + hi) * log10_ivln10lo + lo * log10_ivln10hi
+  w = y + val_hi
+  val_lo = val_lo + (y - w) + val_hi
+  val_hi = w
+  return val_lo + val_hi
 end
 
 local function log10f(value: cfloat): cfloat <cexport, codename 'log10f'>
@@ -3664,44 +4212,68 @@ local function cbrtl(value: clongdouble): clongdouble <cexport, codename 'cbrtl'
   return root
 end
 
-local function log1p_core(value: cdouble): cdouble
-  if fabs(value) >= 0.125_cdouble then
-    local adjusted = 1_cdouble + value
-    local correction = (value - (adjusted - 1_cdouble)) / adjusted
-    return log(adjusted) + correction
-  end
-  local transformed = value / (2_cdouble + value)
-  local square = transformed * transformed
-  local polynomial: cdouble = 1_cdouble / 41_cdouble
-  local denominator: cint = 39_cint
-  while denominator >= 3_cint do
-    polynomial = 1_cdouble / (@cdouble)(denominator) + square * polynomial
-    denominator = denominator - 2_cint
-  end
-  return 2_cdouble * transformed * (1_cdouble + square * polynomial)
-end
+local log1p_ln2_hi: cdouble = 0x1.62E42FEE00000P-1_cdouble
+local log1p_ln2_lo: cdouble = 0x1.A39EF35793C76P-33_cdouble
 
-local function log1p(value: cdouble): cdouble <cexport, codename 'log1p'>
-  if value ~= value then return value + value end
-  if is_infinite64(value) then
-    if value < 0_cdouble then
-      math_domain_error()
-      return nelibc_log_domain_error_hw()
+local function log1p(x: cdouble): cdouble <cexport, codename 'log1p'>
+  if is_nan64(x) then return x + x end
+  local bits = bits_of_double(x)
+  local hx = (@cuint)(bits >> 32)
+  local k: cint = 1_cint
+  local c: cdouble = 0_cdouble
+  local f: cdouble = 0_cdouble
+  if hx < 0x3FDA827A_cuint or (hx >> 31) ~= 0_cuint then -- 1+x < sqrt(2)+
+    if hx >= 0xBFF00000_cuint then -- x <= -1.0
+      if x == -1_cdouble then return math_divzero(true) end
+      return math_invalid(x)
     end
-    return value
+    if (hx << 1) < (0x3CA00000_cuint << 1) then -- |x| < 2**-53
+      if (hx & 0x7FF00000_cuint) == 0_cuint then force_evalf((@cfloat)(x)) end
+      return x
+    end
+    if hx <= 0xBFD2BEC4_cuint then -- sqrt(2)/2- <= 1+x < sqrt(2)+
+      k = 0_cint
+      c = 0_cdouble
+      f = x
+    end
+  elseif hx >= 0x7FF00000_cuint then
+    return x
   end
-  if value == -1_cdouble then
-    math_range_error()
-    return nelibc_log_pole_hw()
+  if k ~= 0_cint then
+    local u = 1_cdouble + x
+    local ubits = bits_of_double(u)
+    local hu = (@cuint)(ubits >> 32)
+    hu = hu + (0x3FF00000_cuint - 0x3FE6A09E_cuint)
+    k = (@cint)(hu >> 20) - 0x3FF_cint
+    -- correction term ~ log(1+x)-log(u), avoid underflow in c/u
+    if k < 54_cint then
+      if k >= 2_cint then
+        c = 1_cdouble - (u - x)
+      else
+        c = x - (u - 1_cdouble)
+      end
+      c = c / u
+    else
+      c = 0_cdouble
+    end
+    -- reduce u into [sqrt(2)/2, sqrt(2)]
+    hu = (hu & 0x000FFFFF_cuint) + 0x3FE6A09E_cuint
+    ubits = ((@culonglong)(hu) << 32) | (ubits & 0xFFFFFFFF_culonglong)
+    f = double_from_bits(ubits) - 1_cdouble
   end
-  if value < -1_cdouble then
-    math_domain_error()
-    return nelibc_log_domain_error_hw()
-  end
-  return log1p_core(value)
+  local hfsq = 0.5_cdouble * f * f
+  local s = f / (2_cdouble + f)
+  local z = s * s
+  local w = z * z
+  local t1 = w * (log_lg2 + w * (log_lg4 + w * log_lg6))
+  local t2 = z * (log_lg1 + w * (log_lg3 + w * (log_lg5 + w * log_lg7)))
+  local r = t2 + t1
+  local dk = (@cdouble)(k)
+  return s * (hfsq + r) + (dk * log1p_ln2_lo + c) - hfsq + f + dk * log1p_ln2_hi
 end
 
 local function log1pf(value: cfloat): cfloat <cexport, codename 'log1pf'>
+  if is_subnormal32(value) then return float_subnormal_result(value) end
   return (@cfloat)(log1p((@cdouble)(value)))
 end
 
@@ -3968,44 +4540,76 @@ end
 
 -- Scale by the larger operand before squaring. Exponent-gap shortcuts avoid
 -- raising underflow for a contribution too small to affect the rounded result.
+-- hypot and hypotf follow musl 1.2.5 src/math/hypot.c and hypotf.c.
+local function hypot_sq(x: cdouble): (cdouble, cdouble)
+  local xc = x * 134217729_cdouble -- SPLIT = 0x1p27 + 1
+  local xh = x - xc + xc
+  local xl = x - xh
+  local hi = x * x
+  local lo = xh * xh - hi + 2_cdouble * xh * xl + xl * xl
+  return hi, lo
+end
+
 local function hypot(x: cdouble, y: cdouble): cdouble <cexport, codename 'hypot'>
-  local ax = fabs(x)
-  local ay = fabs(y)
-  if is_infinite64(ax) or is_infinite64(ay) then
-    return double_from_bits(0x7FF0000000000000_culonglong)
+  local ux = bits_of_double(x) & 0x7FFFFFFFFFFFFFFF_culonglong
+  local uy = bits_of_double(y) & 0x7FFFFFFFFFFFFFFF_culonglong
+  if ux < uy then
+    local swap = ux
+    ux = uy
+    uy = swap
   end
-  if is_nan64(ax) or is_nan64(ay) then return ax + ay end
-  if ax < ay then
-    local temporary = ax
-    ax = ay
-    ay = temporary
+  local ex = (@cint)(ux >> 52)
+  local ey = (@cint)(uy >> 52)
+  x = double_from_bits(ux)
+  y = double_from_bits(uy)
+  -- hypot(inf, nan) == inf
+  if ey == 0x7FF_cint then return y end
+  if ex == 0x7FF_cint or uy == 0_culonglong then return x end
+  -- hypot(x, y) ~= x + y*y/x/2 with inexact for small y/x
+  if ex - ey > 64_cint then return x + y end
+  -- precise sqrt argument in nearest rounding mode without overflow
+  local z: cdouble = 1_cdouble
+  if ex > 0x3FF_cint + 510_cint then
+    z = 0x1P700_cdouble
+    x = x * 0x1P-700_cdouble
+    y = y * 0x1P-700_cdouble
+  elseif ey < 0x3FF_cint - 450_cint then
+    z = 0x1P-700_cdouble
+    x = x * 0x1P700_cdouble
+    y = y * 0x1P700_cdouble
   end
-  if ax == 0_cdouble then return 0_cdouble end
-  if ay == 0_cdouble then return ax end
-  if ilogb(ax) - ilogb(ay) >= 27_cint then return ax end
-  local ratio = ay / ax
-  local result = ax * sqrt(1_cdouble + ratio * ratio)
+  local hx, lx = hypot_sq(x)
+  local hy, ly = hypot_sq(y)
+  local result = z * sqrt(ly + lx + hy + hx)
   if is_infinite64(result) then math_range_error() end
   return result
 end
 
 local function hypotf(x: cfloat, y: cfloat): cfloat <cexport, codename 'hypotf'>
-  local ax = fabsf(x)
-  local ay = fabsf(y)
-  if is_infinite32(ax) or is_infinite32(ay) then
-    return float_from_bits(0x7F800000_cuint)
+  local ux = bits_of_float(x) & 0x7FFFFFFF_cuint
+  local uy = bits_of_float(y) & 0x7FFFFFFF_cuint
+  if ux < uy then
+    local swap = ux
+    ux = uy
+    uy = swap
   end
-  if is_nan32(ax) or is_nan32(ay) then return ax + ay end
-  if ax < ay then
-    local temporary = ax
-    ax = ay
-    ay = temporary
+  x = float_from_bits(ux)
+  y = float_from_bits(uy)
+  if uy == 0x7F800000_cuint then return y end
+  if ux >= 0x7F800000_cuint or uy == 0_cuint or ux - uy >= (25_cuint << 23) then
+    return x + y
   end
-  if ax == 0_cfloat then return 0_cfloat end
-  if ay == 0_cfloat then return ax end
-  if ilogbf(ax) - ilogbf(ay) >= 13_cint then return ax end
-  local ratio = ay / ax
-  local result = ax * sqrtf(1_cfloat + ratio * ratio)
+  local z: cfloat = 1_cfloat
+  if ux >= ((0x7F_cuint + 60_cuint) << 23) then
+    z = 0x1P90_cfloat
+    x = x * 0x1P-90_cfloat
+    y = y * 0x1P-90_cfloat
+  elseif uy < ((0x7F_cuint - 60_cuint) << 23) then
+    z = 0x1P-90_cfloat
+    x = x * 0x1P90_cfloat
+    y = y * 0x1P90_cfloat
+  end
+  local result = z * sqrtf((@cfloat)((@cdouble)(x) * x + (@cdouble)(y) * y))
   if is_infinite32(result) then math_range_error() end
   return result
 end
