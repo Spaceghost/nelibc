@@ -396,7 +396,7 @@ where noted.
 | `<dlfcn.h>` | 3 (zig 4: `tls_get_new-dtv`, behind `<limits.h>` with GCC) | no |
 | `<langinfo.h>` | 2 (zig 3), and `common/utf8.c` | no |
 | `<iconv.h>`, `<libgen.h>`, `<pwd.h>`, `<resolv.h>` | 2 each | no |
-| `<crypt.h>`, `<mntent.h>`, `<sys/msg.h>`, `<sys/sem.h>`, `<sys/shm.h>`, `<sys/statvfs.h>`, `<sys/syscall.h>`, `<wordexp.h>` | 1 each | no |
+| `<crypt.h>`, `<wordexp.h>` | 1 each | no |
 | `<tgmath.h>` | 1 (zig 0: clang ships one) | header only |
 | `<inttypes.h>` in standalone mode | 1 (`functional/qsort`) | a header bug: `include/inttypes.h` does `#include_next <inttypes.h>` even under `NELIBC_STANDALONE` |
 | `random`, `srandom`, `initstate`, `setstate` (`<stdlib.h>`) | 1 | no |
@@ -632,6 +632,23 @@ until it does, they return `ENOSYS` there. `functional/ipc_msg`, `ipc_sem`
 and `ipc_shm` pass with both compilers: gcc 22 and zig 21 failing, all
 expected.
 
+More of the same kind (`src/stdio_extras_adapter.c` and `src/stdio.nelua`,
+after musl): `popen`/`pclose` over `posix_spawn` (the child also closes the
+streams of earlier `popen` calls; the pids live in a list beside the
+streams), `<mntent.h>` (`getmntent[_r]` with musl's `\ooo` unescaping, using
+nelibc's own `sscanf` `%n`, `setmntent`, `endmntent`, `addmntent`,
+`hasmntopt`), `mktemp`, `daemon`, `putc`, `putc_unlocked`, `getc_unlocked`,
+and `st_atime`/`st_mtime`/`st_ctime` in `<sys/stat.h>`. Named semaphores now
+accept a name without a leading slash, as musl's `__shm_mapname` and glibc
+do (leading slashes skipped; empty, `.`, `..` or an inner `/` are `EINVAL`);
+`regression/sem_close-unmap` used one and failed silently with Zig.
+`functional/stat`, `memstream`, `popen`, `mntent`, `regression/daemon-failure`
+and `sem_close-unmap` pass with Zig; with GCC all but `functional/mntent`,
+whose `main` ends without a `return` and is built without C99's implicit
+`return 0`, so its status is whatever `%eax` holds (1 here; the functions'
+results are right, and the same checks written out pass with GCC). GCC 17,
+Zig 15 failing, all expected.
+
 `mktime` with a `tm_isdst` that contradicts the date (0 for a summer wall
 time, 1 for a winter one) now reads the wall time in that kind of offset,
 as musl (`t -= opp - gmtoff`) and glibc do: 2020-07-01 12:00 with
@@ -678,7 +695,7 @@ standalone archive lacks, ranked by tests blocked:
 | `iconv_open`, `iconv`, `iconv_close` | 2 |
 | `getpwnam_r` | 2 |
 | `dn_expand` | 2 |
-| `random` family; `lrand48`; `mktemp`; `popen`/`pclose`; `putc`; `execl`; `execle`; `vfork`; `shm_open`/`shm_unlink`; `daemon`; `crypt`; `basename`; `dirname`; `wordexp`/`wordfree`; `getmntent`/`getmntent_r`/`endmntent`; `statvfs`; `syscall` | 1 each |
+| `shm_open`/`shm_unlink`; `crypt`; `wordexp`/`wordfree` | 1 each |
 
 `dlopen` in a static standalone binary would at best return an error; the
 four `dl*` tests are not expected to pass in this profile.
