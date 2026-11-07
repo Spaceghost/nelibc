@@ -43,8 +43,8 @@ Container `nelibc-writ` (Debian 12, glibc 2.36, GCC 12.2), libc-test
 | Nelibc zig hybrid, this slice, `make libc-test-zig` | 2026-11-07 | 118 (`tools/libc_test_expected_zig.txt`) |
 | Nelibc gcc hybrid, slice 2, `make libc-test-gcc` | 2026-11-07 | 114 (`tools/libc_test_expected_gcc.txt`) |
 | Nelibc zig hybrid, slice 2, `make libc-test-zig` | 2026-11-07 | 116 (`tools/libc_test_expected_zig.txt`) |
-| Nelibc gcc hybrid, libm slice (`LIBM_COMMIT`), `make libc-test-gcc` | 2026-11-07 | GCC_N (`tools/libc_test_expected_gcc.txt`) |
-| Nelibc zig hybrid, libm slice (`LIBM_COMMIT`), `make libc-test-zig` | 2026-11-07 | ZIG_N (list unchanged; ZIG_PASSING listed tests now pass) |
+| Nelibc gcc hybrid, libm slice (`2db0322`, rebased on slice 2), `make libc-test-gcc` | 2026-11-07 | 38 (`tools/libc_test_expected_gcc.txt`) |
+| Nelibc zig hybrid, libm slice (`2db0322`, rebased on slice 2), `make libc-test-zig` | 2026-11-07 | 42 (`tools/libc_test_expected_zig.txt`, 74 math tests removed) |
 
 Against the baseline, `7c321ae` fixed 8 tests glibc 2.36 fails (`strtol`,
 `wcstol`, and the `fmin`/`fmax` families) and added 73 failures:
@@ -93,7 +93,7 @@ did. The 112 gcc failures that remain, now the expected list, are:
   fixed `%8c` on short input there. `crypt`, `wordexp`, `clocale_mbfuncs`
   and `pthread_cancel-points` are the host's.
 - 78 math tests: the exception-flag and ulp items above (the libm slice below
-  reduced the math failures to the ones it lists).
+  reduced the math failures to seven).
 - 8 regression tests, all of which glibc 2.36 also fails. One is
   Nelibc-specific in kind: `fpclassify-invalid-ld80` shows `%La` of an x87
   pseudo-denormal returning an error instead of formatting it.
@@ -159,11 +159,14 @@ would otherwise round through binary64.
   musl ports.
 
 Measured on `nelibc-writ` (gcc profile, libc-test `63e36e9`, unprivileged
-`build` user, 2026-11-07), commit `LIBM_COMMIT`:
+`build` user, 2026-11-07). The per-function ULP rows are from the agent's run on the
+slice before its rebase; the two libc-test rows are from commit `2db0322`, the
+slice rebased onto slice 2 (logs `/work/artifacts/libm3-{gcc,zig}.log` in the container):
 
 | Check | Result |
 | --- | --- |
-| `make libc-test-gcc` | GCC_N failing, all in the expected list; every `math/*` test passes except `fma` and `fmaf` |
+| `make libc-test-gcc` | 38 failing, all in the expected list; `math/*` failures are `fma`, `fmaf` and the five long double tests below |
+| `make libc-test-zig` | 42 failing, all in the expected list; the same seven `math/*` tests; 74 math tests left the zig list |
 | `make math-core-diff-gcc` | PASS: 116 functions matched on edge values and 100,000 generated inputs; max ULP exp/log 0/0 (float 1/1), sin/cos/tan 1/1/1 (float 1/1/1), pow 0 (float 1), erf/erfc 1/1 (float 1/2), cbrt 3 (float 1); hypot is gated at 4 ULP, not measured tighter |
 | `make math-core-standalone-gcc` | PASS |
 | libc-test math vectors | every counted vector (round-to-nearest, and the flag checks in all modes) within libc-test's 1.5 ulp tolerance; the directed-rounding ulp lines libc-test prints with `X` and does not count were not tallied |
@@ -178,11 +181,13 @@ fixes; 2 after the ld80 gamma ports.
 Still failing: `math/fma` and `math/fmaf`. Nelibc's own `fma`/`fmaf` are
 linked; the failure is the sign of an underflowed zero
 (`fma(-0x1p-1000, 0x1p-100, 0)` returns `+0`, glibc's vectors want `-0`), and
-glibc 2.36 alone fails the same two tests. Not visible in these runs:
-`math/erfcl`, `erfl`, `exp10l`, `modfl` and `pow10l`, which the
-`libc-test-slice-2` branch (with `%La` in `printf`) reports as failing; here
-their `%La` output has no trailing newline, so the `FAIL` marker is glued to
-it and missed. They are unmeasured in this slice, not passing. ZIG_NOTE
+glibc 2.36 alone fails the same two tests. Also still failing, in both
+profiles: `math/erfcl`, `erfl`, `exp10l`, `modfl` and `pow10l`, the long
+double tests slice 2 made visible (`modfl(-0)` returns `+0` for the integral
+part, `exp10l(nan)` raises `INVALID`, `erfl`, `erfcl`, `exp10l` are off by 2 to
+11 ulp). This slice ported none of the long double erf/exp10/modf code. The zig
+list differs from the gcc list only in four API tests clang rejects at build
+time (`ftw`, `iso646`, `sys_stat`, `sys_wait`).
 
 ## Not run
 
