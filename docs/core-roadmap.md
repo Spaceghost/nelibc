@@ -55,8 +55,17 @@ scanf `%Nc` on short input. libc-test: gcc 114 expected (was 112: 3 fixed,
 (was 118: 7 fixed, the same 5 added). Smokes observed green on this branch:
 `lib-consumer-{gcc,zig,zig-musl,standalone-gcc,standalone-zig}`,
 `smoke-standalone-{gcc,zig}`, `smoke-lib-standalone-{gcc,zig}`,
-`stdio-format-diff-{gcc,zig-musl}`. The 155-target gate on this branch is
-recorded below when it has run; until then main does not carry it.
+`stdio-format-diff-{gcc,zig-musl}`.
+
+Gate: the 155-target list, container `nelibc-writ`, user `build`, Nelua
+`dabbd9ef`. The first run, on `7120e7c`, failed every zig-linked shootout
+at link time: zig cc's default UBSan instrumented the `dlsym` call in the
+new hybrid `malloc_usable_size` adapter with `__ubsan_handle_nonnull_arg`,
+and those targets link without the UBSan runtime. `236d556` compiles
+`src/alloc_hybrid_adapter.c` with `-fno-sanitize=all` under zig, like
+`src/stdio_host_adapter.c`. The rerun on `236d556`: 155/155 targets exited
+0 and no log contains a warning; logs in
+`/work/artifacts/gate-slice2b-20261107-0824/`.
 
 Open after this slice: exact decimal `%Le/%Lf/%Lg` (currently EINVAL for
 non-double values), the math flag/ulp list, scanf/strftime/fnmatch cases
