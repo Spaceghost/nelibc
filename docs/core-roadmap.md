@@ -71,6 +71,21 @@ Open after this slice: exact decimal `%Le/%Lf/%Lg` (currently EINVAL for
 non-double values), the math flag/ulp list, scanf/strftime/fnmatch cases
 only testable in the standalone profile.
 
+### libm slice, 2026-11-07 (musl math ports)
+
+`src/math_core.nelua` carries ports of musl 1.2.5's exp/exp2/pow/log/log2
+(table driven), the fdlibm-derived log10/log1p/expm1/hypot, trigonometric,
+hyperbolic and inverse families, lgamma_r, tgamma, the Bessel functions and
+musl's ld80 lgammal_r/tgammal, with musl's exception-flag discipline through
+an opaque asm barrier. libc-test (`docs/libc-test.md`, "The libm slice"):
+gcc 38 and zig 42 expected failures, down from 114 and 116; the seven math
+tests left are `fma`, `fmaf` and five long double functions this slice did
+not port.
+
+Gate: the 155-target list, container `nelibc-writ`, user `build`, Nelua
+`dabbd9ef`, on `87f1ddf`: 155/155 targets exited 0 and no log contains a
+warning; logs in `/work/artifacts/gate-libm-20261107-0854/`.
+
 ### Gate run, 2026-11-07 (Nelua `dabbd9ef`, no source change)
 
 Same container, user and target list as the runs below, on main `28879ed`
