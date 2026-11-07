@@ -356,6 +356,9 @@ rather than by libc-test:
   "still no file" as unchanged instead of rerunning `tzset` on every call.
   `tools/syscall_smoke.c` checks `TZ=Japan` and `TZDIR` with `TZ=Tokyo`.
 
+Gate: the 155-target list on `8b286be`, Nelua `dabbd9ef`: 155/155 exited 0,
+no warnings; logs in `/work/artifacts/gate-sh2-20261107-1110/`.
+
 The gcc runtime failures rose from 3 to 12 because nine tests that did not
 build now build and reach the bugs listed below (the same nine the zig run
 already reported). The expected lists were rewritten from these runs. The
