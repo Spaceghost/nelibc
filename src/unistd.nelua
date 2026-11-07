@@ -2174,6 +2174,7 @@ local function mktime(time_value: *Tm): clong <cexport, codename 'mktime'>
     31536000_clonglong, -31536000_clonglong
   }
   local offsets: [7]clonglong = {}
+  local offsets_dst: [7]boolean = {}
   local offset_count: csize = 0
   local index: csize = 0
   while index < 7 do
@@ -2192,6 +2193,7 @@ local function mktime(time_value: *Tm): clong <cexport, codename 'mktime'>
       end
       if not duplicate then
         offsets[offset_count] = (@clonglong)(sample.tm_gmtoff)
+        offsets_dst[offset_count] = sample.tm_isdst > 0
         offset_count = offset_count + 1
       end
     end
@@ -2254,7 +2256,24 @@ local function mktime(time_value: *Tm): clong <cexport, codename 'mktime'>
   if exact_found then result_time = exact_time
   elseif forward_found then result_time = forward_time
   elseif backward_found then result_time = backward_time
-  else result_time = wall_seconds - offsets[0] end
+  else
+    -- No instant has this wall time with the requested DST flag (standard
+    -- time asked for in summer, or the reverse): read the wall time in the
+    -- requested kind of offset, as musl (t -= opp - gmtoff) and glibc do, so
+    -- 12:00 with tm_isdst = 0 in July is 12:00 standard time, i.e. 13:00 DST.
+    result_time = wall_seconds - offsets[0]
+    if time_value.tm_isdst >= 0 then
+      local want_dst: boolean = time_value.tm_isdst > 0
+      local k: csize = 0
+      while k < offset_count do
+        if offsets_dst[k] == want_dst then
+          result_time = wall_seconds - offsets[k]
+          break
+        end
+        k = k + 1
+      end
+    end
+  end
   local converted_time: clong = (@clong)(result_time)
   if localtime_r(&converted_time, time_value) == nilptr then return -1_clong end
   return converted_time
