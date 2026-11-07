@@ -455,7 +455,7 @@ Gate coverage note (2026-11-07): AGENTS.md lists `libc-test-gcc` and
 `libc-test-standalone-zig` (159 targets); gate results recorded before
 this note did not include libc-test.
 
-**Fixed** (branch `regex-h`): `<regex.h>`. `src/regex_standalone.nelua`
+**Fixed** (branch `regex-h`; gate 159/159 on `125f247` after merging main, no warnings, `/work/artifacts/gate-regex-20261107-1425/`): `<regex.h>`. `src/regex_standalone.nelua`
 implements `regcomp`, `regexec`, `regerror` and `regfree` over the regex
 engine of nebox (a Pike VM with leftmost-longest matching), with musl
 1.2.5's parser rules, flag values, error codes and messages; hybrid builds
