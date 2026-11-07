@@ -605,6 +605,23 @@ recursive frames, `longjmp(env, 0)` returning 1, a volatile local preserved,
 and leaving the handler's mask with savemask 0, and `_setjmp`/`_longjmp`.
 Hybrid builds keep the host's `<setjmp.h>`.
 
+Small POSIX families for the standalone profile (`src/extras_standalone.nelua`,
+`src/exec_adapter.c`, `src/syscall_adapter.c`, after musl 1.2.5):
+`<libgen.h>` `basename`/`dirname`; the 48-bit generators (`drand48` ...
+`lcong48`, default state 0 as in musl, so `lrand48()` gives 0, 2116118,
+89401895); `random`/`srandom`/`initstate`/`setstate` (musl's state words,
+`initstate(1, ...)` equal to the default state); `<sys/statvfs.h>`
+`statvfs`/`fstatvfs` filled from statfs(2); `execl`/`execle`/`execlp`;
+`vfork` as `fork` (POSIX allows it); `syscall()` with `<sys/syscall.h>`
+mapping each `SYS_name` to the UAPI `__NR_name` (362 names). Two choices
+differ from musl: `seed48` and `srand48` reset the multiplier and addend
+that `lcong48` set, as POSIX and glibc specify, and the generators take no
+lock. `syscall()` is left out of the host profile, which has no raw system
+calls. Eight standalone libc-tests pass with both compilers
+(`functional/basename`, `dirname`, `random`, `vfork`,
+`regression/lrand48-signextend`, `statvfs`, `execle-env`,
+`syscall-sign-extend`): gcc 25 and zig 24 failing, all expected.
+
 `mktime` with a `tm_isdst` that contradicts the date (0 for a summer wall
 time, 1 for a winter one) now reads the wall time in that kind of offset,
 as musl (`t -= opp - gmtoff`) and glibc do: 2020-07-01 12:00 with
