@@ -884,6 +884,9 @@ static int termios_smoke(void) {
   if (tcgetattr(-1, &t) != -1 || errno != EBADF) return 622;
   close(slave);
   close(master);
+  return 0;
+}
+
 static jmp_buf setjmp_env;
 static sigjmp_buf sigsetjmp_env;
 static volatile int setjmp_depth;
