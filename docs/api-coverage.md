@@ -89,6 +89,15 @@ UTF-8 locales. It also supports escaping and `FNM_PATHNAME`, `FNM_NOESCAPE`,
 standalone syscall smokes cover these cases. Stateful multibyte encodings
 remain incomplete; hybrid archives use the active host multibyte decoder.
 
+Standalone `<regex.h>` (`regcomp`, `regexec`, `regerror`, `regfree`) is a
+byte-wise Pike VM with leftmost-longest matching and musl's syntax, flags,
+error codes and messages; BRE back-references, `REG_ICASE`, `REG_NOSUB`,
+`REG_NEWLINE`, `REG_NOTBOL` and `REG_NOTEOL` are supported, `REG_STARTEND`
+is not, and multibyte characters are handled only as described in
+`docs/libc-test.md`. The Zig and GCC standalone syscall smokes cover it;
+the TinyCC archive includes the module but its smoke is not run. Hybrid
+archives use the host's regex.
+
 Standalone stdio now implements `fwide`, wide-character stream and string I/O,
 the corresponding unlocked calls, `getwc`/`putwc` aliases, and one-character
 `ungetwc` pushback. Its stream state tracks orientation and multibyte conversion

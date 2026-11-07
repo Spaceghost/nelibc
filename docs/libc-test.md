@@ -455,6 +455,44 @@ Gate coverage note (2026-11-07): AGENTS.md lists `libc-test-gcc` and
 `libc-test-standalone-zig` (159 targets); gate results recorded before
 this note did not include libc-test.
 
+**Fixed** (branch `regex-h`): `<regex.h>`. `src/regex_standalone.nelua`
+implements `regcomp`, `regexec`, `regerror` and `regfree` over the regex
+engine of nebox (a Pike VM with leftmost-longest matching), with musl
+1.2.5's parser rules, flag values, error codes and messages; hybrid builds
+include the host's header. It supports BRE and ERE, `REG_EXTENDED`,
+`REG_ICASE`, `REG_NOSUB`, `REG_NEWLINE` (`.` and non-matching lists never
+match a newline, `^`/`$` also match after/before one), `REG_NOTBOL`,
+`REG_NOTEOL`, `re_nsub` and unmatched groups as -1/-1, back-references in
+BRE (in an ERE `\1` is the literal `1`, as in musl), musl's extensions
+(`\|`, `\+`, `\?` in BRE; `\t \n \r \f \a \e \w \W \s \S \d \D \b \B \< \>`;
+`\xHH`, `\x{HHHH}`) and `regerror`'s truncation (it returns the size
+needed). Matching is byte-wise, as in the C locale. In a UTF-8 `LC_CTYPE` a
+pattern that is not valid UTF-8 is `REG_BADPAT` and a multibyte literal is
+one atom, but `.` and bracket expressions match single bytes, a multibyte
+character inside brackets is `REG_ECOLLATE`, and `REG_ICASE` folds ASCII
+only. Not implemented: `REG_STARTEND` (not in musl). Differences from musl,
+all checked against musl and glibc in the container with a differential
+harness of 666 pattern-and-flag pairs by 39 strings, with and without
+`REG_NOTBOL|REG_NOTEOL` (not committed): `[.c.]` and `[=c=]` of one
+character are accepted (musl: `REG_ECOLLATE`; glibc accepts them);
+`RE_DUP_MAX` is 32767 as `<limits.h>` says (musl 255); subexpression spans
+follow the GNU rule, so `(a|ab)(bc|c)` on `abc` gives `(0,1)(1,3)` as glibc
+does (musl `(0,2)(2,3)`); a back-reference to a group that did not
+participate fails (glibc; musl matches it as empty); and where musl misses a
+match (`\(a*\)b\1` on `ab` and `x\(^\)*` on `x`, which glibc matches; ERE
+`^*a` under `REG_NOTBOL`, which glibc rejects) Nelibc matches. As in musl, a
+stale group from an earlier iteration (`((a)|b)*` on `ab`, group 2) is -1/-1
+(glibc keeps `(0,1)`). Limits that return `REG_ESPACE`: groups nested over
+256 deep, a syntax tree over 2048 high, a program over 262,144 instructions
+(matching costs text length times program size), and, with back-references,
+over 65,536 live threads at one position (`\(a*\)\1$` over 10,000 `a`s hits
+it). Matching also copies every capture slot per thread, so thousands of
+groups are slow (2,000 groups over 10,000 bytes: 11 s, GCC standalone
+archive in the container). All eight `regression/regex*` tests pass in both
+runs (gcc 292 to 300, zig 293 to 301); checks 87 to 91 and 504 in
+`tools/syscall_smoke.c` cover the error codes, spans, back-references, the
+flags, `regerror` and a UTF-8 locale.
+
 #### Missing symbols
 
 Link failures, GCC run: `daemon` (`regression/daemon-failure`), `t_vmfill`
