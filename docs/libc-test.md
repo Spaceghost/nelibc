@@ -462,7 +462,11 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
   0x7f..., want 0x7f...`. A second `sem_open` of the same name in the same
   process maps a new address instead of returning the existing `sem_t *`
   (POSIX requires the same address until `sem_close`); the test then
-  deadlocks and is killed at 5 s.
+  deadlocks and is killed at 5 s. **Fixed** (branch `sem-open-reuse`): open named semaphores
+  are registered by the file's device and inode with a reference count, so
+  a second `sem_open` returns the same address and `sem_close` unmaps on the
+  last reference, as musl does; the `flock` already held across `sem_open`
+  serializes the lookup. gcc 281, zig 282, no timeouts left.
 - `functional/spawn`: `posix_spawnp(&pid, "echo", &fa, 0, (char
   *[]){"echo","hello",0}, 0) failed, got 22 want 0`. Nelibc rejects a null
   `envp` with `EINVAL` (`src/spawn_standalone.nelua`,

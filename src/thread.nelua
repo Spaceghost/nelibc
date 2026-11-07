@@ -197,7 +197,10 @@ local Semaphore: type = @record{
 local NamedSemaphoreHandle: type = @record{
   semaphore: pointer,
   fd: cint,
-  next: *NamedSemaphoreHandle
+  next: *NamedSemaphoreHandle,
+  device: culong, -- the semaphore file's identity: sem_open of the same
+  inode: culong,  -- semaphore returns the same address (POSIX)
+  references: csize
 }
 local PthreadKeyValue: type = @record{
   key: cuint,
@@ -3733,6 +3736,30 @@ local function nelibc_sem_open_impl(name: *const [0]cchar, oflag: cint,
       close(fd); nelibc_errno_location()[0] = 22; return nilptr
     end
   end
+  -- A semaphore this process already has open is returned again, with one
+  -- more reference for sem_close (POSIX sem_open; musl does the same).
+  local status: [144]byte
+  local stat_result = nelibc_sys6(5_culong, (@culong)(fd), (@culong)((@usize)(&status[0])),
+                                  0_culong, 0_culong, 0_culong, 0_culong) -- fstat
+  if stat_result < 0 then
+    nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+    close(fd); nelibc_errno_location()[0] = (@cint)(-stat_result); return nilptr
+  end
+  local device = $(@*culong)(&status[0])
+  local inode = $(@*culong)(&status[8])
+  named_sem_registry_lock()
+  local existing = named_semaphore_handles
+  while existing ~= nilptr and (existing.device ~= device or existing.inode ~= inode) do
+    existing = existing.next
+  end
+  if existing ~= nilptr then
+    existing.references = existing.references + 1
+    named_sem_registry_unlock()
+    nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
+    close(fd)
+    return (@*Semaphore)(existing.semaphore)
+  end
+  named_sem_registry_unlock()
   local mapped = mmap(nilptr, 16_csize, 3_cint, 1_cint, fd, 0_clong)
   if mapped == (@pointer)(~0_csize) then
     local error_code = nelibc_errno_location()[0]
@@ -3753,7 +3780,7 @@ local function nelibc_sem_open_impl(name: *const [0]cchar, oflag: cint,
     nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
     close(fd); nelibc_errno_location()[0] = 22; return nilptr
   end
-  local handle = (@*NamedSemaphoreHandle)(nelibc_malloc(24_csize))
+  local handle = (@*NamedSemaphoreHandle)(nelibc_malloc(#NamedSemaphoreHandle))
   if handle == nilptr then
     munmap(mapped, 16_csize)
     nelibc_sys6(SYS_FLOCK, (@culong)(fd), 8_culong, 0_culong, 0_culong, 0_culong, 0_culong)
@@ -3764,6 +3791,9 @@ local function nelibc_sem_open_impl(name: *const [0]cchar, oflag: cint,
   end
   handle.semaphore = mapped
   handle.fd = fd
+  handle.device = device
+  handle.inode = inode
+  handle.references = 1
   named_sem_registry_lock()
   handle.next = named_semaphore_handles
   named_semaphore_handles = handle
@@ -3785,6 +3815,11 @@ local function sem_close(sem: *Semaphore): cint <cexport, codename 'sem_close'>
     named_sem_registry_unlock()
     nelibc_errno_location()[0] = 22
     return -1
+  end
+  handle.references = handle.references - 1
+  if handle.references > 0 then
+    named_sem_registry_unlock()
+    return 0
   end
   if previous == nilptr then named_semaphore_handles = handle.next
   else previous.next = handle.next end
