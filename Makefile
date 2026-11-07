@@ -179,6 +179,9 @@ $(OUT)/math-core-x86_64.o: src/math_core_x86_64.S | $(OUT)
 $(OUT)/complex-abi-x86_64.o: src/complex_abi.c | $(OUT)
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c $< -o $@
 
+$(OUT)/setjmp-x86_64.o: src/setjmp_x86_64.S | $(OUT)
+	$(ZIG) cc $(ZIGFLAGS) -c $< -o $@
+
 $(OUT)/fenv-standalone-zig.o: src/fenv_standalone.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags=-fno-builtin -o $@ $<
 
@@ -192,9 +195,9 @@ $(OUT)/libnelibc-zig.a: $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o $(OUT)/
 $(OUT)/libnelibc-gcc.a: $(OUT)/math-core-gcc.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o $(OUT)/mqueue-adapter-gcc.o
 $(OUT)/libnelibc-zig-musl.a: $(OUT)/math-core-zig-musl.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o $(OUT)/mqueue-adapter-zig-musl.o
 $(OUT)/libnelibc-tcc.a: $(OUT)/math-core-tcc.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o $(OUT)/mqueue-adapter-tcc.o
-$(OUT)/libnelibc-standalone-zig.a: $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o $(OUT)/mqueue-adapter-standalone-zig.o
-$(OUT)/libnelibc-standalone-gcc.a: $(OUT)/math-core-gcc.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o $(OUT)/mqueue-adapter-standalone-gcc.o
-$(OUT)/libnelibc-standalone-tcc.a: $(OUT)/math-core-tcc.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o $(OUT)/mqueue-adapter-standalone-tcc.o
+$(OUT)/libnelibc-standalone-zig.a: $(OUT)/setjmp-x86_64.o $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o $(OUT)/mqueue-adapter-standalone-zig.o
+$(OUT)/libnelibc-standalone-gcc.a: $(OUT)/setjmp-x86_64.o $(OUT)/math-core-gcc.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o $(OUT)/mqueue-adapter-standalone-gcc.o
+$(OUT)/libnelibc-standalone-tcc.a: $(OUT)/setjmp-x86_64.o $(OUT)/math-core-tcc.o $(OUT)/math-core-x86_64.o $(OUT)/complex-abi-x86_64.o $(OUT)/mqueue-adapter-standalone-tcc.o
 
 math-core-diff-zig: $(OUT)/math-core-zig.o $(OUT)/math-core-x86_64.o tools/math_core_diff.c
 	cp $(OUT)/math-core-zig.o $(OUT)/math-core-zig-renamed.o
@@ -2575,7 +2578,7 @@ freestanding-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
 smoke-freestanding-gcc: freestanding-gcc
 	$(OUT)/freestanding-gcc
 
-standalone-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
+standalone-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/setjmp-x86_64.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -DNELIBC_STANDALONE' -o $(OUT)/string-standalone-zig.o src/string.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/string-locale-standalone-zig.o src/string_locale_standalone.nelua
 	$(NELUA) -C -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/memory-standalone-zig.o src/memory.nelua
@@ -2604,13 +2607,13 @@ standalone-zig: $(OUT) $(OUT)/memory-x86_64-simd.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/start_linux_x86_64_standalone.S -o $(OUT)/start-linux-x86_64-standalone-zig.o
-	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Iinclude -DNELIBC_TESTING tools/syscall_smoke.c src/stdio_startup_stub.c src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c tools/syscall_interpose_smoke.c $(OUT)/string-locale-standalone-zig.o $(OUT)/string-standalone-zig.o $(OUT)/memory-standalone-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-zig.o $(OUT)/stdlib-standalone-zig.o $(OUT)/locale-standalone-zig.o $(OUT)/stdlib-exit-standalone-zig.o $(OUT)/search-standalone-zig.o $(OUT)/regex-standalone-zig.o $(OUT)/pwd-standalone-smoke-zig.o $(OUT)/termios-standalone-zig.o $(OUT)/stdlib-float-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o $(OUT)/sys-ops-standalone-zig.o $(OUT)/start-linux-x86_64-standalone-zig.o $(OUT)/errno-standalone-zig.o $(OUT)/tls-fixture-standalone-zig.o $(OUT)/tls-alignment-fixture-standalone-zig.o $(OUT)/thread-standalone-zig.o $(OUT)/alloc-standalone-zig.o $(OUT)/alloc-exports-standalone-zig.o $(OUT)/spawn-standalone-zig.o $(OUT)/unistd-standalone-smoke-zig.o $(OUT)/stdio-standalone-zig.o $(OUT)/stdio-varargs-standalone-zig.o src/environment_adapter.c -o $(OUT)/standalone-zig
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Iinclude -DNELIBC_TESTING tools/syscall_smoke.c src/stdio_startup_stub.c src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c tools/syscall_interpose_smoke.c $(OUT)/string-locale-standalone-zig.o $(OUT)/string-standalone-zig.o $(OUT)/memory-standalone-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-zig.o $(OUT)/stdlib-standalone-zig.o $(OUT)/locale-standalone-zig.o $(OUT)/stdlib-exit-standalone-zig.o $(OUT)/search-standalone-zig.o $(OUT)/regex-standalone-zig.o $(OUT)/pwd-standalone-smoke-zig.o $(OUT)/termios-standalone-zig.o $(OUT)/stdlib-float-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o $(OUT)/sys-ops-standalone-zig.o $(OUT)/start-linux-x86_64-standalone-zig.o $(OUT)/errno-standalone-zig.o $(OUT)/tls-fixture-standalone-zig.o $(OUT)/tls-alignment-fixture-standalone-zig.o $(OUT)/thread-standalone-zig.o $(OUT)/alloc-standalone-zig.o $(OUT)/alloc-exports-standalone-zig.o $(OUT)/spawn-standalone-zig.o $(OUT)/unistd-standalone-smoke-zig.o $(OUT)/stdio-standalone-zig.o $(OUT)/stdio-varargs-standalone-zig.o $(OUT)/setjmp-x86_64.o src/environment_adapter.c -o $(OUT)/standalone-zig
 	@test -z "$$(nm -u $(OUT)/standalone-zig)"
 
 smoke-standalone-zig: standalone-zig
 	NELIBC_GETENV_PROBE=visible $(OUT)/standalone-zig
 
-standalone-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
+standalone-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/setjmp-x86_64.o
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns -DNELIBC_STANDALONE' -o $(OUT)/string-standalone-gcc.o src/string.nelua
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/string-locale-standalone-gcc.o src/string_locale_standalone.nelua
 	$(NELUA) -C -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/memory-standalone-gcc.o src/memory.nelua
@@ -2639,7 +2642,7 @@ standalone-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o
 	gcc -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o
 	gcc -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-standalone-gcc.o
 	gcc -c src/sys/start_linux_x86_64_standalone.S -o $(OUT)/start-linux-x86_64-standalone-gcc.o
-	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Iinclude -DNELIBC_TESTING tools/syscall_smoke.c src/stdio_startup_stub.c src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c tools/syscall_interpose_smoke.c $(OUT)/string-locale-standalone-gcc.o $(OUT)/string-standalone-gcc.o $(OUT)/memory-standalone-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-gcc.o $(OUT)/stdlib-standalone-gcc.o $(OUT)/locale-standalone-gcc.o $(OUT)/stdlib-exit-standalone-gcc.o $(OUT)/search-standalone-gcc.o $(OUT)/regex-standalone-gcc.o $(OUT)/pwd-standalone-smoke-gcc.o $(OUT)/termios-standalone-gcc.o $(OUT)/stdlib-float-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o $(OUT)/sys-ops-standalone-gcc.o $(OUT)/start-linux-x86_64-standalone-gcc.o $(OUT)/errno-standalone-gcc.o $(OUT)/tls-fixture-standalone-gcc.o $(OUT)/tls-alignment-fixture-standalone-gcc.o $(OUT)/thread-standalone-gcc.o $(OUT)/alloc-standalone-gcc.o $(OUT)/alloc-exports-standalone-gcc.o $(OUT)/spawn-standalone-gcc.o $(OUT)/unistd-standalone-smoke-gcc.o $(OUT)/stdio-standalone-gcc.o $(OUT)/stdio-varargs-standalone-gcc.o src/environment_adapter.c -o $(OUT)/standalone-gcc
+	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Iinclude -DNELIBC_TESTING tools/syscall_smoke.c src/stdio_startup_stub.c src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c tools/syscall_interpose_smoke.c $(OUT)/string-locale-standalone-gcc.o $(OUT)/string-standalone-gcc.o $(OUT)/memory-standalone-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-gcc.o $(OUT)/stdlib-standalone-gcc.o $(OUT)/locale-standalone-gcc.o $(OUT)/stdlib-exit-standalone-gcc.o $(OUT)/search-standalone-gcc.o $(OUT)/regex-standalone-gcc.o $(OUT)/pwd-standalone-smoke-gcc.o $(OUT)/termios-standalone-gcc.o $(OUT)/stdlib-float-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o $(OUT)/sys-ops-standalone-gcc.o $(OUT)/start-linux-x86_64-standalone-gcc.o $(OUT)/errno-standalone-gcc.o $(OUT)/tls-fixture-standalone-gcc.o $(OUT)/tls-alignment-fixture-standalone-gcc.o $(OUT)/thread-standalone-gcc.o $(OUT)/alloc-standalone-gcc.o $(OUT)/alloc-exports-standalone-gcc.o $(OUT)/spawn-standalone-gcc.o $(OUT)/unistd-standalone-smoke-gcc.o $(OUT)/stdio-standalone-gcc.o $(OUT)/stdio-varargs-standalone-gcc.o $(OUT)/setjmp-x86_64.o src/environment_adapter.c -o $(OUT)/standalone-gcc
 	@test -z "$$(nm -u $(OUT)/standalone-gcc)"
 
 smoke-standalone-gcc: standalone-gcc
@@ -2648,7 +2651,7 @@ smoke-standalone-gcc: standalone-gcc
 smoke-standalone-tcc: standalone-tcc
 	NELIBC_GETENV_PROBE=visible $(OUT)/standalone-tcc
 
-standalone-tcc: $(OUT) $(OUT)/memory-tcc-simd.o
+standalone-tcc: $(OUT) $(OUT)/memory-tcc-simd.o $(OUT)/setjmp-x86_64.o
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -DNELIBC_STANDALONE' -o $(OUT)/string-standalone-tcc.o src/string.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/string-locale-standalone-tcc.o src/string_locale_standalone.nelua
 	$(NELUA) -C -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/memory-standalone-tcc.o src/memory.nelua
@@ -2685,7 +2688,7 @@ standalone-tcc: $(OUT) $(OUT)/memory-tcc-simd.o
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/environment_adapter.c -o $(OUT)/environment-adapter-standalone-tcc.o
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -Iinclude -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c tools/syscall_smoke.c -o $(OUT)/syscall-smoke-standalone-tcc.o
 	$(TCC) -DNELIBC_STANDALONE -Iinclude -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c tools/syscall_interpose_smoke.c -o $(OUT)/syscall-interpose-smoke-standalone-tcc.o
-	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Iinclude $(OUT)/syscall-smoke-standalone-tcc.o $(OUT)/stdio-startup-stub-standalone-tcc.o $(OUT)/fcntl-adapter-standalone-tcc.o $(OUT)/credential-adapter-standalone-tcc.o $(OUT)/stdio-lock-standalone-tcc.o $(OUT)/syscall-interpose-smoke-standalone-tcc.o $(OUT)/string-locale-standalone-tcc.o $(OUT)/string-standalone-tcc.o $(OUT)/memory-standalone-tcc.o $(OUT)/memory-tcc-standalone-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/ctype-standalone-tcc.o $(OUT)/stdlib-standalone-tcc.o $(OUT)/locale-standalone-tcc.o $(OUT)/stdlib-exit-standalone-tcc.o $(OUT)/search-standalone-tcc.o $(OUT)/regex-standalone-tcc.o $(OUT)/pwd-standalone-tcc.o $(OUT)/termios-standalone-tcc.o $(OUT)/stdlib-float-standalone-tcc.o $(OUT)/sys-linux-x86_64-standalone-tcc.o $(OUT)/sys-linux-x86_64-standalone-tcc-asm.o $(OUT)/sys-ops-standalone-tcc.o $(OUT)/start-linux-x86_64-standalone-tcc.o $(OUT)/errno-standalone-tcc.o $(OUT)/tls-fixture-standalone-tcc.o $(OUT)/tls-alignment-fixture-standalone-tcc.o $(OUT)/thread-standalone-tcc.o $(OUT)/alloc-standalone-tcc.o $(OUT)/alloc-exports-standalone-tcc.o $(OUT)/spawn-standalone-tcc.o $(OUT)/unistd-standalone-tcc.o $(OUT)/stdio-standalone-tcc.o $(OUT)/stdio-varargs-standalone-tcc.o $(OUT)/environment-adapter-standalone-tcc.o $(TCC_LIBTCC1) -o $(OUT)/standalone-tcc
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Iinclude $(OUT)/syscall-smoke-standalone-tcc.o $(OUT)/stdio-startup-stub-standalone-tcc.o $(OUT)/fcntl-adapter-standalone-tcc.o $(OUT)/credential-adapter-standalone-tcc.o $(OUT)/stdio-lock-standalone-tcc.o $(OUT)/syscall-interpose-smoke-standalone-tcc.o $(OUT)/string-locale-standalone-tcc.o $(OUT)/string-standalone-tcc.o $(OUT)/memory-standalone-tcc.o $(OUT)/memory-tcc-standalone-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/ctype-standalone-tcc.o $(OUT)/stdlib-standalone-tcc.o $(OUT)/locale-standalone-tcc.o $(OUT)/stdlib-exit-standalone-tcc.o $(OUT)/search-standalone-tcc.o $(OUT)/regex-standalone-tcc.o $(OUT)/pwd-standalone-tcc.o $(OUT)/termios-standalone-tcc.o $(OUT)/stdlib-float-standalone-tcc.o $(OUT)/sys-linux-x86_64-standalone-tcc.o $(OUT)/sys-linux-x86_64-standalone-tcc-asm.o $(OUT)/sys-ops-standalone-tcc.o $(OUT)/start-linux-x86_64-standalone-tcc.o $(OUT)/errno-standalone-tcc.o $(OUT)/tls-fixture-standalone-tcc.o $(OUT)/tls-alignment-fixture-standalone-tcc.o $(OUT)/thread-standalone-tcc.o $(OUT)/alloc-standalone-tcc.o $(OUT)/alloc-exports-standalone-tcc.o $(OUT)/spawn-standalone-tcc.o $(OUT)/unistd-standalone-tcc.o $(OUT)/stdio-standalone-tcc.o $(OUT)/stdio-varargs-standalone-tcc.o $(OUT)/environment-adapter-standalone-tcc.o $(OUT)/setjmp-x86_64.o $(TCC_LIBTCC1) -o $(OUT)/standalone-tcc
 	@test -z "$$(nm -u $(OUT)/standalone-tcc)"
 
 exit-smoke-standalone-zig: $(OUT)/libnelibc-standalone-zig.a tools/exit_smoke.c
@@ -2755,6 +2758,7 @@ $(OUT)/libnelibc-standalone-zig.a: standalone-zig $(OUT)/inet-standalone-zig.o s
 	$(AR) rcs $@ $(OUT)/string-locale-standalone-zig.o $(OUT)/string-standalone-zig.o $(OUT)/inet-standalone-zig.o $(OUT)/memory-standalone-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-zig.o $(OUT)/stdlib-standalone-zig.o $(OUT)/locale-standalone-zig.o $(OUT)/stdlib-exit-standalone-zig.o $(OUT)/search-standalone-zig.o $(OUT)/regex-standalone-zig.o $(OUT)/pwd-standalone-zig.o $(OUT)/termios-standalone-zig.o $(OUT)/stdlib-float-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig.o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o $(OUT)/sys-ops-standalone-zig.o $(OUT)/start-linux-x86_64-standalone-zig.o $(OUT)/errno-standalone-zig.o $(OUT)/thread-standalone-zig.o $(OUT)/alloc-standalone-zig.o $(OUT)/alloc-exports-standalone-zig.o $(OUT)/spawn-standalone-zig.o $(OUT)/unistd-standalone-zig.o $(OUT)/stdio-standalone-zig.o $(OUT)/stdio-varargs-standalone-zig.o $(OUT)/fcntl-adapter-standalone-zig.o $(OUT)/credential-adapter-standalone-zig.o $(OUT)/stdio-lock-standalone-zig.o $(OUT)/stdio-startup-stub-standalone-zig.o $(OUT)/environment-adapter-standalone-zig.o $(OUT)/mqueue-adapter-standalone-zig.o $(OUT)/semaphore-adapter-standalone-zig.o
 	$(AR) rcs $@ $(OUT)/math-core-zig.o $(OUT)/fenv-standalone-zig.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
+	$(AR) rcs $@ $(OUT)/setjmp-x86_64.o
 	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
 $(OUT)/libnelibc-standalone-gcc.a: standalone-gcc $(OUT)/inet-standalone-gcc.o src/spawn_standalone.nelua src/fcntl_adapter.c src/credential_adapter.c src/stdio_lock_standalone.c src/stdio_startup_stub.c src/environment_adapter.c src/semaphore_adapter.c src/fenv_standalone.nelua include/fenv.h $(OUT)/fenv-standalone-gcc.o $(OUT)/complex-abi-x86_64.o $(OUT)/mqueue-adapter-standalone-gcc.o
@@ -2769,6 +2773,7 @@ $(OUT)/libnelibc-standalone-gcc.a: standalone-gcc $(OUT)/inet-standalone-gcc.o s
 	$(AR) rcs $@ $(OUT)/string-locale-standalone-gcc.o $(OUT)/string-standalone-gcc.o $(OUT)/inet-standalone-gcc.o $(OUT)/memory-standalone-gcc.o $(OUT)/memory-x86_64-simd.o $(OUT)/ctype-standalone-gcc.o $(OUT)/stdlib-standalone-gcc.o $(OUT)/locale-standalone-gcc.o $(OUT)/stdlib-exit-standalone-gcc.o $(OUT)/search-standalone-gcc.o $(OUT)/regex-standalone-gcc.o $(OUT)/pwd-standalone-gcc.o $(OUT)/termios-standalone-gcc.o $(OUT)/stdlib-float-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc.o $(OUT)/sys-linux-x86_64-standalone-gcc-asm.o $(OUT)/sys-ops-standalone-gcc.o $(OUT)/start-linux-x86_64-standalone-gcc.o $(OUT)/errno-standalone-gcc.o $(OUT)/thread-standalone-gcc.o $(OUT)/alloc-standalone-gcc.o $(OUT)/alloc-exports-standalone-gcc.o $(OUT)/spawn-standalone-gcc.o $(OUT)/unistd-standalone-gcc.o $(OUT)/stdio-standalone-gcc.o $(OUT)/stdio-varargs-standalone-gcc.o $(OUT)/fcntl-adapter-standalone-gcc.o $(OUT)/credential-adapter-standalone-gcc.o $(OUT)/stdio-lock-standalone-gcc.o $(OUT)/stdio-startup-stub-standalone-gcc.o $(OUT)/environment-adapter-standalone-gcc.o $(OUT)/mqueue-adapter-standalone-gcc.o $(OUT)/semaphore-adapter-standalone-gcc.o
 	$(AR) rcs $@ $(OUT)/math-core-gcc.o $(OUT)/fenv-standalone-gcc.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
+	$(AR) rcs $@ $(OUT)/setjmp-x86_64.o
 	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
 $(OUT)/tcc-runtime-standalone: $(TCC_LIBTCC1)
@@ -2782,6 +2787,7 @@ $(OUT)/libnelibc-standalone-tcc.a: standalone-tcc $(OUT)/inet-standalone-tcc.o $
 	$(AR) rcs $@ $(OUT)/string-locale-standalone-tcc.o $(OUT)/string-standalone-tcc.o $(OUT)/inet-standalone-tcc.o $(OUT)/memory-standalone-tcc.o $(OUT)/memory-tcc-standalone-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/ctype-standalone-tcc.o $(OUT)/stdlib-standalone-tcc.o $(OUT)/locale-standalone-tcc.o $(OUT)/stdlib-exit-standalone-tcc.o $(OUT)/search-standalone-tcc.o $(OUT)/regex-standalone-tcc.o $(OUT)/pwd-standalone-tcc.o $(OUT)/termios-standalone-tcc.o $(OUT)/stdlib-float-standalone-tcc.o $(OUT)/sys-linux-x86_64-standalone-tcc.o $(OUT)/sys-linux-x86_64-standalone-tcc-asm.o $(OUT)/sys-ops-standalone-tcc.o $(OUT)/start-linux-x86_64-standalone-tcc.o $(OUT)/errno-standalone-tcc.o $(OUT)/thread-standalone-tcc.o $(OUT)/alloc-standalone-tcc.o $(OUT)/alloc-exports-standalone-tcc.o $(OUT)/spawn-standalone-tcc.o $(OUT)/unistd-standalone-tcc.o $(OUT)/stdio-standalone-tcc.o $(OUT)/stdio-varargs-standalone-tcc.o $(OUT)/fcntl-adapter-standalone-tcc.o $(OUT)/credential-adapter-standalone-tcc.o $(OUT)/stdio-lock-standalone-tcc.o $(OUT)/stdio-startup-stub-standalone-tcc.o $(OUT)/environment-adapter-standalone-tcc.o $(OUT)/mqueue-adapter-standalone-tcc.o $(OUT)/semaphore-adapter-standalone-tcc.o $(OUT)/tcc-runtime-standalone/libtcc1.o $(OUT)/tcc-runtime-standalone/va_list.o
 	$(AR) rcs $@ $(OUT)/math-core-tcc.o $(OUT)/fenv-standalone-tcc.o
 	$(AR) rcs $@ $(OUT)/math-core-x86_64.o
+	$(AR) rcs $@ $(OUT)/setjmp-x86_64.o
 	$(AR) rcs $@ $(OUT)/complex-abi-x86_64.o
 
 lib-standalone-zig: $(OUT)/libnelibc-standalone-zig.a

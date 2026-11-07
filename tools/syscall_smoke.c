@@ -69,6 +69,7 @@ _Static_assert(offsetof(struct epoll_event, data) == 4, "Linux x86_64 epoll_even
 #include <dirent.h>
 #include <signal.h>
 #include <termios.h>
+#include <setjmp.h>
 #ifdef NELIBC_TESTING
 extern int __nelibc_tz_file_signature(const char *path, char signature[56]);
 extern int __nelibc_set_localtime_path(const char *path);
@@ -883,6 +884,71 @@ static int termios_smoke(void) {
   if (tcgetattr(-1, &t) != -1 || errno != EBADF) return 622;
   close(slave);
   close(master);
+static jmp_buf setjmp_env;
+static sigjmp_buf sigsetjmp_env;
+static volatile int setjmp_depth;
+
+static __attribute__((noinline)) void setjmp_unwind(int depth, int val) {
+  volatile char pad[256];
+  pad[0] = (char)depth;
+  setjmp_depth = depth + pad[0] - depth;
+  if (depth == 0) longjmp(setjmp_env, val);
+  setjmp_unwind(depth - 1, val);
+}
+
+static void setjmp_on_usr1(int sig) {
+  (void)sig;
+  siglongjmp(sigsetjmp_env, 7);
+}
+
+/* setjmp/longjmp through recursion, val 0 becoming 1, callee-saved values kept,
+ * sigsetjmp restoring the mask after leaving a handler and not restoring it
+ * with savemask 0. */
+static int setjmp_smoke(void) {
+  volatile int count = 0;
+  volatile long keep = 0x1122334455667788L;
+  int r = setjmp(setjmp_env);
+  count++;
+  if (r == 0) {
+    if (count != 1) return 597;
+    setjmp_unwind(20, 42);
+    return 598;
+  }
+  if (r == 42) {
+    if (count != 2 || keep != 0x1122334455667788L || setjmp_depth != 0) return 599;
+    setjmp_unwind(3, 0);
+    return 598;
+  }
+  if (r != 1 || count != 3) return 600;
+
+  /* SIGURG is used by no other check; earlier checks leave SIGUSR1 pending */
+  sigset_t orig, urg, now;
+  sigemptyset(&urg);
+  sigaddset(&urg, SIGURG);
+  if (sigprocmask(SIG_UNBLOCK, &urg, &orig) != 0) return 601;
+  struct sigaction sa;
+  memset(&sa, 0, sizeof sa);
+  sa.sa_handler = setjmp_on_usr1;
+  sigemptyset(&sa.sa_mask);
+  if (sigaction(SIGURG, &sa, 0) != 0) return 601;
+  volatile int jumped = 0;
+  if (sigsetjmp(sigsetjmp_env, 1) == 0) {
+    raise(SIGURG);
+    return 602;
+  }
+  jumped++;
+  if (sigprocmask(SIG_SETMASK, 0, &now) != 0 || sigismember(&now, SIGURG)) return 603;
+  /* savemask 0: the handler's blocked SIGURG stays blocked after the jump */
+  if (sigsetjmp(sigsetjmp_env, 0) == 0) {
+    raise(SIGURG);
+    return 602;
+  }
+  jumped++;
+  if (sigprocmask(SIG_SETMASK, 0, &now) != 0 || !sigismember(&now, SIGURG)) return 604;
+  signal(SIGURG, SIG_DFL);
+  sigprocmask(SIG_SETMASK, &orig, 0);
+  if (jumped != 2) return 604;
+  if (_setjmp(setjmp_env) == 0) _longjmp(setjmp_env, 5);
   return 0;
 }
 
@@ -3941,6 +4007,8 @@ extern int nelibc_standalone_global_collate_mode(void);
 #endif
   int termios_result = termios_smoke();
   if (termios_result != 0) return termios_result;
+  int setjmp_result = setjmp_smoke();
+  if (setjmp_result != 0) return setjmp_result;
   int fcntl_result = fcntl_argument_smoke();
   if (fcntl_result != 0) return fcntl_result;
   return 0;

@@ -396,7 +396,7 @@ where noted.
 | `<dlfcn.h>` | 3 (zig 4: `tls_get_new-dtv`, behind `<limits.h>` with GCC) | no |
 | `<langinfo.h>` | 2 (zig 3), and `common/utf8.c` | no |
 | `<iconv.h>`, `<libgen.h>`, `<pwd.h>`, `<resolv.h>` | 2 each | no |
-| `<crypt.h>`, `<mntent.h>`, `<setjmp.h>`, `<sys/msg.h>`, `<sys/sem.h>`, `<sys/shm.h>`, `<sys/statvfs.h>`, `<sys/syscall.h>`, `<wordexp.h>` | 1 each | no |
+| `<crypt.h>`, `<mntent.h>`, `<sys/msg.h>`, `<sys/sem.h>`, `<sys/shm.h>`, `<sys/statvfs.h>`, `<sys/syscall.h>`, `<wordexp.h>` | 1 each | no |
 | `<tgmath.h>` | 1 (zig 0: clang ships one) | header only |
 | `<inttypes.h>` in standalone mode | 1 (`functional/qsort`) | a header bug: `include/inttypes.h` does `#include_next <inttypes.h>` even under `NELIBC_STANDALONE` |
 | `random`, `srandom`, `initstate`, `setstate` (`<stdlib.h>`) | 1 | no |
@@ -591,6 +591,25 @@ to 622 in `tools/syscall_smoke.c` open a pty pair and cover every function,
 raw mode passing `\r` through unchanged, the speed rules, and `ENOTTY`/`EBADF`
 for descriptors that are not terminals.
 
+`<setjmp.h>` (`src/setjmp_x86_64.S`, in the three standalone archives and so
+in the host profile): `setjmp`, `_setjmp`, `longjmp`, `_longjmp`, `sigsetjmp`
+and `siglongjmp` with musl's `jmp_buf` layout (eight saved words, the
+`sigsetjmp` flag, the saved mask). `setjmp` saves no signal mask, like musl
+and glibc's default; `longjmp` with 0 returns 1; neither saves the x87 control
+word or MXCSR, as in musl. `sigsetjmp` reads the mask before saving the
+registers and tail-calls `setjmp`, so the saved frame is the caller's.
+`functional/setjmp` passes in both standalone runs (gcc 33, zig 32 failing, all
+expected). Checks 597 to 604 in `tools/syscall_smoke.c`: a `longjmp` through 20
+recursive frames, `longjmp(env, 0)` returning 1, a volatile local preserved,
+`siglongjmp` out of a signal handler restoring the mask saved with savemask 1
+and leaving the handler's mask with savemask 0, and `_setjmp`/`_longjmp`.
+Hybrid builds keep the host's `<setjmp.h>`.
+Gate record: 159/159 on branch commit `3cc8819` (container `nelibc-writ`,
+user `build`, `/work/artifacts/gate-setjmp-20261107-1630/`); the squash commit
+`9220a4c` names it `c0d1b7e` by mistake. The follow-up `5f13edd` (snapshot
+object, docs) passed `host-snapshot-matrix`, `host-check-{gcc,zig}` and
+`host-smoke-{gcc,zig}`.
+
 #### Missing symbols
 
 Link failures, GCC run: `daemon` (`regression/daemon-failure`), `t_vmfill`
@@ -624,7 +643,7 @@ standalone archive lacks, ranked by tests blocked:
 | `iconv_open`, `iconv`, `iconv_close` | 2 |
 | `getpwnam_r` | 2 |
 | `dn_expand` | 2 |
-| `setjmp`/`longjmp`/`sigsetjmp`/`siglongjmp`; `random` family; `lrand48`; `mktemp`; `popen`/`pclose`; `putc`; `execl`; `execle`; `vfork`; `shm_open`/`shm_unlink`; `daemon`; `crypt`; `basename`; `dirname`; `wordexp`/`wordfree`; `getmntent`/`getmntent_r`/`endmntent`; `statvfs`; `syscall` | 1 each |
+| `random` family; `lrand48`; `mktemp`; `popen`/`pclose`; `putc`; `execl`; `execle`; `vfork`; `shm_open`/`shm_unlink`; `daemon`; `crypt`; `basename`; `dirname`; `wordexp`/`wordfree`; `getmntent`/`getmntent_r`/`endmntent`; `statvfs`; `syscall` | 1 each |
 
 `dlopen` in a static standalone binary would at best return an error; the
 four `dl*` tests are not expected to pass in this profile.
@@ -757,7 +776,7 @@ and `putc`, `popen`/`pclose`, `random`, `lrand48`, `mktemp`, `execl`/`execle`,
 `vfork`; run `.init_array` in `_start`; the scanf `%n`/`EOF`/pushback bugs and
 `ungetc` after a failed scan; `ftello` in append mode; `sem_open` reuse;
 cancellation cleanup handlers and `sem_wait` as a cancellation point; then the
-missing families (`<regex.h>`, `<search.h>`, `<setjmp.h>`, `<langinfo.h>`,
+missing families (`<regex.h>`, `<search.h>`, `<langinfo.h>`,
 SysV IPC, `iconv`, `getpwnam_r`).
 
 ## Not run

@@ -61,6 +61,7 @@ cp src/host/boot_host.c "$OUT/src/boot_host.c"
 cp src/sys/linux_x86_64.S "$OUT/src/linux_x86_64.S"
 cp src/memory_x86_64.S "$OUT/src/memory_x86_64.S"
 cp src/math_core_x86_64.S "$OUT/src/math_core_x86_64.S"
+cp src/setjmp_x86_64.S "$OUT/src/setjmp_x86_64.S"
 
 {
   echo "nelibc $(git rev-parse HEAD 2>/dev/null || echo unknown)"
@@ -97,7 +98,7 @@ C_OBJECTS := string_locale string inet memory ctype stdlib locale stdlib_exit se
   semaphore_adapter mqueue_adapter complex_abi syscall_host boot_host
 OBJECTS := $(addprefix $(O)/,$(addsuffix .o,$(C_OBJECTS))) \
   $(O)/environment_adapter_host.o \
-  $(O)/linux_x86_64_host.o $(O)/memory_x86_64.o $(O)/math_core_x86_64.o
+  $(O)/linux_x86_64_host.o $(O)/memory_x86_64.o $(O)/math_core_x86_64.o $(O)/setjmp_x86_64.o
 
 all: $(O)/libnelibc-host.a
 
@@ -127,6 +128,8 @@ $(O)/environment_adapter_host.o: $(O)/environment_adapter.o
 $(O)/memory_x86_64.o: src/memory_x86_64.S | $(O)
 	$(CC) -c $< -o $@
 $(O)/math_core_x86_64.o: src/math_core_x86_64.S | $(O)
+	$(CC) -c $< -o $@
+$(O)/setjmp_x86_64.o: src/setjmp_x86_64.S | $(O)
 	$(CC) -c $< -o $@
 
 clean:
