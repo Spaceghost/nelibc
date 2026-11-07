@@ -1392,6 +1392,16 @@ local function nelibc_set_localtime_path(path: *const [0]cchar): cint
 end
 ## end
 
+local function tz_is_bare_name(zone: *const [0]cchar): boolean
+  if zone == nilptr or zone[0] == 0_cchar or zone[0] == 58_cchar then return false end
+  local scan: csize = 0
+  while zone[scan] ~= 0_cchar do
+    if zone[scan] == 47_cchar then return false end
+    scan = scan + 1
+  end
+  return true
+end
+
 local function tz_file_path(zone: *const [0]cchar, path: *[512]cchar): boolean
   local source: *[0]cchar = (@*[0]cchar)(zone)
   local relative: boolean = false
@@ -1403,21 +1413,22 @@ local function tz_file_path(zone: *const [0]cchar, path: *[512]cchar): boolean
       source = (@*[0]cchar)(&zone[1])
       relative = true
     end
-    local has_slash: boolean = false
-    local scan: csize = 0
-    while source[scan] ~= 0_cchar do
-      if source[scan] == 47_cchar then has_slash = true end
-      scan = scan + 1
-    end
-    if not has_slash and not relative then return false end
+    -- glibc order: any TZ value names a zone file first (TZ=Japan,
+    -- TZ=EST5EDT); only when no file is found is it read as a POSIX string.
     if source[0] == 47_cchar then relative = false else relative = true end
   end
   local index: csize = 0
   if relative then
-    local prefix: *const [0]cchar = "/usr/share/zoneinfo/"
+    -- TZDIR overrides the zone directory, as in glibc and musl.
+    local prefix: *const [0]cchar = getenv("TZDIR")
+    if prefix == nilptr or prefix[0] == 0_cchar then prefix = "/usr/share/zoneinfo" end
     while prefix[index] ~= 0_cchar do
-      if index >= 510 then return false end
+      if index >= 509 then return false end
       path[index] = prefix[index]
+      index = index + 1
+    end
+    if path[index - 1] ~= 47_cchar then
+      path[index] = 47_cchar
       index = index + 1
     end
   end
@@ -1433,9 +1444,12 @@ local function tz_file_path(zone: *const [0]cchar, path: *[512]cchar): boolean
 end
 
 local function tz_file_signature_matches(path: *const [0]cchar): boolean
-  if not tz_localtime_signature_ready then return false end
   local current: [56]cchar = {}
-  if not tz_read_file_signature(path, &current[0]) then return false end
+  local readable: boolean = tz_read_file_signature(path, &current[0])
+  -- No file at tzset and still none now (TZ=UTC0 read as a POSIX string):
+  -- the cached rules stand. A file that appeared or vanished is a change.
+  if not tz_localtime_signature_ready then return not readable end
+  if not readable then return false end
   local index: csize = 0
   while index < 56 do
     if current[index] ~= tz_localtime_signature[index] then return false end
@@ -1927,7 +1941,7 @@ local function localtime_tzif_parse(timer: *const [0]clong, result: *Tm,
   return 1_cint
 end
 
-local function localtime_tzif(timer: *const [0]clong, result: *Tm,
+local function localtime_tzif_file(timer: *const [0]clong, result: *Tm,
     path: *const [0]cchar): cint
   local fd: clong = syscall_result(nelibc_sys3(
     SYS_OPENAT, (@culong)(-100_clong), (@culong)((@usize)(path)), 0_culong))
@@ -1948,6 +1962,17 @@ local function localtime_tzif(timer: *const [0]clong, result: *Tm,
   return status
 end
 
+local function localtime_tzif(timer: *const [0]clong, result: *Tm,
+    path: *const [0]cchar): cint
+  -- Probing for a zone file must not change errno: a missing file only
+  -- means the TZ value is read as a POSIX string, and mktime's -1 is a
+  -- valid time whose callers test errno.
+  local saved_errno: cint = nelibc_errno_location()[0]
+  local status: cint = localtime_tzif_file(timer, result, path)
+  nelibc_errno_location()[0] = saved_errno
+  return status
+end
+
 local localtime_result: Tm = {
   tm_sec = 0_cint, tm_min = 0_cint, tm_hour = 0_cint, tm_mday = 1_cint,
   tm_mon = 0_cint, tm_year = 70_cint, tm_wday = 4_cint, tm_yday = 0_cint,
@@ -1963,7 +1988,9 @@ local function localtime_r_core(timer: *const [0]clong, result: *Tm): *Tm
   if tz_file_path(zone, &zone_path[0]) then
     local zone_status: cint = localtime_tzif(timer, result, &zone_path[0])
     if zone_status > 0 then return result end
-    if zone_status < 0 then return nilptr end
+    -- A bare name that is not a zone file (a directory, a stray file) falls
+    -- back to the POSIX reading like a missing file; explicit paths still fail.
+    if zone_status < 0 and not tz_is_bare_name(zone) then return nilptr end
   end
   local offset: clonglong = 0_clonglong
   local zone_length: csize = 0
@@ -5358,7 +5385,7 @@ local function sysconf(name: cint): clong <cexport, codename 'sysconf'>
   if name == 71 then return 256_clong end -- _SC_LOGIN_NAME_MAX
   if name == 72 then return 32_clong end -- _SC_TTY_NAME_MAX
   if name == 73 then return 4_clong end -- _SC_THREAD_DESTRUCTOR_ITERATIONS
-  if name == 74 then return 1024_clong end -- _SC_THREAD_KEYS_MAX
+  if name == 74 then return 128_clong end -- _SC_THREAD_KEYS_MAX, the key table in thread.nelua
   if name == 75 then return 16384_clong end -- _SC_THREAD_STACK_MIN
   if name == 77 or name == 78 or name == 82 then
     return 200809_clong

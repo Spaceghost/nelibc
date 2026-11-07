@@ -1560,6 +1560,16 @@ int main(int argc, char **argv) {
       utc_broken_down.tm_hour != 20 || utc_broken_down.tm_mday != 14 ||
       utc_broken_down.tm_isdst != 1 || utc_broken_down.tm_gmtoff != -14400 ||
       strcmp(utc_broken_down.tm_zone, "EDT") != 0) return 418;
+  /* Like glibc, a name without '/' is a zone file first (TZ=Japan), and
+   * TZDIR moves the zone directory. */
+  if (setenv("TZ", "Japan", 1) != 0 ||
+      localtime_r(&epoch, &utc_broken_down) != &utc_broken_down ||
+      utc_broken_down.tm_hour != 9 || utc_broken_down.tm_gmtoff != 32400 ||
+      strcmp(utc_broken_down.tm_zone, "JST") != 0) return 494;
+  if (setenv("TZDIR", "/usr/share/zoneinfo/Asia", 1) != 0 || setenv("TZ", "Tokyo", 1) != 0 ||
+      localtime_r(&epoch, &utc_broken_down) != &utc_broken_down ||
+      utc_broken_down.tm_hour != 9 || strcmp(utc_broken_down.tm_zone, "JST") != 0 ||
+      unsetenv("TZDIR") != 0) return 495;
   if (setenv("TZ", "EST5", 1) != 0) return 413;
   if (setenv("TZ", "UTC0", 1) != 0) return 424;
   tzset();

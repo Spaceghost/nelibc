@@ -3673,7 +3673,8 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       else
         value = nelibc_va_arg_double(arguments)
       end
-      local negative: boolean = value < 0
+      -- the sign bit, not value < 0: -0.0 prints as "-0.000000" (C 7.21.6.1)
+      local negative: boolean = (nelibc_double_bits(value) >> 63) ~= 0
       if negative then value = -value end
       local float_buffer: [2048]byte
       local float_length: csize = 0

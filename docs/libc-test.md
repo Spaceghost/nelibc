@@ -316,6 +316,52 @@ zig-specific: in the gcc run the same tests either fail the same way
 (`spawn`, `tls_align`, `ftello-unflushed-append`, and `sem_open` times out)
 or do not build.
 
+#### Follow-up: `<limits.h>`, `<inttypes.h>`, signed zero (branch `standalone-headers`)
+
+The first baseline's largest gap was a header, not code. Nelibc now ships
+`include/limits.h`: in hybrid builds it is `#include_next` of the host's, in
+the standalone profile it defines the C limits for x86-64 LP64 and the POSIX
+values Nelibc enforces (`PATH_MAX`, `PTHREAD_KEYS_MAX` 128,
+`PTHREAD_STACK_MIN` 16384, `ATEXIT_MAX` 32, `IOV_MAX`, the `_POSIX_*`
+minimum maxima, ...), the same numbers `sysconf` reports; `ARG_MAX` is
+omitted because it follows `RLIMIT_STACK` at run time. Writing it showed
+`sysconf(_SC_THREAD_KEYS_MAX)` returning 1024 while the key table holds 128;
+it now returns 128. `include/inttypes.h` no longer `#include_next`s in
+standalone mode: it spells the `PRI*`/`SCN*` macros, choosing the length
+modifier of each `FAST`, `MAX` and `PTR` type from the compiler's own
+`<stdint.h>` limits (GCC and clang disagree on `int_fast16_t`).
+
+Rerun on the branch, same checkout and method:
+
+| | pass | build | link | fail | timeout |
+| --- | --- | --- | --- | --- | --- |
+| gcc | 278 (was 255) | 49 (was 78) | 3 (was 6) | 12 (was 3) | 1 |
+| zig | 279 (was 277) | 48 (was 50) | 3 | 12 | 1 |
+
+Two fixes ride on the same branch, both found by nebox's GNU comparisons
+rather than by libc-test:
+
+- `printf` took the sign of `%e`/`%f`/`%g` from `value < 0`, so `-0.0`
+  printed `0.000000` and a negative NaN `nan`. It now reads the sign bit
+  (`-0.000000`, `-0`, `-nan`, as glibc); `tools/lib_consumer_smoke.c` checks
+  them.
+- Local time read a zone file only when TZ contained `/` or began with `:`,
+  so `TZ=Japan` or `TZ=EST5EDT` were parsed as POSIX strings, and `TZDIR` was
+  ignored. As in glibc, any TZ value now names a file under `TZDIR`
+  (default `/usr/share/zoneinfo`) first and is read as a POSIX string only
+  when no such file exists. The first version of this leaked `ENOENT` from
+  the failed probe of `TZ=UTC0` into `errno`, which `mktime`'s callers test
+  when the result is -1; the standalone smoke caught it (exit 431). The
+  zone-file reader now saves and restores `errno`, and the tzset cache counts
+  "still no file" as unchanged instead of rerunning `tzset` on every call.
+  `tools/syscall_smoke.c` checks `TZ=Japan` and `TZDIR` with `TZ=Tokyo`.
+
+The gcc runtime failures rose from 3 to 12 because nine tests that did not
+build now build and reach the bugs listed below (the same nine the zig run
+already reported). The expected lists were rewritten from these runs. The
+table below is the first baseline and keeps its `<limits.h>` and
+`<inttypes.h>` rows for the record.
+
 #### Missing headers and declarations
 
 Tests blocked at compile time, GCC run (zig in parentheses where it

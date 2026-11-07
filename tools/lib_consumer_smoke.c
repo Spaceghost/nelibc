@@ -2064,6 +2064,16 @@ static int long_double_format_probe(void) {
       return 10;
     }
   }
+  /* The sign comes from the sign bit: -0.0 and a negative NaN keep their
+   * minus sign (glibc 2.36 output). */
+  volatile double negative_zero = -0.0;
+  volatile double negative_nan = -strtod("nan", NULL);
+  if (snprintf(text, sizeof text, "%f|%.1e|%g|%f|%Lf", negative_zero, negative_zero,
+               negative_zero, negative_nan, -0.0L) < 0 ||
+      strcmp(text, "-0.000000|-0.0e+00|-0|-nan|-0.000000") != 0) {
+    fprintf(stderr, "signed zero: got [%s]\n", text);
+    return 12;
+  }
   static char huge[8192];
   int huge_length = snprintf(huge, sizeof huge, "%Lf", 1.18973149535723176502e+4932L);
   if (huge_length != 4940 || strncmp(huge, "1189731495357231765021263853030970205169", 40) != 0 ||
