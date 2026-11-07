@@ -664,6 +664,22 @@ pairs, byte order marks, invalid and truncated UTF-8, ISO-8859-15's euro
 sign, `*` replacement and undefined code page bytes. GCC 15, Zig 13
 failing, all expected.
 
+`shm_open` and `shm_unlink` (`<sys/mman.h>`, after musl): objects are files
+under `/dev/shm`, named by musl's `__shm_mapname` rules (leading slashes
+skipped; empty, `.`, `..` or an inner `/` is EINVAL; longer than `NAME_MAX`
+is ENAMETOOLONG), opened with `O_NOFOLLOW|O_CLOEXEC|O_NONBLOCK` and with
+cancellation disabled around the `open`, as musl does. `<resolv.h>` in the
+standalone profile declares only `dn_expand` and `dn_skipname` (after musl;
+a compression-pointer loop is detected by an iteration bound); there is no
+resolver. `<tgmath.h>` with GCC defines the C11 type-generic macros over
+`__builtin_tgmath`, including the complex functions and `fabs` of a complex
+argument as `cabs`; with Clang the compiler's own header is used.
+`functional/pthread_cancel-points`, `functional/tgmath`,
+`regression/dn_expand-empty` and `regression/dn_expand-ptr-0` pass with
+both compilers; checks 634 to 639 cover `shm_open` round trips, the name
+rules, compression pointers, a pointer loop and truncated input. GCC 11,
+Zig 10 failing, all expected (332 and 333 of 343 pass).
+
 `mktime` with a `tm_isdst` that contradicts the date (0 for a summer wall
 time, 1 for a winter one) now reads the wall time in that kind of offset,
 as musl (`t -= opp - gmtoff`) and glibc do: 2020-07-01 12:00 with

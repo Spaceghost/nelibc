@@ -71,6 +71,7 @@ _Static_assert(offsetof(struct epoll_event, data) == 4, "Linux x86_64 epoll_even
 #include <termios.h>
 #ifdef NELIBC_STANDALONE
 #include <iconv.h>
+#include <resolv.h>
 #endif
 #include <setjmp.h>
 #ifdef NELIBC_TESTING
@@ -1004,6 +1005,44 @@ static int iconv_smoke(void) {
   /* an undefined byte of a code page is EILSEQ; unknown names are EINVAL */
   if (iconv_run("UTF-8", "CP1252", "\x81", 1, out, sizeof out, &n, &err) != (size_t)-1 || err != EILSEQ) return 632;
   if (iconv_open("UTF-8", "EBCDIC-NOPE") != (iconv_t)-1 || errno != EINVAL) return 633;
+  return 0;
+}
+
+/* shm_open/shm_unlink name rules and dn_expand/dn_skipname (checks 634 to
+ * 639). */
+static int shm_dn_smoke(void) {
+  char name[64], out[256];
+  int fd;
+  snprintf(name, sizeof name, "/nelibc-smoke-%d", (int)getpid());
+  fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
+  if (fd < 0) return 634;
+  /* FD_CLOEXEC is set; the object is visible again by name, slashes skipped */
+  if (!(fcntl(fd, F_GETFD) & FD_CLOEXEC)) return 635;
+  if (ftruncate(fd, 4096) != 0) return 635;
+  close(fd);
+  fd = shm_open(name + 1, O_RDONLY, 0);
+  if (fd < 0) return 635;
+  close(fd);
+  if (shm_unlink(name) != 0 || shm_unlink(name) != -1 || errno != ENOENT) return 636;
+  /* bad names: an inner slash, empty, "." and ".." */
+  if (shm_open("/a/b", O_RDONLY, 0) != -1 || errno != EINVAL) return 637;
+  if (shm_open("/", O_RDONLY, 0) != -1 || errno != EINVAL) return 637;
+  if (shm_unlink("..") != -1 || errno != EINVAL) return 637;
+  /* a name followed by a compression pointer back to it */
+  {
+    static const unsigned char msg[] = {3, 'w', 'w', 'w', 3, 'f', 'o', 'o', 0, 1, 'a', 0xc0, 4};
+    if (dn_expand(msg, msg + sizeof msg, msg, out, sizeof out) != 9 || strcmp(out, "www.foo") != 0) return 638;
+    if (dn_expand(msg, msg + sizeof msg, msg + 9, out, sizeof out) != 4 || strcmp(out, "a.foo") != 0) return 638;
+    if (dn_skipname(msg, msg + sizeof msg) != 9 || dn_skipname(msg + 9, msg + sizeof msg) != 4) return 638;
+  }
+  /* a pointer to itself is a loop; truncated input fails */
+  {
+    static const unsigned char loop[] = {0xc0, 0};
+    static const unsigned char cut[] = {5, 'a', 'b'};
+    if (dn_expand(loop, loop + sizeof loop, loop, out, sizeof out) != -1) return 639;
+    if (dn_expand(cut, cut + sizeof cut, cut, out, sizeof out) != -1) return 639;
+    if (dn_skipname(cut, cut + sizeof cut) != -1) return 639;
+  }
   return 0;
 }
 #endif
@@ -4088,6 +4127,8 @@ extern int nelibc_standalone_global_collate_mode(void);
 #ifdef NELIBC_STANDALONE
   int iconv_result = iconv_smoke();
   if (iconv_result != 0) return iconv_result;
+  int shm_dn_result = shm_dn_smoke();
+  if (shm_dn_result != 0) return shm_dn_result;
   int termios_result = termios_smoke();
   if (termios_result != 0) return termios_result;
 #endif
