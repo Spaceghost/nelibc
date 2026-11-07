@@ -75,6 +75,7 @@ extern int __nelibc_set_localtime_path(const char *path);
 #include <stdio.h>
 #include <wchar.h>
 #include <locale.h>
+#include <langinfo.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <math.h>
@@ -2122,6 +2123,36 @@ int main(int argc, char **argv) {
       ungetc('x', scan_spaces_stream) != 'x' ||
       fgetc(scan_spaces_stream) != 'x' || fgetc(scan_spaces_stream) != 'h' ||
       fgetc(scan_spaces_stream) != 'e' || fclose(scan_spaces_stream) != 0) return 77;
+  /* nl_langinfo: CODESET follows LC_CTYPE (strict ASCII C locale, C.UTF-8),
+   * the other categories follow Nelibc's de_DE.UTF-8 data. */
+  if (setlocale(LC_CTYPE, "C") == NULL || strcmp(nl_langinfo(CODESET), "ASCII") != 0 ||
+      strcmp(nl_langinfo(RADIXCHAR), ".") != 0 || strcmp(nl_langinfo(THOUSEP), "") != 0 ||
+      strcmp(nl_langinfo(MON_1), "January") != 0 || strcmp(nl_langinfo(ABDAY_1), "Sun") != 0 ||
+      strcmp(nl_langinfo(D_FMT), "%m/%d/%y") != 0 || strcmp(nl_langinfo(T_FMT_AMPM), "%I:%M:%S %p") != 0 ||
+      strcmp(nl_langinfo(YESEXPR), "^[yY]") != 0 || strcmp(nl_langinfo(CRNCYSTR), "") != 0 ||
+      strcmp(nl_langinfo(0x7fff0000), "") != 0 || strcmp(nl_langinfo(ERA), "") != 0) return 78;
+  locale_t langinfo_utf8 = newlocale(LC_CTYPE_MASK, "C.UTF-8", (locale_t)0);
+  locale_t langinfo_de = langinfo_utf8 == (locale_t)0 ? (locale_t)0 :
+      newlocale(LC_NUMERIC_MASK | LC_MONETARY_MASK | LC_TIME_MASK, "de_DE.UTF-8",
+          duplocale(langinfo_utf8));
+  if (langinfo_de == (locale_t)0 ||
+      strcmp(nl_langinfo_l(CODESET, langinfo_utf8), "UTF-8") != 0 ||
+      strcmp(nl_langinfo_l(RADIXCHAR, langinfo_utf8), ".") != 0 ||
+      strcmp(nl_langinfo_l(CODESET, langinfo_de), "UTF-8") != 0 ||
+      strcmp(nl_langinfo_l(RADIXCHAR, langinfo_de), ",") != 0 ||
+      strcmp(nl_langinfo_l(THOUSEP, langinfo_de), ".") != 0 ||
+      strcmp(nl_langinfo_l(MON_3, langinfo_de), "M\303\244rz") != 0 ||
+      strcmp(nl_langinfo_l(ABDAY_2, langinfo_de), "Mo") != 0 ||
+      strcmp(nl_langinfo_l(D_FMT, langinfo_de), "%d.%m.%Y") != 0 ||
+      strcmp(nl_langinfo_l(CRNCYSTR, langinfo_de), "+\342\202\254") != 0 ||
+      strcmp(nl_langinfo_l(CODESET, LC_GLOBAL_LOCALE), "ASCII") != 0) return 79;
+  if (uselocale(langinfo_de) == (locale_t)0 || strcmp(nl_langinfo(CODESET), "UTF-8") != 0 ||
+      strcmp(nl_langinfo(DAY_1), "Sonntag") != 0 ||
+      uselocale(LC_GLOBAL_LOCALE) == (locale_t)0 || strcmp(nl_langinfo(CODESET), "ASCII") != 0 ||
+      setlocale(LC_CTYPE, "C.UTF-8") == NULL || strcmp(nl_langinfo(CODESET), "UTF-8") != 0 ||
+      setlocale(LC_CTYPE, "C") == NULL || strcmp(nl_langinfo(CODESET), "ASCII") != 0) return 80;
+  freelocale(langinfo_de);
+  freelocale(langinfo_utf8);
   char narrow_scan_word[8] = {0};
   int narrow_scan_count = -1;
   if (sscanf("alpha rest", "%5s%n", narrow_scan_word, &narrow_scan_count) != 1 ||

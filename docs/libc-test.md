@@ -410,6 +410,35 @@ where noted.
 | `M_PI` (`<math.h>`, XSI; the test defines `_XOPEN_SOURCE 700`) | zig 1 (`functional/snprintf`) | macro missing |
 | `st_atime`/`st_mtime`/`st_ctime` (`<sys/stat.h>`; only `st_ctim` exists) | 1 (`functional/stat`) | macros missing |
 
+**Fixed** (branch `standalone-batch-2`): `<langinfo.h>`. `nl_langinfo` and
+`nl_langinfo_l` answer from the locale data the standalone profile already
+has, with musl's item numbering: `CODESET` is `UTF-8` when `LC_CTYPE` is
+`C.UTF-8` and `ASCII` in the C/POSIX locale (musl's spelling; glibc says
+`ANSI_X3.4-1968`; the standalone C locale rejects bytes above 0x7f, so it
+is ASCII); `RADIXCHAR`/`THOUSEP` follow `LC_NUMERIC` (`.`/`""`, or
+`,`/`.` for `de_DE.UTF-8`); the `LC_TIME` names and `D_T_FMT`, `D_FMT`,
+`T_FMT`, `T_FMT_AMPM` are the ones `strftime` and `strptime` use (German
+names and `%d.%m.%Y` for `de_DE.UTF-8`; `AM_STR`/`PM_STR` stay `AM`/`PM`
+there because `strftime`'s `%p` prints them); `CRNCYSTR` is `""` in C and
+`+€` for `de_DE.UTF-8` monetary; `LC_MESSAGES` is C only (`^[yY]`,
+`^[nN]`, `yes`, `no`); the `ERA*` and `ALT_DIGITS` items and unknown items
+are `""`. A per-thread locale from `uselocale` is honoured. Hybrid builds
+`#include_next` the host's header. libc-test's `common/utf8.c`
+(`t_setutf8`) now builds, and `functional/mbc` and
+`regression/fgetwc-buffering` pass in both runs (gcc 288, zig 289).
+`functional/clocale_mbfuncs` (`MB_CUR_MAX`) and `functional/swprintf`
+(`M_PI`) also include `<langinfo.h>` and now stop at those identifiers.
+Checks 78 to 80 in `tools/syscall_smoke.c`.
+
+Gate coverage note (2026-11-07): AGENTS.md lists `libc-test-gcc` and
+`libc-test-zig` in the gate, but the container's gate script ran only the
+155 smoke, diff, host and shootout targets. The `<limits.h>` change in
+`8b286be` broke `functional/argv` in the GCC hybrid run (fixed in
+`7ee0613`) and passed that 155-target gate. The script now also runs
+`libc-test-gcc`, `libc-test-zig`, `libc-test-standalone-gcc` and
+`libc-test-standalone-zig` (159 targets); gate results recorded before
+this note did not include libc-test.
+
 #### Missing symbols
 
 Link failures, GCC run: `daemon` (`regression/daemon-failure`), `t_vmfill`

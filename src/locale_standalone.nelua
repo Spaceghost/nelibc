@@ -1951,6 +1951,136 @@ local function uselocale(locale: pointer): pointer <cexport, codename 'uselocale
   return previous
 end
 
+-- nl_langinfo items use musl's encoding: the category in the high 16 bits,
+-- the index within it in the low 16 (include/langinfo.h). The strings follow
+-- the locale data Nelibc already uses: CODESET from the LC_CTYPE mode (the C
+-- locale is strict ASCII here, spelled "ASCII" as musl spells it), the
+-- de_DE.UTF-8 names and formats strftime and strptime use for LC_TIME, the
+-- radix and grouping localeconv reports for LC_NUMERIC, and a C-only
+-- LC_MESSAGES. An unknown item or locale gives "" (POSIX).
+local langinfo_empty: [1]cchar = {0_cchar}
+
+local function langinfo_time(index: cint, german: boolean): *[0]cchar
+  if index >= 0 and index <= 6 then
+    if german then
+      if index == 0 then return "So" elseif index == 1 then return "Mo"
+      elseif index == 2 then return "Di" elseif index == 3 then return "Mi"
+      elseif index == 4 then return "Do" elseif index == 5 then return "Fr" end
+      return "Sa"
+    end
+    if index == 0 then return "Sun" elseif index == 1 then return "Mon"
+    elseif index == 2 then return "Tue" elseif index == 3 then return "Wed"
+    elseif index == 4 then return "Thu" elseif index == 5 then return "Fri" end
+    return "Sat"
+  end
+  if index >= 7 and index <= 13 then
+    local day = index - 7
+    if german then
+      if day == 0 then return "Sonntag" elseif day == 1 then return "Montag"
+      elseif day == 2 then return "Dienstag" elseif day == 3 then return "Mittwoch"
+      elseif day == 4 then return "Donnerstag" elseif day == 5 then return "Freitag" end
+      return "Samstag"
+    end
+    if day == 0 then return "Sunday" elseif day == 1 then return "Monday"
+    elseif day == 2 then return "Tuesday" elseif day == 3 then return "Wednesday"
+    elseif day == 4 then return "Thursday" elseif day == 5 then return "Friday" end
+    return "Saturday"
+  end
+  if index >= 14 and index <= 25 then
+    local month = index - 14
+    if german then
+      if month == 2 then return "M\xc3\xa4r" elseif month == 4 then return "Mai"
+      elseif month == 9 then return "Okt" elseif month == 11 then return "Dez" end
+    end
+    if month == 0 then return "Jan" elseif month == 1 then return "Feb"
+    elseif month == 2 then return "Mar" elseif month == 3 then return "Apr"
+    elseif month == 4 then return "May" elseif month == 5 then return "Jun"
+    elseif month == 6 then return "Jul" elseif month == 7 then return "Aug"
+    elseif month == 8 then return "Sep" elseif month == 9 then return "Oct"
+    elseif month == 10 then return "Nov" end
+    return "Dec"
+  end
+  if index >= 26 and index <= 37 then
+    local month = index - 26
+    if german then
+      if month == 0 then return "Januar" elseif month == 1 then return "Februar"
+      elseif month == 2 then return "M\xc3\xa4rz" elseif month == 3 then return "April"
+      elseif month == 4 then return "Mai" elseif month == 5 then return "Juni"
+      elseif month == 6 then return "Juli" elseif month == 7 then return "August"
+      elseif month == 8 then return "September" elseif month == 9 then return "Oktober"
+      elseif month == 10 then return "November" end
+      return "Dezember"
+    end
+    if month == 0 then return "January" elseif month == 1 then return "February"
+    elseif month == 2 then return "March" elseif month == 3 then return "April"
+    elseif month == 4 then return "May" elseif month == 5 then return "June"
+    elseif month == 6 then return "July" elseif month == 7 then return "August"
+    elseif month == 8 then return "September" elseif month == 9 then return "October"
+    elseif month == 10 then return "November" end
+    return "December"
+  end
+  -- strftime prints AM/PM and %r as "%I:%M:%S %p" in both locales.
+  if index == 38 then return "AM" end
+  if index == 39 then return "PM" end
+  if index == 40 then
+    if german then return "%a %d. %b %Y, %H:%M:%S" end
+    return "%a %b %e %T %Y"
+  end
+  if index == 41 then
+    if german then return "%d.%m.%Y" end
+    return "%m/%d/%y"
+  end
+  if index == 42 then return "%H:%M:%S" end
+  if index == 43 then return "%I:%M:%S %p" end
+  -- ERA, ERA_D_FMT, ALT_DIGITS, ERA_D_T_FMT, ERA_T_FMT: none in either locale.
+  return (@*[0]cchar)(&langinfo_empty[0])
+end
+
+local function nelibc_langinfo(item: cint, locale: pointer): *[0]cchar
+  local category: cint = item >> 16
+  local index: cint = item & 0xffff
+  if category == 0 then
+    if index ~= 14 then return (@*[0]cchar)(&langinfo_empty[0]) end
+    local ctype_mode = nelibc_locale_ctype_mode(locale)
+    if ctype_mode == 1 then return "UTF-8" end
+    if ctype_mode == 0 then return "ASCII" end
+    return (@*[0]cchar)(&langinfo_empty[0])
+  elseif category == 1 then
+    local numeric_mode = nelibc_locale_numeric_mode(locale)
+    if index == 0 then
+      if numeric_mode == 1 then return "," end
+      if numeric_mode == 0 then return "." end
+    elseif index == 1 and numeric_mode == 1 then
+      return "."
+    end
+    return (@*[0]cchar)(&langinfo_empty[0])
+  elseif category == 2 then
+    local time_mode = nelibc_locale_time_mode(locale)
+    if time_mode < 0 or index > 0x31 then return (@*[0]cchar)(&langinfo_empty[0]) end
+    return langinfo_time(index, time_mode == 1)
+  elseif category == 4 then
+    -- CRNCYSTR: the currency symbol, '+' when it follows the value.
+    if index == 15 and nelibc_locale_monetary_mode(locale) == 1 then
+      return "+\xe2\x82\xac"
+    end
+    return (@*[0]cchar)(&langinfo_empty[0])
+  elseif category == 5 then
+    if index == 0 then return "^[yY]" elseif index == 1 then return "^[nN]"
+    elseif index == 2 then return "yes" elseif index == 3 then return "no" end
+  end
+  return (@*[0]cchar)(&langinfo_empty[0])
+end
+
+local function nl_langinfo(item: cint): *[0]cchar <cexport, codename 'nl_langinfo'>
+  return nelibc_langinfo(item, nilptr)
+end
+
+local function nl_langinfo_l(item: cint, locale: pointer): *[0]cchar
+    <cexport, codename 'nl_langinfo_l'>
+  if locale == nilptr then return (@*[0]cchar)(&langinfo_empty[0]) end
+  return nelibc_langinfo(item, locale)
+end
+
 -- BEGIN GENERATED UNICODE WIDTH TABLES
 -- Generated from Unicode Character Database 16.0.0; see THIRD_PARTY_NOTICES.md.
 -- Data SHA-256: 0278b8407039973cee7bc2f4660f40563b812ac4f904ad5e7c2c999f8735e035

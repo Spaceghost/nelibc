@@ -47,6 +47,7 @@ Before pushing a behavior change, run and record the result of:
 | `make sys-ops-check` | the platform-operation vocabulary (`tools/sys_ops.py`) matches the header, the Linux table, and the modules |
 | `make shootout-matrix` | performance versus the host libc per profile |
 | `make libc-test-gcc libc-test-zig LIBC_TEST=<checkout>` | musl's libc-test against both hybrid archives; fails on any test outside `tools/libc_test_expected_<profile>.txt` (`docs/libc-test.md`) |
+| `make libc-test-standalone-gcc libc-test-standalone-zig LIBC_TEST=<checkout>` | the same tests against the standalone archives with Nelibc's headers only; fails on any test outside `tools/libc_test_expected_standalone_<cc>.txt` |
 
 A shootout result is a number from a specific profile on a specific machine;
 report it with both. A smoke that was not run is "not run", not "passes".
