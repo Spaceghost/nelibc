@@ -15,12 +15,12 @@
 #include <math.h>
 #include <complex.h>
 
-#define __TG_RC(f, x) __builtin_tgmath(f##f, f, f##l, c##f##f, c##f, c##f##l, x)
-#define __TG_RC2(f, x, y) __builtin_tgmath(f##f, f, f##l, c##f##f, c##f, c##f##l, x, y)
-#define __TG_R(f, x) __builtin_tgmath(f##f, f, f##l, x)
-#define __TG_R2(f, x, y) __builtin_tgmath(f##f, f, f##l, x, y)
-#define __TG_R3(f, x, y, z) __builtin_tgmath(f##f, f, f##l, x, y, z)
-#define __TG_C(f, x) __builtin_tgmath(c##f##f, c##f, c##f##l, x)
+#define __TG_RC(fn, x) __builtin_tgmath(fn##f, fn, fn##l, c##fn##f, c##fn, c##fn##l, x)
+#define __TG_RC2(fn, x, y) __builtin_tgmath(fn##f, fn, fn##l, c##fn##f, c##fn, c##fn##l, x, y)
+#define __TG_R(fn, x) __builtin_tgmath(fn##f, fn, fn##l, x)
+#define __TG_R2(fn, x, y) __builtin_tgmath(fn##f, fn, fn##l, x, y)
+#define __TG_R3(fn, x, y, z) __builtin_tgmath(fn##f, fn, fn##l, x, y, z)
+#define __TG_C(fn, x) __builtin_tgmath(c##fn##f, c##fn, c##fn##l, x)
 
 /* real and complex */
 #define acos(x)  __TG_RC(acos, x)
