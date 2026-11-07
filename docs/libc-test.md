@@ -395,7 +395,7 @@ where noted.
 | `<search.h>` | 4 | no |
 | `<dlfcn.h>` | 3 (zig 4: `tls_get_new-dtv`, behind `<limits.h>` with GCC) | no |
 | `<langinfo.h>` | 2 (zig 3), and `common/utf8.c` | no |
-| `<iconv.h>`, `<libgen.h>`, `<pwd.h>`, `<resolv.h>` | 2 each | no |
+| `<resolv.h>` | 2 | no |
 | `<crypt.h>`, `<wordexp.h>` | 1 each | no |
 | `<tgmath.h>` | 1 (zig 0: clang ships one) | header only |
 | `<inttypes.h>` in standalone mode | 1 (`functional/qsort`) | a header bug: `include/inttypes.h` does `#include_next <inttypes.h>` even under `NELIBC_STANDALONE` |
@@ -649,6 +649,21 @@ whose `main` ends without a `return` and is built without C99's implicit
 results are right, and the same checks written out pass with GCC). GCC 17,
 Zig 15 failing, all expected.
 
+`<iconv.h>` (`src/iconv_standalone.nelua`, after musl): UTF-8, US-ASCII,
+UTF-16/UCS-2 and UTF-32/UCS-4 in both byte orders (input honours a byte
+order mark; output is big-endian without one, as musl writes it), WCHAR_T,
+ISO-8859-1 to -16, Windows-1250 to -1258, KOI8-R/U, CP437 and CP850, with
+musl's name matching (case and punctuation ignored, `//TRANSLIT` and
+`//IGNORE` accepted). Unrepresentable characters become `*` and are counted
+in the result (musl; glibc reports EILSEQ instead); invalid input is EILSEQ,
+a character cut off at the end of the input EINVAL, a full output buffer
+E2BIG. The single-byte tables come from the Unicode mapping tables. No CJK
+or other multibyte charsets. `functional/iconv_open` and
+`regression/iconv-roundtrips` pass; checks 626 to 633 cover surrogate
+pairs, byte order marks, invalid and truncated UTF-8, ISO-8859-15's euro
+sign, `*` replacement and undefined code page bytes. GCC 15, Zig 13
+failing, all expected.
+
 `mktime` with a `tm_isdst` that contradicts the date (0 for a summer wall
 time, 1 for a winter one) now reads the wall time in that kind of offset,
 as musl (`t -= opp - gmtoff`) and glibc do: 2020-07-01 12:00 with
@@ -692,7 +707,6 @@ standalone archive lacks, ranked by tests blocked:
 | `dlopen`, `dlsym` (4), `dlerror` (2), `dlclose` (1) | 4 |
 | `hsearch`/`hcreate`/`hdestroy`, `insque`/`remque`, `lsearch`/`lfind`, `tsearch`/`tfind`/`tdelete`/`twalk` | 4 |
 | `nl_langinfo` | 2, plus `t_setutf8` |
-| `iconv_open`, `iconv`, `iconv_close` | 2 |
 | `getpwnam_r` | 2 |
 | `dn_expand` | 2 |
 | `shm_open`/`shm_unlink`; `crypt`; `wordexp`/`wordfree` | 1 each |
