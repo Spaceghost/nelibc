@@ -1,0 +1,196 @@
+-- <termios.h> for the standalone profile (after musl 1.2.5 src/termios), the
+-- terminal parts of <unistd.h> (tcgetpgrp, tcsetpgrp) and the pseudo-terminal
+-- functions of <stdlib.h> (posix_openpt, grantpt, unlockpt, ptsname,
+-- ptsname_r). Everything is a Linux ioctl through the exported `ioctl`, so
+-- errno comes from it. struct termios has musl's (and glibc's) x86-64
+-- layout; the first 36 bytes are the kernel's struct termios, which TCGETS
+-- and TCSETS* read and write in place. Baud rates are the B* codes kept in
+-- c_cflag (CBAUD), as in musl; __c_ispeed/__c_ospeed are left alone.
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function ioctl(fd: cint, request: culong, argument: pointer): cint <cimport> end
+local function open(path: *const [0]cchar, flags: cint, mode: cuint): cint <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+
+local EINVAL: cint <comptime> = 22
+local ERANGE: cint <comptime> = 34
+
+local TCGETS: culong <comptime> = 0x5401
+local TCSETS: culong <comptime> = 0x5402
+local TCSBRK: culong <comptime> = 0x5409
+local TCXONC: culong <comptime> = 0x540A
+local TCFLSH: culong <comptime> = 0x540B
+local TIOCGPGRP: culong <comptime> = 0x540F
+local TIOCSPGRP: culong <comptime> = 0x5410
+local TIOCGWINSZ: culong <comptime> = 0x5413
+local TIOCSWINSZ: culong <comptime> = 0x5414
+local TIOCGSID: culong <comptime> = 0x5429
+local TIOCGPTN: culong <comptime> = 0x80045430
+local TIOCSPTLCK: culong <comptime> = 0x40045431
+
+local CBAUD: cuint <comptime> = 0x100F   -- 0010017
+local CSIZE: cuint <comptime> = 0x30
+local CS8: cuint <comptime> = 0x30
+local PARENB: cuint <comptime> = 0x100
+local VTIME: integer <comptime> = 5
+local VMIN: integer <comptime> = 6
+
+local Termios: type = @record{
+  c_iflag: cuint, c_oflag: cuint, c_cflag: cuint, c_lflag: cuint,
+  c_line: cuchar, c_cc: [32]cuchar,
+  c_ispeed: cuint, c_ospeed: cuint,
+}
+## static_assert(Termios.size == 60, 'struct termios must be 60 bytes')
+
+local function errno_set(value: cint): void <inline>
+  nelibc_errno_location()[0] = value
+end
+
+local function tcgetattr(fd: cint, t: *Termios): cint <cexport, codename 'tcgetattr'>
+  if ioctl(fd, TCGETS, t) ~= 0 then return -1 end
+  return 0
+end
+
+local function tcsetattr(fd: cint, action: cint, t: *const Termios): cint <cexport, codename 'tcsetattr'>
+  -- TCSANOW 0, TCSADRAIN 1, TCSAFLUSH 2 map onto TCSETS, TCSETSW, TCSETSF
+  if action < 0 or action > 2 then
+    errno_set(EINVAL)
+    return -1
+  end
+  return ioctl(fd, TCSETS + (@culong)(action), (@pointer)(t))
+end
+
+local function cfgetospeed(t: *const Termios): cuint <cexport, codename 'cfgetospeed'>
+  return t.c_cflag & CBAUD
+end
+
+local function cfgetispeed(t: *const Termios): cuint <cexport, codename 'cfgetispeed'>
+  return t.c_cflag & CBAUD
+end
+
+local function cfsetospeed(t: *Termios, speed: cuint): cint <cexport, codename 'cfsetospeed'>
+  if speed & ~CBAUD ~= 0 then
+    errno_set(EINVAL)
+    return -1
+  end
+  t.c_cflag = (t.c_cflag & ~CBAUD) | speed
+  return 0
+end
+
+-- Linux has one speed for both directions; an input speed of 0 means "same
+-- as output" (POSIX), so it changes nothing.
+local function cfsetispeed(t: *Termios, speed: cuint): cint <cexport, codename 'cfsetispeed'>
+  if speed == 0 then return 0 end
+  return cfsetospeed(t, speed)
+end
+
+local function cfsetspeed(t: *Termios, speed: cuint): cint <cexport, codename 'cfsetspeed'>
+  return cfsetospeed(t, speed)
+end
+
+local function cfmakeraw(t: *Termios): void <cexport, codename 'cfmakeraw'>
+  -- IGNBRK BRKINT PARMRK ISTRIP INLCR IGNCR ICRNL IXON
+  t.c_iflag = t.c_iflag & ~(0x1_cuint | 0x2 | 0x8 | 0x20 | 0x40 | 0x80 | 0x100 | 0x400)
+  t.c_oflag = t.c_oflag & ~0x1_cuint                       -- OPOST
+  -- ECHO ECHONL ICANON ISIG IEXTEN
+  t.c_lflag = t.c_lflag & ~(0x8_cuint | 0x40 | 0x2 | 0x1 | 0x8000)
+  t.c_cflag = (t.c_cflag & ~(CSIZE | PARENB)) | CS8
+  t.c_cc[VMIN] = 1
+  t.c_cc[VTIME] = 0
+end
+
+local function tcflow(fd: cint, action: cint): cint <cexport, codename 'tcflow'>
+  return ioctl(fd, TCXONC, (@pointer)((@usize)(action)))
+end
+
+local function tcflush(fd: cint, queue: cint): cint <cexport, codename 'tcflush'>
+  return ioctl(fd, TCFLSH, (@pointer)((@usize)(queue)))
+end
+
+-- musl and glibc ignore the duration: TCSBRK with 0 sends a 0.25-0.5 s break.
+local function tcsendbreak(fd: cint, duration: cint): cint <cexport, codename 'tcsendbreak'>
+  return ioctl(fd, TCSBRK, nilptr)
+end
+
+local function tcgetsid(fd: cint): cint <cexport, codename 'tcgetsid'>
+  local sid: cint = 0
+  if ioctl(fd, TIOCGSID, &sid) ~= 0 then return -1 end
+  return sid
+end
+
+local Winsize: type = @record{ws_row: cushort, ws_col: cushort, ws_xpixel: cushort, ws_ypixel: cushort}
+
+-- POSIX.1-2024.
+local function tcgetwinsize(fd: cint, ws: *Winsize): cint <cexport, codename 'tcgetwinsize'>
+  return ioctl(fd, TIOCGWINSZ, ws)
+end
+
+local function tcsetwinsize(fd: cint, ws: *const Winsize): cint <cexport, codename 'tcsetwinsize'>
+  return ioctl(fd, TIOCSWINSZ, (@pointer)(ws))
+end
+
+local function tcgetpgrp(fd: cint): cint <cexport, codename 'tcgetpgrp'>
+  local pgrp: cint = 0
+  if ioctl(fd, TIOCGPGRP, &pgrp) ~= 0 then return -1 end
+  return pgrp
+end
+
+local function tcsetpgrp(fd: cint, pgrp: cint): cint <cexport, codename 'tcsetpgrp'>
+  local value: cint = pgrp
+  return ioctl(fd, TIOCSPGRP, &value)
+end
+
+----------------------------------------------------------------------
+-- Pseudo-terminals (<stdlib.h>)
+----------------------------------------------------------------------
+
+local function posix_openpt(flags: cint): cint <cexport, codename 'posix_openpt'>
+  local path: cstring = '/dev/ptmx'
+  return open((@*const [0]cchar)(path), flags, 0)
+end
+
+-- devpts gives the slave the right owner and mode; nothing to do (musl).
+local function grantpt(fd: cint): cint <cexport, codename 'grantpt'>
+  return 0
+end
+
+local function unlockpt(fd: cint): cint <cexport, codename 'unlockpt'>
+  local unlock: cint = 0
+  return ioctl(fd, TIOCSPTLCK, &unlock)
+end
+
+-- Returns 0 or an error number (errno is also set by a failing ioctl).
+local function ptsname_r(fd: cint, buf: *[0]cchar, size: csize): cint <cexport, codename 'ptsname_r'>
+  local n: cuint = 0
+  if ioctl(fd, TIOCGPTN, &n) ~= 0 then return nelibc_errno_location()[0] end
+  local digits: [12]cchar
+  local nd = 0
+  repeat
+    digits[nd] = (@cchar)(48 + n % 10)
+    n = n // 10
+    nd = nd + 1
+  until n == 0
+  local prefix: cstring = '/dev/pts/'
+  local need: csize = 9 + (@csize)(nd) + 1
+  if buf == nilptr or size < need then
+    errno_set(ERANGE)
+    return ERANGE
+  end
+  local p = (@*[0]cchar)(prefix)
+  for i = 0, < 9 do buf[i] = p[i] end
+  for i = 0, < nd do buf[9 + i] = digits[nd - 1 - i] end
+  buf[9 + nd] = 0
+  return 0
+end
+
+local ptsname_buffer: [32]cchar
+
+local function ptsname(fd: cint): *[0]cchar <cexport, codename 'ptsname'>
+  local err = ptsname_r(fd, &ptsname_buffer, 32)
+  if err ~= 0 then
+    errno_set(err)
+    return nilptr
+  end
+  return &ptsname_buffer
+end

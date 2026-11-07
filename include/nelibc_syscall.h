@@ -511,6 +511,11 @@ int faccessat2(int dirfd, const char *pathname, int mode, int flags);
 int access(const char *pathname, int mode);
 int isatty(int fd);
 int tcdrain(int fd);
+#ifdef NELIBC_STANDALONE
+/* src/termios_standalone.nelua: TIOCGPGRP and TIOCSPGRP. */
+pid_t tcgetpgrp(int fd);
+int tcsetpgrp(int fd, pid_t pgrp);
+#endif
 #if defined(__GLIBC__) || defined(NELIBC_STANDALONE)
 int ioctl(int fd, unsigned long request, ...);
 #else
