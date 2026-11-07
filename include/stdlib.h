@@ -21,6 +21,13 @@ void *malloc(size_t size);
 void *calloc(size_t count, size_t size);
 void *realloc(void *ptr, size_t size);
 void free(void *ptr);
+
+/* Pseudo-terminals, src/termios_standalone.nelua. */
+int posix_openpt(int flags);
+int grantpt(int fd);
+int unlockpt(int fd);
+char *ptsname(int fd);
+int ptsname_r(int fd, char *buf, size_t size);
 #else
 #include_next <stdlib.h>
 #endif

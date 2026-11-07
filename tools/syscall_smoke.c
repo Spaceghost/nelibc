@@ -68,6 +68,7 @@ _Static_assert(offsetof(struct epoll_event, data) == 4, "Linux x86_64 epoll_even
 #include <sys/pidfd.h>
 #include <dirent.h>
 #include <signal.h>
+#include <termios.h>
 #include <setjmp.h>
 #ifdef NELIBC_TESTING
 extern int __nelibc_tz_file_signature(const char *path, char signature[56]);
@@ -815,6 +816,79 @@ static int regex_error(const char *pattern, int cflags) {
 }
 #endif
 
+
+#ifndef O_NOCTTY
+#define O_NOCTTY 0400
+#endif
+
+#ifdef NELIBC_STANDALONE
+/* Standalone only: hybrid builds use the host libc's termios (glibc keeps a
+ * separate input speed, and the TLS-errno profile cannot see its errno).
+ * <termios.h>, tcgetpgrp/tcgetsid and the pseudo-terminal functions on a
+ * fresh pty pair (checks 605 to 624). The process has no controlling
+ * terminal among these descriptors, so the process-group queries fail with
+ * ENOTTY. */
+static int termios_smoke(void) {
+  int master = posix_openpt(O_RDWR | O_NOCTTY);
+  if (master < 0) return 605;
+  if (grantpt(master) != 0 || unlockpt(master) != 0) return 606;
+  char small[8];
+  if (ptsname_r(master, small, sizeof small) != ERANGE) return 607;
+  char name[64];
+  if (ptsname_r(master, name, sizeof name) != 0 || strncmp(name, "/dev/pts/", 9) != 0) return 608;
+  const char *shared = ptsname(master);
+  if (shared == 0 || strcmp(shared, name) != 0) return 608;
+  int slave = open(name, O_RDWR | O_NOCTTY);
+  if (slave < 0) return 609;
+
+  struct termios t;
+  if (tcgetattr(slave, &t) != 0 || !(t.c_lflag & ICANON) || !(t.c_lflag & ECHO)) return 610;
+  struct termios raw = t;
+  cfmakeraw(&raw);
+  if ((raw.c_lflag & (ICANON | ECHO | ISIG | IEXTEN)) || (raw.c_oflag & OPOST) ||
+      (raw.c_cflag & CSIZE) != CS8 || raw.c_cc[VMIN] != 1 || raw.c_cc[VTIME] != 0) return 611;
+  if (tcsetattr(slave, TCSANOW, &raw) != 0) return 612;
+  struct termios back;
+  if (tcgetattr(slave, &back) != 0 || (back.c_lflag & ICANON) || back.c_cc[VMIN] != 1) return 612;
+  errno = 0;
+  if (tcsetattr(slave, 3, &raw) != -1 || errno != EINVAL) return 613;
+
+  struct termios sp = back;
+  /* one speed for both directions, as in musl */
+  if (cfsetospeed(&sp, B9600) != 0 || cfgetospeed(&sp) != B9600 || cfgetispeed(&sp) != B9600) return 614;
+  if (cfsetispeed(&sp, 0) != 0 || cfgetispeed(&sp) != B9600) return 614;
+  errno = 0;
+  if (cfsetospeed(&sp, 12345) != -1 || errno != EINVAL || cfgetospeed(&sp) != B9600) return 615;
+  if (cfsetspeed(&sp, B115200) != 0 || cfgetospeed(&sp) != B115200) return 615;
+
+  /* raw mode: bytes pass through unchanged, CR not turned into NL */
+  if (write(master, "a\rb", 3) != 3) return 616;
+  char got[8];
+  ssize_t n = read(slave, got, sizeof got);
+  if (n != 3 || got[0] != 'a' || got[1] != '\r' || got[2] != 'b') return 616;
+  if (tcflush(slave, TCIOFLUSH) != 0 || tcflow(slave, TCOON) != 0 || tcdrain(slave) != 0) return 617;
+  if (tcsendbreak(slave, 0) != 0) return 617;
+
+  struct winsize ws = {33, 101, 0, 0};
+  struct winsize wb = {0, 0, 0, 0};
+  if (tcsetwinsize(master, &ws) != 0 || tcgetwinsize(slave, &wb) != 0 ||
+      wb.ws_row != 33 || wb.ws_col != 101) return 618;
+
+  errno = 0;
+  if (tcgetpgrp(slave) != -1 || errno != ENOTTY) return 619;
+  errno = 0;
+  if (tcgetsid(slave) != -1 || errno != ENOTTY) return 620;
+  int devnull = open("/dev/null", O_RDWR);
+  errno = 0;
+  if (devnull < 0 || tcgetattr(devnull, &t) != -1 || errno != ENOTTY) return 621;
+  close(devnull);
+  errno = 0;
+  if (tcgetattr(-1, &t) != -1 || errno != EBADF) return 622;
+  close(slave);
+  close(master);
+  return 0;
+}
+#endif
 
 static jmp_buf setjmp_env;
 static sigjmp_buf sigsetjmp_env;
@@ -3936,6 +4010,10 @@ extern int nelibc_standalone_global_collate_mode(void);
   posix_aligned = (void *)(uintptr_t)0x5678;
   if (posix_memalign(&posix_aligned, 256, SIZE_MAX) != ENOMEM ||
       posix_aligned != (void *)(uintptr_t)0x5678 || errno != EDOM) return 32;
+#endif
+#ifdef NELIBC_STANDALONE
+  int termios_result = termios_smoke();
+  if (termios_result != 0) return termios_result;
 #endif
   int setjmp_result = setjmp_smoke();
   if (setjmp_result != 0) return setjmp_result;
