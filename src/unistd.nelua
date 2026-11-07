@@ -2168,16 +2168,21 @@ local function mktime(time_value: *Tm): clong <cexport, codename 'mktime'>
   }
   if gmtime_r((@*[0]clong)(&wall_seconds), &normalized) == nilptr then return -1_clong end
 
-  local sample_shifts: [7]clonglong = {
+  -- samples a day, three, six and nine months and a year away, so that both
+  -- the standard and the daylight offset are seen from any date (from late
+  -- October, -/+180 days both land in April)
+  local sample_shifts: [11]clonglong = {
     0_clonglong, 86400_clonglong, -86400_clonglong,
+    7776000_clonglong, -7776000_clonglong,
     15552000_clonglong, -15552000_clonglong,
+    23328000_clonglong, -23328000_clonglong,
     31536000_clonglong, -31536000_clonglong
   }
-  local offsets: [7]clonglong = {}
-  local offsets_dst: [7]boolean = {}
+  local offsets: [11]clonglong = {}
+  local offsets_dst: [11]boolean = {}
   local offset_count: csize = 0
   local index: csize = 0
-  while index < 7 do
+  while index < 11 do
     local sample_time: clonglong = wall_seconds + sample_shifts[index]
     local sample: Tm = {
       tm_sec = 0_cint, tm_min = 0_cint, tm_hour = 0_cint, tm_mday = 1_cint,
