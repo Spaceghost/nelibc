@@ -28,6 +28,7 @@ unsigned int nelibc_va_arg_unsigned_int(va_list arguments) { return va_arg(argum
 double nelibc_va_arg_double(va_list arguments) { return va_arg(arguments, double); }
 /* x87 80-bit layout: 64-bit mantissa with an explicit integer bit, then a
  * 16-bit sign+exponent word. Read the bytes so no classification happens. */
+__attribute__((no_stack_protector))
 void nelibc_va_arg_long_double_bits(va_list arguments, unsigned long long *mantissa,
                                     unsigned *sign_exponent) {
   long double value = va_arg(arguments, long double);
@@ -38,6 +39,7 @@ void nelibc_va_arg_long_double_bits(va_list arguments, unsigned long long *manti
   *sign_exponent = (unsigned)raw[8] | ((unsigned)raw[9] << 8);
 }
 /* The double a long double argument equals, with exact set when nothing was lost. */
+__attribute__((no_stack_protector))
 double nelibc_va_arg_long_double_as_double(va_list arguments, int *exact) {
   long double value = va_arg(arguments, long double);
   double narrowed = (double)value;
