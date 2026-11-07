@@ -452,7 +452,10 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
   reverse after the atexit handlers and before the stdio flush, glibc's
   order. `functional/tls_align` passes in both runs (gcc 279, zig 280);
   `tools/syscall_smoke.c` checks that a constructor ran (501) and that a
-  forked child's atexit handler runs before its destructor (503).
+  forked child's atexit handler runs before its destructor (503). `exit`
+  reaches the `.fini_array` walker through `nelibc_exit_fini_hook`, which
+  `_start` sets: the host profile keeps `exit` but not `_start`, and its
+  `host-check` (no undefined symbols) caught a direct reference.
 - `regression/ftello-unflushed-append`: `ftello is broken before flush: got
   3, want 7`. After `fdopen(fd, "a")` on a 4-byte file and a 3-byte
   `fwrite`, `ftello` ignores that appends go to the end of the file. **Fixed** (branch `ftello-append`): with buffered output on an

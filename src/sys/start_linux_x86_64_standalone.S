@@ -168,6 +168,10 @@ _start:
   # nelua_main function. Initialize standalone stdio before user main, then
   # pass the argc and argv from the kernel-provided initial stack.
   call nelibc_stdio_init
+  # exit walks .fini_array through this hook (exit lives in the archive
+  # without _start in the host profile, so it cannot name the walker).
+  leaq nelibc_run_fini_array(%rip), %rax
+  movq %rax, nelibc_exit_fini_hook(%rip)
   # Static constructors, as glibc and musl run them before main:
   # .preinit_array then .init_array, in order, each called with argc, argv
   # and envp. The linker provides the bounds for a static executable; the

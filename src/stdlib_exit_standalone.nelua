@@ -3,7 +3,9 @@
 
 local function _exit(status: cint): void <cimport> end
 local function fflush(stream: pointer): cint <cimport> end
-local function nelibc_run_fini_array(): void <cimport> end
+-- Set by the standalone _start to its .fini_array walker; profiles without
+-- that _start (the host profile) leave it empty.
+local nelibc_exit_fini_hook: function(): void <cexport, codename 'nelibc_exit_fini_hook'>
 
 local exit_handlers: [32]function(): void = {}
 local exit_handler_count: csize = 0
@@ -26,7 +28,7 @@ local function exit(status: cint): void <cexport, codename 'exit'>
     handler()
   end
   -- static destructors after the atexit handlers, as glibc orders them
-  nelibc_run_fini_array()
+  if nelibc_exit_fini_hook ~= nilptr then nelibc_exit_fini_hook() end
   fflush(nilptr)
   _exit(status)
 end
