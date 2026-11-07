@@ -498,6 +498,7 @@ static void *cancel_disabled_worker(void *argument) {
   }
   pthread_testcancel();
   if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0) != 0) return (void *)2;
+  pthread_testcancel(); /* enabling is not a cancellation point; this is */
   pthread_cleanup_pop(0);
   return 0;
 }
@@ -587,6 +588,9 @@ static void *cancel_disabled_sem_worker(void *argument) {
   atomic_store_explicit(&cancel_sem_started, 1, memory_order_release);
   if (sem_wait(&cancel_semaphore) != 0) return (void *)7;
   if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0) != 0) return (void *)8;
+  /* pthread_setcancelstate is not a cancellation point (POSIX): the cancel
+   * sent while disabled stays pending until the next one. */
+  pthread_testcancel();
   pthread_cleanup_pop(0);
   return (void *)9;
 }

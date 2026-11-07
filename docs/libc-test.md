@@ -610,14 +610,24 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
   286, zig 287.
 - `functional/pthread_cancel` (zig): `foo[0] == 1 failed (cleanup handler
   failed to run)` (lines 84, 92 to 95): cancellation does not run
-  `pthread_cleanup_push` handlers.
+  `pthread_cleanup_push` handlers. **Fixed** (branch `thread-cancel`): the thread trampoline called
+  `pthread_testcancel()` before the start routine, so a cancel sent right
+  after `pthread_create` ended the thread before its first
+  `pthread_cleanup_push`. Thread start is not a cancellation point; the
+  call is gone.
 - `regression/pthread_cancel-sem_wait` (zig): `seqno == 1 failed` for
   uncontended and blocking `sem_wait` and `sem_timedwait` (lines 55, 65, 75,
-  85): `sem_wait` and `sem_timedwait` are not cancellation points.
+  85): `sem_wait` and `sem_timedwait` are not cancellation points. **Fixed** (same branch): they were, but the test's thread was cancelled
+  early by the trampoline check above, and `pthread_setcancelstate(ENABLE)`
+  acted on a pending deferred cancel; it is not a cancellation point, so
+  only asynchronous cancellation is acted on there now.
 - `functional/pthread_mutex_pi` (zig): `PTHREAD_MUTEX_NORMAL relock did not
   deadlock, got Resource deadlock avoided` (line 145): relocking a normal
   priority-inheritance mutex returns `EDEADLK`; POSIX says a normal mutex
-  deadlocks.
+  deadlocks. **Fixed** (same branch): on `EDEADLK` from `FUTEX_LOCK_PI` for a
+  non-error-checking mutex, the lock waits out its deadline (`ETIMEDOUT`) or
+  forever, as musl does. gcc 295, zig 296. Gate: 159/159 on `82c4474`, no warnings,
+  `/work/artifacts/gate-tcancel-20261107-1357/`.
 - `regression/pthread_create-oom` (zig): `pthread_create should fail with
   EAGAIN but failed with 12 (Cannot allocate memory)` (line 24): POSIX
   specifies `EAGAIN` for lack of resources. **Fixed** (branch `pthread-create-eagain`): a failed

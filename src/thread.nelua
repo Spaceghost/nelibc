@@ -1237,7 +1237,10 @@ local function pthread_setcancelstate(cancel_state: cint, old_state: *[0]cint): 
   if old_state ~= nilptr then old_state[0] = previous end
   if cancel_state == PTHREAD_CANCEL_ENABLE then
     pthread_cancel_wake(context)
-    pthread_testcancel()
+    -- pthread_setcancelstate is not a cancellation point: a deferred cancel
+    -- waits for the next one. Only asynchronous cancellation, which may act
+    -- at any time, is acted on here.
+    if context.cancel_type == PTHREAD_CANCEL_ASYNCHRONOUS then pthread_testcancel() end
   end
   return 0
 end
@@ -1266,7 +1269,10 @@ local function pthread_trampoline(argument: pointer): cint <cexport, codename 'n
   nelibc_thread_cancel_signal_unblock()
   pthread_robust_register(context)
   pthread_key_reset_values()
-  pthread_testcancel()
+  -- No cancellation point here: a cancel sent before the thread runs is
+  -- acted on at the first cancellation point inside the start routine,
+  -- after any pthread_cleanup_push before it (as musl; libc-test
+  -- functional/pthread_cancel cancels right after pthread_create).
   context.result = context.start(context.arg)
   pthread_context_exit(context, context.result)
   return 0
@@ -2214,6 +2220,22 @@ local function pthread_mutex_lock_pi(mutex: *PthreadMutex, tid: cint,
       local error_code = (@cint)(-result)
       if error_code == 4 or error_code == 11 then continue end -- EINTR/EAGAIN
       if context ~= nilptr then context.robust_slot.head.list_op_pending = nilptr end
+      if error_code == 35 and mutex.kind ~= 2 then
+        -- The kernel reports EDEADLK for relocking a PI mutex we own. Only an
+        -- error-checking mutex may say so; a normal one deadlocks (POSIX),
+        -- so wait out the deadline, or forever without one, as musl does.
+        local never: cint = 0
+        local wait_operation: culong = 9_culong -- FUTEX_WAIT_BITSET, CLOCK_MONOTONIC
+        if abstime ~= nilptr and clock_id ~= CLOCK_MONOTONIC then
+          wait_operation = 265_culong -- | FUTEX_CLOCK_REALTIME
+        end
+        wait_operation = wait_operation | 128_culong
+        while true do
+          local wait_result = nelibc_sys6(SYS_FUTEX, (@culong)((@usize)(&never)),
+              wait_operation, 0_culong, timeout, 0_culong, 0xFFFFFFFF_culong)
+          if wait_result == -110 then return 110 end -- ETIMEDOUT
+        end
+      end
       return error_code
     end
   end
