@@ -2087,6 +2087,41 @@ int main(int argc, char **argv) {
       fgetc(musl_scan_stream) != 'x' || fclose(musl_scan_stream) != 0) return 148;
   if (sscanf("56789 0123 56a72", "%2d%d%*d %[0123456789]\n", &scan_x, &scan_y, scan_eight_a) != 3 ||
       scan_x != 56 || scan_y != 789 || strcmp(scan_eight_a, "56") != 0) return 149;
+  /* libc-test functional/fscanf, fwscanf and ungetc (musl semantics): a
+   * white-space directive skips all white space and the end of input after
+   * a completed conversion is not an input failure; ungetwc pushes back
+   * bytes ftell sees; ungetc works after a scan pushed back a byte. */
+  char scan_spaces_text[] = "      42";
+  int scan_spaces_x = -1, scan_spaces_y = -1;
+  FILE *scan_spaces_stream = fmemopen(scan_spaces_text, 8, "r");
+  if (scan_spaces_stream == NULL ||
+      fscanf(scan_spaces_stream, " %n%*d%n", &scan_spaces_x, &scan_spaces_y) != 0 ||
+      scan_spaces_x != 6 || scan_spaces_y != 8 || ftell(scan_spaces_stream) != 8 ||
+      !feof(scan_spaces_stream) || fclose(scan_spaces_stream) != 0) return 74;
+  scan_spaces_x = scan_spaces_y = -1;
+  scan_spaces_stream = fmemopen(scan_spaces_text, 8, "r");
+  if (scan_spaces_stream == NULL ||
+      fwscanf(scan_spaces_stream, L" %n%*d%n", &scan_spaces_x, &scan_spaces_y) != 0 ||
+      scan_spaces_x != 6 || scan_spaces_y != 8 || ftell(scan_spaces_stream) != 8 ||
+      !feof(scan_spaces_stream) || fclose(scan_spaces_stream) != 0) return 75;
+  char scan_bracket_text[] = "[abc123]....x";
+  char scan_bracket_a[16] = {0}, scan_bracket_b[16] = {0};
+  scan_spaces_x = scan_spaces_y = -1;
+  scan_spaces_stream = fmemopen(scan_bracket_text, 13, "r");
+  if (scan_spaces_stream == NULL ||
+      fwscanf(scan_spaces_stream, L"%10[^]]%n%10[].]%n", scan_bracket_a, &scan_spaces_x,
+          scan_bracket_b, &scan_spaces_y) != 2 ||
+      strcmp(scan_bracket_a, "[abc123") != 0 || strcmp(scan_bracket_b, "]....") != 0 ||
+      scan_spaces_x != 7 || scan_spaces_y != 12 || ftell(scan_spaces_stream) != 12 ||
+      feof(scan_spaces_stream) || fgetwc(scan_spaces_stream) != L'x' ||
+      fclose(scan_spaces_stream) != 0) return 76;
+  char scan_unget_text[] = "hello";
+  scan_spaces_stream = fmemopen(scan_unget_text, 5, "r");
+  if (scan_spaces_stream == NULL ||
+      fscanf(scan_spaces_stream, "%[x]", scan_bracket_a) != 0 ||
+      ungetc('x', scan_spaces_stream) != 'x' ||
+      fgetc(scan_spaces_stream) != 'x' || fgetc(scan_spaces_stream) != 'h' ||
+      fgetc(scan_spaces_stream) != 'e' || fclose(scan_spaces_stream) != 0) return 77;
   char narrow_scan_word[8] = {0};
   int narrow_scan_count = -1;
   if (sscanf("alpha rest", "%5s%n", narrow_scan_word, &narrow_scan_count) != 1 ||

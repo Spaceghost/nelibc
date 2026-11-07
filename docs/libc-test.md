@@ -487,13 +487,32 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
 - `functional/fscanf` (zig): `fscanf(f, " %n%*d%n", &x, &y) failed (-1 !=
   0)` and `x failed (1 != 6)` on input `"      42"`: the return is `EOF`
   instead of 0, and `%n` after leading white space stores 1 instead of 6.
+  **Fixed** (branch `standalone-batch-2`): a white-space directive read one
+  character instead of all white space, and reaching the end of input there
+  counted as an input failure; a conversion that completed at the end of
+  input (`%*d` on `42`) also marked an input failure, so a format whose
+  only conversions were suppressed returned `EOF`. As in musl and C17
+  7.21.6.2, the end of input now fails only a directive that needs a
+  character and gets none (a literal, or a conversion that matched
+  nothing); the same rule now holds for `%s`, `%[`, `%ls` and `%l[`, narrow
+  and wide.
 - `functional/fwscanf` (zig): the same `L" %n%*d%n"` case (-1, `x` 1), and
   `ftell` one past the consumed input after a failed match (`13 != 12`,
   `5 != 4`, `3 != 2`, lines 61, 75, 110): the wide scanner does not push back
-  the character that ended a conversion.
+  the character that ended a conversion. **Fixed** (same branch): the
+  scanner did push it back, but `ungetwc` kept the wide character in a slot
+  of its own that `ftell` (and `fseek`, which never cleared it) ignored.
+  `ungetwc` now pushes back the character's multibyte encoding, as musl
+  does, so the next read decodes it again and `ftell` moves back by its
+  length.
 - `functional/ungetc` (zig): `unget failed after fscanf: -1 != 120` after
   `fscanf(f, "%[x]", a)` matched nothing; the following `fgetc` calls
-  return `h`, `e` instead of `x`, `h`.
+  return `h`, `e` instead of `x`, `h`. **Fixed** (same branch): the scanner's
+  own pushback of `h` occupied the one-byte `ungetc` slot, so the caller's
+  `ungetc` failed. A byte pushed while that slot is full now goes in front
+  of it into the 8-byte scan pushback area (musl keeps 8 bytes of unget room
+  too), and is read first. Checks 74 to 77 in `tools/syscall_smoke.c`; gcc
+  286, zig 287.
 - `functional/pthread_cancel` (zig): `foo[0] == 1 failed (cleanup handler
   failed to run)` (lines 84, 92 to 95): cancellation does not run
   `pthread_cleanup_push` handlers.

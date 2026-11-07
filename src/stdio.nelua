@@ -540,7 +540,11 @@ end
 local function ungetc_unlocked(character: cint, stream: *FILE): cint <inline>
   stream_orient(stream, -1)
   if character == -1 or (stream.flags & READABLE) == 0 then return -1 end
-  if stream.scan_pushback_length > 0 then
+  -- Reads take scan_pushback first, then the one-byte slot, so a byte
+  -- pushed while either holds data goes to the front of scan_pushback.
+  -- This lets ungetc follow a scanf that pushed back the character ending
+  -- its match (musl keeps 8 bytes of unget room for both).
+  if stream.scan_pushback_length > 0 or stream.has_pushback ~= 0 then
     if stream.scan_pushback_length >= 8 then return -1 end
     local index: cint = stream.scan_pushback_length
     while index > 0 do
@@ -572,10 +576,6 @@ end
 
 local function fgetwc_unlocked(stream: *FILE): cuint <cexport, codename 'fgetwc_unlocked'>
   if stream_orient(stream, 1) < 0 then return ~0_cuint end
-  if stream.has_wide_pushback ~= 0 then
-    stream.has_wide_pushback = 0
-    return (@cuint)(stream.wide_pushback_value)
-  end
   local state: pointer = (@pointer)(&stream.wide_read_state[0])
   local input: [1]cchar = {}
   local wide: cint = 0
@@ -596,18 +596,29 @@ local function fgetwc(stream: *FILE): cuint <cexport, codename 'fgetwc'>
   return result
 end
 
-local function ungetwc(wide: cuint, stream: *FILE): cuint <cexport, codename 'ungetwc'>
-  stream_lock(stream)
+local function ungetwc_unlocked(wide: cuint, stream: *FILE): cuint
   if wide == ~0_cuint or (stream.flags & READABLE) == 0 or
-      stream_orient(stream, 1) < 0 or stream.has_wide_pushback ~= 0 then
-    stream_unlock(stream)
+      stream_orient(stream, 1) < 0 then
     return ~0_cuint
   end
-  stream.wide_pushback_value = (@cint)(wide)
-  stream.has_wide_pushback = 1
-  stream.flags = stream.flags & 0xFFFFFFFE_cuint
-  stream_unlock(stream)
+  -- Push the character back as its multibyte encoding, as musl does, so
+  -- the next read decodes it again and ftell moves back by the bytes it
+  -- took instead of ignoring a separate wide slot.
+  local encoded: [8]cchar = {}
+  local conversion_state: [16]culong = {}
+  local length: csize = wcrtomb(&encoded, (@cint)(wide), (@pointer)(&conversion_state[0]))
+  if length == ~0_csize or length == 0 or length > 4 then return ~0_cuint end
+  if not scan_unread_wide_bytes_unlocked(stream, (@*[0]byte)(&encoded[0]), length) then
+    return ~0_cuint
+  end
   return wide
+end
+
+local function ungetwc(wide: cuint, stream: *FILE): cuint <cexport, codename 'ungetwc'>
+  stream_lock(stream)
+  local result: cuint = ungetwc_unlocked(wide, stream)
+  stream_unlock(stream)
+  return result
 end
 
 local function getwc(stream: *FILE): cuint <cexport, codename 'getwc'>
@@ -773,12 +784,16 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
       while format[format_index] ~= 0 and iswspace(format[format_index]) ~= 0 do
         format_index = format_index + 1
       end
-      local next: cuint = fgetwc_unlocked(stream)
-      if next == ~0_cuint then input_failure = true; break end
-      input_count = input_count + 1
-      if iswspace((@cint)(next)) == 0 then
-        ungetwc(next, stream)
-        input_count = input_count - 1
+      -- See vfscanf: skip all white space; the end of input is no failure.
+      while true do
+        local next: cuint = fgetwc_unlocked(stream)
+        if next == ~0_cuint then break end
+        input_count = input_count + 1
+        if iswspace((@cint)(next)) == 0 then
+          ungetwc_unlocked(next, stream)
+          input_count = input_count - 1
+          break
+        end
       end
       continue
     end
@@ -787,7 +802,7 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
       if next == ~0_cuint then input_failure = true; break end
       input_count = input_count + 1
       if next ~= (@cuint)(format[format_index]) then
-        ungetwc(next, stream)
+        ungetwc_unlocked(next, stream)
         input_count = input_count - 1
         break
       end
@@ -801,7 +816,7 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
       if next == ~0_cuint then input_failure = true; break end
       input_count = input_count + 1
       if next ~= 37 then
-        ungetwc(next, stream)
+        ungetwc_unlocked(next, stream)
         input_count = input_count - 1
         break
       end
@@ -911,7 +926,7 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
         if leading == ~0_cuint then input_failure = true; break end
         input_count = input_count + 1
         if iswspace((@cint)(leading)) == 0 then
-          ungetwc(leading, stream)
+          ungetwc_unlocked(leading, stream)
           input_count = input_count - 1
           break
         end
@@ -959,7 +974,7 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
           end
         end
         if not sign and not prefix and not valid_digit then
-          ungetwc(current, stream)
+          ungetwc_unlocked(current, stream)
           break
         end
         if prefix then base = 16
@@ -1037,7 +1052,8 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
         end
         assignments = assignments + 1
       end
-      if token_eof then input_failure = true end
+      -- The end of input after a completed conversion is not an input
+      -- failure; the next directive that needs input sees it.
       continue
     end
     if conversion == 97 or conversion == 65 or conversion == 101 or conversion == 69 or
@@ -1047,7 +1063,7 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
         if leading == ~0_cuint then input_failure = true; break end
         input_count = input_count + 1
         if iswspace((@cint)(leading)) == 0 then
-          ungetwc(leading, stream)
+          ungetwc_unlocked(leading, stream)
           input_count = input_count - 1
           break
         end
@@ -1103,7 +1119,7 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
             special_state = special_state + 1
             accept = true
           end
-          if not accept then ungetwc(current, stream); break end
+          if not accept then ungetwc_unlocked(current, stream); break end
         elseif special_kind == 2 then -- nan[(payload)]
           local expected: cint = 0
           if special_state == 1 then expected = 97
@@ -1119,11 +1135,11 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
             special_state = special_state + 1
             accept = true
           end
-          if special_state == 3 and not accept then ungetwc(current, stream); break end
-          if special_state == 5 and not accept then ungetwc(current, stream); break end
-          if not accept then ungetwc(current, stream); break end
+          if special_state == 3 and not accept then ungetwc_unlocked(current, stream); break end
+          if special_state == 5 and not accept then ungetwc_unlocked(current, stream); break end
+          if not accept then ungetwc_unlocked(current, stream); break end
         elseif special_kind ~= 0 then
-          ungetwc(current, stream)
+          ungetwc_unlocked(current, stream)
           break
         elseif (code == 120 or code == 88) and not hexadecimal and not exponent and zero_prefix then
           hexadecimal = true
@@ -1145,7 +1161,7 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
           accept = true
         end
         if not accept then
-          ungetwc(current, stream)
+          ungetwc_unlocked(current, stream)
           break
         end
         if token_length + 1 >= token_capacity then
@@ -1204,7 +1220,8 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
         end
         assignments = assignments + 1
       end
-      if token_eof then input_failure = true end
+      -- The end of input after a completed conversion is not an input
+      -- failure; the next directive that needs input sees it.
       continue
     end
     if conversion ~= 99 and conversion ~= 115 and conversion ~= 91 then
@@ -1283,7 +1300,11 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
         has_first_input = false
       else
         current = fgetwc_unlocked(stream)
-        if current == ~0_cuint then input_failure = true; stop = true; break end
+        if current == ~0_cuint then
+          if matched_count == 0 then input_failure = true end
+          stop = true
+          break
+        end
         input_count = input_count + 1
       end
       local matches: boolean = true
@@ -1307,7 +1328,7 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
         matches = in_set ~= scanset_invert
       end
       if not matches then
-        ungetwc(current, stream)
+        ungetwc_unlocked(current, stream)
         input_count = input_count - 1
         stop = true
         break
@@ -1480,12 +1501,18 @@ local function vfscanf(stream: *FILE, format: *const [0]cchar,
       while format[format_index] ~= 0 and isspace((@cint)(format[format_index])) ~= 0 do
         format_index = format_index + 1
       end
-      local next: cint = fgetc_unlocked(stream)
-      if next == -1 then input_failure = true; break end
-      input_count = input_count + 1
-      if isspace(next) == 0 then
-        ungetc_unlocked(next, stream)
-        input_count = input_count - 1
+      -- A white-space directive reads white space up to the first
+      -- non-white-space character or the end of input; reaching the end is
+      -- not a failure (C17 7.21.6.2p5), so a following %n still stores.
+      while true do
+        local next: cint = fgetc_unlocked(stream)
+        if next == -1 then break end
+        input_count = input_count + 1
+        if isspace(next) == 0 then
+          ungetc_unlocked(next, stream)
+          input_count = input_count - 1
+          break
+        end
       end
       continue
     end
@@ -1745,7 +1772,8 @@ local function vfscanf(stream: *FILE, format: *const [0]cchar,
         end
         assignments = assignments + 1
       end
-      if token_eof then input_failure = true end
+      -- The end of input after a completed conversion is not an input
+      -- failure; the next directive that needs input sees it.
       continue
     end
     if conversion == 97 or conversion == 65 or conversion == 101 or conversion == 69 or
@@ -1912,7 +1940,8 @@ local function vfscanf(stream: *FILE, format: *const [0]cchar,
         end
         assignments = assignments + 1
       end
-      if token_eof then input_failure = true end
+      -- The end of input after a completed conversion is not an input
+      -- failure; the next directive that needs input sees it.
       continue
     end
     if conversion ~= 99 and conversion ~= 115 and conversion ~= 91 then
@@ -1955,7 +1984,10 @@ local function vfscanf(stream: *FILE, format: *const [0]cchar,
         local conversion_result: cint = scan_read_wide_unlocked(stream,
             (@pointer)(&conversion_state[0]), &wide, &encoded[0], &byte_count)
         input_count = input_count + byte_count
-        if conversion_result == 0 then input_failure = true; break end
+        if conversion_result == 0 then
+          if matched_count == 0 then input_failure = true end
+          break
+        end
         if conversion_result < 0 then input_failure = true; break end
         if iswspace(wide) ~= 0 then
           if matched_count == 0 then continue end
@@ -1993,7 +2025,11 @@ local function vfscanf(stream: *FILE, format: *const [0]cchar,
         local conversion_result: cint = scan_read_wide_unlocked(stream,
             (@pointer)(&conversion_state[0]), &wide, &encoded[0], &byte_count)
         input_count = input_count + byte_count
-        if conversion_result == 0 then input_failure = true; stop = true; break end
+        if conversion_result == 0 then
+          if matched_count == 0 then input_failure = true end
+          stop = true
+          break
+        end
         if conversion_result < 0 then input_failure = true; stop = true; break end
         if not scan_wide_set_contains(format, scanset_start, scanset_end,
             scanset_invert, wide) then
@@ -2090,7 +2126,12 @@ local function vfscanf(stream: *FILE, format: *const [0]cchar,
         has_first_input = false
       else
         current = fgetc_unlocked(stream)
-        if current == -1 then input_failure = true; stop = true; break end
+        if current == -1 then
+          -- Input failure only when the conversion matched nothing.
+          if matched_count == 0 then input_failure = true end
+          stop = true
+          break
+        end
         input_count = input_count + 1
       end
       local matches: boolean = true
