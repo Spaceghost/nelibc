@@ -77,6 +77,7 @@ extern int __nelibc_set_localtime_path(const char *path);
 #include <locale.h>
 #include <langinfo.h>
 #include <search.h>
+#include <regex.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <math.h>
@@ -742,6 +743,35 @@ static void search_walk(const void *node, VISIT visit, int depth) {
     search_walk_last = value;
     ++search_walk_count;
   }
+}
+#endif
+
+#ifdef NELIBC_STANDALONE
+/* <regex.h> helpers for the standalone checks below: compile, match, and
+ * compare the result and the spans (so, eo pairs; none when no match). */
+static int regex_check(const char *pattern, int cflags, const char *text,
+                       int eflags, int result, int nspan, const long *expect) {
+  regex_t re;
+  regmatch_t m[8];
+  if (regcomp(&re, pattern, cflags) != 0) return 0;
+  for (int i = 0; i < 8; ++i) m[i].rm_so = m[i].rm_eo = 77;
+  int ok = regexec(&re, text, (size_t)nspan, nspan ? m : NULL, eflags) == result;
+  for (int i = 0; ok && result == 0 && i < nspan; ++i)
+    if (m[i].rm_so != expect[2 * i] || m[i].rm_eo != expect[2 * i + 1]) ok = 0;
+  regfree(&re);
+  return ok;
+}
+#define REGEX_SPANS(...) \
+  (int)(sizeof((long[]){__VA_ARGS__}) / sizeof(long) / 2), (long[]){__VA_ARGS__}
+#define REGEX_MATCH(pattern, cflags, text, eflags, ...) \
+  regex_check(pattern, cflags, text, eflags, 0, REGEX_SPANS(__VA_ARGS__))
+#define REGEX_NOMATCH(pattern, cflags, text, eflags) \
+  regex_check(pattern, cflags, text, eflags, REG_NOMATCH, 0, NULL)
+static int regex_error(const char *pattern, int cflags) {
+  regex_t re;
+  int code = regcomp(&re, pattern, cflags);
+  if (code == 0) regfree(&re);
+  return code;
 }
 #endif
 
@@ -2229,6 +2259,85 @@ int main(int argc, char **argv) {
     remque(&q_b);
     if (q_a.next != &q_c || q_c.previous != &q_a || q_a.previous != NULL || q_c.next != NULL)
       return 86;
+  }
+  /* <regex.h>: musl's error codes for malformed patterns; BRE and ERE
+   * matching with leftmost-longest spans, unmatched and stale groups,
+   * back-references, REG_ICASE, REG_NEWLINE, REG_NOTBOL/NOTEOL, REG_NOSUB;
+   * regerror's truncation; a UTF-8 LC_CTYPE. */
+  {
+    const int E = REG_EXTENDED;
+    if (regex_error("a\\", 0) != REG_EESCAPE || regex_error("[a", 0) != REG_EBRACK ||
+        regex_error("[]", 0) != REG_EBRACK || regex_error("\\(a", 0) != REG_EPAREN ||
+        regex_error("a\\)", 0) != REG_EPAREN || regex_error("(a", E) != REG_EPAREN ||
+        regex_error("a{1", E) != REG_BADBR || regex_error("a{2,1}", E) != REG_BADBR ||
+        regex_error("a{,3}", E) != REG_BADBR || regex_error("a\\{1", 0) != REG_BADBR ||
+        regex_error("a{32768}", E) != REG_BADBR || regex_error("*a", E) != REG_BADRPT ||
+        regex_error("a|+b", E) != REG_BADRPT || regex_error("\\{1\\}", 0) != REG_BADRPT ||
+        regex_error("[[:foo:]]", 0) != REG_ECTYPE || regex_error("[z-a]", 0) != REG_ERANGE ||
+        regex_error("[a-c-e]", 0) != REG_ERANGE || regex_error("\\(a\\)\\2", 0) != REG_ESUBREG ||
+        regex_error("[[.ab.]]", 0) != REG_ECOLLATE || regex_error("\\x{41", E) != REG_EBRACE ||
+        regex_error("a)", E) != 0 || regex_error("*a", 0) != 0)
+      return 87;
+    regex_t re;
+    if (regcomp(&re, "(a)(b(c))|d", E) != 0 || re.re_nsub != 3) return 88;
+    regfree(&re);
+    if (!REGEX_MATCH("\\(a*\\)b", 0, "xaab", 0, 1, 4, 1, 3) ||
+        !REGEX_MATCH("a+", E, "baaac", 0, 1, 4) ||
+        !REGEX_MATCH("x*", E, "abc", 0, 0, 0) ||
+        !REGEX_MATCH("(a)|b", E, "b", 0, 0, 1, -1, -1, -1, -1) ||
+        !REGEX_MATCH("^*a", 0, "*a", 0, 0, 2) ||
+        !REGEX_MATCH("a\\{2,3\\}", 0, "aaaa", 0, 0, 3) ||
+        !REGEX_MATCH("(ab)*c", E, "xababc", 0, 1, 6, 3, 5) ||
+        !REGEX_MATCH("((a)|b)*", E, "ab", 0, 0, 2, 1, 2, -1, -1) ||
+        !REGEX_MATCH("a|", E, "b", 0, 0, 0) ||
+        !REGEX_MATCH("[]a]*[a-]", 0, "]a-", 0, 0, 3) ||
+        !REGEX_MATCH("[[.-.]][[=a=]]", 0, "x-a", 0, 1, 3) ||
+        !REGEX_MATCH("a\\|b\\+", 0, "cbb", 0, 1, 3) ||
+        REGEX_MATCH("[^a-z]", 0, "k", 0, 0, 1))
+      return 88;
+    if (!REGEX_MATCH("\\(a\\)\\1", 0, "xaa", 0, 1, 3, 1, 2) ||
+        !REGEX_MATCH("\\(.*\\)\\1", 0, "abcabc", 0, 0, 6, 0, 3) ||
+        !REGEX_MATCH("\\(.\\{1,3\\}\\)\\1", 0, "foo", 0, 1, 3, 1, 2) ||
+        !REGEX_MATCH("(a)\\1", E, "a1", 0, 0, 2) || !REGEX_NOMATCH("(a)\\1", E, "aa", 0) ||
+        !REGEX_MATCH("\\(a\\)\\1", REG_ICASE, "aA", 0, 0, 2) ||
+        !REGEX_MATCH("aBc", REG_ICASE, "xAbC", 0, 1, 4) ||
+        !REGEX_MATCH("[^aBcC]", REG_ICASE, "bd", 0, 1, 2) ||
+        !REGEX_MATCH("[[:upper:]]", REG_ICASE, "a", 0, 0, 1) ||
+        !REGEX_NOMATCH("(x+x+)+y", E, "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", 0) ||
+        !REGEX_MATCH("\\<b", E, "ab b", 0, 3, 4) ||
+        !REGEX_MATCH("\\bfoo\\b", E, "a foo.", 0, 2, 5) ||
+        !REGEX_MATCH("\\w+\\s\\d", E, "!ab 7", 0, 1, 5))
+      return 89;
+    if (!REGEX_MATCH("^b", E | REG_NEWLINE, "a\nb", 0, 2, 3) ||
+        !REGEX_NOMATCH("^b", E, "a\nb", 0) ||
+        !REGEX_MATCH("a$", E | REG_NEWLINE, "a\nb", 0, 0, 1) ||
+        !REGEX_NOMATCH("a.b", E | REG_NEWLINE, "a\nb", 0) ||
+        !REGEX_MATCH("a.b", E, "a\nb", 0, 0, 3) ||
+        !REGEX_NOMATCH("[^x]", REG_NEWLINE, "\n", 0) ||
+        !REGEX_NOMATCH("^a", E, "a", REG_NOTBOL) ||
+        !REGEX_MATCH("^a", E | REG_NEWLINE, "a\na", REG_NOTBOL, 2, 3) ||
+        !REGEX_NOMATCH("a$", E, "a", REG_NOTEOL) ||
+        !REGEX_MATCH("a$", E | REG_NEWLINE, "a\na", REG_NOTEOL, 0, 1))
+      return 90;
+    regmatch_t untouched = {77, 77};
+    if (regcomp(&re, "(b)c", E | REG_NOSUB) != 0 || re.re_nsub != 1 ||
+        regexec(&re, "abc", 1, NULL, 0) != 0 || regexec(&re, "abc", 1, &untouched, 0) != 0 ||
+        untouched.rm_so != 77 || regexec(&re, "ab", 0, NULL, 0) != REG_NOMATCH)
+      return 91;
+    regfree(&re);
+    char message[8];
+    if (regerror(REG_NOMATCH, NULL, message, 4) != 9 || strcmp(message, "No ") != 0 ||
+        regerror(REG_BADRPT, NULL, NULL, 0) != 44 ||
+        regerror(99, NULL, message, sizeof message) != 14 || strcmp(message, "Unknown") != 0)
+      return 91;
+    if (setlocale(LC_CTYPE, "C.UTF-8") == NULL) return 504;
+    if (regex_error("\\\xfc", 0) != REG_BADPAT || regex_error("a\xc3", 0) != REG_BADPAT ||
+        regex_error("[\xc3\xa9]", 0) != REG_ECOLLATE ||
+        !REGEX_MATCH("x\xc3\xa9*y", 0, "x\xc3\xa9\xc3\xa9y", 0, 0, 6) ||
+        !REGEX_MATCH("\\x{e9}+", E, "a\xc3\xa9\xc3\xa9", 0, 1, 5))
+      return 504;
+    if (setlocale(LC_CTYPE, "C") == NULL ||
+        !REGEX_MATCH("\\xe9", E, "a\xe9", 0, 1, 2)) return 504;
   }
   char narrow_scan_word[8] = {0};
   int narrow_scan_count = -1;

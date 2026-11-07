@@ -1,0 +1,1418 @@
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+-- <regex.h> for the standalone profile: regcomp, regexec, regerror and
+-- regfree over the engine of nebox (src/nebox/regex.nelua), adapted to the
+-- POSIX interface. Hybrid builds use the host's.
+--
+-- Syntax follows musl 1.2.5's parser (src/regex/regcomp.c): BRE and ERE,
+-- bracket expressions with the twelve C-locale classes, intervals up to
+-- RE_DUP_MAX (32767, as <limits.h> says; musl's is 255), groups,
+-- alternation (\| in BRE as an extension), \+ and \? in BRE,
+-- back-references \1..\9 in BRE only (in an ERE \1 is a literal 1, as in
+-- musl), the escapes \t \n \r \f \a \e \w \W \s \S \d \D \b \B \< \>
+-- and \xHH \x{HHHH}, and musl's error code for each malformed pattern.
+-- Where musl rejects [.c.] and [=c=] outright, a single-character
+-- collating symbol or equivalence class is accepted here, as POSIX asks.
+--
+-- Matching is byte-wise, as in the C locale. In a UTF-8 LC_CTYPE a pattern
+-- that is not valid UTF-8 is REG_BADPAT (as in musl) and a multibyte
+-- literal is one atom (a repetition applies to all of it), but '.' and
+-- bracket expressions match single bytes, a multibyte character inside a
+-- bracket expression is REG_ECOLLATE, and REG_ICASE folds ASCII only.
+--
+-- The matcher is a Pike VM with leftmost-longest semantics: the earliest
+-- match start wins, then the longest match; subexpression spans are those
+-- of the first path, in alternative order, that reaches that match (the
+-- GNU rule: (a|ab)(bc|c) on "abc" gives (0,1)(1,3) like glibc, where musl
+-- gives (0,2)(2,3)). As in musl, a subexpression reported outside the span
+-- of its enclosing one (a stale capture from an earlier iteration) is
+-- -1/-1. A back-reference to a group that did not participate fails to
+-- match (glibc; musl matches it as empty).
+--
+-- Limits, each REG_ESPACE: groups nested more than MAX_DEPTH deep, a syntax
+-- tree taller than MAX_HEIGHT, a program over MAX_CODE instructions (the
+-- matcher is O(text length * program size)), and, with back-references,
+-- more than MAX_THREADS live threads at one position (threads then carry
+-- distinct captures, so a pattern like \(a*\)\1 over a long run of a's
+-- can need a number quadratic in the text length).
+--
+-- Not implemented: REG_STARTEND (a glibc/BSD extension musl lacks), the
+-- GNU buffer anchors \` and \' (literals here, as in musl).
+
+local function malloc(size: csize): pointer <cimport> end
+local function realloc(value: pointer, size: csize): pointer <cimport> end
+local function free(value: pointer): void <cimport> end
+local function strlen(text: *const [0]cchar): csize <cimport> end
+local function nelibc_multibyte_mode(): cint <cimport> end
+
+-- regcomp flags, regexec flags and error codes: musl's values.
+local REG_EXTENDED: cint <comptime> = 1
+local REG_ICASE: cint <comptime> = 2
+local REG_NEWLINE: cint <comptime> = 4
+local REG_NOSUB: cint <comptime> = 8
+local REG_NOTBOL: cint <comptime> = 1
+local REG_NOTEOL: cint <comptime> = 2
+local REG_NOMATCH: cint <comptime> = 1
+local REG_BADPAT: cint <comptime> = 2
+local REG_ECOLLATE: cint <comptime> = 3
+local REG_ECTYPE: cint <comptime> = 4
+local REG_EESCAPE: cint <comptime> = 5
+local REG_ESUBREG: cint <comptime> = 6
+local REG_EBRACK: cint <comptime> = 7
+local REG_EPAREN: cint <comptime> = 8
+local REG_EBRACE: cint <comptime> = 9
+local REG_BADBR: cint <comptime> = 10
+local REG_ERANGE: cint <comptime> = 11
+local REG_ESPACE: cint <comptime> = 12
+local REG_BADRPT: cint <comptime> = 13
+
+local RE_DUP_MAX: isize <comptime> = 32767 -- include/limits.h and sysconf (musl: 255)
+local CHARCLASS_NAME_MAX: isize <comptime> = 14
+-- Limits that keep the recursive parser and code generator off deep stacks
+-- and the program within a sane size; exceeding one is REG_ESPACE.
+local MAX_DEPTH: isize <comptime> = 256      -- nested groups
+local MAX_HEIGHT: isize <comptime> = 2048    -- syntax tree height
+local MAX_CODE: isize <comptime> = 1 << 18   -- instructions (matching is O(text * program))
+local MAX_THREADS: isize <comptime> = 65536  -- live threads with back-references
+
+-- Bytes the parser looks at.
+local C_NL: byte <comptime> = 10
+local C_DOLLAR: byte <comptime> = 36
+local C_LPAREN: byte <comptime> = 40
+local C_RPAREN: byte <comptime> = 41
+local C_STAR: byte <comptime> = 42
+local C_PLUS: byte <comptime> = 43
+local C_COMMA: byte <comptime> = 44
+local C_MINUS: byte <comptime> = 45
+local C_DOT: byte <comptime> = 46
+local C_COLON: byte <comptime> = 58
+local C_LT: byte <comptime> = 60
+local C_EQUAL: byte <comptime> = 61
+local C_GT: byte <comptime> = 62
+local C_QUESTION: byte <comptime> = 63
+local C_LBRACKET: byte <comptime> = 91
+local C_BACKSLASH: byte <comptime> = 92
+local C_RBRACKET: byte <comptime> = 93
+local C_CARET: byte <comptime> = 94
+local C_UNDERSCORE: byte <comptime> = 95
+local C_LBRACE: byte <comptime> = 123
+local C_BAR: byte <comptime> = 124
+local C_RBRACE: byte <comptime> = 125
+
+-- regex_t and regmatch_t exactly as include/regex.h (musl's layout).
+local RegexT: type = @record{
+  re_nsub: csize,
+  opaque: pointer,
+  padding: [4]pointer,
+  nsub2: csize,
+  padding2: cchar
+}
+local RegMatch: type = @record{rm_so: clong, rm_eo: clong}
+
+-- VM instructions.
+local OP_CHAR: byte <comptime> = 1      -- c: the byte (lowered under REG_ICASE)
+local OP_ANY: byte <comptime> = 2
+local OP_CLASS: byte <comptime> = 3     -- x: set index
+local OP_SPLIT: byte <comptime> = 4     -- x preferred, y alternative
+local OP_JMP: byte <comptime> = 5
+local OP_SAVE: byte <comptime> = 6      -- x: capture slot
+local OP_MATCH: byte <comptime> = 7
+local OP_BOL: byte <comptime> = 8
+local OP_EOL: byte <comptime> = 9
+local OP_BACKREF: byte <comptime> = 10  -- x: group number
+local OP_WORDB: byte <comptime> = 11
+local OP_NWORDB: byte <comptime> = 12
+local OP_WSTART: byte <comptime> = 13
+local OP_WEND: byte <comptime> = 14
+
+local Inst: type = @record{op: byte, c: byte, x: int32, y: int32}
+local ByteSet: type = @record{bits: [32]byte}
+
+local Prog: type = @record{
+  code: *[0]Inst,
+  ncode: isize,
+  sets: *[0]ByteSet,
+  nsets: isize,
+  parent: *[0]int32,   -- per group: the enclosing group (0: none)
+  nsub: isize,
+  ncap: isize,         -- capture slots: 2 * (nsub + 1), or 2 when groups are not saved
+  icase: boolean,
+  newline: boolean,
+  hasref: boolean,
+  nosub: boolean,
+  bolstart: boolean    -- every match begins with '^' (and REG_NEWLINE is off)
+}
+
+local function lower(b: byte): byte <inline>
+  if b >= 65 and b <= 90 then return b + 32 end
+  return b
+end
+
+local function isword(b: byte): boolean <inline>
+  return (b >= 48 and b <= 57) or (b >= 65 and b <= 90) or (b >= 97 and b <= 122) or b == C_UNDERSCORE
+end
+
+local function isdigit(b: byte): boolean <inline>
+  return b >= 48 and b <= 57
+end
+
+local function set_add(s: *ByteSet, b: isize) <inline>
+  s.bits[b >> 3] = s.bits[b >> 3] | (@byte)(1 << (b & 7))
+end
+
+local function set_del(s: *ByteSet, b: isize) <inline>
+  s.bits[b >> 3] = s.bits[b >> 3] & ~(@byte)(1 << (b & 7))
+end
+
+local function set_has(s: *ByteSet, b: byte): boolean <inline>
+  return (s.bits[b >> 3] & (@byte)(1 << (b & 7))) ~= 0
+end
+
+-- Add lo..hi; with icase also the other case of each ASCII letter.
+local function set_range(s: *ByteSet, lo: isize, hi: isize, icase: boolean)
+  for b = lo, hi do
+    set_add(s, b)
+    if icase then
+      if b >= 65 and b <= 90 then set_add(s, b + 32)
+      elseif b >= 97 and b <= 122 then set_add(s, b - 32) end
+    end
+  end
+end
+
+local function set_invert(s: *ByteSet)
+  for i = 0, 31 do s.bits[i] = ~s.bits[i] end
+end
+
+local function set_clear(s: *ByteSet)
+  for i = 0, 31 do s.bits[i] = 0 end
+end
+
+-- The C locale's classes. name points at len bytes. With icase a class
+-- also matches the other case of its letters (musl tests tolower(c) and
+-- toupper(c) against the class).
+local function is(name: *[0]byte, len: isize, word: cstring): boolean
+  local w = (@*[0]byte)(word)
+  for i = 0, len - 1 do
+    if w[i] == 0 or w[i] ~= name[i] then return false end
+  end
+  return w[len] == 0
+end
+
+local function set_class(s: *ByteSet, name: *[0]byte, len: isize, icase: boolean): boolean
+  if is(name, len, 'alpha') then set_range(s, 65, 90, false); set_range(s, 97, 122, false)
+  elseif is(name, len, 'digit') then set_range(s, 48, 57, false)
+  elseif is(name, len, 'alnum') then
+    set_range(s, 48, 57, false); set_range(s, 65, 90, false); set_range(s, 97, 122, false)
+  elseif is(name, len, 'upper') then set_range(s, 65, 90, icase)
+  elseif is(name, len, 'lower') then set_range(s, 97, 122, icase)
+  elseif is(name, len, 'space') then set_range(s, 9, 13, false); set_add(s, 32)
+  elseif is(name, len, 'blank') then set_add(s, 9); set_add(s, 32)
+  elseif is(name, len, 'punct') then
+    set_range(s, 33, 47, false); set_range(s, 58, 64, false)
+    set_range(s, 91, 96, false); set_range(s, 123, 126, false)
+  elseif is(name, len, 'print') then set_range(s, 32, 126, false)
+  elseif is(name, len, 'graph') then set_range(s, 33, 126, false)
+  elseif is(name, len, 'cntrl') then set_range(s, 0, 31, false); set_add(s, 127)
+  elseif is(name, len, 'xdigit') then
+    set_range(s, 48, 57, false); set_range(s, 65, 70, false); set_range(s, 97, 102, false)
+  else
+    return false
+  end
+  return true
+end
+
+-- Length of the UTF-8 sequence at text (NUL-terminated), -1 when invalid.
+local function utf8_length(text: *[0]byte): isize
+  local b0 = text[0]
+  if b0 < 0x80 then return 1 end
+  local need: isize
+  local lo: byte = 0x80
+  local hi: byte = 0xbf
+  if b0 >= 0xc2 and b0 <= 0xdf then need = 2
+  elseif b0 >= 0xe0 and b0 <= 0xef then
+    need = 3
+    if b0 == 0xe0 then lo = 0xa0 elseif b0 == 0xed then hi = 0x9f end
+  elseif b0 >= 0xf0 and b0 <= 0xf4 then
+    need = 4
+    if b0 == 0xf0 then lo = 0x90 elseif b0 == 0xf4 then hi = 0x8f end
+  else
+    return -1
+  end
+  if text[1] < lo or text[1] > hi then return -1 end
+  for i = 2, need - 1 do
+    if text[i] < 0x80 or text[i] > 0xbf then return -1 end
+  end
+  return need
+end
+
+-------------------------------------------------------------------------------
+-- Parser: pattern -> syntax tree.
+
+local N_EMPTY: byte <comptime> = 0
+local N_CHAR: byte <comptime> = 1      -- c
+local N_ANY: byte <comptime> = 2
+local N_SET: byte <comptime> = 3       -- x: set index
+local N_ASSERT: byte <comptime> = 4    -- c: OP_BOL, OP_EOL, OP_WORDB, ...
+local N_BACKREF: byte <comptime> = 5   -- x: group
+local N_GROUP: byte <comptime> = 6     -- x: group, child
+local N_REPEAT: byte <comptime> = 7    -- x: min, y: max (-1 unbounded), child
+local N_SEQ: byte <comptime> = 8       -- children
+local N_ALT: byte <comptime> = 9       -- children (branches)
+
+local Node: type = @record{
+  kind: byte,
+  c: byte,
+  x: int32,
+  y: int32,
+  height: int32,
+  child: *Node,
+  last: *Node,
+  next: *Node
+}
+
+local NODE_CHUNK: isize <comptime> = 128
+local NodeChunk: type = @record{next: *NodeChunk, used: isize, nodes: [128]Node}
+
+local Parser: type = @record{
+  pat: *[0]byte,       -- NUL-terminated; reading pat[len] is fine
+  len: isize,
+  pos: isize,
+  ere: boolean,
+  icase: boolean,
+  newline: boolean,
+  utf8: boolean,
+  err: cint,
+  nsub: isize,
+  maxref: isize,
+  depth: isize,
+  group: isize,        -- innermost open group (0: none)
+  branch_start: isize, -- where the current branch began (BRE '^')
+  chunks: *NodeChunk,
+  sets: *[0]ByteSet,
+  nsets: isize,
+  capsets: isize,
+  parent: *[0]int32,
+  capparent: isize,
+  -- code generation
+  code: *[0]Inst,
+  ncode: isize,
+  capcode: isize,
+  savegroups: boolean
+}
+
+local function new_node(p: *Parser, kind: byte): *Node
+  local chunk = p.chunks
+  if chunk == nilptr or chunk.used == NODE_CHUNK then
+    chunk = (@*NodeChunk)(malloc(#NodeChunk))
+    if chunk == nilptr then p.err = REG_ESPACE; return nilptr end
+    chunk.next = p.chunks
+    chunk.used = 0
+    p.chunks = chunk
+  end
+  local node = &chunk.nodes[chunk.used]
+  chunk.used = chunk.used + 1
+  node.kind = kind
+  node.c = 0
+  node.x = 0
+  node.y = 0
+  node.height = 1
+  node.child = nilptr
+  node.last = nilptr
+  node.next = nilptr
+  return node
+end
+
+-- Append child to a SEQ, ALT, GROUP or REPEAT node.
+local function add_child(p: *Parser, node: *Node, child: *Node): boolean
+  if node.child == nilptr then node.child = child else node.last.next = child end
+  node.last = child
+  if child.height + 1 > node.height then
+    node.height = child.height + 1
+    if node.height > MAX_HEIGHT then p.err = REG_ESPACE; return false end
+  end
+  return true
+end
+
+local function new_set(p: *Parser, s: *ByteSet): *Node
+  if p.nsets == p.capsets then
+    local cap = p.capsets * 2
+    if cap == 0 then cap = 8 end
+    local grown = (@*[0]ByteSet)(realloc(p.sets, (@csize)(cap) * #ByteSet))
+    if grown == nilptr then p.err = REG_ESPACE; return nilptr end
+    p.sets = grown
+    p.capsets = cap
+  end
+  p.sets[p.nsets] = $s
+  local node = new_node(p, N_SET)
+  if node == nilptr then return nilptr end
+  node.x = (@int32)(p.nsets)
+  p.nsets = p.nsets + 1
+  return node
+end
+
+local function char_node(p: *Parser, b: byte): *Node
+  local node = new_node(p, N_CHAR)
+  if node == nilptr then return nilptr end
+  if p.icase then b = lower(b) end
+  node.c = b
+  return node
+end
+
+local function assert_node(p: *Parser, op: byte): *Node
+  local node = new_node(p, N_ASSERT)
+  if node == nilptr then return nilptr end
+  node.c = op
+  return node
+end
+
+-- The literal character at p.pos: one byte, or in a UTF-8 locale a whole
+-- multibyte character (as one atom). An invalid sequence is REG_BADPAT.
+local function literal(p: *Parser): *Node
+  local len: isize = 1
+  if p.utf8 and p.pat[p.pos] >= 0x80 then
+    len = utf8_length(&p.pat[p.pos])
+    if len < 0 then p.err = REG_BADPAT; return nilptr end
+  end
+  if len == 1 then
+    local node = char_node(p, p.pat[p.pos])
+    p.pos = p.pos + 1
+    return node
+  end
+  local seq = new_node(p, N_SEQ)
+  if seq == nilptr then return nilptr end
+  for i = 0, len - 1 do
+    local node = char_node(p, p.pat[p.pos + i])
+    if node == nilptr or not add_child(p, seq, node) then return nilptr end
+  end
+  p.pos = p.pos + len
+  return seq
+end
+
+-- \xHH or \x{HHHH} as a character: a byte in the C locale (a code point
+-- above 0xff never matches), its UTF-8 encoding in a UTF-8 locale.
+local function codepoint_node(p: *Parser, v: isize): *Node
+  if not p.utf8 or v < 0x80 then
+    if v <= 0xff then
+      -- musl does not apply REG_ICASE to \x literals; a one-byte set keeps
+      -- a letter's case (OP_CHAR would compare case-folded).
+      if p.icase and ((v >= 65 and v <= 90) or (v >= 97 and v <= 122)) then
+        local only: ByteSet
+        set_clear(&only)
+        set_add(&only, v)
+        return new_set(p, &only)
+      end
+      return char_node(p, (@byte)(v))
+    end
+    local empty: ByteSet
+    set_clear(&empty)
+    return new_set(p, &empty)
+  end
+  local bytes: [4]byte
+  local n: isize
+  if v >= 0xd800 and v <= 0xdfff or v > 0x10ffff then
+    local empty: ByteSet
+    set_clear(&empty)
+    return new_set(p, &empty)
+  elseif v < 0x800 then
+    bytes[0] = (@byte)(0xc0 | (v >> 6)); bytes[1] = (@byte)(0x80 | (v & 0x3f)); n = 2
+  elseif v < 0x10000 then
+    bytes[0] = (@byte)(0xe0 | (v >> 12)); bytes[1] = (@byte)(0x80 | ((v >> 6) & 0x3f))
+    bytes[2] = (@byte)(0x80 | (v & 0x3f)); n = 3
+  else
+    bytes[0] = (@byte)(0xf0 | (v >> 18)); bytes[1] = (@byte)(0x80 | ((v >> 12) & 0x3f))
+    bytes[2] = (@byte)(0x80 | ((v >> 6) & 0x3f)); bytes[3] = (@byte)(0x80 | (v & 0x3f)); n = 4
+  end
+  local seq = new_node(p, N_SEQ)
+  if seq == nilptr then return nilptr end
+  for i = 0, n - 1 do
+    local node = char_node(p, bytes[i])
+    if node == nilptr or not add_child(p, seq, node) then return nilptr end
+  end
+  return seq
+end
+
+local function hexval(b: byte): isize
+  if b >= 48 and b <= 57 then return b - 48 end
+  local l = b | 32
+  if l >= 97 and l <= 102 then return l - 97 + 10 end
+  return -1
+end
+
+-- [.c.] or [=c=] at p.pat[at] ('[' then kind): the character's byte, or -1
+-- with p.err set. A multi-character element is REG_ECOLLATE; a missing
+-- terminator is REG_EBRACK. On success *after receives the next position.
+local function bracket_element(p: *Parser, at: isize, after: *isize): isize
+  local kind = p.pat[at + 1]
+  local q = at + 2
+  while true do
+    if p.pat[q] == 0 then p.err = REG_EBRACK; return -1 end
+    if q > at + 2 and p.pat[q] == kind and p.pat[q + 1] == C_RBRACKET then break end
+    q = q + 1
+  end
+  if q - (at + 2) ~= 1 then
+    p.err = REG_ECOLLATE
+    if p.utf8 and q - (at + 2) > 1 and utf8_length(&p.pat[at + 2]) < 0 then p.err = REG_BADPAT end
+    return -1
+  end
+  local b = p.pat[at + 2]
+  if p.utf8 and b >= 0x80 then
+    p.err = utf8_length(&p.pat[at + 2]) < 0 and REG_BADPAT or REG_ECOLLATE
+    return -1
+  end
+  $after = q + 2
+  return b
+end
+
+-- One bracket character at p.pos (not a [. [= [: form): its byte, or -1
+-- with p.err set (invalid UTF-8: REG_BADPAT; a multibyte character, which
+-- a byte set cannot hold: REG_ECOLLATE).
+local function bracket_char(p: *Parser): isize
+  local b = p.pat[p.pos]
+  if p.utf8 and b >= 0x80 then
+    p.err = utf8_length(&p.pat[p.pos]) < 0 and REG_BADPAT or REG_ECOLLATE
+    return -1
+  end
+  p.pos = p.pos + 1
+  return b
+end
+
+-- Bracket expression; p.pos is just past '['. Mirrors musl's
+-- parse_bracket_terms, with single-character [.c.] and [=c=] accepted.
+local function parse_bracket(p: *Parser): *Node
+  local s: ByteSet
+  set_clear(&s)
+  local negate = false
+  if p.pat[p.pos] == C_CARET then negate = true; p.pos = p.pos + 1 end
+  local start = p.pos
+  while true do
+    local c = p.pat[p.pos]
+    if c == 0 then p.err = REG_EBRACK; return nilptr end
+    if c == C_RBRACKET and p.pos ~= start then p.pos = p.pos + 1; break end
+    local c1 = p.pat[p.pos + 1]
+    -- '-' is literal only first, last, or as the start of a range "--x"
+    -- right after a range end (musl's [a-z--@] extension).
+    if c == C_MINUS and p.pos ~= start and c1 ~= C_RBRACKET and
+        (c1 ~= C_MINUS or p.pat[p.pos + 2] == C_RBRACKET) then
+      p.err = REG_ERANGE; return nilptr
+    end
+    if c == C_LBRACKET and c1 == C_COLON then
+      local name = p.pos + 2
+      local len: isize = 0
+      local found = false
+      while len < CHARCLASS_NAME_MAX and p.pat[name + len] ~= 0 do
+        if p.pat[name + len] == C_COLON then found = true; break end
+        len = len + 1
+      end
+      if not found or p.pat[name + len + 1] ~= C_RBRACKET or
+          not set_class(&s, &p.pat[name], len, p.icase) then
+        p.err = REG_ECTYPE; return nilptr
+      end
+      p.pos = name + len + 2
+    else
+      local lo: isize
+      local equiv = false
+      if c == C_LBRACKET and (c1 == C_DOT or c1 == C_EQUAL) then
+        equiv = c1 == C_EQUAL
+        local after: isize = 0
+        lo = bracket_element(p, p.pos, &after)
+        if lo < 0 then return nilptr end
+        p.pos = after
+      else
+        lo = bracket_char(p)
+        if lo < 0 then return nilptr end
+      end
+      local hi = lo
+      if p.pat[p.pos] == C_MINUS and p.pat[p.pos + 1] ~= C_RBRACKET then
+        -- a range; an equivalence class cannot bound one
+        if equiv then p.err = REG_ERANGE; return nilptr end
+        p.pos = p.pos + 1
+        local e = p.pat[p.pos]
+        local e1 = p.pat[p.pos + 1]
+        if e == 0 then p.err = REG_ERANGE; return nilptr end
+        if e == C_LBRACKET and e1 == C_DOT then
+          local after: isize = 0
+          hi = bracket_element(p, p.pos, &after)
+          if hi < 0 then return nilptr end
+          p.pos = after
+        elseif e == C_LBRACKET and (e1 == C_EQUAL or e1 == C_COLON) then
+          p.err = REG_ERANGE; return nilptr
+        else
+          hi = bracket_char(p)
+          if hi < 0 then return nilptr end
+        end
+        if lo > hi then p.err = REG_ERANGE; return nilptr end
+      end
+      set_range(&s, lo, hi, p.icase)
+    end
+  end
+  if negate then
+    set_invert(&s)
+    -- POSIX: with REG_NEWLINE no non-matching list matches a newline.
+    if p.newline then set_del(&s, C_NL) end
+  end
+  return new_set(p, &s)
+end
+
+-- A bracket-like escape (\w \W \s \S \d \D): the named class, negated as
+-- the corresponding [^...] would be (so no newline under REG_NEWLINE).
+local function escape_class(p: *Parser, which: byte): *Node
+  local s: ByteSet
+  set_clear(&s)
+  local lowerc = which | 32
+  if lowerc == 119 then -- w: [[:alnum:]_]
+    set_range(&s, 48, 57, false); set_range(&s, 65, 90, false); set_range(&s, 97, 122, false)
+    set_add(&s, C_UNDERSCORE)
+  elseif lowerc == 115 then -- s
+    set_range(&s, 9, 13, false); set_add(&s, 32)
+  else -- d
+    set_range(&s, 48, 57, false)
+  end
+  if which ~= lowerc then
+    set_invert(&s)
+    if p.newline then set_del(&s, C_NL) end
+  end
+  return new_set(p, &s)
+end
+
+local function parse_regex(p: *Parser): *Node <forwarddecl> end
+
+-- At the end of a branch: end of pattern, '|' or a closing ')' of an open
+-- group (ERE), '\|' or '\)' (BRE; a '\)' with no open group is an error
+-- reported by the caller).
+local function at_branch_end(p: *Parser): boolean
+  local c = p.pat[p.pos]
+  if c == 0 then return true end
+  if p.ere then return c == C_BAR or (c == C_RPAREN and p.depth > 0) end
+  return c == C_BACKSLASH and (p.pat[p.pos + 1] == C_BAR or p.pat[p.pos + 1] == C_RPAREN)
+end
+
+local function parse_group(p: *Parser): *Node
+  p.pos = p.pos + (p.ere and 1 or 2)
+  if p.depth >= MAX_DEPTH then p.err = REG_ESPACE; return nilptr end
+  p.nsub = p.nsub + 1
+  local index = p.nsub
+  if index >= p.capparent then
+    local cap = p.capparent * 2
+    if cap == 0 then cap = 16 end
+    local grown = (@*[0]int32)(realloc(p.parent, (@csize)(cap) * #int32))
+    if grown == nilptr then p.err = REG_ESPACE; return nilptr end
+    p.parent = grown
+    p.capparent = cap
+  end
+  p.parent[index] = (@int32)(p.group)
+  local saved_group = p.group
+  local saved_start = p.branch_start
+  p.group = index
+  p.depth = p.depth + 1
+  local inner = parse_regex(p)
+  p.depth = p.depth - 1
+  p.group = saved_group
+  p.branch_start = saved_start
+  if inner == nilptr then return nilptr end
+  if p.ere then
+    if p.pat[p.pos] ~= C_RPAREN then p.err = REG_EPAREN; return nilptr end
+    p.pos = p.pos + 1
+  else
+    if p.pat[p.pos] ~= C_BACKSLASH or p.pat[p.pos + 1] ~= C_RPAREN then p.err = REG_EPAREN; return nilptr end
+    p.pos = p.pos + 2
+  end
+  local node = new_node(p, N_GROUP)
+  if node == nilptr then return nilptr end
+  node.x = (@int32)(index)
+  if not add_child(p, node, inner) then return nilptr end
+  return node
+end
+
+-- One atom at p.pos, which is not at a branch end. Mirrors musl's
+-- parse_atom (and the group handling of tre_parse).
+local function parse_atom(p: *Parser): *Node
+  local c = p.pat[p.pos]
+  local c1 = p.pat[p.pos + 1]
+  if c == C_LBRACKET then
+    p.pos = p.pos + 1
+    return parse_bracket(p)
+  end
+  if (p.ere and c == C_LPAREN) or (not p.ere and c == C_BACKSLASH and c1 == C_LPAREN) then
+    return parse_group(p)
+  end
+  if c == C_BACKSLASH then
+    if c1 == 0 then p.err = REG_EESCAPE; return nilptr end
+    -- musl's macros
+    if c1 == 116 then p.pos = p.pos + 2; return char_node(p, 9) end   -- \t
+    if c1 == 110 then p.pos = p.pos + 2; return char_node(p, 10) end  -- \n
+    if c1 == 114 then p.pos = p.pos + 2; return char_node(p, 13) end  -- \r
+    if c1 == 102 then p.pos = p.pos + 2; return char_node(p, 12) end  -- \f
+    if c1 == 97 then p.pos = p.pos + 2; return char_node(p, 7) end    -- \a
+    if c1 == 101 then p.pos = p.pos + 2; return char_node(p, 27) end  -- \e
+    if c1 == 119 or c1 == 87 or c1 == 115 or c1 == 83 or c1 == 100 or c1 == 68 then
+      p.pos = p.pos + 2
+      return escape_class(p, c1)
+    end
+    -- assertions
+    if c1 == 98 then p.pos = p.pos + 2; return assert_node(p, OP_WORDB) end   -- \b
+    if c1 == 66 then p.pos = p.pos + 2; return assert_node(p, OP_NWORDB) end  -- \B
+    if c1 == C_LT then p.pos = p.pos + 2; return assert_node(p, OP_WSTART) end
+    if c1 == C_GT then p.pos = p.pos + 2; return assert_node(p, OP_WEND) end
+    if c1 == 120 then -- \xHH, \x{HHHHHHHH}
+      local q = p.pos + 2
+      local width: isize = 2
+      if p.pat[q] == C_LBRACE then width = 8; q = q + 1 end
+      local v: isize = 0
+      local i: isize = 0
+      while i < width and v < 0x110000 do
+        local d = hexval(p.pat[q + i])
+        if d < 0 then break end
+        v = 16 * v + d
+        i = i + 1
+      end
+      q = q + i
+      if width == 8 then
+        if p.pat[q] ~= C_RBRACE then p.err = REG_EBRACE; return nilptr end
+        q = q + 1
+      end
+      p.pos = q
+      return codepoint_node(p, v)
+    end
+    if not p.ere and (c1 == C_LBRACE or c1 == C_PLUS or c1 == C_QUESTION) then
+      -- a repetition with nothing to repeat
+      p.err = REG_BADRPT; return nilptr
+    end
+    if not p.ere and c1 >= 49 and c1 <= 57 then
+      local n: isize = c1 - 48
+      if n > p.maxref then p.maxref = n end
+      p.pos = p.pos + 2
+      local node = new_node(p, N_BACKREF)
+      if node == nilptr then return nilptr end
+      node.x = (@int32)(n)
+      return node
+    end
+    -- any other escaped character is that character
+    p.pos = p.pos + 1
+    return literal(p)
+  end
+  if c == C_DOT then
+    p.pos = p.pos + 1
+    if p.newline then
+      local s: ByteSet
+      set_clear(&s)
+      set_invert(&s)
+      set_del(&s, C_NL)
+      return new_set(p, &s)
+    end
+    return new_node(p, N_ANY)
+  end
+  if c == C_CARET then
+    -- special everywhere in an ERE, at the start of a branch in a BRE
+    if p.ere or p.pos == p.branch_start then
+      p.pos = p.pos + 1
+      return assert_node(p, OP_BOL)
+    end
+    return literal(p)
+  end
+  if c == C_DOLLAR then
+    -- special everywhere in an ERE, at the end of a branch in a BRE
+    if p.ere or c1 == 0 or (c1 == C_BACKSLASH and
+        (p.pat[p.pos + 2] == C_RPAREN or p.pat[p.pos + 2] == C_BAR)) then
+      p.pos = p.pos + 1
+      return assert_node(p, OP_EOL)
+    end
+    return literal(p)
+  end
+  if p.ere and (c == C_STAR or c == C_LBRACE or c == C_PLUS or c == C_QUESTION) then
+    p.err = REG_BADRPT; return nilptr
+  end
+  return literal(p)
+end
+
+-- A decimal count of an interval at *q; -1 when there is no digit. Stops
+-- once the value passes RE_DUP_MAX (the caller then rejects it).
+local function dup_count(p: *Parser, q: *isize): isize
+  if not isdigit(p.pat[$q]) then return -1 end
+  local n: isize = 0
+  while true do
+    n = 10 * n + (p.pat[$q] - 48)
+    $q = $q + 1
+    if not isdigit(p.pat[$q]) or n > RE_DUP_MAX then break end
+  end
+  return n
+end
+
+-- Repetition operators after an atom (musl's parse_iter).
+local function parse_iter(p: *Parser, atom: *Node): *Node
+  while true do
+    local c = p.pat[p.pos]
+    if c ~= C_BACKSLASH and c ~= C_STAR then
+      if not p.ere then break end
+      if c ~= C_PLUS and c ~= C_QUESTION and c ~= C_LBRACE then break end
+    end
+    if c == C_BACKSLASH then
+      if p.ere then break end
+      local c1 = p.pat[p.pos + 1]
+      if c1 ~= C_PLUS and c1 ~= C_QUESTION and c1 ~= C_LBRACE then break end
+    end
+    local q = p.pos
+    if c == C_BACKSLASH then q = q + 1 end
+    -- a '*' right after a BRE's leading '^' is literal
+    if not p.ere and q == p.branch_start + 1 and p.pat[q - 1] == C_CARET then break end
+    local min: isize = 0
+    local max: isize = -1
+    if p.pat[q] == C_LBRACE then
+      q = q + 1
+      min = dup_count(p, &q)
+      if p.pat[q] == C_COMMA then
+        q = q + 1
+        max = dup_count(p, &q)
+      else
+        max = min
+      end
+      local ok = not ((max < min and max >= 0) or max > RE_DUP_MAX or min > RE_DUP_MAX or min < 0)
+      if ok and not p.ere then
+        if p.pat[q] ~= C_BACKSLASH then ok = false else q = q + 1 end
+      end
+      if ok then
+        if p.pat[q] ~= C_RBRACE then ok = false else q = q + 1 end
+      end
+      if not ok then p.err = REG_BADBR; return nilptr end
+    else
+      if p.pat[q] == C_PLUS then min = 1 end
+      if p.pat[q] == C_QUESTION then max = 1 end
+      q = q + 1
+    end
+    p.pos = q
+    if max == 0 then
+      atom = new_node(p, N_EMPTY)
+      if atom == nilptr then return nilptr end
+    else
+      local node = new_node(p, N_REPEAT)
+      if node == nilptr then return nilptr end
+      node.x = (@int32)(min)
+      node.y = (@int32)(max)
+      if not add_child(p, node, atom) then return nilptr end
+      atom = node
+    end
+  end
+  return atom
+end
+
+-- Branches separated by '|' ('\|' in a BRE) up to the end of the pattern
+-- or the group's closing parenthesis.
+function parse_regex(p: *Parser): *Node
+  local alt = new_node(p, N_ALT)
+  if alt == nilptr then return nilptr end
+  while true do
+    p.branch_start = p.pos
+    local seq = new_node(p, N_SEQ)
+    if seq == nilptr then return nilptr end
+    while not at_branch_end(p) do
+      local atom = parse_atom(p)
+      if atom == nilptr then return nilptr end
+      atom = parse_iter(p, atom)
+      if atom == nilptr then return nilptr end
+      if not add_child(p, seq, atom) then return nilptr end
+    end
+    if not add_child(p, alt, seq) then return nilptr end
+    local c = p.pat[p.pos]
+    if p.ere and c == C_BAR then
+      p.pos = p.pos + 1
+    elseif not p.ere and c == C_BACKSLASH and p.pat[p.pos + 1] == C_BAR then
+      p.pos = p.pos + 2
+    else
+      break
+    end
+  end
+  return alt
+end
+
+-------------------------------------------------------------------------------
+-- Code generation: syntax tree -> VM program.
+
+local function emit(p: *Parser, op: byte, c: byte, x: isize, y: isize): isize
+  if p.err ~= 0 then return 0 end
+  if p.ncode >= MAX_CODE then p.err = REG_ESPACE; return 0 end
+  if p.ncode == p.capcode then
+    local cap = p.capcode * 2
+    if cap == 0 then cap = 64 end
+    local grown = (@*[0]Inst)(realloc(p.code, (@csize)(cap) * #Inst))
+    if grown == nilptr then p.err = REG_ESPACE; return 0 end
+    p.code = grown
+    p.capcode = cap
+  end
+  local at = p.ncode
+  p.code[at] = (@Inst){op = op, c = c, x = (@int32)(x), y = (@int32)(y)}
+  p.ncode = at + 1
+  return at
+end
+
+local function gen(p: *Parser, node: *Node)
+  if p.err ~= 0 then return end
+  local kind = node.kind
+  if kind == N_EMPTY then
+    return
+  elseif kind == N_CHAR then
+    emit(p, OP_CHAR, node.c, 0, 0)
+  elseif kind == N_ANY then
+    emit(p, OP_ANY, 0, 0, 0)
+  elseif kind == N_SET then
+    emit(p, OP_CLASS, 0, node.x, 0)
+  elseif kind == N_ASSERT then
+    emit(p, node.c, 0, 0, 0)
+  elseif kind == N_BACKREF then
+    emit(p, OP_BACKREF, 0, node.x, 0)
+  elseif kind == N_GROUP then
+    if p.savegroups then emit(p, OP_SAVE, 0, 2 * node.x, 0) end
+    gen(p, node.child)
+    if p.savegroups then emit(p, OP_SAVE, 0, 2 * node.x + 1, 0) end
+  elseif kind == N_SEQ then
+    local child = node.child
+    while child ~= nilptr do gen(p, child); child = child.next end
+  elseif kind == N_ALT then
+    -- SPLIT next, alt2; b1; JMP end; alt2: SPLIT ...; ... bn; end:
+    local child = node.child
+    local prev_jmp: isize = -1
+    while child.next ~= nilptr do
+      local split = emit(p, OP_SPLIT, 0, p.ncode + 1, 0)
+      gen(p, child)
+      local jmp = emit(p, OP_JMP, 0, -1, 0)
+      if p.err ~= 0 then return end
+      -- chain the JMPs through x until their target is known
+      p.code[jmp].x = (@int32)(prev_jmp)
+      prev_jmp = jmp
+      p.code[split].y = (@int32)(p.ncode)
+      child = child.next
+    end
+    gen(p, child)
+    if p.err ~= 0 then return end
+    while prev_jmp >= 0 do
+      local next = p.code[prev_jmp].x
+      p.code[prev_jmp].x = (@int32)(p.ncode)
+      prev_jmp = next
+    end
+  elseif kind == N_REPEAT then
+    local min: isize = node.x
+    local max: isize = node.y
+    local child = node.child
+    if max < 0 then
+      if min == 0 then
+        -- (body+)?: SPLIT L, end; L: body; SPLIT L, end; end:
+        -- Unlike "L: SPLIT body, end; body; JMP L" this lets a single empty
+        -- iteration reach the end, so (a*)* against "" reports the group
+        -- as (0,0) like musl and glibc instead of unset.
+        local split = emit(p, OP_SPLIT, 0, p.ncode + 1, 0)
+        local top = p.ncode
+        gen(p, child)
+        emit(p, OP_SPLIT, 0, top, p.ncode + 1)
+        if p.err ~= 0 then return end
+        p.code[split].y = (@int32)(p.ncode)
+      else
+        -- min-1 copies, then L: body; SPLIT L, end
+        for _ = 1, min - 1 do gen(p, child) end
+        local top = p.ncode
+        gen(p, child)
+        emit(p, OP_SPLIT, 0, top, p.ncode + 1)
+      end
+    else
+      for _ = 1, min do gen(p, child) end
+      -- (body(body(...)?)?)?: every SPLIT's alternative is the end. The
+      -- SPLITs are chained through y until the end is known.
+      local prev_split: isize = -1
+      for _ = min + 1, max do
+        local split = emit(p, OP_SPLIT, 0, p.ncode + 1, prev_split)
+        if p.err ~= 0 then return end
+        prev_split = split
+        gen(p, child)
+      end
+      if p.err ~= 0 then return end
+      while prev_split >= 0 do
+        local next = p.code[prev_split].y
+        p.code[prev_split].y = (@int32)(p.ncode)
+        prev_split = next
+      end
+    end
+  end
+end
+
+local function parser_release(p: *Parser)
+  local chunk = p.chunks
+  while chunk ~= nilptr do
+    local next = chunk.next
+    free(chunk)
+    chunk = next
+  end
+  p.chunks = nilptr
+end
+
+local function regfree(preg: *RegexT): void <cexport, codename 'regfree'>
+  local prog = (@*Prog)(preg.opaque)
+  if prog ~= nilptr then
+    free(prog.code)
+    free(prog.sets)
+    free(prog.parent)
+    free(prog)
+  end
+  preg.opaque = nilptr
+end
+
+local function regcomp(preg: *RegexT, pattern: *[0]byte, cflags: cint): cint <cexport, codename 'regcomp'>
+  preg.opaque = nilptr
+  local p: Parser
+  p.pat = pattern
+  p.len = (@isize)(strlen((@*[0]cchar)(pattern)))
+  p.ere = (cflags & REG_EXTENDED) ~= 0
+  p.icase = (cflags & REG_ICASE) ~= 0
+  p.newline = (cflags & REG_NEWLINE) ~= 0
+  p.utf8 = nelibc_multibyte_mode() == 1
+  p.maxref = 0
+  local root = parse_regex(&p)
+  if p.err == 0 and p.pat[p.pos] ~= 0 then
+    -- only a BRE '\)' without an open group stops the top level early
+    p.err = REG_EPAREN
+  end
+  if p.err == 0 and p.maxref > p.nsub then p.err = REG_ESUBREG end
+  -- Without back-references and with REG_NOSUB the groups need not be saved.
+  p.savegroups = p.maxref > 0 or (cflags & REG_NOSUB) == 0
+  if p.err == 0 then
+    emit(&p, OP_SAVE, 0, 0, 0)
+    gen(&p, root)
+    emit(&p, OP_SAVE, 0, 1, 0)
+    emit(&p, OP_MATCH, 0, 0, 0)
+  end
+  parser_release(&p)
+  local prog: *Prog = nilptr
+  if p.err == 0 then
+    prog = (@*Prog)(malloc(#Prog))
+    if prog == nilptr then p.err = REG_ESPACE end
+  end
+  if p.err ~= 0 then
+    free(p.code)
+    free(p.sets)
+    free(p.parent)
+    return p.err
+  end
+  prog.code = p.code
+  prog.ncode = p.ncode
+  prog.sets = p.sets
+  prog.nsets = p.nsets
+  prog.parent = p.parent
+  prog.nsub = p.nsub
+  prog.ncap = p.savegroups and 2 * (p.nsub + 1) or 2
+  prog.icase = p.icase
+  prog.newline = p.newline
+  prog.hasref = p.maxref > 0
+  prog.nosub = (cflags & REG_NOSUB) ~= 0
+  prog.bolstart = not p.newline and p.ncode > 1 and p.code[1].op == OP_BOL
+  preg.re_nsub = (@csize)(p.nsub)
+  preg.opaque = prog
+  return 0
+end
+
+-------------------------------------------------------------------------------
+-- Executor: a Pike VM.
+--
+-- At every text position the live threads are kept in a list in priority
+-- order (first alternative first, greedy repetition first). Without
+-- back-references two threads at the same pc have the same future, so only
+-- the first is kept; that gives the capture choice described at the top and
+-- cuts empty loop iterations. With back-references a thread's future also
+-- depends on its captures, so threads are deduplicated by (pc, captures,
+-- progress through a back-reference) instead, empty epsilon cycles are cut
+-- per path, and the number of live threads is bounded.
+
+local ThreadList: type = @record{
+  pc: *[0]int32,
+  k: *[0]isize,      -- bytes of a back-reference already consumed
+  caps: *[0]isize,   -- ncap slots per thread
+  n: isize,
+  cap: isize
+}
+
+local W_VISIT: byte <comptime> = 0
+local W_RESTORE_CAP: byte <comptime> = 1
+local W_RESTORE_EPS: byte <comptime> = 2
+local Work: type = @record{kind: byte, a: isize, b: isize}
+
+local Exec: type = @record{
+  prog: *Prog,
+  text: *[0]byte,
+  n: isize,
+  notbol: boolean,
+  noteol: boolean,
+  ncap: isize,
+  clist: ThreadList,
+  nlist: ThreadList,
+  mark: *[0]isize,     -- per pc: generation stamp (no back-references)
+  epsvis: *[0]isize,   -- per pc: position of the current epsilon path (back-references)
+  tabgen: *[0]isize,   -- dedup hash table over the list being built (back-references)
+  tabidx: *[0]int32,
+  tabsize: isize,
+  gen: isize,         -- generation (isize: never wraps)
+  wcaps: *[0]isize,    -- captures of the epsilon walk
+  work: *[0]Work,
+  nwork: isize,
+  capwork: isize,
+  failed: cint         -- REG_ESPACE once memory or the thread bound ran out
+}
+
+local function list_grow(e: *Exec, list: *ThreadList): boolean
+  local cap = list.cap * 2
+  if cap == 0 then cap = 16 end
+  local pc = (@*[0]int32)(realloc(list.pc, (@csize)(cap) * #int32))
+  if pc == nilptr then e.failed = REG_ESPACE; return false end
+  list.pc = pc
+  local k = (@*[0]isize)(realloc(list.k, (@csize)(cap) * #isize))
+  if k == nilptr then e.failed = REG_ESPACE; return false end
+  list.k = k
+  local caps = (@*[0]isize)(realloc(list.caps, (@csize)(cap * e.ncap) * #isize))
+  if caps == nilptr then e.failed = REG_ESPACE; return false end
+  list.caps = caps
+  list.cap = cap
+  return true
+end
+
+local function list_free(list: *ThreadList)
+  free(list.pc)
+  free(list.k)
+  free(list.caps)
+end
+
+local function thread_hash(e: *Exec, pc: isize, k: isize, caps: *[0]isize): usize
+  local h: usize = 0xcbf29ce484222325
+  h = (h ~ (@usize)(pc)) * 0x100000001b3
+  h = (h ~ (@usize)(k)) * 0x100000001b3
+  for i = 0, e.ncap - 1 do h = (h ~ (@usize)(caps[i])) * 0x100000001b3 end
+  return h
+end
+
+local function same_thread(e: *Exec, list: *ThreadList, index: isize, pc: isize, k: isize, caps: *[0]isize): boolean
+  if list.pc[index] ~= pc or list.k[index] ~= k then return false end
+  local base = index * e.ncap
+  for i = 0, e.ncap - 1 do
+    if list.caps[base + i] ~= caps[i] then return false end
+  end
+  return true
+end
+
+-- Rebuild the dedup table at twice the size from the list being built.
+local function table_grow(e: *Exec, list: *ThreadList): boolean
+  local size = e.tabsize * 2
+  if size == 0 then size = 256 end
+  local tabgen = (@*[0]isize)(malloc((@csize)(size) * #isize))
+  local tabidx = (@*[0]int32)(malloc((@csize)(size) * #int32))
+  if tabgen == nilptr or tabidx == nilptr then
+    free(tabgen); free(tabidx)
+    e.failed = REG_ESPACE
+    return false
+  end
+  for i = 0, size - 1 do tabgen[i] = 0 end
+  free(e.tabgen); free(e.tabidx)
+  e.tabgen = tabgen
+  e.tabidx = tabidx
+  e.tabsize = size
+  for index = 0, list.n - 1 do
+    local slot = (@isize)(thread_hash(e, list.pc[index], list.k[index], &list.caps[index * e.ncap]) & (@usize)(size - 1))
+    while tabgen[slot] == e.gen do slot = (slot + 1) & (size - 1) end
+    tabgen[slot] = e.gen
+    tabidx[slot] = (@int32)(index)
+  end
+  return true
+end
+
+-- Append a thread to list unless an identical one is already there.
+local function materialize(e: *Exec, list: *ThreadList, pc: isize, k: isize, caps: *[0]isize)
+  if e.prog.hasref then
+    if (list.n + 1) * 2 > e.tabsize and not table_grow(e, list) then return end
+    local slot = (@isize)(thread_hash(e, pc, k, caps) & (@usize)(e.tabsize - 1))
+    while e.tabgen[slot] == e.gen do
+      if same_thread(e, list, e.tabidx[slot], pc, k, caps) then return end
+      slot = (slot + 1) & (e.tabsize - 1)
+    end
+    if list.n >= MAX_THREADS then e.failed = REG_ESPACE; return end
+    e.tabgen[slot] = e.gen
+    e.tabidx[slot] = (@int32)(list.n)
+  end
+  if list.n == list.cap and not list_grow(e, list) then return end
+  local index = list.n
+  list.pc[index] = (@int32)(pc)
+  list.k[index] = k
+  local base = index * e.ncap
+  for i = 0, e.ncap - 1 do list.caps[base + i] = caps[i] end
+  list.n = index + 1
+end
+
+local function push_work(e: *Exec, kind: byte, a: isize, b: isize): boolean
+  if e.nwork == e.capwork then
+    local cap = e.capwork * 2
+    if cap == 0 then cap = 64 end
+    local grown = (@*[0]Work)(realloc(e.work, (@csize)(cap) * #Work))
+    if grown == nilptr then e.failed = REG_ESPACE; return false end
+    e.work = grown
+    e.capwork = cap
+  end
+  e.work[e.nwork] = (@Work){kind = kind, a = a, b = b}
+  e.nwork = e.nwork + 1
+  return true
+end
+
+-- Does the zero-width assertion op hold at pos?
+local function assertion_holds(e: *Exec, op: byte, pos: isize): boolean
+  local text = e.text
+  local n = e.n
+  if op == OP_BOL then
+    return (pos == 0 and not e.notbol) or (e.prog.newline and pos > 0 and text[pos - 1] == C_NL)
+  end
+  if op == OP_EOL then
+    return (pos == n and not e.noteol) or (e.prog.newline and pos < n and text[pos] == C_NL)
+  end
+  local before = pos > 0 and isword(text[pos - 1])
+  local after = pos < n and isword(text[pos])
+  if op == OP_WORDB then return before ~= after end
+  if op == OP_NWORDB then return before == after end
+  if op == OP_WSTART then return not before and after end
+  return before and not after -- OP_WEND
+end
+
+-- Follow epsilon transitions from pc at pos, adding the consuming (or
+-- MATCH) threads they reach to list in priority order. An explicit work
+-- stack replaces nebox's recursion: VISIT entries are pcs to explore,
+-- RESTORE entries undo a capture or an epsilon-path mark once everything
+-- pushed after them has been explored.
+local function addthread(e: *Exec, list: *ThreadList, pc0: isize, pos: isize, caps0: *[0]isize)
+  if e.failed ~= 0 then return end
+  local prog = e.prog
+  local code = prog.code
+  for i = 0, e.ncap - 1 do e.wcaps[i] = caps0[i] end
+  e.nwork = 0
+  if not push_work(e, W_VISIT, pc0, 0) then return end
+  while e.nwork > 0 do
+    e.nwork = e.nwork - 1
+    local w = e.work[e.nwork]
+    if w.kind == W_RESTORE_CAP then
+      e.wcaps[w.a] = w.b
+      continue
+    elseif w.kind == W_RESTORE_EPS then
+      e.epsvis[w.a] = w.b
+      continue
+    end
+    local pc = w.a
+    if prog.hasref then
+      if e.epsvis[pc] == pos then continue end
+    else
+      if e.mark[pc] == e.gen then continue end
+      e.mark[pc] = e.gen
+    end
+    local ins = code[pc]
+    local op = ins.op
+    if op == OP_CHAR or op == OP_ANY or op == OP_CLASS or op == OP_MATCH then
+      materialize(e, list, pc, 0, e.wcaps)
+      if e.failed ~= 0 then return end
+      continue
+    end
+    if op == OP_BACKREF then
+      local s = e.wcaps[2 * ins.x]
+      local f = e.wcaps[2 * ins.x + 1]
+      if s < 0 or f < 0 then continue end -- an unset group matches nothing
+      if f > s then
+        materialize(e, list, pc, 0, e.wcaps)
+        if e.failed ~= 0 then return end
+        continue
+      end
+      -- an empty back-reference is an epsilon step
+    end
+    if prog.hasref then
+      if not push_work(e, W_RESTORE_EPS, pc, e.epsvis[pc]) then return end
+      e.epsvis[pc] = pos
+    end
+    if op == OP_JMP then
+      if not push_work(e, W_VISIT, ins.x, 0) then return end
+    elseif op == OP_SPLIT then
+      if not push_work(e, W_VISIT, ins.y, 0) or not push_work(e, W_VISIT, ins.x, 0) then return end
+    elseif op == OP_SAVE then
+      if ins.x < e.ncap then
+        if not push_work(e, W_RESTORE_CAP, ins.x, e.wcaps[ins.x]) then return end
+        e.wcaps[ins.x] = pos
+      end
+      if not push_work(e, W_VISIT, pc + 1, 0) then return end
+    elseif op == OP_BACKREF then
+      if not push_work(e, W_VISIT, pc + 1, 0) then return end
+    elseif assertion_holds(e, op, pos) then
+      if not push_work(e, W_VISIT, pc + 1, 0) then return end
+    end
+  end
+end
+
+-- Run the program over the text. With anchored only a match at 0 counts;
+-- otherwise the leftmost start wins. Among matches from the winning start
+-- the longest wins, ties going to the earlier path. best receives the
+-- captures of the winner.
+local function execute(e: *Exec, anchored: boolean, best: *[0]isize): boolean
+  local prog = e.prog
+  local code = prog.code
+  local n = e.n
+  local ncap = e.ncap
+  local found = false
+  local bestend: isize = -1
+  local init = (@*[0]isize)(malloc((@csize)(ncap) * #isize))
+  if init == nilptr then e.failed = REG_ESPACE; return false end
+  for i = 0, ncap - 1 do init[i] = -1 end
+  local pos: isize = 0
+  e.gen = e.gen + 1
+  e.clist.n = 0
+  addthread(e, &e.clist, 0, pos, init)
+  while e.failed == 0 do
+    e.gen = e.gen + 1
+    e.nlist.n = 0
+    local i: isize = 0
+    while i < e.clist.n do
+      local pc: isize = e.clist.pc[i]
+      local caps = (@*[0]isize)(&e.clist.caps[i * ncap])
+      i = i + 1
+      if found and caps[0] > best[0] then continue end
+      local ins = code[pc]
+      local op = ins.op
+      if op == OP_MATCH then
+        if not found or caps[0] < best[0] or pos > bestend then
+          found = true
+          for j = 0, ncap - 1 do best[j] = caps[j] end
+          bestend = pos
+        end
+      elseif pos >= n then
+        -- nothing left to consume
+      elseif op == OP_CHAR then
+        local b = e.text[pos]
+        if prog.icase then b = lower(b) end
+        if b == ins.c then addthread(e, &e.nlist, pc + 1, pos + 1, caps) end
+      elseif op == OP_ANY then
+        addthread(e, &e.nlist, pc + 1, pos + 1, caps)
+      elseif op == OP_CLASS then
+        if set_has(&prog.sets[ins.x], e.text[pos]) then addthread(e, &e.nlist, pc + 1, pos + 1, caps) end
+      elseif op == OP_BACKREF then
+        local s = caps[2 * ins.x]
+        local f = caps[2 * ins.x + 1]
+        local k = e.clist.k[i - 1]
+        local a = e.text[s + k]
+        local b = e.text[pos]
+        if prog.icase then a = lower(a); b = lower(b) end
+        if a == b then
+          if k + 1 == f - s then
+            addthread(e, &e.nlist, pc + 1, pos + 1, caps)
+          else
+            materialize(e, &e.nlist, pc, k + 1, caps)
+          end
+        end
+      end
+      if e.failed ~= 0 then break end
+    end
+    if e.failed ~= 0 then break end
+    if pos >= n then break end
+    pos = pos + 1
+    if not found and not anchored then
+      addthread(e, &e.nlist, 0, pos, init)
+    end
+    local tmp = e.clist
+    e.clist = e.nlist
+    e.nlist = tmp
+    if e.clist.n == 0 and (found or anchored) then break end
+  end
+  free(init)
+  return found and e.failed == 0
+end
+
+local function regexec(preg: *RegexT, text: *[0]byte, nmatch: csize, pmatch: *[0]RegMatch, eflags: cint): cint
+    <cexport, codename 'regexec'>
+  local prog = (@*Prog)(preg.opaque)
+  if prog == nilptr then return REG_BADPAT end
+  local e: Exec
+  e.prog = prog
+  e.text = text
+  e.n = (@isize)(strlen((@*[0]cchar)(text)))
+  e.notbol = (eflags & REG_NOTBOL) ~= 0
+  e.noteol = (eflags & REG_NOTEOL) ~= 0
+  -- REG_NOSUB: pmatch is not used at all (musl).
+  if pmatch == nilptr or prog.nosub then nmatch = 0 end
+  -- Without back-references the groups do not influence matching; skip
+  -- their slots unless the caller wants them.
+  e.ncap = prog.ncap
+  if not prog.hasref and nmatch <= 1 then e.ncap = 2 end
+  if prog.bolstart and e.notbol then return REG_NOMATCH end
+  local result: cint = REG_NOMATCH
+  local ncode = prog.ncode
+  e.wcaps = (@*[0]isize)(malloc((@csize)(e.ncap) * #isize))
+  local best = (@*[0]isize)(malloc((@csize)(e.ncap) * #isize))
+  if prog.hasref then
+    e.epsvis = (@*[0]isize)(malloc((@csize)(ncode) * #isize))
+    if e.epsvis ~= nilptr then for i = 0, ncode - 1 do e.epsvis[i] = -1 end end
+  else
+    e.mark = (@*[0]isize)(malloc((@csize)(ncode) * #isize))
+    if e.mark ~= nilptr then for i = 0, ncode - 1 do e.mark[i] = 0 end end
+  end
+  if e.wcaps == nilptr or best == nilptr or (e.epsvis == nilptr and e.mark == nilptr) then
+    result = REG_ESPACE
+  elseif execute(&e, prog.bolstart, best) then
+    result = 0
+    do
+      local count: isize = (@isize)(nmatch)
+      local nsub = prog.nsub
+      for i = 0, count - 1 do
+        local so: isize = -1
+        local eo: isize = -1
+        if i <= nsub and 2 * i + 1 < e.ncap then
+          so = best[2 * i]
+          eo = best[2 * i + 1]
+          if so < 0 or eo < 0 then so = -1; eo = -1 end
+          -- a group outside its enclosing group's span is a stale capture
+          if i > 0 and so >= 0 then
+            local parent: isize = prog.parent[i]
+            if parent > 0 and (so < pmatch[parent].rm_so or eo > pmatch[parent].rm_eo) then
+              so = -1; eo = -1
+            end
+          end
+        end
+        pmatch[i].rm_so = (@clong)(so)
+        pmatch[i].rm_eo = (@clong)(eo)
+      end
+    end
+  elseif e.failed ~= 0 then
+    result = e.failed
+  end
+  list_free(&e.clist)
+  list_free(&e.nlist)
+  free(e.mark)
+  free(e.epsvis)
+  free(e.tabgen)
+  free(e.tabidx)
+  free(e.work)
+  free(e.wcaps)
+  free(best)
+  return result
+end
+
+-- musl's messages, in error-code order.
+local function regerror(code: cint, preg: *RegexT, buffer: *[0]cchar, size: csize): csize
+    <cexport, codename 'regerror'>
+  local message: cstring
+  if code == 0 then message = 'No error'
+  elseif code == REG_NOMATCH then message = 'No match'
+  elseif code == REG_BADPAT then message = 'Invalid regexp'
+  elseif code == REG_ECOLLATE then message = 'Unknown collating element'
+  elseif code == REG_ECTYPE then message = 'Unknown character class name'
+  elseif code == REG_EESCAPE then message = 'Trailing backslash'
+  elseif code == REG_ESUBREG then message = 'Invalid back reference'
+  elseif code == REG_EBRACK then message = "Missing ']'"
+  elseif code == REG_EPAREN then message = "Missing ')'"
+  elseif code == REG_EBRACE then message = "Missing '}'"
+  elseif code == REG_BADBR then message = 'Invalid contents of {}'
+  elseif code == REG_ERANGE then message = 'Invalid character range'
+  elseif code == REG_ESPACE then message = 'Out of memory'
+  elseif code == REG_BADRPT then message = 'Repetition not preceded by valid expression'
+  else message = 'Unknown error' end
+  local text = (@*[0]cchar)(message)
+  local length = strlen(text)
+  if size > 0 then
+    local copy = length
+    if copy > size - 1 then copy = size - 1 end
+    local i: csize = 0
+    while i < copy do buffer[i] = text[i]; i = i + 1 end
+    buffer[copy] = 0
+  end
+  return length + 1
+end
