@@ -604,6 +604,15 @@ recursive frames, `longjmp(env, 0)` returning 1, a volatile local preserved,
 `siglongjmp` out of a signal handler restoring the mask saved with savemask 1
 and leaving the handler's mask with savemask 0, and `_setjmp`/`_longjmp`.
 Hybrid builds keep the host's `<setjmp.h>`.
+
+`mktime` with a `tm_isdst` that contradicts the date (0 for a summer wall
+time, 1 for a winter one) now reads the wall time in that kind of offset,
+as musl (`t -= opp - gmtoff`) and glibc do: 2020-07-01 12:00 with
+`tm_isdst = 0` in America/Los_Angeles is 12:00 PST, i.e. 13:00 PDT
+(1593633600). Before, nelibc ignored the flag there and returned 12:00 PDT.
+Smoke checks 623 and 624; found through nebox `date -d '14 days ago'`
+across a DST change. Gate 159/159 on `e3e78c6`
+(`/work/artifacts/gate-mkt-20261107-1829`).
 Gate record: 159/159 on branch commit `3cc8819` (container `nelibc-writ`,
 user `build`, `/work/artifacts/gate-setjmp-20261107-1630/`); the squash commit
 `9220a4c` names it `c0d1b7e` by mistake. The follow-up `5f13edd` (snapshot

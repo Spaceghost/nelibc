@@ -1997,6 +1997,20 @@ int main(int argc, char **argv) {
   };
   if (mktime(&skipped_hour) != (time_t)1583663400 || skipped_hour.tm_hour != 3 ||
       skipped_hour.tm_min != 30 || skipped_hour.tm_isdst != 1) return 429;
+  /* a tm_isdst that contradicts the date reads the wall time in that kind of
+   * offset (glibc and musl): standard time in July, daylight time in January */
+  struct tm summer_as_standard = {
+    .tm_sec = 0, .tm_min = 0, .tm_hour = 12, .tm_mday = 1,
+    .tm_mon = 6, .tm_year = 120, .tm_isdst = 0
+  };
+  if (mktime(&summer_as_standard) != (time_t)1593633600 || summer_as_standard.tm_hour != 13 ||
+      summer_as_standard.tm_isdst != 1) return 623;
+  struct tm winter_as_daylight = {
+    .tm_sec = 0, .tm_min = 0, .tm_hour = 12, .tm_mday = 15,
+    .tm_mon = 0, .tm_year = 120, .tm_isdst = 1
+  };
+  if (mktime(&winter_as_daylight) != (time_t)1579114800 || winter_as_daylight.tm_hour != 11 ||
+      winter_as_daylight.tm_isdst != 0) return 624;
   if (unsetenv("TZ") != 0 || localtime_r(&epoch, &utc_broken_down) == NULL ||
       utc_broken_down.tm_zone == NULL) return 405;
 #ifdef NELIBC_TESTING
