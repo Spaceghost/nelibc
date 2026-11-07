@@ -35,6 +35,7 @@ regex src/regex_standalone.nelua
 pwd src/pwd_standalone.nelua
 termios src/termios_standalone.nelua
 extras src/extras_standalone.nelua
+iconv src/iconv_standalone.nelua
 stdlib_float src/stdlib_float.nelua
 sys_linux_x86_64 src/sys/linux_x86_64.nelua
 errno src/errno/standalone.nelua
@@ -92,7 +93,7 @@ CFLAGS_boot_host := -std=c11
 CLANG_ONLY := $(shell $(CC) --version 2>/dev/null | head -1 | grep -q -i 'clang' && echo -fno-addrsig)
 CFLAGS_environment_adapter := -g0 -ffunction-sections -fno-asynchronous-unwind-tables -fno-unwind-tables $(CLANG_ONLY)
 
-C_OBJECTS := string_locale string inet memory ctype stdlib locale stdlib_exit search regex pwd termios extras \
+C_OBJECTS := string_locale string inet memory ctype stdlib locale stdlib_exit search regex pwd termios extras iconv \
   stdlib_float sys_linux_x86_64 errno thread alloc alloc_exports spawn unistd \
   stdio math_core fenv stdio_varargs fcntl_adapter credential_adapter exec_adapter ipc_adapter stdio_extras_adapter \
   stdio_lock_standalone stdio_startup_stub \
