@@ -588,7 +588,8 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
   priority-inheritance mutex returns `EDEADLK`; POSIX says a normal mutex
   deadlocks. **Fixed** (same branch): on `EDEADLK` from `FUTEX_LOCK_PI` for a
   non-error-checking mutex, the lock waits out its deadline (`ETIMEDOUT`) or
-  forever, as musl does. gcc 295, zig 296.
+  forever, as musl does. gcc 295, zig 296. Gate: 159/159 on `82c4474`, no warnings,
+  `/work/artifacts/gate-tcancel-20261107-1357/`.
 - `regression/pthread_create-oom` (zig): `pthread_create should fail with
   EAGAIN but failed with 12 (Cannot allocate memory)` (line 24): POSIX
   specifies `EAGAIN` for lack of resources. **Fixed** (branch `pthread-create-eagain`): a failed
