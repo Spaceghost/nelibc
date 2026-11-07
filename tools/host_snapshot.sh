@@ -52,7 +52,7 @@ echo "$MODULES" | while read -r name source; do
   $NELUA -c -r -o "$OUT/src/$name.c" "$source"
 done
 
-for c in stdio_varargs fcntl_adapter credential_adapter exec_adapter stdio_lock_standalone \
+for c in stdio_varargs fcntl_adapter credential_adapter exec_adapter ipc_adapter stdio_lock_standalone \
     stdio_startup_stub environment_adapter semaphore_adapter mqueue_adapter \
     complex_abi; do
   cp "src/$c.c" "$OUT/src/$c.c"
@@ -94,7 +94,7 @@ CFLAGS_environment_adapter := -g0 -ffunction-sections -fno-asynchronous-unwind-t
 
 C_OBJECTS := string_locale string inet memory ctype stdlib locale stdlib_exit search regex pwd termios extras \
   stdlib_float sys_linux_x86_64 errno thread alloc alloc_exports spawn unistd \
-  stdio math_core fenv stdio_varargs fcntl_adapter credential_adapter exec_adapter \
+  stdio math_core fenv stdio_varargs fcntl_adapter credential_adapter exec_adapter ipc_adapter \
   stdio_lock_standalone stdio_startup_stub \
   semaphore_adapter mqueue_adapter complex_abi syscall_host boot_host
 OBJECTS := $(addprefix $(O)/,$(addsuffix .o,$(C_OBJECTS))) \

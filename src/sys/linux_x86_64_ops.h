@@ -232,4 +232,16 @@ static const unsigned short nelibc_sys_linux_x86_64_numbers[NELIBC_SYS_COUNT] = 
   467, /* open_tree_attr */
   468, /* file_getattr */
   469, /* file_setattr */
+  29, /* shmget */
+  30, /* shmat */
+  31, /* shmctl */
+  64, /* semget */
+  65, /* semop */
+  66, /* semctl */
+  67, /* shmdt */
+  68, /* msgget */
+  69, /* msgsnd */
+  70, /* msgrcv */
+  71, /* msgctl */
+  220, /* semtimedop */
 };
