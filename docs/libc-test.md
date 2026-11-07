@@ -41,6 +41,8 @@ Container `nelibc-writ` (Debian 12, glibc 2.36, GCC 12.2), libc-test
 | Nelibc gcc hybrid, main `7c321ae`, archive linked, Nelibc headers | 2026-11-06 | no report: `strsignal` missing from `string.h` broke the test runner itself |
 | Nelibc gcc hybrid, this slice, `make libc-test-gcc` | 2026-11-07 | 112 (`tools/libc_test_expected_gcc.txt`) |
 | Nelibc zig hybrid, this slice, `make libc-test-zig` | 2026-11-07 | 118 (`tools/libc_test_expected_zig.txt`) |
+| Nelibc gcc hybrid, slice 2, `make libc-test-gcc` | 2026-11-07 | 114 (`tools/libc_test_expected_gcc.txt`) |
+| Nelibc zig hybrid, slice 2, `make libc-test-zig` | 2026-11-07 | 116 (`tools/libc_test_expected_zig.txt`) |
 
 Against the baseline, `7c321ae` fixed 8 tests glibc 2.36 fails (`strtol`,
 `wcstol`, and the `fmin`/`fmax` families) and added 73 failures:
@@ -80,22 +82,56 @@ did. The 112 gcc failures that remain, now the expected list, are:
   `<sys/sem.h>`, `<sys/shm.h>`, `<sys/socket.h>` and `<utmpx.h>`. In hybrid
   builds these headers are the host's or wrap it; `api/main` fails because
   its objects did not build.
-- 10 functional tests, all of which glibc 2.36 also fails. Several exercise
-  Nelibc's own implementations (`sscanf`, `fscanf`, `fwscanf`, `swprintf`,
-  `strftime`, `fnmatch`), so they are Nelibc bugs even where glibc shares
-  them: `%c`/`%C` flags in `strftime`, field-width and `%n` handling in the
-  scanf family, bracket edge cases in `fnmatch`. `crypt`, `wordexp`,
-  `clocale_mbfuncs` and `pthread_cancel-points` are the host's.
+- 10 functional tests, all of which glibc 2.36 also fails. Two exercised
+  Nelibc's own code and were fixed in slice 2 (`strftime`, `fnmatch`, below).
+  The scanf family and `swprintf` are the host's in the hybrid profiles: the
+  hybrid stdio does not export them, so those four failures measure glibc.
+  Nelibc's own `sscanf`/`fscanf`/`swprintf` (standalone profile) are checked
+  against the same musl cases in `tools/syscall_smoke.c` instead; slice 2
+  fixed `%8c` on short input there. `crypt`, `wordexp`, `clocale_mbfuncs`
+  and `pthread_cancel-points` are the host's.
 - 78 math tests: the exception-flag and ulp items above.
 - 8 regression tests, all of which glibc 2.36 also fails. One is
   Nelibc-specific in kind: `fpclassify-invalid-ld80` shows `%La` of an x87
   pseudo-denormal returning an error instead of formatting it.
 
 The zig list differs in: four API tests clang rejects with
-`-Wswitch-bool` (a compiler diagnostic, not a header gap); `functional/strptime`,
-`functional/time`, `regression/getpwnam_r-crash` and `getpwnam_r-errno`
-segfault only with the `zig cc`-built archive, which is a Nelibc defect in
-that profile to chase; `math/sqrt` and `math/sqrtl` pass with zig.
+`-Wswitch-bool` (a compiler diagnostic, not a header gap); `math/sqrt` and
+`math/sqrtl` pass with zig.
+
+### Slice 2 (2026-11-07, branch `libc-test-slice-2`)
+
+Fixed, now passing in both profiles: `functional/strftime` (POSIX
+`%[flag][width]` on `%C %F %G %Y`, `-`/`_`/`0` padding flags, `+` on years past
+9999 as POSIX's `%+4Y` reading of `%F` requires, and `%V` used a 0-based
+ordinal day), `functional/fnmatch` (a backslash inside brackets is a member
+and an unterminated `[` is literal, XCU 2.13.1 / XBD 9.3.5; glibc escapes
+inside brackets, so a pattern like `[\]]` now reads differently from glibc),
+`regression/fpclassify-invalid-ld80` (`%La` is formatted exactly from the
+x87 bits, in musl's normalized form `0x1p+0`, not glibc's `0x8p-3`; a
+pseudo-denormal normalizes and an unnormal prints `nan`, following the
+FPU). Fixed on zig only because only that profile hit them:
+`functional/strptime` and `functional/time` (the TZif reader kept over
+400 KiB of arrays on the stack and clang inlined it into `localtime_r`;
+musl's runner gives tests a 100 KiB stack; the file is now mapped and read
+in place), `regression/getpwnam_r-crash` and `getpwnam_r-errno` (the
+archive exported `malloc` but not `malloc_usable_size`, so glibc's NSS
+module read a glibc chunk header off a Nelibc block; every profile that
+exports `malloc` now exports `malloc_usable_size`).
+
+Added to both expected lists: `math/erfcl`, `erfl`, `exp10l`, `modfl`,
+`pow10l`. They failed before this slice too (checked by linking the tests
+against the slice 1 archive): their reports print with `%La`, which returned
+an error without a newline, so the runner's `FAIL` marker landed on the same
+line as the truncated output and `grep '^FAIL'` missed it. The extraction
+now matches the marker anywhere on the line. `modfl(-0)` returns `+0` for
+the integral part; `exp10l(nan)` raises `INVALID`; `erfl`, `erfcl`,
+`exp10l` are off by 2 to 11 ulp. These belong with the math work.
+
+Still refused rather than wrong: `%Le`, `%Lf`, `%Lg` of a long double whose
+value is not a double return -1 with `EINVAL` (values that are doubles
+print exactly). Exact decimal formatting of a 64-bit mantissa is the next
+printf item.
 
 ## Not run
 

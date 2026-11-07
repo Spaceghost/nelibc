@@ -45,6 +45,23 @@ rerun on `d1353ef`; the two fixes touch only `tools/syscall_smoke.c` and
 `tools/stdio_format_diff.c`.
 
 
+### libc-test slice 2, 2026-11-07 (branch `libc-test-slice-2`)
+
+`strftime` flags/widths and ISO week, `fnmatch` bracket semantics, exact
+`%La`, `%Le/%Lf/%Lg` for double-valued arguments, `malloc_usable_size` in
+every profile that exports `malloc`, the TZif reader off the stack, and
+scanf `%Nc` on short input. libc-test: gcc 114 expected (was 112: 3 fixed,
+5 long double math tests that an output-parsing gap had hidden), zig 116
+(was 118: 7 fixed, the same 5 added). Smokes observed green on this branch:
+`lib-consumer-{gcc,zig,zig-musl,standalone-gcc,standalone-zig}`,
+`smoke-standalone-{gcc,zig}`, `smoke-lib-standalone-{gcc,zig}`,
+`stdio-format-diff-{gcc,zig-musl}`. The 155-target gate on this branch is
+recorded below when it has run; until then main does not carry it.
+
+Open after this slice: exact decimal `%Le/%Lf/%Lg` (currently EINVAL for
+non-double values), the math flag/ulp list, scanf/strftime/fnmatch cases
+only testable in the standalone profile.
+
 ### Gate run, 2026-11-07 (Nelua `dabbd9ef`, no source change)
 
 Same container, user and target list as the runs below, on main `28879ed`

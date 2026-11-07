@@ -64,7 +64,9 @@ make -j"${JOBS:-$(nproc)}" -k > build.log 2>&1 || true
 [ -f src/REPORT ] || { echo "libc-test produced no REPORT; see $OUT/build.log" >&2; exit 2; }
 
 {
-  grep '^FAIL ' src/REPORT | sed 's#^FAIL src/##; s#\.exe .*##'
+  # A test that fails after printing a line with no newline leaves the FAIL
+  # marker glued to its output, so match it anywhere on the line.
+  grep -o 'FAIL src/[^ ]*\.exe \[' src/REPORT | sed 's#^FAIL src/##; s#\.exe .*##'
   grep '^BUILDERROR ' build.log | sed 's#^BUILDERROR src/##; s#\.o$# [build]#; s#\.exe$# [build]#'
 } | sort -u > failures.txt
 

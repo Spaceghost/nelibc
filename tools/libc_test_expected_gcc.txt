@@ -16,12 +16,10 @@ api/utmpx [build]
 api/wchar [build]
 functional/clocale_mbfuncs
 functional/crypt
-functional/fnmatch
 functional/fscanf
 functional/fwscanf
 functional/pthread_cancel-points
 functional/sscanf
-functional/strftime
 functional/swprintf
 functional/wordexp
 math/acos
@@ -39,9 +37,12 @@ math/atanh
 math/atanhf
 math/atanhl
 math/cosh
+math/erfcl
+math/erfl
 math/exp
 math/exp10
 math/exp10f
+math/exp10l
 math/exp2
 math/exp2l
 math/expl
@@ -61,11 +62,11 @@ math/j1f
 math/jn
 math/jnf
 math/lgamma
+math/lgamma_r
 math/lgammaf
 math/lgammaf_r
 math/lgammal
 math/lgammal_r
-math/lgamma_r
 math/log
 math/log10
 math/log10f
@@ -75,9 +76,11 @@ math/log2
 math/logb
 math/logbf
 math/logf
+math/modfl
 math/pow
 math/pow10
 math/pow10f
+math/pow10l
 math/powf
 math/powl
 math/roundl
@@ -105,7 +108,6 @@ math/ynf
 regression/daemon-failure
 regression/dn_expand-empty
 regression/dn_expand-ptr-0
-regression/fpclassify-invalid-ld80
 regression/raise-race
 regression/regex-ere-backref
 regression/regex-escaped-high-byte
