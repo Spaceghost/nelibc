@@ -34,6 +34,16 @@ signal 33. It added `strsignal`, `strerror_l`, `strcasecmp_l`,
 (zig) expected failures, 78 of them math exception flags and ulp errors;
 `docs/libc-test.md` classifies them.
 
+Gate: the 155-target list, same container and user, Nelua `dabbd9ef`, on
+`1cfe68a`: 150 exited 0. Five exited 2, all from this slice's own `%a`
+changes: `smoke-standalone-{zig,gcc}` and `smoke-lib-standalone-{zig,gcc}`
+expected `%.0a` of 3.5 as `0x1p+2` (now `0x2p+1`, the glibc and musl
+carry), and `stdio-format-diff-zig-musl` diffed a subnormal `%a` that glibc
+and musl legitimately print differently. Fixed in `151e773` and `d1353ef`;
+the five targets rerun on `d1353ef` all exited 0. The other 150 were not
+rerun on `d1353ef`; the two fixes touch only `tools/syscall_smoke.c` and
+`tools/stdio_format_diff.c`.
+
 
 ### Gate run, 2026-11-07 (Nelua `dabbd9ef`, no source change)
 
