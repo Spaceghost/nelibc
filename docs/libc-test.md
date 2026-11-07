@@ -289,7 +289,8 @@ category change.
 Container `nelibc-writ`, user `build`, libc-test `63e36e9`, GCC 12.2 and Zig
 0.17.0, branch `libc-test-standalone` (main `3ea86f3` plus the harness; no
 Nelibc source changed). Each run took under ten seconds of wall time and
-gave the same counts on repeated runs (gcc three times, zig three times).
+gave the same counts every time it was run (four times each, the last two
+from a fresh copy of commit `3a2254a` through the make targets, exit 0).
 
 | Directory (tests) | gcc pass / build / link / fail / timeout | zig pass / build / link / fail / timeout |
 | --- | --- | --- |
