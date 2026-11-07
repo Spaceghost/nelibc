@@ -575,6 +575,22 @@ enumeration and restart, `putpwent`/`putgrent` read back with
 `EPERM`, which is what the check asserts; a successful `initgroups` was not
 observed).
 
+`<termios.h>` (`src/termios_standalone.nelua`, standalone archives and host
+snapshot; hybrid builds keep the host's header, whose speed fields differ):
+`tcgetattr`, `tcsetattr` (`TCSANOW`/`TCSADRAIN`/`TCSAFLUSH` as `TCSETS`,
+`TCSETSW`, `TCSETSF`; any other action is `EINVAL`), `cfget*speed`,
+`cfset*speed` and `cfsetspeed` (baud codes in `c_cflag & CBAUD` as in musl; a
+value outside `CBAUD` is `EINVAL`; an input speed of 0 changes nothing),
+`cfmakeraw`, `tcflow`, `tcflush`, `tcsendbreak` (duration ignored, as musl and
+glibc do), `tcgetsid`, POSIX.1-2024 `tcgetwinsize`/`tcsetwinsize`, and from
+`<unistd.h>` `tcgetpgrp`/`tcsetpgrp`; `<stdlib.h>` gains `posix_openpt`,
+`grantpt` (nothing to do on devpts), `unlockpt`, `ptsname` and `ptsname_r`
+(`ERANGE` when the name does not fit). `struct winsize` is declared by both
+`<termios.h>` and `<sys/ioctl.h>`. libc-test has no termios tests; checks 605
+to 622 in `tools/syscall_smoke.c` open a pty pair and cover every function,
+raw mode passing `\r` through unchanged, the speed rules, and `ENOTTY`/`EBADF`
+for descriptors that are not terminals.
+
 #### Missing symbols
 
 Link failures, GCC run: `daemon` (`regression/daemon-failure`), `t_vmfill`
