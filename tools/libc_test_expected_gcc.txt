@@ -22,13 +22,6 @@ functional/pthread_cancel-points
 functional/sscanf
 functional/swprintf
 functional/wordexp
-math/erfcl
-math/erfl
-math/exp10l
-math/fma
-math/fmaf
-math/modfl
-math/pow10l
 regression/daemon-failure
 regression/dn_expand-empty
 regression/dn_expand-ptr-0

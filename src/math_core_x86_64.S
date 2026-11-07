@@ -446,6 +446,18 @@ nelibc_frexpl_hw:
 .size nelibc_frexpl_hw, .-nelibc_frexpl_hw
 
 /* Round a copy toward zero, store it, and return x - integral. */
+.globl nelibc_sse_rounding_mode
+.type nelibc_sse_rounding_mode,@function
+nelibc_sse_rounding_mode:
+  subq $8, %rsp
+  stmxcsr (%rsp)
+  movl (%rsp), %eax
+  shrl $13, %eax
+  andl $3, %eax
+  addq $8, %rsp
+  ret
+.size nelibc_sse_rounding_mode, .-nelibc_sse_rounding_mode
+
 .globl nelibc_modfl_hw
 .type nelibc_modfl_hw,@function
 nelibc_modfl_hw:

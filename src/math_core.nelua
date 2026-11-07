@@ -1195,92 +1195,251 @@ local function expm1l(value: clongdouble): clongdouble <cexport, codename 'expm1
   return expl(value) - 1_clongdouble
 end
 
-local function erf_abs_l(value: clongdouble): clongdouble <inline>
-  if value < 0_clongdouble then return -value end
-  return value
+local erfl_pp: [6]LongDoubleBits = {
+  {parts = {significand = 0x890DFACEC680CB0C_culonglong, sign_exponent = 0x4013_cushort}}, -- 1.122751350964552113068262337278335028553E6L
+  {parts = {significand = 0xAB6B55353EE251F9_culonglong, sign_exponent = 0xc014_cushort}}, -- -2.808533301997696164408397079650699163276E6L
+  {parts = {significand = 0xA1D511887DC5E424_culonglong, sign_exponent = 0xc011_cushort}}, -- -3.314325479115357458197119660818768924100E5L
+  {parts = {significand = 0x85C36C1D991D946E_culonglong, sign_exponent = 0xc00f_cushort}}, -- -6.848684465326256109712135497895525446398E4L
+  {parts = {significand = 0xA61D154777EB9519_culonglong, sign_exponent = 0xc00a_cushort}}, -- -2.657817695110739185591505062971929859314E3L
+  {parts = {significand = 0xA587F1999B164FE8_culonglong, sign_exponent = 0xc006_cushort}}, -- -1.655310302737837556654146291646499062882E2L
+}
+local erfl_qq: [6]LongDoubleBits = {
+  {parts = {significand = 0x8572745F3EF624EE_culonglong, sign_exponent = 0x4016_cushort}}, -- 8.745588372054466262548908189000448124232E6L
+  {parts = {significand = 0xE4A3D90F25C1EEE9_culonglong, sign_exponent = 0x4014_cushort}}, -- 3.746038264792471129367533128637019611485E6L
+  {parts = {significand = 0xAC84BE0D9554997B_culonglong, sign_exponent = 0x4012_cushort}}, -- 7.066358783162407559861156173539693900031E5L
+  {parts = {significand = 0x917CA49D3A9B4669_culonglong, sign_exponent = 0x400f_cushort}}, -- 7.448928604824620999413120955705448117056E4L
+  {parts = {significand = 0x8CFCAC013C37575E_culonglong, sign_exponent = 0x400b_cushort}}, -- 4.511583986730994111992253980546131408924E3L
+  {parts = {significand = 0x88E3EA4B462EBBD9_culonglong, sign_exponent = 0x4006_cushort}}, -- 1.368902937933296323345610240009071254014E2L
+}
+local erfl_pa: [8]LongDoubleBits = {
+  {parts = {significand = 0x89D991639982CCAF_culonglong, sign_exponent = 0xbfff_cushort}}, -- -1.076952146179812072156734957705102256059E0L
+  {parts = {significand = 0xBC7B434EA78AEFB4_culonglong, sign_exponent = 0x4006_cushort}}, -- 1.884814957770385593365179835059971587220E2L
+  {parts = {significand = 0xD590EFCBD7892BB3_culonglong, sign_exponent = 0xc004_cushort}}, -- -5.339153975012804282890066622962070115606E1L
+  {parts = {significand = 0xB16FB9B1509C0C90_culonglong, sign_exponent = 0x4004_cushort}}, -- 4.435910679869176625928504532109635632618E1L
+  {parts = {significand = 0x86A855EFABD2F1A5_culonglong, sign_exponent = 0x4003_cushort}}, -- 1.683219516032328828278557309642929135179E1L
+  {parts = {significand = 0x970E1DE3B589EC74_culonglong, sign_exponent = 0xc000_cushort}}, -- -2.360236618396952560064259585299045804293E0L
+  {parts = {significand = 0xED15DFCC1E1FA493_culonglong, sign_exponent = 0x3fff_cushort}}, -- 1.852230047861891953244413872297940938041E0L
+  {parts = {significand = 0xC068D41797354859_culonglong, sign_exponent = 0x3ffb_cushort}}, -- 9.394994446747752308256773044667843200719E-2L
+}
+local erfl_qa: [7]LongDoubleBits = {
+  {parts = {significand = 0xE3F6935D7EB50540_culonglong, sign_exponent = 0x4007_cushort}}, -- 4.559263722294508998149925774781887811255E2L
+  {parts = {significand = 0xA47663109BAFACB2_culonglong, sign_exponent = 0x4007_cushort}}, -- 3.289248982200800575749795055149780689738E2L
+  {parts = {significand = 0x8E4DB5574A8D0A2C_culonglong, sign_exponent = 0x4007_cushort}}, -- 2.846070965875643009598627918383314457912E2L
+  {parts = {significand = 0x8BDF204103DF5006_culonglong, sign_exponent = 0x4006_cushort}}, -- 1.398715859064535039433275722017479994465E2L
+  {parts = {significand = 0xF2685A65A8D2812C_culonglong, sign_exponent = 0x4004_cushort}}, -- 6.060190733759793706299079050985358190726E1L
+  {parts = {significand = 0xA64BAFFEC56E6F95_culonglong, sign_exponent = 0x4003_cushort}}, -- 2.078695677795422351040502569964299664233E1L
+  {parts = {significand = 0x94854B0AA1806CA0_culonglong, sign_exponent = 0x4001_cushort}}, -- 4.641271134150895940966798357442234498546E0L
+}
+local erfl_ra: [9]LongDoubleBits = {
+  {parts = {significand = 0x8BA1147F23483020_culonglong, sign_exponent = 0x3ffc_cushort}}, -- 1.363566591833846324191000679620738857234E-1L
+  {parts = {significand = 0xA2E99A0AEEE04E8C_culonglong, sign_exponent = 0x4002_cushort}}, -- 1.018203167219873573808450274314658434507E1L
+  {parts = {significand = 0xBA3C66512680507E_culonglong, sign_exponent = 0x4006_cushort}}, -- 1.862359362334248675526472871224778045594E2L
+  {parts = {significand = 0xB073EC3E0C625EAF_culonglong, sign_exponent = 0x4009_cushort}}, -- 1.411622588180721285284945138667933330348E3L
+  {parts = {significand = 0x9F044EC3FB200D87_culonglong, sign_exponent = 0x400b_cushort}}, -- 5.088538459741511988784440103218342840478E3L
+  {parts = {significand = 0x8B81019759F3B6EA_culonglong, sign_exponent = 0x400c_cushort}}, -- 8.928251553922176506858267311750789273656E3L
+  {parts = {significand = 0xE3037CEDA5477EA6_culonglong, sign_exponent = 0x400b_cushort}}, -- 7.264436000148052545243018622742770549982E3L
+  {parts = {significand = 0x9537E11D629D5E93_culonglong, sign_exponent = 0x400a_cushort}}, -- 2.387492459664548651671894725748959751119E3L
+  {parts = {significand = 0xDE17776039C08D90_culonglong, sign_exponent = 0x4006_cushort}}, -- 2.220916652813908085449221282808458466556E2L
+}
+local erfl_sa: [9]LongDoubleBits = {
+  {parts = {significand = 0xDD28548B26F49C21_culonglong, sign_exponent = 0xc002_cushort}}, -- -1.382234625202480685182526402169222331847E1L
+  {parts = {significand = 0xA5C82D562A7A71C7_culonglong, sign_exponent = 0xc007_cushort}}, -- -3.315638835627950255832519203687435946482E2L
+  {parts = {significand = 0xB851FF714D683071_culonglong, sign_exponent = 0xc00a_cushort}}, -- -2.949124863912936259747237164260785326692E3L
+  {parts = {significand = 0xC2C8E24B636B5DB4_culonglong, sign_exponent = 0xc00c_cushort}}, -- -1.246622099070875940506391433635999693661E4L
+  {parts = {significand = 0xD0D5988E04C9308E_culonglong, sign_exponent = 0xc00d_cushort}}, -- -2.673079795851665428695842853070996219632E4L
+  {parts = {significand = 0xE105654EC58FFCF7_culonglong, sign_exponent = 0xc00d_cushort}}, -- -2.880269786660559337358397106518918220991E4L
+  {parts = {significand = 0xE2A80256FBB4CDAD_culonglong, sign_exponent = 0xc00c_cushort}}, -- -1.450600228493968044773354186390390823713E4L
+  {parts = {significand = 0xB3A8A2BD1AE5892A_culonglong, sign_exponent = 0xc00a_cushort}}, -- -2.874539731125893533960680525192064277816E3L
+  {parts = {significand = 0x8C396054B1AB12AE_culonglong, sign_exponent = 0xc006_cushort}}, -- -1.402241261419067750237395034116942296027E2L
+}
+local erfl_rb: [8]LongDoubleBits = {
+  {parts = {significand = 0xCC3ECBC79CC360D1_culonglong, sign_exponent = 0xbff0_cushort}}, -- -4.869587348270494309550558460786501252369E-5L
+  {parts = {significand = 0x840FC34A1215833D_culonglong, sign_exponent = 0xbff7_cushort}}, -- -4.030199390527997378549161722412466959403E-3L
+  {parts = {significand = 0xC137900C35C6FA33_culonglong, sign_exponent = 0xbffb_cushort}}, -- -9.434425866377037610206443566288917589122E-2L
+  {parts = {significand = 0xEE91368B082A3D37_culonglong, sign_exponent = 0xbffe_cushort}}, -- -9.319032754357658601200655161585539404155E-1L
+  {parts = {significand = 0x88C2DF6AD5D3AA0D_culonglong, sign_exponent = 0xc001_cushort}}, -- -4.273788174307459947350256581445442062291E0L
+  {parts = {significand = 0x8D7A050450A2CC9B_culonglong, sign_exponent = 0xc002_cushort}}, -- -8.842289940696150508373541814064198259278E0L
+  {parts = {significand = 0xE23702E61492A1B2_culonglong, sign_exponent = 0xc001_cushort}}, -- -7.069215249419887403187988144752613025255E0L
+  {parts = {significand = 0xB35B767B1FAF5426_culonglong, sign_exponent = 0xbfff_cushort}}, -- -1.401228723639514787920274427443330704764E0L
+}
+local erfl_sb: [7]LongDoubleBits = {
+  {parts = {significand = 0xA1C04ED159F6AE68_culonglong, sign_exponent = 0x3ff7_cushort}}, -- 4.936254964107175160157544545879293019085E-3L
+  {parts = {significand = 0xA225643BF00BB255_culonglong, sign_exponent = 0x3ffc_cushort}}, -- 1.583457624037795744377163924895349412015E-1L
+  {parts = {significand = 0xECE2088CB3DEBC0A_culonglong, sign_exponent = 0x3fff_cushort}}, -- 1.850647991850328356622940552450636420484E0L
+  {parts = {significand = 0x9ED77F375E7AF590_culonglong, sign_exponent = 0x4002_cushort}}, -- 9.927611557279019463768050710008450625415E0L
+  {parts = {significand = 0xCA888BA1BCAABB46_culonglong, sign_exponent = 0x4003_cushort}}, -- 2.531667257649436709617165336779212114570E1L
+  {parts = {significand = 0xE5948A03597C3A41_culonglong, sign_exponent = 0x4003_cushort}}, -- 2.869752886406743386458304052862814690045E1L
+  {parts = {significand = 0xBD2128334D0429EA_culonglong, sign_exponent = 0x4002_cushort}}, -- 1.182059497870819562441683560749192539345E1L
+}
+local erfl_rc: [6]LongDoubleBits = {
+  {parts = {significand = 0xAE0E3B7F13E29D19_culonglong, sign_exponent = 0xbff1_cushort}}, -- -8.299617545269701963973537248996670806850E-5L
+  {parts = {significand = 0xCC992C826973D624_culonglong, sign_exponent = 0xbff7_cushort}}, -- -6.243845685115818513578933902532056244108E-3L
+  {parts = {significand = 0xE9D03DEA0628E5B6_culonglong, sign_exponent = 0xbffb_cushort}}, -- -1.141667210620380223113693474478394397230E-1L
+  {parts = {significand = 0xC08BE0F3198D261E_culonglong, sign_exponent = 0xbffe_cushort}}, -- -7.521343797212024245375240432734425789409E-1L
+  {parts = {significand = 0xE1F611A68108769A_culonglong, sign_exponent = 0xbfff_cushort}}, -- -1.765321928311155824664963633786967602934E0L
+  {parts = {significand = 0x83C37E35AEFE08A5_culonglong, sign_exponent = 0xbfff_cushort}}, -- -1.029403473103215800456761180695263439188E0L
+}
+local erfl_sc: [5]LongDoubleBits = {
+  {parts = {significand = 0x89D7B4591D2BD98B_culonglong, sign_exponent = 0x3ff8_cushort}}, -- 8.413244363014929493035952542677768808601E-3L
+  {parts = {significand = 0xD377BBB27F6AFCD4_culonglong, sign_exponent = 0x3ffc_cushort}}, -- 2.065114333816877479753334599639158060979E-1L
+  {parts = {significand = 0xD1CCE147F28CFE7F_culonglong, sign_exponent = 0x3fff_cushort}}, -- 1.639064941530797583766364412782135680148E0L
+  {parts = {significand = 0x9DFA2BCCE78B3201_culonglong, sign_exponent = 0x4001_cushort}}, -- 4.936788463787115555582319302981666347450E0L
+  {parts = {significand = 0xA02A6A7B20F65C06_culonglong, sign_exponent = 0x4001_cushort}}, -- 5.005177727208955487404729933261347679090E0L
+}
+local erfl_erx: LongDoubleBits = {parts = {significand = 0xD8560B0000000000_culonglong, sign_exponent = 0x3ffe_cushort}} -- 0.845062911510467529296875L
+local erfl_efx8: LongDoubleBits = {parts = {significand = 0x8375D410A6DB446C_culonglong, sign_exponent = 0x3fff_cushort}} -- 1.0270333367641005911692712249723613735048E0L
+local exp10l_p10: [31]LongDoubleBits = {
+  {parts = {significand = 0x901D7CF73AB0ACD9_culonglong, sign_exponent = 0x3fcd_cushort}}, -- 1e-15
+  {parts = {significand = 0xB424DC35095CD80F_culonglong, sign_exponent = 0x3fd0_cushort}}, -- 1e-14
+  {parts = {significand = 0xE12E13424BB40E13_culonglong, sign_exponent = 0x3fd3_cushort}}, -- 1e-13
+  {parts = {significand = 0x8CBCCC096F5088CC_culonglong, sign_exponent = 0x3fd7_cushort}}, -- 1e-12
+  {parts = {significand = 0xAFEBFF0BCB24AAFF_culonglong, sign_exponent = 0x3fda_cushort}}, -- 1e-11
+  {parts = {significand = 0xDBE6FECEBDEDD5BF_culonglong, sign_exponent = 0x3fdd_cushort}}, -- 1e-10
+  {parts = {significand = 0x89705F4136B4A597_culonglong, sign_exponent = 0x3fe1_cushort}}, -- 1e-9
+  {parts = {significand = 0xABCC77118461CEFD_culonglong, sign_exponent = 0x3fe4_cushort}}, -- 1e-8
+  {parts = {significand = 0xD6BF94D5E57A42BC_culonglong, sign_exponent = 0x3fe7_cushort}}, -- 1e-7
+  {parts = {significand = 0x8637BD05AF6C69B6_culonglong, sign_exponent = 0x3feb_cushort}}, -- 1e-6
+  {parts = {significand = 0xA7C5AC471B478423_culonglong, sign_exponent = 0x3fee_cushort}}, -- 1e-5
+  {parts = {significand = 0xD1B71758E219652C_culonglong, sign_exponent = 0x3ff1_cushort}}, -- 1e-4
+  {parts = {significand = 0x83126E978D4FDF3B_culonglong, sign_exponent = 0x3ff5_cushort}}, -- 1e-3
+  {parts = {significand = 0xA3D70A3D70A3D70A_culonglong, sign_exponent = 0x3ff8_cushort}}, -- 1e-2
+  {parts = {significand = 0xCCCCCCCCCCCCCCCD_culonglong, sign_exponent = 0x3ffb_cushort}}, -- 1e-1
+  {parts = {significand = 0x8000000000000000_culonglong, sign_exponent = 0x3fff_cushort}}, -- 1e0
+  {parts = {significand = 0xA000000000000000_culonglong, sign_exponent = 0x4002_cushort}}, -- 1e1
+  {parts = {significand = 0xC800000000000000_culonglong, sign_exponent = 0x4005_cushort}}, -- 1e2
+  {parts = {significand = 0xFA00000000000000_culonglong, sign_exponent = 0x4008_cushort}}, -- 1e3
+  {parts = {significand = 0x9C40000000000000_culonglong, sign_exponent = 0x400c_cushort}}, -- 1e4
+  {parts = {significand = 0xC350000000000000_culonglong, sign_exponent = 0x400f_cushort}}, -- 1e5
+  {parts = {significand = 0xF424000000000000_culonglong, sign_exponent = 0x4012_cushort}}, -- 1e6
+  {parts = {significand = 0x9896800000000000_culonglong, sign_exponent = 0x4016_cushort}}, -- 1e7
+  {parts = {significand = 0xBEBC200000000000_culonglong, sign_exponent = 0x4019_cushort}}, -- 1e8
+  {parts = {significand = 0xEE6B280000000000_culonglong, sign_exponent = 0x401c_cushort}}, -- 1e9
+  {parts = {significand = 0x9502F90000000000_culonglong, sign_exponent = 0x4020_cushort}}, -- 1e10
+  {parts = {significand = 0xBA43B74000000000_culonglong, sign_exponent = 0x4023_cushort}}, -- 1e11
+  {parts = {significand = 0xE8D4A51000000000_culonglong, sign_exponent = 0x4026_cushort}}, -- 1e12
+  {parts = {significand = 0x9184E72A00000000_culonglong, sign_exponent = 0x402a_cushort}}, -- 1e13
+  {parts = {significand = 0xB5E620F480000000_culonglong, sign_exponent = 0x402d_cushort}}, -- 1e14
+  {parts = {significand = 0xE35FA931A0000000_culonglong, sign_exponent = 0x4030_cushort}}, -- 1e15
+}
+local exp10l_log2_10: LongDoubleBits = {parts = {significand = 0xD49A784BCD1B8AFE_culonglong, sign_exponent = 0x4000_cushort}} -- log2(10)
+
+-- erfl and erfcl follow musl 1.2.5 src/math/erfl.c (MIT; from OpenBSD,
+-- Stephen L. Moshier's ld80 coefficients). Every coefficient is spelled as
+-- its binary80 bit pattern (rounded half to even from musl's decimal text by
+-- a script), since a Nelua literal would round through binary64.
+local function erfl_ix(value: clongdouble): cuint <inline>
+  local u: LongDoubleBits = {value = value}
+  return ((@cuint)(u.parts.sign_exponent & 0x7FFF_cushort) << 16) |
+    (@cuint)(u.parts.significand >> 48)
 end
 
-local function erf_series_l(value: clongdouble): clongdouble
-  local square = value * value
-  local term = value
-  local sum = value
-  local index: cint = 1_cint
-  while index < 256_cint do
-    term = -term * square / (@clongdouble)(index)
-    local addition = term / (@clongdouble)(2_cint * index + 1_cint)
-    sum = sum + addition
-    if erf_abs_l(addition) <= erf_abs_l(sum) * 0x1p-66_clongdouble then break end
-    index = index + 1_cint
-  end
-  return (2_clongdouble / sqrtl(nelibc_x87_pi())) * sum
+local function erfl_sign(value: clongdouble): boolean <inline>
+  local u: LongDoubleBits = {value = value}
+  return (u.parts.sign_exponent >> 15) ~= 0_cushort
 end
 
-local function erfc_positive_l(value: clongdouble): clongdouble
-  if value == 0_clongdouble then return 1_clongdouble end
-  if value >= 2000_clongdouble then
-    math_range_error()
-    return 0_clongdouble
-  end
-  local square = value * value
-  if value < 1.5_clongdouble then return 1_clongdouble - erf_series_l(value) end
+local function erfl_abs(value: clongdouble): clongdouble <inline>
+  local u: LongDoubleBits = {value = value}
+  u.parts.sign_exponent = u.parts.sign_exponent & 0x7FFF_cushort
+  return u.value
+end
 
-  -- Continued fraction for Q(1/2, x^2), which is exactly erfc(x). It avoids
-  -- subtracting erf(x) from one in the tail and keeps binary80 precision.
-  local a = 0.5_clongdouble
-  local b = square + 0.5_clongdouble
-  local c = 0x1p10000_clongdouble
-  local d = 1_clongdouble / b
-  local h = d
-  local tiny = 0x1p-10000_clongdouble
-  local index: cint = 1_cint
-  while index < 512_cint do
-    local iteration = (@clongdouble)(index)
-    local coefficient = -iteration * (iteration - a)
-    b = b + 2_clongdouble
-    d = coefficient * d + b
-    if erf_abs_l(d) < tiny then
-      if d < 0_clongdouble then d = -tiny else d = tiny end
+local function erfl_erfc1(x: clongdouble): clongdouble
+  local s = erfl_abs(x) - 1_clongdouble
+  local p = erfl_pa[0].value + s * (erfl_pa[1].value + s * (erfl_pa[2].value +
+    s * (erfl_pa[3].value + s * (erfl_pa[4].value + s * (erfl_pa[5].value +
+    s * (erfl_pa[6].value + s * erfl_pa[7].value))))))
+  local q = erfl_qa[0].value + s * (erfl_qa[1].value + s * (erfl_qa[2].value +
+    s * (erfl_qa[3].value + s * (erfl_qa[4].value + s * (erfl_qa[5].value +
+    s * (erfl_qa[6].value + s))))))
+  return 1_clongdouble - erfl_erx.value - p / q
+end
+
+local function erfl_erfc2(ix: cuint, x: clongdouble): clongdouble
+  if ix < 0x3fffa000_cuint then return erfl_erfc1(x) end -- 0.84375 <= |x| < 1.25
+  x = erfl_abs(x)
+  local s = 1_clongdouble / (x * x)
+  local r: clongdouble
+  local q: clongdouble
+  if ix < 0x4000b6db_cuint then -- 1.25 <= |x| < 2.857
+    r = erfl_ra[0].value + s * (erfl_ra[1].value + s * (erfl_ra[2].value +
+      s * (erfl_ra[3].value + s * (erfl_ra[4].value + s * (erfl_ra[5].value +
+      s * (erfl_ra[6].value + s * (erfl_ra[7].value + s * erfl_ra[8].value)))))))
+    q = erfl_sa[0].value + s * (erfl_sa[1].value + s * (erfl_sa[2].value +
+      s * (erfl_sa[3].value + s * (erfl_sa[4].value + s * (erfl_sa[5].value +
+      s * (erfl_sa[6].value + s * (erfl_sa[7].value + s * (erfl_sa[8].value + s))))))))
+  elseif ix < 0x4001d555_cuint then -- 2.857 <= |x| < 6.6666259765625
+    r = erfl_rb[0].value + s * (erfl_rb[1].value + s * (erfl_rb[2].value +
+      s * (erfl_rb[3].value + s * (erfl_rb[4].value + s * (erfl_rb[5].value +
+      s * (erfl_rb[6].value + s * erfl_rb[7].value))))))
+    q = erfl_sb[0].value + s * (erfl_sb[1].value + s * (erfl_sb[2].value +
+      s * (erfl_sb[3].value + s * (erfl_sb[4].value + s * (erfl_sb[5].value +
+      s * (erfl_sb[6].value + s))))))
+  else -- 6.666 <= |x| < 107 (erfc only)
+    r = erfl_rc[0].value + s * (erfl_rc[1].value + s * (erfl_rc[2].value +
+      s * (erfl_rc[3].value + s * (erfl_rc[4].value + s * erfl_rc[5].value))))
+    q = erfl_sc[0].value + s * (erfl_sc[1].value + s * (erfl_sc[2].value +
+      s * (erfl_sc[3].value + s * (erfl_sc[4].value + s))))
+  end
+  local u: LongDoubleBits = {value = x}
+  u.parts.significand = u.parts.significand & 0xFFFFFF0000000000_culonglong
+  local z = u.value
+  return expl(-z * z - 0.5625_clongdouble) * expl((z - x) * (z + x) + r / q) / x
+end
+
+local function erfl_ratio(z: clongdouble): clongdouble <inline>
+  local r = erfl_pp[0].value + z * (erfl_pp[1].value + z * (erfl_pp[2].value +
+    z * (erfl_pp[3].value + z * (erfl_pp[4].value + z * erfl_pp[5].value))))
+  local s = erfl_qq[0].value + z * (erfl_qq[1].value + z * (erfl_qq[2].value +
+    z * (erfl_qq[3].value + z * (erfl_qq[4].value + z * (erfl_qq[5].value + z)))))
+  return r / s
+end
+
+local function erfl(x: clongdouble): clongdouble <cexport, codename 'erfl'>
+  local ix = erfl_ix(x)
+  local negative = erfl_sign(x)
+  if ix >= 0x7fff0000_cuint then -- erf(nan) = nan, erf(+-inf) = +-1
+    local one: clongdouble = 1_clongdouble
+    if negative then one = -1_clongdouble end
+    return one + 1_clongdouble / x
+  end
+  if ix < 0x3ffed800_cuint then -- |x| < 0.84375
+    if ix < 0x3fde8000_cuint then -- |x| < 2**-33, avoid underflow
+      return 0.125_clongdouble * (8_clongdouble * x + erfl_efx8.value * x)
     end
-    c = b + coefficient / c
-    if erf_abs_l(c) < tiny then
-      if c < 0_clongdouble then c = -tiny else c = tiny end
-    end
-    d = 1_clongdouble / d
-    local delta = d * c
-    h = h * delta
-    if erf_abs_l(delta - 1_clongdouble) <= 0x1p-63_clongdouble then break end
-    index = index + 1_cint
+    return x + x * erfl_ratio(x * x)
   end
-  return expl(-square) * sqrtl(square / nelibc_x87_pi()) * h
+  local y: clongdouble
+  if ix < 0x4001d555_cuint then -- |x| < 6.6666259765625
+    y = 1_clongdouble - erfl_erfc2(ix, x)
+  else
+    y = 1_clongdouble - 0x1p-16382_clongdouble
+  end
+  if negative then return -y end
+  return y
 end
 
-local function erfl(value: clongdouble): clongdouble <cexport, codename 'erfl'>
-  if is_nan80(value) then return value + value end
-  if is_infinite80(value) then
-    if value < 0_clongdouble then return -1_clongdouble end
-    return 1_clongdouble
+local function erfcl(x: clongdouble): clongdouble <cexport, codename 'erfcl'>
+  local ix = erfl_ix(x)
+  local negative = erfl_sign(x)
+  if ix >= 0x7fff0000_cuint then -- erfc(nan) = nan, erfc(+-inf) = 0, 2
+    local base: clongdouble = 0_clongdouble
+    if negative then base = 2_clongdouble end
+    return base + 1_clongdouble / x
   end
-  if value == 0_clongdouble then return value end
-  local magnitude = erf_abs_l(value)
-  if magnitude >= 8_clongdouble then
-    if value < 0_clongdouble then return -1_clongdouble end
-    return 1_clongdouble
+  if ix < 0x3ffed800_cuint then -- |x| < 0.84375
+    if ix < 0x3fbe0000_cuint then return 1_clongdouble - x end -- |x| < 2**-65
+    local y = erfl_ratio(x * x)
+    if ix < 0x3ffd8000_cuint then return 1_clongdouble - (x + x * y) end -- x < 1/4
+    return 0.5_clongdouble - (x - 0.5_clongdouble + x * y)
   end
-  if magnitude < 1.5_clongdouble then return erf_series_l(value) end
-  local result = 1_clongdouble - erfc_positive_l(magnitude)
-  if value < 0_clongdouble then return -result end
-  return result
-end
-
-local function erfcl(value: clongdouble): clongdouble <cexport, codename 'erfcl'>
-  if is_nan80(value) then return value + value end
-  if is_infinite80(value) then
-    if value < 0_clongdouble then return 2_clongdouble end
-    return 0_clongdouble
+  if ix < 0x4005d600_cuint then -- |x| < 107
+    if negative then return 2_clongdouble - erfl_erfc2(ix, x) end
+    return erfl_erfc2(ix, x)
   end
-  if value <= -8_clongdouble then return 2_clongdouble end
-  if value >= 0_clongdouble then return erfc_positive_l(value) end
-  return 2_clongdouble - erfc_positive_l(-value)
+  local tiny: clongdouble = 0x1p-16382_clongdouble
+  if negative then return 2_clongdouble - tiny end
+  return tiny * tiny
 end
 
 local function sinhl(value: clongdouble): clongdouble <cexport, codename 'sinhl'>
@@ -1665,7 +1824,10 @@ local function fma(x: cdouble, y: cdouble, z: cdouble): cdouble
     return x * y + z
   end
   if nz.exponent >= zero_inf_nan_exponent then
-    if nz.exponent > zero_inf_nan_exponent then return x * y + z end
+    -- z is zero and x*y is a nonzero finite product, so the exact sum is the
+    -- product: return its rounding. musl's x*y + z turns an underflowed -0
+    -- into +0 (fma(-0x1p-1000, 0x1p-100, 0) must be -0).
+    if nz.exponent > zero_inf_nan_exponent then return x * y end
     return z
   end
 
@@ -2213,27 +2375,38 @@ local function powl(value: clongdouble, exponent: clongdouble): clongdouble
   return result
 end
 
+-- exp10l follows musl 1.2.5 src/math/exp10l.c: integer powers come exactly
+-- from the table, other values within |n| < 16 from exp2l. The magnitude test
+-- reads the exponent bits so a NaN raises nothing (an ordered comparison of a
+-- NaN long double raises INVALID on x87).
 local function exp10l(value: clongdouble): clongdouble <cexport, codename 'exp10l'>
-  -- Near the binary80 underflow boundary, powl's log/exp path loses too much
-  -- accuracy in the exponent. Use a split log2(10) and exp2l's exact binary
-  -- scaling so representable subnormal results survive the final rounding.
-  if value < -4000_clongdouble and value > -5000_clongdouble then
-    local log2_10_high_bits: LongDoubleBits = {
-      parts = {significand = 0xd49a784bcd1b8afe_culonglong,
-               sign_exponent = 0x4000_cushort}
-    }
+  local integral: [1]clongdouble
+  local fraction = nelibc_modfl_hw(value, &integral)
+  local n: LongDoubleBits = {value = integral[0]}
+  if (n.parts.sign_exponent & 0x7FFF_cushort) < 0x3fff_cushort + 4_cushort then
+    local index = (@cint)(integral[0]) + 15_cint
+    if fraction == 0_clongdouble then return exp10l_p10[index].value end
+    return exp2l(exp10l_log2_10.value * fraction) * exp10l_p10[index].value
+  end
+  local v: LongDoubleBits = {value = value}
+  local exponent_field = v.parts.sign_exponent & 0x7FFF_cushort
+  -- Near the binary80 underflow boundary (-5000 < x < -4000), powl's log/exp
+  -- path loses too much accuracy in the exponent. Use a split log2(10) and
+  -- exp2l's exact binary scaling so representable subnormal results survive.
+  if (v.parts.sign_exponent >> 15) ~= 0_cushort and exponent_field == 0x400B_cushort and
+      value < -4000_clongdouble and value > -5000_clongdouble then
+    local log2_10_high = exp10l_log2_10.value
     local log2_10_low_bits: LongDoubleBits = {
       parts = {significand = 0x9257edfe9b5fb69a_culonglong,
                sign_exponent = 0x3fbf_cushort}
     }
-    local log2_10_high = log2_10_high_bits.value
     local log2_10_low = log2_10_low_bits.value
     local product_high = value * log2_10_high
     local product_error = nelibc_fmal(value, log2_10_high, -product_high)
     local low_correction = nelibc_fmal(value, log2_10_low, product_error)
     local scale = truncl(product_high)
-    local fraction = (product_high - scale) + low_correction
-    return ldexpl(exp2l(fraction), (@cint)(scale))
+    local remainder = (product_high - scale) + low_correction
+    return ldexpl(exp2l(remainder), (@cint)(scale))
   end
   return powl(10_clongdouble, value)
 end
@@ -2242,30 +2415,60 @@ local function pow10l(value: clongdouble): clongdouble <cexport, codename 'pow10
   return exp10l(value)
 end
 
+local function nelibc_sse_rounding_mode(): cint <cimport> end -- MXCSR.RC, 0 = to nearest
+
+-- The neighbour of the float `f` on the side of `above` (true: towards +inf),
+-- by bit pattern so that no flag is raised.
+local function fmaf_neighbour(f: cfloat, above: boolean): cfloat <inline>
+  local representation: FloatBits = {value = f}
+  local magnitude = representation.bits & 0x7FFFFFFF_cuint
+  local negative = (representation.bits >> 31) ~= 0_cuint
+  if magnitude == 0_cuint then
+    if above then representation.bits = 1_cuint else representation.bits = 0x80000001_cuint end
+  elseif negative == above then
+    representation.bits = representation.bits - 1_cuint
+  else
+    representation.bits = representation.bits + 1_cuint
+  end
+  return representation.value
+end
+
 local function fmaf(x: cfloat, y: cfloat, z: cfloat): cfloat
     <cexport, codename 'fmaf'>
+  -- x*y is exact in double (24 + 24 bits); only the sum rounds.
   local product = (@cdouble)(x) * (@cdouble)(y)
-  local result = product + (@cdouble)(z)
-  local representation: DoubleBits = {value = result}
-  local exponent = (@cint)((representation.bits >> 52) & 0x7FF_culonglong)
-  if (representation.bits & 0x1FFFFFFF_culonglong) ~= 0x10000000_culonglong or
-      exponent == 0x7FF_cint or (result - product == (@cdouble)(z) and
-      result - (@cdouble)(z) == product) then
-    return (@cfloat)(result)
+  local addend = (@cdouble)(z)
+  local sum = product + addend
+  local sum_bits: DoubleBits = {value = sum}
+  if ((sum_bits.bits >> 52) & 0x7FF_culonglong) == 0x7FF_culonglong then return (@cfloat)(sum) end
+  local exact = sum - product == addend and sum - addend == product
+  local result = (@cfloat)(sum)
+  local back = (@cdouble)(result)
+  if not exact and nelibc_sse_rounding_mode() == 0_cint and back ~= sum then
+    -- Round to nearest: the double sum can land exactly on a midpoint of the
+    -- float grid (normal or subnormal) and then rounds to even, while the
+    -- true value lies past the midpoint. TwoSum gives the exact error.
+    local bb = sum - product
+    local error = (product - (sum - bb)) + (addend - bb)
+    local other = fmaf_neighbour(result, sum > back)
+    if (back + (@cdouble)(other)) * 0.5_cdouble == sum and error ~= 0_cdouble and
+        (error > 0_cdouble) == ((@cdouble)(other) > back) then
+      result = other
+      back = (@cdouble)(result)
+    end
   end
-  local negative = (representation.bits >> 63) ~= 0_culonglong
-  local error: cdouble
-  if negative == ((@cdouble)(z) > product) then
-    error = product - result + (@cdouble)(z)
-  else
-    error = (@cdouble)(z) - result + product
+  -- A tiny inexact result must raise UNDERFLOW. The double sum raised
+  -- INEXACT, but if the float conversion itself was exact (fmaf(0x1p-120,
+  -- 0x1p-120, 0x1p-149)) nothing raised UNDERFLOW yet. Directed rounding
+  -- needs no midpoint fix: rounding twice in one direction is rounding once.
+  if not exact and back == sum then
+    local magnitude = back
+    if magnitude < 0_cdouble then magnitude = -magnitude end
+    if magnitude < 0x1p-126_cdouble then
+      force_eval(nelibc_fp_barrier_hw(0x1p-1022_cdouble) * 0x1p-1022_cdouble)
+    end
   end
-  if negative == (error < 0_cdouble) then
-    representation.bits = representation.bits + 1_culonglong
-  else
-    representation.bits = representation.bits - 1_culonglong
-  end
-  return (@cfloat)(representation.value)
+  return result
 end
 
 local function nextafter(x: cdouble, y: cdouble): cdouble <cexport, codename 'nextafter'>
@@ -6115,7 +6318,18 @@ end
 
 local function modfl(value: clongdouble, integral: *[0]clongdouble): clongdouble
     <cexport, codename 'modfl'>
-  return nelibc_modfl_hw(value, integral)
+  local fraction = nelibc_modfl_hw(value, integral)
+  -- x - trunc(x) is +0 for a negative integer or -inf; C wants the fraction
+  -- to carry the sign of x (modfl(-1) = -0, modfl(-inf) = -0).
+  if fraction == 0_clongdouble then
+    if value < 0_clongdouble then
+      local negative_zero: clongdouble = 0_clongdouble
+      fraction = -negative_zero
+    elseif value == 0_clongdouble then
+      fraction = value
+    end
+  end
+  return fraction
 end
 
 local function trunc(value: cdouble): cdouble <cexport, codename 'trunc'>

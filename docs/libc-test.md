@@ -45,6 +45,8 @@ Container `nelibc-writ` (Debian 12, glibc 2.36, GCC 12.2), libc-test
 | Nelibc zig hybrid, slice 2, `make libc-test-zig` | 2026-11-07 | 116 (`tools/libc_test_expected_zig.txt`) |
 | Nelibc gcc hybrid, libm slice (`2db0322`, rebased on slice 2), `make libc-test-gcc` | 2026-11-07 | 38 (`tools/libc_test_expected_gcc.txt`) |
 | Nelibc zig hybrid, libm slice (`2db0322`, rebased on slice 2), `make libc-test-zig` | 2026-11-07 | 42 (`tools/libc_test_expected_zig.txt`, 74 math tests removed) |
+| Nelibc gcc hybrid, math details, `make libc-test-gcc` | 2026-11-07 | 31 (`tools/libc_test_expected_gcc.txt`, no math tests) |
+| Nelibc zig hybrid, math details, `make libc-test-zig` | 2026-11-07 | 35 (`tools/libc_test_expected_zig.txt`, no math tests) |
 
 Against the baseline, `7c321ae` fixed 8 tests glibc 2.36 fails (`strtol`,
 `wcstol`, and the `fmin`/`fmax` families) and added 73 failures:
@@ -93,7 +95,8 @@ did. The 112 gcc failures that remain, now the expected list, are:
   fixed `%8c` on short input there. `crypt`, `wordexp`, `clocale_mbfuncs`
   and `pthread_cancel-points` are the host's.
 - 78 math tests: the exception-flag and ulp items above (the libm slice below
-  reduced the math failures to seven).
+  reduced the math failures to seven, the math details
+  follow-up to none).
 - 8 regression tests, all of which glibc 2.36 also fails. One is
   Nelibc-specific in kind: `fpclassify-invalid-ld80` shows `%La` of an x87
   pseudo-denormal returning an error instead of formatting it.
@@ -177,14 +180,34 @@ run tags): 90 before the slice; 45 after exp/pow/trig and the flag discipline;
 28 after lgamma/tgamma/Bessel; 6 after log/hypot and the long double flag
 fixes; 2 after the ld80 gamma ports.
 
-Still failing: `math/fma` and `math/fmaf`. Nelibc's own `fma`/`fmaf` are
-linked; the failure is the sign of an underflowed zero
-(`fma(-0x1p-1000, 0x1p-100, 0)` returns `+0`, glibc's vectors want `-0`), and
-glibc 2.36 alone fails the same two tests. Also still failing, in both
-profiles: `math/erfcl`, `erfl`, `exp10l`, `modfl` and `pow10l`, the long
-double tests slice 2 made visible (`modfl(-0)` returns `+0` for the integral
-part, `exp10l(nan)` raises `INVALID`, `erfl`, `erfcl`, `exp10l` are off by 2 to
-11 ulp). This slice ported none of the long double erf/exp10/modf code. The zig
+The libm slice left seven math tests failing in both profiles; the math
+details follow-up (below) fixed all seven.
+
+### Math details (2026-11-07, branch `math-details`)
+
+- `fma(x, y, 0)` returned `x*y + 0`, which turns an underflowed `-0` into
+  `+0` (`fma(-0x1p-1000, 0x1p-100, 0)` must be `-0`). With a zero addend the
+  exact result is the product, so it now returns `x*y`. musl has the same
+  shortcut.
+- `fmaf` missed `UNDERFLOW` when the double sum was inexact but converted
+  to a float subnormal exactly (`fmaf(0x1p-120, 0x1p-120, 0x1p-149)`), and
+  double-rounded when the result was a float subnormal: the halfway test
+  only knew normal floats. It now finds a float-grid midpoint by comparing
+  with the neighbouring float, takes the exact error of the double sum
+  (TwoSum) to pick the side, reads the SSE rounding mode (directed modes need
+  no correction), and raises `UNDERFLOW` for tiny inexact results.
+- `modfl` returned `+0` as the fraction of a negative integer or `-inf`; the
+  fraction now carries the sign of the argument.
+- `erfl` and `erfcl` are ports of musl's ld80 code (Moshier's coefficients,
+  every one spelled as its binary80 bit pattern); the series and continued
+  fraction they replace were 2 to 11 ulp off.
+- `exp10l` (and `pow10l`) follow musl: integer powers from an exact table,
+  other small arguments through `exp2l`, the range test on exponent bits so
+  a NaN raises no `INVALID`. The split-constant path for results near the
+  subnormal boundary is kept.
+
+Result: gcc 31 and zig 35 expected failures, no `math/*` test among them.
+The zig
 list differs from the gcc list only in four API tests clang rejects at build
 time (`ftw`, `iso646`, `sys_stat`, `sys_wait`).
 
