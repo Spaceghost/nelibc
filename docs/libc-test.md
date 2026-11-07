@@ -588,6 +588,11 @@ recursive frames, `longjmp(env, 0)` returning 1, a volatile local preserved,
 `siglongjmp` out of a signal handler restoring the mask saved with savemask 1
 and leaving the handler's mask with savemask 0, and `_setjmp`/`_longjmp`.
 Hybrid builds keep the host's `<setjmp.h>`.
+Gate record: 159/159 on branch commit `3cc8819` (container `nelibc-writ`,
+user `build`, `/work/artifacts/gate-setjmp-20261107-1630/`); the squash commit
+`9220a4c` names it `c0d1b7e` by mistake. The follow-up `5f13edd` (snapshot
+object, docs) passed `host-snapshot-matrix`, `host-check-{gcc,zig}` and
+`host-smoke-{gcc,zig}`.
 
 #### Missing symbols
 
