@@ -94,6 +94,9 @@ OPERATIONS = [
     ("statmount", 457), ("listmount", 458), ("setxattrat", 463),
     ("getxattrat", 464), ("listxattrat", 465), ("removexattrat", 466),
     ("open_tree_attr", 467), ("file_getattr", 468), ("file_setattr", 469),
+    ("shmget", 29), ("shmat", 30), ("shmctl", 31), ("semget", 64),
+    ("semop", 65), ("semctl", 66), ("shmdt", 67), ("msgget", 68),
+    ("msgsnd", 69), ("msgrcv", 70), ("msgctl", 71), ("semtimedop", 220),
 ]
 
 NELUA_MODULES = [

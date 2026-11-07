@@ -622,6 +622,16 @@ calls. Eight standalone libc-tests pass with both compilers
 `regression/lrand48-signextend`, `statvfs`, `execle-env`,
 `syscall-sign-extend`): gcc 25 and zig 24 failing, all expected.
 
+System V IPC (`src/ipc_adapter.c`, after musl): `ftok`, `msgget`/`msgsnd`/
+`msgrcv`/`msgctl`, `semget`/`semop`/`semtimedop`/`semctl` (the `union semun`
+argument read only for the commands that take one), `shmget`/`shmat`/`shmdt`/
+`shmctl`, with `<sys/ipc.h>`, `<sys/msg.h>`, `<sys/sem.h>` and `<sys/shm.h>`
+in the kernel's x86-64 64-bit layouts. The twelve system calls are new
+platform operations (`tools/sys_ops.py`), so the host profile can serve them;
+until it does, they return `ENOSYS` there. `functional/ipc_msg`, `ipc_sem`
+and `ipc_shm` pass with both compilers: gcc 22 and zig 21 failing, all
+expected.
+
 `mktime` with a `tm_isdst` that contradicts the date (0 for a summer wall
 time, 1 for a winter one) now reads the wall time in that kind of offset,
 as musl (`t -= opp - gmtoff`) and glibc do: 2020-07-01 12:00 with
@@ -664,7 +674,6 @@ standalone archive lacks, ranked by tests blocked:
 | `regcomp`, `regexec` (8), `regerror` (6), `regfree` (2) | 8 |
 | `dlopen`, `dlsym` (4), `dlerror` (2), `dlclose` (1) | 4 |
 | `hsearch`/`hcreate`/`hdestroy`, `insque`/`remque`, `lsearch`/`lfind`, `tsearch`/`tfind`/`tdelete`/`twalk` | 4 |
-| `ftok` with `msg*`, `sem*` (SysV), `shm*` (SysV) | 3 |
 | `nl_langinfo` | 2, plus `t_setutf8` |
 | `iconv_open`, `iconv`, `iconv_close` | 2 |
 | `getpwnam_r` | 2 |
