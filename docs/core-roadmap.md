@@ -8,7 +8,7 @@ archive; it does not certify every behavior required by C or POSIX.
 
 | Priority | Gap | Why it blocks a compelling libc | Next milestone |
 |---|---|---|---|
-| P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep the seven-profile `make smoke-matrix` and four-profile `make dogfood-matrix` green as the source changes |
+| P0 | Reliable build and consumer gate | Regressions in any compiler/libc profile undermine every replacement | Keep the seven-profile `make smoke-matrix` and four-profile `make dogfood-matrix` green as the source changes; shrink the libc-test expected lists (`docs/libc-test.md`) |
 | P1 | C math library | The Nelua slice includes binary32/binary64 math, including `scalb`, `scalbf`, `significand`, and `significandf`, plus x86-64 long-double math, internal binary32/64/80 classification, and all standard standalone x86-64 fenv entry points; hybrid fenv delegates to the host | Expand long-double edge coverage, fenv environment edges, and math quality/performance |
 | P1 | Standalone threading completeness | Standalone pthread remains a subset; several POSIX behaviors and process/signal APIs remain gaps | Continue POSIX pthread behavior coverage and audit process/signal interactions |
 | P1 | Process creation APIs | Standalone `posix_spawn`/`posix_spawnp` handles direct execution, PATH lookup, synchronous setup/exec-error reporting, ordered close/dup2/open/chdir/fchdir file actions, and standard spawn attributes; negative file-action descriptors return `EBADF` | Broaden process/signal/fork interaction audit and successful real-time scheduling coverage where permitted; hybrid profiles continue to use host spawn implementations |
@@ -18,6 +18,22 @@ archive; it does not certify every behavior required by C or POSIX.
 | P3 | Platform portability | The modules ask for platform work through Nelibc's own operation vocabulary (`include/nelibc_sys.h`, `nelibc_sys3/6`), with Linux x86-64 one backend (`src/sys/linux_x86_64_ops.c`, a number table) and the host profile another; the operation names still pin Linux syscall semantics and argument shapes, and the entry points and thread register are x86-64 | Add a second architecture backend (its own number table plus the entry point and TLS register) before claiming portable standalone support |
 
 ## Current evidence
+
+### libc-test slice 1, 2026-11-07
+
+musl's libc-test (`63e36e9`) now runs against the gcc and zig hybrid archives
+as `make libc-test-gcc` and `make libc-test-zig`, with the failing set checked
+against `tools/libc_test_expected_<profile>.txt`. The first runs (container
+`nelibc-writ`, glibc 2.36 baseline fails 43) found and this slice fixed: five
+header gaps visible only with Nelibc's headers first (`<poll.h>`,
+`<ctype.h>`, `<string.h>`, `<strings.h>`, `<inttypes.h>`), `inet_aton`'s
+hex/octal grammar and `inet_pton`'s leading zeros, `%f` capped at 22 digits
+and `%a` of zero, `strptime` `%z` without minutes, and `sigaddset` accepting
+signal 33. It added `strsignal`, `strerror_l`, `strcasecmp_l`,
+`strncasecmp_l`, `strcoll_l` and `strxfrm_l`. Remaining: 112 (gcc) and 118
+(zig) expected failures, 78 of them math exception flags and ulp errors;
+`docs/libc-test.md` classifies them.
+
 
 ### Gate run, 2026-11-07 (Nelua `dabbd9ef`, no source change)
 

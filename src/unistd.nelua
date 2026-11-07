@@ -2493,6 +2493,10 @@ local function strptime(input: *const [0]cchar, format: *const [0]cchar,
           input_position = input_position + 1
         end
       elseif directive == 122_cchar then
+        if input[input_position] == 90_cchar then -- "Z" is UTC (RFC 3339)
+          input_position = input_position + 1
+          time_value.tm_gmtoff = 0
+        else
         local sign: cint = 1
         if input[input_position] == 43_cchar then input_position = input_position + 1
         elseif input[input_position] == 45_cchar then sign = -1; input_position = input_position + 1
@@ -2514,8 +2518,10 @@ local function strptime(input: *const [0]cchar, format: *const [0]cchar,
           input_position = input_position + 1
           digit_count = digit_count + 1
         end
-        if digit_count ~= 2 or hour > 23 or minute > 59 then return nilptr end
-        if not colon_form and input[input_position] == 58_cchar then
+        -- "+hh" alone is a complete offset; minutes, when present, need two digits.
+        if digit_count == 1 or (digit_count == 0 and colon_form) then return nilptr end
+        if hour > 23 or minute > 59 then return nilptr end
+        if digit_count == 2 and not colon_form and input[input_position] == 58_cchar then
           input_position = input_position + 1
           local second: cint = 0
           digit_count = 0
@@ -2528,6 +2534,7 @@ local function strptime(input: *const [0]cchar, format: *const [0]cchar,
           time_value.tm_gmtoff = sign * (hour * 3600 + minute * 60 + second)
         else
           time_value.tm_gmtoff = sign * (hour * 3600 + minute * 60)
+        end
         end
       elseif directive == 90_cchar then
         local zone_start: csize = input_position
@@ -6179,7 +6186,9 @@ local function sigaddset(set: pointer, signal: cint): cint <cexport, codename 's
     nelibc_errno_location()[0] = 22_cint
     return -1_cint
   end
-  if signal == 32 then
+  -- 32 and 33 are the libc's internal realtime signals (glibc SIGCANCEL and
+  -- SIGSETXID, musl SIGTIMER and SIGCANCEL); application sets never hold them.
+  if signal == 32 or signal == 33 then
     nelibc_errno_location()[0] = 22_cint
     return -1_cint
   end
@@ -6193,7 +6202,7 @@ local function sigdelset(set: pointer, signal: cint): cint <cexport, codename 's
     nelibc_errno_location()[0] = 22_cint
     return -1_cint
   end
-  if signal == 32 then return 0_cint end
+  if signal == 32 or signal == 33 then return 0_cint end
   local words: *[0]culong = (@*[0]culong)(set)
   words[(signal - 1) // 64] = words[(signal - 1) // 64] & ~(1_culong << (@culong)((signal - 1) % 64))
   return 0_cint
@@ -6202,6 +6211,6 @@ end
 local function sigfillset(set: pointer): cint <cexport, codename 'sigfillset'>
   local bytes: *[0]byte = (@*[0]byte)(set)
   for i = 0, 127 do bytes[i] = 0xff end
-  ((@*Sigset)(set)).bits[0] = ((@*Sigset)(set)).bits[0] & ~(1_culong << 31)
+  ((@*Sigset)(set)).bits[0] = ((@*Sigset)(set)).bits[0] & ~((1_culong << 31) | (1_culong << 32))
   return 0_cint
 end

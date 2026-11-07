@@ -907,6 +907,14 @@ multibyte-diff-tcc: $(OUT)/libnelibc-tcc.a
 
 multibyte-diff-matrix: multibyte-diff-zig multibyte-diff-gcc multibyte-diff-zig-musl multibyte-diff-tcc
 
+# musl's libc-test against the hybrid archives (docs/libc-test.md). Point
+# LIBC_TEST at a checkout of https://git.musl-libc.org/cgit/libc-test.
+LIBC_TEST ?= ../libc-test
+libc-test-gcc: $(OUT)/libnelibc-gcc.a tools/libc_test.sh tools/libc_test_expected_gcc.txt
+	tools/libc_test.sh gcc $(LIBC_TEST) $(OUT)/libc-test-gcc
+libc-test-zig: $(OUT)/libnelibc-zig.a tools/libc_test.sh tools/libc_test_expected_zig.txt
+	ZIG="$(ZIG)" ZIGFLAGS="$(ZIGFLAGS)" tools/libc_test.sh zig $(LIBC_TEST) $(OUT)/libc-test-zig
+
 lib-consumer-matrix: lib-adapter-symbols lib-consumer-zig lib-consumer-gcc lib-consumer-zig-musl musl-malloc-smoke-zig-musl lib-consumer-tcc getopt-diff-zig getopt-long-diff-zig getsubopt-diff-zig strerror-r-diff-zig multibyte-diff-matrix wide-int-diff-matrix wide-string-diff-matrix rand-r-diff-matrix strtok-thread-matrix strtok-diff-matrix strverscmp-diff-matrix
 
 strtok-thread-zig: $(OUT)/libnelibc-zig.a

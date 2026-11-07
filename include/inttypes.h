@@ -3,6 +3,8 @@
 
 /* Reuse the toolchain's fixed-width and format-macro definitions. */
 #include_next <inttypes.h>
+/* The wide conversions below are declared with wchar_t (C11 7.8.1). */
+#include <stddef.h>
 
 intmax_t strtoimax(const char *restrict, char **restrict, int);
 uintmax_t strtoumax(const char *restrict, char **restrict, int);

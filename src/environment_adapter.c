@@ -1057,6 +1057,11 @@ char **nelibc_strtok_state(void) {
   static _Thread_local char *state NELIBC_STRTOK_TLS_MODEL;
   return &state;
 }
+
+char *nelibc_strsignal_buffer(void) {
+  static _Thread_local char buffer[32] NELIBC_STRTOK_TLS_MODEL;
+  return buffer;
+}
 #endif
 
 #ifndef NELIBC_STANDALONE

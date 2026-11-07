@@ -15,7 +15,13 @@ int isupper(int character);
 int isxdigit(int character);
 int tolower(int character);
 int toupper(int character);
-#if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
+#ifndef NELIBC_STANDALONE
+#include <features.h>
+#endif
+/* POSIX.1-2008 locale-object classification (the _l suffix family). */
+#if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE) || \
+    (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L) || \
+    (defined(_XOPEN_SOURCE) && _XOPEN_SOURCE >= 700)
 #include <locale.h>
 int isalnum_l(int character, locale_t locale);
 int isalpha_l(int character, locale_t locale);

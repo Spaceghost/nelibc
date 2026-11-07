@@ -112,3 +112,22 @@ local function nelibc_locale_strxfrm(dest: *[0]cchar, src: *const [0]cchar, size
   end
   return length
 end
+
+-- POSIX.1-2008 locale-object collation: run the current-locale entry points
+-- under the requested locale, as ctype's tolower_l does. Hybrid profiles
+-- leave these two to the host libc (see string_locale.nelua).
+local function strcoll_l(left: *const [0]cchar, right: *const [0]cchar,
+    locale: pointer): cint <cexport, codename 'strcoll_l'>
+  local previous: pointer = uselocale(locale)
+  local result: cint = nelibc_locale_strcoll(left, right)
+  if previous ~= nilptr then uselocale(previous) end
+  return result
+end
+
+local function strxfrm_l(dest: *[0]cchar, src: *const [0]cchar, size: csize,
+    locale: pointer): csize <cexport, codename 'strxfrm_l'>
+  local previous: pointer = uselocale(locale)
+  local result: csize = nelibc_locale_strxfrm(dest, src, size)
+  if previous ~= nilptr then uselocale(previous) end
+  return result
+end

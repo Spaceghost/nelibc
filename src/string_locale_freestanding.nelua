@@ -27,3 +27,15 @@ local function nelibc_locale_strxfrm(dest: *[0]cchar,
   end
   return length
 end
+
+-- The freestanding profile has one byte-order collation and no locale
+-- objects, so the _l entry points are the plain ones.
+local function strcoll_l(left: *const [0]cchar, right: *const [0]cchar,
+    locale: pointer): cint <cexport, codename 'strcoll_l'>
+  return nelibc_locale_strcoll(left, right)
+end
+
+local function strxfrm_l(dest: *[0]cchar, source: *const [0]cchar, size: csize,
+    locale: pointer): csize <cexport, codename 'strxfrm_l'>
+  return nelibc_locale_strxfrm(dest, source, size)
+end

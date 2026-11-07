@@ -17,6 +17,18 @@ char **nelibc_strtok_state(void) {
   return &state;
 }
 
+/* strsignal(3) composes "Real-time signal N" and "Unknown signal N" here. */
+char *nelibc_strsignal_buffer(void) {
+#if defined(NELIBC_FREESTANDING)
+  static _Thread_local char buffer[32] __attribute__((tls_model("local-exec")));
+#elif defined(__TINYC__)
+  static __thread char buffer[32];
+#else
+  static _Thread_local char buffer[32];
+#endif
+  return buffer;
+}
+
 #ifndef NELIBC_FREESTANDING
 void nelibc_locale_cache_lock(void) {
   (void)pthread_mutex_lock(&nelibc_locale_cache_mutex);

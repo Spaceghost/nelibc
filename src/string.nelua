@@ -188,6 +188,15 @@ local function strncmp(a: *const [0]cchar, b: *const [0]cchar, n: csize): cint <
   return 0
 end
 
+-- strcasecmp(3) is defined over the current locale's single-byte case
+-- mapping; nelibc's byte locales (C, C.UTF-8, de_DE.UTF-8) all fold ASCII
+-- only, so the ASCII comparison is the locale comparison for every locale
+-- object this library can create.
+local function strcasecmp_l(a: *const [0]cchar, b: *const [0]cchar, locale: pointer): cint
+    <cexport, codename 'strcasecmp_l'>
+  return strcasecmp(a, b)
+end
+
 local function strncasecmp(a: *const [0]cchar, b: *const [0]cchar, n: csize): cint <cexport, codename 'strncasecmp'>
   local a: *[0]cchar = (@*[0]cchar)(a)
   local b: *[0]cchar = (@*[0]cchar)(b)
@@ -268,6 +277,12 @@ end
 local function strxfrm(dest: *[0]cchar, src: *const [0]cchar, size: csize): csize <cexport, codename 'strxfrm'>
   local src: *[0]cchar = (@*[0]cchar)(src)
   return nelibc_locale_strxfrm(dest, src, size)
+end
+
+
+local function strncasecmp_l(a: *const [0]cchar, b: *const [0]cchar, n: csize, locale: pointer): cint
+    <cexport, codename 'strncasecmp_l'>
+  return strncasecmp(a, b, n)
 end
 
 local function strlcat(dest: *[0]cchar, src: *const [0]cchar, size: csize): csize <cexport, codename 'strlcat'>
@@ -795,6 +810,100 @@ end
 
 local function strerror(errnum: cint): *cchar <cexport, codename 'strerror'>
   return nelibc_strerror(errnum)
+end
+
+-- Error messages are not translated in any locale this library carries, so
+-- the locale object only has to be accepted.
+local function strerror_l(errnum: cint, locale: pointer): *cchar <cexport, codename 'strerror_l'>
+  return nelibc_strerror(errnum)
+end
+
+local function nelibc_strsignal_buffer(): *[0]cchar <cimport> end
+
+-- Linux signal descriptions in glibc's wording; 32 and 33 are the libc's
+-- internal realtime signals and SIGRTMIN is 34, as glibc reports them.
+local function nelibc_signal_description(signal: cint): *[0]cchar
+  switch signal do
+  case 1 then return "Hangup"
+  case 2 then return "Interrupt"
+  case 3 then return "Quit"
+  case 4 then return "Illegal instruction"
+  case 5 then return "Trace/breakpoint trap"
+  case 6 then return "Aborted"
+  case 7 then return "Bus error"
+  case 8 then return "Floating point exception"
+  case 9 then return "Killed"
+  case 10 then return "User defined signal 1"
+  case 11 then return "Segmentation fault"
+  case 12 then return "User defined signal 2"
+  case 13 then return "Broken pipe"
+  case 14 then return "Alarm clock"
+  case 15 then return "Terminated"
+  case 16 then return "Stack fault"
+  case 17 then return "Child exited"
+  case 18 then return "Continued"
+  case 19 then return "Stopped (signal)"
+  case 20 then return "Stopped"
+  case 21 then return "Stopped (tty input)"
+  case 22 then return "Stopped (tty output)"
+  case 23 then return "Urgent I/O condition"
+  case 24 then return "CPU time limit exceeded"
+  case 25 then return "File size limit exceeded"
+  case 26 then return "Virtual timer expired"
+  case 27 then return "Profiling timer expired"
+  case 28 then return "Window changed"
+  case 29 then return "I/O possible"
+  case 30 then return "Power failure"
+  case 31 then return "Bad system call"
+  end
+  return nilptr
+end
+
+local function nelibc_append_text(buffer: *[0]cchar, index: csize, text: *[0]cchar): csize
+  local i: csize = 0
+  while text[i] ~= 0 do
+    buffer[index] = text[i]
+    index = index + 1
+    i = i + 1
+  end
+  return index
+end
+
+local function nelibc_append_int(buffer: *[0]cchar, index: csize, value: cint): csize
+  if value < 0 then
+    buffer[index] = 45
+    index = index + 1
+    value = -value
+  end
+  local digits: [12]cchar
+  local count: csize = 0
+  repeat
+    digits[count] = (@cchar)(48 + value % 10)
+    count = count + 1
+    value = value // 10
+  until value == 0
+  while count > 0 do
+    count = count - 1
+    buffer[index] = digits[count]
+    index = index + 1
+  end
+  return index
+end
+
+local function strsignal(signal: cint): *cchar <cexport, codename 'strsignal'>
+  local fixed: *[0]cchar = nelibc_signal_description(signal)
+  if fixed ~= nilptr then return (@*cchar)(fixed) end
+  local buffer: *[0]cchar = nelibc_strsignal_buffer()
+  local index: csize = 0
+  if signal >= 34 and signal <= 64 then
+    index = nelibc_append_text(buffer, index, "Real-time signal ")
+    index = nelibc_append_int(buffer, index, signal - 34)
+  else
+    index = nelibc_append_text(buffer, index, "Unknown signal ")
+    index = nelibc_append_int(buffer, index, signal)
+  end
+  buffer[index] = 0
+  return (@*cchar)(buffer)
 end
 
 local function strerror_r(errnum: cint, buffer: *[0]cchar,

@@ -39,6 +39,8 @@ local function nelibc_parse_ipv4(source: *const [0]cchar, output: *[4]byte): boo
       digits = digits + 1
       index = index + 1
     end
+    -- inet_pton(3) is strictly dotted-decimal: "03" is not an octet.
+    if digits > 1 and first == 48 then return false end
     output[part] = (@byte)(value)
     if part < 3 then
       if (@byte)(source[index]) ~= 46 then return false end
@@ -259,16 +261,79 @@ end
 
 local inet_ntoa_buffer: [16]cchar
 
+-- inet_aton(3) grammar, as glibc and musl implement it: one to four parts
+-- separated by dots, each a C integer literal (decimal, 0x hex, 0 octal).
+-- "a" is 32 bits, "a.b" is 8+24, "a.b.c" is 8+8+16, "a.b.c.d" is 8 bits each.
+local function nelibc_parse_classic_ipv4(source: *const [0]cchar, output: *cuint): boolean
+  local parts: [4]culong
+  local count: csize = 0
+  local index: csize = 0
+  while true do
+    local first = (@byte)(source[index])
+    if first < 48 or first > 57 then return false end
+    local base: culong = 10
+    if first == 48 then
+      local marker = (@byte)(source[index + 1])
+      if marker == 120 or marker == 88 then
+        base = 16
+        index = index + 2
+      else
+        base = 8
+      end
+    end
+    local value: culong = 0
+    local digits: csize = 0
+    while true do
+      local ch = (@byte)(source[index])
+      local digit: culong
+      if ch >= 48 and ch <= 57 then digit = (@culong)(ch - 48)
+      elseif ch >= 97 and ch <= 102 then digit = (@culong)(ch - 87)
+      elseif ch >= 65 and ch <= 70 then digit = (@culong)(ch - 55)
+      else break end
+      if digit >= base then break end
+      value = value * base + digit
+      if value > 0xffffffff_culong then return false end
+      digits = digits + 1
+      index = index + 1
+    end
+    if digits == 0 then return false end
+    parts[count] = value
+    count = count + 1
+    local separator = (@byte)(source[index])
+    if separator == 0 then break end
+    if separator ~= 46 or count == 4 then return false end
+    index = index + 1
+  end
+  local result: culong = 0
+  if count == 1 then
+    result = parts[0]
+  elseif count == 2 then
+    if parts[0] > 255 or parts[1] > 0xffffff then return false end
+    result = (parts[0] << 24) | parts[1]
+  elseif count == 3 then
+    if parts[0] > 255 or parts[1] > 255 or parts[2] > 0xffff then return false end
+    result = (parts[0] << 24) | (parts[1] << 16) | parts[2]
+  else
+    if parts[0] > 255 or parts[1] > 255 or parts[2] > 255 or parts[3] > 255 then return false end
+    result = (parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]
+  end
+  $output = htonl((@cuint)(result))
+  return true
+end
+
 local function inet_aton(source: *const [0]cchar, destination: pointer): cint
     <cexport, codename 'inet_aton'>
-  return inet_pton(2, source, destination)
+  local address: cuint = 0
+  if not nelibc_parse_classic_ipv4(source, &address) then return 0 end
+  $(@*cuint)(destination) = address
+  return 1
 end
 
 local function inet_addr(source: *const [0]cchar): cuint
     <cexport, codename 'inet_addr'>
   local address: cuint = 0xffffffff_cuint
-  if inet_pton(2, source, (@pointer)(&address)) == 0 then
-    return 0xffffffff_cuint
+  if not nelibc_parse_classic_ipv4(source, &address) then
+    return 0xffffffff_cuint -- INADDR_NONE
   end
   return address
 end

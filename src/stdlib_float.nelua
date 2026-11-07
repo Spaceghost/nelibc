@@ -589,7 +589,8 @@ end
 local function nelibc_format_fixed_double(value: cdouble, precision: cint,
     radix: cint, output: *[0]byte, capacity: csize): csize
     <cexport, codename 'nelibc_format_fixed_double'>
-  if precision < 0 or precision > 22 or output == nilptr then return 0 end
+  -- 1074 fractional digits write out any double exactly.
+  if precision < 0 or precision > 1074 or output == nilptr then return 0 end
   local bits: culonglong = nelibc_double_bits(value)
   local exponent_bits: cint = (@cint)((bits >> 52) & 2047)
   local significand: culonglong = bits & 0x000FFFFFFFFFFFFF_culonglong
@@ -618,7 +619,7 @@ local function nelibc_format_fixed_double(value: cdouble, precision: cint,
     end
   end
 
-  local reversed_digits: [400]byte
+  local reversed_digits: [1400]byte -- 309 integer digits + 1074 fraction digits
   local digit_count: csize = 0
   if integer.used == 0 then
     reversed_digits[0] = 48

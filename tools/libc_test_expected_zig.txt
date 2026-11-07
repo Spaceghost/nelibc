@@ -1,0 +1,118 @@
+api/aio [build]
+api/dirent [build]
+api/fcntl [build]
+api/ftw [build]
+api/iso646 [build]
+api/limits [build]
+api/main
+api/main [build]
+api/netdb [build]
+api/signal [build]
+api/stdio [build]
+api/stdlib [build]
+api/sys_sem [build]
+api/sys_shm [build]
+api/sys_socket [build]
+api/sys_stat [build]
+api/sys_wait [build]
+api/unistd [build]
+api/utmpx [build]
+api/wchar [build]
+functional/clocale_mbfuncs
+functional/crypt
+functional/fnmatch
+functional/fscanf
+functional/fwscanf
+functional/pthread_cancel-points
+functional/sscanf
+functional/strftime
+functional/strptime
+functional/swprintf
+functional/time
+functional/wordexp
+math/acos
+math/acosf
+math/acosh
+math/acoshf
+math/asin
+math/asinf
+math/asinh
+math/atan
+math/atan2
+math/atan2f
+math/atanf
+math/atanh
+math/atanhf
+math/atanhl
+math/cosh
+math/exp
+math/exp10
+math/exp10f
+math/exp2
+math/exp2l
+math/expl
+math/expm1
+math/expm1f
+math/fma
+math/fmaf
+math/hypot
+math/hypotf
+math/ilogb
+math/ilogbf
+math/ilogbl
+math/j0
+math/j0f
+math/j1
+math/j1f
+math/jn
+math/jnf
+math/lgamma
+math/lgammaf
+math/lgammaf_r
+math/lgammal
+math/lgammal_r
+math/lgamma_r
+math/log
+math/log10
+math/log10f
+math/log1p
+math/log1pf
+math/log2
+math/logb
+math/logbf
+math/logf
+math/pow
+math/pow10
+math/pow10f
+math/powf
+math/powl
+math/roundl
+math/scalb
+math/scalbf
+math/sin
+math/sinf
+math/sinh
+math/sinhf
+math/tan
+math/tanf
+math/tanh
+math/tanhf
+math/tgamma
+math/tgammaf
+math/tgammal
+math/y0
+math/y0f
+math/y1
+math/y1f
+math/yn
+math/ynf
+regression/daemon-failure
+regression/dn_expand-empty
+regression/dn_expand-ptr-0
+regression/fpclassify-invalid-ld80
+regression/getpwnam_r-crash
+regression/getpwnam_r-errno
+regression/raise-race
+regression/regex-ere-backref
+regression/regex-escaped-high-byte
+regression/setvbuf-unget

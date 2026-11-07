@@ -1823,6 +1823,34 @@ static int inet_conversion_probe(void) {
       legacy_address.s_addr != unchanged.s_addr ||
       inet_addr("203.0.113.999") != INADDR_NONE) return 9;
   if (inet_addr("255.255.255.255") != INADDR_BROADCAST) return 10;
+  /* inet_aton(3) grammar: one to four parts, each decimal, 0x hex or 0 octal. */
+  static const struct { const char *text; uint32_t host_order; } classic[] = {
+    {"1.2.0x33.4", 0x01023304u}, {"1.2.0XAB.4", 0x0102ab04u},
+    {"1.2.0xabcd", 0x0102abcdu}, {"1.0xabcdef", 0x01abcdefu},
+    {"00377.0x0ff.65534", 0xfffffffeu}, {"0x7f000001", 0x7f000001u},
+    {"127.1", 0x7f000001u}, {"0", 0u}, {"1.2.3.04", 0x01020304u},
+    {"4294967295", 0xffffffffu},
+  };
+  for (size_t i = 0; i < sizeof classic / sizeof classic[0]; ++i) {
+    uint32_t expected = htonl(classic[i].host_order);
+    if (inet_aton(classic[i].text, &legacy_address) != 1 ||
+        legacy_address.s_addr != expected) return 11;
+    if (classic[i].host_order != 0xffffffffu && inet_addr(classic[i].text) != expected)
+      return 11;
+  }
+  static const char *const classic_invalid[] = {
+    "1.2.3.4.5", "1.2.3.256", "0x", "1.2.3.4x", "1..3", "256.1", "1.0x1000000",
+    "4294967296", "", " 1.2.3.4", "1.2.3.4 ", "0x1g",
+  };
+  for (size_t i = 0; i < sizeof classic_invalid / sizeof classic_invalid[0]; ++i)
+    if (inet_addr(classic_invalid[i]) != INADDR_NONE ||
+        inet_aton(classic_invalid[i], &legacy_address) != 0) return 12;
+  /* inet_pton(3) stays dotted-decimal and refuses leading zeros. */
+  static const char *const pton_invalid[] = {"1.2.03.4", "01.2.3.4", "1.2.3.004", "0x1.2.3.4", "127.1"};
+  for (size_t i = 0; i < sizeof pton_invalid / sizeof pton_invalid[0]; ++i)
+    if (inet_pton(AF_INET, pton_invalid[i], address) != 0) return 13;
+  if (inet_pton(AF_INET6, "::012.34.56.78", address) != 0 ||
+      inet_pton(AF_INET6, "::ffff:1.2.03.4", address) != 0) return 14;
   static const char *const invalid_v4[] = {
     "", ".1.2.3", "1.2.3", "1.2.3.256", "1.2.3.4.", "1..3.4", "1.2.3.4x"
   };
@@ -1847,11 +1875,80 @@ static int inet_conversion_probe(void) {
   return 0;
 }
 
+/* strptime %z: "+hh", "+hhmm", "+hh:mm" and "Z" (RFC 3339), as glibc reads them. */
+static int timezone_parse_probe(void) {
+  struct tm parsed;
+  static const struct { const char *text; long offset; } zones[] = {
+    {"-06", -6 * 3600}, {"+0530", 5 * 3600 + 30 * 60},
+    {"-06:30", -(6 * 3600 + 30 * 60)}, {"+00", 0}, {"Z", 0}, {"+2359", 23 * 3600 + 59 * 60},
+  };
+  for (size_t i = 0; i < sizeof zones / sizeof zones[0]; ++i) {
+    memset(&parsed, 0, sizeof parsed);
+    const char *end = strptime(zones[i].text, "%z", &parsed);
+    if (end == NULL || *end != 0 || parsed.tm_gmtoff != zones[i].offset) return (int)i + 1;
+  }
+  static const char *const rejected[] = {"-6", "+06:", "+24", "+0660", "06", "", "+1:30", "+06:3"};
+  for (size_t i = 0; i < sizeof rejected / sizeof rejected[0]; ++i) {
+    memset(&parsed, 0, sizeof parsed);
+    if (strptime(rejected[i], "%z", &parsed) != NULL) return 10 + (int)i;
+  }
+  return 0;
+}
+
+/* 32 and 33 are the libc's internal realtime signals; sets never carry them. */
+static int signal_set_internal_probe(void) {
+  sigset_t set;
+  if (sigemptyset(&set) != 0) return 1;
+  errno = 0;
+  if (sigaddset(&set, 32) != -1 || errno != EINVAL) return 2;
+  errno = 0;
+  if (sigaddset(&set, 33) != -1 || errno != EINVAL) return 3;
+  if (sigismember(&set, 33) != 0) return 4;
+  if (sigfillset(&set) != 0 || sigismember(&set, 32) != 0 || sigismember(&set, 33) != 0 ||
+      sigismember(&set, SIGUSR1) != 1 || sigismember(&set, 34) != 1 ||
+      sigismember(&set, 64) != 1) return 5;
+  if (sigdelset(&set, 33) != 0 || sigdelset(&set, 34) != 0 || sigismember(&set, 34) != 0) return 6;
+  return 0;
+}
+
+/* POSIX.1-2008 locale-object string functions and strsignal. */
+static int string_locale_object_probe(void) {
+  locale_t c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
+  if (c_locale == (locale_t)0) return 1;
+  if (strcasecmp_l("Nelua", "nELUA", c_locale) != 0 ||
+      strcasecmp_l("abc", "abd", c_locale) >= 0 ||
+      strncasecmp_l("ABCdef", "abcXYZ", 3, c_locale) != 0 ||
+      strncasecmp_l("ABCdef", "abcXYZ", 4, c_locale) >= 0) return 2;
+  if (strcoll_l("apple", "banana", c_locale) >= 0 ||
+      strcoll_l("same", "same", c_locale) != 0) return 3;
+  char transformed[16];
+  if (strxfrm_l(transformed, "abc", sizeof transformed, c_locale) != 3 ||
+      strcmp(transformed, "abc") != 0) return 4;
+  if (strcmp(strerror_l(ENOENT, c_locale), strerror(ENOENT)) != 0) return 5;
+  freelocale(c_locale);
+  if (strcmp(strsignal(SIGINT), "Interrupt") != 0 ||
+      strcmp(strsignal(SIGSEGV), "Segmentation fault") != 0 ||
+      strcmp(strsignal(SIGSYS), "Bad system call") != 0 ||
+      strcmp(strsignal(34), "Real-time signal 0") != 0 ||
+      strcmp(strsignal(64), "Real-time signal 30") != 0 ||
+      strcmp(strsignal(0), "Unknown signal 0") != 0 ||
+      strcmp(strsignal(33), "Unknown signal 33") != 0 ||
+      strcmp(strsignal(-7), "Unknown signal -7") != 0 ||
+      strcmp(strsignal(65), "Unknown signal 65") != 0) return 6;
+  return 0;
+}
+
 int main(int argc, char **argv) {
   int byte_order_result = byte_order_probe();
   if (byte_order_result != 0) return 640 + byte_order_result;
   int inet_result = inet_conversion_probe();
   if (inet_result != 0) return 650 + inet_result;
+  int timezone_result = timezone_parse_probe();
+  if (timezone_result != 0) return 660 + timezone_result;
+  int signal_set_result = signal_set_internal_probe();
+  if (signal_set_result != 0) return 680 + signal_set_result;
+  int string_locale_result = string_locale_object_probe();
+  if (string_locale_result != 0) return 690 + string_locale_result;
   int locale_float_parser_result = locale_float_parser_probe();
   if (locale_float_parser_result != 0) return 89 + locale_float_parser_result;
   void *minimal_aligned = memalign(1, 17);

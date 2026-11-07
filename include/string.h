@@ -58,4 +58,15 @@ void *memchr(const void *s, int c, size_t n);
 void *memrchr(const void *s, int c, size_t n);
 void *memmem(const void *haystack, size_t haystack_len, const void *needle, size_t needle_len);
 
+/* POSIX.1-2008 locale-object and signal-description entry points. */
+#if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE) || \
+    (defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L) || \
+    (defined(_XOPEN_SOURCE) && _XOPEN_SOURCE >= 700)
+#include <locale.h>
+int strcoll_l(const char *a, const char *b, locale_t locale);
+size_t strxfrm_l(char *restrict dest, const char *restrict src, size_t n, locale_t locale);
+char *strerror_l(int errnum, locale_t locale);
+char *strsignal(int signal);
+#endif
+
 #endif

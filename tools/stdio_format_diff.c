@@ -47,5 +47,22 @@ int main(void) {
       emit("sprintf-n-lengths", length, buffer)) return 5;
   if (printf("counts:%d:%d:%ld:%lld:%td:%td:%jd\n", written_hh, written_h,
              written_l, written_ll, written_z, written_t, written_j) < 0) return 6;
+
+  /* Hexadecimal floats: zero, negative zero, normals and subnormals. */
+  static char big[4096];
+  length = sprintf(big, "%a|%A|%a|%a|%a|%.3a|%.0a", 0.0, -0.0, 1.0, 0x1p-1022,
+                   0x1p-1074, 0x1.fffp+3, 1.5);
+  if (length < 0 || emit("sprintf-hexfloat", length, big)) return 7;
+
+  /* Fixed notation at any precision: 2^-1021 has 1021 fraction digits. */
+  length = sprintf(big, "%.1022f", 0x1p-1021);
+  if (length != 1024 || emit("sprintf-fixed-1022", length, big)) return 8;
+  length = sprintf(big, "%.300f|%.30f|%.25f", 0.8414709848078965, 1e300, -2.5);
+  if (length < 0 || emit("sprintf-fixed-long", length, big)) return 9;
+  /* Past 1074 fraction digits the expansion is exact and zero-filled. */
+  length = sprintf(big, "%.1100f|%-1110.1080f|", 0x1p-1074, 1.0);
+  if (length != 1102 + 1 + 1110 + 1 || emit("sprintf-fixed-tail", length, big)) return 10;
+  length = sprintf(big, "%1200.1100f", -0x1p-1074);
+  if (length != 1200 || emit("sprintf-fixed-width", length, big)) return 11;
   return 0;
 }
