@@ -41,7 +41,7 @@ local Termios: type = @record{
   c_line: cuchar, c_cc: [32]cuchar,
   c_ispeed: cuint, c_ospeed: cuint,
 }
-## static_assert(Termios.size == 60, 'struct termios must be 60 bytes')
+## static_assert(Termios.value.size == 60, 'struct termios must be 60 bytes')
 
 local function errno_set(value: cint): void <inline>
   nelibc_errno_location()[0] = value
