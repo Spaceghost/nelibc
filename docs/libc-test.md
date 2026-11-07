@@ -456,6 +456,14 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
   reaches the `.fini_array` walker through `nelibc_exit_fini_hook`, which
   `_start` sets: the host profile keeps `exit` but not `_start`, and its
   `host-check` (no undefined symbols) caught a direct reference.
+
+  Gate for the fixes recorded since the standalone-headers merge (unknown
+  TZ names, constructors and destructors, `ftello` append, `sem_open`
+  reuse, `pthread_create` `EAGAIN`, exit after the last `pthread_exit`):
+  the 155-target list on `21463a5`, Nelua `dabbd9ef`: 155/155 exited 0, no
+  warnings; logs in `/work/artifacts/gate-stack3-20261107-1208/`. An earlier
+  run of the same stack on `9d54945` failed the five host targets on the
+  undefined `nelibc_run_fini_array`, fixed in `21463a5`.
 - `regression/ftello-unflushed-append`: `ftello is broken before flush: got
   3, want 7`. After `fdopen(fd, "a")` on a 4-byte file and a 3-byte
   `fwrite`, `ftello` ignores that appends go to the end of the file. **Fixed** (branch `ftello-append`): with buffered output on an
