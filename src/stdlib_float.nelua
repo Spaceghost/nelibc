@@ -680,6 +680,258 @@ local function nelibc_format_fixed_double(value: cdouble, precision: cint,
   return output_index
 end
 
+-- Long double (x87 binary80) e/f/g: the value is m * 2^e with a 64-bit m, so
+-- its decimal expansion is finite and fits a BigUInt (at most 4932 integer
+-- digits, or m * 5^16445 below one). Generate every digit, then round the
+-- digit string half to even, as the double path rounds.
+local function long_double_round_up(digits: *[0]byte, count: isize, keep: isize): boolean <inline>
+  if keep < 0 or keep >= count then return false end
+  local rounding: byte = digits[keep]
+  if rounding > 53 then return true end
+  if rounding < 53 then return false end
+  local index: isize = keep + 1
+  while index < count do
+    if digits[index] ~= 48 then return true end
+    index = index + 1
+  end
+  if keep == 0 then return false end
+  return ((digits[keep - 1] - 48) & 1) ~= 0
+end
+
+local function long_double_all_nines(digits: *[0]byte, keep: isize): boolean <inline>
+  local index: isize = 0
+  while index < keep do
+    if digits[index] ~= 57 then return false end
+    index = index + 1
+  end
+  return true
+end
+
+-- Rounds `digits` to its first `keep` digits (zero-padding when keep exceeds
+-- count) and returns the new count; a carry out of the first digit prepends a
+-- 1, so the result can be keep + 1 digits long.
+local function long_double_round(digits: *[0]byte, count: isize, keep: isize): isize <inline>
+  if keep < 0 then return 0 end
+  if keep >= count then
+    local pad: isize = count
+    while pad < keep do
+      digits[pad] = 48
+      pad = pad + 1
+    end
+    return keep
+  end
+  local round_up: boolean = long_double_round_up(digits, count, keep)
+  count = keep
+  if round_up then
+    local index: isize = count - 1
+    while index >= 0 and digits[index] == 57 do
+      digits[index] = 48
+      index = index - 1
+    end
+    if index >= 0 then
+      digits[index] = digits[index] + 1
+    else
+      local move: isize = count
+      while move > 0 do
+        digits[move] = digits[move - 1]
+        move = move - 1
+      end
+      digits[0] = 49
+      count = count + 1
+    end
+  end
+  return count
+end
+
+local function nelibc_format_long_double_parts(mantissa: culonglong, sign_exponent: cuint,
+    conversion: cint, precision: cint, alternate: cint, radix: cint,
+    output: *[0]byte, capacity: csize): csize
+    <cexport, codename 'nelibc_format_long_double_parts'>
+  -- The sign is the caller's; infinities and NaNs never reach here.
+  if precision < 0 or precision > 100000 or output == nilptr then return 0 end
+  if capacity < (@csize)(precision) + 4960 then return 0 end
+  local exponent_field: cint = (@cint)(sign_exponent & 0x7FFF)
+  if exponent_field == 0x7FFF then return 0 end
+  local binary_exponent: cint
+  if exponent_field == 0 then
+    binary_exponent = -16382 - 63
+  else
+    binary_exponent = exponent_field - 16383 - 63
+  end
+  local digits: *[0]byte = (@*[0]byte)(malloc(11600 + (@csize)(precision) + 64))
+  if digits == nilptr then return 0 end
+  local count: isize = 0
+  local scale: isize = 0 -- digits after the decimal point
+  if mantissa == 0 then
+    digits[0] = 48
+    count = 1
+  else
+    local integer: BigUInt <noinit>
+    big_set_u64(&integer, mantissa)
+    local scaled: boolean
+    if binary_exponent >= 0 then
+      scaled = big_shift_left(&integer, binary_exponent)
+    else
+      scaled = big_mul_power5(&integer, -binary_exponent)
+      scale = -binary_exponent
+    end
+    if not scaled then
+      free(digits)
+      return 0
+    end
+    while integer.used > 0 do
+      local chunk: cuint = big_divide_small(&integer, 1000000000)
+      if integer.used > 0 then
+        for _ = 1, 9 do
+          digits[count] = 48 + (@byte)(chunk % 10)
+          chunk = chunk // 10
+          count = count + 1
+        end
+      else
+        while chunk > 0 do
+          digits[count] = 48 + (@byte)(chunk % 10)
+          chunk = chunk // 10
+          count = count + 1
+        end
+      end
+    end
+    local low: isize = 0
+    local high: isize = count - 1
+    while low < high do
+      local swap: byte = digits[low]
+      digits[low] = digits[high]
+      digits[high] = swap
+      low = low + 1
+      high = high - 1
+    end
+  end
+  local lead_exponent: isize = count - 1 - scale
+  local uppercase: boolean = conversion == 69 or conversion == 70 or conversion == 71
+  local fraction_digits: isize = precision
+  local exponent_style: boolean = conversion == 101 or conversion == 69
+  local strip_zeros: boolean = false
+  if conversion == 103 or conversion == 71 then
+    if fraction_digits == 0 then fraction_digits = 1 end
+    local decimal_exponent: isize = lead_exponent
+    if mantissa ~= 0 and fraction_digits < count and
+        long_double_round_up(digits, count, fraction_digits) and
+        long_double_all_nines(digits, fraction_digits) then
+      decimal_exponent = decimal_exponent + 1
+    end
+    if mantissa == 0 then decimal_exponent = 0 end
+    if fraction_digits > decimal_exponent and decimal_exponent >= -4 then
+      fraction_digits = fraction_digits - 1 - decimal_exponent
+    else
+      exponent_style = true
+      fraction_digits = fraction_digits - 1
+    end
+    strip_zeros = alternate == 0
+  end
+
+  local length: csize = 0
+  local radix_written: boolean = false
+  if not exponent_style then
+    local kept: isize = long_double_round(digits, count, count - scale + fraction_digits)
+    local whole: isize = kept - fraction_digits
+    if whole <= 0 then
+      output[length] = 48
+      length = length + 1
+      if fraction_digits > 0 or alternate ~= 0 then
+        output[length] = (@byte)(radix)
+        length = length + 1
+        radix_written = true
+      end
+      local zeros: isize = fraction_digits - kept
+      while zeros > 0 do
+        output[length] = 48
+        length = length + 1
+        zeros = zeros - 1
+      end
+      local index: isize = 0
+      while index < kept do
+        output[length] = digits[index]
+        length = length + 1
+        index = index + 1
+      end
+    else
+      local index: isize = 0
+      while index < whole do
+        output[length] = digits[index]
+        length = length + 1
+        index = index + 1
+      end
+      if fraction_digits > 0 or alternate ~= 0 then
+        output[length] = (@byte)(radix)
+        length = length + 1
+        radix_written = true
+      end
+      while index < kept do
+        output[length] = digits[index]
+        length = length + 1
+        index = index + 1
+      end
+    end
+  else
+    local decimal_exponent: isize = lead_exponent
+    local keep: isize = fraction_digits + 1
+    local kept: isize = long_double_round(digits, count, keep)
+    if kept > keep then
+      decimal_exponent = decimal_exponent + 1
+      kept = keep
+    end
+    if mantissa == 0 then decimal_exponent = 0 end
+    output[length] = digits[0]
+    length = length + 1
+    if fraction_digits > 0 or alternate ~= 0 then
+      output[length] = (@byte)(radix)
+      length = length + 1
+      radix_written = true
+    end
+    local index: isize = 1
+    while index < kept do
+      output[length] = digits[index]
+      length = length + 1
+      index = index + 1
+    end
+    if strip_zeros and radix_written then
+      while output[length - 1] == 48 do length = length - 1 end
+      if output[length - 1] == (@byte)(radix) then length = length - 1 end
+      strip_zeros = false
+    end
+    output[length] = uppercase and 69 or 101
+    length = length + 1
+    if decimal_exponent < 0 then
+      output[length] = 45
+      decimal_exponent = -decimal_exponent
+    else
+      output[length] = 43
+    end
+    length = length + 1
+    local exponent_digits: [8]byte
+    local exponent_count: isize = 0
+    repeat
+      exponent_digits[exponent_count] = 48 + (@byte)(decimal_exponent % 10)
+      decimal_exponent = decimal_exponent // 10
+      exponent_count = exponent_count + 1
+    until decimal_exponent == 0
+    if exponent_count < 2 then
+      exponent_digits[exponent_count] = 48
+      exponent_count = exponent_count + 1
+    end
+    while exponent_count > 0 do
+      exponent_count = exponent_count - 1
+      output[length] = exponent_digits[exponent_count]
+      length = length + 1
+    end
+  end
+  if strip_zeros and radix_written then
+    while output[length - 1] == 48 do length = length - 1 end
+    if output[length - 1] == (@byte)(radix) then length = length - 1 end
+  end
+  free(digits)
+  return length
+end
+
 
 local function big_compare(left: *BigUInt, right: *BigUInt): cint <inline>
   if left.used < right.used then return -1 end

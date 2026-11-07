@@ -46,6 +46,22 @@ double nelibc_va_arg_long_double_as_double(va_list arguments, int *exact) {
   *exact = (value != value) || ((long double)narrowed == value);
   return narrowed;
 }
+/* One read of a long double argument: the double it narrows to, whether that
+ * is exact, and the raw x87 bits for the exact decimal path. */
+__attribute__((no_stack_protector))
+double nelibc_va_arg_long_double_parts(va_list arguments, int *exact,
+                                       unsigned long long *mantissa,
+                                       unsigned *sign_exponent) {
+  long double value = va_arg(arguments, long double);
+  const unsigned char *raw = (const unsigned char *)&value;
+  unsigned long long bits = 0;
+  for (int index = 7; index >= 0; --index) bits = (bits << 8) | raw[index];
+  *mantissa = bits;
+  *sign_exponent = (unsigned)raw[8] | ((unsigned)raw[9] << 8);
+  double narrowed = (double)value;
+  *exact = (value != value) || ((long double)narrowed == value);
+  return narrowed;
+}
 void nelibc_va_copy(va_list destination, va_list source) {
   va_copy(destination, source);
 }

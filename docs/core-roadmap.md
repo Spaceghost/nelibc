@@ -67,9 +67,27 @@ and those targets link without the UBSan runtime. `236d556` compiles
 0 and no log contains a warning; logs in
 `/work/artifacts/gate-slice2b-20261107-0824/`.
 
-Open after this slice: exact decimal `%Le/%Lf/%Lg` (currently EINVAL for
-non-double values), the math flag/ulp list, scanf/strftime/fnmatch cases
-only testable in the standalone profile.
+Open after this slice: the math flag/ulp list, scanf/strftime/fnmatch cases
+only testable in the standalone profile. (Exact decimal `%Le/%Lf/%Lg`: see
+below.)
+
+### Exact long double decimal, 2026-11-07 (branch `long-double-decimal`)
+
+`%Le`, `%Lf`, `%Lg` (and `E`/`F`/`G`) of a long double that is not exactly a
+double used to return -1 with `EINVAL`. They are now formatted exactly:
+`nelibc_format_long_double_parts` in `src/stdlib_float.nelua` writes the
+value `m * 2^e` (64-bit `m`, subnormals and pseudo-denormals by the same
+formula) as its complete decimal expansion with the existing big-integer
+code, at most 4,932 integer digits or `m * 5^16445` below one, then rounds
+the digit string half to even, as the double path does. `%g` picks its style
+from the exponent after rounding, as C requires. Values that are doubles,
+infinities and NaNs keep the double path. The sign comes from the x87 sign
+bit, so `-1e-4000L` prints `-0.000000`. Not done: the current rounding mode
+is not consulted (glibc honors it), and the `'` grouping flag is ignored on
+this path. `tools/lib_consumer_smoke.c` checks 28 cases against glibc 2.36's
+strings, including half-to-even ties at the 63rd fraction digit, the
+smallest subnormal, `LDBL_MAX` in full (4,940 characters) and width/flag
+combinations; `tools/syscall_smoke.c` checks the standalone `swprintf`.
 
 ### Gate run, 2026-11-07 (Nelua `dabbd9ef`, no source change)
 

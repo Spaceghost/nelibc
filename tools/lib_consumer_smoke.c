@@ -2007,7 +2007,7 @@ static int fnmatch_bracket_probe(void) {
  * (musl libc-test regression/fpclassify-invalid-ld80); %Lf for values that
  * are doubles; %Ld as glibc reads it. */
 static int long_double_format_probe(void) {
-  char text[64];
+  char text[128];
   union { long double f; struct { uint64_t m; uint16_t se; } i; } u;
   if (snprintf(text, sizeof text, "%La", 1.0L) < 0 || strcmp(text, "0x1p+0") != 0) return 1;
   if (snprintf(text, sizeof text, "%La|%.1La|%.0La|%LA", 1.5L, 0x1.08p+3L, 1.5L, -2.0L) < 0 ||
@@ -2026,8 +2026,48 @@ static int long_double_format_probe(void) {
   if (snprintf(text, sizeof text, "%La|%La", 0.0L, infinite) < 0 || strcmp(text, "0x0p+0|inf") != 0) return 8;
   if (snprintf(text, sizeof text, "%Lf|%.3Le|%Lg|%Ld|%Lu", 1.5L, 1234.5L, 0.25L, -7LL, 9ULL) < 0 ||
       strcmp(text, "1.500000|1.234e+03|0.25|-7|9") != 0) return 9;
-  errno = 0;
-  if (snprintf(text, sizeof text, "%Lf", 1.0L / 3.0L) != -1 || errno != EINVAL) return 10;
+  /* Values that are not doubles take the exact binary80 decimal path; the
+   * expected strings are glibc 2.36's output for the same calls. */
+  static const struct { const char *format; long double value; const char *want; } exact[] = {
+    { "%Lf", 1.0L / 3.0L, "0.333333" },
+    { "%.25Lf", 1.0L / 3.0L, "0.3333333333333333333423684" },
+    { "%.20Le", 1.0L / 3.0L, "3.33333333333333333342e-01" },
+    { "%Lg", 1.0L / 3.0L, "0.333333" },
+    { "%.30Lg", 0.1L, "0.100000000000000000001355252716" },
+    { "%Lg", 1e4000L, "1e+4000" },
+    { "%Le", 0x1p-16445L, "3.645200e-4951" },
+    { "%.3Le", 0x1p-16445L, "3.645e-4951" },
+    { "%.62Lf", 1.0L + 0x1p-63L, "1.00000000000000000010842021724855044340074528008699417114257812" },
+    { "%.61Lf", 1.0L + 0x1p-63L, "1.0000000000000000001084202172485504434007452800869941711425781" },
+    { "%.62Lf", 1.0L + 0x3p-63L, "1.00000000000000000032526065174565133020223584026098251342773438" },
+    { "%Lf", -1e-4000L, "-0.000000" },
+    { "%LG", 1e-4000L, "1E-4000" },
+    { "%LE", 12345.678L, "1.234568E+04" },
+    { "%+15.3Le", 2.0L / 3.0L, "     +6.667e-01" },
+    { "%-12.2Lf|", -2.0L / 3.0L, "-0.67       |" },
+    { "%012.4Lf", 2.0L / 3.0L, "0000000.6667" },
+    { "%#.0Lf", 0x1.4000000000000002p+1L, "3." },
+    { "%.0Le", 9.5L + 0x1p-60L, "1e+01" },
+    { "%#Lg", 1.0L / 3.0L, "0.333333" },
+    { "%Lg", 123456789.0L / 7.0L, "1.76367e+07" },
+    { "%Lg", 1e-5L / 3.0L, "3.33333e-06" },
+    { "%.0Lg", 0.0001L / 3.0L, "3e-05" },
+    { "% .3Lf", 1e20L / 3.0L, " 33333333333333333334.000" },
+    { "%.10Lg", 9.9999999999L + 0x1p-50L, "10" },
+    { "%.40Le", 1.18973149535723176502e+4932L, "1.1897314953572317650212638530309702051691e+4932" },
+    { "%Lg", 0x1p-16382L, "3.3621e-4932" },
+  };
+  for (size_t index = 0; index < sizeof exact / sizeof exact[0]; ++index) {
+    if (snprintf(text, sizeof text, exact[index].format, exact[index].value) < 0 ||
+        strcmp(text, exact[index].want) != 0) {
+      fprintf(stderr, "long double %s: got [%s] want [%s]\n", exact[index].format, text, exact[index].want);
+      return 10;
+    }
+  }
+  static char huge[8192];
+  int huge_length = snprintf(huge, sizeof huge, "%Lf", 1.18973149535723176502e+4932L);
+  if (huge_length != 4940 || strncmp(huge, "1189731495357231765021263853030970205169", 40) != 0 ||
+      strcmp(huge + 4933, ".000000") != 0) return 11;
   return 0;
 }
 

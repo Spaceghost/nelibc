@@ -128,10 +128,9 @@ now matches the marker anywhere on the line. `modfl(-0)` returns `+0` for
 the integral part; `exp10l(nan)` raises `INVALID`; `erfl`, `erfcl`,
 `exp10l` are off by 2 to 11 ulp. These belong with the math work.
 
-Still refused rather than wrong: `%Le`, `%Lf`, `%Lg` of a long double whose
-value is not a double return -1 with `EINVAL` (values that are doubles
-print exactly). Exact decimal formatting of a 64-bit mantissa is the next
-printf item.
+Since slice 2, `%Le`, `%Lf`, `%Lg` of a long double that is not a double are
+formatted exactly from its x87 bits (see `docs/core-roadmap.md`, "Exact long
+double decimal"); before, they returned -1 with `EINVAL`.
 
 ## Not run
 

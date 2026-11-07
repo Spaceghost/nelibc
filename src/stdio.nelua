@@ -21,6 +21,8 @@ local function nelibc_va_arg_double(arguments: cvalist): cdouble <cimport> end
 local function nelibc_va_arg_long_double_bits(arguments: cvalist, mantissa: *culonglong,
     sign_exponent: *cuint): void <cimport> end
 local function nelibc_va_arg_long_double_as_double(arguments: cvalist, exact: *cint): cdouble <cimport> end
+local function nelibc_va_arg_long_double_parts(arguments: cvalist, exact: *cint,
+    mantissa: *culonglong, sign_exponent: *cuint): cdouble <cimport> end
 local function nelibc_va_arg_pointer_at(arguments: cvalist, position: csize): pointer <cimport> end
 local function isspace(character: cint): cint <cimport> end
 local function nelibc_scan_strtoll(text: *const [0]cchar, end_text: **cchar,
@@ -54,6 +56,9 @@ local function nelibc_round_significant_double(value: cdouble, decimal_scale: ci
     result: *[0]culonglong): cint <cimport> end
 local function nelibc_format_general_double(value: cdouble, precision: cint,
     exponent: cint, alternate: cint, uppercase: cint, radix: cint,
+    output: *[0]byte, capacity: csize): csize <cimport> end
+local function nelibc_format_long_double_parts(mantissa: culonglong, sign_exponent: cuint,
+    conversion: cint, precision: cint, alternate: cint, radix: cint,
     output: *[0]byte, capacity: csize): csize <cimport> end
 local function nelibc_grouping_size(position: cint): cint <cimport> end
 local function nelibc_grouping_separator_length(): cint <cimport> end
@@ -3656,18 +3661,15 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
     elseif conversion == 102 or conversion == 70 or conversion == 101 or conversion == 69 or
         conversion == 103 or conversion == 71 then -- f/F/e/E/g/G
       local value: cdouble = 0.0
+      -- long double e/f/g: a value that is a double takes the double path
+      -- below; any other finite value is formatted exactly from its x87 bits.
+      local long_inexact: boolean = false
+      local long_mantissa: culonglong = 0
+      local long_sign_exponent: cuint = 0
       if length_mod == 6 then
-        -- long double e/f/g: the exact decimal path below works on doubles,
-        -- so a value that is one is printed exactly and anything with more
-        -- significant bits is refused rather than silently rounded. Exact
-        -- 64-bit-mantissa decimal formatting is roadmap work.
         local exact: cint = 0
-        value = nelibc_va_arg_long_double_as_double(arguments, &exact)
-        if exact == 0 then
-          nelibc_errno_location()[0] = 22 -- EINVAL
-          stream_unlock(stream)
-          return -1
-        end
+        value = nelibc_va_arg_long_double_parts(arguments, &exact, &long_mantissa, &long_sign_exponent)
+        long_inexact = exact == 0
       else
         value = nelibc_va_arg_double(arguments)
       end
@@ -3682,7 +3684,49 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       if negative then sign = 45
       elseif plus_sign then sign = 43
       elseif space_sign then sign = 32 end
-      if value ~= value then
+      if long_inexact then
+        local long_precision: cint = 6
+        if precision_set then long_precision = precision end
+        if long_precision > 100000 then
+          nelibc_errno_location()[0] = 75 -- EOVERFLOW
+          stream_unlock(stream)
+          return -1
+        end
+        local long_capacity: csize = (@csize)(long_precision) + 5120
+        local long_output: *[0]byte = (@*[0]byte)(nelibc_malloc(long_capacity))
+        if long_output == nilptr then
+          nelibc_errno_location()[0] = 12 -- ENOMEM
+          stream_unlock(stream)
+          return -1
+        end
+        local long_length: csize = nelibc_format_long_double_parts(long_mantissa,
+            long_sign_exponent, conversion, long_precision, (alternate and 1 or 0),
+            nelibc_radix_character(), long_output, long_capacity)
+        if long_length == 0 then
+          nelibc_free(long_output)
+          nelibc_errno_location()[0] = 12 -- ENOMEM
+          stream_unlock(stream)
+          return -1
+        end
+        -- the narrowed double can be zero or infinite, the sign comes from the bits
+        local long_sign: byte = 0
+        if (long_sign_exponent & 0x8000) ~= 0 then long_sign = 45
+        elseif plus_sign then long_sign = 43
+        elseif space_sign then long_sign = 32 end
+        local core_length: csize = long_length
+        if long_sign ~= 0 then core_length = core_length + 1 end
+        local spaces: csize = 0
+        if width > 0 and (@csize)(width) > core_length then
+          spaces = (@csize)(width) - core_length
+        end
+        if not left_align and not zero_pad then written = written + emit_padding(stream, 32, spaces) end
+        if long_sign ~= 0 then written = written + emit_padding(stream, long_sign, 1) end
+        if not left_align and zero_pad then written = written + emit_padding(stream, 48, spaces) end
+        written = written + emit_bytes(stream, (@pointer)(long_output), long_length)
+        if left_align then written = written + emit_padding(stream, 32, spaces) end
+        nelibc_free(long_output)
+        float_emitted = true
+      elseif value ~= value then
         if uppercase_float then
           float_buffer[0] = 78; float_buffer[1] = 65; float_buffer[2] = 78
         else
