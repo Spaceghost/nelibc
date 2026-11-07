@@ -3,9 +3,11 @@
 [musl's libc-test](https://git.musl-libc.org/cgit/libc-test) is a suite of
 functional, regression, math and header (API) tests written against the C and
 POSIX standards, not against any one libc. The API coverage manifest says
-which symbols Nelibc exports; libc-test says which of them behave. It is run
-against the hybrid archives, so a failure is either Nelibc's or the host
-libc's; the glibc baseline below tells them apart.
+which symbols Nelibc exports; libc-test says which of them behave. It runs
+against the hybrid archives, where a failure is either Nelibc's or the host
+libc's (the glibc baseline below tells them apart), and against the
+standalone archives, where every symbol and header is Nelibc's
+("Standalone profile" below).
 
 ## Running it
 
@@ -47,6 +49,8 @@ Container `nelibc-writ` (Debian 12, glibc 2.36, GCC 12.2), libc-test
 | Nelibc zig hybrid, libm slice (`2db0322`, rebased on slice 2), `make libc-test-zig` | 2026-11-07 | 42 (`tools/libc_test_expected_zig.txt`, 74 math tests removed) |
 | Nelibc gcc hybrid, math details, `make libc-test-gcc` | 2026-11-07 | 31 (`tools/libc_test_expected_gcc.txt`, no math tests) |
 | Nelibc zig hybrid, math details, `make libc-test-zig` | 2026-11-07 | 35 (`tools/libc_test_expected_zig.txt`, no math tests) |
+| Nelibc gcc standalone, branch `libc-test-standalone` on main `3ea86f3`, `make libc-test-standalone-gcc` | 2026-11-07 | 88 of 343 (`tools/libc_test_expected_standalone_gcc.txt`) |
+| Nelibc zig standalone, same branch, `make libc-test-standalone-zig` | 2026-11-07 | 66 of 343 (`tools/libc_test_expected_standalone_zig.txt`) |
 
 Against the baseline, `7c321ae` fixed 8 tests glibc 2.36 fails (`strtol`,
 `wcstol`, and the `fmin`/`fmax` families) and added 73 failures:
@@ -214,8 +218,253 @@ The zig
 list differs from the gcc list only in four API tests clang rejects at build
 time (`ftw`, `iso646`, `sys_stat`, `sys_wait`).
 
+## Standalone profile
+
+```sh
+make libc-test-standalone-gcc LIBC_TEST=../libc-test
+make libc-test-standalone-zig LIBC_TEST=../libc-test
+```
+
+`tools/libc_test_standalone.sh` does not use libc-test's Makefile, which
+assumes a hosted toolchain (`-lpthread -lm -lrt`, dynamic binaries, `.so`
+helpers). It copies `src/common`, `functional`, `regression` and `math` into
+`build/libc-test-standalone-<cc>/` and builds each test itself:
+
+- **Headers: Nelibc's only.** `-nostdinc` removes the host libc's headers;
+  the compiler's own freestanding headers (`stddef.h`, `stdint.h`,
+  `stdarg.h`, `limits.h`, `float.h`, and clang's `tgmath.h`) remain, as the
+  task of a freestanding compiler. Nelibc's standalone headers include Linux
+  UAPI headers (`<linux/fcntl.h>`, `<asm/ioctl.h>`, `<asm/socket.h>`,
+  `<linux/mount.h>`, `<linux/xattr.h>`), so the driver makes a directory of
+  symlinks to only `linux/`, `asm/` and `asm-generic/` (from `/usr/include`
+  or `UAPI_INCLUDE`) and puts it last with `-idirafter`. Zig adds the native
+  libc's include directories even under `-nostdinc`, so the zig run uses
+  `-target x86_64-linux-none`, which adds only Zig's resource headers.
+  The flags are libc-test's own (`-std=c99 -D_POSIX_C_SOURCE=200809L
+  -fno-builtin -frounding-math -Werror=implicit-function-declaration` and
+  the rest of `Makefile`/`config.mak.def`) minus the glibc-specific
+  `-D_FILE_OFFSET_BITS=64`, plus the standalone smokes' `-DNELIBC_STANDALONE
+  -ffreestanding -fno-stack-protector -fno-pie`.
+- **Link: as the standalone smokes link.** `-nostdlib -static -no-pie
+  -Wl,-e,_start`, Nelibc's own `_start`, the archive inside
+  `--whole-archive`, no libgcc, no host libc. A binary with any `nm -u`
+  symbol left counts as a link failure. `functional/tls_align` links its
+  helper `tls_align_dso.o` statically, as libc-test's static build does; the
+  other `*_dso` helpers are shared objects and are not tests.
+- **Run: libc-test's own `runtest.c`.** Nelibc standalone has everything the
+  runner needs (`fork`, `execv`, `getrlimit`/`setrlimit`, `sigprocmask`,
+  `signal`, `sigtimedwait`, `kill`, `waitpid`, `getopt`, `strsignal`), so the
+  runner is built and linked the same way and keeps libc-test's semantics: a
+  forked child, `RLIMIT_STACK` of 100 KiB, a 5 s timeout, `FAIL` on a nonzero
+  status, a signal or a timeout. A shell runner with `timeout(1)` would drop
+  the stack limit, which already caught one Nelibc bug in the hybrid runs
+  (slice 2's TZif reader). Before trusting it, the Nelibc-built runner was
+  checked on a passing program, `/bin/false` (`[status 1]`), `sleep 3` with
+  `-t 1` (`[timed out]`) and a script that kills itself with `SIGSEGV`
+  (`[signal Segmentation fault]`). The runner itself must link with no
+  undefined symbol, or the driver exits 2.
+
+Each test is classified as `pass`, `build` (the first missing header,
+undeclared function, identifier or type is recorded; GCC stops at the first
+missing header, so later gaps in that file are hidden), `link` (undefined or
+duplicate symbols recorded), `fail` (nonzero status), `timeout`, or `crash`
+(signal). `results.tsv` holds one row per test, `summary.txt` the counts and
+the missing headers and symbols ranked by the tests they block. The `FAIL`
+marker is matched anywhere on a line, as in the hybrid driver. Binaries are
+deleted after their run (`KEEP_BINARIES=1` keeps them): the zig ones carry
+the 5 MB archive whole and the container disk is small.
+
+The expected list holds `name [category]`. The gate compares names: a test
+outside the list fails the run (exit 1), a listed test that passes is printed
+for removal, and a listed test that still fails under another category
+(`link` to `fail`, say) is printed for the list to be updated without failing
+the run. Both checks were exercised by editing the list in the container:
+removing `regression/ftello-unflushed-append` exited 1 with it as a new
+failure, a fabricated `functional/string` entry was reported as now
+passing, and `functional/spawn` recorded as `[link]` was reported as a
+category change.
+
+### What the first standalone runs showed (2026-11-07)
+
+Container `nelibc-writ`, user `build`, libc-test `63e36e9`, GCC 12.2 and Zig
+0.17.0, branch `libc-test-standalone` (main `3ea86f3` plus the harness; no
+Nelibc source changed). Each run took under ten seconds of wall time and
+gave the same counts on repeated runs (gcc three times, zig three times).
+
+| Directory (tests) | gcc pass / build / link / fail / timeout | zig pass / build / link / fail / timeout |
+| --- | --- | --- |
+| `functional` (74) | 26 / 45 / 0 / 2 / 1 | 36 / 29 / 0 / 8 / 1 |
+| `regression` (70) | 32 / 31 / 6 / 1 / 0 | 44 / 19 / 3 / 4 / 0 |
+| `math` (199) | 197 / 2 / 0 / 0 / 0 | 197 / 2 / 0 / 0 / 0 |
+| total (343) | 255 / 78 / 6 / 3 / 1 | 277 / 50 / 3 / 12 / 1 |
+
+No test crashed with a signal in either run. Of libc-test's support code,
+`common/utf8.c` (`t_setutf8`) does not compile in either profile
+(`<langinfo.h>`), and `common/vmfill.c` (`t_vmfill`) does not compile with
+GCC (`<limits.h>`); the tests that call them fail to link.
+
+The two compilers differ in one thing that matters: GCC's `<limits.h>`
+`#include_next`s the C library's `<limits.h>`, and Nelibc ships none, so
+every test that includes it fails to build with GCC (32 tests, and
+`t_vmfill`). Clang's freestanding `<limits.h>` stands alone, so the zig run
+builds those tests and is the deeper view: of the 32, 18 pass, 9 fail at
+run time (below), and 5 stop at the next gap (`PATH_MAX`, which no
+freestanding `<limits.h>` provides; `M_PI`; `shm_open`; `<langinfo.h>`;
+`<dlfcn.h>`). The 12 zig runtime failures are not
+zig-specific: in the gcc run the same tests either fail the same way
+(`spawn`, `tls_align`, `ftello-unflushed-append`, and `sem_open` times out)
+or do not build.
+
+#### Missing headers and declarations
+
+Tests blocked at compile time, GCC run (zig in parentheses where it
+differs). Each item is a header or declaration Nelibc's standalone headers
+lack; the "in archive" column says whether the standalone archive defines
+the function anyway (`nm -g --defined-only`), which none of them does except
+where noted.
+
+| Missing | Tests | In archive |
+| --- | --- | --- |
+| `<limits.h>` | 32 (zig 0; `PATH_MAX` 1) | header only |
+| `<regex.h>` | 8 | no |
+| `<search.h>` | 4 | no |
+| `<dlfcn.h>` | 3 (zig 4: `tls_get_new-dtv`, behind `<limits.h>` with GCC) | no |
+| `<langinfo.h>` | 2 (zig 3), and `common/utf8.c` | no |
+| `<iconv.h>`, `<libgen.h>`, `<pwd.h>`, `<resolv.h>` | 2 each | no |
+| `<crypt.h>`, `<mntent.h>`, `<setjmp.h>`, `<sys/msg.h>`, `<sys/sem.h>`, `<sys/shm.h>`, `<sys/statvfs.h>`, `<sys/syscall.h>`, `<wordexp.h>` | 1 each | no |
+| `<tgmath.h>` | 1 (zig 0: clang ships one) | header only |
+| `<inttypes.h>` in standalone mode | 1 (`functional/qsort`) | a header bug: `include/inttypes.h` does `#include_next <inttypes.h>` even under `NELIBC_STANDALONE` |
+| `random`, `srandom`, `initstate`, `setstate` (`<stdlib.h>`) | 1 | no |
+| `lrand48`, `mktemp` (`<stdlib.h>`) | 1 each | no |
+| `putc` (`<stdio.h>`) | 1 (`functional/memstream`) | no |
+| `popen`, `pclose` (`<stdio.h>`) | 1 | no |
+| `execl` and `vfork`, `execle` (`<unistd.h>`) | 1 each | no |
+| `shm_open`, `shm_unlink` (`<sys/mman.h>`) | zig 1 (`pthread_cancel-points`) | no |
+| `isnormal` (`<math.h>`) | 1 (`math/fpclassify`) | macro missing |
+| `isgreater`, `isgreaterequal`, `isless`, `islessequal`, `islessgreater`, `isunordered` (`<math.h>`) | 1 (`math/isless`) | macros missing |
+| `M_PI` (`<math.h>`, XSI; the test defines `_XOPEN_SOURCE 700`) | zig 1 (`functional/snprintf`) | macro missing |
+| `st_atime`/`st_mtime`/`st_ctime` (`<sys/stat.h>`; only `st_ctim` exists) | 1 (`functional/stat`) | macros missing |
+
+#### Missing symbols
+
+Link failures, GCC run: `daemon` (`regression/daemon-failure`), `t_vmfill`
+(3 tests, libc-test support code blocked by `<limits.h>`), `t_setutf8`
+(`regression/fgetwc-buffering`, blocked by `<langinfo.h>`), and
+`regression/flockfile-list`, which defines its own `malloc`, `calloc`,
+`realloc`, `free` and `aligned_alloc`: with the archive linked whole, the
+standalone allocator's exports collide (`multiple definition`). That test
+checks behavior with an interposed malloc; it cannot run under the
+whole-archive link convention, and Nelibc's static allocator is not
+replaceable today.
+
+Because a missing declaration stops compilation first, the link stage sees
+few symbols. To map the functions behind the compile failures, each of the
+84 build- and link-failing gcc tests was compiled once more against glibc
+2.36's headers (compile only, never linked or run, not part of the gate) and
+its undefined symbols compared with the archive's defined symbols. Dropping
+glibc-internal names (`__isoc99_*`, `__xpg_basename`, `__sigsetjmp`,
+`__pthread_register_cancel` and kin, `__sysv_signal`,
+`__libc_current_sigrtmin`, `__ctype_get_mb_cur_max`,
+`_GLOBAL_OFFSET_TABLE_`) and libc-test's own `t_*`, the functions the
+standalone archive lacks, ranked by tests blocked:
+
+| Function family | Tests |
+| --- | --- |
+| `regcomp`, `regexec` (8), `regerror` (6), `regfree` (2) | 8 |
+| `dlopen`, `dlsym` (4), `dlerror` (2), `dlclose` (1) | 4 |
+| `hsearch`/`hcreate`/`hdestroy`, `insque`/`remque`, `lsearch`/`lfind`, `tsearch`/`tfind`/`tdelete`/`twalk` | 4 |
+| `ftok` with `msg*`, `sem*` (SysV), `shm*` (SysV) | 3 |
+| `nl_langinfo` | 2, plus `t_setutf8` |
+| `iconv_open`, `iconv`, `iconv_close` | 2 |
+| `getpwnam_r` | 2 |
+| `dn_expand` | 2 |
+| `setjmp`/`longjmp`/`sigsetjmp`/`siglongjmp`; `random` family; `lrand48`; `mktemp`; `popen`/`pclose`; `putc`; `execl`; `execle`; `vfork`; `shm_open`/`shm_unlink`; `daemon`; `crypt`; `basename`; `dirname`; `wordexp`/`wordfree`; `getmntent`/`getmntent_r`/`endmntent`; `statvfs`; `syscall` | 1 each |
+
+`dlopen` in a static standalone binary would at best return an error; the
+four `dl*` tests are not expected to pass in this profile.
+
+#### Wrong behavior
+
+Run-time failures, with libc-test's own messages. Tests marked "zig" are
+behind `<limits.h>` with GCC; the rest fail identically in both runs.
+
+- `functional/tls_align`: `tls_align.c:16: name is not set for t[0]` (and
+  1 to 3). The test's `__attribute__((constructor))` never ran: the
+  standalone `_start` (`src/sys/start_linux_x86_64_standalone.S`) does not
+  walk `.preinit_array`/`.init_array`, and nothing in `src/` mentions
+  them. Static constructors are silently skipped in every standalone binary;
+  `.fini_array` is likely skipped too (not tested here).
+- `regression/ftello-unflushed-append`: `ftello is broken before flush: got
+  3, want 7`. After `fdopen(fd, "a")` on a 4-byte file and a 3-byte
+  `fwrite`, `ftello` ignores that appends go to the end of the file.
+- `functional/sem_open` (timeout): `sem_open.c:37: could not reopen sem: got
+  0x7f..., want 0x7f...`. A second `sem_open` of the same name in the same
+  process maps a new address instead of returning the existing `sem_t *`
+  (POSIX requires the same address until `sem_close`); the test then
+  deadlocks and is killed at 5 s.
+- `functional/spawn`: `posix_spawnp(&pid, "echo", &fa, 0, (char
+  *[]){"echo","hello",0}, 0) failed, got 22 want 0`. Nelibc rejects a null
+  `envp` with `EINVAL` (`src/spawn_standalone.nelua`,
+  `nelibc_posix_spawn_common`). POSIX does not define a null `envp`; musl and
+  glibc pass it to `execve`, which Linux treats as an empty environment.
+  A compatibility gap rather than a conformance bug.
+- `functional/fscanf` (zig): `fscanf(f, " %n%*d%n", &x, &y) failed (-1 !=
+  0)` and `x failed (1 != 6)` on input `"      42"`: the return is `EOF`
+  instead of 0, and `%n` after leading white space stores 1 instead of 6.
+- `functional/fwscanf` (zig): the same `L" %n%*d%n"` case (-1, `x` 1), and
+  `ftell` one past the consumed input after a failed match (`13 != 12`,
+  `5 != 4`, `3 != 2`, lines 61, 75, 110): the wide scanner does not push back
+  the character that ended a conversion.
+- `functional/ungetc` (zig): `unget failed after fscanf: -1 != 120` after
+  `fscanf(f, "%[x]", a)` matched nothing; the following `fgetc` calls
+  return `h`, `e` instead of `x`, `h`.
+- `functional/pthread_cancel` (zig): `foo[0] == 1 failed (cleanup handler
+  failed to run)` (lines 84, 92 to 95): cancellation does not run
+  `pthread_cleanup_push` handlers.
+- `regression/pthread_cancel-sem_wait` (zig): `seqno == 1 failed` for
+  uncontended and blocking `sem_wait` and `sem_timedwait` (lines 55, 65, 75,
+  85): `sem_wait` and `sem_timedwait` are not cancellation points.
+- `functional/pthread_mutex_pi` (zig): `PTHREAD_MUTEX_NORMAL relock did not
+  deadlock, got Resource deadlock avoided` (line 145): relocking a normal
+  priority-inheritance mutex returns `EDEADLK`; POSIX says a normal mutex
+  deadlocks.
+- `regression/pthread_create-oom` (zig): `pthread_create should fail with
+  EAGAIN but failed with 12 (Cannot allocate memory)` (line 24): POSIX
+  specifies `EAGAIN` for lack of resources.
+- `regression/pthread_exit-dtor` (zig): `atexit handler was not run after
+  last thread exited (exited=1, signal=0, status=0, want exit status=1)`
+  (line 64): when the last thread calls `pthread_exit`, the process exits
+  with status 0 without running `atexit` handlers.
+- `functional/pthread_robust` (zig): `pthread_mutex_destroy(&mtx) failed:
+  ... Device or resource busy (destroying mutex)` (line 61), for all four
+  pshared/PI combinations. The test destroys a robust mutex it has just
+  relocked; POSIX leaves destroying a locked mutex undefined and allows
+  `EBUSY`, so this is a divergence from musl, not a conformance bug.
+
+Every `math/*` test that builds passes in both runs (197 of 199), as in the
+hybrid runs: the libm ports are the same code. The two that do not build
+lack `<math.h>` macros (above).
+
+### Next work (not done on this branch)
+
+In order of tests unblocked per change: ship a `<limits.h>` with the POSIX
+limits (32 gcc tests and `t_vmfill`); fix `<inttypes.h>` and add the
+`<math.h>` classification/comparison macros, `M_PI`, the `st_*time` macros,
+and `putc`, `popen`/`pclose`, `random`, `lrand48`, `mktemp`, `execl`/`execle`,
+`vfork`; run `.init_array` in `_start`; the scanf `%n`/`EOF`/pushback bugs and
+`ungetc` after a failed scan; `ftello` in append mode; `sem_open` reuse;
+cancellation cleanup handlers and `sem_wait` as a cancellation point; then the
+missing families (`<regex.h>`, `<search.h>`, `<setjmp.h>`, `<langinfo.h>`,
+SysV IPC, `iconv`, `getpwnam_r`).
+
 ## Not run
 
-- The static musl hybrid and the standalone profile: libc-test's build
-  expects a hosted toolchain; a standalone harness is future work.
-- Static test binaries (see above).
+- The static musl hybrid: libc-test's build expects a hosted toolchain.
+- Static hybrid test binaries (see above).
+- The standalone TinyCC archive: no `libc-test-standalone-tcc` target (the
+  container's TinyCC 0.9.27 cannot build the TinyCC profile).
+- libc-test's `api/` header tests and `musl/` internal tests in the standalone
+  profile: the standalone driver runs only `functional`, `regression` and
+  `math`.
+- The standalone shared-object tests as libc-test intends them: the four
+  `dlopen`/`tls_*_dlopen`/`tls_get_new-dtv` tests stop at `<dlfcn.h>`.
