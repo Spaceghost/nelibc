@@ -3671,21 +3671,30 @@ local function nelibc_thread_fork_child(): void <cexport, codename 'nelibc_threa
 end
 
 local function named_sem_build_path(name: *const [0]cchar, path: *[0]cchar): cint
-  if name == nilptr or name[0] ~= 47_cchar then return -1 end
-  local name_length = strlen((@*[0]cchar)(name))
-  if name_length < 2_csize or name_length > 252_csize then return -1 end
-  for i: csize = 1, name_length - 1_csize do
+  if name == nilptr then return -1 end
+  -- Leading slashes are skipped and a name without one is accepted, as musl's
+  -- __shm_mapname and glibc do; what remains may not be empty, ".", "..", or
+  -- contain a slash.
+  while name[0] == 47_cchar do name = (@*const [0]cchar)(&name[1]) end
+  local rest_length = strlen((@*[0]cchar)(name))
+  if rest_length == 0_csize then return -1 end
+  for i: csize = 0, < rest_length do
     if name[i] == 47_cchar then return -1 end
   end
+  if name[0] == 46_cchar and (rest_length == 1_csize or (rest_length == 2_csize and name[1] == 46_cchar)) then
+    return -1
+  end
   -- Linux reserves a four-byte "sem." prefix inside /dev/shm's NAME_MAX.
-  if name_length - 1_csize > 251_csize then return -1 end
+  if rest_length > 251_csize then return -1 end
+  -- the code below expects the name with one leading slash, as before
+  local name_length = rest_length + 1_csize
   local prefix: [13]cchar = {
     47_cchar, 100_cchar, 101_cchar, 118_cchar, 47_cchar,
     115_cchar, 104_cchar, 109_cchar, 47_cchar,
     115_cchar, 101_cchar, 109_cchar, 46_cchar
   }
   for i: csize = 0, 12 do path[i] = prefix[i] end
-  for i: csize = 1, name_length - 1_csize do path[12_csize + i] = name[i] end
+  for i: csize = 0, < rest_length do path[13_csize + i] = name[i] end
   path[12_csize + name_length] = 0_cchar
   return (@cint)(name_length + 12_csize)
 end

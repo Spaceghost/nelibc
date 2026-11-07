@@ -517,6 +517,7 @@ int execl(const char *path, const char *arg, ...);
 int execle(const char *path, const char *arg, ...);
 int execlp(const char *file, const char *arg, ...);
 pid_t vfork(void);
+int daemon(int nochdir, int noclose);
 long syscall(long number, ...);
 #endif
 #ifdef NELIBC_STANDALONE

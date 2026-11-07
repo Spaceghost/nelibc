@@ -2331,6 +2331,11 @@ local function getchar_unlocked(): cint <cexport, codename 'getchar_unlocked'>
   return fgetc_unlocked(&stdin_FILE)
 end
 
+-- POSIX getc_unlocked (getc is the locking form above).
+local function getc_unlocked(stream: *FILE): cint <cexport, codename 'getc_unlocked'>
+  return fgetc_unlocked(stream)
+end
+
 local function fgets(buffer: *[0]cchar, count: cint, stream: *FILE): *[0]cchar <cexport, codename 'fgets'>
   if count <= 0 then return nilptr end
   local destination: *[0]byte = (@*[0]byte)(buffer)
@@ -2454,6 +2459,16 @@ end
 
 local function putchar(character: cint): cint <cexport, codename 'putchar'>
   return fputc(character, &stdout_FILE)
+end
+
+-- putc and POSIX putc_unlocked: functions here (C allows putc to be a macro;
+-- a function is always also required).
+local function putc(character: cint, stream: *FILE): cint <cexport, codename 'putc'>
+  return fputc(character, stream)
+end
+
+local function putc_unlocked(character: cint, stream: *FILE): cint <cexport, codename 'putc_unlocked'>
+  return fputc_unlocked(character, stream)
 end
 
 local function putchar_unlocked(character: cint): cint <cexport, codename 'putchar_unlocked'>

@@ -33,6 +33,13 @@ struct stat {
 #undef NELIBC_DEFINE_STAT_LAYOUT
 #endif
 
+/* POSIX.1-2008: the seconds of each time, as the older field names. */
+#ifndef st_atime
+#define st_atime st_atim.tv_sec
+#define st_mtime st_mtim.tv_sec
+#define st_ctime st_ctim.tv_sec
+#endif
+
 #ifndef S_IFMT
 #define S_IFMT 0170000
 #endif
