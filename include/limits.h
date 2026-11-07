@@ -1,13 +1,18 @@
-#ifndef NELIBC_LIMITS_H
-#define NELIBC_LIMITS_H
-
 /* Hybrid builds keep the host's <limits.h>. The standalone profile has no
  * host libc, so this header is the whole of it: the C limits for x86-64
  * LP64 and the POSIX values Nelibc itself enforces (sysconf reports the
- * same numbers). */
+ * same numbers).
+ *
+ * The hybrid branch has no include guard on purpose: GCC's <limits.h>
+ * includes "syslimits.h", whose #include_next <limits.h> restarts the
+ * search at the first directory and so lands here again. This file must
+ * forward that second inclusion too, or GCC's header never reaches the
+ * host's and PATH_MAX and the other POSIX limits vanish (libc-test
+ * functional/argv stopped building in the gcc hybrid run). */
 #if !defined(NELIBC_STANDALONE)
 #include_next <limits.h>
-#else
+#elif !defined(NELIBC_LIMITS_H)
+#define NELIBC_LIMITS_H
 
 #define CHAR_BIT 8
 #define SCHAR_MIN (-128)
@@ -142,4 +147,3 @@
 #define _XOPEN_PATH_MAX 1024
 
 #endif /* NELIBC_STANDALONE */
-#endif

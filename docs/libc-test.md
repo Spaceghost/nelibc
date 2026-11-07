@@ -331,6 +331,18 @@ standalone mode: it spells the `PRI*`/`SCN*` macros, choosing the length
 modifier of each `FAST`, `MAX` and `PTR` type from the compiler's own
 `<stdint.h>` limits (GCC and clang disagree on `int_fast16_t`).
 
+The hybrid branch of `include/limits.h` first carried the same include
+guard as the standalone one. GCC's `<limits.h>` includes `"syslimits.h"`,
+whose `#include_next <limits.h>` restarts the search and lands in Nelibc's
+header a second time; the guard made that inclusion empty, so GCC never
+reached glibc's header and `PATH_MAX` and the other POSIX limits vanished
+from every GCC hybrid build that includes `<limits.h>`. The gate's target
+list does not run `libc-test-gcc`, which is where it showed:
+`functional/argv` stopped building. Found and fixed on branch
+`standalone-batch-2`: the guard now covers only the standalone branch, and
+`make libc-test-gcc` is back to 30 failing, all expected (zig was never
+affected: clang's `<limits.h>` reaches the next one directly).
+
 Rerun on the branch, same checkout and method:
 
 | | pass | build | link | fail | timeout |
