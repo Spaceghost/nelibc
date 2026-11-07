@@ -43,6 +43,8 @@ Container `nelibc-writ` (Debian 12, glibc 2.36, GCC 12.2), libc-test
 | Nelibc zig hybrid, this slice, `make libc-test-zig` | 2026-11-07 | 118 (`tools/libc_test_expected_zig.txt`) |
 | Nelibc gcc hybrid, slice 2, `make libc-test-gcc` | 2026-11-07 | 114 (`tools/libc_test_expected_gcc.txt`) |
 | Nelibc zig hybrid, slice 2, `make libc-test-zig` | 2026-11-07 | 116 (`tools/libc_test_expected_zig.txt`) |
+| Nelibc gcc hybrid, libm slice (`2db0322`, rebased on slice 2), `make libc-test-gcc` | 2026-11-07 | 38 (`tools/libc_test_expected_gcc.txt`) |
+| Nelibc zig hybrid, libm slice (`2db0322`, rebased on slice 2), `make libc-test-zig` | 2026-11-07 | 42 (`tools/libc_test_expected_zig.txt`, 74 math tests removed) |
 
 Against the baseline, `7c321ae` fixed 8 tests glibc 2.36 fails (`strtol`,
 `wcstol`, and the `fmin`/`fmax` families) and added 73 failures:
@@ -90,7 +92,8 @@ did. The 112 gcc failures that remain, now the expected list, are:
   against the same musl cases in `tools/syscall_smoke.c` instead; slice 2
   fixed `%8c` on short input there. `crypt`, `wordexp`, `clocale_mbfuncs`
   and `pthread_cancel-points` are the host's.
-- 78 math tests: the exception-flag and ulp items above.
+- 78 math tests: the exception-flag and ulp items above (the libm slice below
+  reduced the math failures to seven).
 - 8 regression tests, all of which glibc 2.36 also fails. One is
   Nelibc-specific in kind: `fpclassify-invalid-ld80` shows `%La` of an x87
   pseudo-denormal returning an error instead of formatting it.
@@ -131,6 +134,59 @@ the integral part; `exp10l(nan)` raises `INVALID`; `erfl`, `erfcl`,
 Since slice 2, `%Le`, `%Lf`, `%Lg` of a long double that is not a double are
 formatted exactly from its x87 bits (see `docs/core-roadmap.md`, "Exact long
 double decimal"); before, they returned -1 with `EINVAL`.
+
+## The libm slice
+
+The math failures were fixed by porting musl 1.2.5's algorithms into
+`src/math_core.nelua` (attribution comments name each source file; no C math
+code is linked). `tools/gen_musl_tables.py` regenerates the exp, pow, log and
+log2 tables from a musl checkout, and encodes binary80 constants, which Nelua
+would otherwise round through binary64.
+
+- Exception flags: musl's `FORCE_EVAL` is the opaque asm identity
+  `nelibc_fp_barrier_hw` (`f`/`l` variants) in `src/math_core_x86_64.S`;
+  underflow, overflow, divide-by-zero and invalid results are produced by
+  real operations instead of returned constants. `sqrt(NaN)`, `ilogb`,
+  `logb`, `scalb`, tiny `sin`/`atan`/`exp`/`expm1`, subnormal float results,
+  `atan2f`, `log1pf`, `roundl`, `expl`/`exp2l` (thresholds before the x87
+  `fist` step), `atanhl(+-1)`, `powl(+-0, -y)` and the gamma poles raise what
+  glibc raises.
+- Values: `exp`, `exp2`, `exp10`, `expm1`, `pow`, `log`, `log2`, `log10`,
+  `log1p`, `sinh`, `cosh`, `tanh`, `asin`, `acos`, `atan`, `atan2`, `tan`,
+  `asinh`, `acosh`, `atanh`, `hypot`, `lgamma_r`, `tgamma`, `j0`, `j1`, `jn`,
+  `y0`, `y1`, `yn`, their float variants, and `lgammal_r`/`tgammal` are
+  musl ports.
+
+Measured on `nelibc-writ` (gcc profile, libc-test `63e36e9`, unprivileged
+`build` user, 2026-11-07). The per-function ULP rows are from the agent's run on the
+slice before its rebase; the two libc-test rows are from commit `2db0322`, the
+slice rebased onto slice 2 (logs `/work/artifacts/libm3-{gcc,zig}.log` in the container):
+
+| Check | Result |
+| --- | --- |
+| `make libc-test-gcc` | 38 failing, all in the expected list; `math/*` failures are `fma`, `fmaf` and the five long double tests below |
+| `make libc-test-zig` | 42 failing, all in the expected list; the same seven `math/*` tests; 74 math tests left the zig list |
+| `make math-core-diff-gcc` | PASS: 116 functions matched on edge values and 100,000 generated inputs; max ULP exp/log 0/0 (float 1/1), sin/cos/tan 1/1/1 (float 1/1/1), pow 0 (float 1), erf/erfc 1/1 (float 1/2), cbrt 3 (float 1); hypot is gated at 4 ULP, not measured tighter |
+| `make math-core-standalone-gcc` | PASS |
+| libc-test math vectors | every counted vector (round-to-nearest, and the flag checks in all modes) within libc-test's 1.5 ulp tolerance; the directed-rounding ulp lines libc-test prints with `X` and does not count were not tallied |
+| `lgammal`/`tgammal` sanity vectors | a probe (`printf` lacks `%La`, so the test's own value lines are unreadable) shows `lgammal` within 2 ulp and `tgammal` within 1 ulp of the binary80 expectations on the ten sanity vectors each, `lgammal(-2.5)` at 0.96 ulp |
+
+Per-family counts of failing `math/*` tests on the way, each from a
+`tools/libc_test.sh gcc` run on the streamed tree (commit messages carry the
+run tags): 90 before the slice; 45 after exp/pow/trig and the flag discipline;
+28 after lgamma/tgamma/Bessel; 6 after log/hypot and the long double flag
+fixes; 2 after the ld80 gamma ports.
+
+Still failing: `math/fma` and `math/fmaf`. Nelibc's own `fma`/`fmaf` are
+linked; the failure is the sign of an underflowed zero
+(`fma(-0x1p-1000, 0x1p-100, 0)` returns `+0`, glibc's vectors want `-0`), and
+glibc 2.36 alone fails the same two tests. Also still failing, in both
+profiles: `math/erfcl`, `erfl`, `exp10l`, `modfl` and `pow10l`, the long
+double tests slice 2 made visible (`modfl(-0)` returns `+0` for the integral
+part, `exp10l(nan)` raises `INVALID`, `erfl`, `erfcl`, `exp10l` are off by 2 to
+11 ulp). This slice ported none of the long double erf/exp10/modf code. The zig
+list differs from the gcc list only in four API tests clang rejects at build
+time (`ftw`, `iso646`, `sys_stat`, `sys_wait`).
 
 ## Not run
 

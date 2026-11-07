@@ -89,6 +89,21 @@ strings, including half-to-even ties at the 63rd fraction digit, the
 smallest subnormal, `LDBL_MAX` in full (4,940 characters) and width/flag
 combinations; `tools/syscall_smoke.c` checks the standalone `swprintf`.
 
+### libm slice, 2026-11-07 (musl math ports)
+
+`src/math_core.nelua` carries ports of musl 1.2.5's exp/exp2/pow/log/log2
+(table driven), the fdlibm-derived log10/log1p/expm1/hypot, trigonometric,
+hyperbolic and inverse families, lgamma_r, tgamma, the Bessel functions and
+musl's ld80 lgammal_r/tgammal, with musl's exception-flag discipline through
+an opaque asm barrier. libc-test (`docs/libc-test.md`, "The libm slice"):
+gcc 38 and zig 42 expected failures, down from 114 and 116; the seven math
+tests left are `fma`, `fmaf` and five long double functions this slice did
+not port.
+
+Gate: the 155-target list, container `nelibc-writ`, user `build`, Nelua
+`dabbd9ef`, on `87f1ddf`: 155/155 targets exited 0 and no log contains a
+warning; logs in `/work/artifacts/gate-libm-20261107-0854/`.
+
 ### Gate run, 2026-11-07 (Nelua `dabbd9ef`, no source change)
 
 Same container, user and target list as the runs below, on main `28879ed`
@@ -830,14 +845,16 @@ including APIs absent from the pinned musl export set.
   host because observed behavior differs by profile/compiler. Signed-zero
   equality and subnormal-to-zero exception cases are checked; broader
   zero/quiet-NaN coverage remains. Its
-  Nelua `exp`/`expf` and `log`/`logf` use a range-reduced degree-20 exponential
-  polynomial and an atanh logarithm series with split ln(2) constants. The
-  differential run over edge values and 100,000 generated inputs reports a
-  maximum observed error of 1 ULP for exp, 2 ULP for log, and 1 ULP for both
-  float variants on the current host; the cross-libc matrix checks the same
+  Nelua `exp`/`exp2`/`pow` and `log`/`log2` are ports of musl 1.2.5's
+  table-driven routines (`tools/gen_musl_tables.py` regenerates the tables);
+  `log10`, `log1p`, `expm1`, `hypot` and the trigonometric, hyperbolic and
+  inverse families follow musl's fdlibm-derived code, and the float variants
+  widen to double. The differential run over edge values and 100,000 generated
+  inputs reports a maximum observed error of 0 ULP for exp and log and 1 ULP
+  for both float variants (nelibc-writ, gcc profile, 2026-11-07); the cross-libc matrix checks the same
   four-ULP bound on each profile. Range errno and overflow/underflow/pole/domain
   exception flags are also checked.
-  `j0`/`j1` and `y0`/`y1` use Nelua power series below 12 and optimally truncated Hankel expansions above it; float APIs widen to double. Four-profile comparisons cover zero behavior, domain edges, roots, large arguments, and 100,000 generated inputs, gated at 2e-9 relative error for double and 2e-6 for float. `tgamma` and `lgamma` use the musl Lanczos rational coefficients with reflection for negative nonintegers; `lgamma_r`/`lgammaf_r` return the gamma sign, and `lgamma`/`lgammaf` update `signgam`. Differential checks span edge cases and 100,000 generated inputs, with relative-error gates of 2e-13 for double gamma, 2e-12 for double log-gamma, and 2e-5 for float variants. The GNU `sincos` pair API shares argument reduction and evaluates both kernels once; `sincosf` widens to double. Integer-order Bessel `jn`/`yn` now use forward recurrence for oscillatory inputs and a continued-fraction/backward recurrence for large orders; float APIs widen to double. Their four-profile differential matrix covers order sign, negative inputs, zero/pole behavior, transition regions, large arguments, and generated inputs. `fma` uses a portable 128-bit integer-product fallback to preserve fused rounding; `fmaf` uses a double-precision product/sum with a halfway correction. Exact-bit differential checks cover edge cases and 100,000 generated triples across compiler/libc profiles. `cbrt` reduces the binary exponent modulo three, seeds from the Nelua
+  `j0`/`j1`/`jn` and `y0`/`y1`/`yn` are ports of musl 1.2.5's fdlibm Bessel code; float APIs widen to double. Four-profile comparisons cover zero behavior, domain edges, roots, large arguments, and 100,000 generated inputs, gated at 2e-9 relative error for double and 2e-6 for float. `tgamma` follows musl's Lanczos code and `lgamma_r` musl's fdlibm code with reflection for negative nonintegers; `lgammal_r` and `tgammal` are musl's ld80 ports with every binary80 coefficient spelled as its bit pattern; `lgamma_r`/`lgammaf_r` return the gamma sign, and `lgamma`/`lgammaf` update `signgam`. Differential checks span edge cases and 100,000 generated inputs, with relative-error gates of 2e-13 for double gamma, 2e-12 for double log-gamma, and 2e-5 for float variants. The GNU `sincos` pair API shares argument reduction and evaluates both kernels once; `sincosf` widens to double. The Bessel four-profile differential matrix covers order sign, negative inputs, zero/pole behavior, transition regions, large arguments, and generated inputs. `fma` uses a portable 128-bit integer-product fallback to preserve fused rounding; `fmaf` uses a double-precision product/sum with a halfway correction. Exact-bit differential checks cover edge cases and 100,000 generated triples across compiler/libc profiles. `cbrt` reduces the binary exponent modulo three, seeds from the Nelua
   exponential/logarithm cores, then applies Newton refinement. Across the
   current edge set and 100,000 generated inputs per profile, observed error is
   at most 4 ULP for binary64 and 0 ULP for binary32; this is differential

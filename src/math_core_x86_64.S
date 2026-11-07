@@ -84,6 +84,30 @@ nelibc_fenv_raise_hw:
 .Lnelibc_fenv_min:    .quad 0x0010000000000000  /* DBL_MIN */
 .text
 
+/* Identity functions musl's FORCE_EVAL/fp_barrier idioms call through: an
+   opaque call makes the compiler evaluate an operation kept only for its
+   floating-point flags and stops it from folding one at compile time. */
+.globl nelibc_fp_barrier_hw
+.type nelibc_fp_barrier_hw,@function
+nelibc_fp_barrier_hw:
+  ret
+.size nelibc_fp_barrier_hw, .-nelibc_fp_barrier_hw
+
+/* Long double twin: the argument arrives on the stack, the result leaves in
+   st(0). */
+.globl nelibc_fp_barrierl_hw
+.type nelibc_fp_barrierl_hw,@function
+nelibc_fp_barrierl_hw:
+  fldt 8(%rsp)
+  ret
+.size nelibc_fp_barrierl_hw, .-nelibc_fp_barrierl_hw
+
+.globl nelibc_fp_barrierf_hw
+.type nelibc_fp_barrierf_hw,@function
+nelibc_fp_barrierf_hw:
+  ret
+.size nelibc_fp_barrierf_hw, .-nelibc_fp_barrierf_hw
+
 .globl nelibc_sqrt_hw
 .type nelibc_sqrt_hw,@function
 nelibc_sqrt_hw:
@@ -613,32 +637,6 @@ nelibc_roundl_hw:
 .size nelibc_roundl_hw, .-nelibc_roundl_hw
 
 /* roundl: nearest integral value, halfway cases away from zero. */
-.globl nelibc_roundl_away_hw
-.type nelibc_roundl_away_hw,@function
-nelibc_roundl_away_hw:
-  subq $48, %rsp
-  movzwl 64(%rsp), %eax
-  andl $0x8000, %eax
-  movw %ax, 4(%rsp)
-  fnstcw 0(%rsp)
-  movzwl 0(%rsp), %eax
-  andl $0xfffff0ff, %eax
-  orl $0x0f00, %eax
-  movw %ax, 2(%rsp)
-  fldcw 2(%rsp)
-  fldt 56(%rsp)
-  fabs
-  fldt .Lhalf80(%rip)
-  faddp %st, %st(1)
-  frndint
-  cmpw $0, 4(%rsp)
-  je .Lroundl_away_done
-  fchs
-.Lroundl_away_done:
-  fldcw 0(%rsp)
-  addq $48, %rsp
-  ret
-.size nelibc_roundl_away_hw, .-nelibc_roundl_away_hw
 
 /* fistpll follows the active x87 rounding direction and raises FE_INVALID
    when the result is outside the signed 64-bit range. */
