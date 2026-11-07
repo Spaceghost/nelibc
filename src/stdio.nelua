@@ -4760,7 +4760,15 @@ local function ftell(stream: *FILE): clong <cexport, codename 'ftell'>
     stream_unlock(stream)
     return position
   end
-  local position: clong = lseek(stream.fd, 0, 1)
+  -- Buffered data on an O_APPEND descriptor will land at the end of the
+  -- file, wherever the offset is now (fdopen(fd, "a") on a 4-byte file, a
+  -- 3-byte fwrite: ftell is 7). musl measures from SEEK_END in that case.
+  local whence: cint = 1 -- SEEK_CUR
+  if stream.write_length > 0 then
+    local descriptor_flags: clong = nelibc_raw_fcntl(stream.fd, 3, 0) -- F_GETFL
+    if descriptor_flags >= 0 and (descriptor_flags & 1024) ~= 0 then whence = 2 end -- O_APPEND
+  end
+  local position: clong = lseek(stream.fd, 0, whence)
   if position < 0 then
     stream_unlock(stream)
     return -1

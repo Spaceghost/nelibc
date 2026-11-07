@@ -455,7 +455,9 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
   forked child's atexit handler runs before its destructor (503).
 - `regression/ftello-unflushed-append`: `ftello is broken before flush: got
   3, want 7`. After `fdopen(fd, "a")` on a 4-byte file and a 3-byte
-  `fwrite`, `ftello` ignores that appends go to the end of the file.
+  `fwrite`, `ftello` ignores that appends go to the end of the file. **Fixed** (branch `ftello-append`): with buffered output on an
+  `O_APPEND` descriptor (`F_GETFL`), `ftell`/`ftello` measure from
+  `SEEK_END`, as musl does; gcc 280, zig 281.
 - `functional/sem_open` (timeout): `sem_open.c:37: could not reopen sem: got
   0x7f..., want 0x7f...`. A second `sem_open` of the same name in the same
   process maps a new address instead of returning the existing `sem_t *`
