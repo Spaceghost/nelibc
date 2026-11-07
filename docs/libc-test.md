@@ -473,6 +473,15 @@ strict ASCII and `mbrtowc` rejects bytes 0x80-0xff, where musl (and POSIX
 Issue 8's single-byte POSIX locale) maps every byte. glibc 2.36 fails it too.
 This is a recorded divergence, not changed here.
 
+Gate for `math-macros` and `pwd-grp` together (branch `gate-merge`, which
+also declares `exit`/`_Exit`/`abort`/`_exit` noreturn and makes
+`tools/libc_test.sh` drop its binaries after recording): 159/159 on
+`0a069fc` with a cleared zig cache, no warnings;
+`/work/artifacts/gate-merge3-20261107-1543/`. Standalone libc-test: gcc 309,
+zig 310 of 343. The first run of this stack, on `b057047`, exited 0
+everywhere but logged a `-Wreturn-type` warning that zig's object cache had
+hidden in earlier gates: a gate should run with a cleared zig cache.
+
 Gate coverage note (2026-11-07): AGENTS.md lists `libc-test-gcc` and
 `libc-test-zig` in the gate, but the container's gate script ran only the
 155 smoke, diff, host and shootout targets. The `<limits.h>` change in
