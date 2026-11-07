@@ -853,30 +853,32 @@ static int setjmp_smoke(void) {
   }
   if (r != 1 || count != 3) return 600;
 
-  sigset_t empty, now;
-  sigemptyset(&empty);
-  if (sigprocmask(SIG_SETMASK, &empty, 0) != 0) return 601;
+  /* SIGURG is used by no other check; earlier checks leave SIGUSR1 pending */
+  sigset_t orig, urg, now;
+  sigemptyset(&urg);
+  sigaddset(&urg, SIGURG);
+  if (sigprocmask(SIG_UNBLOCK, &urg, &orig) != 0) return 601;
   struct sigaction sa;
   memset(&sa, 0, sizeof sa);
   sa.sa_handler = setjmp_on_usr1;
   sigemptyset(&sa.sa_mask);
-  if (sigaction(SIGUSR1, &sa, 0) != 0) return 601;
+  if (sigaction(SIGURG, &sa, 0) != 0) return 601;
   volatile int jumped = 0;
   if (sigsetjmp(sigsetjmp_env, 1) == 0) {
-    raise(SIGUSR1);
+    raise(SIGURG);
     return 602;
   }
   jumped++;
-  if (sigprocmask(SIG_SETMASK, 0, &now) != 0 || sigismember(&now, SIGUSR1)) return 603;
-  /* savemask 0: the handler's blocked SIGUSR1 stays blocked after the jump */
+  if (sigprocmask(SIG_SETMASK, 0, &now) != 0 || sigismember(&now, SIGURG)) return 603;
+  /* savemask 0: the handler's blocked SIGURG stays blocked after the jump */
   if (sigsetjmp(sigsetjmp_env, 0) == 0) {
-    raise(SIGUSR1);
+    raise(SIGURG);
     return 602;
   }
   jumped++;
-  if (sigprocmask(SIG_SETMASK, 0, &now) != 0 || !sigismember(&now, SIGUSR1)) return 604;
-  sigprocmask(SIG_SETMASK, &empty, 0);
-  signal(SIGUSR1, SIG_DFL);
+  if (sigprocmask(SIG_SETMASK, 0, &now) != 0 || !sigismember(&now, SIGURG)) return 604;
+  signal(SIGURG, SIG_DFL);
+  sigprocmask(SIG_SETMASK, &orig, 0);
   if (jumped != 2) return 604;
   if (_setjmp(setjmp_env) == 0) _longjmp(setjmp_env, 5);
   return 0;
