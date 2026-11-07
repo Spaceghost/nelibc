@@ -821,7 +821,10 @@ static int regex_error(const char *pattern, int cflags) {
 #define O_NOCTTY 0400
 #endif
 
-/* <termios.h>, tcgetpgrp/tcgetsid and the pseudo-terminal functions on a
+#ifdef NELIBC_STANDALONE
+/* Standalone only: hybrid builds use the host libc's termios (glibc keeps a
+ * separate input speed, and the TLS-errno profile cannot see its errno).
+ * <termios.h>, tcgetpgrp/tcgetsid and the pseudo-terminal functions on a
  * fresh pty pair (checks 605 to 624). The process has no controlling
  * terminal among these descriptors, so the process-group queries fail with
  * ENOTTY. */
@@ -848,20 +851,12 @@ static int termios_smoke(void) {
   struct termios back;
   if (tcgetattr(slave, &back) != 0 || (back.c_lflag & ICANON) || back.c_cc[VMIN] != 1) return 612;
   errno = 0;
-  if (tcsetattr(slave, 3, &raw) != -1) return 613;
-#ifdef NELIBC_STANDALONE
-  /* hybrid builds run glibc's tcsetattr, which sets glibc's internal errno;
-   * the TLS-errno profile reads nelibc's */
-  if (errno != EINVAL) return 613;
-#endif
+  if (tcsetattr(slave, 3, &raw) != -1 || errno != EINVAL) return 613;
 
   struct termios sp = back;
-  if (cfsetospeed(&sp, B9600) != 0 || cfgetospeed(&sp) != B9600) return 614;
-#ifdef NELIBC_STANDALONE
-  /* one speed for both directions (musl); glibc keeps a separate input speed */
-  if (cfgetispeed(&sp) != B9600) return 614;
+  /* one speed for both directions, as in musl */
+  if (cfsetospeed(&sp, B9600) != 0 || cfgetospeed(&sp) != B9600 || cfgetispeed(&sp) != B9600) return 614;
   if (cfsetispeed(&sp, 0) != 0 || cfgetispeed(&sp) != B9600) return 614;
-#endif
   errno = 0;
   if (cfsetospeed(&sp, 12345) != -1 || errno != EINVAL || cfgetospeed(&sp) != B9600) return 615;
   if (cfsetspeed(&sp, B115200) != 0 || cfgetospeed(&sp) != B115200) return 615;
@@ -874,12 +869,10 @@ static int termios_smoke(void) {
   if (tcflush(slave, TCIOFLUSH) != 0 || tcflow(slave, TCOON) != 0 || tcdrain(slave) != 0) return 617;
   if (tcsendbreak(slave, 0) != 0) return 617;
 
-#ifdef NELIBC_STANDALONE
   struct winsize ws = {33, 101, 0, 0};
   struct winsize wb = {0, 0, 0, 0};
   if (tcsetwinsize(master, &ws) != 0 || tcgetwinsize(slave, &wb) != 0 ||
       wb.ws_row != 33 || wb.ws_col != 101) return 618;
-#endif
 
   errno = 0;
   if (tcgetpgrp(slave) != -1 || errno != ENOTTY) return 619;
@@ -895,6 +888,7 @@ static int termios_smoke(void) {
   close(master);
   return 0;
 }
+#endif
 
 static jmp_buf setjmp_env;
 static sigjmp_buf sigsetjmp_env;
@@ -4017,8 +4011,10 @@ extern int nelibc_standalone_global_collate_mode(void);
   if (posix_memalign(&posix_aligned, 256, SIZE_MAX) != ENOMEM ||
       posix_aligned != (void *)(uintptr_t)0x5678 || errno != EDOM) return 32;
 #endif
+#ifdef NELIBC_STANDALONE
   int termios_result = termios_smoke();
   if (termios_result != 0) return termios_result;
+#endif
   int setjmp_result = setjmp_smoke();
   if (setjmp_result != 0) return setjmp_result;
   int fcntl_result = fcntl_argument_smoke();
