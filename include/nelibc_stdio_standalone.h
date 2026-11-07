@@ -81,6 +81,9 @@ char *fgets(char *restrict buffer, int count, FILE *restrict stream);
 char *fgets_unlocked(char *restrict buffer, int count, FILE *restrict stream);
 int ungetc(int character, FILE *stream);
 int fputc(int character, FILE *stream);
+int putc(int character, FILE *stream);
+int putc_unlocked(int character, FILE *stream);
+int getc_unlocked(FILE *stream);
 int fputs(const char *restrict string, FILE *restrict stream);
 int fputs_unlocked(const char *restrict string, FILE *restrict stream);
 int fprintf(FILE *restrict stream, const char *restrict format, ...);
@@ -98,6 +101,8 @@ FILE *freopen(const char *restrict path, const char *restrict mode, FILE *restri
 FILE *fmemopen(void *restrict buffer, size_t size, const char *restrict mode);
 FILE *open_memstream(char **restrict buffer, size_t *restrict size);
 FILE *fdopen(int fd, const char *restrict mode);
+FILE *popen(const char *command, const char *mode);
+int pclose(FILE *stream);
 int fileno(FILE *stream);
 FILE *tmpfile(void);
 int remove(const char *path);

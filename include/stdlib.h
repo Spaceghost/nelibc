@@ -36,6 +36,7 @@ long random(void);
 void srandom(unsigned int);
 char *initstate(unsigned int, char *, size_t);
 char *setstate(char *);
+char *mktemp(char *);
 
 /* Pseudo-terminals, src/termios_standalone.nelua. */
 int posix_openpt(int flags);
