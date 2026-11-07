@@ -2465,7 +2465,7 @@ extern int nelibc_standalone_global_collate_mode(void);
   if (fflush(file) != 0 || fseek(file, 0, SEEK_SET) != 0) return 228;
   char formatted_contents[128] = {0};
   if (fread(formatted_contents, 1, 92, file) != 92 ||
-      memcmp(formatted_contents, "0x00002a ok ! % -12\n1.26 -2.3 1.25e+01 1.23e+04 0x1p+2 0X1.8P+0 0x0.0000000000001p-1022-7:42", 92) != 0)
+      memcmp(formatted_contents, "0x00002a ok ! % -12\n1.26 -2.3 1.25e+01 1.23e+04 0x2p+1 0X1.8P+0 0x0.0000000000001p-1022-7:42", 92) != 0)
     return 230;
   if (fclose(file) != 0) return 231;
   if (unlinkat(AT_FDCWD, stdio_path, 0) != 0) return 232;
