@@ -97,6 +97,7 @@ OPERATIONS = [
     ("shmget", 29), ("shmat", 30), ("shmctl", 31), ("semget", 64),
     ("semop", 65), ("semctl", 66), ("shmdt", 67), ("msgget", 68),
     ("msgsnd", 69), ("msgrcv", 70), ("msgctl", 71), ("semtimedop", 220),
+    ("renameat2", 316),
 ]
 
 NELUA_MODULES = [

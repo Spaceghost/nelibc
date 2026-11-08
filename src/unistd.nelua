@@ -215,6 +215,7 @@ local SYS_REMOVEXATTRAT: culong <comptime> = 225
 local SYS_OPEN_TREE_ATTR: culong <comptime> = 226
 local SYS_FILE_GETATTR: culong <comptime> = 227
 local SYS_FILE_SETATTR: culong <comptime> = 228
+local SYS_RENAMEAT2: culong <comptime> = 241
 -- (end nelibc_sys operations)
 
 -- POSIX adaptation of the raw Linux x86_64 syscall. errno comes from the host
@@ -5004,6 +5005,16 @@ local function renameat(olddirfd: cint, oldpath: *const void, newdirfd: cint, ne
   return (@cint)(syscall_result(nelibc_sys6(
     SYS_RENAMEAT, (@culong)(olddirfd), (@culong)((@usize)(oldpath)),
     (@culong)(newdirfd), (@culong)((@usize)(newpath)), 0_culong, 0_culong
+  )))
+end
+
+-- Linux renameat2: renameat with RENAME_NOREPLACE, RENAME_EXCHANGE and
+-- RENAME_WHITEOUT. As in glibc, flags of zero go through renameat.
+local function renameat2(olddirfd: cint, oldpath: *const void, newdirfd: cint, newpath: *const void, flags: cuint): cint <cexport, codename 'renameat2'>
+  if flags == 0 then return renameat(olddirfd, oldpath, newdirfd, newpath) end
+  return (@cint)(syscall_result(nelibc_sys6(
+    SYS_RENAMEAT2, (@culong)(olddirfd), (@culong)((@usize)(oldpath)),
+    (@culong)(newdirfd), (@culong)((@usize)(newpath)), (@culong)(flags), 0_culong
   )))
 end
 

@@ -848,7 +848,7 @@ Linux scheduling calls `sched_yield`, `sched_getaffinity`, and `sched_setaffinit
 `getrusage`, and `times`,
 `umask`,
 `uname`,
-`lseek`, `ftruncate`, `truncate`, `fsync`, `fdatasync`, `sync`, `syncfs`, `openat`, `creat`, `unlinkat`, `mkdirat`, `renameat`, `linkat`, `chmod`, `fchmod`, `fchmodat`, `access`, `faccessat`, Linux `faccessat2`, `fstatat`, `fstat`, `stat`, `lstat`, `symlinkat`,
+`lseek`, `ftruncate`, `truncate`, `fsync`, `fdatasync`, `sync`, `syncfs`, `openat`, `creat`, `unlinkat`, `mkdirat`, `renameat`, Linux `renameat2` (zero flags through `renameat`, as glibc), `linkat`, `chmod`, `fchmod`, `fchmodat`, `access`, `faccessat`, Linux `faccessat2`, `fstatat`, `fstat`, `stat`, `lstat`, `symlinkat`,
 Linux `fallocate` and POSIX `posix_fallocate`,
 POSIX `posix_fadvise` and Linux `readahead`,
 Linux `sendfile`,

@@ -244,4 +244,5 @@ static const unsigned short nelibc_sys_linux_x86_64_numbers[NELIBC_SYS_COUNT] = 
   70, /* msgrcv */
   71, /* msgctl */
   220, /* semtimedop */
+  316, /* renameat2 */
 };

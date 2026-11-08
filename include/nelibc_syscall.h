@@ -498,6 +498,7 @@ int mknodat(int dirfd, const char *pathname, mode_t mode, dev_t device);
 int mkfifoat(int dirfd, const char *pathname, mode_t mode);
 int mkfifo(const char *pathname, mode_t mode);
 int renameat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath);
+int renameat2(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, unsigned int flags);
 int rename(const char *oldpath, const char *newpath);
 int linkat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath, int flags);
 int link(const char *oldpath, const char *newpath);

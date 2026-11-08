@@ -257,7 +257,8 @@ enum nelibc_sys_op {
   NELIBC_SYS_MSGRCV = 238,
   NELIBC_SYS_MSGCTL = 239,
   NELIBC_SYS_SEMTIMEDOP = 240,
-  NELIBC_SYS_COUNT = 241
+  NELIBC_SYS_RENAMEAT2 = 241,
+  NELIBC_SYS_COUNT = 242
 };
 
 /* Perform an operation. Results follow the Linux convention the modules

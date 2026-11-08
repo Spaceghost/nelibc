@@ -1047,6 +1047,35 @@ static int shm_dn_smoke(void) {
 }
 #endif
 
+/* renameat2 (checks 640 to 642): RENAME_NOREPLACE refuses an existing
+ * name, RENAME_EXCHANGE swaps two names, unknown flags are EINVAL and zero
+ * flags behave as renameat. */
+static int renameat2_smoke(void) {
+  char dir[] = "/tmp/nelibc-renameat2-XXXXXX";
+  if (!mkdtemp(dir)) return 640;
+  int dfd = open(dir, O_RDONLY | O_DIRECTORY);
+  if (dfd < 0) return 640;
+  int a = openat(dfd, "a", O_WRONLY | O_CREAT, 0600);
+  int b = openat(dfd, "b", O_WRONLY | O_CREAT, 0600);
+  if (a < 0 || b < 0 || write(a, "A", 1) != 1 || write(b, "BB", 2) != 2) return 640;
+  close(a); close(b);
+  int result = 0;
+  errno = 0;
+  if (renameat2(dfd, "a", dfd, "b", 1u) != -1 || errno != EEXIST) result = 640;
+  struct stat st;
+  if (result == 0 && renameat2(dfd, "a", dfd, "b", 2u) != 0) result = 641;
+  if (result == 0 && (fstatat(dfd, "a", &st, 0) != 0 || st.st_size != 2)) result = 641;
+  if (result == 0 && (fstatat(dfd, "b", &st, 0) != 0 || st.st_size != 1)) result = 641;
+  errno = 0;
+  if (result == 0 && (renameat2(dfd, "a", dfd, "b", 0x80u) != -1 || errno != EINVAL)) result = 642;
+  if (result == 0 && renameat2(dfd, "a", dfd, "c", 0u) != 0) result = 642;
+  if (result == 0 && (fstatat(dfd, "c", &st, 0) != 0 || st.st_size != 2 || fstatat(dfd, "a", &st, 0) == 0)) result = 642;
+  unlinkat(dfd, "b", 0); unlinkat(dfd, "c", 0); unlinkat(dfd, "a", 0);
+  close(dfd);
+  rmdir(dir);
+  return result;
+}
+
 int main(int argc, char **argv) {
   if (!constructor_ran) return 501;
   {
@@ -4132,6 +4161,8 @@ extern int nelibc_standalone_global_collate_mode(void);
   int termios_result = termios_smoke();
   if (termios_result != 0) return termios_result;
 #endif
+  int renameat2_result = renameat2_smoke();
+  if (renameat2_result != 0) return renameat2_result;
   int setjmp_result = setjmp_smoke();
   if (setjmp_result != 0) return setjmp_result;
   int fcntl_result = fcntl_argument_smoke();

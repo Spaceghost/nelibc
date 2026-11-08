@@ -107,6 +107,13 @@ int fileno(FILE *stream);
 FILE *tmpfile(void);
 int remove(const char *path);
 int rename(const char *old_path, const char *new_path);
+int renameat(int old_dirfd, const char *old_path, int new_dirfd, const char *new_path);
+#if defined(_GNU_SOURCE)
+#define RENAME_NOREPLACE (1 << 0)
+#define RENAME_EXCHANGE (1 << 1)
+#define RENAME_WHITEOUT (1 << 2)
+int renameat2(int old_dirfd, const char *old_path, int new_dirfd, const char *new_path, unsigned int flags);
+#endif
 int fclose(FILE *stream);
 int fflush(FILE *stream);
 int setvbuf(FILE *restrict stream, char *restrict buffer, int mode, size_t size);
