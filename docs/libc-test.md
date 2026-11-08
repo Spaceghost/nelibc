@@ -471,7 +471,10 @@ Gate for `standalone-batch-2` and `search-h` together: the 159-target list
 `functional/clocale_mbfuncs` now builds and fails: Nelibc's C locale is
 strict ASCII and `mbrtowc` rejects bytes 0x80-0xff, where musl (and POSIX
 Issue 8's single-byte POSIX locale) maps every byte. glibc 2.36 fails it too.
-This is a recorded divergence, not changed here.
+This is a recorded divergence, not changed here. **Fixed later** (branch
+`c-locale-spawn`): in the standalone C locale every byte is a character;
+bytes 0x80-0xff decode to 0xdf80-0xdfff and encode back, as musl's
+`CODEUNIT` does, and no other wide character above 0x7f has a byte.
 
 Gate for `math-macros` and `pwd-grp` together (branch `gate-merge`, which
 also declares `exit`/`_Exit`/`abort`/`_exit` noreturn and makes
@@ -777,7 +780,9 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
   `envp` with `EINVAL` (`src/spawn_standalone.nelua`,
   `nelibc_posix_spawn_common`). POSIX does not define a null `envp`; musl and
   glibc pass it to `execve`, which Linux treats as an empty environment.
-  A compatibility gap rather than a conformance bug.
+  A compatibility gap rather than a conformance bug. **Fixed** (branch
+  `c-locale-spawn`): a null `envp` runs the child with an empty
+  environment.
 - `functional/fscanf` (zig): `fscanf(f, " %n%*d%n", &x, &y) failed (-1 !=
   0)` and `x failed (1 != 6)` on input `"      42"`: the return is `EOF`
   instead of 0, and `%n` after leading white space stores 1 instead of 6.

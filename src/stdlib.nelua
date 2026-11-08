@@ -866,7 +866,9 @@ local function decode_multibyte(state: pointer, wide: *[0]cint, text: *[0]cchar 
     return 0
   end
   if mode == 0 or first < 0x80 then
-    if first > 0x7f then return ~0_csize end
+    -- POSIX 2024: the C locale is single-byte and every byte is a character;
+    -- bytes 0x80-0xff become 0xdf80-0xdfff as in musl (CODEUNIT)
+    if first > 0x7f then first = 0xdf00 | first end
     if wide ~= nilptr then wide[0] = (@cint)(first) end
     return 1
   end
@@ -906,13 +908,18 @@ end
 local function encode_multibyte(state: pointer, output: *[0]cchar, wide: cint): csize <inline>
   local mode: cint = nelibc_multibyte_mode()
   if mode == 2 then return nelibc_multibyte_encode(state, output, wide) end
-  if wide < 0 or wide > 0x10ffff or (wide >= 0xd800 and wide <= 0xdfff) then
-    return ~0_csize
-  end
   if mode == 0 then
-    if wide > 0x7f then return ~0_csize end
+    -- the C locale: ASCII and the code units 0xdf80-0xdfff of bytes 0x80-0xff
+    if wide >= 0xdf80 and wide <= 0xdfff then
+      if output ~= nilptr then output[0] = (@cchar)(wide & 0xff) end
+      return 1
+    end
+    if wide < 0 or wide > 0x7f then return ~0_csize end
     if output ~= nilptr then output[0] = (@cchar)(wide) end
     return 1
+  end
+  if wide < 0 or wide > 0x10ffff or (wide >= 0xd800 and wide <= 0xdfff) then
+    return ~0_csize
   end
   if wide < 0x80 then
     if output ~= nilptr then output[0] = (@cchar)(wide) end
@@ -1029,11 +1036,7 @@ local function mbrtowc(wide: *[0]cint, text: *const [0]cchar, size: csize,
       return 0
     end
     if mode == 0 or first_byte < 0x80 then
-      if first_byte > 0x7f then
-        words[0] = 0
-        nelibc_errno_location()[0] = 84 -- EILSEQ
-        return ~0_csize
-      end
+      if first_byte > 0x7f then first_byte = 0xdf00 | first_byte end -- C locale code unit
       if wide ~= nilptr then wide[0] = (@cint)(first_byte) end
       words[0] = 0
       return 1

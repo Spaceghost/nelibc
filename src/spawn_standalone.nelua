@@ -317,6 +317,8 @@ local function posix_spawn_file_actions_addfchdir_np(actions: *SpawnFileActions,
                                     0_cuint, nilptr)
 end
 
+local spawn_empty_environment: [1]*[0]cchar = {nilptr}
+
 local function nelibc_spawn_child_fail(error_fd: cint, error_number: cint): void
   local written: csize = 0
   while written < 4_csize do
@@ -536,7 +538,10 @@ local function nelibc_posix_spawn_common(pid_output: *[0]cint,
     pathname: *const [0]cchar, file_actions: pointer,
     attributes: pointer, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar,
     search_path: boolean): cint
-  if pid_output == nilptr or pathname == nilptr or argv == nilptr or envp == nilptr then
+  -- A null envp runs the program with an empty environment, as execve does
+  -- on Linux (glibc and musl pass it through); libc-test spawn relies on it.
+  if envp == nilptr then envp = (@*[0]*[0]cchar)(&spawn_empty_environment[0]) end
+  if pid_output == nilptr or pathname == nilptr or argv == nilptr then
     return 22_cint -- EINVAL
   end
   local attribute_state: *SpawnAttributes = nilptr
