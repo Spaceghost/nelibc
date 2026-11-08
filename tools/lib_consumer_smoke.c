@@ -2200,6 +2200,8 @@ int main(int argc, char **argv) {
   if (fnmatch_bracket_result != 0) return 710 + fnmatch_bracket_result;
   int long_double_format_result = long_double_format_probe();
   if (long_double_format_result != 0) return 720 + long_double_format_result;
+  errno = 0;
+  if (execvp("", (char *[]){"", 0}) != -1 || errno != ENOENT) return 780;
   int strtod_special_result = strtod_special_probe();
   if (strtod_special_result != 0) return 760 + strtod_special_result;
   int printf_precision_result = printf_precision_probe();

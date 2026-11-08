@@ -1042,6 +1042,12 @@ local function exec_search_path(file: *const [0]cchar, argv: *[0]*[0]cchar,
     file_length = file_length + 1_csize
   end
   if has_slash then return execve_with_shell_fallback(file, argv, envp) end
+  -- An empty name is ENOENT without a search, as in glibc and musl (a search
+  -- would try each PATH directory itself and report EACCES).
+  if file_length == 0_csize then
+    nelibc_errno_location()[0] = 2_cint -- ENOENT
+    return -1_cint
+  end
 
   local search_path: *[0]cchar = getenv('PATH')
   if search_path == nilptr then search_path = '/bin:/usr/bin' end
