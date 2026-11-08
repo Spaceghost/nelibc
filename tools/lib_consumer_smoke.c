@@ -27,6 +27,7 @@
 #include <semaphore.h>
 #include <sys/stat.h>
 #include <utime.h>
+#include <wordexp.h>
 #include "nelibc_alloc.h"
 #ifdef NELIBC_STANDALONE
 #include <pthread.h>
@@ -2183,6 +2184,67 @@ static int malloc_usable_size_probe(void) {
   return 0;
 }
 
+/* 1 when wordexp returns other than want_ret or, on success, words other
+ * than want (each word followed by '|'). */
+static int wordexp_check(const char *words, int flags, int want_ret, const char *want) {
+  wordexp_t we;
+  int r = wordexp(words, &we, flags);
+  if (r != want_ret) {
+    fprintf(stderr, "wordexp(\"%s\", %d) returned %d, want %d\n", words, flags, r, want_ret);
+    return 1;
+  }
+  if (r != 0) return 0;
+  char joined[256] = "";
+  size_t used = 0;
+  for (size_t i = 0; i < we.we_wordc && used < sizeof joined; i++)
+    used += (size_t)snprintf(joined + used, sizeof joined - used, "%s|", we.we_wordv[i]);
+  int bad = we.we_wordv[we.we_wordc] != NULL || strcmp(joined, want) != 0;
+  if (bad) fprintf(stderr, "wordexp(\"%s\", %d) gave [%s], want [%s]\n", words, flags, joined, want);
+  wordfree(&we);
+  return bad;
+}
+
+static int wordexp_probe(void) {
+  if (setenv("WEXP_PROBE", "a b", 1) != 0 || unsetenv("WEXP_UNSET_PROBE") != 0) return 1;
+  if (wordexp_check("one 'two three'", 0, 0, "one|two three|") ||
+      wordexp_check("$WEXP_PROBE", 0, 0, "a|b|") ||
+      wordexp_check("\"$WEXP_PROBE\"", 0, 0, "a b|") ||
+      wordexp_check("$((2*21))", WRDE_NOCMD, 0, "42|") ||
+      wordexp_check("$(echo hi)", 0, 0, "hi|") ||
+      wordexp_check("\"${WEXP_PROBE%'b'}\"", WRDE_NOCMD, 0, "a |")) return 2;
+  if (wordexp_check("$(echo x)", WRDE_NOCMD, WRDE_CMDSUB, "") ||
+      wordexp_check("`echo x`", WRDE_NOCMD, WRDE_CMDSUB, "") ||
+      wordexp_check("a;b", WRDE_NOCMD, WRDE_BADCHAR, "") ||
+      wordexp_check("'unterminated", 0, WRDE_SYNTAX, "")) return 3;
+  wordexp_t we;
+  we.we_offs = 2;
+  if (wordexp("x y", &we, WRDE_DOOFFS) != 0 || we.we_wordc != 2 || we.we_wordv[0] != NULL ||
+      we.we_wordv[1] != NULL || strcmp(we.we_wordv[2], "x") != 0 ||
+      strcmp(we.we_wordv[3], "y") != 0 || we.we_wordv[4] != NULL) return 4;
+  if (wordexp("z", &we, WRDE_DOOFFS | WRDE_APPEND) != 0 || we.we_wordc != 3 ||
+      we.we_wordv[1] != NULL || strcmp(we.we_wordv[4], "z") != 0 || we.we_wordv[5] != NULL) return 5;
+  if (wordexp("q", &we, WRDE_REUSE) != 0 || we.we_wordc != 1 || we.we_offs != 0 ||
+      strcmp(we.we_wordv[0], "q") != 0 || we.we_wordv[1] != NULL) return 6;
+  wordfree(&we);
+#if defined(NELIBC_STANDALONE) || defined(__GLIBC__)
+  /* musl ignores WRDE_UNDEF and rejects the last two as WRDE_BADCHAR */
+  if (wordexp_check("$WEXP_UNSET_PROBE", WRDE_UNDEF, WRDE_BADVAL, "") ||
+      wordexp_check("${WEXP_PROBE#a }", WRDE_NOCMD, 0, "b|") ||
+      wordexp_check("$((case x in x) echo a;; esac) )", WRDE_NOCMD, WRDE_CMDSUB, "")) return 7;
+#endif
+#ifdef NELIBC_STANDALONE
+  /* glibc has no $'...' and no comments, stops at the case pattern's ")",
+   * and takes $1 and $# from the program's argv; musl from its own shell. */
+  if (wordexp_check("$# $1", 0, 0, "0|") ||
+      wordexp_check("$'a\\tb' x #(y", WRDE_NOCMD, 0, "a\tb|x|") ||
+      wordexp_check("$'\\''$(echo bad)", WRDE_NOCMD, WRDE_CMDSUB, "") ||
+      wordexp_check("${X-\"$\"{A}B}", WRDE_NOCMD, WRDE_BADCHAR, "") ||
+      wordexp_check("$(case a in a) echo x;; esac)", 0, 0, "x|") ||
+      wordexp_check("$( (case a in (a) echo $'y\\'z';; esac) )", 0, 0, "y'z|")) return 8;
+#endif
+  return 0;
+}
+
 int main(int argc, char **argv) {
   int byte_order_result = byte_order_probe();
   if (byte_order_result != 0) return 640 + byte_order_result;
@@ -2208,6 +2270,8 @@ int main(int argc, char **argv) {
   if (printf_precision_result != 0) return 740 + printf_precision_result;
   int malloc_usable_size_result = malloc_usable_size_probe();
   if (malloc_usable_size_result != 0) return 730 + malloc_usable_size_result;
+  int wordexp_result = wordexp_probe();
+  if (wordexp_result != 0) return 790 + wordexp_result;
   int locale_float_parser_result = locale_float_parser_probe();
   if (locale_float_parser_result != 0) return 89 + locale_float_parser_result;
   void *minimal_aligned = memalign(1, 17);

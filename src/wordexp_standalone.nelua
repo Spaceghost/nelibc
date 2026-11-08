@@ -1,0 +1,995 @@
+-- <wordexp.h> for the standalone profile: wordexp and wordfree.
+--
+-- As in musl 1.2.5 (src/misc/wordexp.c), /bin/sh does the expansion: the
+-- words become the arguments of `printf '%s\0' x WORDS` and the NUL-separated
+-- output is read back through a pipe. Differences from musl:
+--
+-- * The string is lexed first (wordexp_lex below), in every mode. The lexer
+--   follows the quoting of XCU 2.2 and 2.6: backslash, single and double
+--   quotes, POSIX.1-2024 $'...', ${...} with its operators and nested words,
+--   $((...)) and its nesting, $(...) and backquotes, and # comments. With
+--   WRDE_NOCMD it rejects every command substitution (WRDE_CMDSUB) and every
+--   unquoted | & ; < > ( ) { } and newline (WRDE_BADCHAR). "$((" whose first
+--   unmatched ")" is not followed by ")" is "$( (", a command substitution.
+--   Where shells disagree on how a NOCMD string is quoted, it is WRDE_SYNTAX
+--   rather than a guess: a single quote in the word of ${x-word} (any operator
+--   but % %% # ##) inside double quotes or $((...)), $'...' inside ${...},
+--   an unquoted ( or ) in a ${...} word inside $((...)), and # " ' ; \ in
+--   $((...)).
+-- * $'...' is translated into plain single-quoted text before the shell sees
+--   it, so it means the same with a shell that predates POSIX.1-2024 (dash).
+-- * The words run in a shell function with no arguments, so $1, $# and $@
+--   are the empty positional parameters, not the script's. The function is
+--   defined before a marker is printed: no marker means the shell could not
+--   parse the string (WRDE_SYNTAX); a marker but no expansion means an
+--   expansion error, WRDE_BADVAL under WRDE_UNDEF (set -u) and WRDE_SYNTAX
+--   otherwise (${x?}, an arithmetic error).
+-- * Without WRDE_SHOWERR the shell's stderr is /dev/null, set up by
+--   posix_spawn rather than by a redirection in the command text, which a
+--   trailing comment would swallow.
+-- * Without WRDE_NOCMD the shell decides what a command substitution
+--   contains: when the lexer fails inside a string that has commands (an
+--   unquoted operator, newline, $( or backquote), the string goes to the
+--   shell untranslated and the shell's verdict stands.
+## pragmas.nogc = true
+## pragmas.noentrypoint = true
+
+local function malloc(size: csize): pointer <cimport> end
+local function realloc(ptr: pointer, size: csize): pointer <cimport> end
+local function free(ptr: pointer): void <cimport> end
+local function read(fd: cint, buf: pointer, count: csize): clong <cimport> end
+local function close(fd: cint): cint <cimport> end
+local function pipe2(pipefd: *[0]cint, flags: cint): cint <cimport> end
+local function nelibc_raw_fcntl(fd: cint, command: cint, argument: culong): cint <cimport> end
+local function nelibc_waitpid(pid: cint, status: pointer, options: cint): cint <cimport> end
+local function nelibc_errno_location(): *[0]cint <cimport> end
+local function nelibc_environment_vector(): *[0]*[0]cchar <cimport> end
+local function pthread_setcancelstate(state: cint, old_state: *[0]cint): cint <cimport> end
+local function posix_spawn_file_actions_init(actions: pointer): cint <cimport> end
+local function posix_spawn_file_actions_destroy(actions: pointer): cint <cimport> end
+local function posix_spawn_file_actions_adddup2(actions: pointer, fd: cint, newfd: cint): cint <cimport> end
+local function posix_spawn_file_actions_addopen(actions: pointer, fd: cint,
+    pathname: *const [0]cchar, flags: cint, mode: cuint): cint <cimport> end
+local function posix_spawn(pid: *[0]cint, pathname: *const [0]cchar, actions: pointer,
+    attributes: pointer, argv: *[0]*[0]cchar, envp: *[0]*[0]cchar): cint <cimport> end
+
+local WRDE_DOOFFS: cint <comptime> = 1
+local WRDE_APPEND: cint <comptime> = 2
+local WRDE_NOCMD: cint <comptime> = 4
+local WRDE_REUSE: cint <comptime> = 8
+local WRDE_SHOWERR: cint <comptime> = 16
+local WRDE_UNDEF: cint <comptime> = 32
+local WRDE_NOSPACE: cint <comptime> = 1
+local WRDE_BADCHAR: cint <comptime> = 2
+local WRDE_BADVAL: cint <comptime> = 3
+local WRDE_CMDSUB: cint <comptime> = 4
+local WRDE_SYNTAX: cint <comptime> = 5
+
+local EINTR: cint <comptime> = 4
+local O_WRONLY: cint <comptime> = 1
+local O_CLOEXEC: cint <comptime> = 0x80000
+local F_DUPFD_CLOEXEC: cint <comptime> = 1030
+
+-- Characters the lexer looks at.
+local CH_TAB: cchar <comptime> = 9
+local CH_NL: cchar <comptime> = 10
+local CH_SPACE: cchar <comptime> = 32
+local CH_BANG: cchar <comptime> = 33
+local CH_DQUOTE: cchar <comptime> = 34
+local CH_HASH: cchar <comptime> = 35
+local CH_DOLLAR: cchar <comptime> = 36
+local CH_PERCENT: cchar <comptime> = 37
+local CH_AMP: cchar <comptime> = 38
+local CH_SQUOTE: cchar <comptime> = 39
+local CH_LPAREN: cchar <comptime> = 40
+local CH_RPAREN: cchar <comptime> = 41
+local CH_STAR: cchar <comptime> = 42
+local CH_PLUS: cchar <comptime> = 43
+local CH_MINUS: cchar <comptime> = 45
+local CH_ZERO: cchar <comptime> = 48
+local CH_SEVEN: cchar <comptime> = 55
+local CH_NINE: cchar <comptime> = 57
+local CH_COLON: cchar <comptime> = 58
+local CH_SEMI: cchar <comptime> = 59
+local CH_LT: cchar <comptime> = 60
+local CH_EQUALS: cchar <comptime> = 61
+local CH_GT: cchar <comptime> = 62
+local CH_QUESTION: cchar <comptime> = 63
+local CH_AT: cchar <comptime> = 64
+local CH_BACKSLASH: cchar <comptime> = 92
+local CH_UNDERSCORE: cchar <comptime> = 95
+local CH_BACKQUOTE: cchar <comptime> = 96
+local CH_LBRACE: cchar <comptime> = 123
+local CH_PIPE: cchar <comptime> = 124
+local CH_RBRACE: cchar <comptime> = 125
+
+----------------------------------------------------------------------
+-- Growable byte buffer
+----------------------------------------------------------------------
+
+local WordexpBuffer: type = @record{
+  data: *[0]cchar,
+  length: csize,
+  capacity: csize,
+  failed: boolean
+}
+
+local function buffer_put(buffer: *WordexpBuffer, c: cchar): void
+  if buffer.failed then return end
+  if buffer.length + 1 >= buffer.capacity then
+    local new_capacity: csize = 256
+    if buffer.capacity ~= 0 then new_capacity = buffer.capacity * 2 end
+    local grown = (@*[0]cchar)(realloc((@pointer)(buffer.data), new_capacity))
+    if grown == nilptr then
+      buffer.failed = true
+      return
+    end
+    buffer.data = grown
+    buffer.capacity = new_capacity
+  end
+  buffer.data[buffer.length] = c
+  buffer.length = buffer.length + 1
+end
+
+local function buffer_put_span(buffer: *WordexpBuffer, s: *[0]cchar, count: csize): void
+  local index: csize = 0
+  while index < count do
+    buffer_put(buffer, s[index])
+    index = index + 1
+  end
+end
+
+local function buffer_put_text(buffer: *WordexpBuffer, text: cstring): void
+  local s = (@*[0]cchar)(text)
+  local index: csize = 0
+  while s[index] ~= 0 do
+    buffer_put(buffer, s[index])
+    index = index + 1
+  end
+end
+
+----------------------------------------------------------------------
+-- Lexer
+----------------------------------------------------------------------
+
+local FRAME_TOP: cint <comptime> = 0     -- the words themselves
+local FRAME_COMMAND: cint <comptime> = 1 -- $( ... ), only without WRDE_NOCMD
+local FRAME_DQUOTE: cint <comptime> = 2  -- " ... "
+local FRAME_BRACE: cint <comptime> = 3   -- ${ ... }
+local FRAME_ARITH: cint <comptime> = 4   -- $(( ... ))
+
+local WordexpFrame: type = @record{
+  kind: cint,
+  word_start: boolean,  -- top/command: a # here starts a comment
+  depth: csize,         -- arith/command: open parentheses
+  cases: csize,         -- command: open case ... esac
+  pattern: boolean,     -- command: a case pattern (ended by ")") is next
+  in_word: boolean,     -- brace: past the name and operator
+  dq_word: boolean,     -- brace: the word is read as if double-quoted
+  dq_context: boolean,  -- brace: the ${ is inside double quotes or $((
+  in_arith: boolean,    -- brace: the nearest enclosing non-brace is $((
+  restart: csize,       -- arith: the input index after "$("
+  out_length: csize     -- arith: the output length before "$(("
+}
+
+local WordexpLexer: type = @record{
+  s: *[0]cchar,
+  index: csize,
+  nocmd: boolean,
+  commands: boolean,    -- the string has command syntax (see the header)
+  out: *WordexpBuffer,
+  frames: *[0]WordexpFrame,
+  count: csize,
+  capacity: csize
+}
+
+local function lex_push(lexer: *WordexpLexer, kind: cint): *WordexpFrame
+  if lexer.count == lexer.capacity then
+    local new_capacity: csize = 16
+    if lexer.capacity ~= 0 then new_capacity = lexer.capacity * 2 end
+    local grown = (@*[0]WordexpFrame)(realloc((@pointer)(lexer.frames),
+        new_capacity * #WordexpFrame))
+    if grown == nilptr then return nilptr end
+    lexer.frames = grown
+    lexer.capacity = new_capacity
+  end
+  local frame: *WordexpFrame = &lexer.frames[lexer.count]
+  frame.kind = kind
+  frame.word_start = false
+  frame.depth = 0
+  frame.cases = 0
+  frame.pattern = false
+  frame.in_word = false
+  frame.dq_word = false
+  frame.dq_context = false
+  frame.in_arith = false
+  frame.restart = 0
+  frame.out_length = 0
+  lexer.count = lexer.count + 1
+  return frame
+end
+
+local function is_name_start(c: cchar): boolean
+  return c == CH_UNDERSCORE or (c >= 65 and c <= 90) or (c >= 97 and c <= 122)
+end
+
+local function is_name_char(c: cchar): boolean
+  return is_name_start(c) or (c >= CH_ZERO and c <= CH_NINE)
+end
+
+local function is_digit(c: cchar): boolean
+  return c >= CH_ZERO and c <= CH_NINE
+end
+
+-- Special parameters: @ * # ? - $ ! 0
+local function is_special(c: cchar): boolean
+  return c == CH_AT or c == CH_STAR or c == CH_HASH or c == CH_QUESTION or
+    c == CH_MINUS or c == CH_DOLLAR or c == CH_BANG or c == CH_ZERO
+end
+
+-- Characters that end a word in command text.
+local function is_command_delimiter(c: cchar): boolean
+  return c == 0 or c == CH_SPACE or c == CH_TAB or c == CH_NL or c == CH_SEMI or
+    c == CH_AMP or c == CH_PIPE or c == CH_LPAREN or c == CH_RPAREN or
+    c == CH_LT or c == CH_GT
+end
+
+local function hex_value(c: cchar): cint
+  if c >= CH_ZERO and c <= CH_NINE then return (@cint)(c) - 48 end
+  if c >= 97 and c <= 102 then return (@cint)(c) - 87 end
+  if c >= 65 and c <= 70 then return (@cint)(c) - 55 end
+  return -1
+end
+
+-- $'...' at lexer.index (the $): emit the same bytes as plain '...' text.
+-- Escapes are POSIX.1-2024's (XCU 2.2.4) plus \E and \?; an unknown escape
+-- keeps its backslash. A NUL byte ends the string: it and the rest up to the
+-- closing quote are dropped (one of the two results POSIX allows).
+local function lex_dollar_single(lexer: *WordexpLexer): cint
+  local s = lexer.s
+  local out = lexer.out
+  local i: csize = lexer.index + 2
+  local dropping = false
+  buffer_put(out, CH_SQUOTE)
+  while true do
+    local c: cchar = s[i]
+    local value: cint = 0
+    local emit = true
+    if c == 0 then return WRDE_SYNTAX end
+    if c == CH_SQUOTE then
+      i = i + 1
+      break
+    end
+    if c ~= CH_BACKSLASH then
+      value = (@cint)((@cuchar)(c))
+      i = i + 1
+    else
+      c = s[i + 1]
+      if c == 0 then return WRDE_SYNTAX end
+      i = i + 2
+      if c == 97 then value = 7           -- \a
+      elseif c == 98 then value = 8       -- \b
+      elseif c == 101 or c == 69 then value = 27 -- \e \E
+      elseif c == 102 then value = 12     -- \f
+      elseif c == 110 then value = 10     -- \n
+      elseif c == 114 then value = 13     -- \r
+      elseif c == 116 then value = 9      -- \t
+      elseif c == 118 then value = 11     -- \v
+      elseif c == CH_BACKSLASH or c == CH_SQUOTE or c == CH_DQUOTE or c == CH_QUESTION then
+        value = (@cint)(c)
+      elseif c == 99 then                 -- \cX
+        local x: cchar = s[i]
+        if x == 0 then return WRDE_SYNTAX end
+        i = i + 1
+        if x == CH_BACKSLASH then
+          if s[i] ~= CH_BACKSLASH then return WRDE_SYNTAX end
+          i = i + 1
+          value = 0x1c
+        elseif x == CH_QUESTION then
+          value = 0x7f
+        else
+          value = (@cint)((@cuchar)(x)) & 0x1f
+        end
+      elseif c == 120 then                -- \xHH
+        local h = hex_value(s[i])
+        if h < 0 then
+          emit = false
+          if not dropping then
+            buffer_put(out, CH_BACKSLASH)
+            buffer_put(out, c)
+          end
+        else
+          value = h
+          i = i + 1
+          h = hex_value(s[i])
+          if h >= 0 then
+            value = value * 16 + h
+            i = i + 1
+          end
+        end
+      elseif c >= CH_ZERO and c <= CH_SEVEN then -- \ddd
+        value = (@cint)(c) - 48
+        if s[i] >= CH_ZERO and s[i] <= CH_SEVEN then
+          value = value * 8 + (@cint)(s[i]) - 48
+          i = i + 1
+          if s[i] >= CH_ZERO and s[i] <= CH_SEVEN then
+            value = value * 8 + (@cint)(s[i]) - 48
+            i = i + 1
+          end
+        end
+        value = value & 0xff
+      else
+        emit = false
+        if not dropping then
+          buffer_put(out, CH_BACKSLASH)
+          buffer_put(out, c)
+        end
+      end
+    end
+    if emit then
+      if value == 0 then dropping = true end
+      if not dropping then
+        if value == (@cint)(CH_SQUOTE) then
+          buffer_put_text(out, "'\\''")
+        else
+          buffer_put(out, (@cchar)((@cuchar)(value)))
+        end
+      end
+    end
+  end
+  buffer_put(out, CH_SQUOTE)
+  lexer.index = i
+  return 0
+end
+
+-- A backquoted command substitution, copied as it is (no WRDE_NOCMD).
+local function lex_backquote(lexer: *WordexpLexer): cint
+  if lexer.nocmd then return WRDE_CMDSUB end
+  local s = lexer.s
+  lexer.commands = true
+  buffer_put(lexer.out, s[lexer.index])
+  lexer.index = lexer.index + 1
+  while true do
+    local c: cchar = s[lexer.index]
+    if c == 0 then return WRDE_SYNTAX end
+    buffer_put(lexer.out, c)
+    lexer.index = lexer.index + 1
+    if c == CH_BACKQUOTE then return 0 end
+    if c == CH_BACKSLASH then
+      if s[lexer.index] == 0 then return WRDE_SYNTAX end
+      buffer_put(lexer.out, s[lexer.index])
+      lexer.index = lexer.index + 1
+    end
+  end
+  return 0
+end
+
+-- '...' copied as it is.
+local function lex_single(lexer: *WordexpLexer): cint
+  local s = lexer.s
+  local j: csize = lexer.index + 1
+  while s[j] ~= 0 and s[j] ~= CH_SQUOTE do j = j + 1 end
+  if s[j] == 0 then return WRDE_SYNTAX end
+  buffer_put_span(lexer.out, (@*[0]cchar)(&s[lexer.index]), j + 1 - lexer.index)
+  lexer.index = j + 1
+  return 0
+end
+
+local DOLLAR_SINGLE_LITERAL: cint <comptime> = 0 -- $' is $ and a quote character
+local DOLLAR_SINGLE_QUOTE: cint <comptime> = 1   -- $'...' quoting
+local DOLLAR_SINGLE_REJECT: cint <comptime> = 2  -- WRDE_SYNTAX
+
+-- At a $ (lexer.index). dq_context and in_arith describe where it is, for a
+-- ${ opened here.
+local function lex_dollar(lexer: *WordexpLexer, dq_context: boolean,
+    in_arith: boolean, single_mode: cint): cint
+  local s = lexer.s
+  local i: csize = lexer.index
+  local next: cchar = s[i + 1]
+  if next == CH_LPAREN then
+    if s[i + 2] == CH_LPAREN then
+      local out_length: csize = lexer.out.length
+      local frame = lex_push(lexer, FRAME_ARITH)
+      if frame == nilptr then return WRDE_NOSPACE end
+      frame.restart = i + 2
+      frame.out_length = out_length
+      buffer_put_span(lexer.out, (@*[0]cchar)(&s[i]), 3)
+      lexer.index = i + 3
+      return 0
+    end
+    if lexer.nocmd then return WRDE_CMDSUB end
+    lexer.commands = true
+    local frame = lex_push(lexer, FRAME_COMMAND)
+    if frame == nilptr then return WRDE_NOSPACE end
+    frame.word_start = true
+    buffer_put_span(lexer.out, (@*[0]cchar)(&s[i]), 2)
+    lexer.index = i + 2
+    return 0
+  end
+  if next == CH_LBRACE then
+    local frame = lex_push(lexer, FRAME_BRACE)
+    if frame == nilptr then return WRDE_NOSPACE end
+    frame.dq_context = dq_context
+    frame.in_arith = in_arith
+    buffer_put_span(lexer.out, (@*[0]cchar)(&s[i]), 2)
+    lexer.index = i + 2
+    return 0
+  end
+  if next == CH_SQUOTE then
+    if single_mode == DOLLAR_SINGLE_QUOTE then return lex_dollar_single(lexer) end
+    if single_mode == DOLLAR_SINGLE_REJECT then return WRDE_SYNTAX end
+  end
+  buffer_put(lexer.out, CH_DOLLAR)
+  lexer.index = i + 1
+  return 0
+end
+
+-- The parameter and operator after ${ (XCU 2.6.2). A bare name or
+-- ${#name} must be followed by }.
+local function lex_brace_head(lexer: *WordexpLexer, frame: *WordexpFrame): cint
+  local s = lexer.s
+  local i: csize = lexer.index
+  local j: csize = i
+  local length = false
+  local pattern = false
+  if s[j] == CH_HASH and s[j + 1] ~= CH_RBRACE and (is_name_start(s[j + 1]) or
+      is_digit(s[j + 1]) or (is_special(s[j + 1]) and s[j + 2] == CH_RBRACE)) then
+    length = true
+    j = j + 1
+  end
+  if is_name_start(s[j]) then
+    while is_name_char(s[j]) do j = j + 1 end
+  elseif is_digit(s[j]) then
+    while is_digit(s[j]) do j = j + 1 end
+  elseif is_special(s[j]) then
+    j = j + 1
+  else
+    return WRDE_SYNTAX
+  end
+  if s[j] == CH_RBRACE then
+    buffer_put_span(lexer.out, (@*[0]cchar)(&s[i]), j + 1 - i)
+    lexer.index = j + 1
+    lexer.count = lexer.count - 1
+    return 0
+  end
+  if length then return WRDE_SYNTAX end
+  local c: cchar = s[j]
+  local after: cchar = s[j + 1]
+  if c == CH_COLON and (after == CH_MINUS or after == CH_EQUALS or
+      after == CH_QUESTION or after == CH_PLUS) then
+    j = j + 2
+  elseif c == CH_MINUS or c == CH_EQUALS or c == CH_QUESTION or c == CH_PLUS then
+    j = j + 1
+  elseif c == CH_PERCENT or c == CH_HASH then
+    pattern = true
+    j = j + 1
+    if after == c then j = j + 1 end
+  else
+    return WRDE_SYNTAX
+  end
+  buffer_put_span(lexer.out, (@*[0]cchar)(&s[i]), j - i)
+  lexer.index = j
+  frame.in_word = true
+  -- XCU 2.6.2: in double quotes, the word of % %% # ## is still a pattern
+  -- whose quotes are recognized; the other words are read as quoted text.
+  frame.dq_word = (not pattern) and frame.dq_context
+  return 0
+end
+
+-- Top-level words and command text.
+local function lex_words(lexer: *WordexpLexer, frame: *WordexpFrame): cint
+  local s = lexer.s
+  local out = lexer.out
+  local c: cchar = s[lexer.index]
+  local command = frame.kind == FRAME_COMMAND
+  if c == 0 then
+    if command then return WRDE_SYNTAX end
+    lexer.count = 0
+    return 0
+  end
+  if c == CH_SPACE or c == CH_TAB then
+    buffer_put(out, c)
+    lexer.index = lexer.index + 1
+    frame.word_start = true
+    return 0
+  end
+  if c == CH_NL then
+    if lexer.nocmd then return WRDE_BADCHAR end
+    lexer.commands = true
+    buffer_put(out, c)
+    lexer.index = lexer.index + 1
+    frame.word_start = true
+    return 0
+  end
+  if c == CH_HASH and frame.word_start then
+    while s[lexer.index] ~= 0 and s[lexer.index] ~= CH_NL do
+      buffer_put(out, s[lexer.index])
+      lexer.index = lexer.index + 1
+    end
+    return 0
+  end
+  if c == CH_BACKSLASH then
+    if s[lexer.index + 1] == 0 then return WRDE_SYNTAX end
+    -- a backslash-newline is removed (XCU 2.2.1) and so starts no word
+    if s[lexer.index + 1] ~= CH_NL then frame.word_start = false end
+    buffer_put_span(out, (@*[0]cchar)(&s[lexer.index]), 2)
+    lexer.index = lexer.index + 2
+    return 0
+  end
+  local at_word_start = frame.word_start
+  frame.word_start = false
+  if c == CH_SQUOTE then return lex_single(lexer) end
+  if c == CH_DQUOTE then
+    buffer_put(out, c)
+    lexer.index = lexer.index + 1
+    if lex_push(lexer, FRAME_DQUOTE) == nilptr then return WRDE_NOSPACE end
+    return 0
+  end
+  if c == CH_BACKQUOTE then return lex_backquote(lexer) end
+  if c == CH_DOLLAR then return lex_dollar(lexer, false, false, DOLLAR_SINGLE_QUOTE) end
+  if command then
+    -- Only the extent of the substitution matters here (the shell parses
+    -- it): parentheses nest, and in case ... esac the ")" that ends each
+    -- pattern (after "in" or ";;", optionally opened by "(") is not one.
+    if c == CH_LPAREN then
+      if not frame.pattern then frame.depth = frame.depth + 1 end
+      frame.word_start = true
+    elseif c == CH_RPAREN then
+      if frame.pattern then
+        frame.pattern = false
+      elseif frame.depth > 0 then
+        frame.depth = frame.depth - 1
+      else
+        buffer_put(out, c)
+        lexer.index = lexer.index + 1
+        lexer.count = lexer.count - 1
+        return 0
+      end
+      frame.word_start = true
+    elseif c == CH_SEMI and s[lexer.index + 1] == CH_SEMI then
+      if frame.cases > 0 then frame.pattern = true end
+      buffer_put_span(out, (@*[0]cchar)(&s[lexer.index]), 2)
+      lexer.index = lexer.index + 2
+      frame.word_start = true
+      return 0
+    elseif c == CH_SEMI or c == CH_AMP or c == CH_PIPE or c == CH_LT or c == CH_GT then
+      frame.word_start = true
+    elseif is_name_start(c) and at_word_start then
+      local j: csize = lexer.index
+      while is_name_char(s[j]) do j = j + 1 end
+      if is_command_delimiter(s[j]) then
+        local w = (@*[0]cchar)(&s[lexer.index])
+        local n: csize = j - lexer.index
+        if n == 4 and w[0] == 99 and w[1] == 97 and w[2] == 115 and w[3] == 101 then        -- case
+          frame.cases = frame.cases + 1
+          frame.pattern = false
+        elseif n == 4 and w[0] == 101 and w[1] == 115 and w[2] == 97 and w[3] == 99 and     -- esac
+            frame.cases > 0 then
+          frame.cases = frame.cases - 1
+          frame.pattern = false
+        elseif n == 2 and w[0] == 105 and w[1] == 110 and frame.cases > 0 and               -- in
+            not frame.pattern then
+          frame.pattern = true
+        end
+      end
+      buffer_put_span(out, (@*[0]cchar)(&s[lexer.index]), j - lexer.index)
+      lexer.index = j
+      return 0
+    end
+  elseif c == CH_PIPE or c == CH_AMP or c == CH_SEMI or c == CH_LT or c == CH_GT or
+      c == CH_LPAREN or c == CH_RPAREN or c == CH_LBRACE or c == CH_RBRACE then
+    if lexer.nocmd then return WRDE_BADCHAR end
+    lexer.commands = true
+    if c ~= CH_LBRACE and c ~= CH_RBRACE then frame.word_start = true end
+  end
+  buffer_put(out, c)
+  lexer.index = lexer.index + 1
+  return 0
+end
+
+local function lex_dquote(lexer: *WordexpLexer): cint
+  local s = lexer.s
+  local out = lexer.out
+  local c: cchar = s[lexer.index]
+  if c == 0 then return WRDE_SYNTAX end
+  if c == CH_DQUOTE then
+    buffer_put(out, c)
+    lexer.index = lexer.index + 1
+    lexer.count = lexer.count - 1
+    return 0
+  end
+  if c == CH_BACKSLASH then
+    if s[lexer.index + 1] == 0 then return WRDE_SYNTAX end
+    buffer_put_span(out, (@*[0]cchar)(&s[lexer.index]), 2)
+    lexer.index = lexer.index + 2
+    return 0
+  end
+  if c == CH_BACKQUOTE then return lex_backquote(lexer) end
+  if c == CH_DOLLAR then return lex_dollar(lexer, true, false, DOLLAR_SINGLE_LITERAL) end
+  buffer_put(out, c)
+  lexer.index = lexer.index + 1
+  return 0
+end
+
+local function lex_brace(lexer: *WordexpLexer, frame: *WordexpFrame): cint
+  if not frame.in_word then return lex_brace_head(lexer, frame) end
+  local s = lexer.s
+  local out = lexer.out
+  local c: cchar = s[lexer.index]
+  if c == 0 then return WRDE_SYNTAX end
+  if c == CH_RBRACE then
+    buffer_put(out, c)
+    lexer.index = lexer.index + 1
+    lexer.count = lexer.count - 1
+    return 0
+  end
+  if c == CH_BACKSLASH then
+    if s[lexer.index + 1] == 0 then return WRDE_SYNTAX end
+    buffer_put_span(out, (@*[0]cchar)(&s[lexer.index]), 2)
+    lexer.index = lexer.index + 2
+    return 0
+  end
+  if c == CH_SQUOTE then
+    if not frame.dq_word then return lex_single(lexer) end
+    -- shells differ on whether this quotes; it is a plain character to dash
+    if lexer.nocmd then return WRDE_SYNTAX end
+  end
+  if c == CH_DQUOTE then
+    buffer_put(out, c)
+    lexer.index = lexer.index + 1
+    if lex_push(lexer, FRAME_DQUOTE) == nilptr then return WRDE_NOSPACE end
+    return 0
+  end
+  if c == CH_BACKQUOTE then return lex_backquote(lexer) end
+  if c == CH_DOLLAR then
+    local single_mode: cint = DOLLAR_SINGLE_QUOTE
+    if lexer.nocmd then
+      single_mode = DOLLAR_SINGLE_REJECT
+    elseif frame.dq_word then
+      single_mode = DOLLAR_SINGLE_LITERAL
+    end
+    return lex_dollar(lexer, frame.dq_word, frame.in_arith, single_mode)
+  end
+  if (c == CH_LPAREN or c == CH_RPAREN) and lexer.nocmd and frame.in_arith then
+    return WRDE_SYNTAX
+  end
+  buffer_put(out, c)
+  lexer.index = lexer.index + 1
+  return 0
+end
+
+local function lex_arith(lexer: *WordexpLexer, frame: *WordexpFrame): cint
+  local s = lexer.s
+  local out = lexer.out
+  local c: cchar = s[lexer.index]
+  if c == 0 then return WRDE_SYNTAX end
+  if c == CH_LPAREN then
+    frame.depth = frame.depth + 1
+    buffer_put(out, c)
+    lexer.index = lexer.index + 1
+    return 0
+  end
+  if c == CH_RPAREN then
+    if frame.depth > 0 then
+      frame.depth = frame.depth - 1
+      buffer_put(out, c)
+      lexer.index = lexer.index + 1
+      return 0
+    end
+    if s[lexer.index + 1] == CH_RPAREN then
+      buffer_put_span(out, (@*[0]cchar)(&s[lexer.index]), 2)
+      lexer.index = lexer.index + 2
+      lexer.count = lexer.count - 1
+      return 0
+    end
+    -- "$((" opened a command substitution whose command is a subshell
+    if lexer.nocmd then return WRDE_CMDSUB end
+    lexer.commands = true
+    out.length = frame.out_length
+    buffer_put(out, CH_DOLLAR)
+    buffer_put(out, CH_LPAREN)
+    lexer.index = frame.restart
+    frame.kind = FRAME_COMMAND
+    frame.word_start = true
+    frame.depth = 0
+    frame.cases = 0
+    frame.pattern = false
+    return 0
+  end
+  if c == CH_DOLLAR then return lex_dollar(lexer, true, true, DOLLAR_SINGLE_LITERAL) end
+  if c == CH_BACKQUOTE then return lex_backquote(lexer) end
+  if lexer.nocmd then
+    if c == CH_HASH or c == CH_DQUOTE or c == CH_SQUOTE or c == CH_SEMI or
+        c == CH_BACKSLASH then return WRDE_SYNTAX end
+    if c == CH_LBRACE or c == CH_RBRACE then return WRDE_BADCHAR end
+  end
+  buffer_put(out, c)
+  lexer.index = lexer.index + 1
+  return 0
+end
+
+-- Check s and write the text the shell gets (s with $'...' translated) to
+-- lexer.out. Returns 0 or a WRDE_ error.
+local function wordexp_lex(lexer: *WordexpLexer): cint
+  local top = lex_push(lexer, FRAME_TOP)
+  if top == nilptr then return WRDE_NOSPACE end
+  top.word_start = true
+  while lexer.count > 0 do
+    if lexer.out.failed then return WRDE_NOSPACE end
+    local frame: *WordexpFrame = &lexer.frames[lexer.count - 1]
+    local result: cint = 0
+    if frame.kind == FRAME_TOP or frame.kind == FRAME_COMMAND then
+      result = lex_words(lexer, frame)
+    elseif frame.kind == FRAME_DQUOTE then
+      result = lex_dquote(lexer)
+    elseif frame.kind == FRAME_BRACE then
+      result = lex_brace(lexer, frame)
+    else
+      result = lex_arith(lexer, frame)
+    end
+    if result ~= 0 then return result end
+  end
+  if lexer.out.failed then return WRDE_NOSPACE end
+  return 0
+end
+
+----------------------------------------------------------------------
+-- Running the shell
+----------------------------------------------------------------------
+
+local function errno_value(): cint
+  return nelibc_errno_location()[0]
+end
+
+-- Run /bin/sh on the prepared words; the output goes to output.
+local function wordexp_run(words: *[0]cchar, flags: cint, output: *WordexpBuffer,
+    status: *[0]cint): cint
+  local script: WordexpBuffer = {data = nilptr, length = 0, capacity = 0, failed = false}
+  buffer_put_text(&script, "__nelibc_wordexp() { printf '%s\\0' x ")
+  local length: csize = 0
+  while words[length] ~= 0 do length = length + 1 end
+  buffer_put_span(&script, words, length)
+  buffer_put_text(&script, "\n}\nprintf 'P\\0'\n")
+  if (flags & WRDE_UNDEF) ~= 0 then buffer_put_text(&script, "set -u\n") end
+  buffer_put_text(&script, "__nelibc_wordexp\n")
+  buffer_put(&script, 0)
+  if script.failed then
+    free((@pointer)(script.data))
+    return WRDE_NOSPACE
+  end
+
+  local pipe_fds: [2]cint = {-1, -1}
+  if pipe2(&pipe_fds, O_CLOEXEC) < 0 then
+    free((@pointer)(script.data))
+    return WRDE_NOSPACE
+  end
+  -- dup2 onto itself would leave the shell's stdout close-on-exec
+  if pipe_fds[1] == 1 then
+    local moved = nelibc_raw_fcntl(1, F_DUPFD_CLOEXEC, 3)
+    if moved < 0 then
+      close(pipe_fds[0])
+      close(pipe_fds[1])
+      free((@pointer)(script.data))
+      return WRDE_NOSPACE
+    end
+    close(1)
+    pipe_fds[1] = moved
+  end
+
+  local actions: [16]culong
+  local index: cint = 0
+  while index < 16 do
+    actions[index] = 0
+    index = index + 1
+  end
+  local ok = posix_spawn_file_actions_init(&actions) == 0
+  if ok then ok = posix_spawn_file_actions_adddup2(&actions, pipe_fds[1], 1) == 0 end
+  if ok and (flags & WRDE_SHOWERR) == 0 then
+    ok = posix_spawn_file_actions_addopen(&actions, 2, "/dev/null", O_WRONLY, 0) == 0
+  end
+  local argv: [4]*[0]cchar = {(@*[0]cchar)("sh"), (@*[0]cchar)("-c"), script.data, nilptr}
+  local child: [1]cint = {0}
+  if ok then
+    ok = posix_spawn(&child, "/bin/sh", &actions, nilptr, &argv,
+        nelibc_environment_vector()) == 0
+  end
+  posix_spawn_file_actions_destroy(&actions)
+  close(pipe_fds[1])
+  free((@pointer)(script.data))
+  if not ok then
+    close(pipe_fds[0])
+    return WRDE_NOSPACE
+  end
+
+  while not output.failed do
+    if output.capacity - output.length < 4096 then
+      local new_capacity: csize = output.capacity + 65536
+      local grown = (@*[0]cchar)(realloc((@pointer)(output.data), new_capacity))
+      if grown == nilptr then
+        output.failed = true
+        break
+      end
+      output.data = grown
+      output.capacity = new_capacity
+    end
+    local got = read(pipe_fds[0], (@pointer)(&output.data[output.length]),
+        output.capacity - output.length)
+    if got < 0 and errno_value() == EINTR then continue end
+    if got <= 0 then break end
+    output.length = output.length + (@csize)(got)
+  end
+  close(pipe_fds[0])
+  local wait_status: [1]cint = {0}
+  while true do
+    local waited = nelibc_waitpid(child[0], &wait_status, 0)
+    if waited == child[0] then
+      status[0] = wait_status[0]
+      break
+    end
+    if waited < 0 and errno_value() == EINTR then continue end
+    status[0] = 0 -- not observable (SIGCHLD ignored); the markers decide
+    break
+  end
+  if output.failed then return WRDE_NOSPACE end
+  return 0
+end
+
+----------------------------------------------------------------------
+-- wordexp and wordfree
+----------------------------------------------------------------------
+
+local WordexpWords: type = @record{
+  we_wordc: csize,
+  we_wordv: *[0]*[0]cchar,
+  we_offs: csize
+}
+
+local function wordfree(we: *WordexpWords): void <cexport, codename 'wordfree'>
+  if we.we_wordv == nilptr then return end
+  local index: csize = 0
+  while index < we.we_wordc do
+    free((@pointer)(we.we_wordv[we.we_offs + index]))
+    index = index + 1
+  end
+  free((@pointer)(we.we_wordv))
+  we.we_wordv = nilptr
+  we.we_wordc = 0
+end
+
+local function do_wordexp(s: *[0]cchar, we: *WordexpWords, flags: cint): cint
+  if (flags & WRDE_REUSE) ~= 0 then wordfree(we) end
+
+  local prepared: WordexpBuffer = {data = nilptr, length = 0, capacity = 0, failed = false}
+  local lexer: WordexpLexer = {
+    s = s, index = 0, nocmd = (flags & WRDE_NOCMD) ~= 0, commands = false,
+    out = &prepared, frames = nilptr, count = 0, capacity = 0
+  }
+  local result = wordexp_lex(&lexer)
+  free((@pointer)(lexer.frames))
+  local words: *[0]cchar = s
+  if result ~= 0 then
+    free((@pointer)(prepared.data))
+    if result == WRDE_NOSPACE or lexer.nocmd or not lexer.commands then return result end
+    -- the shell decides about a string with commands
+  else
+    buffer_put(&prepared, 0)
+    if prepared.failed then
+      free((@pointer)(prepared.data))
+      return WRDE_NOSPACE
+    end
+    words = prepared.data
+  end
+
+  local output: WordexpBuffer = {data = nilptr, length = 0, capacity = 0, failed = false}
+  local status: [1]cint = {0}
+  result = wordexp_run(words, flags, &output, &status)
+  if words ~= s then free((@pointer)(prepared.data)) end
+  if result ~= 0 then
+    free((@pointer)(output.data))
+    return result
+  end
+  local out = output.data
+  local out_length = output.length
+  -- "P\0": the shell parsed the words; "x\0": they expanded.
+  if out_length < 2 or out[0] ~= 80 or out[1] ~= 0 then
+    free((@pointer)(out))
+    return WRDE_SYNTAX
+  end
+  if out_length < 4 or out[2] ~= 120 or out[3] ~= 0 or status[0] ~= 0 then
+    free((@pointer)(out))
+    if (flags & WRDE_UNDEF) ~= 0 then return WRDE_BADVAL end
+    return WRDE_SYNTAX
+  end
+
+  local wordc: csize = 0
+  local wordv: *[0]*[0]cchar = nilptr
+  if (flags & WRDE_APPEND) ~= 0 then
+    wordc = we.we_wordc
+    wordv = we.we_wordv
+  end
+  local slot: csize = wordc
+  if (flags & WRDE_DOOFFS) ~= 0 then
+    if we.we_offs > (@csize)(0xffffffffffffffff_u64) // 32 then
+      free((@pointer)(out))
+      if (flags & WRDE_APPEND) == 0 then
+        we.we_wordc = 0
+        we.we_wordv = nilptr
+      end
+      return WRDE_NOSPACE
+    end
+    slot = slot + we.we_offs
+  else
+    we.we_offs = 0
+  end
+  -- an appended vector holds we_offs + we_wordc words and a null
+  local capacity: csize = 0
+  if wordv ~= nilptr then capacity = slot + 1 end
+  result = 0
+  local position: csize = 4
+  while position < out_length do
+    local finish: csize = position
+    while finish < out_length and out[finish] ~= 0 do finish = finish + 1 end
+    if finish == out_length then break end -- not a whole printf word
+    if slot + 1 >= capacity then
+      local new_capacity: csize = capacity + capacity // 2 + 10
+      local grown = (@*[0]*[0]cchar)(realloc((@pointer)(wordv), new_capacity * #pointer))
+      if grown == nilptr then
+        result = WRDE_NOSPACE
+        break
+      end
+      wordv = grown
+      capacity = new_capacity
+    end
+    local size: csize = finish - position + 1
+    local word = (@*[0]cchar)(malloc(size))
+    if word == nilptr then
+      result = WRDE_NOSPACE
+      break
+    end
+    local k: csize = 0
+    while k < size do
+      word[k] = out[position + k]
+      k = k + 1
+    end
+    wordv[slot] = word
+    slot = slot + 1
+    wordv[slot] = nilptr
+    position = finish + 1
+  end
+  free((@pointer)(out))
+  if wordv == nilptr then
+    -- no words and nothing to append to: an empty vector (plus offsets)
+    wordv = (@*[0]*[0]cchar)(malloc((slot + 1) * #pointer))
+    if wordv == nilptr then
+      we.we_wordc = 0
+      we.we_wordv = nilptr
+      return WRDE_NOSPACE
+    end
+    local k: csize = 0
+    while k <= slot do
+      wordv[k] = nilptr
+      k = k + 1
+    end
+  end
+  we.we_wordv = wordv
+  we.we_wordc = slot
+  if (flags & WRDE_DOOFFS) ~= 0 then
+    local k: csize = 0
+    while k < we.we_offs do
+      wordv[k] = nilptr
+      k = k + 1
+    end
+    we.we_wordc = we.we_wordc - we.we_offs
+  end
+  return result
+end
+
+local function wordexp(s: *const [0]cchar, we: *WordexpWords, flags: cint): cint
+    <cexport, codename 'wordexp'>
+  -- read and waitpid are cancellation points; the shell must be reaped
+  local cancel_state: [1]cint = {0}
+  pthread_setcancelstate(1, &cancel_state) -- PTHREAD_CANCEL_DISABLE
+  local result = do_wordexp((@*[0]cchar)(s), we, flags)
+  pthread_setcancelstate(cancel_state[0], nilptr)
+  return result
+end

@@ -594,6 +594,61 @@ to 622 in `tools/syscall_smoke.c` open a pty pair and cover every function,
 raw mode passing `\r` through unchanged, the speed rules, and `ENOTTY`/`EBADF`
 for descriptors that are not terminals.
 
+`<wordexp.h>` (`src/wordexp_standalone.nelua`, standalone archives and host
+snapshot; hybrid builds keep the host's header and `wordexp`): `wordexp` and
+`wordfree`, with `WRDE_DOOFFS`, `WRDE_APPEND`, `WRDE_REUSE`, `WRDE_NOCMD`,
+`WRDE_SHOWERR` and `WRDE_UNDEF`. As in musl, `/bin/sh` expands the words
+(`printf '%s\0' x WORDS`, read back NUL-separated through a pipe; the shell is
+started with `posix_spawn`, its stderr on `/dev/null` unless `WRDE_SHOWERR`).
+The string is lexed first, in every mode: backslashes, single and double
+quotes, POSIX.1-2024 `$'...'`, `${...}` with its name, operator and nested
+word, `$((...))`, `$(...)`, backquotes and `#` comments. With `WRDE_NOCMD`
+every command substitution is `WRDE_CMDSUB` and every unquoted
+`| & ; < > ( ) { }` and newline outside a comment `WRDE_BADCHAR`; musl's scan
+knows no comments, `$'...'` or `${...}` quoting, so it calls
+`${X-"$"{A}B}` valid (the `}` of `{A}` closes the `${`, leaving a bare `}`)
+and `$((case $A in a) echo x ;; *) echo y ;; esac))` arithmetic (a `)` at
+depth 0 not followed by `)` makes `$((` a `$( (` command substitution).
+Where shells read a `WRDE_NOCMD` string differently the result is
+`WRDE_SYNTAX`, not a guess: a single quote in a `${x-word}` word (operators
+other than `%`, `%%`, `#`, `##`, whose patterns keep their quotes) inside
+double quotes or `$((...))`, `$'` inside `${...}`, an unquoted `(` or `)` in
+a `${...}` word inside `$((...))`, and `#`, `"`, `'`, `;` or `\` directly in
+`$((...))` (`{`/`}` there are `WRDE_BADCHAR`). `$'...'` is rewritten as plain
+single-quoted text before the shell sees it, so the container's dash 0.5.12,
+which predates it, gives POSIX.1-2024 results. The words run in a shell
+function called without arguments (`$#` is 0, `$1` unset; musl's `eval`
+exposes its own `sh -c` arguments, glibc the program's argv), defined before
+a marker is printed: no marker is `WRDE_SYNTAX` (the shell could not parse
+the words), a marker without the expansion is `WRDE_BADVAL` under
+`WRDE_UNDEF` (`set -u`) and `WRDE_SYNTAX` otherwise (`${x?}`, an arithmetic
+error). Without `WRDE_NOCMD` the shell parses command substitutions: the
+lexer only follows them to translate `$'...'` (parentheses, and the `)` of
+`case` patterns), and when it fails on a string that has command syntax the
+string goes to the shell untranslated and the shell's verdict stands. Two
+limits: the safety of `WRDE_NOCMD` rests on `/bin/sh` quoting `${...}` and
+`$((...))` as POSIX and dash do (bash, which evaluates variables inside
+arithmetic recursively, is not covered), and the words travel as one `sh -c`
+argument, so a string over Linux's 128 KiB argument limit is `WRDE_NOSPACE`
+(as in musl).
+
+`functional/wordexp` passes in both standalone runs (failing tests: gcc 8 to
+7, zig 7 to 6, all expected). Of its 314 table
+cases, 306 give the primary expected result and 8 an accepted alternative,
+each a `WRDE_NOCMD` string the rules above reject on purpose: `WRDE_SYNTAX`
+for `$((${X-"$"(echo + 2)}))`, `$((${X-"$"((1+1))}))` (whose duplicate
+entry requires it), `${X=2} $((${X-))}+1))` and `${X=2} $((${X-')'}+1))`
+(each also inside double quotes), and `WRDE_BADCHAR` for
+`${X=2} $((${X-$((}))}+1))` (and its quoted twin). The hybrid runs still
+fail it with glibc's `wordexp`. `wordexp_probe` in
+`tools/lib_consumer_smoke.c` (exit 791 to 798) checks plain words, quoting,
+parameters, arithmetic, command substitution, the three error codes and the
+`WRDE_DOOFFS`/`WRDE_APPEND`/`WRDE_REUSE` layouts in every consumer build;
+`WRDE_UNDEF`, `${x#pattern}` and the `$( (` rule where glibc agrees; and
+`$'...'`, comments, `$#`, `${X-"$"{A}B}` and `case` inside command
+substitution in the standalone builds only, after the same calls were run
+against glibc 2.36 and musl 1.2.5 to find where they differ.
+
 `<setjmp.h>` (`src/setjmp_x86_64.S`, in the three standalone archives and so
 in the host profile): `setjmp`, `_setjmp`, `longjmp`, `_longjmp`, `sigsetjmp`
 and `siglongjmp` with musl's `jmp_buf` layout (eight saved words, the
