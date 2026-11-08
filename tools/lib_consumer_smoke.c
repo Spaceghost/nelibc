@@ -3118,7 +3118,10 @@ int main(int argc, char **argv) {
       (unsigned char)bounded_output[2] != 0xa9 || bounded_output[3] != 0 ||
       bounded_wide_cursor != NULL)
     return 73;
-  if (setlocale(LC_CTYPE, "C") == NULL || mbtowc(&unicode_character, utf8_text, 2) != -1 ||
+  /* POSIX 2024: in the C locale each byte is one character; 0xc3 is the
+   * code unit 0xdfc3, as in musl. */
+  if (setlocale(LC_CTYPE, "C") == NULL || mbtowc(&unicode_character, utf8_text, 2) != 1 ||
+      unicode_character != 0xdfc3 ||
       wcwidth(0x4e00) != -1 || wcwidth(L'A') != 1 ||
       wcswidth(width_text, 3) != -1 || towlower(L'A') != L'a' ||
       towupper(L'a') != L'A' || towlower(0x391) != 0x391 ||

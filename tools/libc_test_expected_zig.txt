@@ -18,7 +18,6 @@ api/sys_wait [build]
 api/unistd [build]
 api/utmpx [build]
 api/wchar [build]
-functional/clocale_mbfuncs
 functional/crypt
 functional/fscanf
 functional/fwscanf
