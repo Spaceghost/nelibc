@@ -1,4 +1,3 @@
-functional/crypt [build]
 functional/dlopen [build]
 functional/mntent [fail]
 functional/tls_align_dlopen [build]

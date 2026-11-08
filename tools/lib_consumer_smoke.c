@@ -31,6 +31,7 @@
 #include "nelibc_alloc.h"
 #ifdef NELIBC_STANDALONE
 #include <pthread.h>
+#include <crypt.h>
 #else
 #include <sys/mman.h>
 #include <pthread.h>
@@ -2245,6 +2246,80 @@ static int wordexp_probe(void) {
   return 0;
 }
 
+#ifdef NELIBC_STANDALONE
+/* Each expected result was produced by musl 1.2.5's crypt_r. glibc 2.36's
+ * libcrypt gives the same hashes except where marked: "glibc *0" is its
+ * failure result, which it also gives instead of musl's "*" and "x". */
+static const char *const crypt_probe_cases[][3] = {
+  {"password", "ab", "abJnggxhB/yWI"},
+  {"\x80\xff high", "\x80x", "\x80xO5uqMD4k/lI"},              /* glibc *0 */
+  {"a", "*", "x"},                                             /* glibc *0 */
+  {"a", "", "*"},                                              /* glibc *0 */
+  {"a", "a\n", "*"},                                           /* glibc *0 */
+  {"U*U*U*U*", "_J9..CCCC", "_J9..CCCCXBrJUJV154M"},
+  {"a long key past eight bytes", "_J9..CCCC", "_J9..CCCCq1nBFqQozg."},
+  {"x", "_....", "*"},                                         /* glibc *0 */
+  {"x", "_J9..CC!C", "*"},                                     /* glibc *0 */
+  {"password", "$1$saltsaltsalt", "$1$saltsalt$qjXMvbEw8oaL.CzflDtaK/"},
+  {"password", "$5$rounds=1000$saltsalt$", "$5$rounds=1000$saltsalt$azOwbpkvuuBKkE82dQPwTsQE8JyT9Fflpr9aKid3aT9"},
+  /* glibc *0: */
+  {"password", "$5$rounds=10$saltsalt", "$5$rounds=1000$saltsalt$azOwbpkvuuBKkE82dQPwTsQE8JyT9Fflpr9aKid3aT9"},
+  /* glibc accepts 10000000 rounds: */
+  {"password", "$5$rounds=10000000$saltsalt$", "*"},
+  {"password", "$5$rounds=1234saltsalt", "*"},                 /* glibc *0 */
+  {"password", "$5$sa:lt$", "*"},                              /* glibc *0 */
+  {"password", "$6$rounds=1000$saltsalt$", "$6$rounds=1000$saltsalt$Z/J9iYO1iE9xnr8JPQL57ZWsVRtVjrUv3CiWc/wKWseqXgSqn3HFYJ/Ng7YXa8XlLj.wpdAwHOJJzuGFqBBRa0"},
+  /* glibc *0: */
+  {"password", "$6$rounds=01000$saltsaltsaltsaltsalt$", "$6$rounds=1000$saltsaltsaltsalt$3.brVxJ/6VAQv6Cd3dm5xeNUkjPvlI9Eao6nz5O6JfSs2klDra/PNNFRXvu4MBsuD1w4JnIFFHaBvPRi2HqVn1"},
+  {"\xa3password", "$2a$05$abcdefghijklmnopqrstuu", "$2a$05$abcdefghijklmnopqrstuunrqu/sPNnUA2w92pmdMVy0k67Hopucy"},
+  {"\xa3password", "$2b$05$abcdefghijklmnopqrstuu", "$2b$05$abcdefghijklmnopqrstuunrqu/sPNnUA2w92pmdMVy0k67Hopucy"},
+  {"\xa3password", "$2x$05$abcdefghijklmnopqrstuu", "$2x$05$abcdefghijklmnopqrstuuRjJ9MMIx8tBIXJ4aVZU6ZceZ0BW7E9a"},
+  {"\xa3password", "$2y$05$abcdefghijklmnopqrstuv", "$2y$05$abcdefghijklmnopqrstuunrqu/sPNnUA2w92pmdMVy0k67Hopucy"},
+  /* the $2a$ countermeasure: same key, different hash from $2b$ */
+  {"\xff\xa3" "34" "\xff\xff\xff\xa3" "345", "$2a$04$abcdefghijklmnopqrstuu", "$2a$04$abcdefghijklmnopqrstuuE8Lpo1/qkGPTBDBxEsJjeEzh9nkZ9uW"},
+  {"\xff\xa3" "34" "\xff\xff\xff\xa3" "345", "$2b$04$abcdefghijklmnopqrstuu", "$2b$04$abcdefghijklmnopqrstuu9f4sA9SRA0scUKcRyC5kce8dao2.GKe"},
+  {"password", "$2a$03$abcdefghijklmnopqrstuu", "*"},          /* glibc *0 */
+  {"password", "$2c$05$abcdefghijklmnopqrstuu", "*"},          /* glibc *0 */
+  {"password", "$2a$05$abcdefghijklmnopqrst!u", "*"},          /* glibc *0 */
+  /* not a bcrypt prefix: DES with salt "$2" (glibc *0) */
+  {"password", "$2$05$abcdefghijklmnopqrstuu", "$2mV0NZp92R3g"},
+};
+
+static int crypt_probe(void) {
+  struct crypt_data data;
+  for (size_t i = 0; i < sizeof crypt_probe_cases / sizeof crypt_probe_cases[0]; i++) {
+    const char *key = crypt_probe_cases[i][0], *setting = crypt_probe_cases[i][1];
+    const char *want = crypt_probe_cases[i][2];
+    char *r = crypt_r(key, setting, &data);
+    if (r == NULL || strcmp(r, want) != 0) {
+      fprintf(stderr, "crypt_r case %zu (\"%s\") gave \"%s\", want \"%s\"\n", i, setting, r ? r : "(null)", want);
+      return 1;
+    }
+    r = crypt(key, setting);
+    if (r == NULL || strcmp(r, want) != 0) {
+      fprintf(stderr, "crypt case %zu (\"%s\") gave \"%s\", want \"%s\"\n", i, setting, r ? r : "(null)", want);
+      return 2;
+    }
+  }
+  /* A successful hash is written into the caller's buffer. */
+  if (crypt_r("password", "ab", &data) != (char *)&data) return 3;
+  /* FIPS 46 test vector: key 133457799BBCDFF1, block 0123456789ABCDEF. */
+  char key[64], block[64];
+  unsigned long long k = 0x133457799BBCDFF1ULL, p = 0x0123456789ABCDEFULL, c;
+  for (int i = 0; i < 64; i++) { key[i] = k >> (63 - i) & 1; block[i] = p >> (63 - i) & 1; }
+  setkey(key);
+  encrypt(block, 0);
+  c = 0;
+  for (int i = 0; i < 64; i++) c = c << 1 | (unsigned char)block[i];
+  if (c != 0x85E813540F0AB405ULL) return 4;
+  encrypt(block, 1);
+  c = 0;
+  for (int i = 0; i < 64; i++) c = c << 1 | (unsigned char)block[i];
+  if (c != p) return 5;
+  return 0;
+}
+#endif
+
 int main(int argc, char **argv) {
   int byte_order_result = byte_order_probe();
   if (byte_order_result != 0) return 640 + byte_order_result;
@@ -2285,6 +2360,10 @@ int main(int argc, char **argv) {
   if (malloc_usable_size_result != 0) return 730 + malloc_usable_size_result;
   int wordexp_result = wordexp_probe();
   if (wordexp_result != 0) return 790 + wordexp_result;
+#ifdef NELIBC_STANDALONE
+  int crypt_result = crypt_probe();
+  if (crypt_result != 0) return 800 + crypt_result;
+#endif
   int locale_float_parser_result = locale_float_parser_probe();
   if (locale_float_parser_result != 0) return 89 + locale_float_parser_result;
   void *minimal_aligned = memalign(1, 17);

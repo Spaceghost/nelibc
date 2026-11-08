@@ -18,6 +18,10 @@
 extern char **environ;
 int _Fork(void);
 
+/* XSI crypt and encrypt, src/crypt_standalone.nelua. */
+char *crypt(const char *, const char *);
+void encrypt(char *, int);
+
 #ifndef F_OK
 #define F_OK 0
 #endif

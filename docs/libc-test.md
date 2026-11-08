@@ -649,6 +649,47 @@ parameters, arithmetic, command substitution, the three error codes and the
 substitution in the standalone builds only, after the same calls were run
 against glibc 2.36 and musl 1.2.5 to find where they differ.
 
+`<crypt.h>` (`src/crypt_standalone.nelua`, standalone archives and host
+snapshot; hybrid builds keep the host's header and libcrypt): `crypt`,
+`crypt_r` (musl's `struct crypt_data`, used only as the result buffer),
+and the XSI `setkey` (`<stdlib.h>`) and `encrypt` (`<unistd.h>`), ported
+from musl 1.2.5 `src/crypt/`. Every scheme musl has: traditional DES, BSDi
+extended DES (`_` with count and salt), MD5 `$1$`, SHA-256 `$5$` and SHA-512
+`$6$` with `rounds=` (below 1000 is 1000, above 9999999 fails, the count is
+written back without leading zeros), and bcrypt `$2a$`, `$2b$`, `$2x$`
+(the old sign-extension bug) and `$2y$` with costs 04 to 19 (00 to 03 fail
+for callers; the self-test uses 00). Settings are dispatched and validated as
+musl does them, including its deviations from the SHA-crypt reference
+(`rounds=` must be digits ending in `$`), its key limits (30000 bytes for
+MD5, 256 for SHA), `\n` and `:` rejected in SHA salts, DES salts mapped as
+UFC-crypt maps a signed char, `$2$...` falling through to DES, and the last
+bcrypt salt character normalised. Failure is musl's `"*"`, or `"x"` for a
+DES setting that starts with `*`; glibc's libcrypt answers `"*0"` there.
+Each call runs musl's self-test after the requested hash (a miscompiled
+build gives `"*"`, and the second computation overwrites the first one's
+stack), and bcrypt's key setup keeps musl's branch-free handling of the
+`$2a$` countermeasure; as in musl, password length and the cipher's S-box
+lookups are not hidden. The tables are generated from musl's sources by
+`tools/gen_crypt_tables.py`.
+
+`functional/crypt` passes in both standalone runs (failing tests: gcc 7 to
+6, zig 6 to 5, all expected). The hybrid builds use the host's crypt and
+keep `functional/crypt` in their expected lists. `crypt_probe` in `tools/lib_consumer_smoke.c` (exit 801 to 805,
+standalone builds only) checks 27 settings across every scheme and failure
+rule with `crypt` and `crypt_r`, and `setkey`/`encrypt` on the FIPS 46
+vector in both directions; each expected string came from musl 1.2.5.
+glibc 2.36's libcrypt gives the same hashes except for four settings it
+rejects (the high-byte DES salt, `rounds=10`, `rounds=01000`, `$2$`) and one
+it accepts (`rounds=10000000`), and `"*0"` for every failure. Outside the gate, random key/setting pairs (valid and malformed
+settings for every scheme, keys of 0 to 259 bytes with values 1 to 255, `crypt`
+and `crypt_r`) and as many random `setkey`/`encrypt` calls were compared
+with musl 1.2.5 linked into the same program: 123,000 with the gcc build of
+the module, 10,000 each with the zig and TinyCC builds, all byte-identical.
+Against glibc 2.36's libcrypt, 20,000 pairs with well-formed settings
+matched except 586, each one of musl's documented deviations: a key over 256
+bytes (musl "*", glibc hashes it) or a zero-prefixed `rounds=` (musl
+normalises it, glibc gives "*0").
+
 `<setjmp.h>` (`src/setjmp_x86_64.S`, in the three standalone archives and so
 in the host profile): `setjmp`, `_setjmp`, `longjmp`, `_longjmp`, `sigsetjmp`
 and `siglongjmp` with musl's `jmp_buf` layout (eight saved words, the

@@ -44,6 +44,9 @@ int grantpt(int fd);
 int unlockpt(int fd);
 char *ptsname(int fd);
 int ptsname_r(int fd, char *buf, size_t size);
+
+/* XSI DES key schedule for encrypt(), src/crypt_standalone.nelua. */
+void setkey(const char *);
 #else
 #include_next <stdlib.h>
 #endif
