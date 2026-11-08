@@ -2003,6 +2003,42 @@ static int fnmatch_bracket_probe(void) {
   return 0;
 }
 
+/* Widths and precisions up to INT_MAX, as glibc allows: %e of a double past
+ * 18 digits takes the exact binary80 path, long zero tails stream out, and
+ * values beyond INT_MAX are EOVERFLOW. Expected strings are glibc 2.36's. */
+static int printf_precision_probe(void) {
+  char text[256];
+  if (snprintf(text, sizeof text, "%.19e|%.25e|%.20E|%.19e|%.19e", 1.0, 0.5, -2.0, 0.0, -0.0) < 0 ||
+      strcmp(text, "1.0000000000000000000e+00|5.0000000000000000000000000e-01|-2.00000000000000000000E+00|"
+                   "0.0000000000000000000e+00|-0.0000000000000000000e+00") != 0) return 1;
+  if (snprintf(text, sizeof text, "%.30e|%26.19e|%-26.19e|", 0.1, 3.0, 3.0) < 0 ||
+      strcmp(text, "1.000000000000000055511151231258e-01| 3.0000000000000000000e+00|"
+                   "3.0000000000000000000e+00 |") != 0) return 2;
+  if (snprintf(text, sizeof text, "%.20000g", 0.1) < 0 ||
+      strcmp(text, "0.1000000000000000055511151231257827021181583404541015625") != 0) return 3;
+  char *big = malloc(400000);
+  if (big == NULL) return 4;
+  int n = snprintf(big, 400000, "%.200000f", 1.0);
+  if (n != 200002 || strncmp(big, "1.000", 5) != 0 || big[n - 1] != '0') { free(big); return 5; }
+  n = snprintf(big, 400000, "%.200000e", 1.0);
+  if (n != 200006 || strcmp(big + n - 4, "e+00") != 0 || big[n - 5] != '0') { free(big); return 6; }
+  n = snprintf(big, 400000, "%#.20000g", 1.0);
+  if (n != 20001 || big[1] != '.' || big[n - 1] != '0') { free(big); return 7; }
+  n = snprintf(big, 400000, "%.20000Le", 1.0L / 3.0L);
+  if (n != 20006 || strncmp(big, "3.33333333333333333342", 22) != 0 || strcmp(big + n - 4, "e-01") != 0) { free(big); return 8; }
+  n = snprintf(big, 400000, "%.300a|%150000d|", 1.0, 7);
+  if (n != 307 + 1 + 150000 + 1 || strncmp(big, "0x1.000", 7) != 0 || strncmp(big + 304, "p+0|", 4) != 0 ||
+      big[n - 2] != '7' || big[n - 3] != ' ') { free(big); return 9; }
+  free(big);
+  errno = 0;
+  if (snprintf(text, sizeof text, "%2147483648d", 1) != -1 || errno != EOVERFLOW) return 10;
+  errno = 0;
+  if (snprintf(text, sizeof text, "%.2147483648f", 1.0) != -1 || errno != EOVERFLOW) return 11;
+  errno = 0;
+  if (snprintf(text, sizeof text, "%*d", INT_MIN, 1) != -1 || errno != EOVERFLOW) return 12;
+  return 0;
+}
+
 /* %La on x87 long double, including the encodings the FPU never makes
  * (musl libc-test regression/fpclassify-invalid-ld80); %Lf for values that
  * are doubles; %Ld as glibc reads it. */
@@ -2121,6 +2157,8 @@ int main(int argc, char **argv) {
   if (fnmatch_bracket_result != 0) return 710 + fnmatch_bracket_result;
   int long_double_format_result = long_double_format_probe();
   if (long_double_format_result != 0) return 720 + long_double_format_result;
+  int printf_precision_result = printf_precision_probe();
+  if (printf_precision_result != 0) return 740 + printf_precision_result;
   int malloc_usable_size_result = malloc_usable_size_probe();
   if (malloc_usable_size_result != 0) return 730 + malloc_usable_size_result;
   int locale_float_parser_result = locale_float_parser_probe();

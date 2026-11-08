@@ -3383,10 +3383,16 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
     if format[index] == 42 then
       width = nelibc_va_arg_int(arguments)
       index = index + 1
+      if width == -2147483648 then
+        nelibc_errno_location()[0] = 75 -- EOVERFLOW: -INT_MIN is not an int
+        stream_unlock(stream)
+        return -1
+      end
       if width < 0 then left_align = true; width = -width end
     else
       while format[index] >= 48 and format[index] <= 57 do
-        if width > 100000 then
+        -- any width up to INT_MAX, as glibc allows; beyond is EOVERFLOW
+        if width > (2147483647 - (@cint)(format[index] - 48)) // 10 then
           nelibc_errno_location()[0] = 75 -- EOVERFLOW
           stream_unlock(stream)
           return -1
@@ -3406,7 +3412,7 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
         index = index + 1
       else
         while format[index] >= 48 and format[index] <= 57 do
-          if precision > 100000 then
+          if precision > (2147483647 - (@cint)(format[index] - 48)) // 10 then
             nelibc_errno_location()[0] = 75 -- EOVERFLOW
             stream_unlock(stream)
             return -1
@@ -3617,6 +3623,8 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       local float_length: csize = 0
       local prefix_length: csize = 0
       local digit_count: cint = fraction_width // 4
+      local hex_zero_tail: csize = 0 -- precision zeros past the real digits
+      local mantissa_end: csize = 0  -- where the zeros go (before the 'p')
       if special_value then
         zero_pad = false -- inf and nan pad with spaces
         if special_nan then
@@ -3636,11 +3644,6 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       else
         local hex_precision: cint = digit_count
         if precision_set then hex_precision = precision end
-        if hex_precision > 100 then
-          nelibc_errno_location()[0] = 75 -- EOVERFLOW
-          stream_unlock(stream)
-          return -1
-        end
         if hex_precision < digit_count then
           digit_count = hex_precision
           local discarded_bits: cint = fraction_width - 4 * hex_precision
@@ -3686,10 +3689,8 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
           float_length = float_length + 1
           emitted_digits = emitted_digits + 1
         end
-        while emitted_digits < hex_precision do
-          float_buffer[float_length] = 48
-          float_length = float_length + 1
-          emitted_digits = emitted_digits + 1
+        if emitted_digits < hex_precision then
+          hex_zero_tail = (@csize)(hex_precision - emitted_digits)
         end
         -- Without a precision the digits are exact (trailing zeros dropped);
         -- '#' keeps the radix character: %#a of 1.0 is 0x1.p+0.
@@ -3701,6 +3702,7 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
             float_length = float_length - 1
           end
         end
+        mantissa_end = float_length
         float_buffer[float_length] = 112
         if uppercase_hex then float_buffer[float_length] = 80 end
         float_length = float_length + 1
@@ -3725,7 +3727,8 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
         end
         prefix_length = 2
       end
-      local core_length: csize = float_length + prefix_length
+      if special_value then mantissa_end = float_length end
+      local core_length: csize = float_length + prefix_length + hex_zero_tail
       if sign ~= 0 then core_length = core_length + 1 end
       local padding: csize = 0
       if width > 0 and (@csize)(width) > core_length then padding = (@csize)(width) - core_length end
@@ -3738,7 +3741,9 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
         written = written + emit_padding(stream, prefix_char, 1)
       end
       if not left_align and zero_pad then written = written + emit_padding(stream, 48, padding) end
-      written = written + emit_bytes(stream, (@pointer)(&float_buffer), float_length)
+      written = written + emit_bytes(stream, (@pointer)(&float_buffer), mantissa_end)
+      if hex_zero_tail > 0 then written = written + emit_padding(stream, 48, hex_zero_tail) end
+      written = written + emit_bytes(stream, (@pointer)(&float_buffer[mantissa_end]), float_length - mantissa_end)
       if left_align then written = written + emit_padding(stream, 32, padding) end
     elseif conversion == 102 or conversion == 70 or conversion == 101 or conversion == 69 or
         conversion == 103 or conversion == 71 then -- f/F/e/E/g/G
@@ -3767,13 +3772,32 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       if negative then sign = 45
       elseif plus_sign then sign = 43
       elseif space_sign then sign = 32 end
+      -- The double path handles %e/%E up to 18 digits and %g/%G up to 17000;
+      -- past that a finite double goes to the exact binary80 formatter (every
+      -- double is a long double), so %.19e of 1.0 prints like glibc's.
+      if not long_inexact and precision_set and value == value and value <= 1.7976931348623157e308 and
+          (((conversion == 101 or conversion == 69) and precision > 18) or
+           ((conversion == 103 or conversion == 71) and precision > 17000)) then
+        local wide: clongdouble = (@clongdouble)(value)
+        local wide_bits: *[2]culonglong = (@*[2]culonglong)(&wide)
+        long_mantissa = wide_bits[0]
+        long_sign_exponent = (@cuint)(wide_bits[1] & 0x7fff)
+        if negative then long_sign_exponent = long_sign_exponent | 0x8000 end
+        long_inexact = true
+      end
       if long_inexact then
         local long_precision: cint = 6
         if precision_set then long_precision = precision end
-        if long_precision > 100000 then
-          nelibc_errno_location()[0] = 75 -- EOVERFLOW
-          stream_unlock(stream)
-          return -1
+        -- A binary80 needs at most 16508 fraction digits in %f and fewer
+        -- significant digits in %e/%g, so past 17000 the remaining places are
+        -- zeros: they are emitted after the digits (before an exponent), and
+        -- dropped for %g without '#'.
+        local long_zero_tail: csize = 0
+        if long_precision > 17000 then
+          if (conversion ~= 103 and conversion ~= 71) or alternate then
+            long_zero_tail = (@csize)(long_precision - 17000)
+          end
+          long_precision = 17000
         end
         local long_capacity: csize = (@csize)(long_precision) + 5120
         local long_output: *[0]byte = (@*[0]byte)(nelibc_malloc(long_capacity))
@@ -3796,16 +3820,26 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
         if (long_sign_exponent & 0x8000) ~= 0 then long_sign = 45
         elseif plus_sign then long_sign = 43
         elseif space_sign then long_sign = 32 end
-        local core_length: csize = long_length
+        local core_length: csize = long_length + long_zero_tail
         if long_sign ~= 0 then core_length = core_length + 1 end
         local spaces: csize = 0
         if width > 0 and (@csize)(width) > core_length then
           spaces = (@csize)(width) - core_length
         end
+        local long_digits_end: csize = long_length
+        if long_zero_tail > 0 then
+          local scan: csize = 0
+          while scan < long_length do
+            if long_output[scan] == 101 or long_output[scan] == 69 then long_digits_end = scan; break end
+            scan = scan + 1
+          end
+        end
         if not left_align and not zero_pad then written = written + emit_padding(stream, 32, spaces) end
         if long_sign ~= 0 then written = written + emit_padding(stream, long_sign, 1) end
         if not left_align and zero_pad then written = written + emit_padding(stream, 48, spaces) end
-        written = written + emit_bytes(stream, (@pointer)(long_output), long_length)
+        written = written + emit_bytes(stream, (@pointer)(long_output), long_digits_end)
+        if long_zero_tail > 0 then written = written + emit_padding(stream, 48, long_zero_tail) end
+        written = written + emit_bytes(stream, (@pointer)(&long_output[long_digits_end]), long_length - long_digits_end)
         if left_align then written = written + emit_padding(stream, 32, spaces) end
         nelibc_free(long_output)
         float_emitted = true
