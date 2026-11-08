@@ -1,6 +1,5 @@
 functional/crypt [build]
 functional/dlopen [build]
-functional/pthread_robust [fail]
 functional/tls_align_dlopen [build]
 functional/tls_init_dlopen [build]
 functional/wordexp [build]

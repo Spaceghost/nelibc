@@ -1681,9 +1681,23 @@ local function pthread_mutex_init(mutex: *PthreadMutex, attr: *PthreadMutexAttr)
   return 0
 end
 
+local function pthread_robust_mutex_remove(context: *PthreadContext,
+    mutex: *PthreadMutex): void <forwarddecl> end
+
 local function pthread_mutex_destroy(mutex: *PthreadMutex): cint <cexport, codename 'pthread_mutex_destroy'>
   if not pthread_mutex_valid(mutex) then return 22 end -- EINVAL
-  if nelibc_atomic_load_int(&mutex.state) ~= 0 then return 16 end -- EBUSY
+  local state = nelibc_atomic_load_int(&mutex.state)
+  if state ~= 0 and mutex.robust == PTHREAD_MUTEX_ROBUST and
+      (state & FUTEX_TID_MASK) == (@cint)(nelibc_sys3(SYS_GETTID, 0_culong, 0_culong, 0_culong)) then
+    -- glibc and musl let a robust mutex's owner destroy it (libc-test
+    -- functional/pthread_robust). Take it off this thread's robust list
+    -- first, so the kernel never walks into the freed memory at exit.
+    local context = pthread_current_context()
+    pthread_robust_mutex_remove(context, mutex)
+    context.robust_slot.head.list_op_pending = nilptr
+  elseif state ~= 0 then
+    return 16 -- EBUSY
+  end
   mutex.magic = 0
   mutex.owner = 0
   mutex.count = 0
@@ -1726,7 +1740,7 @@ local function pthread_robust_mutex_add(context: *PthreadContext,
   slot.head.list_op_pending = nilptr
 end
 
-local function pthread_robust_mutex_remove(context: *PthreadContext,
+function pthread_robust_mutex_remove(context: *PthreadContext,
     mutex: *PthreadMutex): void
   local slot = context.robust_slot
   local node: pointer = (@pointer)(&mutex.robust_next)

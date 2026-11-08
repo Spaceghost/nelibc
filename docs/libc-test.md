@@ -849,6 +849,11 @@ behind `<limits.h>` with GCC; the rest fail identically in both runs.
   pshared/PI combinations. The test destroys a robust mutex it has just
   relocked; POSIX leaves destroying a locked mutex undefined and allows
   `EBUSY`, so this is a divergence from musl, not a conformance bug.
+  **Fixed** (branch `c-locale-spawn`): as in glibc and musl the owner may
+  destroy a robust mutex it holds; nelibc first takes it off the thread's
+  robust list so the kernel never walks freed memory at exit. A robust
+  mutex held by another thread, and any other locked mutex, is still
+  `EBUSY`.
 
 Every `math/*` test that builds passes in both runs (197 of 199), as in the
 hybrid runs: the libm ports are the same code. The two that do not build
