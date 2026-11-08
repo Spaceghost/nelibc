@@ -3618,6 +3618,7 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       local prefix_length: csize = 0
       local digit_count: cint = fraction_width // 4
       if special_value then
+        zero_pad = false -- inf and nan pad with spaces
         if special_nan then
           if uppercase_hex then
             float_buffer[0] = 78; float_buffer[1] = 65; float_buffer[2] = 78
@@ -3690,11 +3691,13 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
           float_length = float_length + 1
           emitted_digits = emitted_digits + 1
         end
-        if not precision_set and not alternate then
+        -- Without a precision the digits are exact (trailing zeros dropped);
+        -- '#' keeps the radix character: %#a of 1.0 is 0x1.p+0.
+        if not precision_set then
           while float_length > 1 and float_buffer[float_length - 1] == 48 do
             float_length = float_length - 1
           end
-          if float_length > 1 and float_buffer[float_length - 1] == (@byte)(nelibc_radix_character()) then
+          if not alternate and float_length > 1 and float_buffer[float_length - 1] == (@byte)(nelibc_radix_character()) then
             float_length = float_length - 1
           end
         end
@@ -3807,6 +3810,7 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
         nelibc_free(long_output)
         float_emitted = true
       elseif value ~= value then
+        zero_pad = false -- inf and nan pad with spaces (C 7.21.6.1, glibc, musl)
         if uppercase_float then
           float_buffer[0] = 78; float_buffer[1] = 65; float_buffer[2] = 78
         else
@@ -3814,6 +3818,7 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
         end
         float_length = 3
       elseif value > 1.7976931348623157e308 then
+        zero_pad = false
         if uppercase_float then
           float_buffer[0] = 73; float_buffer[1] = 78; float_buffer[2] = 70
         else
@@ -4331,7 +4336,9 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       if sign ~= 0 then written = written + emit_padding(stream, sign, 1) end
       if prefix then
         written = written + emit_padding(stream, 48, 1)
-        written = written + emit_padding(stream, 120, 1)
+        -- %#X prints 0X; %p and %#x print 0x
+        if conversion == 88 then written = written + emit_padding(stream, 88, 1)
+        else written = written + emit_padding(stream, 120, 1) end
       end
       written = written + emit_padding(stream, 48, width_zeroes + zeroes)
       local emitted_digits: csize = 0

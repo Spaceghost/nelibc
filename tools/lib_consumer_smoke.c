@@ -2026,6 +2026,15 @@ static int long_double_format_probe(void) {
   if (snprintf(text, sizeof text, "%La|%La", 0.0L, infinite) < 0 || strcmp(text, "0x0p+0|inf") != 0) return 8;
   if (snprintf(text, sizeof text, "%Lf|%.3Le|%Lg|%Ld|%Lu", 1.5L, 1234.5L, 0.25L, -7LL, 9ULL) < 0 ||
       strcmp(text, "1.500000|1.234e+03|0.25|-7|9") != 0) return 9;
+  /* '#': %#X prints 0X, and %#a without a precision keeps the exact digits
+   * (trailing zeros dropped) with the radix character, as C requires. */
+  if (snprintf(text, sizeof text, "%#X|%#x|%#X|%#a|%#La|%#a|%#.0a|%#.2a|%#8X", 255u, 255u, 0u, 1.0, 0.0L, 0.5, 1.0,
+               1.0, 10u) < 0 ||
+      strcmp(text, "0XFF|0xff|0|0x1.p+0|0x0.p+0|0x1.p-1|0x1.p+0|0x1.00p+0|     0XA") != 0) return 13;
+  /* The '0' flag does not apply to inf and nan: they pad with spaces. */
+  if (snprintf(text, sizeof text, "%06f|%#06g|%-06e|%+08a|%06LG|%06.2f", strtod("inf", NULL), strtod("-inf", NULL),
+               strtod("nan", NULL), strtod("inf", NULL), strtold("inf", NULL), 1.5) < 0 ||
+      strcmp(text, "   inf|  -inf|nan   |    +inf|   INF|001.50") != 0) return 14;
   /* Values that are not doubles take the exact binary80 decimal path; the
    * expected strings are glibc 2.36's output for the same calls. */
   static const struct { const char *format; long double value; const char *want; } exact[] = {
