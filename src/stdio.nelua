@@ -3760,8 +3760,11 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       else
         value = nelibc_va_arg_double(arguments)
       end
-      -- the sign bit, not value < 0: -0.0 prints as "-0.000000" (C 7.21.6.1)
+      -- the sign bit, not value < 0: -0.0 prints as "-0.000000" (C 7.21.6.1);
+      -- for a long double the bits' own sign, since narrowing an unnormal or a
+      -- pseudo-NaN yields the FPU's default NaN, whose sign is set
       local negative: boolean = (nelibc_double_bits(value) >> 63) ~= 0
+      if length_mod == 6 then negative = (long_sign_exponent & 0x8000) ~= 0 end
       if negative then value = -value end
       local float_buffer: [2048]byte
       local float_length: csize = 0

@@ -1789,22 +1789,83 @@ local function strtod_impl(text: *const [0]cchar, end_text: **cchar, precision: 
   end
   if matches(text, cursor, 'nan'_cstring) then
     cursor = cursor + 3
+    -- glibc: "nan(n-char-sequence)" consumes the parentheses only when the
+    -- sequence is letters, digits and '_' up to ')'; a sequence that
+    -- strtoull (base 0) reads whole becomes the payload, kept in the bits
+    -- below the quiet bit of the target format (62 for long double, 51 for
+    -- double, 22 for float).
+    local payload: culonglong = 0
     if text[cursor] == 40 then
       local close: csize = cursor + 1
-      while text[close] ~= 0 and text[close] ~= 41 do close = close + 1 end
-      if text[close] == 41 then cursor = close + 1 end
+      while (text[close] >= 48 and text[close] <= 57) or (text[close] >= 65 and text[close] <= 90) or
+          (text[close] >= 97 and text[close] <= 122) or text[close] == 95 do
+        close = close + 1
+      end
+      if text[close] == 41 then
+        local start: csize = cursor + 1
+        local position: csize = start
+        local base: culonglong = 10
+        if text[position] == 48 and (text[position + 1] == 120 or text[position + 1] == 88) and
+            position + 2 < close then
+          base = 16; position = position + 2
+        elseif text[position] == 48 then
+          base = 8
+        end
+        local value: culonglong = 0
+        local overflow: boolean = false
+        local digits_start: csize = position
+        while position < close do
+          local character: cint = (@cint)(text[position])
+          local digit: culonglong = 99
+          if character >= 48 and character <= 57 then digit = (@culonglong)(character - 48)
+          elseif character >= 97 and character <= 122 then digit = (@culonglong)(character - 87)
+          elseif character >= 65 and character <= 90 then digit = (@culonglong)(character - 55) end
+          if digit >= base then break end
+          if value > (0xFFFFFFFFFFFFFFFF_culonglong - digit) // base then overflow = true end
+          value = value * base + digit
+          position = position + 1
+        end
+        if position == close and (position > digits_start or base == 8) then
+          if overflow then
+            payload = 0xFFFFFFFFFFFFFFFF_culonglong
+            nelibc_errno_location()[0] = 34 -- ERANGE, as strtoull reports it
+          else
+            payload = value
+          end
+        end
+        cursor = close + 1
+      end
     end
     if end_text ~= nilptr then end_pointer[0] = (@*cchar)(&text[cursor]) end
-    local not_a_number: cdouble = nelibc_double_from_bits(0x7FF8000000000000_culonglong)
-    if negative then return -not_a_number end
-    return not_a_number
+    if precision == 64 then
+      local quiet: clongdouble
+      local quiet_bits: *[2]culonglong = (@*[2]culonglong)(&quiet)
+      quiet_bits[0] = 0xC000000000000000_culonglong | (payload & 0x3FFFFFFFFFFFFFFF_culonglong)
+      quiet_bits[1] = 0x7FFF_culonglong
+      if negative then quiet_bits[1] = 0xFFFF_culonglong end
+      return quiet
+    end
+    local nan_bits: culonglong = 0x7FF8000000000000_culonglong
+    if precision == 53 then nan_bits = nan_bits | (payload & 0x0007FFFFFFFFFFFF_culonglong)
+    else nan_bits = nan_bits | ((payload & 0x3FFFFF_culonglong) << 29) end
+    if negative then nan_bits = nan_bits | 0x8000000000000000_culonglong end
+    return nelibc_double_from_bits(nan_bits)
   end
 
-  local hexadecimal: boolean = text[cursor] == 48 and
-      (text[cursor + 1] == 120 or text[cursor + 1] == 88)
-  if hexadecimal then cursor = cursor + 2 end
   -- The host adapter may call localeconv(); fetch the radix once, not per byte.
   local radix_character: cint = nelibc_radix_character()
+  -- "0x" starts a hexadecimal number only when a hex digit follows (perhaps
+  -- after the radix character); otherwise the "0" is the number and the end
+  -- pointer stays on the 'x', as C requires ("0x", "0xp1", "-0x").
+  local function is_hex_digit(character: cchar): boolean <inline>
+    return (character >= 48 and character <= 57) or (character >= 97 and character <= 102) or
+      (character >= 65 and character <= 70)
+  end
+  local hexadecimal: boolean = text[cursor] == 48 and
+      (text[cursor + 1] == 120 or text[cursor + 1] == 88) and
+      (is_hex_digit(text[cursor + 2]) or
+       ((@cint)(text[cursor + 2]) == radix_character and is_hex_digit(text[cursor + 3])))
+  if hexadecimal then cursor = cursor + 2 end
   local radix: cint = 10
   if hexadecimal then radix = 16 end
   local significand: culonglong = 0_culonglong

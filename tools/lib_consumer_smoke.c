@@ -2003,6 +2003,49 @@ static int fnmatch_bracket_probe(void) {
   return 0;
 }
 
+/* strtold and friends: "0x" without hex digits is the number 0 ending at
+ * the 'x'; nan(n-char-sequence) keeps a numeric payload and consumes the
+ * parentheses only for letters, digits and '_'; and %Lg of an unnormal
+ * prints the sign of its own bits. Expected values are glibc 2.36's. */
+static int strtod_special_probe(void) {
+  static const struct { const char *text; long consumed; uint16_t se; uint64_t m; } ld[] = {
+    { "0x", 1, 0, 0 }, { "0x.", 1, 0, 0 }, { "0xp1", 1, 0, 0 }, { "-0x", 2, 0x8000, 0 }, { "0x 1", 1, 0, 0 },
+    { "0x1p1", 5, 0x4000, 0x8000000000000000ULL }, { "0x.8", 4, 0x3ffe, 0x8000000000000000ULL },
+    { "nan(12)", 7, 0x7fff, 0xc00000000000000cULL }, { "nan(1-)", 3, 0x7fff, 0xc000000000000000ULL },
+    { "-nan(0x7)", 9, 0xffff, 0xc000000000000007ULL }, { "nan(abc_9)", 10, 0x7fff, 0xc000000000000000ULL },
+    { "nan()", 5, 0x7fff, 0xc000000000000000ULL }, { "nan(08)", 7, 0x7fff, 0xc000000000000000ULL },
+    { "nan(010)", 8, 0x7fff, 0xc000000000000008ULL },
+  };
+  for (size_t i = 0; i < sizeof ld / sizeof ld[0]; i++) {
+    char *end;
+    union { long double f; struct { uint64_t m; uint16_t se; } i; } u;
+    u.f = strtold(ld[i].text, &end);
+    if (end - ld[i].text != ld[i].consumed || u.i.se != ld[i].se || u.i.m != ld[i].m) return 1 + (int)i;
+  }
+  char *end;
+  double d;
+  const char *hx = "0xg";
+  d = strtod(hx, &end);
+  if (d != 0 || end != hx + 1) return 20;
+  union { double f; uint64_t b; } ud;
+  ud.f = strtod("nan(12)", NULL);
+  if (ud.b != 0x7ff800000000000cULL) return 21;
+  union { float f; uint32_t b; } uf;
+  uf.f = strtof("nan(12)", NULL);
+  if (uf.b != 0x7fc0000cU) return 22;
+  uf.f = strtof("-nan(0x3fffff)", NULL);
+  if (uf.b != 0xffffffffU) return 23;
+  union { long double f; struct { uint64_t m; uint16_t se; } i; } u;
+  char text[64];
+  u.i.m = 0x0706050403020100ULL; u.i.se = 0x0908;
+  if (snprintf(text, sizeof text, "%Lg|%Lf|%Le|%La", u.f, u.f, u.f, u.f) < 0 || strcmp(text, "nan|nan|nan|nan") != 0) return 24;
+  u.i.se = 0x8908;
+  if (snprintf(text, sizeof text, "%Lg|%Lf|%Le|%La", u.f, u.f, u.f, u.f) < 0 || strcmp(text, "-nan|-nan|-nan|-nan") != 0) return 25;
+  u.i.m = 0; u.i.se = 0x7fff;
+  if (snprintf(text, sizeof text, "%Lg", u.f) < 0 || strcmp(text, "nan") != 0) return 26;
+  return 0;
+}
+
 /* Widths and precisions up to INT_MAX, as glibc allows: %e of a double past
  * 18 digits takes the exact binary80 path, long zero tails stream out, and
  * values beyond INT_MAX are EOVERFLOW. Expected strings are glibc 2.36's. */
@@ -2157,6 +2200,8 @@ int main(int argc, char **argv) {
   if (fnmatch_bracket_result != 0) return 710 + fnmatch_bracket_result;
   int long_double_format_result = long_double_format_probe();
   if (long_double_format_result != 0) return 720 + long_double_format_result;
+  int strtod_special_result = strtod_special_probe();
+  if (strtod_special_result != 0) return 760 + strtod_special_result;
   int printf_precision_result = printf_precision_probe();
   if (printf_precision_result != 0) return 740 + printf_precision_result;
   int malloc_usable_size_result = malloc_usable_size_probe();
