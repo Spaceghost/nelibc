@@ -1313,6 +1313,25 @@ local function gmtime_r(timer: *const [0]clong, result: *Tm): *Tm
   return result
 end
 
+-- The proleptic Gregorian year of a UTC instant, without gmtime_r's tm_year
+-- range check: the TZ rules need the UTC year to pick a DST rule even when
+-- the local time is the last representable year and UTC is already past it.
+local function tz_utc_year(timestamp: clonglong): clonglong
+  local days: clonglong = floor_division(timestamp, 86400_clonglong)
+  local z: clonglong = days + 719468_clonglong
+  local era: clonglong = floor_division(z, 146097_clonglong)
+  local day_of_era: clonglong = z - era * 146097_clonglong
+  local year_of_era: clonglong =
+    (day_of_era - day_of_era // 1460_clonglong +
+      day_of_era // 36524_clonglong - day_of_era // 146096_clonglong) // 365_clonglong
+  local year: clonglong = year_of_era + era * 400_clonglong
+  local day_of_year_march: clonglong = day_of_era -
+    (365_clonglong * year_of_era + year_of_era // 4_clonglong - year_of_era // 100_clonglong)
+  local month_prime: clonglong = (5_clonglong * day_of_year_march + 2_clonglong) // 153_clonglong
+  if month_prime >= 10_clonglong then year = year + 1_clonglong end
+  return year
+end
+
 local function gmtime(timer: *const [0]clong): *Tm <cexport, codename 'gmtime'>
   return gmtime_r(timer, &gmtime_result)
 end
@@ -1765,17 +1784,11 @@ local function tz_apply_posix_zone(specification: *const [0]cchar, length: csize
   local index: csize = 0
   while index < length do footer[index + 1] = specification[index]; index = index + 1 end
   footer[length + 1] = 10_cchar
-  local utc_calendar: Tm = {
-    tm_sec = 0_cint, tm_min = 0_cint, tm_hour = 0_cint, tm_mday = 1_cint,
-    tm_mon = 0_cint, tm_year = 70_cint, tm_wday = 4_cint, tm_yday = 0_cint,
-    tm_isdst = 0_cint, tm_gmtoff = 0_clong, tm_zone = nilptr
-  }
-  if gmtime_r(timer, &utc_calendar) == nilptr then return false end
   local offset: clonglong = 0_clonglong
   local is_dst: cint = 0_cint
   local name: [16]cchar = {}
   if not tz_apply_footer(&footer[0], 0, length + 2, (@clonglong)(timer[0]),
-      (@clonglong)(utc_calendar.tm_year) + 1900_clonglong, &offset, &is_dst, &name[0]) then return false end
+      tz_utc_year((@clonglong)(timer[0])), &offset, &is_dst, &name[0]) then return false end
   local timestamp: clonglong = (@clonglong)(timer[0])
   if offset > 0_clonglong and timestamp > 0x7fffffffffffffff_clonglong - offset or
       offset < 0_clonglong and timestamp < (-0x7fffffffffffffff_clonglong - 1_clonglong) - offset then
@@ -1908,14 +1921,8 @@ local function localtime_tzif_parse(timer: *const [0]clong, result: *Tm,
     after_last_transition = timestamp > tz_transition_time(data, block, time_width, transitions - 1)
   end
   if after_last_transition then
-    local utc_calendar: Tm = {
-      tm_sec = 0_cint, tm_min = 0_cint, tm_hour = 0_cint, tm_mday = 1_cint,
-      tm_mon = 0_cint, tm_year = 70_cint, tm_wday = 4_cint, tm_yday = 0_cint,
-      tm_isdst = 0_cint, tm_gmtoff = 0_clong, tm_zone = nilptr
-    }
-    if gmtime_r(timer, &utc_calendar) == nilptr then return -1_cint end
     use_footer = tz_apply_footer(data, block + (@csize)(block_size), data_length,
-      timestamp, (@clonglong)(utc_calendar.tm_year) + 1900_clonglong,
+      timestamp, tz_utc_year(timestamp),
       &footer_offset, &footer_is_dst, &footer_zone)
     if use_footer then
       chosen.offset = footer_offset

@@ -2264,6 +2264,19 @@ int main(int argc, char **argv) {
   if (long_double_format_result != 0) return 720 + long_double_format_result;
   errno = 0;
   if (execvp("", (char *[]){"", 0}) != -1 || errno != ENOENT) return 780;
+  /* The last representable local year west of UTC: the UTC instant is already
+   * in year INT_MAX + 1901, which only the DST rule lookup needs (glibc 2.36
+   * gives tm_year INT_MAX, 18:00 Dec 31 in New York). */
+  {
+    setenv("TZ", "EST5EDT,M3.2.0,M11.1.0", 1);
+    tzset();
+    time_t last = (time_t)67768036191676799LL;
+    struct tm *lt = localtime(&last);
+    if (lt == NULL || lt->tm_year != 2147483647 || lt->tm_mon != 11 || lt->tm_mday != 31 ||
+        lt->tm_hour != 18) return 781;
+    unsetenv("TZ");
+    tzset();
+  }
   int strtod_special_result = strtod_special_probe();
   if (strtod_special_result != 0) return 760 + strtod_special_result;
   int printf_precision_result = printf_precision_probe();
