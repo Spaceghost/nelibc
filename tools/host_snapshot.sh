@@ -43,7 +43,6 @@ sys_linux_x86_64 src/sys/linux_x86_64.nelua
 errno src/errno/standalone.nelua
 thread src/thread.nelua
 alloc src/alloc.nelua
-alloc_exports src/alloc/standalone_exports.nelua
 spawn src/spawn_standalone.nelua
 unistd src/unistd.nelua
 stdio src/stdio.nelua
@@ -60,6 +59,7 @@ for c in stdio_varargs fcntl_adapter credential_adapter exec_adapter ipc_adapter
     complex_abi; do
   cp "src/$c.c" "$OUT/src/$c.c"
 done
+cp src/alloc/standalone_exports.c "$OUT/src/alloc_exports.c"
 cp src/host/syscall_host.c "$OUT/src/syscall_host.c"
 cp src/host/boot_host.c "$OUT/src/boot_host.c"
 cp src/sys/linux_x86_64.S "$OUT/src/linux_x86_64.S"

@@ -68,9 +68,18 @@ local function unlinkat(dirfd: cint, pathname: *const void, flags: cint): cint <
 local function getpid(): cint <cimport> end
 local function nelibc_raw_fcntl(fd: cint, command: cint, argument: culong): cint <cimport> end
 local function close(fd: cint): cint <cimport> end
+-- Two allocators on purpose. Memory that crosses the API boundary (FILE
+-- objects, open_memstream/open_wmemstream buffers, getdelim lines, scanf %m
+-- results, vasprintf output) goes through the public malloc/realloc/free so an
+-- application that replaces the allocator owns all of it. Scratch buffers that
+-- are allocated and freed inside one call, and fmemopen's owned buffer (freed
+-- only by fclose), stay on nelibc_* and never reach the public free.
 local function nelibc_malloc(size: csize): pointer <cimport> end
 local function nelibc_realloc(ptr: pointer, size: csize): pointer <cimport> end
 local function nelibc_free(ptr: pointer): void <cimport> end
+local function malloc(size: csize): pointer <cimport> end
+local function realloc(ptr: pointer, size: csize): pointer <cimport> end
+local function free(ptr: pointer): void <cimport> end
 local function nelibc_stdio_lock(word: *cint, owner: *cint, depth: *cint): void <cimport> end
 local function nelibc_stdio_trylock(word: *cint, owner: *cint, depth: *cint): cint <cimport> end
 local function nelibc_stdio_unlock(word: *cint, owner: *cint, depth: *cint): void <cimport> end
@@ -379,7 +388,7 @@ local function write_bytes(stream: *FILE, buffer: *const void, count: csize): cs
       local capacity: csize = stream.buffer_size
       while capacity < needed and capacity <= MAX_CSIZE // 2 do capacity = capacity * 2 end
       if capacity < needed then capacity = needed end
-      local grown: pointer = nelibc_realloc((@pointer)(stream.user_buffer), capacity)
+      local grown: pointer = realloc((@pointer)(stream.user_buffer), capacity)
       if grown == nilptr then stream.flags = stream.flags | STREAM_ERROR; return 0 end
       stream.user_buffer = (@*byte)(grown)
       stream.buffer_size = capacity
@@ -664,7 +673,7 @@ local function fputwc_unlocked(wide: cuint, stream: *FILE): cuint
         stream.flags = stream.flags | STREAM_ERROR
         return ~0_cuint
       end
-      local grown: pointer = nelibc_realloc((@pointer)(stream.user_buffer),
+      local grown: pointer = realloc((@pointer)(stream.user_buffer),
           capacity * (@csize)(#cint))
       if grown == nilptr then
         stream.flags = stream.flags | STREAM_ERROR
@@ -1278,9 +1287,9 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
     if allocate_assignment then
       output_capacity = 64
       if length_modifier == 1 then
-        allocated_output = (@*[0]cint)(nelibc_malloc(output_capacity * (@csize)(#cint)))
+        allocated_output = (@*[0]cint)(malloc(output_capacity * (@csize)(#cint)))
       else
-        allocated_byte_output = (@*[0]cchar)(nelibc_malloc(output_capacity))
+        allocated_byte_output = (@*[0]cchar)(malloc(output_capacity))
       end
       if (length_modifier == 1 and allocated_output == nilptr) or
           (length_modifier == 0 and allocated_byte_output == nilptr) then
@@ -1338,16 +1347,16 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
           if allocate_assignment and matched_count + 1 >= output_capacity then
             if output_capacity > MAX_CSIZE // 2 or
                 output_capacity * 2 > MAX_CSIZE // (@csize)(#cint) then
-              nelibc_free((@pointer)(allocated_output))
+              free((@pointer)(allocated_output))
               stream_unlock(stream)
               nelibc_errno_location()[0] = 75 -- EOVERFLOW
               return assignments
             end
             output_capacity = output_capacity * 2
-            local grown: pointer = nelibc_realloc((@pointer)(allocated_output),
+            local grown: pointer = realloc((@pointer)(allocated_output),
                 output_capacity * (@csize)(#cint))
             if grown == nilptr then
-              nelibc_free((@pointer)(allocated_output))
+              free((@pointer)(allocated_output))
               stream_unlock(stream)
               nelibc_errno_location()[0] = 12 -- ENOMEM
               return -1
@@ -1362,13 +1371,13 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
           local encoded_count: csize = wcrtomb(&encoded[0], (@cint)(current),
               (@pointer)(&conversion_state[0]))
           if encoded_count == ~0_csize then
-            if allocate_assignment then nelibc_free((@pointer)(allocated_byte_output)) end
+            if allocate_assignment then free((@pointer)(allocated_byte_output)) end
             stream_unlock(stream)
             if assignments == 0 then return -1 end
             return assignments
           end
           if allocate_assignment and output_index > MAX_CSIZE - encoded_count - 1 then
-            nelibc_free((@pointer)(allocated_byte_output))
+            free((@pointer)(allocated_byte_output))
             stream_unlock(stream)
             nelibc_errno_location()[0] = 75 -- EOVERFLOW
             return assignments
@@ -1376,17 +1385,17 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
           if allocate_assignment and output_index + encoded_count >= output_capacity then
             while output_index + encoded_count >= output_capacity do
               if output_capacity > MAX_CSIZE // 2 then
-                nelibc_free((@pointer)(allocated_byte_output))
+                free((@pointer)(allocated_byte_output))
                 stream_unlock(stream)
                 nelibc_errno_location()[0] = 75 -- EOVERFLOW
                 return assignments
               end
               output_capacity = output_capacity * 2
             end
-            local grown: pointer = nelibc_realloc((@pointer)(allocated_byte_output),
+            local grown: pointer = realloc((@pointer)(allocated_byte_output),
                 output_capacity)
             if grown == nilptr then
-              nelibc_free((@pointer)(allocated_byte_output))
+              free((@pointer)(allocated_byte_output))
               stream_unlock(stream)
               nelibc_errno_location()[0] = 12 -- ENOMEM
               return -1
@@ -1403,13 +1412,13 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
       matched_count = matched_count + 1
     end
     if conversion == 99 and matched_count ~= width then
-      if allocate_assignment then nelibc_free((@pointer)(allocated_output)) end
-      if allocate_assignment then nelibc_free((@pointer)(allocated_byte_output)) end
+      if allocate_assignment then free((@pointer)(allocated_output)) end
+      if allocate_assignment then free((@pointer)(allocated_byte_output)) end
       break
     end
     if matched_count == 0 then
-      if allocate_assignment then nelibc_free((@pointer)(allocated_output)) end
-      if allocate_assignment then nelibc_free((@pointer)(allocated_byte_output)) end
+      if allocate_assignment then free((@pointer)(allocated_output)) end
+      if allocate_assignment then free((@pointer)(allocated_byte_output)) end
       break
     end
     if not suppress then
@@ -1431,8 +1440,8 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
       end
       assignments = assignments + 1
     elseif allocate_assignment then
-      nelibc_free((@pointer)(allocated_output))
-      nelibc_free((@pointer)(allocated_byte_output))
+      free((@pointer)(allocated_output))
+      free((@pointer)(allocated_byte_output))
     end
   end
   stream_unlock(stream)
@@ -2108,7 +2117,7 @@ local function vfscanf(stream: *FILE, format: *const [0]cchar,
     local output_capacity: csize = 0
     if allocate_assignment then
       output_capacity = 64
-      allocated_output = (@*[0]cchar)(nelibc_malloc(output_capacity))
+      allocated_output = (@*[0]cchar)(malloc(output_capacity))
       if allocated_output == nilptr then
         stream_unlock(stream)
         nelibc_errno_location()[0] = 12 -- ENOMEM
@@ -2162,15 +2171,15 @@ local function vfscanf(stream: *FILE, format: *const [0]cchar,
       end
       if allocate_assignment and output_index + 1 >= output_capacity then
         if output_capacity > MAX_CSIZE // 2 then
-          nelibc_free((@pointer)(allocated_output))
+          free((@pointer)(allocated_output))
           stream_unlock(stream)
           nelibc_errno_location()[0] = 75 -- EOVERFLOW
           return -1
         end
         output_capacity = output_capacity * 2
-        local grown: pointer = nelibc_realloc((@pointer)(allocated_output), output_capacity)
+        local grown: pointer = realloc((@pointer)(allocated_output), output_capacity)
         if grown == nilptr then
-          nelibc_free((@pointer)(allocated_output))
+          free((@pointer)(allocated_output))
           stream_unlock(stream)
           nelibc_errno_location()[0] = 12 -- ENOMEM
           return -1
@@ -2192,12 +2201,12 @@ local function vfscanf(stream: *FILE, format: *const [0]cchar,
       matched_count = matched_count + 1
     end
     if matched_count == 0 then
-      if allocate_assignment then nelibc_free((@pointer)(allocated_output)) end
+      if allocate_assignment then free((@pointer)(allocated_output)) end
       break
     end
     if conversion == 99 and matched_count < width then
       -- %Nc needs exactly N characters; the input ended first (C17 7.21.6.2p12).
-      if allocate_assignment then nelibc_free((@pointer)(allocated_output)) end
+      if allocate_assignment then free((@pointer)(allocated_output)) end
       break
     end
     if not suppress then
@@ -2279,7 +2288,7 @@ local function getdelim(line_pointer: *[0]*[0]cchar, capacity_pointer: *[0]csize
   local line: *[0]cchar = line_pointer[0]
   if line == nilptr or capacity == 0 then
     capacity = 128
-    local replacement: pointer = nelibc_realloc((@pointer)(line), capacity)
+    local replacement: pointer = realloc((@pointer)(line), capacity)
     if replacement == nilptr then return -1 end
     line = (@*[0]cchar)(replacement)
     line_pointer[0] = line
@@ -2294,7 +2303,7 @@ local function getdelim(line_pointer: *[0]*[0]cchar, capacity_pointer: *[0]csize
         return -1
       end
       local new_capacity: csize = capacity * 2
-      local replacement: pointer = nelibc_realloc((@pointer)(line), new_capacity)
+      local replacement: pointer = realloc((@pointer)(line), new_capacity)
       if replacement == nilptr then
         if length == 0 then return -1 end
         break
@@ -2585,7 +2594,7 @@ local function fopen(pathname: *const [0]cchar, mode: *const [0]cchar): *FILE <c
 
   local fd: cint = openat(-100, (@pointer)(pathname), flags, 438_cuint)
   if fd < 0 then return nilptr end
-  local stream: *FILE = (@*FILE)(nelibc_malloc((@csize)(#FILE)))
+  local stream: *FILE = (@*FILE)(malloc((@csize)(#FILE)))
   if stream == nilptr then
     local saved_errno: cint = nelibc_errno_location()[0]
     close(fd)
@@ -2648,7 +2657,7 @@ local function fmemopen(buffer: pointer, size: csize, mode: *const [0]cchar): *F
   else
     while length < size and bytes[length] ~= 0 do length = length + 1 end
   end
-  local stream: *FILE = (@*FILE)(nelibc_malloc((@csize)(#FILE)))
+  local stream: *FILE = (@*FILE)(malloc((@csize)(#FILE)))
   if stream == nilptr then
     if owned then nelibc_free(buffer) end
     return nilptr
@@ -2681,12 +2690,12 @@ local function open_memstream(buffer: **byte, size: *csize): *FILE <cexport, cod
   local output_size: *[0]csize = (@*[0]csize)(size)
   output_buffer[0] = nilptr
   output_size[0] = 0
-  local memory: pointer = nelibc_malloc(1)
+  local memory: pointer = malloc(1)
   if memory == nilptr then return nilptr end
   ((@*[0]byte)(memory))[0] = 0
-  local stream: *FILE = (@*FILE)(nelibc_malloc((@csize)(#FILE)))
+  local stream: *FILE = (@*FILE)(malloc((@csize)(#FILE)))
   if stream == nilptr then
-    nelibc_free(memory)
+    free(memory)
     return nilptr
   end
   memset((@pointer)(stream), 0, (@csize)(#FILE))
@@ -2715,12 +2724,12 @@ local function open_wmemstream(buffer: **cint, size: *csize): *FILE
   output_size[0] = 0
 
   local capacity: csize = 8
-  local memory: pointer = nelibc_malloc(capacity * (@csize)(#cint))
+  local memory: pointer = malloc(capacity * (@csize)(#cint))
   if memory == nilptr then return nilptr end
   ((@*[0]cint)(memory))[0] = 0
-  local stream: *FILE = (@*FILE)(nelibc_malloc((@csize)(#FILE)))
+  local stream: *FILE = (@*FILE)(malloc((@csize)(#FILE)))
   if stream == nilptr then
-    nelibc_free(memory)
+    free(memory)
     return nilptr
   end
   memset((@pointer)(stream), 0, (@csize)(#FILE))
@@ -2780,20 +2789,20 @@ local function fdopen(fd: cint, mode: *const [0]cchar): *FILE <cexport, codename
     nelibc_errno_location()[0] = 22 -- EINVAL
     return nilptr
   end
-  local stream: *FILE = (@*FILE)(nelibc_malloc((@csize)(#FILE)))
+  local stream: *FILE = (@*FILE)(malloc((@csize)(#FILE)))
   if stream == nilptr then return nilptr end
   local fd_flags: cint = 0
   if close_on_exec_seen then
     fd_flags = nelibc_raw_fcntl(fd, 1, 0) -- F_GETFD
     if fd_flags < 0 then
-      nelibc_free((@pointer)(stream))
+      free((@pointer)(stream))
       return nilptr
     end
   end
   local append_changed: boolean = false
   if initial_mode == 97 and (descriptor_flags & 1024) == 0 then
     if nelibc_raw_fcntl(fd, 4, (@culong)(descriptor_flags | 1024)) < 0 then
-      nelibc_free((@pointer)(stream))
+      free((@pointer)(stream))
       return nilptr
     end -- F_SETFL, O_APPEND
     append_changed = true
@@ -2801,7 +2810,7 @@ local function fdopen(fd: cint, mode: *const [0]cchar): *FILE <cexport, codename
   if close_on_exec_seen then
     if nelibc_raw_fcntl(fd, 2, (@culong)(fd_flags | 1)) < 0 then
       if append_changed then nelibc_raw_fcntl(fd, 4, (@culong)(descriptor_flags)) end
-      nelibc_free((@pointer)(stream))
+      free((@pointer)(stream))
       return nilptr
     end -- F_SETFD, FD_CLOEXEC
   end
@@ -2890,7 +2899,7 @@ local function tmpfile(): *FILE <cexport, codename 'tmpfile'>
         if previous ~= nilptr then previous.next = stream.next end
       end
       stream_list_unlock()
-      nelibc_free((@pointer)(stream))
+      free((@pointer)(stream))
       nelibc_errno_location()[0] = saved_errno
       return nilptr
     end
@@ -2947,7 +2956,7 @@ local function close_stream(stream: *FILE, release_stream: boolean): cint
   stream_list_unlock()
   if owned_buffer ~= nilptr then nelibc_free(owned_buffer) end
   if release_stream and stream ~= &stdin_FILE and stream ~= &stdout_FILE and stream ~= &stderr_FILE then
-    nelibc_free((@pointer)(stream))
+    free((@pointer)(stream))
   end
   return result
 end
@@ -3096,7 +3105,7 @@ local function freopen(pathname: *const [0]cchar, mode: *const [0]cchar, stream:
   stream.lock_depth = old_lock_depth
   stream_unlock(replacement)
   nelibc_stdio_unlock(&stream.lock_word, &stream.lock_owner, &stream.lock_depth)
-  nelibc_free((@pointer)(replacement))
+  free((@pointer)(replacement))
   stream_list_unlock()
   return stream
 end
@@ -4693,14 +4702,14 @@ local function vasprintf(output: *[0]*[0]cchar, format: *const [0]cchar, argumen
   C.va_end(count_arguments)
   if count < 0 then return -1 end
   local size: csize = (@csize)(count) + 1
-  local output_buffer: pointer = nelibc_malloc(size)
+  local output_buffer: pointer = malloc(size)
   if output_buffer == nilptr then return -1 end
   local write_arguments: cvalist
   nelibc_va_copy(write_arguments, arguments)
   local result: cint = vsnprintf((@*[0]cchar)(output_buffer), size, format, write_arguments)
   C.va_end(write_arguments)
   if result < 0 then
-    nelibc_free(output_buffer)
+    free(output_buffer)
     return -1
   end
   output[0] = (@*[0]cchar)(output_buffer)

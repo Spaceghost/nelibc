@@ -1103,9 +1103,60 @@ through musl's public semaphore functions, avoiding assumptions about musl's
 private `sem_t` layout. The musl smoke checks cancellation while blocked.
 `nm -u` must be empty.
 The allocator exports only `nelibc_*` names in hybrid builds. The standalone-only wrappers
-in `src/alloc/standalone_exports.nelua` provide standard `malloc`, `calloc`,
-`realloc`, `reallocarray`, `free`, C11 `aligned_alloc`, and POSIX `posix_memalign`; the C smoke
-calls them with no host libc linked.
+in `src/alloc/standalone_exports.c` provide standard `malloc`, `calloc`,
+`realloc`, `free`, C11 `aligned_alloc`, POSIX `posix_memalign`, `memalign` and
+`malloc_usable_size` (`reallocarray` is in `src/stdlib.nelua` over the public
+`realloc`); the C smoke calls them with no host libc linked.
+
+**Replacing the allocator (standalone).** Each of those eight public names is a
+weak alias of a `nelibc_standalone_*` function, so an application that defines
+`malloc`, `free` and the rest wins at static link time, also under
+`--whole-archive`, as with musl's static `libc.a`. Hybrid builds keep the host
+allocator and are unchanged.
+
+Memory the library hands to the caller to free, or takes from the caller and
+frees or grows, goes through the public names: `strdup`, `strndup`, `wcsdup`,
+`getline`/`getdelim`, `asprintf`/`vasprintf`, scanf `%m`, the
+`open_memstream`/`open_wmemstream` buffers, `realpath(NULL)`,
+`get_current_dir_name` (`getcwd(NULL, ...)` is not supported: it fails as
+before, so it allocates nothing), `scandir`/`scandirat`, `wordexp`/`wordfree`,
+`reallocarray`, `setenv`/`putenv`, and the paired internal objects of regex,
+iconv, `<search.h>`, `posix_spawn` file actions, `<pwd.h>`/`<grp.h>`,
+`opendir`, `pthread_atfork`, and scratch buffers in collation and float
+conversion (those modules import only the public names). `FILE` objects are allocated with the public `malloc` and
+freed by `fclose` with the public `free`, as musl does. Two internal users stay
+on `nelibc_malloc`/`nelibc_free`, and no pointer of theirs reaches the public
+`free`: stdio scratch buffers allocated and freed within one call (printf and
+scanf temporaries, wide-format conversions) and the buffer `fmemopen` allocates
+itself (freed only by `fclose`), and the thread library's objects (thread
+control blocks, key tables, read-lock overflow records, named-semaphore
+handles), which never leave it.
+
+Partial replacement follows musl (`src/malloc/calloc.c`, `memalign.c`,
+`posix_memalign.c`, `mallocng/glue.h`). The allocator counts as replaced when
+the public `malloc` does not resolve to Nelibc's (musl's dynamic linker checks
+the same symbol). Then `calloc`, if not replaced, calls the public `malloc` and
+clears the block itself; `aligned_alloc`, if not replaced, fails with `ENOMEM`
+(after the usual `EINVAL` checks) instead of mixing allocators; `posix_memalign`
+and `memalign` call the public `aligned_alloc` when the application replaced
+it, and otherwise fail with `ENOMEM`; `malloc_usable_size` is unsupported and
+returns 0. Replacing `malloc` without `free` and `realloc` is undefined, as in
+musl. Deliberate differences: musl sets its replaced flags only in the dynamic
+linker, so a static musl binary that replaces `malloc` but not `aligned_alloc`
+hands mallocng's `aligned_alloc` the foreign allocator; Nelibc detects the
+replacement at static link time too. musl's `malloc_usable_size` on a replaced
+allocator reads its own metadata from a foreign pointer; Nelibc returns 0.
+`make malloc-replace-standalone-{zig,gcc,tcc}` (in
+`lib-consumer-standalone-matrix`) links `tools/malloc_replace_smoke.c`, which
+replaces `malloc`/`realloc`/`free`, under `--whole-archive` and checks every API
+above that returns memory, that `fclose` frees through the replacement, and the
+`ENOMEM` rules; a second build also replaces `aligned_alloc` and checks that
+`posix_memalign` and `memalign` reach it. The zig and gcc targets pass; the
+tcc one cannot run yet because the TinyCC standalone archive does not build
+(`src/stdio_extras_adapter.c` uses `__atomic_exchange_n`, which TinyCC lacks;
+this predates the allocator change). TinyCC ignores the alias attribute, so
+`standalone_exports.c` emits its weak aliases with `.weak`/`.set` there;
+`smoke-standalone-tcc`, which links that object, passes.
 
 The standalone-only `src/stdlib_exit_standalone.nelua` implements `atexit` and
 `exit`. The shared `src/unistd.nelua` exports `_exit` and `_Exit` through the

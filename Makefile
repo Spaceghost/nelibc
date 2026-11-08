@@ -2602,7 +2602,7 @@ standalone-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/setjmp-x86_64.o
 	$(ZIG) cc $(ZIGFLAGS) -c -std=c11 -ffreestanding -fno-stack-protector -fno-builtin -fno-sanitize=all -ftls-model=local-exec tools/tls_alignment_fixture.c -o $(OUT)/tls-alignment-fixture-standalone-zig.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/thread-standalone-zig.o src/thread.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/alloc-standalone-zig.o src/alloc.nelua
-	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/alloc-exports-standalone-zig.o src/alloc/standalone_exports.nelua
+	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/alloc/standalone_exports.c -o $(OUT)/alloc-exports-standalone-zig.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/spawn-standalone-zig.o src/spawn_standalone.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/unistd-standalone-zig.o src/unistd.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-zig.o src/unistd.nelua
@@ -2641,7 +2641,7 @@ standalone-gcc: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/setjmp-x86_64.o
 	gcc -c -std=c11 -ffreestanding -fno-stack-protector -fno-builtin -fno-sanitize=all -ftls-model=local-exec tools/tls_alignment_fixture.c -o $(OUT)/tls-alignment-fixture-standalone-gcc.o
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/thread-standalone-gcc.o src/thread.nelua
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/alloc-standalone-gcc.o src/alloc.nelua
-	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/alloc-exports-standalone-gcc.o src/alloc/standalone_exports.nelua
+	gcc -U_FORTIFY_SOURCE -ffreestanding -fno-builtin -fno-stack-protector -fno-tree-loop-distribute-patterns -c src/alloc/standalone_exports.c -o $(OUT)/alloc-exports-standalone-gcc.o
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/spawn-standalone-gcc.o src/spawn_standalone.nelua
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -o $(OUT)/unistd-standalone-gcc.o src/unistd.nelua
 	$(NELUA) -B -r --cc gcc --cflags='-U_FORTIFY_SOURCE -fno-builtin -ffreestanding -fno-stack-protector -fno-tree-loop-distribute-patterns' -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-gcc.o src/unistd.nelua
@@ -2685,7 +2685,7 @@ standalone-tcc: $(OUT) $(OUT)/memory-tcc-simd.o $(OUT)/setjmp-x86_64.o
 	$(ZIG) cc $(ZIGFLAGS) -c -std=c11 -ffreestanding -fno-stack-protector -fno-builtin -fno-sanitize=all -ftls-model=local-exec tools/tls_alignment_fixture.c -o $(OUT)/tls-alignment-fixture-standalone-tcc.o
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/thread-standalone-tcc.o src/thread.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/alloc-standalone-tcc.o src/alloc.nelua
-	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/alloc-exports-standalone-tcc.o src/alloc/standalone_exports.nelua
+	$(TCC) -ffreestanding -fno-builtin -fno-stack-protector -c src/alloc/standalone_exports.c -o $(OUT)/alloc-exports-standalone-tcc.o
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/spawn-standalone-tcc.o src/spawn_standalone.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/unistd-standalone-tcc.o src/unistd.nelua
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/stdio-standalone-tcc.o src/stdio.nelua
@@ -2848,6 +2848,36 @@ lib-consumer-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a
 
 lib-consumer-link-standalone-tcc: lib-consumer-standalone-tcc
 
+# The application replaces malloc/realloc/free (then also aligned_alloc) while
+# the archive is linked with --whole-archive; see docs/implementation-catalog.md.
+malloc-replace-standalone-zig: $(OUT)/libnelibc-standalone-zig.a tools/malloc_replace_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/malloc_replace_smoke.c -o $(OUT)/malloc-replace-standalone-zig
+	@test -z "$$(nm -u $(OUT)/malloc-replace-standalone-zig)"
+	$(OUT)/malloc-replace-standalone-zig
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -DREPLACE_ALIGNED -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/malloc_replace_smoke.c -o $(OUT)/malloc-replace-standalone-zig-aligned
+	@test -z "$$(nm -u $(OUT)/malloc-replace-standalone-zig-aligned)"
+	$(OUT)/malloc-replace-standalone-zig-aligned
+
+malloc-replace-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a tools/malloc_replace_smoke.c
+	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-gcc.a -Wl,--no-whole-archive -Iinclude tools/malloc_replace_smoke.c -o $(OUT)/malloc-replace-standalone-gcc
+	@test -z "$$(nm -u $(OUT)/malloc-replace-standalone-gcc)"
+	$(OUT)/malloc-replace-standalone-gcc
+	gcc -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -fno-tree-loop-distribute-patterns -Wl,-e,_start -Wl,--build-id=none -DREPLACE_ALIGNED -Wl,--whole-archive $(OUT)/libnelibc-standalone-gcc.a -Wl,--no-whole-archive -Iinclude tools/malloc_replace_smoke.c -o $(OUT)/malloc-replace-standalone-gcc-aligned
+	@test -z "$$(nm -u $(OUT)/malloc-replace-standalone-gcc-aligned)"
+	$(OUT)/malloc-replace-standalone-gcc-aligned
+
+malloc-replace-standalone-tcc: $(OUT)/libnelibc-standalone-tcc.a tools/malloc_replace_smoke.c
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -Wl,--whole-archive $(OUT)/libnelibc-standalone-tcc.a -Wl,--no-whole-archive -Iinclude tools/malloc_replace_smoke.c -o $(OUT)/malloc-replace-standalone-tcc
+	@test -z "$$(nm -u $(OUT)/malloc-replace-standalone-tcc)"
+	$(OUT)/malloc-replace-standalone-tcc
+	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--build-id=none -DREPLACE_ALIGNED -Wl,--whole-archive $(OUT)/libnelibc-standalone-tcc.a -Wl,--no-whole-archive -Iinclude tools/malloc_replace_smoke.c -o $(OUT)/malloc-replace-standalone-tcc-aligned
+	@test -z "$$(nm -u $(OUT)/malloc-replace-standalone-tcc-aligned)"
+	$(OUT)/malloc-replace-standalone-tcc-aligned
+
+malloc-replace-standalone-matrix: malloc-replace-standalone-zig malloc-replace-standalone-gcc malloc-replace-standalone-tcc
+
+.PHONY: malloc-replace-standalone-zig malloc-replace-standalone-gcc malloc-replace-standalone-tcc malloc-replace-standalone-matrix
+
 $(OUT)/pthread-tls-fixture.o: tools/tls_fixture.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector -ftls-model=local-exec' -o $@ $<
 
@@ -2914,7 +2944,7 @@ rand-r-diff-standalone-gcc: $(OUT)/libnelibc-standalone-gcc.a
 
 rand-r-diff-standalone-matrix: rand-r-diff-standalone-zig rand-r-diff-standalone-gcc
 
-lib-consumer-standalone-matrix: lib-consumer-standalone-zig lib-consumer-standalone-gcc lib-consumer-standalone-tcc rand-r-diff-standalone-matrix pthread-standalone-matrix
+lib-consumer-standalone-matrix: lib-consumer-standalone-zig lib-consumer-standalone-gcc lib-consumer-standalone-tcc malloc-replace-standalone-matrix rand-r-diff-standalone-matrix pthread-standalone-matrix
 
 smoke-lib-standalone-matrix: smoke-lib-standalone-zig smoke-lib-standalone-gcc
 

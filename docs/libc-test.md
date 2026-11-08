@@ -803,7 +803,20 @@ Link failures, GCC run: `daemon` (`regression/daemon-failure`), `t_vmfill`
 standalone allocator's exports collide (`multiple definition`). That test
 checks behavior with an interposed malloc; it cannot run under the
 whole-archive link convention, and Nelibc's static allocator is not
-replaceable today.
+replaceable today. **Fixed** (branch `malloc-replace`): the standalone
+public allocator names (`malloc`, `calloc`, `realloc`, `free`,
+`aligned_alloc`, `posix_memalign`, `memalign`, `malloc_usable_size`) are weak
+aliases in `src/alloc/standalone_exports.c`, so the test's definitions win
+under `--whole-archive`. Stdio now allocates `FILE` objects, memstream
+buffers, `getdelim` lines, scanf `%m` results and `vasprintf` output through
+the public names, so the test's `tmpfile` streams live in its own buffer and
+its clobber check covers them; the other modules already used the public
+names. A replaced `malloc` without a replaced `aligned_alloc` makes the
+memalign family fail with `ENOMEM`, as in musl (design and the list of
+allocating APIs in `docs/implementation-catalog.md`). The test passes with
+both compilers; `make malloc-replace-standalone-{zig,gcc,tcc}` adds a probe
+that replaces the allocator and checks each allocating API. Standalone
+counts: gcc 5 failing (5 expected), zig 4 failing (4 expected), 343 tests.
 
 Because a missing declaration stops compilation first, the link stage sees
 few symbols. To map the functions behind the compile failures, each of the
