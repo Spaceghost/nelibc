@@ -32,6 +32,26 @@ struct popen_entry {
 static struct popen_entry *popen_list;
 static volatile int popen_lock_word;
 
+#if defined(__TINYC__)
+/* TinyCC has no __atomic builtins: xchg is a full barrier on x86-64, and a
+ * plain store after a compiler barrier is a release store there. */
+static int popen_xchg(volatile int *word, int value)
+{
+	__asm__ __volatile__("xchgl %0, %1" : "+r"(value), "+m"(*word) : : "memory");
+	return value;
+}
+
+static void popen_lock(void)
+{
+	while (popen_xchg(&popen_lock_word, 1)) { }
+}
+
+static void popen_unlock(void)
+{
+	__asm__ __volatile__("" : : : "memory");
+	popen_lock_word = 0;
+}
+#else
 static void popen_lock(void)
 {
 	while (__atomic_exchange_n(&popen_lock_word, 1, __ATOMIC_ACQUIRE)) { }
@@ -41,6 +61,7 @@ static void popen_unlock(void)
 {
 	__atomic_store_n(&popen_lock_word, 0, __ATOMIC_RELEASE);
 }
+#endif
 
 FILE *popen(const char *cmd, const char *mode)
 {
