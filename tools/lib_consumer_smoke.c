@@ -2337,6 +2337,21 @@ int main(int argc, char **argv) {
   if (fnmatch_bracket_result != 0) return 710 + fnmatch_bracket_result;
   int long_double_format_result = long_double_format_probe();
   if (long_double_format_result != 0) return 720 + long_double_format_result;
+  {
+    /* An unknown conversion is copied out as text (glibc 2.36); a format that
+     * ends inside a directive is still an error. %#.0f keeps the radix
+     * character for doubles past 2^64 too. */
+    char unknown_text[96];
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat"
+#pragma GCC diagnostic ignored "-Wformat-extra-args"
+    if (snprintf(unknown_text, sizeof unknown_text, "[%-5.3.4d][%y][%5]", 7) != 18 ||
+        strcmp(unknown_text, "[%-5.3.4d][%y][%5]") != 0) return 782;
+    if (snprintf(unknown_text, sizeof unknown_text, "ab%") != -1) return 783;
+    if (snprintf(unknown_text, sizeof unknown_text, "[%#.0f|%#.0f|%#.0f|%.0f]", 18446744073709551616.0, 1e20, 3.0, 1e20) != 71 ||
+        strcmp(unknown_text, "[18446744073709551616.|100000000000000000000.|3.|100000000000000000000]") != 0) return 784;
+#pragma GCC diagnostic pop
+  }
   errno = 0;
   if (execvp("", (char *[]){"", 0}) != -1 || errno != ENOENT) return 780;
   /* The last representable local year west of UTC: the UTC instant is already

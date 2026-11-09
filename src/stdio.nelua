@@ -3370,6 +3370,7 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       if result ~= length then stream_unlock(stream); return -1 end
       continue
     end
+    local directive_start: csize = index
     index = index + 1
     local left_align: boolean = false
     local plus_sign: boolean = false
@@ -4151,6 +4152,12 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
             float_length = float_length + 1
             digit_index = digit_index + 1
           end
+          -- '#' keeps the radix character even with no fraction digits
+          -- (%#.0f of 2^64 is "18446744073709551616.")
+          if alternate and integer_length == exact_length then
+            float_buffer[float_length] = (@byte)(nelibc_radix_character())
+            float_length = float_length + 1
+          end
           if is_general and not alternate then
             while float_length > 0 and float_buffer[float_length - 1] == 48 and
                 float_buffer[float_length - 1] ~= (@byte)(nelibc_radix_character()) do
@@ -4429,9 +4436,13 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
       written = written + emit_padding(stream, 37, 1)
       if left_align then written = written + emit_padding(stream, 32, pad) end
     else
-      nelibc_errno_location()[0] = 22 -- EINVAL
-      stream_unlock(stream)
-      return -1
+      -- An unknown conversion is copied out as text, '%' through the
+      -- character that ended the directive, as glibc does ("%y" -> "%y").
+      local directive_length: csize = index - directive_start
+      local directive_data: *const void = (@pointer)((@usize)(format) + directive_start)
+      local copied: csize = emit_bytes(stream, directive_data, directive_length)
+      written = written + copied
+      if copied ~= directive_length then stream_unlock(stream); return -1 end
     end
     if written < field_start then
       stream_unlock(stream)
