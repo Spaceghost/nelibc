@@ -92,6 +92,7 @@ with an x87 argument fix; see [the compiler patch and reproducer](tools/toolchai
 | Guide | What it covers |
 | --- | --- |
 | [Quickstart](docs/quickstart.md) | Build and link a C program |
+| [Full integration gate](docs/integration-gate-20261117.md) | 2026-11-17 Pacific: 14 targets passed; expected failures and namespace skip recorded |
 | [API inventory](docs/musl-1.2.5-api-coverage.csv) | Function and symbol coverage |
 | [Coverage notes](docs/api-coverage.md) | How coverage is measured |
 | [Core roadmap](docs/core-roadmap.md) | Priorities and missing core pieces |

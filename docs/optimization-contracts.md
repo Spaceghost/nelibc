@@ -151,9 +151,11 @@ aa93d82e5887d195a8e3be1efadda15154996e932a0df742a8e6fe0f0ecc4009
 648d276f382122d0fb1d3894a6600f6645ff563f09ac63ada34b3aee09acef91
 ```
 
-The source changes remain unmerged and unpushed: these focused checks do not
-substitute for the repository's full behavior-change gate. This section
-describes the earlier candidate; the linked follow-up records its successor.
+At measurement time these source changes were unmerged; focused checks do not
+substitute for the repository's full behavior-change gate. The subsequent
+[full integration run](integration-gate-20261117.md) passed all 14 targets.
+This section preserves the earlier candidate; the linked follow-up records
+its successor.
 
 ## Next work, ranked
 

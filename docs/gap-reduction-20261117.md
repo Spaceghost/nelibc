@@ -101,5 +101,7 @@ musl:   f0166bc73f35bcb6693a7c67ef7c6322f38a558a8499c515fd98089ba8e5e35c
 Cosmo:  b27b8345de288c5ced933e0cf8a9d20774618f91f26860bd6c645990b25d60b0
 ```
 
-These changes are an unmerged candidate. Focused checks and the independent
-corpus do not substitute for all behavior-change gates in AGENTS.md.
+These measurements captured an unmerged candidate. The subsequent
+[full integration run](integration-gate-20261117.md) passed all 14 targets
+on the integrated implementation. The dated source and archives above remain
+the exact artifacts measured here.

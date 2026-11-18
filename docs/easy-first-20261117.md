@@ -108,4 +108,6 @@ Retained inside `nelibc-writ` at
 The run-source archive is checked against every file hash in the timing
 manifest before packaging. Exploratory samples and the rejected first search
 version remain separate from the final evidence. These focused checks do not
-replace the full integration gate in AGENTS.md; the source remains a candidate.
+replace the full integration gate in AGENTS.md. The subsequent
+[full integration run](integration-gate-20261117.md) passed all 14 targets
+on the integrated implementation, including its build and benchmark fixes.
