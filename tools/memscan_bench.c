@@ -40,7 +40,7 @@ static void sort(double values[SAMPLES]) {
   }
 }
 
-static double measure(find_fn fn, size_t size, int target, size_t position,
+static double measure(find_fn volatile fn, size_t size, int target, size_t position,
                       int absent) {
   size_t reps = WORK_BYTES / size;
   if (reps < 128) reps = 128;

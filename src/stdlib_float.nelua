@@ -6,7 +6,12 @@ require 'C'
 
 global C.LDBL_MAX: clongdouble <const,cimport,cinclude'<float.h>'>
 global C.LDBL_MIN: clongdouble <const,cimport,cinclude'<float.h>'>
+## if require('nelua.ccompiler').get_cc_defines().__COSMOPOLITAN__ then
+global C.Locale: type <cimport,nodecl,ctypedef, codename '__locale_struct'> = @record{}
+global C.locale_t: type = @*C.Locale
+## else
 global C.locale_t: type <cimport,nodecl> = pointer
+## end
 
 local function nelibc_errno_location(): *[0]cint <cimport> end
 local function nelibc_radix_character(): cint <cimport> end

@@ -4,7 +4,12 @@
 require 'C'
 ## cinclude '<locale.h>'
 
+## if require('nelua.ccompiler').get_cc_defines().__COSMOPOLITAN__ then
+global C.Locale: type <cimport,nodecl,ctypedef, codename '__locale_struct'> = @record{}
+global C.locale_t: type = @*C.Locale
+## else
 global C.locale_t: type <cimport,nodecl> = pointer
+## end
 local function uselocale(locale: C.locale_t): C.locale_t <cimport,nodecl> end
 
 -- C-locale character classification. Arguments outside EOF and the unsigned
@@ -13,82 +18,82 @@ local function valid_character(character: cint): boolean <inline>
   return character >= 0 and character <= 255
 end
 
-local function isupper(character: cint): cint <cexport, codename 'isupper'>
+local function isupper(character: cint): cint <cexport, codename 'isupper', cattribute '__pure__'>
   if valid_character(character) and character >= 65 and character <= 90 then return 1 end
   return 0
 end
 
-local function islower(character: cint): cint <cexport, codename 'islower'>
+local function islower(character: cint): cint <cexport, codename 'islower', cattribute '__pure__'>
   if valid_character(character) and character >= 97 and character <= 122 then return 1 end
   return 0
 end
 
-local function isalpha(character: cint): cint <cexport, codename 'isalpha'>
+local function isalpha(character: cint): cint <cexport, codename 'isalpha', cattribute '__pure__'>
   if isupper(character) ~= 0 or islower(character) ~= 0 then return 1 end
   return 0
 end
 
-local function isdigit(character: cint): cint <cexport, codename 'isdigit'>
+local function isdigit(character: cint): cint <cexport, codename 'isdigit', cattribute '__pure__'>
   if valid_character(character) and character >= 48 and character <= 57 then return 1 end
   return 0
 end
 
-local function isalnum(character: cint): cint <cexport, codename 'isalnum'>
+local function isalnum(character: cint): cint <cexport, codename 'isalnum', cattribute '__pure__'>
   if isalpha(character) ~= 0 or isdigit(character) ~= 0 then return 1 end
   return 0
 end
 
-local function isblank(character: cint): cint <cexport, codename 'isblank'>
+local function isblank(character: cint): cint <cexport, codename 'isblank', cattribute '__pure__'>
   if character == 9 or character == 32 then return 1 end
   return 0
 end
 
-local function isspace(character: cint): cint <cexport, codename 'isspace'>
+local function isspace(character: cint): cint <cexport, codename 'isspace', cattribute '__pure__'>
   if character == 32 or (character >= 9 and character <= 13) then return 1 end
   return 0
 end
 
-local function iscntrl(character: cint): cint <cexport, codename 'iscntrl'>
+local function iscntrl(character: cint): cint <cexport, codename 'iscntrl', cattribute '__pure__'>
   if valid_character(character) and (character < 32 or character == 127) then return 1 end
   return 0
 end
 
-local function isprint(character: cint): cint <cexport, codename 'isprint'>
+local function isprint(character: cint): cint <cexport, codename 'isprint', cattribute '__pure__'>
   if valid_character(character) and character >= 32 and character <= 126 then return 1 end
   return 0
 end
 
-local function isgraph(character: cint): cint <cexport, codename 'isgraph'>
+local function isgraph(character: cint): cint <cexport, codename 'isgraph', cattribute '__pure__'>
   if valid_character(character) and character >= 33 and character <= 126 then return 1 end
   return 0
 end
 
-local function ispunct(character: cint): cint <cexport, codename 'ispunct'>
+local function ispunct(character: cint): cint <cexport, codename 'ispunct', cattribute '__pure__'>
   if isgraph(character) ~= 0 and isalnum(character) == 0 then return 1 end
   return 0
 end
 
-local function isxdigit(character: cint): cint <cexport, codename 'isxdigit'>
+local function isxdigit(character: cint): cint <cexport, codename 'isxdigit', cattribute '__pure__'>
   if isdigit(character) ~= 0 or (character >= 65 and character <= 70) or
       (character >= 97 and character <= 102) then return 1 end
   return 0
 end
 
-local function isascii(character: cint): cint <cexport, codename 'isascii'>
+local function isascii(character: cint): cint <cexport, codename 'isascii', nosideeffect, cattribute '__const__'>
   if character >= 0 and character <= 127 then return 1 end
   return 0
 end
 
-local function toascii(character: cint): cint <cexport, codename 'toascii'>
+local function toascii(character: cint): cint <cexport, codename 'toascii', nosideeffect, cattribute '__const__'>
   return character & 127
 end
 
-local function tolower(character: cint): cint <cexport, codename 'tolower'>
+local function tolower(character: cint): cint <cexport, codename 'tolower', cattribute '__pure__'>
   if isupper(character) ~= 0 then return character + 32 end
   return character
 end
 
-local function toupper(character: cint): cint <cexport, codename 'toupper'>
+local function toupper(character: cint): cint <cexport, codename 'toupper', cattribute '__pure__'>
   if islower(character) ~= 0 then return character - 32 end
   return character
 end

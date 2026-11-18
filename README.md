@@ -4,8 +4,9 @@
 
 ### A C library, rebuilt piece by piece in [Nelua](https://nelua.io)
 
-Replace selected libc functions with Nelua implementations. Keep the rest on
-glibc or musl, then grow the replacement toward a standalone runtime.
+Replace selected libc functions with Nelua implementations. Resolve the rest from
+Cosmopolitan libc in the default build, without a GNU libc dependency.
+Glibc and musl remain available as comparison profiles.
 
 [Quickstart](docs/quickstart.md) ·
 [API coverage](docs/musl-1.2.5-api-coverage.csv) ·
@@ -19,12 +20,13 @@ glibc or musl, then grow the replacement toward a standalone runtime.
 
 ## Try it
 
-Install [Nelua](https://nelua.io) and [Zig](https://ziglang.org), then run:
+Install [Nelua](https://nelua.io) and the
+[Cosmopolitan toolchain](docs/cosmopolitan.md#build), then run:
 
 ```sh
 git clone https://github.com/Spaceghost/nelibc.git
 cd nelibc
-make dogfood-zig
+make dogfood-cosmo
 ```
 
 This builds the library, links a C program against it, runs the program, and
@@ -33,8 +35,8 @@ checks that Nelibc's symbols made it into the executable.
 To link your own C program:
 
 ```sh
-make lib-zig
-zig cc -Iinclude -fno-builtin app.c build/libnelibc-zig.a -o app
+make lib-cosmo
+x86_64-unknown-cosmo-cc -fno-builtin app.c build/libnelibc-cosmo.a -o app
 ```
 
 `-fno-builtin` directs calls to the library symbols under evaluation. The
@@ -71,8 +73,10 @@ These counts track exported names, not behavioral conformance. See the
 
 ## Build profiles
 
-Zig cc is the default compiler and linker. GCC and TinyCC are comparison
-profiles; hybrid archives can target glibc or musl.
+The default `make` target runs the Cosmopolitan hybrid smoke checks.
+[Cosmopolitan profile](docs/cosmopolitan.md) documents symbol ownership and
+ABI requirements. Zig, GCC, and TinyCC remain comparison profiles for
+glibc, musl, standalone, and host builds.
 
 ```sh
 make dogfood-matrix
@@ -80,7 +84,8 @@ make smoke-matrix
 ```
 
 TinyCC is optional. See the [quickstart](docs/quickstart.md) for requirements
-and profile-specific commands.
+and profile-specific commands. The 2026-11-17 integration compiler is pinned
+with an x87 argument fix; see [the compiler patch and reproducer](tools/toolchains/README.md).
 
 ## Project guide
 

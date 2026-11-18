@@ -15,6 +15,12 @@ x86-64 project; the standalone runtime is a separate, incomplete profile.
   Debian 12 lacks `__thread` and rejects `INFINITY`/`NAN` in static
   initializers, so it cannot build the profile.
 
+The 2026-11-17 integration run pins mob commit
+`32d1c0a5614b9979768b3711726db3d601750ed3` with the
+[x87 argument-pop fix and regression](../tools/toolchains/README.md).
+Use that compiler's matching `libtcc1.a`; the unpatched snapshot raises
+spurious floating-point exceptions when passing long-double arguments.
+
 Zig builds default to `-mcpu=x86_64`, so binaries run on baseline x86-64
 machines. Override this with `make ZIGFLAGS='-mcpu=x86_64_v3'` when you
 intentionally want a newer CPU baseline.

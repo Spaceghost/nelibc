@@ -1,5 +1,15 @@
 /* C complex ABI adapters. Arithmetic lives in math_core.nelua. */
 #include <complex.h>
+/* Some libc headers define this optional C keyword macro. */
+#ifdef imaginary
+#undef imaginary
+#endif
+#undef crealf
+#undef creal
+#undef creall
+#undef cimagf
+#undef cimag
+#undef cimagl
 
 extern float nelibc_cabsf_parts(float real, float imaginary);
 extern double nelibc_cabs_parts(double real, double imaginary);

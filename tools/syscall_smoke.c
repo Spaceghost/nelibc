@@ -726,6 +726,11 @@ static int positioned_io_smoke(void) {
 /* Static constructors and destructors (standalone _start and exit). The
  * destructor reports through a pipe from a forked child: atexit handlers
  * first, then .fini_array, as glibc orders them. */
+#if defined(__TINYC__) && defined(__attribute__)
+/* glibc sys/cdefs.h erases attributes for compilers without __GNUC__, but
+ * TinyCC implements constructor/destructor attributes itself. */
+#undef __attribute__
+#endif
 static int constructor_ran;
 static int order_fd = -1;
 __attribute__((constructor)) static void smoke_constructor(void) { constructor_ran = 1; }

@@ -44,7 +44,8 @@ static double now_seconds(void) {
   return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
 }
 
-static double median_copy(copy_fn fn, size_t size, size_t reps) {
+/* Keep each implementation call observable even when declarations are pure. */
+static double median_copy(copy_fn volatile fn, size_t size, size_t reps) {
   double samples[SAMPLES];
   for (size_t s = 0; s < SAMPLES; ++s) {
     uintptr_t local = 0;
@@ -57,7 +58,7 @@ static double median_copy(copy_fn fn, size_t size, size_t reps) {
   return samples[SAMPLES / 2];
 }
 
-static double median_memccpy(stop_copy_fn fn, size_t size, size_t reps) {
+static double median_memccpy(stop_copy_fn volatile fn, size_t size, size_t reps) {
   double samples[SAMPLES];
   for (size_t s = 0; s < SAMPLES; ++s) {
     uintptr_t local = 0;
@@ -70,7 +71,7 @@ static double median_memccpy(stop_copy_fn fn, size_t size, size_t reps) {
   return samples[SAMPLES / 2];
 }
 
-static double median_move(copy_fn fn, size_t size, size_t reps,
+static double median_move(copy_fn volatile fn, size_t size, size_t reps,
                           size_t source_offset, size_t destination_offset) {
   double samples[SAMPLES];
   for (size_t s = 0; s < SAMPLES; ++s) {
@@ -88,7 +89,7 @@ static double median_move(copy_fn fn, size_t size, size_t reps,
   return samples[SAMPLES / 2];
 }
 
-static double median_set(set_fn fn, size_t size, size_t reps) {
+static double median_set(set_fn volatile fn, size_t size, size_t reps) {
   double samples[SAMPLES];
   for (size_t s = 0; s < SAMPLES; ++s) {
     uintptr_t local = 0;
@@ -101,7 +102,7 @@ static double median_set(set_fn fn, size_t size, size_t reps) {
   return samples[SAMPLES / 2];
 }
 
-static double median_compare(compare_fn fn, size_t size, size_t reps) {
+static double median_compare(compare_fn volatile fn, size_t size, size_t reps) {
   double samples[SAMPLES];
   for (size_t s = 0; s < SAMPLES; ++s) {
     uintptr_t local = 0;
@@ -114,7 +115,7 @@ static double median_compare(compare_fn fn, size_t size, size_t reps) {
   return samples[SAMPLES / 2];
 }
 
-static double median_find(find_fn fn, size_t size, size_t reps, int target) {
+static double median_find(find_fn volatile fn, size_t size, size_t reps, int target) {
   double samples[SAMPLES];
   for (size_t s = 0; s < SAMPLES; ++s) {
     uintptr_t local = 0;
@@ -127,7 +128,7 @@ static double median_find(find_fn fn, size_t size, size_t reps, int target) {
   return samples[SAMPLES / 2];
 }
 
-static double median_search(search_fn fn, size_t size, const unsigned char *search_needle,
+static double median_search(search_fn volatile fn, size_t size, const unsigned char *search_needle,
                             size_t needle_size, size_t reps) {
   double samples[SAMPLES];
   for (size_t s = 0; s < SAMPLES; ++s) {

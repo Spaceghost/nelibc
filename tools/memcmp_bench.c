@@ -41,7 +41,7 @@ static void sort(double values[SAMPLES]) {
   }
 }
 
-static double median_compare(compare_fn fn, size_t size, size_t iterations) {
+static double median_compare(compare_fn volatile fn, size_t size, size_t iterations) {
   double samples[SAMPLES];
   for (size_t sample = 0; sample < SAMPLES; ++sample) {
     uintptr_t local = 0;

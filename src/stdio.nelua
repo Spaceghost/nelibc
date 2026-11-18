@@ -24,7 +24,7 @@ local function nelibc_va_arg_long_double_as_double(arguments: cvalist, exact: *c
 local function nelibc_va_arg_long_double_parts(arguments: cvalist, exact: *cint,
     mantissa: *culonglong, sign_exponent: *cuint): cdouble <cimport> end
 local function nelibc_va_arg_pointer_at(arguments: cvalist, position: csize): pointer <cimport> end
-local function isspace(character: cint): cint <cimport> end
+local function isspace(character: cint): cint <cimport,cattribute '__pure__'> end
 local function nelibc_scan_strtoll(text: *const [0]cchar, end_text: **cchar,
     base: cint): clonglong <cimport> end
 local function nelibc_scan_strtoull(text: *const [0]cchar, end_text: **cchar,

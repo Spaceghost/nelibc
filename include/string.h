@@ -5,17 +5,18 @@
 #include <features.h>
 #endif
 #include <stddef.h>
+#include "nelibc_attributes.h"
 
-size_t strlen(const char *s);
-size_t strnlen(const char *s, size_t maxlen);
+size_t strlen(const char *s) NELIBC_PURE;
+size_t strnlen(const char *s, size_t maxlen) NELIBC_PURE;
 char *strdup(const char *s);
 char *strndup(const char *s, size_t n);
-int strcmp(const char *a, const char *b);
-int strverscmp(const char *left, const char *right);
-int strcasecmp(const char *a, const char *b);
+int strcmp(const char *a, const char *b) NELIBC_PURE;
+int strverscmp(const char *left, const char *right) NELIBC_PURE;
+int strcasecmp(const char *a, const char *b) NELIBC_PURE;
 int strcoll(const char *a, const char *b);
-int strncmp(const char *a, const char *b, size_t n);
-int strncasecmp(const char *a, const char *b, size_t n);
+int strncmp(const char *a, const char *b, size_t n) NELIBC_PURE;
+int strncasecmp(const char *a, const char *b, size_t n) NELIBC_PURE;
 size_t strxfrm(char *restrict dest, const char *restrict src, size_t n);
 char *strcpy(char *restrict dest, const char *restrict src);
 size_t strlcpy(char *restrict dest, const char *restrict src, size_t dstsize);
@@ -25,14 +26,14 @@ char *strcat(char *restrict dest, const char *restrict src);
 char *strncat(char *restrict dest, const char *restrict src, size_t n);
 char *strncpy(char *restrict dest, const char *restrict src, size_t n);
 char *stpncpy(char *restrict dest, const char *restrict src, size_t n);
-char *strchr(const char *s, int c);
-char *strchrnul(const char *s, int c);
-char *strrchr(const char *s, int c);
-char *strstr(const char *haystack, const char *needle);
-char *strcasestr(const char *haystack, const char *needle);
-size_t strspn(const char *s, const char *accept);
-size_t strcspn(const char *s, const char *reject);
-char *strpbrk(const char *s, const char *accept);
+char *strchr(const char *s, int c) NELIBC_PURE;
+char *strchrnul(const char *s, int c) NELIBC_PURE;
+char *strrchr(const char *s, int c) NELIBC_PURE;
+char *strstr(const char *haystack, const char *needle) NELIBC_PURE;
+char *strcasestr(const char *haystack, const char *needle) NELIBC_PURE;
+size_t strspn(const char *s, const char *accept) NELIBC_PURE;
+size_t strcspn(const char *s, const char *reject) NELIBC_PURE;
+char *strpbrk(const char *s, const char *accept) NELIBC_PURE;
 char *strtok(char *restrict s, const char *restrict delim);
 char *strtok_r(char *restrict s, const char *restrict delim, char **restrict saveptr);
 char *strsep(char **restrict stringp, const char *restrict delim);
@@ -53,10 +54,10 @@ void *memmove(void *dest, const void *src, size_t n);
 void *memccpy(void *restrict dest, const void *restrict src, int c, size_t n);
 void *memset(void *dest, int value, size_t n);
 void explicit_bzero(void *dest, size_t n);
-int memcmp(const void *a, const void *b, size_t n);
-void *memchr(const void *s, int c, size_t n);
-void *memrchr(const void *s, int c, size_t n);
-void *memmem(const void *haystack, size_t haystack_len, const void *needle, size_t needle_len);
+int memcmp(const void *a, const void *b, size_t n) NELIBC_PURE;
+void *memchr(const void *s, int c, size_t n) NELIBC_PURE;
+void *memrchr(const void *s, int c, size_t n) NELIBC_PURE;
+void *memmem(const void *haystack, size_t haystack_len, const void *needle, size_t needle_len) NELIBC_PURE;
 
 /* POSIX.1-2008 locale-object and signal-description entry points. */
 #if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE) || \

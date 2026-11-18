@@ -280,27 +280,42 @@ double nexttoward(double from, long double to);
 #define islessgreater(x, y) __builtin_islessgreater(x, y)
 #define isunordered(x, y) __builtin_isunordered(x, y)
 #else
-/* TinyCC has no such builtins: these evaluate the argument more than once
- * and isinf/isfinite raise FE_INVALID on an infinity. */
-#define isnan(value) ((value) != (value))
-#define isinf(value) (((value) == (value)) && (value) != 0 && ((value) - (value)) != 0)
-#define isfinite(value) (((value) == (value)) && !isinf(value))
+/* TinyCC has _Generic but no classification/comparison builtins. Dispatch
+ * without converting the argument, and classify its bits before comparing. */
+int __fpclassify(double value);
+int __fpclassifyf(float value);
+int __fpclassifyl(long double value);
+int __signbit(double value);
+int __signbitf(float value);
+int __signbitl(long double value);
 #define fpclassify(value) \
-  (isnan(value) ? FP_NAN : isinf(value) ? FP_INFINITE : \
-   (value) == 0 ? FP_ZERO : \
-   (sizeof(value) == sizeof(float) ? \
-    ((value) < FLT_MIN && (value) > -FLT_MIN ? FP_SUBNORMAL : FP_NORMAL) : \
-    sizeof(value) == sizeof(long double) ? \
-    ((value) < LDBL_MIN && (value) > -LDBL_MIN ? FP_SUBNORMAL : FP_NORMAL) : \
-    ((value) < DBL_MIN && (value) > -DBL_MIN ? FP_SUBNORMAL : FP_NORMAL)))
+  _Generic((value), float: __fpclassifyf, long double: __fpclassifyl, \
+           default: __fpclassify)(value)
+#define isnan(value) (fpclassify(value) == FP_NAN)
+#define isinf(value) (fpclassify(value) == FP_INFINITE)
+#define isfinite(value) (fpclassify(value) > FP_INFINITE)
 #define isnormal(value) (fpclassify(value) == FP_NORMAL)
-#define signbit(value) ((value) < 0 || ((value) == 0 && (1.0 / (value)) < 0))
-#define isunordered(x, y) (isnan(x) || isnan(y))
-#define isgreater(x, y) (!isunordered(x, y) && (x) > (y))
-#define isgreaterequal(x, y) (!isunordered(x, y) && (x) >= (y))
-#define isless(x, y) (!isunordered(x, y) && (x) < (y))
-#define islessequal(x, y) (!isunordered(x, y) && (x) <= (y))
-#define islessgreater(x, y) (!isunordered(x, y) && ((x) < (y) || (x) > (y)))
+#define signbit(value) \
+  _Generic((value), float: __signbitf, long double: __signbitl, \
+           default: __signbit)(value)
+#define __NELIBC_COMPARE(type, suffix, classify) \
+  static inline int __nelibc_compare##suffix(type x, type y) { \
+    if (classify(x) == FP_NAN || classify(y) == FP_NAN) return 8; \
+    return x < y ? 1 : x > y ? 2 : 4; \
+  }
+__NELIBC_COMPARE(float, f, __fpclassifyf)
+__NELIBC_COMPARE(double, d, __fpclassify)
+__NELIBC_COMPARE(long double, l, __fpclassifyl)
+#undef __NELIBC_COMPARE
+#define __nelibc_compare(x, y) \
+  _Generic((x) + (y), float: __nelibc_comparef, long double: __nelibc_comparel, \
+           default: __nelibc_compared)((x), (y))
+#define isless(x, y) (__nelibc_compare(x, y) & 1)
+#define isgreater(x, y) (__nelibc_compare(x, y) & 2)
+#define islessequal(x, y) (__nelibc_compare(x, y) & 5)
+#define isgreaterequal(x, y) (__nelibc_compare(x, y) & 6)
+#define islessgreater(x, y) (__nelibc_compare(x, y) & 3)
+#define isunordered(x, y) (__nelibc_compare(x, y) & 8)
 #endif
 
 /* SSE arithmetic on x86-64: FLT_EVAL_METHOD 0. */

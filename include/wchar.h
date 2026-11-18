@@ -1,5 +1,6 @@
 #ifndef NELIBC_WCHAR_WRAPPER_H
 #define NELIBC_WCHAR_WRAPPER_H
+#include "nelibc_attributes.h"
 
 #if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
 #include <locale.h>
@@ -60,13 +61,13 @@ size_t wcsftime_l(wchar_t *restrict, size_t, const wchar_t *restrict,
 wchar_t *wmemcpy(wchar_t *restrict, const wchar_t *restrict, size_t);
 wchar_t *wmemmove(wchar_t *, const wchar_t *, size_t);
 wchar_t *wmemset(wchar_t *, wchar_t, size_t);
-int wmemcmp(const wchar_t *, const wchar_t *, size_t);
-wchar_t *wmemchr(const wchar_t *, wchar_t, size_t);
-size_t wcslen(const wchar_t *);
-size_t wcsnlen(const wchar_t *, size_t);
+int wmemcmp(const wchar_t *, const wchar_t *, size_t) NELIBC_PURE;
+wchar_t *wmemchr(const wchar_t *, wchar_t, size_t) NELIBC_PURE;
+size_t wcslen(const wchar_t *) NELIBC_PURE;
+size_t wcsnlen(const wchar_t *, size_t) NELIBC_PURE;
 wchar_t *wcsdup(const wchar_t *);
-int wcscmp(const wchar_t *, const wchar_t *);
-int wcsncmp(const wchar_t *, const wchar_t *, size_t);
+int wcscmp(const wchar_t *, const wchar_t *) NELIBC_PURE;
+int wcsncmp(const wchar_t *, const wchar_t *, size_t) NELIBC_PURE;
 int wcscasecmp(const wchar_t *, const wchar_t *);
 int wcsncasecmp(const wchar_t *, const wchar_t *, size_t);
 int wcscasecmp_l(const wchar_t *, const wchar_t *, locale_t);
@@ -80,21 +81,21 @@ int wcscoll(const wchar_t *, const wchar_t *);
 int wcscoll_l(const wchar_t *, const wchar_t *, locale_t);
 size_t wcsxfrm(wchar_t *restrict, const wchar_t *restrict, size_t);
 size_t wcsxfrm_l(wchar_t *restrict, const wchar_t *restrict, size_t, locale_t);
-wchar_t *wcschr(const wchar_t *, wchar_t);
-wchar_t *wcsrchr(const wchar_t *, wchar_t);
+wchar_t *wcschr(const wchar_t *, wchar_t) NELIBC_PURE;
+wchar_t *wcsrchr(const wchar_t *, wchar_t) NELIBC_PURE;
 wchar_t *wcscpy(wchar_t *restrict, const wchar_t *restrict);
 wchar_t *wcsncpy(wchar_t *restrict, const wchar_t *restrict, size_t);
 wchar_t *wcscat(wchar_t *restrict, const wchar_t *restrict);
 wchar_t *wcsncat(wchar_t *restrict, const wchar_t *restrict, size_t);
-size_t wcsspn(const wchar_t *, const wchar_t *);
-size_t wcscspn(const wchar_t *, const wchar_t *);
-wchar_t *wcspbrk(const wchar_t *, const wchar_t *);
+size_t wcsspn(const wchar_t *, const wchar_t *) NELIBC_PURE;
+size_t wcscspn(const wchar_t *, const wchar_t *) NELIBC_PURE;
+wchar_t *wcspbrk(const wchar_t *, const wchar_t *) NELIBC_PURE;
 wchar_t *wcstok(wchar_t *restrict, const wchar_t *restrict,
                 wchar_t **restrict);
-wchar_t *wcsstr(const wchar_t *, const wchar_t *);
+wchar_t *wcsstr(const wchar_t *, const wchar_t *) NELIBC_PURE;
 wchar_t *wcpcpy(wchar_t *restrict, const wchar_t *restrict);
 wchar_t *wcpncpy(wchar_t *restrict, const wchar_t *restrict, size_t);
-wchar_t *wcswcs(const wchar_t *, const wchar_t *);
+wchar_t *wcswcs(const wchar_t *, const wchar_t *) NELIBC_PURE;
 
 int mblen(const char *, size_t);
 int mbtowc(wchar_t *restrict, const char *restrict, size_t);

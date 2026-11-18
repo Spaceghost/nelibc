@@ -1,3 +1,4 @@
+.DEFAULT_GOAL := all
 NELUA ?= $(shell command -v nelua 2>/dev/null || printf '%s\n' "$$HOME/.local/nelua/bin/nelua")
 ZIG ?= zig
 ZIGFLAGS ?= -mcpu=x86_64
@@ -152,9 +153,11 @@ $(OUT)/inet-standalone-gcc.o: src/inet.nelua | $(OUT)
 $(OUT)/inet-standalone-tcc.o: src/inet.nelua | $(OUT)
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $@ $<
 
-all: smoke-zig
+all: smoke-cosmo
 
 include host.mk
+include cosmopolitan.mk
+include purity.mk
 
 $(OUT):
 	mkdir -p $@
@@ -1983,7 +1986,21 @@ musl: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/string-locale-musl.o $(OUT)/stri
 smoke-musl: musl
 	$(OUT)/abi-smoke-musl
 
-tcc: $(OUT) $(OUT)/memory-tcc-simd.o $(OUT)/string-locale-tcc.o $(OUT)/string-locale-lock-tcc.o
+# The stdio smoke below links these runtime objects before syscall-tcc runs.
+# Declare them here so a clean TinyCC build does not depend on target order.
+$(OUT)/alloc-tcc.o: src/alloc.nelua | $(OUT)
+	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $@ $<
+
+$(OUT)/sys-linux-x86_64-tcc.o: src/sys/linux_x86_64.nelua | $(OUT)
+	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $@ $<
+
+$(OUT)/sys-linux-x86_64-tcc-asm.o: src/sys/linux_x86_64.S | $(OUT)
+	$(ZIG) cc $(ZIGFLAGS) -c $< -o $@
+
+$(OUT)/sys-ops-tcc.o: src/sys/linux_x86_64_ops.c include/nelibc_sys.h | $(OUT)
+	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c $< -o $@
+
+tcc: $(OUT) $(OUT)/memory-tcc-simd.o $(OUT)/string-locale-tcc.o $(OUT)/string-locale-lock-tcc.o $(OUT)/alloc-tcc.o $(OUT)/sys-linux-x86_64-tcc.o $(OUT)/sys-linux-x86_64-tcc-asm.o $(OUT)/sys-ops-tcc.o
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/string-tcc.o $(SOURCE)
 	$(NELUA) -B -r --cc '$(TCC)' --cflags=-fno-builtin -o $(OUT)/memory-tcc.o src/memory.nelua
 	$(TCC) -c -fno-builtin src/memory_tcc_x86_64.c -o $(OUT)/memory-tcc-helper.o

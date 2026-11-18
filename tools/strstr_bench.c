@@ -47,7 +47,7 @@ static char *reference_strstr(const char *h, const char *n) {
   return NULL;
 }
 
-static int differential_checks(strstr_fn fn) {
+static int differential_checks(strstr_fn volatile fn) {
   char h[4097];
   char n[MAX_NEEDLE + 1];
   for (size_t trial = 0; trial < 512; ++trial) {
@@ -77,7 +77,7 @@ static int differential_checks(strstr_fn fn) {
   return 0;
 }
 
-static int page_boundary_checks(strstr_fn fn) {
+static int page_boundary_checks(strstr_fn volatile fn) {
   long page_size_result = sysconf(_SC_PAGESIZE);
   if (page_size_result <= 0) return 1;
   size_t page_size = (size_t)page_size_result;
@@ -107,7 +107,7 @@ static double now_seconds(void) {
   return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
 }
 
-static double median_strlen(strlen_fn fn, const char *s) {
+static double median_strlen(strlen_fn volatile fn, const char *s) {
   double samples[SAMPLES];
   for (size_t sample = 0; sample < SAMPLES; ++sample) {
     uintptr_t local = 0;
@@ -128,7 +128,7 @@ static double median_strlen(strlen_fn fn, const char *s) {
   return samples[SAMPLES / 2];
 }
 
-static double median(strstr_fn fn, size_t haystack_size, size_t needle_size) {
+static double median(strstr_fn volatile fn, size_t haystack_size, size_t needle_size) {
   double samples[SAMPLES];
   for (size_t sample = 0; sample < SAMPLES; ++sample) {
     uintptr_t local = 0;

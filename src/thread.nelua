@@ -327,7 +327,7 @@ local function lseek(fd: cint, offset: clong, whence: cint): clong <cimport> end
 local function mmap(address: pointer, length: csize, protection: cint, flags: cint, fd: cint, offset: clong): pointer <cimport> end
 local function munmap(address: pointer, length: csize): cint <cimport> end
 local function unlink(pathname: *const void): cint <cimport> end
-local function strlen(string: *const [0]cchar): csize <cimport> end
+local function strlen(string: *const [0]cchar): csize <cimport,cattribute '__pure__'> end
 
 -- Async cancellation must not run cleanup handlers while this thread owns a
 -- libc lock that those handlers or TLS destructors may need. If the reserved

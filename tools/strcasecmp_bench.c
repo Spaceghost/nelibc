@@ -78,6 +78,8 @@ static int call_strncasecmp(const char *a, const char *b, size_t n) { return str
 static int bench_case(const input_case *item) { return item->n ? strncasecmp(item->left, item->right, item->n) : strcasecmp(item->left, item->right); }
 #endif
 
+static int (*volatile timed_case_call)(const input_case *) = bench_case;
+
 static int long_case_checks(void) {
   size_t equal_95 = CASE_COUNT - 4;
   size_t mismatch_95 = CASE_COUNT - 3;
@@ -497,7 +499,7 @@ static double median_ns(size_t case_index) {
     unsigned long long local = 0;
     double start = now_seconds();
     for (size_t i = 0; i < ITERATIONS; ++i)
-      local += (unsigned int)bench_case(&benchmark_cases[case_index]);
+      local += (unsigned int)timed_case_call(&benchmark_cases[case_index]);
     samples[sample] = (now_seconds() - start) * 1e9 / ITERATIONS;
     sink ^= local;
   }

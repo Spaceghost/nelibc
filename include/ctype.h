@@ -1,20 +1,21 @@
 #ifndef NELIBC_CTYPE_H
 #define NELIBC_CTYPE_H
+#include "nelibc_attributes.h"
 
-int isalnum(int character);
-int isalpha(int character);
-int isblank(int character);
-int iscntrl(int character);
-int isdigit(int character);
-int isgraph(int character);
-int islower(int character);
-int isprint(int character);
-int ispunct(int character);
-int isspace(int character);
-int isupper(int character);
-int isxdigit(int character);
-int tolower(int character);
-int toupper(int character);
+int isalnum(int character) NELIBC_PURE;
+int isalpha(int character) NELIBC_PURE;
+int isblank(int character) NELIBC_PURE;
+int iscntrl(int character) NELIBC_PURE;
+int isdigit(int character) NELIBC_PURE;
+int isgraph(int character) NELIBC_PURE;
+int islower(int character) NELIBC_PURE;
+int isprint(int character) NELIBC_PURE;
+int ispunct(int character) NELIBC_PURE;
+int isspace(int character) NELIBC_PURE;
+int isupper(int character) NELIBC_PURE;
+int isxdigit(int character) NELIBC_PURE;
+int tolower(int character) NELIBC_PURE;
+int toupper(int character) NELIBC_PURE;
 #ifndef NELIBC_STANDALONE
 #include <features.h>
 #endif
@@ -38,7 +39,7 @@ int isxdigit_l(int character, locale_t locale);
 int tolower_l(int character, locale_t locale);
 int toupper_l(int character, locale_t locale);
 #endif
-int isascii(int character);
-int toascii(int character);
+int isascii(int character) NELIBC_CONST;
+int toascii(int character) NELIBC_CONST;
 
 #endif

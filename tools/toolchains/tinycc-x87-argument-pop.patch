@@ -1,0 +1,11 @@
+--- a/x86_64-gen.c
++++ b/x86_64-gen.c
+@@ -1319,6 +1319,8 @@
+                 o(0x7cdb); /* fstpt 0(%rsp) */
+                 g(0x24);
+                 g(0x00);
++                /* fstpt already consumed ST0; vpop must not pop it twice. */
++                vtop->r = VT_CONST;
+ 		break;
+ 
+ 	    case VT_FLOAT:

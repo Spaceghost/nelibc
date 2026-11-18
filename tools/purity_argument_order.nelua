@@ -1,0 +1,19 @@
+-- Diagnostic only: pinned dabbd9ef/GCC returns 1 for this nested form.
+-- This also happens without nosideeffect, so it is not proof that the
+-- annotation alone caused the reordering. Use explicit sequencing.
+local function strcmp(a: *const [0]cchar, b: *const [0]cchar): cint
+    <cimport,cinclude'<string.h>',cattribute '__pure__'> end
+local text: [4]cchar = {97,98,99,0}
+local mutations:cint = 0
+local function overwrite(): cint <noinline>
+  text[0] = 120
+  mutations = mutations + 1
+  return 1
+end
+local function first(a: cint, b: cint): cint <noinline>
+  return a
+end
+local function exit(status:cint):void <cimport,cinclude'<stdlib.h>',noreturn> end
+if first(strcmp(&text,"abc"),overwrite()) ~= 0 then exit(1) end
+if strcmp(&text,"abc") <= 0 then exit(2) end
+if mutations ~= 1 then exit(3) end

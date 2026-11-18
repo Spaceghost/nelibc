@@ -6,6 +6,7 @@ local function malloc(size: csize): pointer <cimport> end
 local function nelibc_tcc_memcpy(dest: pointer, src: *const void, n: csize): pointer <cimport> end
 ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang or ccinfo.is_tcc) then
 local function nelibc_x86_64_rep_memcpy(dest: pointer, src: *const void, n: csize): pointer <cimport> end
+local function nelibc_x86_64_sse_memcpy(dest: pointer, src: *const void, n: csize): pointer <cimport> end
 ## end
 local function nelibc_tcc_sse_memccpy(dest: pointer, src: *const void, value: cint, n: csize): pointer <cimport> end
 local function nelibc_tcc_sse_memmove(dest: pointer, src: *const void, n: csize): pointer <cimport> end
@@ -15,15 +16,16 @@ local function nelibc_tcc_memset(dest: pointer, value: cint, n: csize): pointer 
 local function towlower(value: cwchar_t): cwchar_t <cimport> end
 local function towlower_l(value: cwchar_t, locale: pointer): cwchar_t <cimport> end
 local function wcwidth(value: cwchar_t): cint <cimport> end
-local function nelibc_tcc_sse_memcmp(left: *const void, right: *const void, n: csize): cint <cimport> end
-local function nelibc_x86_64_sse_memcmp(left: *const void, right: *const void, n: csize): cint <cimport> end
+local function nelibc_tcc_sse_memcmp(left: *const void, right: *const void, n: csize): cint <cimport,cattribute '__pure__'> end
+local function nelibc_x86_64_sse_memcmp(left: *const void, right: *const void, n: csize): cint <cimport,cattribute '__pure__'> end
 ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
 local function nelibc_x86_64_sse_memset(dest: pointer, value: cint, n: csize): pointer <cimport> end
 ## end
-local function nelibc_x86_64_sse_memchr(src: *const void, value: cint, n: csize): pointer <cimport> end
-local function nelibc_x86_64_sse_memrchr(src: *const void, value: cint, n: csize): pointer <cimport> end
-local function nelibc_tcc_sse_memchr(src: *const void, value: cint, n: csize): pointer <cimport> end
-local function nelibc_tcc_sse_memrchr(src: *const void, value: cint, n: csize): pointer <cimport> end
+local function nelibc_x86_64_sse_memchr(src: *const void, value: cint, n: csize): pointer <cimport,cattribute '__pure__'> end
+local function nelibc_x86_64_short_memchr(src: *const void, value: cint, n: csize): pointer <cimport,cattribute '__pure__'> end
+local function nelibc_x86_64_sse_memrchr(src: *const void, value: cint, n: csize): pointer <cimport,cattribute '__pure__'> end
+local function nelibc_tcc_sse_memchr(src: *const void, value: cint, n: csize): pointer <cimport,cattribute '__pure__'> end
+local function nelibc_tcc_sse_memrchr(src: *const void, value: cint, n: csize): pointer <cimport,cattribute '__pure__'> end
 
 -- Core byte operations. These functions must not call host libc; keep their
 -- loops explicit so later freestanding builds have no hidden dependencies.
@@ -39,8 +41,8 @@ local function memcpy(dest: pointer, src: *const void, n: csize): pointer <cexpo
   ## end
   ## else
   ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
-  if n >= 256 then return nelibc_x86_64_rep_memcpy(dest, src, n) end
-  ## end
+  return nelibc_x86_64_sse_memcpy(dest, src, n)
+  ## else
   local d: *[0]byte = (@*[0]byte)(dest)
   local s: *[0]byte = (@*[0]byte)(src)
   local i: csize = 0
@@ -136,6 +138,7 @@ local function memcpy(dest: pointer, src: *const void, n: csize): pointer <cexpo
     d[i] = s[i]
     i = i + 1
   end
+  ## end
   ## end
   return dest
 end
@@ -483,8 +486,8 @@ local function memset(dest: pointer, value: cint, n: csize): pointer <cexport, c
   return nelibc_tcc_memset(dest, value, n)
   ## else
   ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
-  if n >= 16 then return nelibc_x86_64_sse_memset(dest, value, n) end
-  ## end
+  return nelibc_x86_64_sse_memset(dest, value, n)
+  ## else
   local d: *[0]byte = (@*[0]byte)(dest)
   local b: byte = (@byte)(value)
   local i: csize = 0
@@ -504,6 +507,7 @@ local function memset(dest: pointer, value: cint, n: csize): pointer <cexport, c
     i = i + 1
   end
   return dest
+  ## end
   ## end
 end
 
@@ -560,7 +564,7 @@ local function wmemset(dest: *[0]cwchar_t, value: cwchar_t, n: csize): *[0]cwcha
 end
 
 local function wmemcmp(left: *const [0]cwchar_t, right: *const [0]cwchar_t, n: csize): cint
-    <cexport, codename 'wmemcmp'>
+    <cexport, codename 'wmemcmp', cattribute '__pure__'>
   local index: csize = 0
   while index < n do
     if left[index] < right[index] then return -1 end
@@ -571,7 +575,7 @@ local function wmemcmp(left: *const [0]cwchar_t, right: *const [0]cwchar_t, n: c
 end
 
 local function wmemchr(text: *const [0]cwchar_t, value: cwchar_t, n: csize): *cwchar_t
-    <cexport, codename 'wmemchr'>
+    <cexport, codename 'wmemchr', cattribute '__pure__'>
   local index: csize = 0
   while index < n do
     if text[index] == value then return (@*cwchar_t)(&text[index]) end
@@ -580,7 +584,7 @@ local function wmemchr(text: *const [0]cwchar_t, value: cwchar_t, n: csize): *cw
   return nilptr
 end
 
-local function wcslen(text: *const [0]cwchar_t): csize <cexport, codename 'wcslen'>
+local function wcslen(text: *const [0]cwchar_t): csize <cexport, codename 'wcslen', cattribute '__pure__'>
   local length: csize = 0
   while text[length] ~= 0 do
     length = length + 1
@@ -589,7 +593,7 @@ local function wcslen(text: *const [0]cwchar_t): csize <cexport, codename 'wcsle
 end
 
 local function wcsnlen(text: *const [0]cwchar_t, limit: csize): csize
-    <cexport, codename 'wcsnlen'>
+    <cexport, codename 'wcsnlen', cattribute '__pure__'>
   local length: csize = 0
   while length < limit and text[length] ~= 0 do
     length = length + 1
@@ -610,7 +614,7 @@ local function wcsdup(text: *const [0]cwchar_t): *cwchar_t <cexport, codename 'w
 end
 
 local function wcscmp(left: *const [0]cwchar_t, right: *const [0]cwchar_t): cint
-    <cexport, codename 'wcscmp'>
+    <cexport, codename 'wcscmp', cattribute '__pure__'>
   local index: csize = 0
   while left[index] == right[index] and left[index] ~= 0 do
     index = index + 1
@@ -621,7 +625,7 @@ local function wcscmp(left: *const [0]cwchar_t, right: *const [0]cwchar_t): cint
 end
 
 local function wcsncmp(left: *const [0]cwchar_t, right: *const [0]cwchar_t, n: csize): cint
-    <cexport, codename 'wcsncmp'>
+    <cexport, codename 'wcsncmp', cattribute '__pure__'>
   local index: csize = 0
   while index < n and left[index] == right[index] and left[index] ~= 0 do index = index + 1 end
   if index == n then return 0 end
@@ -693,7 +697,7 @@ local function wcswidth(text: *const [0]cwchar_t, n: csize): cint
   return columns
 end
 
-local function wcschr(text: *const [0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'wcschr'>
+local function wcschr(text: *const [0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'wcschr', cattribute '__pure__'>
   local index: csize = 0
   while true do
     if text[index] == value then return (@*cwchar_t)(&text[index]) end
@@ -702,7 +706,7 @@ local function wcschr(text: *const [0]cwchar_t, value: cwchar_t): *cwchar_t <cex
   end
 end
 
-local function wcsrchr(text: *const [0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'wcsrchr'>
+local function wcsrchr(text: *const [0]cwchar_t, value: cwchar_t): *cwchar_t <cexport, codename 'wcsrchr', cattribute '__pure__'>
   local found: *cwchar_t = nilptr
   local index: csize = 0
   while true do
@@ -785,7 +789,7 @@ local function wcsncat(dest: *[0]cwchar_t, src: *const [0]cwchar_t, n: csize): *
 end
 
 local function wcsspn(text: *const [0]cwchar_t, accept: *const [0]cwchar_t): csize
-    <cexport, codename 'wcsspn'>
+    <cexport, codename 'wcsspn', cattribute '__pure__'>
   local length: csize = 0
   while text[length] ~= 0 do
     local candidate: csize = 0
@@ -799,7 +803,7 @@ local function wcsspn(text: *const [0]cwchar_t, accept: *const [0]cwchar_t): csi
 end
 
 local function wcscspn(text: *const [0]cwchar_t, reject: *const [0]cwchar_t): csize
-    <cexport, codename 'wcscspn'>
+    <cexport, codename 'wcscspn', cattribute '__pure__'>
   local length: csize = 0
   while text[length] ~= 0 do
     local candidate: csize = 0
@@ -813,7 +817,7 @@ local function wcscspn(text: *const [0]cwchar_t, reject: *const [0]cwchar_t): cs
 end
 
 local function wcspbrk(text: *const [0]cwchar_t, accept: *const [0]cwchar_t): *cwchar_t
-    <cexport, codename 'wcspbrk'>
+    <cexport, codename 'wcspbrk', cattribute '__pure__'>
   local index: csize = 0
   while text[index] ~= 0 do
     local candidate: csize = 0
@@ -863,7 +867,7 @@ local function wcstok(text: *[0]cwchar_t, delimiters: *const [0]cwchar_t, savept
 end
 
 local function wcsstr(haystack: *const [0]cwchar_t, needle: *const [0]cwchar_t): *cwchar_t
-    <cexport, codename 'wcsstr'>
+    <cexport, codename 'wcsstr', cattribute '__pure__'>
   if needle[0] == 0 then return (@*cwchar_t)(haystack) end
   local start: csize = 0
   while haystack[start] ~= 0 do
@@ -878,7 +882,7 @@ local function wcsstr(haystack: *const [0]cwchar_t, needle: *const [0]cwchar_t):
 end
 
 local function wcswcs(haystack: *const [0]cwchar_t, needle: *const [0]cwchar_t): *cwchar_t
-    <cexport, codename 'wcswcs'>
+    <cexport, codename 'wcswcs', cattribute '__pure__'>
   return wcsstr(haystack, needle)
 end
 
@@ -886,8 +890,8 @@ local function nelibc_memset(dest: pointer, value: cint, n: csize): pointer <cex
   return memset(dest, value, n)
 end
 
-local function memcmp(a: *const void, b: *const void, n: csize): cint <cexport, codename 'memcmp'>
-  ## if ccinfo.is_gcc and not ccinfo.is_clang and ccinfo.is_x86_64 then
+local function memcmp(a: *const void, b: *const void, n: csize): cint <cexport, codename 'memcmp', cattribute '__pure__'>
+  ## if (ccinfo.is_gcc or ccinfo.is_clang) and ccinfo.is_x86_64 then
   return nelibc_x86_64_sse_memcmp(a, b, n)
   ## elseif ccinfo.is_tcc then
   return nelibc_tcc_sse_memcmp(a, b, n)
@@ -986,15 +990,20 @@ local function memcmp(a: *const void, b: *const void, n: csize): cint <cexport, 
   ## end
 end
 
-local function bcmp(left: *const void, right: *const void, n: csize): cint <cexport, codename 'bcmp'>
+local function bcmp(left: *const void, right: *const void, n: csize): cint <cexport, codename 'bcmp', cattribute '__pure__'>
   return memcmp(left, right, n)
 end
-local function memchr(s: *const void, value: cint, n: csize): pointer <cexport, codename 'memchr'>
+local function memchr(s: *const void, value: cint, n: csize): pointer <cexport, codename 'memchr', cattribute '__pure__'>
   ## if ccinfo.is_tcc then
   return nelibc_tcc_sse_memchr(s, value, n)
   ## end
   ## if ccinfo.is_x86_64 and (ccinfo.is_gcc or ccinfo.is_clang) then
-  if n >= 64 then return nelibc_x86_64_sse_memchr(s, value, n) end
+  if n >= 64 then return nelibc_x86_64_sse_memchr(s, value, n)
+  elseif n >= 16 then
+    local first: *[0]byte = (@*[0]byte)(s)
+    if first[0] == (@byte)(value) then return (@pointer)(s) end
+    return nelibc_x86_64_short_memchr(s, value, n)
+  end
   ## end
   local bytes: *[0]byte = (@*[0]byte)(s)
   local target: byte = (@byte)(value)
@@ -1057,7 +1066,7 @@ end
 
 -- GNU extension, also provided by musl. Search from the final byte toward the
 -- beginning while returning the address of the last matching byte.
-local function memrchr(s: *const void, value: cint, n: csize): pointer <cexport, codename 'memrchr'>
+local function memrchr(s: *const void, value: cint, n: csize): pointer <cexport, codename 'memrchr', cattribute '__pure__'>
   ## if ccinfo.is_tcc then
   return nelibc_tcc_sse_memrchr(s, value, n)
   ## end
@@ -1266,7 +1275,7 @@ local function memmem_twoway(haystack: *const void, haystack_len: csize, needle:
   return nilptr
 end
 
-local function memmem(haystack: *const void, haystack_len: csize, needle: *const void, needle_len: csize): pointer <cexport, codename 'memmem'>
+local function memmem(haystack: *const void, haystack_len: csize, needle: *const void, needle_len: csize): pointer <cexport, codename 'memmem', cattribute '__pure__'>
   local h: *[0]byte = (@*[0]byte)(haystack)
   local n: *[0]byte = (@*[0]byte)(needle)
   if needle_len == 0 then return (@pointer)(haystack) end

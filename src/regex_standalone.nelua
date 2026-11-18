@@ -43,7 +43,7 @@
 local function malloc(size: csize): pointer <cimport> end
 local function realloc(value: pointer, size: csize): pointer <cimport> end
 local function free(value: pointer): void <cimport> end
-local function strlen(text: *const [0]cchar): csize <cimport> end
+local function strlen(text: *const [0]cchar): csize <cimport,cattribute '__pure__'> end
 local function nelibc_multibyte_mode(): cint <cimport> end
 
 -- regcomp flags, regexec flags and error codes: musl's values.

@@ -27,7 +27,7 @@
 local function malloc(size: csize): pointer <cimport> end
 local function realloc(value: pointer, size: csize): pointer <cimport> end
 local function free(value: pointer): void <cimport> end
-local function strcmp(left: *const [0]cchar, right: *const [0]cchar): cint <cimport> end
+local function strcmp(left: *const [0]cchar, right: *const [0]cchar): cint <cimport,cattribute '__pure__'> end
 local function memcpy(destination: pointer, source: pointer, size: csize): pointer <cimport> end
 local function fopen(path: *const [0]cchar, mode: *const [0]cchar): pointer <cimport> end
 local function fclose(stream: pointer): cint <cimport> end

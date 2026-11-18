@@ -17,19 +17,19 @@ local function realloc(ptr: pointer, size: csize): pointer <cimport> end
 local function strtod(text: *const [0]cchar, end_text: **cchar): cdouble <cimport> end
 local function strtof(text: *const [0]cchar, end_text: **cchar): cfloat <cimport> end
 local function strtold(text: *const [0]cchar, end_text: **cchar): clongdouble <cimport> end
-local function tolower(character: cint): cint <cimport> end
-local function isalnum(character: cint): cint <cimport> end
-local function isalpha(character: cint): cint <cimport> end
-local function isblank(character: cint): cint <cimport> end
-local function iscntrl(character: cint): cint <cimport> end
-local function isdigit(character: cint): cint <cimport> end
-local function isgraph(character: cint): cint <cimport> end
-local function islower(character: cint): cint <cimport> end
-local function isprint(character: cint): cint <cimport> end
-local function ispunct(character: cint): cint <cimport> end
-local function isspace(character: cint): cint <cimport> end
-local function isupper(character: cint): cint <cimport> end
-local function isxdigit(character: cint): cint <cimport> end
+local function tolower(character: cint): cint <cimport,cattribute '__pure__'> end
+local function isalnum(character: cint): cint <cimport,cattribute '__pure__'> end
+local function isalpha(character: cint): cint <cimport,cattribute '__pure__'> end
+local function isblank(character: cint): cint <cimport,cattribute '__pure__'> end
+local function iscntrl(character: cint): cint <cimport,cattribute '__pure__'> end
+local function isdigit(character: cint): cint <cimport,cattribute '__pure__'> end
+local function isgraph(character: cint): cint <cimport,cattribute '__pure__'> end
+local function islower(character: cint): cint <cimport,cattribute '__pure__'> end
+local function isprint(character: cint): cint <cimport,cattribute '__pure__'> end
+local function ispunct(character: cint): cint <cimport,cattribute '__pure__'> end
+local function isspace(character: cint): cint <cimport,cattribute '__pure__'> end
+local function isupper(character: cint): cint <cimport,cattribute '__pure__'> end
+local function isxdigit(character: cint): cint <cimport,cattribute '__pure__'> end
 local function iswalnum(character: cint): cint <cimport> end
 local function iswalpha(character: cint): cint <cimport> end
 local function iswblank(character: cint): cint <cimport> end
@@ -1928,11 +1928,13 @@ local function parse_integer(text: *[0]cchar <const>, end_text: **cchar, base: c
   end
   local limit: culonglong = positive_limit
   if negative then limit = negative_limit end
-  local cutoff: culonglong = limit // (@culonglong)(actual_base)
-  local cutlim: cint = (@cint)(limit % (@culonglong)(actual_base))
   local magnitude: culonglong = 0
   local overflow: boolean = false
   if actual_base == 10 then
+    -- Keep common bases constant at division sites. A variable divide before
+    -- this dispatch prevents the C backend from using reciprocal/shift code.
+    local cutoff: culonglong = limit // 10_culonglong
+    local cutlim: cint = (@cint)(limit % 10_culonglong)
     while true do
       local character: cchar = text[cursor]
       local digit: cuint = (@cuint)(character) - 48
@@ -1949,6 +1951,8 @@ local function parse_integer(text: *[0]cchar <const>, end_text: **cchar, base: c
       cursor = cursor + 1
     end
   elseif actual_base == 8 then
+    local cutoff: culonglong = limit // 8_culonglong
+    local cutlim: cint = (@cint)(limit % 8_culonglong)
     while true do
       local character: cchar = text[cursor]
       local digit: cuint = (@cuint)(character) - 48
@@ -1965,6 +1969,8 @@ local function parse_integer(text: *[0]cchar <const>, end_text: **cchar, base: c
       cursor = cursor + 1
     end
   elseif actual_base == 16 then
+    local cutoff: culonglong = limit // 16_culonglong
+    local cutlim: cint = (@cint)(limit % 16_culonglong)
     while true do
       local character: cchar = text[cursor]
       local folded: cuint = (@cuint)(character) | 32
@@ -1983,6 +1989,8 @@ local function parse_integer(text: *[0]cchar <const>, end_text: **cchar, base: c
       cursor = cursor + 1
     end
   else
+    local cutoff: culonglong = limit // (@culonglong)(actual_base)
+    local cutlim: cint = (@cint)(limit % (@culonglong)(actual_base))
     while true do
       local digit: cint = digit_value(text[cursor])
       if digit >= actual_base then break end
@@ -2537,7 +2545,7 @@ local function atof(text: *const [0]cchar): cdouble <cexport, codename 'atof'>
   return strtod(text, nilptr)
 end
 
-local function abs(value: cint): cint <cexport, codename 'abs'>
+local function abs(value: cint): cint <cexport, codename 'abs', nosideeffect, cattribute '__const__'>
   if value < 0 then return -value end
   return value
 end
@@ -2549,12 +2557,12 @@ local function abort(): void <cexport, codename 'abort'>
   _Exit(134)
 end
 
-local function labs(value: clong): clong <cexport, codename 'labs'>
+local function labs(value: clong): clong <cexport, codename 'labs', nosideeffect, cattribute '__const__'>
   if value < 0 then return -value end
   return value
 end
 
-local function llabs(value: clonglong): clonglong <cexport, codename 'llabs'>
+local function llabs(value: clonglong): clonglong <cexport, codename 'llabs', nosideeffect, cattribute '__const__'>
   if value < 0 then return -value end
   return value
 end
@@ -2564,7 +2572,7 @@ local function imaxabs(value: clong): clong <cexport, codename 'imaxabs'>
   return value
 end
 
-local function ffs(value: cint): cint <cexport, codename 'ffs'>
+local function ffs(value: cint): cint <cexport, codename 'ffs', nosideeffect, cattribute '__const__'>
   local bits: cuint = (@cuint)(value)
   if bits == 0 then return 0 end
   local position: cint = 1
@@ -2575,7 +2583,7 @@ local function ffs(value: cint): cint <cexport, codename 'ffs'>
   return position
 end
 
-local function ffsl(value: clong): cint <cexport, codename 'ffsl'>
+local function ffsl(value: clong): cint <cexport, codename 'ffsl', nosideeffect, cattribute '__const__'>
   local bits: culong = (@culong)(value)
   if bits == 0 then return 0 end
   local position: cint = 1
@@ -2586,7 +2594,7 @@ local function ffsl(value: clong): cint <cexport, codename 'ffsl'>
   return position
 end
 
-local function ffsll(value: clonglong): cint <cexport, codename 'ffsll'>
+local function ffsll(value: clonglong): cint <cexport, codename 'ffsll', nosideeffect, cattribute '__const__'>
   local bits: culonglong = (@culonglong)(value)
   if bits == 0 then return 0 end
   local position: cint = 1
@@ -2796,8 +2804,8 @@ local function qsort_r(base: pointer, count: csize, width: csize,
   end
 end
 
-local function qsort(base: pointer, count: csize, width: csize,
-    compare: function(pointer, pointer): cint): void <cexport, codename 'qsort'>
+local function qsort_impl(base: pointer, count: csize, width: csize,
+    compare: function(pointer, pointer): cint): void <inline>
   if base == nilptr or compare == nilptr or count < 2 or width == 0 then return end
   local bytes: *[0]cchar = (@*[0]cchar)(base)
   if count <= 16 and width <= 64 then
@@ -2927,6 +2935,15 @@ local function qsort(base: pointer, count: csize, width: csize,
       depth_limit = ranges[stack_size].depth
     end
   end
+end
+
+local function qsort(base: pointer, count: csize, width: csize,
+    compare: function(pointer, pointer): cint): void <cexport, codename 'qsort'>
+  -- Constant widths remove byte-loop and address-multiply overhead while
+  -- retaining the same introsort, depth limit and heapsort fallback.
+  if width == 4 then qsort_impl(base, count, 4, compare)
+  elseif width == 8 then qsort_impl(base, count, 8, compare)
+  else qsort_impl(base, count, width, compare) end
 end
 
 local function bsearch(key: pointer, base: pointer, count: csize, width: csize,

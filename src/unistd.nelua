@@ -249,7 +249,7 @@ local function snprintf(buffer: *[0]cchar, max_size: csize,
 local function qsort(base: pointer, count: csize, width: csize,
     compare: function(pointer, pointer): cint): void <cimport> end
 local function strcoll(left: *const [0]cchar, right: *const [0]cchar): cint <cimport> end
-local function strverscmp(left: *const [0]cchar, right: *const [0]cchar): cint <cimport> end
+local function strverscmp(left: *const [0]cchar, right: *const [0]cchar): cint <cimport,cattribute '__pure__'> end
 local function nelibc_cancellation_enter(): cint <cimport> end
 local function nelibc_cancellation_leave(previous_type: cint): void <cimport> end
 local function nelibc_cancellable_sys3(op: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end

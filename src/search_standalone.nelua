@@ -9,7 +9,7 @@
 local function malloc(size: csize): pointer <cimport> end
 local function calloc(count: csize, size: csize): pointer <cimport> end
 local function free(value: pointer): void <cimport> end
-local function strcmp(left: *const [0]cchar, right: *const [0]cchar): cint <cimport> end
+local function strcmp(left: *const [0]cchar, right: *const [0]cchar): cint <cimport,cattribute '__pure__'> end
 local function memcpy(destination: pointer, source: pointer, size: csize): pointer <cimport> end
 
 -- ENTRY {char *key; void *data;}; ACTION FIND = 0, ENTER = 1.

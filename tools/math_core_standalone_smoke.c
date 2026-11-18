@@ -57,6 +57,20 @@ int main(void) {
       return 601;
     if (fetestexcept(FE_ALL_EXCEPT) != 0) return 602;
   }
+  {
+    double values[] = {1.0, 2.0, -0.0, INFINITY, NAN};
+    float float_values[] = {0x1p-149f};
+    long double long_values[] = {-0.0L};
+    int left = 0, right = 1, index = 2, fi = 0, li = 0;
+    if (feclearexcept(FE_ALL_EXCEPT) != 0) return 603;
+    if (!isless(values[left++], values[right++]) || left != 1 || right != 2 ||
+        !signbit(values[index++]) || index != 3 ||
+        !isinf(values[index++]) || index != 4 ||
+        !isnan(values[index++]) || index != 5 ||
+        fpclassify(float_values[fi++]) != FP_SUBNORMAL || fi != 1 ||
+        !signbit(long_values[li++]) || li != 1) return 604;
+    if (fetestexcept(FE_ALL_EXCEPT) != 0) return 605;
+  }
   fenv_t saved_environment;
   fenv_t clean_environment;
   fexcept_t saved_flags = 0;

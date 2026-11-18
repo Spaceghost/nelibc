@@ -2,7 +2,7 @@
 .text
 
 #ifndef NELIBC_MEMSCAN_AVX2_THRESHOLD
-#define NELIBC_MEMSCAN_AVX2_THRESHOLD 2048
+#define NELIBC_MEMSCAN_AVX2_THRESHOLD 256
 #endif
 #ifndef NELIBC_MEMSCAN_AVX512_THRESHOLD
 #define NELIBC_MEMSCAN_AVX512_THRESHOLD 16384
@@ -14,6 +14,431 @@
 #define NELIBC_MEMMOVE_AVX2_THRESHOLD 2048
 #endif
 
+/* strcmp: compare a vector at a time, stopping at the first mismatch or
+ * NUL. Never issue a load crossing a 4 KiB page boundary in either input.
+ * The scalar tail handles independent alignments and guard-page endings. */
+.globl nelibc_x86_64_sse_strcmp
+.type nelibc_x86_64_sse_strcmp,@function
+nelibc_x86_64_sse_strcmp:
+  pxor %xmm0, %xmm0
+  movl %edi, %eax
+  orl %esi, %eax
+  andl $4095, %eax
+  cmpl $4032, %eax
+  ja .Lstrcmp_edge_entry
+  /* One page check admits the whole short-string prefix. Avoid computing
+   * two page windows and reducing four vectors before finding a short NUL. */
+.rept 4
+  movdqu (%rdi), %xmm1
+  movdqu (%rsi), %xmm2
+  pcmpeqb %xmm1, %xmm2
+  pminub %xmm1, %xmm2
+  pcmpeqb %xmm0, %xmm2
+  pmovmskb %xmm2, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_found
+  addq $16, %rdi
+  addq $16, %rsi
+.endr
+#ifndef NELIBC_DISABLE_AVX2
+  jmp .Lstrcmp_probe
+#else
+  jmp .Lstrcmp_window
+#endif
+.Lstrcmp_edge_entry:
+  cmpl $4080, %eax
+  ja .Lstrcmp_window
+  movdqu (%rdi), %xmm1
+  movdqu (%rsi), %xmm2
+  pcmpeqb %xmm1, %xmm2
+  pminub %xmm1, %xmm2
+  pcmpeqb %xmm0, %xmm2
+  pmovmskb %xmm2, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_found
+  addq $16, %rdi
+  addq $16, %rsi
+.Lstrcmp_window:
+  movl %edi, %eax
+  andl $4095, %eax
+  movl $4096, %edx
+  subl %eax, %edx
+  movl %esi, %eax
+  andl $4095, %eax
+  movl $4096, %ecx
+  subl %eax, %ecx
+  cmpl %ecx, %edx
+  cmova %ecx, %edx
+  cmpl $64, %edx
+  jb .Lstrcmp_vector16_check
+.p2align 4
+.Lstrcmp_vector64:
+  movdqu 0(%rdi), %xmm1
+  movdqu 0(%rsi), %xmm2
+  pcmpeqb %xmm1, %xmm2
+  pminub %xmm1, %xmm2
+  movdqu 16(%rdi), %xmm1
+  movdqu 16(%rsi), %xmm3
+  pcmpeqb %xmm1, %xmm3
+  pminub %xmm1, %xmm3
+  movdqu 32(%rdi), %xmm1
+  movdqu 32(%rsi), %xmm4
+  pcmpeqb %xmm1, %xmm4
+  pminub %xmm1, %xmm4
+  movdqu 48(%rdi), %xmm1
+  movdqu 48(%rsi), %xmm5
+  pcmpeqb %xmm1, %xmm5
+  pminub %xmm1, %xmm5
+  movdqa %xmm2, %xmm6
+  pminub %xmm3, %xmm6
+  pminub %xmm4, %xmm6
+  pminub %xmm5, %xmm6
+  pcmpeqb %xmm0, %xmm6
+  pmovmskb %xmm6, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_decide64
+  addq $64, %rdi
+  addq $64, %rsi
+  subl $64, %edx
+#ifndef NELIBC_DISABLE_AVX2
+  /* Only probe after an equal prefix. Short calls need no CPUID. */
+.Lstrcmp_probe:
+  cmpb $2, .Lmemscan_avx2_state(%rip)
+  jae .Lstrcmp_avx2_setup
+  cmpb $1, .Lmemscan_avx2_state(%rip)
+  je .Lstrcmp_sse_continue
+  subq $8, %rsp
+  call nelibc_x86_64_memscan_has_avx2
+  addq $8, %rsp
+  testl %eax, %eax
+  jnz .Lstrcmp_avx2_setup
+  jmp .Lstrcmp_window
+.Lstrcmp_sse_continue:
+#endif
+  cmpl $64, %edx
+  jae .Lstrcmp_vector64
+.Lstrcmp_vector16_check:
+  cmpl $16, %edx
+  jb .Lstrcmp_scalar
+.Lstrcmp_vector16:
+  movdqu (%rdi), %xmm1
+  movdqu (%rsi), %xmm2
+  pcmpeqb %xmm1, %xmm2
+  pminub %xmm1, %xmm2
+  pcmpeqb %xmm0, %xmm2
+  pmovmskb %xmm2, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_found
+  addq $16, %rdi
+  addq $16, %rsi
+  subl $16, %edx
+  cmpl $16, %edx
+  jae .Lstrcmp_vector16
+.Lstrcmp_scalar:
+  testl %edx, %edx
+  jz .Lstrcmp_window
+.Lstrcmp_scalar_loop:
+  movzbl (%rdi), %eax
+  movzbl (%rsi), %ecx
+  cmpb %cl, %al
+  jne .Lstrcmp_scalar_found
+  testb %al, %al
+  jz .Lstrcmp_scalar_found
+  incq %rdi
+  incq %rsi
+  decl %edx
+  jnz .Lstrcmp_scalar_loop
+  jmp .Lstrcmp_window
+.Lstrcmp_scalar_found:
+  subl %ecx, %eax
+  ret
+.Lstrcmp_decide64:
+  pcmpeqb %xmm0, %xmm2
+  pmovmskb %xmm2, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_found
+  addq $16, %rdi
+  addq $16, %rsi
+  pcmpeqb %xmm0, %xmm3
+  pmovmskb %xmm3, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_found
+  addq $16, %rdi
+  addq $16, %rsi
+  pcmpeqb %xmm0, %xmm4
+  pmovmskb %xmm4, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_found
+  addq $16, %rdi
+  addq $16, %rsi
+  pcmpeqb %xmm0, %xmm5
+  pmovmskb %xmm5, %eax
+.Lstrcmp_found:
+  bsfl %eax, %eax
+  movzbl (%rdi,%rax), %ecx
+  movzbl (%rsi,%rax), %eax
+  subl %eax, %ecx
+  movl %ecx, %eax
+  ret
+#ifndef NELIBC_DISABLE_AVX2
+.Lstrcmp_avx2_setup:
+  /* Revisit at most 31 bytes of the already equal 80-byte prefix, keeping
+   * the left stream aligned without reading before either input. */
+  movl %edi, %eax
+  andl $31, %eax
+  subq %rax, %rdi
+  subq %rax, %rsi
+  vpxor %ymm0, %ymm0, %ymm0
+  /* Resolve the first AVX block before computing two exact page windows.
+   * The combined offset check is conservative for independent alignments. */
+  movl %edi, %eax
+  orl %esi, %eax
+  andl $4095, %eax
+  cmpl $3968, %eax
+  ja .Lstrcmp_avx2_window
+  vmovdqu 0(%rdi), %ymm1
+  vpcmpeqb 0(%rsi), %ymm1, %ymm2
+  vpminub %ymm1, %ymm2, %ymm2
+  vmovdqu 32(%rdi), %ymm1
+  vpcmpeqb 32(%rsi), %ymm1, %ymm3
+  vpminub %ymm1, %ymm3, %ymm3
+  vmovdqu 64(%rdi), %ymm1
+  vpcmpeqb 64(%rsi), %ymm1, %ymm4
+  vpminub %ymm1, %ymm4, %ymm4
+  vmovdqu 96(%rdi), %ymm1
+  vpcmpeqb 96(%rsi), %ymm1, %ymm5
+  vpminub %ymm1, %ymm5, %ymm5
+  vpminub %ymm2, %ymm3, %ymm6
+  vpminub %ymm4, %ymm6, %ymm6
+  vpminub %ymm5, %ymm6, %ymm6
+  vpcmpeqb %ymm0, %ymm6, %ymm6
+  vpmovmskb %ymm6, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_avx2_decide128
+  addq $128, %rdi
+  addq $128, %rsi
+.Lstrcmp_avx2_window:
+  movl %edi, %eax
+  andl $4095, %eax
+  movl $4096, %edx
+  subl %eax, %edx
+  movl %esi, %eax
+  andl $4095, %eax
+  movl $4096, %ecx
+  subl %eax, %ecx
+  cmpl %ecx, %edx
+  cmova %ecx, %edx
+  cmpl $128, %edx
+  jb .Lstrcmp_avx2_32_check
+.p2align 5
+.Lstrcmp_avx2_128:
+  vmovdqu 0(%rdi), %ymm1
+  vpcmpeqb 0(%rsi), %ymm1, %ymm2
+  vpminub %ymm1, %ymm2, %ymm2
+  vmovdqu 32(%rdi), %ymm1
+  vpcmpeqb 32(%rsi), %ymm1, %ymm3
+  vpminub %ymm1, %ymm3, %ymm3
+  vmovdqu 64(%rdi), %ymm1
+  vpcmpeqb 64(%rsi), %ymm1, %ymm4
+  vpminub %ymm1, %ymm4, %ymm4
+  vmovdqu 96(%rdi), %ymm1
+  vpcmpeqb 96(%rsi), %ymm1, %ymm5
+  vpminub %ymm1, %ymm5, %ymm5
+  vpminub %ymm2, %ymm3, %ymm6
+  vpminub %ymm4, %ymm6, %ymm6
+  vpminub %ymm5, %ymm6, %ymm6
+  vpcmpeqb %ymm0, %ymm6, %ymm6
+  vpmovmskb %ymm6, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_avx2_decide128
+  addq $128, %rdi
+  addq $128, %rsi
+  subl $128, %edx
+  cmpl $128, %edx
+  jae .Lstrcmp_avx2_128
+.Lstrcmp_avx2_32_check:
+  cmpl $32, %edx
+  jb .Lstrcmp_avx2_page_tail
+.Lstrcmp_avx2_32:
+  vmovdqu (%rdi), %ymm1
+  vpcmpeqb (%rsi), %ymm1, %ymm2
+  vpminub %ymm1, %ymm2, %ymm2
+  vpcmpeqb %ymm0, %ymm2, %ymm2
+  vpmovmskb %ymm2, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_avx2_found
+  addq $32, %rdi
+  addq $32, %rsi
+  subl $32, %edx
+  cmpl $32, %edx
+  jae .Lstrcmp_avx2_32
+.Lstrcmp_avx2_page_tail:
+  vzeroupper
+  jmp .Lstrcmp_vector16_check
+.Lstrcmp_avx2_decide128:
+  vpcmpeqb %ymm0, %ymm2, %ymm2
+  vpmovmskb %ymm2, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_avx2_found
+  addq $32, %rdi
+  addq $32, %rsi
+  vpcmpeqb %ymm0, %ymm3, %ymm3
+  vpmovmskb %ymm3, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_avx2_found
+  addq $32, %rdi
+  addq $32, %rsi
+  vpcmpeqb %ymm0, %ymm4, %ymm4
+  vpmovmskb %ymm4, %eax
+  testl %eax, %eax
+  jnz .Lstrcmp_avx2_found
+  addq $32, %rdi
+  addq $32, %rsi
+  vpcmpeqb %ymm0, %ymm5, %ymm5
+  vpmovmskb %ymm5, %eax
+.Lstrcmp_avx2_found:
+  vzeroupper
+  jmp .Lstrcmp_found
+#endif
+.size nelibc_x86_64_sse_strcmp, .-nelibc_x86_64_sse_strcmp
+
+/* Bounded head/tail copies; no load or store extends outside [0,n). */
+.p2align 6
+.globl nelibc_x86_64_sse_memcpy
+.type nelibc_x86_64_sse_memcpy,@function
+nelibc_x86_64_sse_memcpy:
+  movq %rdi, %rax
+  cmpq $16, %rdx
+  jb .Lcopy_small
+  cmpq $128, %rdx
+  jb .Lcopy_sse
+  cmpq $8192, %rdx
+  jae .Lcopy_rep
+#ifndef NELIBC_DISABLE_AVX2
+  cmpb $2, .Lmemscan_avx2_state(%rip)
+  jae .Lcopy_avx
+  cmpb $1, .Lmemscan_avx2_state(%rip)
+  je .Lcopy_sse
+  pushq %rdx
+  call nelibc_x86_64_memscan_has_avx2
+  popq %rdx
+  movq %rdi, %rax
+  cmpb $2, .Lmemscan_avx2_state(%rip)
+  jae .Lcopy_avx
+#endif
+.Lcopy_sse:
+  cmpq $32, %rdx
+  ja .Lcopy_sse64
+  movdqu (%rsi), %xmm0
+  movdqu -16(%rsi,%rdx), %xmm1
+  movdqu %xmm0, (%rdi)
+  movdqu %xmm1, -16(%rdi,%rdx)
+  ret
+.Lcopy_sse64:
+  cmpq $64, %rdx
+  ja .Lcopy_sse128
+  movdqu 0(%rsi), %xmm0
+  movdqu 16(%rsi), %xmm1
+  movdqu -32(%rsi,%rdx), %xmm2
+  movdqu -16(%rsi,%rdx), %xmm3
+  movdqu %xmm0, 0(%rdi)
+  movdqu %xmm1, 16(%rdi)
+  movdqu %xmm2, -32(%rdi,%rdx)
+  movdqu %xmm3, -16(%rdi,%rdx)
+  ret
+.Lcopy_sse128:
+  cmpq $128, %rdx
+  ja .Lcopy_sse_loop
+.irp off,0,16,32,48
+  movdqu \off(%rsi), %xmm0
+  movdqu %xmm0, \off(%rdi)
+.endr
+.irp off,-64,-48,-32,-16
+  movdqu \off(%rsi,%rdx), %xmm0
+  movdqu %xmm0, \off(%rdi,%rdx)
+.endr
+  ret
+.Lcopy_sse_loop:
+.irp off,0,16,32,48
+  movdqu \off(%rsi), %xmm0
+  movdqu %xmm0, \off(%rdi)
+.endr
+  addq $64, %rsi
+  addq $64, %rdi
+  subq $64, %rdx
+  cmpq $128, %rdx
+  ja .Lcopy_sse_loop
+  jmp .Lcopy_sse64
+.Lcopy_small:
+  cmpq $8, %rdx
+  jb .Lcopy_small4
+  movq (%rsi), %rcx
+  movq -8(%rsi,%rdx), %r8
+  movq %rcx, (%rdi)
+  movq %r8, -8(%rdi,%rdx)
+  ret
+.Lcopy_small4:
+  cmpq $4, %rdx
+  jb .Lcopy_small2
+  movl (%rsi), %ecx
+  movl -4(%rsi,%rdx), %r8d
+  movl %ecx, (%rdi)
+  movl %r8d, -4(%rdi,%rdx)
+  ret
+.Lcopy_small2:
+  cmpq $2, %rdx
+  jb .Lcopy_small1
+  movzwl (%rsi), %ecx
+  movzwl -2(%rsi,%rdx), %r8d
+  movw %cx, (%rdi)
+  movw %r8w, -2(%rdi,%rdx)
+  ret
+.Lcopy_small1:
+  testq %rdx, %rdx
+  jz .Lcopy_return
+  movzbl (%rsi), %ecx
+  movb %cl, (%rdi)
+.Lcopy_return:
+  ret
+.Lcopy_rep:
+  movq %rdx, %rcx
+  rep movsb
+  ret
+#ifndef NELIBC_DISABLE_AVX2
+.Lcopy_avx:
+  cmpq $128, %rdx
+  jbe .Lcopy_avx_tail
+.p2align 4
+.Lcopy_avx_loop:
+.irp off,0,32,64,96
+  vmovdqu \off(%rsi), %ymm0
+  vmovdqu %ymm0, \off(%rdi)
+.endr
+  addq $128, %rsi
+  addq $128, %rdi
+  subq $128, %rdx
+  cmpq $128, %rdx
+  ja .Lcopy_avx_loop
+  /* The last 128 bytes can revisit the block just copied. */
+  leaq -128(%rsi,%rdx), %rsi
+  leaq -128(%rdi,%rdx), %rdi
+  movl $128, %edx
+.Lcopy_avx_tail:
+  vmovdqu 0(%rsi), %ymm0
+  vmovdqu 32(%rsi), %ymm1
+  vmovdqu -64(%rsi,%rdx), %ymm2
+  vmovdqu -32(%rsi,%rdx), %ymm3
+  vmovdqu %ymm0, 0(%rdi)
+  vmovdqu %ymm1, 32(%rdi)
+  vmovdqu %ymm2, -64(%rdi,%rdx)
+  vmovdqu %ymm3, -32(%rdi,%rdx)
+  vzeroupper
+  ret
+#endif
+.size nelibc_x86_64_sse_memcpy, .-nelibc_x86_64_sse_memcpy
+
+/* Preserve the cache-line phase of the pre-existing memory helpers. */
+.p2align 6
 .globl nelibc_x86_64_rep_memcpy
 .type nelibc_x86_64_rep_memcpy,@function
 nelibc_x86_64_rep_memcpy:
@@ -100,6 +525,17 @@ nelibc_x86_64_sse_strlen:
   testl %eax, %eax
   jnz .Lstrlen_found64
   addq $64, %rdi
+#ifndef NELIBC_DISABLE_AVX2
+  cmpb $2, .Lmemscan_avx2_state(%rip)
+  jae .Lstrlen_avx_entry
+  cmpb $1, .Lmemscan_avx2_state(%rip)
+  je .Lstrlen_after64
+  subq $8, %rsp
+  call nelibc_x86_64_memscan_has_avx2
+  addq $8, %rsp
+  testl %eax, %eax
+  jnz .Lstrlen_avx_entry
+#endif
   jmp .Lstrlen_after64
 .Lstrlen_after64:
   movdqa (%rdi), %xmm1
@@ -294,6 +730,55 @@ nelibc_x86_64_sse_strlen:
   movq %rdi, %rax
   subq %rsi, %rax
   ret
+#ifndef NELIBC_DISABLE_AVX2
+.Lstrlen_avx_entry:
+  vpxor %ymm0, %ymm0, %ymm0
+  /* The SSE prefix leaves a 64-byte aligned cursor. Reach 128-byte
+   * alignment before grouped loads, so no group can cross a 4 KiB page. */
+  testq $127, %rdi
+  jz .Lstrlen_avx_loop
+  vpcmpeqb (%rdi), %ymm0, %ymm1
+  vpmovmskb %ymm1, %eax
+  testl %eax, %eax
+  jnz .Lstrlen_avx_found
+  addq $32, %rdi
+  vpcmpeqb (%rdi), %ymm0, %ymm1
+  vpmovmskb %ymm1, %eax
+  testl %eax, %eax
+  jnz .Lstrlen_avx_found
+  addq $32, %rdi
+.p2align 5
+.Lstrlen_avx_loop:
+  vpcmpeqb 0(%rdi), %ymm0, %ymm1
+  vpcmpeqb 32(%rdi), %ymm0, %ymm2
+  vpcmpeqb 64(%rdi), %ymm0, %ymm3
+  vpcmpeqb 96(%rdi), %ymm0, %ymm4
+  vpor %ymm1, %ymm2, %ymm5
+  vpor %ymm3, %ymm4, %ymm6
+  vpor %ymm5, %ymm6, %ymm5
+  vpmovmskb %ymm5, %eax
+  testl %eax, %eax
+  jnz .Lstrlen_avx_decide
+  addq $128, %rdi
+  jmp .Lstrlen_avx_loop
+.Lstrlen_avx_decide:
+  vpmovmskb %ymm1, %eax
+  testl %eax, %eax
+  jnz .Lstrlen_avx_found
+  addq $32, %rdi
+  vpmovmskb %ymm2, %eax
+  testl %eax, %eax
+  jnz .Lstrlen_avx_found
+  addq $32, %rdi
+  vpmovmskb %ymm3, %eax
+  testl %eax, %eax
+  jnz .Lstrlen_avx_found
+  addq $32, %rdi
+  vpmovmskb %ymm4, %eax
+.Lstrlen_avx_found:
+  vzeroupper
+  jmp .Lstrlen_found_mask
+#endif
 .size nelibc_x86_64_sse_strlen, .-nelibc_x86_64_sse_strlen
 
 #ifndef NELIBC_DISABLE_AVX2
@@ -356,6 +841,8 @@ nelibc_x86_64_memscan_has_avx2:
   ret
 .size nelibc_x86_64_memscan_has_avx2, .-nelibc_x86_64_memscan_has_avx2
 #endif
+
+
 
 .globl nelibc_tcc_sse_memchr
 .type nelibc_tcc_sse_memchr,@function
@@ -1047,6 +1534,8 @@ nelibc_x86_64_sse_memrchr:
 .type nelibc_x86_64_sse_memcmp,@function
 nelibc_tcc_sse_memcmp:
 nelibc_x86_64_sse_memcmp:
+  cmpq $16, %rdx
+  jb .Lmemcmp_small
   xorl %r8d, %r8d
 #ifndef NELIBC_DISABLE_AVX2
   cmpq $32, %rdx
@@ -1060,7 +1549,7 @@ nelibc_x86_64_sse_memcmp:
   cmpq $64, %rdx
   jb .Lmemcmp_avx2_short
   cmpq $256, %rdx
-  jb .Lmemcmp_vector128
+  jb .Lmemcmp_avx2_medium
   jmp .Lmemcmp_avx2_start
 .Lmemcmp_detect_avx2:
   pushq %rbx
@@ -1092,7 +1581,7 @@ nelibc_x86_64_sse_memcmp:
   cmpq $64, %rdx
   jb .Lmemcmp_avx2_short
   cmpq $256, %rdx
-  jb .Lmemcmp_vector128
+  jb .Lmemcmp_avx2_medium
   jmp .Lmemcmp_avx2_start
 .Lmemcmp_avx2_unavailable:
   movb $1, .Lmemcmp_avx2_state(%rip)
@@ -1100,6 +1589,66 @@ nelibc_x86_64_sse_memcmp:
   popq %rbx
   jmp .Lmemcmp_vector128
 #endif
+  jmp .Lmemcmp_vector128
+.Lmemcmp_small:
+  cmpq $8, %rdx
+  jb .Lmemcmp_small4
+  movq (%rdi), %rax
+  movq (%rsi), %rcx
+  bswapq %rax
+  bswapq %rcx
+  cmpq %rcx, %rax
+  jne .Lmemcmp_small_sign
+  movq -8(%rdi,%rdx), %rax
+  movq -8(%rsi,%rdx), %rcx
+  bswapq %rax
+  bswapq %rcx
+  cmpq %rcx, %rax
+  jne .Lmemcmp_small_sign
+  xorl %eax, %eax
+  ret
+.Lmemcmp_small4:
+  cmpq $4, %rdx
+  jb .Lmemcmp_small2
+  movl (%rdi), %eax
+  movl (%rsi), %ecx
+  bswap %eax
+  bswap %ecx
+  cmpl %ecx, %eax
+  jne .Lmemcmp_small_sign
+  movl -4(%rdi,%rdx), %eax
+  movl -4(%rsi,%rdx), %ecx
+  bswap %eax
+  bswap %ecx
+  cmpl %ecx, %eax
+  jne .Lmemcmp_small_sign
+  xorl %eax, %eax
+  ret
+.Lmemcmp_small2:
+  testq %rdx, %rdx
+  jz .Lmemcmp_small_zero
+  movzbl (%rdi), %eax
+  movzbl (%rsi), %ecx
+  subl %ecx, %eax
+  jnz .Lmemcmp_small_return
+  cmpq $1, %rdx
+  je .Lmemcmp_small_return
+  movzbl 1(%rdi), %eax
+  movzbl 1(%rsi), %ecx
+  subl %ecx, %eax
+  jnz .Lmemcmp_small_return
+  movzbl -1(%rdi,%rdx), %eax
+  movzbl -1(%rsi,%rdx), %ecx
+  subl %ecx, %eax
+.Lmemcmp_small_return:
+  ret
+.Lmemcmp_small_zero:
+  xorl %eax, %eax
+  ret
+.Lmemcmp_small_sign:
+  sbbl %eax, %eax
+  orl $1, %eax
+  ret
 .Lmemcmp_vector128:
   cmpq $128, %rdx
   jb .Lmemcmp_vector64
@@ -1273,6 +1822,37 @@ nelibc_x86_64_sse_memcmp:
 .size nelibc_tcc_sse_memcmp, .-nelibc_tcc_sse_memcmp
 .size nelibc_x86_64_sse_memcmp, .-nelibc_x86_64_sse_memcmp
 #else
+.Lmemcmp_avx2_medium:
+  cmpq $128, %rdx
+  ja .Lmemcmp_vector128
+  vmovdqu (%rdi), %ymm1
+  vpcmpeqb (%rsi), %ymm1, %ymm1
+  vmovdqu 32(%rdi), %ymm2
+  vpcmpeqb 32(%rsi), %ymm2, %ymm2
+  vmovdqu -64(%rdi,%rdx), %ymm3
+  vpcmpeqb -64(%rsi,%rdx), %ymm3, %ymm3
+  vmovdqu -32(%rdi,%rdx), %ymm4
+  vpcmpeqb -32(%rsi,%rdx), %ymm4, %ymm4
+  vpand %ymm1, %ymm2, %ymm5
+  vpand %ymm3, %ymm4, %ymm6
+  vpand %ymm5, %ymm6, %ymm5
+  vpmovmskb %ymm5, %eax
+  cmpl $-1, %eax
+  je .Lmemcmp_avx2_short_equal
+  vpmovmskb %ymm1, %eax
+  cmpl $-1, %eax
+  jne .Lmemcmp_avx2_diff
+  movl $32, %r8d
+  vpmovmskb %ymm2, %eax
+  cmpl $-1, %eax
+  jne .Lmemcmp_avx2_diff
+  leaq -64(%rdx), %r8
+  vpmovmskb %ymm3, %eax
+  cmpl $-1, %eax
+  jne .Lmemcmp_avx2_diff
+  leaq -32(%rdx), %r8
+  vpmovmskb %ymm4, %eax
+  jmp .Lmemcmp_avx2_diff
 .Lmemcmp_avx2_short:
   vmovdqu (%rdi,%r8), %ymm1
   vpcmpeqb (%rsi,%r8), %ymm1, %ymm1
@@ -1491,36 +2071,116 @@ nelibc_x86_64_sse_memset:
   movq %rdi, %rax
   testq %rdx, %rdx
   jz .Lmemset_done
-  movd %esi, %xmm0
-  punpcklbw %xmm0, %xmm0
-  pshuflw $0, %xmm0, %xmm0
+  cmpq $2048, %rdx
+  jae .Lmemset_rep
+#ifndef NELIBC_DISABLE_AVX2
+  cmpq $128, %rdx
+  jb .Lmemset_sse
+  cmpb $2, .Lmemscan_avx2_state(%rip)
+  jae .Lmemset_avx
+  cmpb $1, .Lmemscan_avx2_state(%rip)
+  je .Lmemset_sse
+  pushq %rdx
+  call nelibc_x86_64_memscan_has_avx2
+  popq %rdx
+  movq %rdi, %rax
+  cmpb $2, .Lmemscan_avx2_state(%rip)
+  jae .Lmemset_avx
+#endif
+.Lmemset_sse:
+  movzbl %sil, %ecx
+  imull $0x01010101, %ecx, %ecx
+  movd %ecx, %xmm0
   pshufd $0, %xmm0, %xmm0
-.Lmemset_loop64:
+  cmpq $16, %rdx
+  jb .Lmemset_small
+  cmpq $32, %rdx
+  ja .Lmemset_sse64
+  movdqu %xmm0, (%rdi)
+  movdqu %xmm0, -16(%rdi,%rdx)
+  ret
+.Lmemset_sse64:
   cmpq $64, %rdx
-  jb .Lmemset_loop16
+  ja .Lmemset_sse128
   movdqu %xmm0, 0(%rdi)
   movdqu %xmm0, 16(%rdi)
-  movdqu %xmm0, 32(%rdi)
-  movdqu %xmm0, 48(%rdi)
+  movdqu %xmm0, -32(%rdi,%rdx)
+  movdqu %xmm0, -16(%rdi,%rdx)
+  ret
+.Lmemset_sse128:
+  cmpq $128, %rdx
+  ja .Lmemset_sse_loop
+.irp off,0,16,32,48
+  movdqu %xmm0, \off(%rdi)
+.endr
+.irp off,-64,-48,-32,-16
+  movdqu %xmm0, \off(%rdi,%rdx)
+.endr
+  ret
+.Lmemset_sse_loop:
+.irp off,0,16,32,48
+  movdqu %xmm0, \off(%rdi)
+.endr
   addq $64, %rdi
   subq $64, %rdx
-  jmp .Lmemset_loop64
-.Lmemset_loop16:
-  cmpq $16, %rdx
-  jb .Lmemset_tail
-  movdqu %xmm0, (%rdi)
-  addq $16, %rdi
-  subq $16, %rdx
-  jmp .Lmemset_loop16
-.Lmemset_tail:
-  testq %rdx, %rdx
-  jz .Lmemset_done
-  movb %sil, (%rdi)
-  incq %rdi
-  decq %rdx
-  jmp .Lmemset_tail
+  cmpq $128, %rdx
+  ja .Lmemset_sse_loop
+  jmp .Lmemset_sse64
+.Lmemset_small:
+  cmpq $8, %rdx
+  jb .Lmemset_small4
+  movq %xmm0, %rcx
+  movq %rcx, (%rdi)
+  movq %rcx, -8(%rdi,%rdx)
+  ret
+.Lmemset_small4:
+  cmpq $4, %rdx
+  jb .Lmemset_small2
+  movl %ecx, (%rdi)
+  movl %ecx, -4(%rdi,%rdx)
+  ret
+.Lmemset_small2:
+  cmpq $2, %rdx
+  jb .Lmemset_small1
+  movw %cx, (%rdi)
+  movw %cx, -2(%rdi,%rdx)
+  ret
+.Lmemset_small1:
+  movb %cl, (%rdi)
 .Lmemset_done:
   ret
+.Lmemset_rep:
+  movb %sil, %al
+  movq %rdi, %r8
+  movq %rdx, %rcx
+  rep stosb
+  movq %r8, %rax
+  ret
+#ifndef NELIBC_DISABLE_AVX2
+.Lmemset_avx:
+  vmovd %esi, %xmm0
+  vpbroadcastb %xmm0, %ymm0
+  cmpq $128, %rdx
+  jbe .Lmemset_avx_tail
+.p2align 4
+.Lmemset_avx_loop:
+.irp off,0,32,64,96
+  vmovdqu %ymm0, \off(%rdi)
+.endr
+  addq $128, %rdi
+  subq $128, %rdx
+  cmpq $128, %rdx
+  ja .Lmemset_avx_loop
+  leaq -128(%rdi,%rdx), %rdi
+  movl $128, %edx
+.Lmemset_avx_tail:
+  vmovdqu %ymm0, 0(%rdi)
+  vmovdqu %ymm0, 32(%rdi)
+  vmovdqu %ymm0, -64(%rdi,%rdx)
+  vmovdqu %ymm0, -32(%rdi,%rdx)
+  vzeroupper
+  ret
+#endif
 .size nelibc_x86_64_sse_memset, .-nelibc_x86_64_sse_memset
 
 .globl nelibc_tcc_sse_memmove
@@ -2579,5 +3239,72 @@ nelibc_tcc_sse_memset:
   .rept 16
   .byte 32
   .endr
+
+.text
+.p2align 4
+.globl nelibc_x86_64_short_memchr
+.type nelibc_x86_64_short_memchr,@function
+nelibc_x86_64_short_memchr:
+  /* Public callers retain the scalar first-byte exit and use this helper
+   * for 16..63 bytes. Smaller inputs can use the shared bounded scalar tail. */
+  cmpq $16, %rdx
+  jb .Lmemchr_tail
+  movd %esi, %xmm0
+  punpcklbw %xmm0, %xmm0
+  punpcklwd %xmm0, %xmm0
+  pshufd $0, %xmm0, %xmm0
+  cmpq $32, %rdx
+  ja .Lmemchr_short64
+.Lmemchr_short16:
+  movdqu (%rdi), %xmm1
+  movdqu -16(%rdi,%rdx), %xmm2
+  pcmpeqb %xmm0, %xmm1
+  pcmpeqb %xmm0, %xmm2
+  movdqa %xmm1, %xmm3
+  por %xmm2, %xmm3
+  pmovmskb %xmm3, %eax
+  testl %eax, %eax
+  jz .Lmemchr_not_found
+  pmovmskb %xmm1, %eax
+  testl %eax, %eax
+  jnz .Lmemchr_found
+  pmovmskb %xmm2, %eax
+  leaq -16(%rdi,%rdx), %rdi
+  jmp .Lmemchr_found
+.Lmemchr_short64:
+  movdqu 0(%rdi), %xmm1
+  movdqu 16(%rdi), %xmm2
+  movdqu -32(%rdi,%rdx), %xmm3
+  movdqu -16(%rdi,%rdx), %xmm4
+  pcmpeqb %xmm0, %xmm1
+  pcmpeqb %xmm0, %xmm2
+  pcmpeqb %xmm0, %xmm3
+  pcmpeqb %xmm0, %xmm4
+  movdqa %xmm1, %xmm5
+  por %xmm2, %xmm5
+  por %xmm3, %xmm5
+  por %xmm4, %xmm5
+  pmovmskb %xmm5, %eax
+  testl %eax, %eax
+  jz .Lmemchr_not_found
+  pmovmskb %xmm1, %eax
+  testl %eax, %eax
+  jnz .Lmemchr_found
+  pmovmskb %xmm2, %eax
+  testl %eax, %eax
+  jnz .Lmemchr_short_at16
+  pmovmskb %xmm3, %eax
+  testl %eax, %eax
+  jnz .Lmemchr_short_at_tail32
+  pmovmskb %xmm4, %eax
+  leaq -16(%rdi,%rdx), %rdi
+  jmp .Lmemchr_found
+.Lmemchr_short_at16:
+  addq $16, %rdi
+  jmp .Lmemchr_found
+.Lmemchr_short_at_tail32:
+  leaq -32(%rdi,%rdx), %rdi
+  jmp .Lmemchr_found
+.size nelibc_x86_64_short_memchr, .-nelibc_x86_64_short_memchr
 
 .section .note.GNU-stack,"",@progbits

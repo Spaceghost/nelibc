@@ -1,0 +1,20 @@
+-- Explicit sequencing must preserve reads across a later mutation.
+-- cattribute pure lets the C optimizer track memory dependencies.
+local function strcmp(a: *const [0]cchar, b: *const [0]cchar): cint
+    <cimport,cinclude'<string.h>',cattribute '__pure__'> end
+local text: [4]cchar = {97,98,99,0}
+local mutations:cint = 0
+local function overwrite(): cint <noinline>
+  text[0] = 120
+  mutations = mutations + 1
+  return 1
+end
+local function first(a: cint, b: cint): cint <noinline>
+  return a
+end
+local function exit(status:cint):void <cimport,cinclude'<stdlib.h>',noreturn> end
+local before:cint = strcmp(&text,"abc")
+overwrite()
+if before ~= 0 then exit(1) end
+if strcmp(&text,"abc") <= 0 then exit(2) end
+if mutations ~= 1 then exit(3) end

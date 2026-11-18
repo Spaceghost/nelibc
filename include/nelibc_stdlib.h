@@ -2,6 +2,7 @@
 #define NELIBC_STDLIB_EXTENSIONS_H
 
 #include <stddef.h>
+#include "nelibc_attributes.h"
 
 #if defined(_GNU_SOURCE) || defined(NELIBC_STANDALONE)
 #include <locale.h>
@@ -76,9 +77,9 @@ int atoi(const char *text);
 long atol(const char *text);
 long long atoll(const char *text);
 double atof(const char *text);
-int abs(int value);
-long labs(long value);
-long long llabs(long long value);
+int abs(int value) NELIBC_CONST;
+long labs(long value) NELIBC_CONST;
+long long llabs(long long value) NELIBC_CONST;
 int rand(void);
 int rand_r(unsigned int *seed);
 void srand(unsigned int seed);
