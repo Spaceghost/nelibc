@@ -639,7 +639,7 @@ $(OUT)/libnelibc-tcc.a: Makefile tcc $(OUT)/inet-tcc.o $(OUT)/stdio-format-tcc.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-tcc-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-tcc.o
 	# TinyCC lacks C TLS; compile this TLS-bearing adapter with Zig cc.
-	$(ZIG) cc $(ZIGFLAGS) -pthread -Iinclude -fno-builtin -DNELIBC_WITH_UNISTD -DNELIBC_USE_GLIBC_CANCEL_WRAPPERS -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-tcc.o
+	$(ZIG) cc $(ZIGFLAGS) -pthread -Iinclude -fno-builtin -fno-sanitize=all -DNELIBC_WITH_UNISTD -DNELIBC_USE_GLIBC_CANCEL_WRAPPERS -DNELIBC_ALLOCATOR_FASTPATH_SAFE -c src/environment_adapter.c -o $(OUT)/environment-adapter-tcc.o
 	$(TCC) -Iinclude -fno-builtin -c src/stdio_host_adapter.c -o $(OUT)/stdio-host-adapter-tcc.o
 	$(TCC) -Iinclude -fno-builtin -c src/alloc_hybrid_adapter.c -o $(OUT)/alloc-hybrid-adapter-tcc.o
 	$(TCC) -Iinclude -fno-builtin -c src/fcntl_adapter.c -o $(OUT)/fcntl-adapter-tcc.o
@@ -1545,7 +1545,7 @@ int-shootout-zig-musl: zig-musl
 int-shootout-tcc: tcc
 	$(NELUA) -B -r --cc '$(TCC)' --cflags='-O2 -fno-builtin' -o $(OUT)/stdlib-int-bench-tcc.o src/stdlib.nelua
 	$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"host-libc"' tools/int_bench.c -o $(OUT)/int-shootout-host-tcc
-	$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/int_bench.c $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/stdlib-int-bench-tcc.o $(OUT)/errno-host-tcc.o src/environment_adapter.c -o $(OUT)/int-shootout-nelibc-tcc
+	$(TCC) -O2 -Iinclude -fno-builtin -DBENCH_COMPILER='"TinyCC"' -DBENCH_LIBC='"glibc"' -DBENCH_IMPLEMENTATION='"nelibc"' tools/int_bench.c $(OUT)/memory-tcc.o $(OUT)/memory-tcc-helper.o $(OUT)/memory-tcc-simd.o $(OUT)/stdlib-int-bench-tcc.o $(OUT)/errno-host-tcc.o $(OUT)/environment-adapter-smoke-tcc.o -o $(OUT)/int-shootout-nelibc-tcc
 	$(OUT)/int-shootout-host-tcc > $(OUT)/int-shootout-host-tcc.csv
 	$(OUT)/int-shootout-nelibc-tcc > $(OUT)/int-shootout-nelibc-tcc.csv
 	{ cat $(OUT)/int-shootout-host-tcc.csv; tail -n +2 $(OUT)/int-shootout-nelibc-tcc.csv; } > $(OUT)/int-shootout-tcc.csv
