@@ -87,6 +87,25 @@ TinyCC is optional. See the [quickstart](docs/quickstart.md) for requirements
 and profile-specific commands. The 2026-11-17 integration compiler is pinned
 with an x87 argument fix; see [the compiler patch and reproducer](tools/toolchains/README.md).
 
+## Build Nelua's Lua runtime against standalone Nelibc
+
+With a built x86-64 standalone Zig archive and a Spaceghost Nelua source
+checkout, build the bundled Lua interpreter and its builtin Nelua modules:
+
+```sh
+tools/build-nelua-runtime.sh "$ZIG" "$ZIG_LIB_DIR" "$NELUA_SRC" . \
+  build/libnelibc-standalone-zig.a "$NELUA_SRC/nelua-lua"
+"$NELUA_SRC/nelua-lua" -e 'print(_VERSION)'
+"$NELUA_SRC/nelua" --version
+```
+
+`ZIG_LIB_DIR` is the Zig distribution's `lib` directory. The script uses
+its compiler and Linux UAPI headers and links the interpreter directly
+against the standalone Nelibc archive. The runtime enables Lua's POSIX
+facilities and statically registered modules. Loading shared libraries
+through Lua is unavailable. Nelua still needs its `lib` and `lualib`
+trees alongside the interpreter and a C compiler to build native programs.
+
 ## Project guide
 
 | Guide | What it covers |

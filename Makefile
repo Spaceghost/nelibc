@@ -287,6 +287,12 @@ complex-math-smoke-matrix: complex-math-smoke-zig complex-math-smoke-gcc complex
 
 .PHONY: complex-math-smoke-zig complex-math-smoke-gcc complex-math-smoke-zig-musl complex-math-smoke-tcc complex-math-smoke-standalone-zig complex-math-smoke-standalone-gcc complex-math-smoke-standalone-tcc complex-math-smoke-matrix
 
+# Check C assertion semantics and the path limit used by LuaFileSystem.
+.PHONY: assert-header-smoke-zig
+assert-header-smoke-zig: $(OUT)/libnelibc-standalone-zig.a tools/assert_header_smoke.c include/assert.h include/sys/param.h
+	$(ZIG) cc $(ZIGFLAGS) -std=c11 -DNELIBC_STANDALONE -nostdlib -static -no-pie -fno-pie -fno-stack-protector -ffreestanding -fno-builtin -fno-sanitize=all -Wl,-e,_start -Wl,--whole-archive $(OUT)/libnelibc-standalone-zig.a -Wl,--no-whole-archive -Iinclude tools/assert_header_smoke.c -o $(OUT)/assert-header-smoke-zig
+	@set -e; ulimit -c 0; $(OUT)/assert-header-smoke-zig 2>$(OUT)/assert-header-smoke-zig.log; grep -F 'main: assertion failed: 0 && "standalone assertion smoke"' $(OUT)/assert-header-smoke-zig.log
+
 unistd-header-smoke: $(OUT)
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -c tools/unistd_header_smoke.c -o $(OUT)/unistd-header-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -c tools/unistd_header_smoke.c -o $(OUT)/unistd-header-zig-musl.o
@@ -2566,7 +2572,7 @@ smoke-syscall-tls-gcc: syscall-tls-gcc
 	NELIBC_GETENV_PROBE=visible $(OUT)/syscall-smoke-tls-gcc
 	$(OUT)/errno-tls-smoke-gcc
 
-smoke-matrix: unistd-header-smoke smoke-zig smoke-gcc smoke-zig-musl smoke-tcc float-diff-matrix int-diff-matrix collation-diff-matrix smoke-syscall-zig smoke-syscall-gcc smoke-syscall-zig-musl smoke-syscall-tcc smoke-syscall-tls-gcc smoke-freestanding-zig smoke-freestanding-gcc smoke-standalone-zig smoke-standalone-gcc smoke-standalone-tcc spawn-smoke-standalone-matrix exit-smoke-standalone-matrix abort-smoke-matrix lib-smoke-matrix smoke-lib-standalone-matrix lib-consumer-matrix lib-stdio-smoke-matrix atexit-hybrid-smoke-matrix stdio-format-diff-matrix unistd-cancel-matrix unistd-cancel-standalone-matrix lib-consumer-standalone-matrix math-core-diff-matrix math-core-standalone-matrix complex-math-smoke-matrix
+smoke-matrix: unistd-header-smoke assert-header-smoke-zig smoke-zig smoke-gcc smoke-zig-musl smoke-tcc float-diff-matrix int-diff-matrix collation-diff-matrix smoke-syscall-zig smoke-syscall-gcc smoke-syscall-zig-musl smoke-syscall-tcc smoke-syscall-tls-gcc smoke-freestanding-zig smoke-freestanding-gcc smoke-standalone-zig smoke-standalone-gcc smoke-standalone-tcc spawn-smoke-standalone-matrix exit-smoke-standalone-matrix abort-smoke-matrix lib-smoke-matrix smoke-lib-standalone-matrix lib-consumer-matrix lib-stdio-smoke-matrix atexit-hybrid-smoke-matrix stdio-format-diff-matrix unistd-cancel-matrix unistd-cancel-standalone-matrix lib-consumer-standalone-matrix math-core-diff-matrix math-core-standalone-matrix complex-math-smoke-matrix
 
 errno-tls-zig-musl: $(OUT)
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-target x86_64-linux-musl -fno-builtin -ftls-model=initial-exec' -o $(OUT)/errno-tls-zig-musl.o src/errno/standalone.nelua
