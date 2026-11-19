@@ -537,9 +537,11 @@ flags, `regerror` and a UTF-8 locale.
 `getpwuid`, `getpwnam_r`, `getpwuid_r`, `setpwent`/`getpwent`/`endpwent`,
 `fgetpwent`, `putpwent`; `getgrnam`, `getgrgid`, `getgrnam_r`, `getgrgid_r`,
 `setgrent`/`getgrent`/`endgrent`, `fgetgrent`, `putgrent`, `getgrouplist`,
-`initgroups`. They read `/etc/passwd` and `/etc/group` as bytes; there is no
-NSS, nscd, or shadow (`<shadow.h>`) support, and hybrid builds include the
-host's headers and use its NSS. As in musl: a field ends at `:` and the last
+`initgroups`. Keyed user and group lookups and supplementary groups query
+the system nscd socket when enabled. If the service is unavailable, disabled
+or returns an invalid reply, they read `/etc/passwd` and `/etc/group`.
+Enumeration reads the local files. Hybrid builds use host NSS directly.
+Standalone builds also omit shadow (`<shadow.h>`). For the file parser: a field ends at `:` and the last
 one (shell, member list) runs to the end of the line, so extra colons stay in
 it; `#` starts no comment; a line with too few fields is skipped; a numeric
 field is decimal digits only, empty reads as 0, and a sign, space or other
