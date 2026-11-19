@@ -22,7 +22,8 @@
 -- "a" and ",b" and reads past a trailing comma); the _r functions return
 -- ERANGE exactly when the entry does not fit (musl compares with its line
 -- buffer's capacity and asks 32 spare bytes for a group); a line too long
--- for memory is ENOMEM rather than a truncated entry; there is no nscd.
+-- for memory is ENOMEM rather than a truncated entry. Keyed lookups and
+-- supplementary groups consult the system nscd socket when available.
 
 local function malloc(size: csize): pointer <cimport> end
 local function realloc(value: pointer, size: csize): pointer <cimport> end
@@ -362,7 +363,180 @@ local function open_database(path: *const [0]cchar, failure: *cint): pointer
   return stream
 end
 
--- Search /etc/passwd by name (when `name` is not NULL) or uid. Returns 0
+-- glibc's version-2 nscd socket protocol. Keep this optional on early boot
+-- and on systems without nscd. The socket is the system path, independent
+-- of the caller's environment.
+local function socket(domain: cint, kind: cint, protocol: cint): cint <cimport> end
+local function connect(fd: cint, address: pointer, size: cuint): cint <cimport> end
+local function close(fd: cint): cint <cimport> end
+local function send(fd: cint, buffer: pointer, size: csize, flags: cint): isize <cimport> end
+local function recv(fd: cint, buffer: pointer, size: csize, flags: cint): isize <cimport> end
+local function poll(fds: pointer, count: culong, timeout: cint): cint <cimport> end
+
+local NscdAddress: type = @record{family: cushort, path: [108]cchar}
+local NscdPoll: type = @record{fd: cint, events: cshort, returned: cshort}
+local NSCD_MAX_PAYLOAD: csize <comptime> = 4 * 1024 * 1024
+local NSCD_MAX_GROUPS: csize <comptime> = 65536
+
+local function nscd_transfer(fd: cint, buffer: *[0]byte, size: csize, writing: boolean): boolean
+  local at: csize = 0
+  while at < size do
+    local n: isize
+    if writing then n = send(fd, &buffer[at], size - at, 0x4000) -- MSG_NOSIGNAL
+    else n = recv(fd, &buffer[at], size - at, 0) end
+    if n == 0 then return false end
+    if n < 0 then
+      local error = errno_get()
+      if error == 4 then continue end -- EINTR
+      if error ~= 11 then return false end -- EAGAIN
+      local ready: NscdPoll = {fd, writing and 4_cshort or 1_cshort, 0}
+      if poll(&ready, 1, 1000) <= 0 then return false end
+      continue
+    end
+    at = at + (@csize)(n)
+  end
+  return true
+end
+
+local function nscd_request(name: *const [0]cchar, id: cuint, operation: int32,
+    response: pointer, response_size: csize): cint
+  local key: [1024]cchar
+  local size: csize = 0
+  if name == nilptr then
+    local reversed: [10]cchar
+    repeat
+      reversed[size] = (@cchar)(48 + id % 10)
+      size = size + 1
+      id = id // 10
+    until id == 0
+    for i: csize = 0, < size do key[i] = reversed[size - 1 - i] end
+  else
+    while size < #key and name[size] ~= 0_cchar do
+      key[size] = name[size]
+      size = size + 1
+    end
+    if size == #key then return -1 end
+  end
+  key[size] = 0_cchar
+  local header: [3]int32 = {2, operation, (@int32)(size + 1)}
+  local address: NscdAddress
+  address.family = 1 -- AF_UNIX
+  local path: *const [0]cchar = "/var/run/nscd/socket"
+  memcpy(&address.path, (@pointer)(path), 21)
+  local fd = socket(1, 1 | 0x800 | 0x80000, 0) -- STREAM | NONBLOCK | CLOEXEC
+  if fd < 0 then return -1 end
+  if connect(fd, &address, 23) ~= 0 or
+      not nscd_transfer(fd, (@*[0]byte)(&header), #header * #int32, true) or
+      not nscd_transfer(fd, (@*[0]byte)(&key), size + 1, true) or
+      not nscd_transfer(fd, (@*[0]byte)(response), response_size, false) or
+      ((@*[0]int32)(response))[0] ~= 2 then
+    close(fd)
+    return -1
+  end
+  return fd
+end
+
+-- The received fields remain in the same ownership and layout that the
+-- file-backed lookup uses. The final spare NUL is required by _r callers.
+local function nscd_payload(fd: cint, line: *LineBuffer, lengths: *[0]uint32, count: csize): boolean
+  local bytes: csize = 0
+  for i: csize = 0, < count do
+    if lengths[i] == 0 or lengths[i] > NSCD_MAX_PAYLOAD - bytes then return false end
+    bytes = bytes + lengths[i]
+  end
+  if line.capacity < bytes + 1 then
+    local grown = realloc(line.text, bytes + 1)
+    if grown == nilptr then return false end
+    line.text = (@*[0]cchar)(grown)
+    line.capacity = bytes + 1
+  end
+  if not nscd_transfer(fd, (@*[0]byte)(line.text), bytes, false) then return false end
+  local at: csize = 0
+  for i: csize = 0, < count do
+    at = at + lengths[i]
+    if line.text[at - 1] ~= 0_cchar then return false end
+  end
+  line.text[bytes] = 0_cchar
+  line.length = bytes
+  return true
+end
+
+-- -1 requests local fallback, 0 is an authoritative miss, 1 is a hit.
+local function nscd_passwd(name: *const [0]cchar, uid: cuint, entry: *Passwd, line: *LineBuffer): cint
+  local reply: [9]uint32
+  local fd = nscd_request(name, uid, name ~= nilptr and 0 or 1, &reply, #reply * #uint32)
+  if fd < 0 then return -1 end
+  defer close(fd) end
+  if reply[1] ~= 1 then return reply[1] == 0 and 0 or -1 end
+  local lengths: [5]uint32 = {reply[2], reply[3], reply[6], reply[7], reply[8]}
+  if not nscd_payload(fd, line, (@*[0]uint32)(&lengths), 5) then return -1 end
+  entry.uid, entry.gid = reply[4], reply[5]
+  entry.name = line.text
+  entry.passwd = &line.text[lengths[0]]
+  entry.gecos = &line.text[lengths[0] + lengths[1]]
+  entry.dir = &line.text[lengths[0] + lengths[1] + lengths[2]]
+  entry.shell = &line.text[lengths[0] + lengths[1] + lengths[2] + lengths[3]]
+  return 1
+end
+
+local function nscd_group(name: *const [0]cchar, gid: cuint, entry: *Group, line: *LineBuffer,
+    list: **[0]*[0]cchar, slots: *csize, count: *csize): cint
+  local reply: [6]uint32
+  local fd = nscd_request(name, gid, name ~= nilptr and 2 or 3, &reply, #reply * #uint32)
+  if fd < 0 then return -1 end
+  defer close(fd) end
+  if reply[1] ~= 1 then return reply[1] == 0 and 0 or -1 end
+  local members: csize = reply[5]
+  if members > NSCD_MAX_GROUPS then return -1 end
+  local lengths = (@*[0]uint32)(malloc((members + 2) * #uint32))
+  if lengths == nilptr then return -1 end
+  defer free(lengths) end
+  lengths[0], lengths[1] = reply[2], reply[3]
+  if not nscd_transfer(fd, (@*[0]byte)(&lengths[2]), members * #uint32, false) or
+      not nscd_payload(fd, line, lengths, members + 2) then return -1 end
+  if $slots < members + 1 then
+    local grown = realloc($list, (members + 1) * #pointer)
+    if grown == nilptr then return -1 end
+    $list = (@*[0]*[0]cchar)(grown)
+    $slots = members + 1
+  end
+  entry.gid = reply[4]
+  entry.name = line.text
+  entry.passwd = &line.text[lengths[0]]
+  entry.mem = $list
+  local at: csize = lengths[0] + lengths[1]
+  for i: csize = 0, < members do
+    entry.mem[i] = &line.text[at]
+    at = at + lengths[i + 2]
+  end
+  entry.mem[members] = nilptr
+  $count = members
+  return 1
+end
+
+local function nscd_groups(user: *const [0]cchar, primary: cuint, groups: *[0]cuint,
+    limit: cint): cint
+  local reply: [3]uint32
+  local fd = nscd_request(user, 0, 15, &reply, #reply * #uint32)
+  if fd < 0 then return -1 end
+  defer close(fd) end
+  if reply[1] == 0 then return 1 end
+  if reply[1] ~= 1 or reply[2] > NSCD_MAX_GROUPS then return -1 end
+  local ids = (@*[0]cuint)(malloc(((@csize)(reply[2]) + 1) * #cuint))
+  if ids == nilptr then return -1 end
+  defer free(ids) end
+  if not nscd_transfer(fd, (@*[0]byte)(ids), (@csize)(reply[2]) * #cuint, false) then return -1 end
+  local count: cint = 1
+  for i: csize = 0, < reply[2] do
+    if ids[i] ~= primary then
+      if count < limit then groups[count] = ids[i] end
+      count = count + 1
+    end
+  end
+  return count
+end
+
+-- Search the account database by name (when `name` is not NULL) or uid. Returns 0
 -- or an errno value; *found is the entry or NULL. errno is left as it was
 -- unless an error is returned.
 local function lookup_passwd(name: *const [0]cchar, uid: cuint, entry: *Passwd,
@@ -371,7 +545,15 @@ local function lookup_passwd(name: *const [0]cchar, uid: cuint, entry: *Passwd,
   local cancel_state: cint = cancel_disable()
   $found = nilptr
   local failure: cint = 0
-  local stream: pointer = open_database(passwd_path(), &failure)
+  local status: cint = -1
+  local use_nscd = true
+  ## if NELIBC_TESTING then
+  use_nscd = passwd_path_override[0] == 0_cchar
+  ## end
+  if use_nscd then status = nscd_passwd(name, uid, entry, line) end
+  if status == 1 then $found = entry end
+  local stream: pointer = nilptr
+  if status < 0 then stream = open_database(passwd_path(), &failure) end
   if stream ~= nilptr then
     while true do
       local status: cint = next_passwd(stream, entry, line, &failure)
@@ -406,7 +588,15 @@ local function lookup_group(name: *const [0]cchar, gid: cuint, entry: *Group,
   local cancel_state: cint = cancel_disable()
   $found = nilptr
   local failure: cint = 0
-  local stream: pointer = open_database(group_path(), &failure)
+  local status: cint = -1
+  local use_nscd = true
+  ## if NELIBC_TESTING then
+  use_nscd = group_path_override[0] == 0_cchar
+  ## end
+  if use_nscd then status = nscd_group(name, gid, entry, line, list, list_slots, member_count) end
+  if status == 1 then $found = entry end
+  local stream: pointer = nilptr
+  if status < 0 then stream = open_database(group_path(), &failure) end
   if stream ~= nilptr then
     while true do
       local status: cint = next_group(stream, entry, line, list, list_slots, member_count, &failure)
@@ -791,7 +981,15 @@ local function getgrouplist(user: *const [0]cchar, gid: cuint, groups: *[0]cuint
   local saved_errno: cint = errno_get()
   local cancel_state: cint = cancel_disable()
   local failure: cint = 0
-  local stream: pointer = open_database(group_path(), &failure)
+  local cached: cint = -1
+  local use_nscd = true
+  ## if NELIBC_TESTING then
+  use_nscd = group_path_override[0] == 0_cchar
+  ## end
+  if use_nscd then cached = nscd_groups(user, gid, groups, limit) end
+  local stream: pointer = nilptr
+  if cached >= 0 then count = cached
+  else stream = open_database(group_path(), &failure) end
   if stream ~= nilptr then
     local entry: Group
     local line: LineBuffer = {nilptr, 0, 0}
