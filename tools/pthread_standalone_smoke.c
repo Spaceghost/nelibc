@@ -26,7 +26,7 @@ static void *tls_isolation_worker(void *argument) {
   return (void *)(uintptr_t)errno;
 }
 
-static volatile int detached_release;
+static _Atomic int detached_release;
 static volatile int pthread_kill_signal;
 static int atfork_order[16];
 static int atfork_order_count;
@@ -37,7 +37,7 @@ static _Atomic int fork_lock_ready;
 static _Atomic int fork_lock_release;
 static _Atomic int fork_sibling_ready;
 static _Atomic int fork_sibling_release;
-static volatile int detached_done;
+static _Atomic int detached_done;
 static _Atomic int join_release;
 static _Atomic int cancel_join_started;
 static volatile int mutex_counter;
@@ -95,16 +95,16 @@ static _Atomic int deleted_value_destructor_calls;
 static int cancel_read_pipe[2];
 static _Atomic int cancel_waiting;
 static int cancel_cond_cleanup_unlock_result;
-static volatile int cancel_read_started;
-static volatile int cancel_sleep_started;
-static volatile int cancel_state_ready;
-static volatile int cancel_state_release;
-static volatile int cancel_async_ready;
+static _Atomic int cancel_read_started;
+static _Atomic int cancel_sleep_started;
+static _Atomic int cancel_state_ready;
+static _Atomic int cancel_state_release;
+static _Atomic int cancel_async_ready;
 static _Atomic int cancel_guard_ready;
 static _Atomic int cancel_guard_release;
 static _Atomic int cancel_futex_wait_ready;
-static volatile int cancel_type_ready;
-static volatile int cancel_type_release;
+static _Atomic int cancel_type_ready;
+static _Atomic int cancel_type_release;
 static _Atomic int cancel_cleanup_calls;
 static int cleanup_frame_order;
 static int cleanup_frame_order_bad;
@@ -662,16 +662,21 @@ static int wait_for_atomic_int(_Atomic int *value, int expected) {
   return ETIMEDOUT;
 }
 
-static int wait_for_condition_block(pthread_cond_t *condition,
-                                    pthread_mutex_t *mutex) {
+/* Pthread ABI fields are plain ints shared with the implementation. */
+static int wait_for_pthread_field(const int *field, int minimum) {
   struct timespec pause = {0, 1000000};
-  unsigned int attempt;
-  for (attempt = 0; attempt < 5000U; ++attempt) {
-    if (__atomic_load_n(&condition->__waiters, __ATOMIC_ACQUIRE) != 0) break;
+  for (unsigned int i = 0; i < 5000U; ++i) {
+    if (__atomic_load_n(field, __ATOMIC_ACQUIRE) >= minimum) return 0;
     if (nanosleep(&pause, 0) != 0 && errno != EINTR) return errno;
   }
-  if (attempt == 5000U) return ETIMEDOUT;
-  int result = pthread_mutex_lock(mutex);
+  return ETIMEDOUT;
+}
+
+static int wait_for_condition_block(pthread_cond_t *condition,
+                                    pthread_mutex_t *mutex) {
+  int result = wait_for_pthread_field(&condition->__waiters, 1);
+  if (result != 0) return result;
+  result = pthread_mutex_lock(mutex);
   if (result != 0) return result;
   if (__atomic_load_n(&condition->__waiters, __ATOMIC_ACQUIRE) == 0)
     result = ETIMEDOUT;
@@ -2272,8 +2277,7 @@ int main(void) {
       !WIFEXITED(detached_handle_status) || WEXITSTATUS(detached_handle_status) != 0)
     return 296;
   detached_release = 1;
-  for (unsigned int spin = 0; spin < 10000000U && !detached_done; ++spin) {}
-  if (!detached_done) return 297;
+  if (wait_for_atomic_int(&detached_done, 1) != 0) return 297;
   if (pthread_attr_destroy(&detached_attributes) != 0) return 298;
 
   atomic_store_explicit(&fork_sibling_ready, 0, memory_order_relaxed);
@@ -2455,14 +2459,17 @@ int main(void) {
       pthread_setattr_default_np(&observed_default_attributes) != EINVAL)
     return 249;
   pthread_t default_attr_thread;
-  if (pthread_create(&default_attr_thread, 0, return_self, 0) != 0 ||
+  atomic_store_explicit(&join_release, 0, memory_order_relaxed);
+  if (pthread_create(&default_attr_thread, 0, gated_join_worker, 0) != 0 ||
       pthread_getattr_np(default_attr_thread, &changed_default_attributes) != 0 ||
       pthread_attr_getstacksize(&changed_default_attributes,
                                 &default_stack_size) != 0 ||
       pthread_attr_getguardsize(&changed_default_attributes,
                                 &default_guard_size) != 0 ||
-      default_stack_size != 131072 || default_guard_size != 12288 ||
-      pthread_join(default_attr_thread, 0) != 0 ||
+      default_stack_size != 131072 || default_guard_size != 12288)
+    return 250;
+  atomic_store_explicit(&join_release, 1, memory_order_release);
+  if (pthread_join(default_attr_thread, 0) != 0 ||
       pthread_attr_destroy(&changed_default_attributes) != 0 ||
       pthread_setattr_default_np(&original_default_attributes) != 0 ||
       pthread_attr_destroy(&observed_default_attributes) != 0 ||
@@ -2667,12 +2674,12 @@ int main(void) {
       pthread_mutex_destroy(&clocklock_mutex) != 0)
     return 217;
 
+  detached_done = 0;
+  detached_release = 0;
   if (pthread_create(&thread, &attributes, return_detached, 0) != 0) return 5;
   if (pthread_join(thread, 0) != EINVAL) return 6;
   detached_release = 1;
-  for (unsigned int i = 0; i < 10000000U && !detached_done; ++i) {
-  }
-  if (!detached_done) return 7;
+  if (wait_for_atomic_int(&detached_done, 1) != 0) return 7;
 
   if (pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_JOINABLE) != 0)
     return 8;
@@ -2683,9 +2690,7 @@ int main(void) {
   if (pthread_detach(thread) != EINVAL || pthread_join(thread, 0) != EINVAL)
     return 11;
   detached_release = 1;
-  for (unsigned int i = 0; i < 10000000U && !detached_done; ++i) {
-  }
-  if (!detached_done) return 12;
+  if (wait_for_atomic_int(&detached_done, 1) != 0) return 12;
 
   if (pthread_create(&thread, &attributes, return_self, 0) != 0) return 13;
   void *result = 0;
@@ -2865,12 +2870,8 @@ int main(void) {
       sem_init(&cancel_exit_semaphore, 0, 0) != 0 ||
       pthread_create(&thread, 0, cancel_exit_order_worker, 0) != 0)
     return 309;
-  for (unsigned int i = 0; i < 10000000U &&
-       (!atomic_load_explicit(&cancel_exit_ready, memory_order_acquire) ||
-        __atomic_load_n(&cancel_exit_semaphore.__waiters, __ATOMIC_ACQUIRE) == 0); ++i) {
-  }
-  if (!atomic_load_explicit(&cancel_exit_ready, memory_order_acquire) ||
-      __atomic_load_n(&cancel_exit_semaphore.__waiters, __ATOMIC_ACQUIRE) == 0 ||
+  if (wait_for_atomic_int(&cancel_exit_ready, 1) != 0 ||
+      wait_for_pthread_field(&cancel_exit_semaphore.__waiters, 1) != 0 ||
       pthread_cancel(thread) != 0 ||
       pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
       cancel_exit_order != 2 || cancel_exit_destructor_calls != 1 ||
@@ -2898,9 +2899,7 @@ int main(void) {
   cancel_read_started = 0;
   if (pipe(cancel_read_pipe) != 0) return 137;
   if (pthread_create(&thread, 0, cancel_read_worker, 0) != 0) return 138;
-  for (unsigned int i = 0; i < 10000000U && !cancel_read_started; ++i) {
-  }
-  if (!cancel_read_started) return 139;
+  if (wait_for_atomic_int(&cancel_read_started, 1) != 0) return 139;
   for (volatile unsigned int i = 0; i < 10000000U; ++i) {
   }
   if (pthread_cancel(thread) != 0) return 140;
@@ -2914,9 +2913,7 @@ int main(void) {
   cancel_cleanup_calls = 0;
   cancel_sleep_started = 0;
   if (pthread_create(&thread, 0, cancel_sleep_worker, 0) != 0) return 143;
-  for (unsigned int i = 0; i < 10000000U && !cancel_sleep_started; ++i) {
-  }
-  if (!cancel_sleep_started) return 144;
+  if (wait_for_atomic_int(&cancel_sleep_started, 1) != 0) return 144;
   for (volatile unsigned int i = 0; i < 10000000U; ++i) {
   }
   if (pthread_cancel(thread) != 0) return 145;
@@ -3075,9 +3072,8 @@ int main(void) {
   cancel_state_release = 0;
   cancel_cleanup_calls = 0;
   if (pthread_create(&thread, 0, cancel_disabled_worker, 0) != 0) return 134;
-  for (unsigned int i = 0; i < 10000000U && !cancel_state_ready; ++i) {
-  }
-  if (!cancel_state_ready || pthread_cancel(thread) != 0) return 135;
+  if (wait_for_atomic_int(&cancel_state_ready, 1) != 0 || pthread_cancel(thread) != 0)
+    return 135;
   cancel_state_release = 1;
   result = 0;
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
@@ -3087,9 +3083,8 @@ int main(void) {
   cancel_async_ready = 0;
   cancel_cleanup_calls = 0;
   if (pthread_create(&thread, 0, cancel_async_worker, 0) != 0) return 194;
-  for (unsigned int i = 0; i < 10000000U && !cancel_async_ready; ++i) {
-  }
-  if (!cancel_async_ready || pthread_cancel(thread) != 0) return 195;
+  if (wait_for_atomic_int(&cancel_async_ready, 1) != 0 || pthread_cancel(thread) != 0)
+    return 195;
   result = 0;
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
       cancel_cleanup_calls != 1)
@@ -3099,9 +3094,8 @@ int main(void) {
   cancel_guard_release = 0;
   cancel_cleanup_calls = 0;
   if (pthread_create(&thread, 0, cancel_deferred_lock_worker, 0) != 0) return 201;
-  for (unsigned int i = 0; i < 10000000U && !cancel_guard_ready; ++i) {
-  }
-  if (!cancel_guard_ready || pthread_cancel(thread) != 0) return 202;
+  if (wait_for_atomic_int(&cancel_guard_ready, 1) != 0 || pthread_cancel(thread) != 0)
+    return 202;
   struct timespec cancel_guard_delay = {0, 20000000};
   if (nanosleep(&cancel_guard_delay, 0) != 0 || cancel_cleanup_calls != 0)
     return 203;
@@ -3116,13 +3110,9 @@ int main(void) {
   if (pthread_mutex_lock(&cancel_mutex) != 0) return 205;
   if (pthread_create(&thread, 0, cancel_futex_mutex_worker, &cancel_mutex) != 0)
     return 206;
-  for (unsigned int i = 0; i < 10000000U && !cancel_futex_wait_ready; ++i) {
-  }
-  if (!cancel_futex_wait_ready) return 207;
-  for (unsigned int i = 0; i < 10000000U &&
-       __atomic_load_n(&cancel_mutex.__state, __ATOMIC_ACQUIRE) != 2; ++i) {
-  }
-  if (__atomic_load_n(&cancel_mutex.__state, __ATOMIC_ACQUIRE) != 2) return 211;
+  if (wait_for_atomic_int(&cancel_futex_wait_ready, 1) != 0) return 207;
+  if (wait_for_pthread_field(&cancel_mutex.__state, 2) != 0 ||
+      __atomic_load_n(&cancel_mutex.__state, __ATOMIC_ACQUIRE) != 2) return 211;
   struct timespec futex_wait_delay = {0, 20000000};
   if (nanosleep(&futex_wait_delay, 0) != 0 || pthread_cancel(thread) != 0)
     return 208;
@@ -3139,9 +3129,8 @@ int main(void) {
   cancel_type_release = 0;
   cancel_cleanup_calls = 0;
   if (pthread_create(&thread, 0, cancel_pending_type_worker, 0) != 0) return 198;
-  for (unsigned int i = 0; i < 10000000U && !cancel_type_ready; ++i) {
-  }
-  if (!cancel_type_ready || pthread_cancel(thread) != 0) return 199;
+  if (wait_for_atomic_int(&cancel_type_ready, 1) != 0 || pthread_cancel(thread) != 0)
+    return 199;
   cancel_type_release = 1;
   result = 0;
   if (pthread_join(thread, &result) != 0 || result != PTHREAD_CANCELED ||
@@ -3738,10 +3727,7 @@ int main(void) {
   pid_t child = fork();
   if (child < 0) return 61;
   if (child == 0) process_shared_condition_child(shared_state);
-  for (unsigned int i = 0; i < 10000000U &&
-       !atomic_load_explicit(&shared_state->entered, memory_order_acquire); ++i) {
-  }
-  if (!atomic_load_explicit(&shared_state->entered, memory_order_acquire)) return 62;
+  if (wait_for_atomic_int(&shared_state->entered, 1) != 0) return 62;
   if (pthread_mutex_lock(&shared_state->mutex) != 0) return 63;
   shared_state->ready = 1;
   if (pthread_cond_signal(&shared_state->condition) != 0 ||
@@ -3765,10 +3751,7 @@ int main(void) {
   child = fork();
   if (child < 0) return 162;
   if (child == 0) process_shared_semaphore_child(shared_semaphore);
-  for (unsigned int i = 0; i < 10000000U &&
-       __atomic_load_n(&shared_semaphore->__waiters, __ATOMIC_ACQUIRE) == 0; ++i) {
-  }
-  if (__atomic_load_n(&shared_semaphore->__waiters, __ATOMIC_ACQUIRE) == 0 ||
+  if (wait_for_pthread_field(&shared_semaphore->__waiters, 1) != 0 ||
       sem_post(shared_semaphore) != 0)
     return 163;
   child_status = -1;
@@ -3780,15 +3763,9 @@ int main(void) {
     if (pthread_create(&once_threads[i], &attributes, once_worker, 0) != 0)
       return 68;
   }
-  for (unsigned int i = 0; i < 10000000U &&
-       atomic_load_explicit(&once_callers, memory_order_acquire) != 4; ++i) {
-  }
-  if (atomic_load_explicit(&once_callers, memory_order_acquire) != 4) return 69;
+  if (wait_for_atomic_int(&once_callers, 4) != 0) return 69;
   atomic_store_explicit(&once_go, 1, memory_order_release);
-  for (unsigned int i = 0; i < 10000000U &&
-       !atomic_load_explicit(&once_started, memory_order_acquire); ++i) {
-  }
-  if (!atomic_load_explicit(&once_started, memory_order_acquire)) return 70;
+  if (wait_for_atomic_int(&once_started, 1) != 0) return 70;
   for (volatile unsigned int i = 0; i < 1000000U; ++i) {
   }
   atomic_store_explicit(&once_release, 1, memory_order_release);
@@ -3804,10 +3781,7 @@ int main(void) {
     return 73;
   if (pthread_create(&thread, &attributes, async_once_cancel_worker, 0) != 0)
     return 294;
-  for (unsigned int i = 0; i < 10000000U &&
-       !atomic_load_explicit(&async_once_started, memory_order_acquire); ++i) {
-  }
-  if (!atomic_load_explicit(&async_once_started, memory_order_acquire))
+  if (wait_for_atomic_int(&async_once_started, 1) != 0)
     return 295;
   struct timespec async_once_delay = {0, 20000000};
   if (nanosleep(&async_once_delay, 0) != 0 || pthread_cancel(thread) != 0 ||
@@ -3864,11 +3838,8 @@ int main(void) {
       pthread_create(&thread, &attributes, barrier_async_cancel_worker,
                      &async_cancel_barrier) != 0)
     return 290;
-  for (unsigned int i = 0; i < 10000000U &&
-       (!atomic_load_explicit(&barrier_async_wait_ready, memory_order_acquire) ||
-        __atomic_load_n(&async_cancel_barrier.__arrived, __ATOMIC_ACQUIRE) == 0); ++i) {
-  }
-  if (!atomic_load_explicit(&barrier_async_wait_ready, memory_order_acquire) ||
+  if (wait_for_atomic_int(&barrier_async_wait_ready, 1) != 0 ||
+      wait_for_pthread_field(&async_cancel_barrier.__arrived, 1) != 0 ||
       __atomic_load_n(&async_cancel_barrier.__arrived, __ATOMIC_ACQUIRE) != 1)
     return 291;
   struct timespec async_barrier_delay = {0, 20000000};
@@ -3899,10 +3870,7 @@ int main(void) {
       pthread_rwlock_rdlock(&kind_rwlock) != 0 ||
       pthread_create(&thread, &attributes, rwlock_kind_writer, &kind_rwlock) != 0)
     return 298;
-  for (unsigned int i = 0; i < 10000000U &&
-       __atomic_load_n(&kind_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0; ++i) {
-  }
-  if (__atomic_load_n(&kind_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0 ||
+  if (wait_for_pthread_field(&kind_rwlock.__waiting_writers, 1) != 0 ||
       pthread_rwlock_tryrdlock(&kind_rwlock) != 0 ||
       pthread_rwlock_unlock(&kind_rwlock) != 0 ||
       pthread_rwlock_unlock(&kind_rwlock) != 0 ||
@@ -3915,10 +3883,7 @@ int main(void) {
       pthread_rwlock_rdlock(&kind_rwlock) != 0 ||
       pthread_create(&thread, &attributes, rwlock_kind_writer, &kind_rwlock) != 0)
     return 300;
-  for (unsigned int i = 0; i < 10000000U &&
-       __atomic_load_n(&kind_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0; ++i) {
-  }
-  if (__atomic_load_n(&kind_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0 ||
+  if (wait_for_pthread_field(&kind_rwlock.__waiting_writers, 1) != 0 ||
       pthread_rwlock_tryrdlock(&kind_rwlock) != EBUSY ||
       pthread_rwlock_unlock(&kind_rwlock) != 0 ||
       pthread_join(thread, &result) != 0 || result != 0 ||
@@ -3959,11 +3924,8 @@ int main(void) {
       pthread_create(&thread, &attributes, rwlock_stress_worker,
                      (void *)(uintptr_t)1) != 0)
     return 205;
-  for (unsigned int i = 0; i < 10000000U &&
-       __atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0; ++i) {
-  }
   /* Reader preference is the documented policy when priority scheduling is unavailable. */
-  if (__atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0 ||
+  if (wait_for_pthread_field(&static_rwlock.__waiting_writers, 1) != 0 ||
       pthread_rwlock_rdlock(&static_rwlock) != 0 ||
       pthread_rwlock_unlock(&static_rwlock) != 0 ||
       pthread_rwlock_unlock(&static_rwlock) != 0 ||
@@ -3974,12 +3936,8 @@ int main(void) {
       pthread_create(&thread, &attributes, rwlock_async_cancel_worker,
                      &static_rwlock) != 0)
     return 286;
-  for (unsigned int i = 0; i < 10000000U &&
-       (!atomic_load_explicit(&rwlock_async_wait_ready, memory_order_acquire) ||
-        __atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0); ++i) {
-  }
-  if (!atomic_load_explicit(&rwlock_async_wait_ready, memory_order_acquire) ||
-      __atomic_load_n(&static_rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0)
+  if (wait_for_atomic_int(&rwlock_async_wait_ready, 1) != 0 ||
+      wait_for_pthread_field(&static_rwlock.__waiting_writers, 1) != 0)
     return 287;
   struct timespec async_rwlock_delay = {0, 20000000};
   if (nanosleep(&async_rwlock_delay, 0) != 0 || pthread_cancel(thread) != 0)
@@ -4101,12 +4059,8 @@ int main(void) {
     atomic_store_explicit(&shared_rwlock->acquired, 1, memory_order_release);
     _exit(pthread_rwlock_unlock(&shared_rwlock->rwlock) == 0 ? 0 : 2);
   }
-  for (unsigned int i = 0; i < 10000000U &&
-       (!atomic_load_explicit(&shared_rwlock->started, memory_order_acquire) ||
-        __atomic_load_n(&shared_rwlock->rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0); ++i) {
-  }
-  if (!atomic_load_explicit(&shared_rwlock->started, memory_order_acquire) ||
-      __atomic_load_n(&shared_rwlock->rwlock.__waiting_writers, __ATOMIC_ACQUIRE) == 0 ||
+  if (wait_for_atomic_int(&shared_rwlock->started, 1) != 0 ||
+      wait_for_pthread_field(&shared_rwlock->rwlock.__waiting_writers, 1) != 0 ||
       pthread_rwlock_unlock(&shared_rwlock->rwlock) != 0)
     return 217;
   child_status = -1;
@@ -4178,10 +4132,7 @@ int main(void) {
   if (pthread_key_create(&deleted_value_key, deleted_value_destructor) != 0 ||
       pthread_create(&thread, &attributes, deleted_value_worker, 0) != 0)
     return 311;
-  for (unsigned int i = 0; i < 10000000U &&
-       !atomic_load_explicit(&deleted_value_ready, memory_order_acquire); ++i) {
-  }
-  if (!atomic_load_explicit(&deleted_value_ready, memory_order_acquire) ||
+  if (wait_for_atomic_int(&deleted_value_ready, 1) != 0 ||
       pthread_key_delete(deleted_value_key) != 0)
     return 312;
   pthread_key_t reused_deleted_key;
