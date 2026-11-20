@@ -17,6 +17,10 @@ make libc-test-gcc LIBC_TEST=../libc-test
 make libc-test-zig LIBC_TEST=../libc-test
 ```
 
+Both hybrid and standalone Make targets test the archive built under `OUT`.
+When running a driver script directly, `NELIBC_ARCHIVE` selects a specific
+archive file. The default uses the matching profile under `build/`.
+
 `tools/libc_test.sh` copies the checkout into `build/libc-test-<profile>/`,
 builds every test with Nelibc's headers first on the include path and the
 archive linked ahead of the host libc (the way a hybrid consumer links), runs

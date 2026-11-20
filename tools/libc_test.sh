@@ -30,10 +30,12 @@ OUT=${3:-$ROOT/build/libc-test-$PROFILE}
 EXPECTED=$ROOT/tools/libc_test_expected_$PROFILE.txt
 
 case $PROFILE in
-  gcc) TEST_CC=${CC:-gcc}; ARCHIVE=$ROOT/build/libnelibc-gcc.a ;;
-  zig) TEST_CC="${ZIG:-zig} cc ${ZIGFLAGS:-}"; ARCHIVE=$ROOT/build/libnelibc-zig.a ;;
+  gcc) TEST_CC=${CC:-gcc} ;;
+  zig) TEST_CC="${ZIG:-zig} cc ${ZIGFLAGS:-}" ;;
   *) usage ;;
 esac
+ARCHIVE=${NELIBC_ARCHIVE:-$ROOT/build/libnelibc-$PROFILE.a}
+case $ARCHIVE in /*) ;; *) ARCHIVE=$PWD/$ARCHIVE ;; esac
 [ -d "$SRC/src/functional" ] || { echo "$SRC is not a libc-test checkout" >&2; exit 2; }
 [ -f "$ARCHIVE" ] || { echo "missing $ARCHIVE; run make lib-$PROFILE first" >&2; exit 2; }
 

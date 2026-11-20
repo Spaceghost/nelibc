@@ -107,7 +107,8 @@ SRC=$2
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 OUT=${3:-$ROOT/build/libc-test-standalone-$CCNAME}
 EXPECTED=$ROOT/tools/libc_test_expected_standalone_$CCNAME.txt
-ARCHIVE=$ROOT/build/libnelibc-standalone-$CCNAME.a
+ARCHIVE=${NELIBC_ARCHIVE:-$ROOT/build/libnelibc-standalone-$CCNAME.a}
+case $ARCHIVE in /*) ;; *) ARCHIVE=$PWD/$ARCHIVE ;; esac
 LIBC_TEST_FLAGS="-std=c99 -D_POSIX_C_SOURCE=200809L -Wall -Wno-unused-function \
 -Wno-missing-braces -Wno-unused -Wno-overflow -Wno-unknown-pragmas -fno-builtin \
 -frounding-math -Werror=implicit-function-declaration -Werror=implicit-int \
