@@ -6206,14 +6206,23 @@ local function kill(pid: cint, signal: cint): cint <cexport, codename 'kill'>
   )))
 end
 
--- POSIX raise targets the calling thread, so use Linux tgkill rather than kill.
+-- A signal handler can fork while raise is collecting its own process and
+-- thread IDs. Hold the signals until tgkill has targeted the current thread.
 local function raise(signal: cint): cint <cexport, codename 'raise'>
-  return (@cint)(syscall_result(nelibc_sys3(
-    SYS_TGKILL,
-    (@culong)(getpid()),
-    (@culong)(gettid()),
-    (@culong)(signal)
-  )))
+  local blocked: culong = ~0_culong
+  local previous: culong
+  local saved = nelibc_sys6(
+    SYS_RT_SIGPROCMASK, 0_culong, (@culong)((@usize)(&blocked)),
+    (@culong)((@usize)(&previous)), 8_culong, 0_culong, 0_culong
+  )
+  if saved < 0 then return (@cint)(syscall_result(saved)) end
+  local sent = nelibc_sys3(SYS_TGKILL, (@culong)(getpid()), (@culong)(gettid()), (@culong)(signal))
+  local restored = nelibc_sys6(
+    SYS_RT_SIGPROCMASK, 2_culong, (@culong)((@usize)(&previous)),
+    0_culong, 8_culong, 0_culong, 0_culong
+  )
+  if sent < 0 then return (@cint)(syscall_result(sent)) end
+  return (@cint)(syscall_result(restored))
 end
 
 -- Kernel x86_64 rt_sigaction entry point used by sigaction.
