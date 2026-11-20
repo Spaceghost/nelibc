@@ -113,8 +113,7 @@ static _Atomic int cancel_sem_started;
 static _Atomic int cancel_async_sem_ready;
 enum { NAMED_SEMAPHORE_RACE_WORKERS = 8 };
 static char named_semaphore_path[64];
-static _Atomic int named_semaphore_race_ready;
-static _Atomic int named_semaphore_race_go;
+static pthread_barrier_t named_semaphore_race_barrier;
 static struct {
   sem_t *semaphore;
   int value;
@@ -597,9 +596,8 @@ static void *cancel_disabled_sem_worker(void *argument) {
 
 static void *named_semaphore_race_worker(void *argument) {
   unsigned int index = (unsigned int)(uintptr_t)argument;
-  atomic_fetch_add_explicit(&named_semaphore_race_ready, 1, memory_order_release);
-  while (!atomic_load_explicit(&named_semaphore_race_go, memory_order_acquire)) {
-  }
+  int rc = pthread_barrier_wait(&named_semaphore_race_barrier);
+  if (rc != 0 && rc != PTHREAD_BARRIER_SERIAL_THREAD) return (void *)1;
   sem_t *semaphore = sem_open(named_semaphore_path, O_CREAT, 0600, index + 1U);
   named_semaphore_race_results[index].semaphore = semaphore;
   if (semaphore == SEM_FAILED) {
@@ -3013,6 +3011,9 @@ int main(void) {
     return 170;
   (void)sem_unlink(named_semaphore_path);
   pthread_t named_semaphore_race_threads[NAMED_SEMAPHORE_RACE_WORKERS];
+  if (pthread_barrier_init(&named_semaphore_race_barrier, 0,
+                           NAMED_SEMAPHORE_RACE_WORKERS) != 0)
+    return 181;
   for (unsigned int i = 0; i < NAMED_SEMAPHORE_RACE_WORKERS; ++i) {
     named_semaphore_race_results[i].semaphore = SEM_FAILED;
     named_semaphore_race_results[i].value = -1;
@@ -3021,19 +3022,12 @@ int main(void) {
                        named_semaphore_race_worker, (void *)(uintptr_t)i) != 0)
       return 180;
   }
-  for (unsigned int i = 0; i < 10000000U &&
-       atomic_load_explicit(&named_semaphore_race_ready, memory_order_acquire) !=
-           NAMED_SEMAPHORE_RACE_WORKERS; ++i) {
-  }
-  if (atomic_load_explicit(&named_semaphore_race_ready, memory_order_acquire) !=
-      NAMED_SEMAPHORE_RACE_WORKERS)
-    return 181;
-  atomic_store_explicit(&named_semaphore_race_go, 1, memory_order_release);
   for (unsigned int i = 0; i < NAMED_SEMAPHORE_RACE_WORKERS; ++i) {
     void *race_result = 0;
     if (pthread_join(named_semaphore_race_threads[i], &race_result) != 0 || race_result != 0)
       return 182;
   }
+  if (pthread_barrier_destroy(&named_semaphore_race_barrier) != 0) return 181;
   int race_initial_value = named_semaphore_race_results[0].value;
   if (race_initial_value < 1 || race_initial_value > NAMED_SEMAPHORE_RACE_WORKERS)
     return 183;
