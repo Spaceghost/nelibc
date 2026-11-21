@@ -1275,11 +1275,48 @@ local function memmem_twoway(haystack: *const void, haystack_len: csize, needle:
   return nilptr
 end
 
+local function nelibc_x86_64_find_pair(h: *const void, starts: csize, n: *const void): pointer <cimport> end
+
 local function memmem(haystack: *const void, haystack_len: csize, needle: *const void, needle_len: csize): pointer <cexport, codename 'memmem', cattribute '__pure__'>
   local h: *[0]byte = (@*[0]byte)(haystack)
   local n: *[0]byte = (@*[0]byte)(needle)
   if needle_len == 0 then return (@pointer)(haystack) end
   if needle_len > haystack_len then return nilptr end
+
+  ## if ccinfo.is_x86_64 then
+  if needle_len == 2 then return nelibc_x86_64_find_pair(h, haystack_len - 1, n) end
+  -- Filter on adjacent trailing bytes. Bound false candidates before
+  -- switching to Two-Way on the remaining suffix.
+  if needle_len >= 8 and needle_len <= 32 and n[needle_len-2] ~= n[needle_len-1] then
+    local tail: csize = needle_len - 2
+    local start: csize = 0
+    for attempt: csize = 0, < 4 do
+      local pair = nelibc_x86_64_find_pair(&h[start + tail], haystack_len - needle_len - start + 1, &n[tail])
+      if pair == nilptr then return nilptr end
+      start = (@usize)(pair) - (@usize)(&h[tail])
+      if memcmp(&h[start], n, tail) == 0 then return &h[start] end
+      start = start + 1
+      if start > haystack_len - needle_len then return nilptr end
+    end
+    return memmem_twoway(&h[start], haystack_len - start, n, needle_len)
+  end
+  ## end
+
+  -- When both ends are the same, an interior byte can reject a whole
+  -- repeated prefix. Resume at the first possible start for Two-Way.
+  if needle_len >= 8 and n[0] == n[needle_len - 1] then
+    local key: csize = needle_len // 2
+    if n[key] == n[0] then
+      key = 1
+      while key < needle_len and n[key] == n[0] do key = key + 1 end
+    end
+    if key < needle_len then
+      local anchor = memchr(&h[key], (@cint)(n[key]), haystack_len - needle_len + 1)
+      if anchor == nilptr then return nilptr end
+      local skip: csize = (@usize)(anchor) - (@usize)(&h[key])
+      return memmem_twoway(&h[skip], haystack_len - skip, needle, needle_len)
+    end
+  end
 
   -- A missing final needle byte rules out every candidate window. Search only
   -- the legal candidate-ending positions; memrchr makes suffix hits cheap and

@@ -443,9 +443,30 @@ local function strstr(haystack: *const [0]cchar, needle: *const [0]cchar): *ccha
   local haystack: *[0]cchar = (@*[0]cchar)(haystack)
   local needle: *[0]cchar = (@*[0]cchar)(needle)
   if needle[0] == 0 then return haystack end
+  -- Check a bounded prefix before traversing a potentially large string
+  -- for its length. Stop each comparison at its first mismatch or NUL.
+  local start: csize = 0
+  while start < 16 do
+    if haystack[start] == 0 then return nilptr end
+    if haystack[start] == needle[0] then
+      local j: csize = 1
+      while needle[j] ~= 0 and needle[j] == haystack[start + j] do j = j + 1 end
+      if needle[j] == 0 then return &haystack[start] end
+      -- A long shared prefix calls for the bounded search below.
+      if j >= 8 then
+        start = start + 1
+        break
+      end
+    end
+    start = start + 1
+  end
+  haystack = &haystack[start]
   local needle_len: csize = strlen(needle)
   local haystack_len: csize = strlen(haystack)
   if needle_len > haystack_len then return nilptr end
+  if needle_len == 2 then
+    return (@*cchar)(memmem(haystack, haystack_len, needle, needle_len))
+  end
   if needle_len < 64 then
     local h: *[0]cchar = (@*[0]cchar)(haystack)
     local last_start: csize = haystack_len - needle_len
@@ -496,10 +517,15 @@ local function strstr(haystack: *const [0]cchar, needle: *const [0]cchar): *ccha
       -- A cluster of false matches can signal a change in the haystack.
       -- The byte that just failed verification can skip that cluster.
       -- Try it once, then use the direct scan if close misses recur.
-      if position - search_start < 4 then
+      local cluster_distance: csize = 4
+      if needle_len >= 8 and needle_len <= 32 then cluster_distance = 64 end
+      if position - search_start < cluster_distance then
         short_misses = short_misses + 1
         if short_misses == 4 then
-          if switched_anchor or needle_len >= 8 then
+          if needle_len >= 8 then
+            return (@*cchar)(memmem(&h[position + 1], haystack_len - position - 1, needle, needle_len))
+          end
+          if switched_anchor then
             return scan_short_candidates(h, needle, position + 1, last_start, last_byte)
           end
           anchor = j

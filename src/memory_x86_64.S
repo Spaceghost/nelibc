@@ -3375,4 +3375,53 @@ nelibc_x86_64_short_memchr:
   jmp .Lmemchr_found
 .size nelibc_x86_64_short_memchr, .-nelibc_x86_64_short_memchr
 
+/* Compare both bytes of sixteen legal starts in parallel. Count is the
+ * number of starts, so the shifted load ends inside the haystack. */
+.globl nelibc_x86_64_find_pair
+.type nelibc_x86_64_find_pair,@function
+nelibc_x86_64_find_pair:
+  movzbl (%rdx), %eax
+  imull $0x01010101, %eax, %eax
+  movd %eax, %xmm0
+  pshufd $0, %xmm0, %xmm0
+  movzbl 1(%rdx), %eax
+  imull $0x01010101, %eax, %eax
+  movd %eax, %xmm1
+  pshufd $0, %xmm1, %xmm1
+.Lpair_block:
+  cmpq $16, %rsi
+  jb .Lpair_tail
+  movdqu (%rdi), %xmm2
+  movdqu 1(%rdi), %xmm3
+  pcmpeqb %xmm0, %xmm2
+  pcmpeqb %xmm1, %xmm3
+  pand %xmm3, %xmm2
+  pmovmskb %xmm2, %eax
+  testl %eax, %eax
+  jnz .Lpair_found
+  addq $16, %rdi
+  subq $16, %rsi
+  jmp .Lpair_block
+.Lpair_found:
+  bsfl %eax, %eax
+  addq %rdi, %rax
+  ret
+.Lpair_tail:
+  movzwl (%rdx), %eax
+  testq %rsi, %rsi
+  jz .Lpair_miss
+.Lpair_scalar:
+  cmpw %ax, (%rdi)
+  je .Lpair_hit
+  incq %rdi
+  decq %rsi
+  jnz .Lpair_scalar
+.Lpair_miss:
+  xorl %eax, %eax
+  ret
+.Lpair_hit:
+  movq %rdi, %rax
+  ret
+.size nelibc_x86_64_find_pair, .-nelibc_x86_64_find_pair
+
 .section .note.GNU-stack,"",@progbits
