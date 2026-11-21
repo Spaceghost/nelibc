@@ -33,7 +33,7 @@ in the container, `*-tcc` targets are unrun.
 CI (`.github/workflows/host.yml`) runs as an unprivileged user in a dedicated
 Fedora guest on the Fedora host. The job requires the `fedora` and
 `nelibc-host` runner labels, the pinned Nelua, Zig and Bend paths above, GCC,
-and `tzdata-legacy` for the standalone timezone smoke. It covers the host
+and `tzdata` for the standalone timezone smoke. It covers the host
 profile, Bend, standalone and freestanding Zig smokes, and the generated-C
 snapshot. Run the full matrix in the manual gate.
 

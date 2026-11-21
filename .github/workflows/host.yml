@@ -37,7 +37,7 @@ jobs:
           test "$ID" = fedora
           test "$(id -u)" -ne 0
           if ! test -r /usr/share/zoneinfo/Japan; then
-            echo "::error::The standalone timezone smoke requires Fedora's tzdata-legacy package."
+            echo "::error::The standalone timezone smoke requires Fedora's tzdata package."
             exit 1
           fi
           "$NELUA" --version
