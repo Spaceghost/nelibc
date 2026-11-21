@@ -1695,10 +1695,89 @@ local function exact_rational_to_double(numerator_input: *BigUInt, denominator_i
   return true
 end
 
+-- Convert a normal binary64 value n / 10^k exactly in integer arithmetic.
+-- Divide by 5^k and account for 2^k in the encoded exponent. Both n and
+-- 5^k fit in 53 bits, so normalizing either operand cannot overflow uint64.
+local decimal_powers_of_five: [23]culonglong <const> = {
+  1, 5, 25, 125, 625,
+  3125, 15625, 78125, 390625, 1953125,
+  9765625, 48828125, 244140625, 1220703125, 6103515625,
+  30517578125, 152587890625, 762939453125, 3814697265625, 19073486328125,
+  95367431640625, 476837158203125, 2384185791015625
+}
+
+local function short_bit_length(n: culonglong): cint <inline>
+  local length: cint = 1
+  ## for _, step in ipairs{32, 16, 8, 4, 2, 1} do
+  if n >> #[step]# ~= 0 then
+    n = n >> #[step]#
+    length = length + #[step]#
+  end
+  ## end
+  return length
+end
+
+local function short_decimal_to_double(n: culonglong, places: cint, negative: boolean): cdouble
+  if places == 0 then
+    local exact = (@cdouble)(n)
+    if negative then return -exact end
+    return exact
+  end
+  local divisor = decimal_powers_of_five[places]
+  local numerator_bits = short_bit_length(n)
+  local divisor_bits = short_bit_length(divisor)
+  local exponent = numerator_bits - divisor_bits
+  if exponent >= 0 then
+    if n < (divisor << exponent) then exponent = exponent - 1 end
+  elseif (n << (-exponent)) < divisor then
+    exponent = exponent - 1
+  end
+
+  local shift = 52 - exponent
+  -- Use the spare high bits before the first division. Later steps extend
+  -- only the remainder; each quotient digit then fits in its appended width.
+  local first = 64 - numerator_bits
+  if first > shift then first = shift end
+  n = n << first
+  shift = shift - first
+  local quotient = n // divisor
+  local remainder = n - quotient * divisor
+  local room = 64 - divisor_bits
+  while shift > 0 do
+    local step = shift
+    if step > room then step = room end
+    local scaled = remainder << step
+    local digit = scaled // divisor
+    remainder = scaled - digit * divisor
+    quotient = (quotient << step) | digit
+    shift = shift - step
+  end
+  -- Round to nearest-even, as in big_divide_round. Doubling the final
+  -- remainder is exact here because the divisor is at most 5^22.
+  local twice = remainder << 1
+  if twice > divisor or (twice == divisor and (quotient & 1) ~= 0) then
+    quotient = quotient + 1
+    if quotient == 0x20000000000000_culonglong then exponent = exponent + 1 end
+  end
+  local bits = ((@culonglong)(1023 + exponent - places) << 52) |
+    (quotient & 0xfffffffffffff_culonglong)
+  if negative then bits = bits | 0x8000000000000000_culonglong end
+  return nelibc_double_from_bits(bits)
+end
+
 local function exact_decimal_to_double(integer: *BigUInt, exponent10: cint,
     trailing_zeroes: cint, negative: boolean,
     precision: cint, sticky_tail: boolean, output: *cdouble, long_output: *clongdouble): boolean <inline>
   local integer_pointer: *[0]BigUInt = (@*[0]BigUInt)(integer)
+  if precision == 53 and not sticky_tail and exponent10 >= -22 and exponent10 <= 0 and
+      (integer.used == 1 or (integer.used == 2 and integer.limbs[1] <= 0x1fffff)) then
+    local n: culonglong = integer.limbs[0]
+    if integer.used == 2 then n = n | ((@culonglong)(integer.limbs[1]) << 32) end
+    if n ~= 0 then
+      $output = short_decimal_to_double(n, -exponent10, negative)
+      return true
+    end
+  end
   local numerator: BigUInt <noinit>
   big_copy(&numerator, &integer_pointer[0])
   while trailing_zeroes >= 9 do

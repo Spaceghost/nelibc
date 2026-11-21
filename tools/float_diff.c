@@ -201,6 +201,41 @@ int main(void) {
     if (compare_one(fixed_cases[i])) return 1;
   }
 
+  /* Fixed binary64 answers exercise the single/two-limb boundary, both sides
+     of the 53-bit fast path, and a three-way crossing of an exact power of two. */
+  static const struct { const char *text; uint64_t bits; } short_decimals[] = {
+      {"1e-22", UINT64_C(0x3b5e392010175ee6)},
+      {"-1e-22", UINT64_C(0xbb5e392010175ee6)},
+      {"1e-23", UINT64_C(0x3b282db34012b251)},
+      {"3.141592653589793", UINT64_C(0x400921fb54442d18)},
+      {"4294967295e-12", UINT64_C(0x3f719799811c5278)},
+      {"4294967296e-12", UINT64_C(0x3f719799812dea11)},
+      {"9007199254740991e-22", UINT64_C(0x3eae392010175ee5)},
+      {"9007199254740992e-22", UINT64_C(0x3eae392010175ee6)},
+      {"9007199254740993e-22", UINT64_C(0x3eae392010175ee7)},
+      {"999999999999999e-15", UINT64_C(0x3feffffffffffff7)},
+      {"1000000000000000e-15", UINT64_C(0x3ff0000000000000)},
+      {"1000000000000001e-15", UINT64_C(0x3ff0000000000005)},
+      {"2384185791015624e-22", UINT64_C(0x3e8ffffffffffffc)},
+      {"2384185791015625e-22", UINT64_C(0x3e90000000000000)},
+      {"2384185791015626e-22", UINT64_C(0x3e90000000000002)},
+      {"9007199254740991", UINT64_C(0x433fffffffffffff)},
+      {"-9007199254740992", UINT64_C(0xc340000000000000)},
+  };
+  for (size_t i = 0; i < sizeof short_decimals / sizeof short_decimals[0]; ++i) {
+    char *end = NULL;
+    uint64_t bits;
+    errno = EDOM;
+    double value = NELIBC_STRTOD(short_decimals[i].text, &end);
+    int saved_errno = errno;
+    memcpy(&bits, &value, sizeof bits);
+    if (bits != short_decimals[i].bits || *end != '\0' || saved_errno != EDOM) {
+      fprintf(stderr, "short decimal mismatch: %s\n", short_decimals[i].text);
+      return 1;
+    }
+    ++cases_run;
+  }
+
   char text[20000];
   for (unsigned int i = 0; i < 600; ++i) {
     make_decimal(text, sizeof text);
