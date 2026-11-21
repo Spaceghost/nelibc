@@ -482,22 +482,22 @@ nelibc_x86_64_sse_strlen:
   jb .Lstrlen_sse_start
   movl %edi, %eax
   andl $4095, %eax
-  /* Scan the first four vectors directly when all their bytes share
+  /* Scan the prefix directly when all five vectors share
    * the starting page. The SSE entry handles starts near a page end. */
-  cmpl $(4096-128), %eax
+  cmpl $(4096-160), %eax
   ja .Lstrlen_sse_start
   vpxor %ymm0, %ymm0, %ymm0
-  .irp pos,0,32,64,96
+  .irp pos,0,32,64,96,128
     vpcmpeqb \pos(%rdi), %ymm0, %ymm1
     vpmovmskb %ymm1, %eax
     testl %eax, %eax
     jnz .Lstrlen_short_found\pos
   .endr
   /* Overlap the inspected prefix to align the next full group. */
-  addq $128, %rdi
+  addq $160, %rdi
   andq $-128, %rdi
   jmp .Lstrlen_avx_loop
-  .irp pos,0,32,64,96
+  .irp pos,0,32,64,96,128
 .Lstrlen_short_found\pos:
     bsfl %eax, %eax
     .if \pos
@@ -781,19 +781,54 @@ nelibc_x86_64_sse_strlen:
   addq $32, %rdi
 .p2align 5
 .Lstrlen_avx_loop:
-  vpcmpeqb 0(%rdi), %ymm0, %ymm1
-  vpcmpeqb 32(%rdi), %ymm0, %ymm2
-  vpcmpeqb 64(%rdi), %ymm0, %ymm3
-  vpcmpeqb 96(%rdi), %ymm0, %ymm4
-  vpor %ymm1, %ymm2, %ymm5
-  vpor %ymm3, %ymm4, %ymm6
-  vpor %ymm5, %ymm6, %ymm5
+  /* Start the eight-vector loop at a 256-byte boundary to keep every
+   * load within a mapped page until a terminator is located. */
+  testq $128, %rdi
+  jz .Lstrlen_avx_256
+  vmovdqa (%rdi), %ymm1
+  vmovdqa 64(%rdi), %ymm3
+  vpminub 32(%rdi), %ymm1, %ymm2
+  vpminub 96(%rdi), %ymm3, %ymm4
+  vpminub %ymm2, %ymm4, %ymm5
+  vpcmpeqb %ymm0, %ymm5, %ymm5
   vpmovmskb %ymm5, %eax
   testl %eax, %eax
   jnz .Lstrlen_avx_decide
   addq $128, %rdi
-  jmp .Lstrlen_avx_loop
+.p2align 5
+.Lstrlen_avx_256:
+  /* A zero byte makes the unsigned lane minimum zero. Keep the first
+   * half minimum to locate the earliest matching vector on exit. */
+  vmovdqa    0(%rdi), %ymm1
+  vmovdqa   64(%rdi), %ymm3
+  vmovdqa  128(%rdi), %ymm6
+  vmovdqa  192(%rdi), %ymm7
+  vpminub   32(%rdi), %ymm1, %ymm2
+  vpminub   96(%rdi), %ymm3, %ymm4
+  vpminub  160(%rdi), %ymm6, %ymm6
+  vpminub  224(%rdi), %ymm7, %ymm7
+  vpminub %ymm2, %ymm4, %ymm2
+  vpminub %ymm6, %ymm7, %ymm7
+  vpminub %ymm2, %ymm7, %ymm5
+  vpcmpeqb %ymm0, %ymm5, %ymm5
+  vpmovmskb %ymm5, %eax
+  testl %eax, %eax
+  jnz .Lstrlen_avx_found_256
+  addq $256, %rdi
+  jmp .Lstrlen_avx_256
+.Lstrlen_avx_found_256:
+  vpcmpeqb %ymm0, %ymm2, %ymm2
+  vpmovmskb %ymm2, %eax
+  testl %eax, %eax
+  jnz .Lstrlen_avx_decide
+  addq $128, %rdi
+  vmovdqa   0(%rdi), %ymm1
+  vmovdqa  64(%rdi), %ymm3
 .Lstrlen_avx_decide:
+  vpcmpeqb %ymm0, %ymm1, %ymm1
+  vpcmpeqb 32(%rdi), %ymm0, %ymm2
+  vpcmpeqb %ymm0, %ymm3, %ymm3
+  vpcmpeqb 96(%rdi), %ymm0, %ymm4
   vpmovmskb %ymm1, %eax
   testl %eax, %eax
   jnz .Lstrlen_avx_found
