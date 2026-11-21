@@ -479,6 +479,7 @@ local function strstr(haystack: *const [0]cchar, needle: *const [0]cchar): *ccha
     end
     local position: csize = 0
     local short_misses: cuint = 0
+    local switched_anchor: boolean = false
     while position <= last_start do
       local search_start: csize = position
       ## if ccinfo.is_x86_64 then
@@ -492,16 +493,17 @@ local function strstr(haystack: *const [0]cchar, needle: *const [0]cchar): *ccha
       local j: csize = 0
       while j < needle_len and h[position + j] == needle[j] do j = j + 1 end
       if j == needle_len then return &h[position] end
-      -- The initial sample may not represent the rest of the haystack. After
-      -- four nearby false candidates, switch to the first byte. If that byte
-      -- is also unselective, verify the remaining starts directly.
+      -- A cluster of false matches can signal a change in the haystack.
+      -- The byte that just failed verification can skip that cluster.
+      -- Try it once, then use the direct scan if close misses recur.
       if position - search_start < 4 then
         short_misses = short_misses + 1
         if short_misses == 4 then
-          if anchor == 0 then
+          if switched_anchor or needle_len >= 8 then
             return scan_short_candidates(h, needle, position + 1, last_start, last_byte)
           end
-          anchor = 0
+          anchor = j
+          switched_anchor = true
           short_misses = 0
         end
       else

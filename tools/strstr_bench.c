@@ -135,6 +135,25 @@ static int page_boundary_checks(strstr_fn volatile fn) {
     memcpy(h + 60, "abaa", 4);
     if (fn(h, "abaa") != h + 60) goto shift_mismatch;
   }
+  /* The initial search byte becomes common; the byte that rejects candidates
+     may be at any later index. Keep a valid last start next to the guard. */
+  for (size_t width = 2; width <= 7; ++width) {
+    char pattern[8];
+    char *h = page + page_size - 97;
+    for (size_t differing = 1; differing < width; ++differing) {
+      memset(pattern, 'a', width);
+      pattern[differing] = 'b';
+      pattern[width] = 0;
+      memset(h, 'a', 96);
+      memset(h, 'b', 16);
+      h[96] = 0;
+      if (fn(h, pattern) != NULL) goto shift_mismatch;
+      memcpy(h + 96 - width, pattern, width);
+      if (fn(h, pattern) != h + 96 - width) goto shift_mismatch;
+      memcpy(h + 32, pattern, width);
+      if (fn(h, pattern) != h + 32) goto shift_mismatch;
+    }
+  }
   munmap(mapping, page_size * 3);
   return 0;
 
