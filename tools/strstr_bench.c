@@ -118,8 +118,30 @@ static int page_boundary_checks(strstr_fn volatile fn) {
       }
     }
   }
+  /* The first 16 bytes favor the interior 'b'. Later runs supply false
+     interior and first-byte candidates before the final legal start. */
+  for (size_t length = 80; length < 144; ++length) {
+    char *h = page + page_size - length - 1;
+    memset(h, 'x', length);
+    memset(h, 'a', 16);
+    h[length] = 0;
+    if (fn(h, "abaa") != NULL) goto shift_mismatch;
+    memset(h + 16, 'b', 16);
+    for (size_t i = 32; i < 56; i += 2) memcpy(h + i, "ab", 2);
+    memcpy(h + length - 4, "abax", 4);
+    if (fn(h, "abaa") != NULL) goto shift_mismatch;
+    h[length - 1] = 'a';
+    if (fn(h, "abaa") != h + length - 4) goto shift_mismatch;
+    memcpy(h + 60, "abaa", 4);
+    if (fn(h, "abaa") != h + 60) goto shift_mismatch;
+  }
   munmap(mapping, page_size * 3);
   return 0;
+
+shift_mismatch:
+  fprintf(stderr, "strstr guard-page mismatch after a change in anchor frequency\n");
+  munmap(mapping, page_size * 3);
+  return 1;
 }
 
 static double now_seconds(void) {
@@ -171,11 +193,44 @@ static double median(strstr_fn volatile fn, size_t haystack_size, size_t needle_
   return samples[SAMPLES / 2];
 }
 
-int main(void) {
+/* Keep these distributions separate from the historical CSV. */
+static int anchor_controls(void) {
+  static const size_t sizes[] = {64, 4096, MAX_HAYSTACK};
+  static const char *const names[] = {
+    "first-dense-then-sparse", "first-sparse-then-dense", "equal-frequency"
+  };
+  memcpy(needle, "abaa", 5);
+  for (size_t idx = 0; idx < sizeof sizes / sizeof sizes[0]; ++idx) {
+    size_t length = sizes[idx];
+    for (size_t mode = 0; mode < sizeof names / sizeof names[0]; ++mode) {
+      if (mode == 2) {
+        for (size_t i = 0; i < length; ++i) haystack[i] = (i & 1) ? 'b' : 'a';
+      } else {
+        memset(haystack, mode == 0 ? 'b' : 'a', length);
+        memset(haystack, mode == 0 ? 'a' : 'b', 16);
+      }
+      haystack[length] = 0;
+      if (reference_strstr(haystack, needle) != NULL || strstr(haystack, needle) != NULL) {
+        fprintf(stderr, "strstr unexpected match in %s, length=%zu\n", names[mode], length);
+        return 1;
+      }
+      printf("%s,%s,%s,%s,%zu,4,%u,%.2f\n", BENCH_COMPILER, BENCH_LIBC,
+             BENCH_IMPLEMENTATION, names[mode], length, REPS, median(strstr, length, 4));
+    }
+  }
+  return 0;
+}
+
+int main(int argc, char **argv) {
   static const size_t haystack_sizes[] = {64, 4096, MAX_HAYSTACK};
   static const size_t needle_sizes[] = {4, 8, 16, 64, MAX_NEEDLE};
+  if (argc > 2 || (argc == 2 && strcmp(argv[1], "--anchor-controls") != 0)) {
+    fprintf(stderr, "usage: %s [--anchor-controls]\n", argv[0]);
+    return 2;
+  }
   if (differential_checks(strstr) != 0 || page_boundary_checks(strstr) != 0) return 1;
   puts("compiler,libc,implementation,case,haystack_bytes,needle_bytes,iterations,median_ns_per_call");
+  if (argc == 2) return anchor_controls();
   static const size_t strlen_sizes[] = {0, 1, 4, 8, 15, 16, 31, 64, 4096, MAX_HAYSTACK};
   static const size_t strlen_offsets[] = {0, 1, 7, 15};
   for (size_t sidx = 0; sidx < sizeof strlen_sizes / sizeof strlen_sizes[0]; ++sidx) {
