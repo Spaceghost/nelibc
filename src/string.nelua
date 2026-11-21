@@ -426,6 +426,19 @@ local function rindex(s: *const [0]cchar, c: cint): *cchar <cexport, codename 'r
   return strrchr(s, c)
 end
 
+local function scan_short_candidates(h: *[0]cchar, needle: *[0]cchar, start: csize,
+                                     last_start: csize, last_byte: csize): *cchar <inline>
+  while start <= last_start do
+    if h[start + last_byte] == needle[last_byte] then
+      local j: csize = 0
+      while j < last_byte and h[start + j] == needle[j] do j = j + 1 end
+      if j == last_byte then return &h[start] end
+    end
+    start = start + 1
+  end
+  return nilptr
+end
+
 local function strstr(haystack: *const [0]cchar, needle: *const [0]cchar): *cchar <cexport, codename 'strstr', cattribute '__pure__'>
   local haystack: *[0]cchar = (@*[0]cchar)(haystack)
   local needle: *[0]cchar = (@*[0]cchar)(needle)
@@ -439,14 +452,7 @@ local function strstr(haystack: *const [0]cchar, needle: *const [0]cchar): *ccha
     local last_byte: csize = needle_len - 1
     if last_start < 16 then
       -- A short candidate range costs less to verify directly than to sample.
-      for start: csize = 0, last_start do
-        if h[start + last_byte] == needle[last_byte] then
-          local j: csize = 0
-          while j < last_byte and h[start + j] == needle[j] do j = j + 1 end
-          if j == last_byte then return &h[start] end
-        end
-      end
-      return nilptr
+      return scan_short_candidates(h, needle, 0, last_start, last_byte)
     end
     local first_hits: csize = 0
     for sample: csize = 0, < 16 do
@@ -468,18 +474,13 @@ local function strstr(haystack: *const [0]cchar, needle: *const [0]cchar): *ccha
         end
       end
       if anchor == 0 or anchor_hits >= first_hits then
-        local start: csize = 0
-        while start <= last_start do
-          local j: csize = 0
-          while j < needle_len and h[start + j] == needle[j] do j = j + 1 end
-          if j == needle_len then return &h[start] end
-          start = start + 1
-        end
-        return nilptr
+        return scan_short_candidates(h, needle, 0, last_start, last_byte)
       end
     end
     local position: csize = 0
+    local short_misses: cuint = 0
     while position <= last_start do
+      local search_start: csize = position
       ## if ccinfo.is_x86_64 then
       local candidate: pointer = nelibc_x86_64_sse_memchr(&h[position + anchor], (@cint)(needle[anchor]), last_start - position + 1)
       if candidate == nilptr then return nilptr end
@@ -491,6 +492,21 @@ local function strstr(haystack: *const [0]cchar, needle: *const [0]cchar): *ccha
       local j: csize = 0
       while j < needle_len and h[position + j] == needle[j] do j = j + 1 end
       if j == needle_len then return &h[position] end
+      -- The initial sample may not represent the rest of the haystack. After
+      -- four nearby false candidates, switch to the first byte. If that byte
+      -- is also unselective, verify the remaining starts directly.
+      if position - search_start < 4 then
+        short_misses = short_misses + 1
+        if short_misses == 4 then
+          if anchor == 0 then
+            return scan_short_candidates(h, needle, position + 1, last_start, last_byte)
+          end
+          anchor = 0
+          short_misses = 0
+        end
+      else
+        short_misses = 0
+      end
       position = position + 1
     end
     return nilptr
