@@ -993,6 +993,10 @@ end
 local function bcmp(left: *const void, right: *const void, n: csize): cint <cexport, codename 'bcmp', cattribute '__pure__'>
   return memcmp(left, right, n)
 end
+## if ccinfo.is_x86_64 and ccinfo.is_clang then
+local function copy_word(dest: pointer, src: *const void, size: csize): pointer <cimport '__builtin_memcpy', nodecl> end
+local function trailing_zeros(v: culonglong): cint <cimport '__builtin_ctzll', nodecl> end
+## end
 local function memchr(s: *const void, value: cint, n: csize): pointer <cexport, codename 'memchr', cattribute '__pure__'>
   ## if ccinfo.is_tcc then
   return nelibc_tcc_sse_memchr(s, value, n)
@@ -1008,12 +1012,22 @@ local function memchr(s: *const void, value: cint, n: csize): pointer <cexport, 
   local bytes: *[0]byte = (@*[0]byte)(s)
   local target: byte = (@byte)(value)
   local i: csize = 0
+  ## if ccinfo.is_x86_64 and ccinfo.is_clang then
+  -- Load only a complete word on this page. At the edge, the ordered
+  -- tail can stop at a match before touching the next page.
+  if n >= 8 and ((@usize)(s) & 4095) <= 4088 then
+    local word: uint64
+    copy_word(&word, s, 8)
+    local ones: uint64 <comptime> = 0x0101010101010101
+    local diff = word ~ ((@uint64)(target) * ones)
+    local mask = (diff - ones) & ~diff & (ones << 7)
+    -- A borrow may mark a later byte, but the lowest mark is the first
+    -- equal byte on little-endian x86.
+    if mask ~= 0 then return &bytes[trailing_zeros(mask) >> 3] end
+    i = 8
+  end
+  ## else
   while n - i >= 8 do
-    ## if ccinfo.is_x86_64 and ccinfo.is_clang then
-    -- A match can end the search before the requested range reaches the
-    -- next page. Use the ordered tail if the mask would read across it.
-    if ((@usize)(&bytes[i]) & 4095) > 4088 then break end
-    ## end
     ## if ccinfo.is_clang then
     local matches: cuint = 0
     if bytes[i] == target then matches = matches | 1_cuint end
@@ -1051,6 +1065,7 @@ local function memchr(s: *const void, value: cint, n: csize): pointer <cexport, 
     break
     ## end
   end
+  ## end
   while i < n do
     if bytes[i] == target then return &bytes[i] end
     i = i + 1
