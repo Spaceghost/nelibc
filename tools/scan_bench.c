@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-static unsigned char text[65632];
+static _Alignas(64) unsigned char text[65632];
 static volatile uintptr_t sink;
 static __attribute__((noinline)) size_t length(const char *s) { return strlen(s); }
 static __attribute__((noinline)) void *search(const void *s,int c,size_t n) { return memchr(s,c,n); }
@@ -17,7 +17,7 @@ static void loop(unsigned op,unsigned char *s,size_t n,size_t reps) {
   sink^=sum;
 }
 int main(void) {
-  const size_t sizes[]={0,1,3,7,8,15,16,31,32,63,64,127,128,256,1024,4096,65536};
+  const size_t sizes[]={0,1,3,7,8,9,10,11,12,13,14,15,16,31,32,63,64,127,128,256,1024,4096,65536};
   const size_t offsets[]={0,1,7,15,31};
   const char *names[]={"strlen","memchr-absent","memchr-first","memchr-middle","memchr-last"};
   /* Measure steady-state dispatch for every implementation, including short

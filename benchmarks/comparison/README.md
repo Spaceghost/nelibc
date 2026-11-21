@@ -40,6 +40,18 @@ adds alignment and mismatch-position measurements for GCC/glibc. Add
 `--source tools/memory_bench.c` for bounded copy/fill/compare size and alignment
 distributions. Both retain raw samples, commands and archive/source hashes.
 
+For the Cosmopolitan short-search comparison, use the same compiler driver
+that built both archives. The scan fixture starts on a 64-byte boundary and
+tests offsets 0, 1, 7, 15 and 31. It includes every size from 8 through 16,
+longer scans through 64 KiB, and absent, first, middle and last-byte matches.
+
+```sh
+python3 tools/strcmp_bench.py --profile cosmopolitan \
+  --cc /path/to/cosmocc/bin/x86_64-unknown-cosmo-cc \
+  --source tools/scan_bench.c --old-archive /path/to/previous/libnelibc-cosmo.a \
+  --pairs 7 --cpu 10 --out /path/to/new-scan-output
+```
+
 ## What the comparison isolates
 
 Each pair uses the same compiler, consumer source, compiler options and inputs.

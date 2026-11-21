@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Matched GCC/glibc strcmp timing across sizes, alignments and mismatch positions."""
+"""Time matched libc builds across sizes, alignments and match positions."""
 import argparse, csv, hashlib, io, json, os, shlex, statistics, subprocess
 from pathlib import Path
 
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--out', required=True, type=Path)
+p.add_argument('--profile', choices=('glibc', 'cosmopolitan'), default='glibc')
+p.add_argument('--cc', help='Compiler driver for the selected libc')
+p.add_argument('--candidate-archive', type=Path,
+               help='Override the production archive for the selected profile')
 p.add_argument('--old-archive', type=Path)
 p.add_argument('--pairs', type=int, default=7)
 p.add_argument('--cpu', type=int)
@@ -14,19 +18,26 @@ root = Path(__file__).resolve().parents[1]
 source=a.source.resolve() if a.source else root/'tools/strcmp_bench.c'
 out = a.out.resolve()
 out.mkdir(parents=True, exist_ok=True)
-archives = {'baseline': None, 'candidate': root/'build/libnelibc-gcc.a'}
+compiler, archive_name = {
+    'glibc': ('gcc', 'libnelibc-gcc.a'),
+    'cosmopolitan': ('x86_64-unknown-cosmo-cc', 'libnelibc-cosmo.a'),
+}[a.profile]
+compiler = a.cc or compiler
+candidate = a.candidate_archive.resolve() if a.candidate_archive else root/'build'/archive_name
+archives = {'baseline': None, 'candidate': candidate}
 if a.old_archive:
     archives['previous'] = a.old_archive.resolve()
 commands = {}
 for name, archive in archives.items():
-    cmd = ['gcc', '-O2', '-fno-builtin', '-fno-stack-protector',
+    cmd = [compiler, '-O2', '-fno-builtin', '-fno-stack-protector',
            str(source)]
     if archive:
         cmd.append(str(archive))
     cmd += ['-lm', '-pthread', '-o', str(out/name)]
     commands[name] = cmd
     subprocess.run(cmd, check=True)
-meta = {'commands': commands, 'pairs': a.pairs, 'cpu': a.cpu,
+meta = {'commands': commands, 'pairs': a.pairs, 'cpu': a.cpu, 'profile': a.profile,
+        'compiler': subprocess.check_output([compiler, '--version'], text=True).splitlines()[0],
         'load_start': os.getloadavg(),
         'archive_sha256': {n: hashlib.sha256(v.read_bytes()).hexdigest()
                            for n, v in archives.items() if v},
@@ -45,7 +56,7 @@ for pair in range(1, a.pairs+1):
         (out/f'{name}-{pair}.csv').write_text(result.stdout)
         raw.extend({'implementation': name, 'pair': pair, **r}
                    for r in csv.DictReader(io.StringIO(result.stdout)))
-    print(f'strcmp distribution pair {pair}/{a.pairs}', flush=True)
+    print(f'{source.name} {a.profile} pair {pair}/{a.pairs}', flush=True)
 with (out/'raw.csv').open('w') as f:
     w = csv.DictWriter(f, list(raw[0]))
     w.writeheader()
@@ -59,7 +70,7 @@ for (size, left, right, case), values in groups.items():
     ratios = [values['baseline'][i]/v for i, v in values['candidate'].items()]
     row = {'bytes': size, 'left_offset': left, 'right_offset': right, 'case': case,
            'median_ns': {n: statistics.median(v.values()) for n, v in values.items()},
-           'candidate_speedup_vs_glibc': statistics.median(ratios),
+           f'candidate_speedup_vs_{a.profile}': statistics.median(ratios),
            'ratio_min': min(ratios), 'ratio_max': max(ratios)}
     if 'previous' in values:
         row['candidate_speedup_vs_previous'] = statistics.median(
