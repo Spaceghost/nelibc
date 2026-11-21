@@ -3,6 +3,7 @@
 --   <stdlib.h>      drand48 erand48 lrand48 nrand48 mrand48 jrand48 srand48
 --                   seed48 lcong48 (src/prng/*48.c); random srandom initstate
 --                   setstate (src/prng/random.c)
+--   <sys/statfs.h>  statfs, fstatfs (Linux x86-64)
 --   <sys/statvfs.h> statvfs, fstatvfs (src/stat/statvfs.c)
 -- Differences from musl: seed48 and srand48 put the multiplier and addend
 -- back to their defaults, as POSIX and glibc specify (musl keeps the values
@@ -12,10 +13,21 @@
 ## pragmas.noentrypoint = true
 
 local function nelibc_sys3(op: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
+local function nelibc_sys6(op: culong, arg1: culong, arg2: culong, arg3: culong,
+  arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
+local function nelibc_cancellable_sys6(op: culong, arg1: culong, arg2: culong, arg3: culong,
+  arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
+local function nelibc_raw_syscall6(number: culong, arg1: culong, arg2: culong, arg3: culong,
+  arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
 
+local SYS_FLOCK: culong <comptime> = 60
 local SYS_STATFS: culong <comptime> = 102
 local SYS_FSTATFS: culong <comptime> = 103
+local SYS_PRCTL: culong <comptime> = 114
+local NR_REBOOT: culong <comptime> = 169
+local REBOOT_MAGIC1: culong <comptime> = 0xfee1dead
+local REBOOT_MAGIC2: culong <comptime> = 0x28121969
 
 ----------------------------------------------------------------------
 -- <libgen.h>
@@ -225,7 +237,7 @@ local function random(): clong <cexport, codename 'random'>
 end
 
 ----------------------------------------------------------------------
--- statvfs
+-- statfs and statvfs
 ----------------------------------------------------------------------
 
 local KStatfs: type = @record{
@@ -233,6 +245,7 @@ local KStatfs: type = @record{
   f_files: culong, f_ffree: culong, f_fsid: [2]cint, f_namelen: clong, f_frsize: clong,
   f_flags: clong, f_spare: [4]clong,
 }
+## static_assert(KStatfs.value.size == 120, 'Linux x86-64 struct statfs must be 120 bytes')
 
 local Statvfs: type = @record{
   f_bsize: culong, f_frsize: culong, f_blocks: culong, f_bfree: culong, f_bavail: culong,
@@ -258,19 +271,42 @@ local function result_of(r: clong): cint
     nelibc_errno_location()[0] = (@cint)(-r)
     return -1
   end
-  return 0
+  return (@cint)(r)
+end
+
+local function statfs(path: *const [0]cchar, out: *KStatfs): cint <cexport, codename 'statfs'>
+  return result_of(nelibc_sys3(SYS_STATFS, (@culong)((@usize)(path)), (@culong)((@usize)(out)), 0))
+end
+
+local function fstatfs(fd: cint, out: *KStatfs): cint <cexport, codename 'fstatfs'>
+  return result_of(nelibc_sys3(SYS_FSTATFS, (@culong)(fd), (@culong)((@usize)(out)), 0))
 end
 
 local function statvfs(path: *const [0]cchar, out: *Statvfs): cint <cexport, codename 'statvfs'>
   local k: KStatfs
-  local rc = result_of(nelibc_sys3(SYS_STATFS, (@culong)((@usize)(path)), (@culong)((@usize)(&k)), 0))
+  local rc = statfs(path, &k)
   if rc == 0 then fixup(out, &k) end
   return rc
 end
 
 local function fstatvfs(fd: cint, out: *Statvfs): cint <cexport, codename 'fstatvfs'>
   local k: KStatfs
-  local rc = result_of(nelibc_sys3(SYS_FSTATFS, (@culong)(fd), (@culong)((@usize)(&k)), 0))
+  local rc = fstatfs(fd, &k)
   if rc == 0 then fixup(out, &k) end
   return rc
+end
+
+local function flock(fd: cint, operation: cint): cint <cexport, codename 'flock'>
+  return result_of(nelibc_cancellable_sys6(SYS_FLOCK, (@culong)(fd), (@culong)(operation), 0, 0, 0, 0))
+end
+
+-- The standalone ABI is x86-64. Forward the four integer argument slots
+-- to the kernel, which interprets them according to the selected option.
+local function prctl(option: cint, arg2: culong, arg3: culong, arg4: culong, arg5: culong): cint
+    <cexport, codename 'prctl'>
+  return result_of(nelibc_sys6(SYS_PRCTL, (@culong)(option), arg2, arg3, arg4, arg5, 0))
+end
+
+local function reboot(command: cint): cint <cexport, codename 'reboot'>
+  return result_of(nelibc_raw_syscall6(NR_REBOOT, REBOOT_MAGIC1, REBOOT_MAGIC2, (@culong)(command), 0, 0, 0))
 end

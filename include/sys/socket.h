@@ -4,6 +4,7 @@
 #ifdef NELIBC_STANDALONE
 
 #include <stddef.h>
+#include <sys/types.h>
 
 #ifndef __socklen_t_defined
 typedef unsigned int socklen_t;
@@ -42,6 +43,13 @@ struct cmsghdr {
 struct linger {
   int l_onoff;
   int l_linger;
+};
+
+/* Linux SO_PEERCRED payload. */
+struct ucred {
+  pid_t pid;
+  uid_t uid;
+  gid_t gid;
 };
 
 #define AF_UNSPEC 0
