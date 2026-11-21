@@ -1,17 +1,26 @@
 name: host profile
-# Runs on the self-hosted bak runner (Incus container gh-runners on bak), which
-# carries the pinned toolchains under /opt: Nelua (Spaceghost/nelua-lang
-# dabbd9ef), Zig 0.17.0, and Bend 2.0.39. GPU work does not belong here; the
-# alienware runners are reserved for jobs that need a GPU.
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   host-matrix:
-    runs-on: [self-hosted, linux, x64, bak]
+    if: >-
+      (github.actor == github.repository_owner ||
+       contains(fromJSON(vars.NELIBC_CI_TRUSTED_ACTORS || '[]').*, github.actor)) &&
+      (github.triggering_actor == github.repository_owner ||
+       contains(fromJSON(vars.NELIBC_CI_TRUSTED_ACTORS || '[]').*, github.triggering_actor)) &&
+      (github.event_name != 'pull_request' ||
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        (github.event.pull_request.user.login == github.repository_owner ||
+         contains(fromJSON(vars.NELIBC_CI_TRUSTED_ACTORS || '[]').*, github.event.pull_request.user.login)) &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)))
+    runs-on: [self-hosted, linux, x64, fedora, nelibc-host]
     timeout-minutes: 40
     env:
       NELUA: /opt/nelua-dabbd9ef/nelua
@@ -19,12 +28,22 @@ jobs:
       BEND: /opt/bend-2.0.39/bend/bin/bend
     steps:
       - uses: actions/checkout@v4
-      - name: toolchains
+        with:
+          persist-credentials: false
+      - name: Fedora runner and toolchains
         run: |
-          "$NELUA" --version | head -1
+          . /etc/os-release
+          echo "$PRETTY_NAME"
+          test "$ID" = fedora
+          test "$(id -u)" -ne 0
+          if ! test -r /usr/share/zoneinfo/Japan; then
+            echo "::error::The standalone timezone smoke requires Fedora's tzdata-legacy package."
+            exit 1
+          fi
+          "$NELUA" --version
           "$ZIG" version
-          gcc --version | head -1
-          BEND_NO_TELEMETRY=1 "$BEND" version || echo "bend unavailable; hello smoke will skip"
+          gcc --version
+          BEND_NO_TELEMETRY=1 "$BEND" version
       - name: platform-operation vocabulary in sync
         run: make sys-ops-check
       - name: host archives, link checks, hosted smoke
@@ -35,11 +54,26 @@ jobs:
         run: make smoke-standalone-zig smoke-freestanding-zig NELUA="$NELUA" ZIG="$ZIG"
       - name: generated-C snapshot rebuilt with zig cc and gcc
         run: make host-snapshot-matrix NELUA="$NELUA" ZIG="$ZIG"
-      - uses: actions/upload-artifact@v4
+      - name: Upload host profile logs
+        id: logs
+        uses: actions/upload-artifact@v4
         if: always()
+        continue-on-error: true
         with:
           name: host-profile-logs
           path: |
             build/host-smoke-*.log
             build/host-bend-*.log
+          retention-days: 7
           if-no-files-found: ignore
+      - name: Show logs when the artifact upload fails
+        if: ${{ !cancelled() && steps.logs.outcome == 'failure' }}
+        run: |
+          echo "::warning::Host profile logs could not be uploaded. See the upload step for the reason."
+          for log in build/host-smoke-*.log build/host-bend-*.log; do
+            if test -f "$log"; then
+              echo "::group::$log"
+              tail -n 100 "$log"
+              echo "::endgroup::"
+            fi
+          done

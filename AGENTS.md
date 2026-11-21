@@ -10,8 +10,8 @@ asked, never force-push.
 
 ## Where to build
 
-Never compile or run tests on the workstation. Every build and every smoke,
-diff, and shootout runs inside the Incus container `nelibc-writ` on bak
+Never compile or run tests on the workstation. Run manual builds, smokes,
+diffs and shootouts inside the Incus container `nelibc-writ` on bak
 (Debian 12; Nelua `dabbd9ef` at `/opt/nelua-dabbd9ef/nelua`, Zig 0.17.0 at
 `/opt/zig/zig`, GCC 12.2, TinyCC 0.9.27, musl-gcc, Bend 2.0.39 at
 `/opt/bend-2.0.39/bend/bin/bend`). The checkout is `/work/nelibc`, a clone of
@@ -30,9 +30,20 @@ Debian's packaged TinyCC 0.9.27 cannot build the TinyCC profile (see the
 quickstart); `TCC=` must point at a mob-branch build. Until one is installed
 in the container, `*-tcc` targets are unrun.
 
-CI (`.github/workflows/host.yml`) runs on the self-hosted bak runner and
-covers the host profile plus the standalone and freestanding Zig smokes only.
-The full matrix is a manual gate.
+CI (`.github/workflows/host.yml`) runs as an unprivileged user in a dedicated
+Fedora guest on the Fedora host. The job requires the `fedora` and
+`nelibc-host` runner labels, the pinned Nelua, Zig and Bend paths above, GCC,
+and `tzdata-legacy` for the standalone timezone smoke. It covers the host
+profile, Bend, standalone and freestanding Zig smokes, and the generated-C
+snapshot. Run the full matrix in the manual gate.
+
+The runner admits the repository owner and any additional trusted
+collaborators named in the repository variable `NELIBC_CI_TRUSTED_ACTORS`
+(a JSON array of GitHub logins). Both the original actor and the person
+requesting a re-run must be admitted. Pull requests must come from a branch
+in this repository, and their author must also be an admitted owner, member,
+or collaborator.
+Keep fork pull-request workflows disabled in the private repository settings.
 
 ## The gate
 
