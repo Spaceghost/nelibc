@@ -195,23 +195,23 @@ static int explicit_bzero_checks(void) {
 
 static int long_memcmp_checks(void) {
   static const size_t lengths[] = {
-      127, 128, 129, 255, 256, 257, 4095, 4096, 4097, 32768, 65535, 65536};
-  static const size_t offsets[] = {0, 1, 7, 15};
+      127, 128, 129, 255, 256, 257, 511, 512, 513, 4095, 4096, 4097, 32767, 32768, 65535, 65536};
+  const size_t alignments[][2] = {{0, 0}, {1, 1}, {7, 7}, {15, 15}, {1, 15}, {15, 1}};
 
-  for (size_t oi = 0; oi < sizeof offsets / sizeof offsets[0]; ++oi) {
-    size_t offset = offsets[oi];
-    for (size_t i = 0; i < sizeof long_left; ++i) {
-      long_left[i] = (unsigned char)(i * 73u + i / 11u + offset * 19u);
-      long_right[i] = long_left[i];
+  for (size_t oi = 0; oi < sizeof alignments / sizeof alignments[0]; ++oi) {
+    size_t offset = alignments[oi][0];
+    unsigned char *a = long_left + offset;
+    unsigned char *b = long_right + alignments[oi][1];
+    for (size_t i = 0; i < lengths[sizeof lengths / sizeof lengths[0] - 1]; ++i) {
+      a[i] = (unsigned char)(i * 73u + i / 11u + offset * 19u);
+      b[i] = a[i];
     }
     for (size_t li = 0; li < sizeof lengths / sizeof lengths[0]; ++li) {
       size_t size = lengths[li];
-      const unsigned char *a = long_left + offset;
-      unsigned char *b = long_right + offset;
       if (memcmp(a, b, size) != 0) return fail("long memcmp equal", offset, size);
 
       size_t positions[] = {0, 1, 15, 16, 31, 32, 63, 64, 127, 128,
-                            255, 256, 4095, 4096, size / 2, size - 1};
+                            255, 256, 287, 288, 511, 512, 4095, 4096, size / 2, size - 1};
       for (size_t pi = 0; pi < sizeof positions / sizeof positions[0]; ++pi) {
         size_t position = positions[pi];
         if (position >= size) continue;

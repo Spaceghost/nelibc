@@ -1572,17 +1572,17 @@ nelibc_x86_64_sse_memcmp:
 #ifndef NELIBC_DISABLE_AVX2
   cmpq $32, %rdx
   jb .Lmemcmp_vector128
-  cmpb $0, .Lmemcmp_avx2_state(%rip)
-  je .Lmemcmp_detect_avx2
   cmpb $2, .Lmemcmp_avx2_state(%rip)
-  je .Lmemcmp_avx2_cached
-  jmp .Lmemcmp_vector128
+  jne .Lmemcmp_avx2_uncached
 .Lmemcmp_avx2_cached:
   cmpq $64, %rdx
   jb .Lmemcmp_avx2_short
   cmpq $256, %rdx
   jb .Lmemcmp_avx2_medium
   jmp .Lmemcmp_avx2_start
+.Lmemcmp_avx2_uncached:
+  cmpb $0, .Lmemcmp_avx2_state(%rip)
+  jne .Lmemcmp_vector128
 .Lmemcmp_detect_avx2:
   pushq %rbx
   pushq %rdx
@@ -1610,11 +1610,7 @@ nelibc_x86_64_sse_memcmp:
   movb $2, .Lmemcmp_avx2_state(%rip)
   popq %rdx
   popq %rbx
-  cmpq $64, %rdx
-  jb .Lmemcmp_avx2_short
-  cmpq $256, %rdx
-  jb .Lmemcmp_avx2_medium
-  jmp .Lmemcmp_avx2_start
+  jmp .Lmemcmp_avx2_cached
 .Lmemcmp_avx2_unavailable:
   movb $1, .Lmemcmp_avx2_state(%rip)
   popq %rdx
@@ -1960,26 +1956,28 @@ nelibc_x86_64_sse_memcmp:
   cmpq $32768, %rdx
   jae .Lmemcmp_avx2_loop128
   jmp .Lmemcmp_avx2_loop256
+# Advance both bases per block so the AVX2 memory operands need only a
+# displacement. R8 stays zero for the shared mismatch and remainder paths.
 .Lmemcmp_avx2_loop256:
-  vmovdqu 0(%rdi,%r8), %ymm1
-  vpcmpeqb 0(%rsi,%r8), %ymm1, %ymm1
+  vmovdqu 0(%rdi), %ymm1
+  vpcmpeqb 0(%rsi), %ymm1, %ymm1
   vpmovmskb %ymm1, %eax
   cmpl $-1, %eax
   jne .Lmemcmp_avx2_diff
-  vmovdqu 32(%rdi,%r8), %ymm2
-  vpcmpeqb 32(%rsi,%r8), %ymm2, %ymm2
-  vmovdqu 64(%rdi,%r8), %ymm3
-  vpcmpeqb 64(%rsi,%r8), %ymm3, %ymm3
-  vmovdqu 96(%rdi,%r8), %ymm4
-  vpcmpeqb 96(%rsi,%r8), %ymm4, %ymm4
-  vmovdqu 128(%rdi,%r8), %ymm5
-  vpcmpeqb 128(%rsi,%r8), %ymm5, %ymm5
-  vmovdqu 160(%rdi,%r8), %ymm6
-  vpcmpeqb 160(%rsi,%r8), %ymm6, %ymm6
-  vmovdqu 192(%rdi,%r8), %ymm7
-  vpcmpeqb 192(%rsi,%r8), %ymm7, %ymm7
-  vmovdqu 224(%rdi,%r8), %ymm8
-  vpcmpeqb 224(%rsi,%r8), %ymm8, %ymm8
+  vmovdqu 32(%rdi), %ymm2
+  vpcmpeqb 32(%rsi), %ymm2, %ymm2
+  vmovdqu 64(%rdi), %ymm3
+  vpcmpeqb 64(%rsi), %ymm3, %ymm3
+  vmovdqu 96(%rdi), %ymm4
+  vpcmpeqb 96(%rsi), %ymm4, %ymm4
+  vmovdqu 128(%rdi), %ymm5
+  vpcmpeqb 128(%rsi), %ymm5, %ymm5
+  vmovdqu 160(%rdi), %ymm6
+  vpcmpeqb 160(%rsi), %ymm6, %ymm6
+  vmovdqu 192(%rdi), %ymm7
+  vpcmpeqb 192(%rsi), %ymm7, %ymm7
+  vmovdqu 224(%rdi), %ymm8
+  vpcmpeqb 224(%rsi), %ymm8, %ymm8
   vpand %ymm3, %ymm2, %ymm2
   vpand %ymm4, %ymm2, %ymm2
   vpand %ymm5, %ymm2, %ymm2
@@ -1989,10 +1987,13 @@ nelibc_x86_64_sse_memcmp:
   vpmovmskb %ymm2, %eax
   cmpl $-1, %eax
   jne .Lmemcmp_avx2_mismatch_tail256
-  addq $256, %r8
+  addq $256, %rdi
+  addq $256, %rsi
   subq $256, %rdx
   cmpq $256, %rdx
   jae .Lmemcmp_avx2_loop256
+  testl %edx, %edx
+  jz .Lmemcmp_avx2_short_equal
   vzeroupper
   jmp .Lmemcmp_vector128
 .Lmemcmp_avx2_loop128:
