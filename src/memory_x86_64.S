@@ -474,8 +474,40 @@ memcpy:
 
 .globl nelibc_x86_64_sse_strlen
 .type nelibc_x86_64_sse_strlen,@function
+.p2align 5
 nelibc_x86_64_sse_strlen:
   movq %rdi, %rsi
+#ifndef NELIBC_DISABLE_AVX2
+  cmpb $2, .Lmemscan_avx2_state(%rip)
+  jb .Lstrlen_sse_start
+  movl %edi, %eax
+  andl $4095, %eax
+  /* Scan the first four vectors directly when all their bytes share
+   * the starting page. The SSE entry handles starts near a page end. */
+  cmpl $(4096-128), %eax
+  ja .Lstrlen_sse_start
+  vpxor %ymm0, %ymm0, %ymm0
+  .irp pos,0,32,64,96
+    vpcmpeqb \pos(%rdi), %ymm0, %ymm1
+    vpmovmskb %ymm1, %eax
+    testl %eax, %eax
+    jnz .Lstrlen_short_found\pos
+  .endr
+  /* Overlap the inspected prefix to align the next full group. */
+  addq $128, %rdi
+  andq $-128, %rdi
+  jmp .Lstrlen_avx_loop
+  .irp pos,0,32,64,96
+.Lstrlen_short_found\pos:
+    bsfl %eax, %eax
+    .if \pos
+      addl $\pos, %eax
+    .endif
+    vzeroupper
+    ret
+  .endr
+.Lstrlen_sse_start:
+#endif
   pxor %xmm0, %xmm0
 .Lstrlen_align:
   testq $15, %rdi
