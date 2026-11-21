@@ -436,43 +436,62 @@ local function strstr(haystack: *const [0]cchar, needle: *const [0]cchar): *ccha
   if needle_len < 64 then
     local h: *[0]cchar = (@*[0]cchar)(haystack)
     local last_start: csize = haystack_len - needle_len
-    local sample_len: csize = haystack_len
-    if sample_len > 16 then sample_len = 16 end
-    local sample_hits: csize = 0
-    local sample: csize = 0
-    while sample < sample_len do
-      if h[sample] == needle[0] then sample_hits = sample_hits + 1 end
-      sample = sample + 1
+    local last_byte: csize = needle_len - 1
+    if last_start < 16 then
+      -- A short candidate range costs less to verify directly than to sample.
+      for start: csize = 0, last_start do
+        if h[start + last_byte] == needle[last_byte] then
+          local j: csize = 0
+          while j < last_byte and h[start + j] == needle[j] do j = j + 1 end
+          if j == last_byte then return &h[start] end
+        end
+      end
+      return nilptr
     end
-    if sample_hits > 2 then
+    local first_hits: csize = 0
+    for sample: csize = 0, < 16 do
+      if h[sample] == needle[0] then first_hits = first_hits + 1 end
+    end
+    local anchor: csize = 0
+    if first_hits > 2 then
       if needle_len >= 8 then
         return (@*cchar)(memmem(haystack, haystack_len, needle, needle_len))
       end
-      local start: csize = 0
-      while start <= last_start do
-        local j: csize = 0
-        while j < needle_len and h[start + j] == needle[j] do j = j + 1 end
-        if j == needle_len then return &h[start] end
-        start = start + 1
+      -- A frequent initial byte makes a poor search key. Try the last
+      -- differing byte, keeping a direct scan when neither end is selective.
+      anchor = last_byte
+      while anchor > 0 and needle[anchor] == needle[0] do anchor = anchor - 1 end
+      local anchor_hits: csize = 0
+      if anchor > 0 then
+        for sample: csize = 0, < 16 do
+          if h[sample] == needle[anchor] then anchor_hits = anchor_hits + 1 end
+        end
       end
-      return nilptr
+      if anchor == 0 or anchor_hits >= first_hits then
+        local start: csize = 0
+        while start <= last_start do
+          local j: csize = 0
+          while j < needle_len and h[start + j] == needle[j] do j = j + 1 end
+          if j == needle_len then return &h[start] end
+          start = start + 1
+        end
+        return nilptr
+      end
     end
     local position: csize = 0
     while position <= last_start do
       ## if ccinfo.is_x86_64 then
-      local candidate: pointer = nelibc_x86_64_sse_memchr(&h[position], (@cint)(needle[0]), last_start - position + 1)
-      ## else
-      local candidate: pointer = nilptr
-      local scan: csize = position
-      while scan <= last_start and h[scan] ~= needle[0] do scan = scan + 1 end
-      if scan <= last_start then candidate = &h[scan] end
-      ## end
+      local candidate: pointer = nelibc_x86_64_sse_memchr(&h[position + anchor], (@cint)(needle[anchor]), last_start - position + 1)
       if candidate == nilptr then return nilptr end
-      local bytes: *[0]cchar = (@*[0]cchar)(candidate)
-      local j: csize = 1
-      while j < needle_len and bytes[j] == needle[j] do j = j + 1 end
-      if j == needle_len then return (@*cchar)(candidate) end
-      position = ((@csize)((@usize)(candidate) - (@usize)(haystack))) + 1
+      position = (@csize)((@usize)(candidate) - (@usize)(haystack)) - anchor
+      ## else
+      while position <= last_start and h[position + anchor] ~= needle[anchor] do position = position + 1 end
+      if position > last_start then return nilptr end
+      ## end
+      local j: csize = 0
+      while j < needle_len and h[position + j] == needle[j] do j = j + 1 end
+      if j == needle_len then return &h[position] end
+      position = position + 1
     end
     return nilptr
   end

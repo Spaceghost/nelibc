@@ -97,6 +97,27 @@ static int page_boundary_checks(strstr_fn volatile fn) {
       return 1;
     }
   }
+  /* Exercise first, interior and trailing search keys at every short length.
+     The terminator sits at the guard page, including after the last full match. */
+  static const char *const needles[] = {"a", "aa", "aab", "abaa", "aaaaaz", "aaaaaa", "a\xff" "aa"};
+  for (size_t length = 0; length < 80; ++length) {
+    char *h = page + page_size - length - 1;
+    h[length] = 0;
+    for (size_t k = 0; k < sizeof needles / sizeof needles[0]; ++k) {
+      const char *needle = needles[k];
+      size_t width = strlen(needle);
+      for (size_t start = 0; start <= length; ++start) {
+        memset(h, 'a', length);
+        if (width <= length - start) memcpy(h + start, needle, width);
+        if (width <= length / 2) memcpy(h + length - width, needle, width);
+        if (fn(h, needle) != reference_strstr(h, needle)) {
+          fprintf(stderr, "short-needle boundary mismatch length=%zu needle=%zu start=%zu\n", length, k, start);
+          munmap(mapping, page_size * 3);
+          return 1;
+        }
+      }
+    }
+  }
   munmap(mapping, page_size * 3);
   return 0;
 }
