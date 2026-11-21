@@ -1009,6 +1009,11 @@ local function memchr(s: *const void, value: cint, n: csize): pointer <cexport, 
   local target: byte = (@byte)(value)
   local i: csize = 0
   while n - i >= 8 do
+    ## if ccinfo.is_x86_64 and ccinfo.is_clang then
+    -- A match can end the search before the requested range reaches the
+    -- next page. Use the ordered tail if the mask would read across it.
+    if ((@usize)(&bytes[i]) & 4095) > 4088 then break end
+    ## end
     ## if ccinfo.is_clang then
     local matches: cuint = 0
     if bytes[i] == target then matches = matches | 1_cuint end
@@ -1040,6 +1045,11 @@ local function memchr(s: *const void, value: cint, n: csize): pointer <cexport, 
     if bytes[i + 7] == target then return &bytes[i + 7] end
     ## end
     i = i + 8
+    ## if ccinfo.is_x86_64 and ccinfo.is_gcc and not ccinfo.is_clang and require('nelua.ccompiler').get_cc_defines().__COSMOPOLITAN__ then
+    -- The x86 dispatch leaves at most one group here. Cosmopolitan GCC
+    -- otherwise generates a second loop test on the short path.
+    break
+    ## end
   end
   while i < n do
     if bytes[i] == target then return &bytes[i] end

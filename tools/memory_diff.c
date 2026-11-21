@@ -386,6 +386,52 @@ static int guard_page_explicit_bzero_checks(size_t page_size) {
   return 0;
 }
 
+static int guard_page_short_memchr_checks(unsigned char *page, size_t page_size,
+                                         const void *protected_page) {
+  static const int needles[] = {0x5A, 0x15A, -166};
+
+  /* These slices end exactly at PROT_NONE. A full 16-byte load from any of
+     them would cross the boundary even though the requested range is valid. */
+  for (size_t size = 8; size <= 15; ++size) {
+    unsigned char *src = page + page_size - size;
+    for (size_t i = 0; i < size; ++i) src[i] = 0x11;
+    src[1] = 0x5A;
+    src[size - 1] = 0x5A;
+
+    for (size_t i = 0; i < sizeof needles / sizeof needles[0]; ++i) {
+      if (memchr(src, needles[i], size) != src + 1) {
+        return fail("guard short memchr first narrowed match", i, size);
+      }
+    }
+    if (memchr(src, 0x15B, size) != NULL) {
+      return fail("guard short memchr absent narrowed needle", 0, size);
+    }
+  }
+
+  /* A match before the guard must stop the search without touching the
+     inaccessible suffix, even when n extends across the page boundary.
+     Keep the readable prefix shorter than the 8-byte match-mask path. */
+  for (size_t readable = 1; readable <= 7; ++readable) {
+    unsigned char *src = page + page_size - readable;
+    for (size_t i = 0; i < readable; ++i) src[i] = 0x11;
+    src[readable - 1] = 0x5A;
+
+    for (size_t size = 8; size <= 15; ++size) {
+      for (size_t i = 0; i < sizeof needles / sizeof needles[0]; ++i) {
+        if (memchr(src, needles[i], size) != src + readable - 1) {
+          return fail("guard short memchr early match before protected suffix", readable, size);
+        }
+      }
+    }
+  }
+
+  /* n == 0 must not touch even an inaccessible address. */
+  if (memchr(protected_page, 0x5A, 0) != NULL) {
+    return fail("guard short memchr zero length", 0, 0);
+  }
+  return 0;
+}
+
 static int guard_page_checks(void) {
   long page_result = sysconf(_SC_PAGESIZE);
   if (page_result <= 0) return fail("guard page size", 0, 0);
@@ -399,6 +445,11 @@ static int guard_page_checks(void) {
     if (source_mapping != MAP_FAILED) munmap(source_mapping, page_size * 3);
     if (destination_mapping != MAP_FAILED) munmap(destination_mapping, page_size * 3);
     return fail("guard page setup", 0, 0);
+  }
+  if (guard_page_short_memchr_checks(source_page, page_size, source_mapping) != 0) {
+    munmap(source_mapping, page_size * 3);
+    munmap(destination_mapping, page_size * 3);
+    return 1;
   }
 
   unsigned char compare[512];
