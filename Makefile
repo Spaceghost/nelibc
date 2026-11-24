@@ -475,10 +475,14 @@ smoke-startup-aarch64-gcc: $(OUT)/startup-aarch64-gcc
 		}
 	@echo 'Nelibc AArch64 standalone startup and exit passed'
 
+$(OUT)/setjmp-aarch64.o: src/setjmp_aarch64.S | $(OUT)
+	gcc -c $< -o $@
+
 $(OUT)/signal-aarch64-gcc: tools/signal_aarch64_smoke.c $(OUT)/start-linux-aarch64.o \
 	$(OUT)/boot-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o \
 	$(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o \
-	$(OUT)/unistd-aarch64-gcc.o $(OUT)/errno-aarch64-gcc.o include/signal.h
+	$(OUT)/unistd-aarch64-gcc.o $(OUT)/errno-aarch64-gcc.o $(OUT)/setjmp-aarch64.o \
+	include/signal.h include/setjmp.h
 	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
 		-fno-pie -no-pie -DNELIBC_STANDALONE -Iinclude -nostdlib -static \
 		-Wl,-e,_start,--gc-sections $(filter-out %.h,$^) -o $@

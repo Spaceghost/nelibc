@@ -432,7 +432,9 @@ and the remaining architecture-specific routines.
 Run `make smoke-signal-aarch64-gcc NELUA=/path/to/nelua` to link the Nelibc
 signal functions and thread-local errno into a static test. It checks public
 `sigaction`, `sigprocmask` and `raise`, including delivery with `SA_SIGINFO`,
-return from the handler and restoration of the previous action.
+return from the handler and restoration of the previous action. It also
+checks the AArch64 `setjmp` family, including saved registers and jumping
+out of a signal handler with and without restoring the blocked signal mask.
 
 ## Useful checks
 

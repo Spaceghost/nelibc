@@ -2,8 +2,7 @@
 #define NELIBC_SETJMP_WRAPPER_H
 
 /* Hybrid builds use the host's <setjmp.h>. The standalone and host profiles
- * provide setjmp, _setjmp, longjmp, _longjmp, sigsetjmp and siglongjmp from
- * src/setjmp_x86_64.S, with musl's jmp_buf layout. */
+ * provide the setjmp family from architecture-specific assembly. */
 #ifdef NELIBC_STANDALONE
 
 #ifdef __cplusplus
@@ -18,7 +17,11 @@ extern "C" {
 #define NELIBC_SETJMP_NORETURN
 #endif
 
+#if defined(__aarch64__)
+typedef unsigned long __jmp_buf[22];
+#else
 typedef unsigned long __jmp_buf[8];
+#endif
 
 typedef struct __jmp_buf_tag {
   __jmp_buf __jb;
