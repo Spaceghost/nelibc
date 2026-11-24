@@ -416,8 +416,10 @@ The dispatcher uses syscall numbers from Linux AArch64 headers. It adapts
 legacy operations such as `open`, `poll` and `fork` to their AArch64
 equivalents. Callers use AArch64 kernel flag values. File metadata
 operations translate the kernel result into Nelibc’s existing `struct stat`
-layout. Operations with pending ABI work, including signal actions and
-epoll event records, return `-ENOSYS`. The standalone library still needs those ABI
+layout. Epoll uses the native AArch64 event layout. The smoke checks two
+event records through `epoll_wait` and `epoll_pwait`, and reports when
+`epoll_pwait2` returns `ENOSYS` in the test environment. Operations with
+pending ABI work, including signal actions, return `-ENOSYS`. The standalone library still needs those ABI
 adapters, integration with the public pthread implementation, and integration
 with the standalone exit path.
 

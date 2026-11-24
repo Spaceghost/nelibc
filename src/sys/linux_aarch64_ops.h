@@ -404,6 +404,9 @@ static const unsigned short linux_aarch64_numbers[NELIBC_SYS_COUNT] = {
 #ifdef __NR_exit_group
   [NELIBC_SYS_EXIT_GROUP] = __NR_exit_group + 1,
 #endif
+#ifdef __NR_epoll_ctl
+  [NELIBC_SYS_EPOLL_CTL] = __NR_epoll_ctl + 1,
+#endif
 #ifdef __NR_tgkill
   [NELIBC_SYS_TGKILL] = __NR_tgkill + 1,
 #endif
@@ -487,6 +490,9 @@ static const unsigned short linux_aarch64_numbers[NELIBC_SYS_COUNT] = {
 #endif
 #ifdef __NR_utimensat
   [NELIBC_SYS_UTIMENSAT] = __NR_utimensat + 1,
+#endif
+#ifdef __NR_epoll_pwait
+  [NELIBC_SYS_EPOLL_PWAIT] = __NR_epoll_pwait + 1,
 #endif
 #ifdef __NR_timerfd_create
   [NELIBC_SYS_TIMERFD_CREATE] = __NR_timerfd_create + 1,
@@ -583,6 +589,9 @@ static const unsigned short linux_aarch64_numbers[NELIBC_SYS_COUNT] = {
 #endif
 #ifdef __NR_faccessat2
   [NELIBC_SYS_FACCESSAT2] = __NR_faccessat2 + 1,
+#endif
+#ifdef __NR_epoll_pwait2
+  [NELIBC_SYS_EPOLL_PWAIT2] = __NR_epoll_pwait2 + 1,
 #endif
 #ifdef __NR_mount_setattr
   [NELIBC_SYS_MOUNT_SETATTR] = __NR_mount_setattr + 1,

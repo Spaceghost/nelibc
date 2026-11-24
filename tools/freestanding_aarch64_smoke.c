@@ -5,11 +5,46 @@
 #include <linux/mman.h>
 #include <poll.h>
 #include <sys/stat.h>
+#include <sys/epoll.h>
 
 #include "../include/nelibc_sys.h"
 #include "../src/sys/thread_linux_aarch64.h"
 
 extern char **environ;
+
+static int check_epoll(int fd) {
+  _Static_assert(sizeof(struct epoll_event) == 16, "AArch64 epoll stride");
+  long ep = nelibc_sys3(NELIBC_SYS_EPOLL_CREATE1, 0, 0, 0);
+  long duplicate = nelibc_sys3(NELIBC_SYS_DUP, fd, 0, 0);
+  if (ep < 0 || duplicate < 0) return 0;
+  const uint64_t first = 0x100000002UL, second = 0x300000004UL;
+  struct epoll_event entry = {.events = EPOLLIN, .data.u64 = first};
+  if (nelibc_sys6(NELIBC_SYS_EPOLL_CTL, ep, EPOLL_CTL_ADD, fd,
+                  (unsigned long)&entry, 0, 0)) return 0;
+  entry.data.u64 = second;
+  if (nelibc_sys6(NELIBC_SYS_EPOLL_CTL, ep, EPOLL_CTL_ADD, duplicate,
+                  (unsigned long)&entry, 0, 0)) return 0;
+  struct epoll_event received[2];
+  if (nelibc_sys6(NELIBC_SYS_EPOLL_WAIT, ep, (unsigned long)received,
+                  2, 0, 0, 0) != 2) return 0;
+  uint64_t a = received[0].data.u64, b = received[1].data.u64;
+  if (!(received[0].events & EPOLLIN) || !(received[1].events & EPOLLIN) ||
+      !((a == first && b == second) || (a == second && b == first))) return 0;
+  if (nelibc_sys6(NELIBC_SYS_EPOLL_PWAIT, ep, (unsigned long)received,
+                  2, 0, 0, 0) != 2) return 0;
+  const struct __kernel_timespec timeout = {0};
+  long waited = nelibc_sys6(NELIBC_SYS_EPOLL_PWAIT2, ep,
+      (unsigned long)received, 2, (unsigned long)&timeout, 0, 0);
+  if (waited == -ENOSYS) {
+    static const char skipped[] = "epoll_pwait2 unavailable (ENOSYS)\n";
+    nelibc_sys3(NELIBC_SYS_WRITE, 1, (unsigned long)skipped, sizeof skipped - 1);
+  } else if (waited != 2) {
+    return 0;
+  }
+  return
+         !nelibc_sys3(NELIBC_SYS_CLOSE, duplicate, 0, 0) &&
+         !nelibc_sys3(NELIBC_SYS_CLOSE, ep, 0, 0);
+}
 
 #ifdef NELIBC_ARM_TEST_TLS
 static _Thread_local volatile unsigned long initialized = 0x1234;
@@ -142,13 +177,14 @@ int main(int argc, char **argv, char **envp) {
       nelibc_sys3(NELIBC_SYS_WRITE, pipe[1], (unsigned long)&value, 1) != 1 ||
       nelibc_sys3(NELIBC_SYS_POLL, (unsigned long)&ready, 1, 50) != 1 ||
       !(ready.revents & POLLIN)) return 11;
+  if (!check_epoll(pipe[0])) return 25;
   if (nelibc_sys3(NELIBC_SYS_DUP2, pipe[0], pipe[0], 0) != pipe[0] ||
       nelibc_sys3(NELIBC_SYS_DUP2, -1UL, -1UL, 0) != -EBADF ||
       nelibc_sys3(NELIBC_SYS_DUP2, pipe[0], pipe[1], 0) != pipe[1]) return 12;
   if (nelibc_sys3(NELIBC_SYS_CLOSE, pipe[0], 0, 0) ||
       nelibc_sys3(NELIBC_SYS_CLOSE, pipe[1], 0, 0)) return 13;
   if (nelibc_sys3(NELIBC_SYS_COUNT, 0, 0, 0) != -ENOSYS ||
-      nelibc_sys3(NELIBC_SYS_EPOLL_WAIT, 0, 0, 0) != -ENOSYS) return 14;
+      nelibc_sys3(NELIBC_SYS_RT_SIGACTION, 0, 0, 0) != -ENOSYS) return 14;
   long child = nelibc_sys3(NELIBC_SYS_FORK, 0, 0, 0);
   if (child < 0) return 15;
   if (child == 0) return 42;

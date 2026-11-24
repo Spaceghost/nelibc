@@ -427,7 +427,7 @@ $(OUT)/linux-aarch64-ops.o: src/sys/linux_aarch64_ops.c src/sys/linux_aarch64_op
 
 $(OUT)/freestanding-aarch64-tls-gcc: private ARM_STARTUP_FIXTURE = -DNELIBC_ARM_TEST_TLS
 
-$(OUT)/freestanding-aarch64-gcc $(OUT)/freestanding-aarch64-tls-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/boot-linux-aarch64.o $(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o $(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o include/nelibc_sys.h src/sys/thread_linux_aarch64.h include/sys/stat.h
+$(OUT)/freestanding-aarch64-gcc $(OUT)/freestanding-aarch64-tls-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/boot-linux-aarch64.o $(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o $(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o include/nelibc_sys.h src/sys/thread_linux_aarch64.h include/sys/stat.h include/sys/epoll.h
 	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
 		-fno-pie -no-pie -ftls-model=local-exec -DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-e,_start \
 		$(ARM_STARTUP_FIXTURE) $(filter-out %.h,$^) -o $@

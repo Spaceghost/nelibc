@@ -18,6 +18,8 @@ typedef union epoll_data {
 /* TinyCC accepts #pragma pack but silently ignores GCC's packed attribute. */
 #pragma pack(push, 1)
 #define NELIBC_EPOLL_PACKED
+#elif defined(__aarch64__)
+#define NELIBC_EPOLL_PACKED
 #else
 #define NELIBC_EPOLL_PACKED __attribute__((__packed__))
 #endif

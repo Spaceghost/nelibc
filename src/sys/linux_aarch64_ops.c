@@ -53,6 +53,8 @@ long nelibc_sys6(unsigned long op, unsigned long a1, unsigned long a2,
       /* With no child stack and no sharing flags, clone duplicates the
        * calling process and both copies return through the same stack. */
       return nelibc_raw_syscall6(__NR_clone, SIGCHLD, 0, 0, 0, 0, 0);
+    case NELIBC_SYS_EPOLL_WAIT:
+      return nelibc_raw_syscall6(__NR_epoll_pwait, a1, a2, a3, a4, 0, 0);
     case NELIBC_SYS_POLL: {
       int milliseconds = (int)a3;
       struct __kernel_timespec timeout;
