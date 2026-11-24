@@ -411,9 +411,11 @@ $(OUT)/linux-aarch64-raw-syscall.o: src/sys/linux_aarch64.S | $(OUT)
 $(OUT)/start-linux-aarch64.o: src/sys/start_linux_aarch64.S | $(OUT)
 	gcc -c $< -o $@
 
-$(OUT)/boot-linux-aarch64.o: src/sys/boot_linux_aarch64.c src/sys/thread_linux_aarch64.h | $(OUT)
+$(OUT)/boot-linux-aarch64-standalone.o: private ARM_BOOT_FLAGS = -DNELIBC_STANDALONE
+
+$(OUT)/boot-linux-aarch64.o $(OUT)/boot-linux-aarch64-standalone.o: src/sys/boot_linux_aarch64.c src/sys/thread_linux_aarch64.h | $(OUT)
 	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
-		-fno-tree-loop-distribute-patterns -fno-pie -c $< -o $@
+		-fno-tree-loop-distribute-patterns -fno-pie $(ARM_BOOT_FLAGS) -c $< -o $@
 
 $(OUT)/clone-linux-aarch64.o: src/sys/clone_linux_aarch64.S | $(OUT)
 	gcc -c $< -o $@
@@ -427,7 +429,7 @@ $(OUT)/linux-aarch64-ops.o: src/sys/linux_aarch64_ops.c src/sys/linux_aarch64_op
 
 $(OUT)/freestanding-aarch64-tls-gcc: private ARM_STARTUP_FIXTURE = -DNELIBC_ARM_TEST_TLS
 
-$(OUT)/freestanding-aarch64-gcc $(OUT)/freestanding-aarch64-tls-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/boot-linux-aarch64.o $(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o $(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o include/nelibc_sys.h src/sys/thread_linux_aarch64.h include/sys/stat.h include/sys/epoll.h
+$(OUT)/freestanding-aarch64-gcc $(OUT)/freestanding-aarch64-tls-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/boot-linux-aarch64.o $(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o $(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o include/nelibc_sys.h src/sys/thread_linux_aarch64.h include/sys/stat.h include/sys/epoll.h include/sys/select.h include/sys/time.h
 	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
 		-fno-pie -no-pie -ftls-model=local-exec -DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-e,_start \
 		$(ARM_STARTUP_FIXTURE) $(filter-out %.h,$^) -o $@
@@ -443,15 +445,35 @@ smoke-freestanding-aarch64-gcc: $(OUT)/freestanding-aarch64-gcc $(OUT)/freestand
 
 .PHONY: smoke-signal-aarch64-gcc
 
-AARCH64_SIGNAL_NELUA_FLAGS = -U_FORTIFY_SOURCE -fno-builtin -ffreestanding \
+AARCH64_NELUA_FLAGS = -U_FORTIFY_SOURCE -fno-builtin -ffreestanding \
 	-fno-stack-protector -fno-tree-loop-distribute-patterns -ffunction-sections \
 	-fdata-sections -fno-pie -ftls-model=local-exec
 
 $(OUT)/unistd-aarch64-gcc.o: src/unistd.nelua Makefile | $(OUT)
-	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_SIGNAL_NELUA_FLAGS)' -o $@ $<
+	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_NELUA_FLAGS)' -o $@ $<
 
 $(OUT)/errno-aarch64-gcc.o: src/errno/standalone.nelua Makefile | $(OUT)
-	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_SIGNAL_NELUA_FLAGS)' -o $@ $<
+	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_NELUA_FLAGS)' -o $@ $<
+
+$(OUT)/stdlib-exit-aarch64-gcc.o: src/stdlib_exit_standalone.nelua Makefile | $(OUT)
+	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_NELUA_FLAGS)' -o $@ $<
+
+$(OUT)/startup-aarch64-gcc: tools/startup_aarch64_smoke.c $(OUT)/start-linux-aarch64.o \
+	$(OUT)/boot-linux-aarch64-standalone.o $(OUT)/linux-aarch64-raw-syscall.o \
+	$(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o \
+	$(OUT)/unistd-aarch64-gcc.o $(OUT)/stdlib-exit-aarch64-gcc.o include/nelibc_sys.h
+	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
+		-fno-pie -no-pie -DNELIBC_STANDALONE -Iinclude -nostdlib -static \
+		-Wl,-e,_start,--gc-sections $(filter-out %.h,$^) -o $@
+
+.PHONY: smoke-startup-aarch64-gcc
+smoke-startup-aarch64-gcc: $(OUT)/startup-aarch64-gcc
+	@undefined=$$($(NM) -u $<) && test -z "$$undefined"
+	@status=0; output=$$($<) || status=$$?; \
+		test "$$status" -eq 42 && test "$$output" = 'SICMBAYXF' || { \
+			printf 'Startup order: %s, exit status: %s\n' "$$output" "$$status" >&2; exit 1; \
+		}
+	@echo 'Nelibc AArch64 standalone startup and exit passed'
 
 $(OUT)/signal-aarch64-gcc: tools/signal_aarch64_smoke.c $(OUT)/start-linux-aarch64.o \
 	$(OUT)/boot-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o \

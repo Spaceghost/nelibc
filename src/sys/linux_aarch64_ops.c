@@ -2,8 +2,9 @@
 #include <asm/errno.h>
 #include <asm/unistd.h>
 #include <linux/fcntl.h>
-#include <linux/signal.h>
 #include <linux/time_types.h>
+#include <signal.h>
+#include <sys/time.h>
 
 #include "../../include/nelibc_sys.h"
 #include "linux_aarch64_ops.h"
@@ -55,6 +56,24 @@ long nelibc_sys6(unsigned long op, unsigned long a1, unsigned long a2,
       return nelibc_raw_syscall6(__NR_clone, SIGCHLD, 0, 0, 0, 0, 0);
     case NELIBC_SYS_EPOLL_WAIT:
       return nelibc_raw_syscall6(__NR_epoll_pwait, a1, a2, a3, a4, 0, 0);
+    case NELIBC_SYS_SELECT: {
+      struct timeval *requested = (void *)a5;
+      if (!requested)
+        return nelibc_raw_syscall6(__NR_pselect6, a1, a2, a3, a4, 0, 0);
+      struct __kernel_timespec timeout;
+      long seconds = requested->tv_sec;
+      long micros = requested->tv_usec;
+      if (seconds < 0 || micros < 0 ||
+          __builtin_add_overflow(seconds, micros / 1000000L, &timeout.tv_sec))
+        return -EINVAL;
+      timeout.tv_nsec = (micros % 1000000L) * 1000L;
+      long result = nelibc_raw_syscall6(__NR_pselect6, a1, a2, a3, a4,
+                                      (unsigned long)&timeout, 0);
+      /* The raw syscall reports the unslept time, including on interruption. */
+      requested->tv_sec = timeout.tv_sec;
+      requested->tv_usec = timeout.tv_nsec / 1000L;
+      return result;
+    }
     case NELIBC_SYS_POLL: {
       int milliseconds = (int)a3;
       struct __kernel_timespec timeout;

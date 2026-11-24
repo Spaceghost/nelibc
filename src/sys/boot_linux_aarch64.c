@@ -14,6 +14,19 @@ extern init_fn __preinit_array_start[] __attribute__((weak));
 extern init_fn __preinit_array_end[] __attribute__((weak));
 extern init_fn __init_array_start[] __attribute__((weak));
 extern init_fn __init_array_end[] __attribute__((weak));
+#ifdef NELIBC_STANDALONE
+typedef void (*fini_fn)(void);
+extern fini_fn __fini_array_start[] __attribute__((weak));
+extern fini_fn __fini_array_end[] __attribute__((weak));
+extern fini_fn nelibc_exit_fini_hook;
+extern void nelibc_stdio_init(void);
+extern _Noreturn void exit(int);
+
+static void run_fini_array(void) {
+  fini_fn *fn = __fini_array_end;
+  while (fn != __fini_array_start) (*--fn)();
+}
+#endif
 extern long nelibc_raw_syscall6(unsigned long, unsigned long, unsigned long,
                                 unsigned long, unsigned long, unsigned long,
                                 unsigned long);
@@ -83,9 +96,18 @@ int nelibc_boot_linux_aarch64(int argc, char **argv, char **envp) {
       nelibc_aarch64_allocate_tls(&tls)) return 127;
   __asm__ volatile("msr tpidr_el0, %0" : : "r"(tls.tp) : "memory");
 
+#ifdef NELIBC_STANDALONE
+  nelibc_stdio_init();
+  nelibc_exit_fini_hook = run_fini_array;
+#endif
   for (init_fn *fn = __preinit_array_start; fn != __preinit_array_end; ++fn)
     (*fn)(argc, argv, envp);
   for (init_fn *fn = __init_array_start; fn != __init_array_end; ++fn)
     (*fn)(argc, argv, envp);
-  return main(argc, argv, envp);
+  int result = main(argc, argv, envp);
+#ifdef NELIBC_STANDALONE
+  exit(result);
+#else
+  return result;
+#endif
 }

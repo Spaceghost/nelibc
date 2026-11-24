@@ -400,7 +400,7 @@ For an emulated build environment, see the
 
 ## AArch64 freestanding startup
 
-On Linux AArch64, run `make smoke-freestanding-aarch64-gcc`. It links a
+On Linux AArch64, run `make smoke-freestanding-aarch64-gcc`. It links
 two static executables without a C runtime, one with a TLS template and
 one without. The TLS fixture checks initialized storage, over-aligned
 zero-filled storage, and the order of preinit and init constructors. It
@@ -413,15 +413,21 @@ exit status. The metadata checks cover file size and type, symlink
 following, and failed lookups.
 
 The dispatcher uses syscall numbers from Linux AArch64 headers. It adapts
-legacy operations such as `open`, `poll` and `fork` to their AArch64
+legacy operations such as `open`, `poll`, `select` and `fork` to their AArch64
 equivalents. Callers use AArch64 kernel flag values. File metadata
 operations translate the kernel result into Nelibc’s existing `struct stat`
 layout. Epoll uses the native AArch64 event layout. The smoke checks two
 event records through `epoll_wait` and `epoll_pwait`, and reports when
-`epoll_pwait2` returns `ENOSYS` in the test environment. Operations with
-pending ABI work, such as the legacy `select` operation, return `-ENOSYS`. The standalone library still needs those ABI
-adapters, integration with the public pthread implementation, and integration
-with the standalone exit path.
+`epoll_pwait2` returns `ENOSYS` in the test environment. The `select`
+smoke checks descriptor readiness, timeout conversion and writeback, and
+rejection of a negative timeout.
+
+Run `make smoke-startup-aarch64-gcc NELUA=/path/to/nelua` to check the
+standalone startup and exit path. It links the real Nelibc exit routine
+and observes stdio initialization, preinit and init constructors, reverse
+order atexit handlers and destructors, and the final stdio flush call.
+The full standalone library still needs the public pthread implementation
+and the remaining architecture-specific routines.
 
 Run `make smoke-signal-aarch64-gcc NELUA=/path/to/nelua` to link the Nelibc
 signal functions and thread-local errno into a static test. It checks public

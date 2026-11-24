@@ -6,11 +6,34 @@
 #include <poll.h>
 #include <sys/stat.h>
 #include <sys/epoll.h>
+#include <sys/select.h>
 
 #include "../include/nelibc_sys.h"
 #include "../src/sys/thread_linux_aarch64.h"
 
 extern char **environ;
+
+static int check_select(int fd) {
+  fd_set readable;
+  if (fd < 0 || fd >= FD_SETSIZE) return 0;
+  FD_ZERO(&readable);
+  FD_SET(fd, &readable);
+  if (nelibc_sys6(NELIBC_SYS_SELECT, fd + 1, (unsigned long)&readable,
+                  0, 0, 0, 0) != 1 || !FD_ISSET(fd, &readable)) return 0;
+
+  struct timeval timeout = {.tv_sec = 0, .tv_usec = 1500000};
+  if (nelibc_sys6(NELIBC_SYS_SELECT, fd + 1, (unsigned long)&readable,
+                  0, 0, (unsigned long)&timeout, 0) != 1 ||
+      !FD_ISSET(fd, &readable) || timeout.tv_sec > 1 ||
+      timeout.tv_usec < 0 || timeout.tv_usec >= 1000000) return 0;
+  timeout = (struct timeval){.tv_usec = 1000};
+  if (nelibc_sys6(NELIBC_SYS_SELECT, 0, 0, 0, 0,
+                  (unsigned long)&timeout, 0) || timeout.tv_sec || timeout.tv_usec)
+    return 0;
+  timeout.tv_usec = -1;
+  return nelibc_sys6(NELIBC_SYS_SELECT, 0, 0, 0, 0,
+                     (unsigned long)&timeout, 0) == -EINVAL && timeout.tv_usec == -1;
+}
 
 static int check_epoll(int fd) {
   _Static_assert(sizeof(struct epoll_event) == 16, "AArch64 epoll stride");
@@ -178,13 +201,13 @@ int main(int argc, char **argv, char **envp) {
       nelibc_sys3(NELIBC_SYS_POLL, (unsigned long)&ready, 1, 50) != 1 ||
       !(ready.revents & POLLIN)) return 11;
   if (!check_epoll(pipe[0])) return 25;
+  if (!check_select(pipe[0])) return 26;
   if (nelibc_sys3(NELIBC_SYS_DUP2, pipe[0], pipe[0], 0) != pipe[0] ||
       nelibc_sys3(NELIBC_SYS_DUP2, -1UL, -1UL, 0) != -EBADF ||
       nelibc_sys3(NELIBC_SYS_DUP2, pipe[0], pipe[1], 0) != pipe[1]) return 12;
   if (nelibc_sys3(NELIBC_SYS_CLOSE, pipe[0], 0, 0) ||
       nelibc_sys3(NELIBC_SYS_CLOSE, pipe[1], 0, 0)) return 13;
-  if (nelibc_sys3(NELIBC_SYS_COUNT, 0, 0, 0) != -ENOSYS ||
-      nelibc_sys3(NELIBC_SYS_SELECT, 0, 0, 0) != -ENOSYS) return 14;
+  if (nelibc_sys3(NELIBC_SYS_COUNT, 0, 0, 0) != -ENOSYS) return 14;
   long child = nelibc_sys3(NELIBC_SYS_FORK, 0, 0, 0);
   if (child < 0) return 15;
   if (child == 0) return 42;
