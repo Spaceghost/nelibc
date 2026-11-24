@@ -1,0 +1,75 @@
+/* Static ET_EXEC startup for the initial AArch64 thread. */
+#include <asm/unistd.h>
+#include <elf.h>
+#include <linux/mman.h>
+#include <stdint.h>
+
+#define TCB_SIZE 16UL
+
+typedef void (*init_fn)(int, char **, char **);
+extern init_fn __preinit_array_start[] __attribute__((weak));
+extern init_fn __preinit_array_end[] __attribute__((weak));
+extern init_fn __init_array_start[] __attribute__((weak));
+extern init_fn __init_array_end[] __attribute__((weak));
+extern long nelibc_raw_syscall6(unsigned long, unsigned long, unsigned long,
+                                unsigned long, unsigned long, unsigned long,
+                                unsigned long);
+extern int main(int, char **, char **);
+char **environ;
+
+static int init_tls(const Elf64_auxv_t *auxv) {
+  const Elf64_Phdr *ph = 0;
+  unsigned long count = 0;
+  unsigned long entry_size = 0;
+  for (; auxv->a_type != AT_NULL; ++auxv) {
+    switch (auxv->a_type) {
+      case AT_PHDR: ph = (const Elf64_Phdr *)auxv->a_un.a_val; break;
+      case AT_PHNUM: count = auxv->a_un.a_val; break;
+      case AT_PHENT: entry_size = auxv->a_un.a_val; break;
+    }
+  }
+  if (!ph || !count || entry_size != sizeof *ph) return -1;
+  const Elf64_Phdr *tls = 0;
+  for (unsigned long i = 0; i < count; ++i) {
+    if (ph[i].p_type != PT_TLS) continue;
+    if (tls) return -1;
+    tls = &ph[i];
+  }
+
+  unsigned long align = tls && tls->p_align ? tls->p_align : 1;
+  unsigned long size = tls ? tls->p_memsz : 0;
+  unsigned long initialized = tls ? tls->p_filesz : 0;
+  uintptr_t address = tls ? tls->p_vaddr : 0;
+  if ((align & (align - 1)) || initialized > size) return -1;
+
+  /* Variant 1 puts the TLS image after a 16-byte TCB. Preserve the
+   * ELF template's alignment residue when computing the padding. */
+  unsigned long padding = (address - TCB_SIZE) & (align - 1);
+  if (align < TCB_SIZE) align = TCB_SIZE;
+  unsigned long overhead, allocation;
+  if (__builtin_add_overflow(TCB_SIZE + padding, align - 1, &overhead) ||
+      __builtin_add_overflow(overhead, size, &allocation)) return -1;
+  unsigned long mapping = nelibc_raw_syscall6(__NR_mmap, 0, allocation,
+      PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1UL, 0);
+  if (mapping >= -4095UL) return -1;
+  uintptr_t tp = (mapping + align - 1) & ~(align - 1);
+  unsigned char *image = (unsigned char *)(tp + TCB_SIZE + padding);
+  const unsigned char *template = (const unsigned char *)address;
+  /* Anonymous mappings arrive zero-filled, including the TCB and .tbss. */
+  for (unsigned long i = 0; i < initialized; ++i) image[i] = template[i];
+  __asm__ volatile("msr tpidr_el0, %0" : : "r"(tp) : "memory");
+  return 0;
+}
+
+int nelibc_boot_linux_aarch64(int argc, char **argv, char **envp) {
+  environ = envp;
+  char **end = envp;
+  while (*end) ++end;
+  if (init_tls((const Elf64_auxv_t *)(end + 1))) return 127;
+
+  for (init_fn *fn = __preinit_array_start; fn != __preinit_array_end; ++fn)
+    (*fn)(argc, argv, envp);
+  for (init_fn *fn = __init_array_start; fn != __init_array_end; ++fn)
+    (*fn)(argc, argv, envp);
+  return main(argc, argv, envp);
+}

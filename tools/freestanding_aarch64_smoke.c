@@ -5,12 +5,45 @@
 
 #include "../include/nelibc_sys.h"
 
+extern char **environ;
+
+#ifdef NELIBC_ARM_TEST_TLS
+static _Thread_local volatile unsigned long initialized = 0x1234;
+static _Alignas(128) _Thread_local volatile unsigned long zeroed;
+static volatile int stage;
+
+static void preinit(int argc, char **argv, char **envp) {
+  if (argc > 0 && argv[0] && envp == environ && initialized == 0x1234 &&
+      zeroed == 0 && ((unsigned long)&zeroed & 127) == 0) {
+    initialized = 0x5678;
+    stage = 1;
+  }
+}
+
+static void init(int argc, char **argv, char **envp) {
+  if (argc > 0 && argv[0] && envp == environ && stage == 1 &&
+      initialized == 0x5678 && zeroed == 0) {
+    zeroed = 42;
+    stage = 2;
+  }
+}
+
+static void (*const preinit_entry)(int, char **, char **)
+    __attribute__((section(".preinit_array"), used)) = preinit;
+static void (*const init_entry)(int, char **, char **)
+    __attribute__((section(".init_array"), used)) = init;
+#endif
+
 int main(int argc, char **argv, char **envp) {
   static const char env[] = "NELIBC_ARM_SMOKE=present";
   static const char ok[] = "Nelibc AArch64 startup and platform operations passed\n";
   static const unsigned long offset = 65536; /* aligned for all ARM64 page sizes */
   char value = 'N';
 
+  if (envp != environ) return 17;
+#ifdef NELIBC_ARM_TEST_TLS
+  if (stage != 2 || initialized != 0x5678 || zeroed != 42) return 18;
+#endif
   if (argc != 2 || argv[1][0] != 'a' || argv[1][1] || argv[2]) return 1;
   while (*envp) {
     unsigned long i = 0;
