@@ -563,30 +563,42 @@ int nelibc_thread_tid_load(const int *tid) {
   return __atomic_load_n(tid, __ATOMIC_ACQUIRE);
 }
 
+#ifdef __aarch64__
+#include "sys/thread_linux_aarch64.h"
+#endif
+
+static void **nelibc_thread_slots(void *tp) {
+#ifdef __aarch64__
+  return nelibc_aarch64_thread_slots(tp);
+#else
+  return tp;
+#endif
+}
+
 void *nelibc_thread_current_identity(void) {
   void *thread_pointer = __builtin_thread_pointer();
-  void *identity = ((void **)thread_pointer)[1];
+  void *identity = nelibc_thread_slots(thread_pointer)[1];
   return identity != NULL ? identity : thread_pointer;
 }
 
 void *nelibc_thread_current_pthread_context(void) {
   void *thread_pointer = __builtin_thread_pointer();
-  return ((void **)thread_pointer)[2];
+  return nelibc_thread_slots(thread_pointer)[2];
 }
 
 void nelibc_thread_set_pthread_context(void *context) {
   void *thread_pointer = __builtin_thread_pointer();
-  ((void **)thread_pointer)[2] = context;
+  nelibc_thread_slots(thread_pointer)[2] = context;
 }
 
 void *nelibc_thread_current_key_values(void) {
   void *thread_pointer = __builtin_thread_pointer();
-  return ((void **)thread_pointer)[4];
+  return nelibc_thread_slots(thread_pointer)[4];
 }
 
 void nelibc_thread_set_key_values(void *values) {
   void *thread_pointer = __builtin_thread_pointer();
-  ((void **)thread_pointer)[4] = values;
+  nelibc_thread_slots(thread_pointer)[4] = values;
 }
 
 int nelibc_thread_current_context_detached(void) {
@@ -599,12 +611,13 @@ int nelibc_thread_current_context_detached(void) {
     int lifecycle;
   } pthread_context_prefix;
   void **thread_pointer = __builtin_thread_pointer();
-  pthread_context_prefix *context = thread_pointer[2];
+  pthread_context_prefix *context = nelibc_thread_slots(thread_pointer)[2];
   if (context == NULL) return 0;
   int lifecycle = __atomic_load_n(&context->lifecycle, __ATOMIC_ACQUIRE);
   return lifecycle == 1 || lifecycle == 3 || lifecycle == 5 || lifecycle == 6;
 }
 
+#ifndef __aarch64__
 __attribute__((naked, noreturn))
 void nelibc_thread_detached_exit(void) {
   __asm__ volatile(
@@ -633,6 +646,8 @@ void nelibc_thread_detached_exit(void) {
       "syscall\n"
       "ud2\n");
 }
+
+#endif
 
 static int nelibc_standalone_ctype_utf8;
 static int nelibc_standalone_numeric_de;

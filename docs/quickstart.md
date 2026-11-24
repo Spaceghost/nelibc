@@ -426,8 +426,14 @@ Run `make smoke-startup-aarch64-gcc NELUA=/path/to/nelua` to check the
 standalone startup and exit path. It links the real Nelibc exit routine
 and observes stdio initialization, preinit and init constructors, reverse
 order atexit handlers and destructors, and the final stdio flush call.
-The full standalone library still needs the public pthread implementation
-and the remaining architecture-specific routines.
+
+Run `make smoke-pthread-aarch64-gcc NELUA=/path/to/nelua` to link the
+standalone pthread runtime into a static test. It exercises thread creation
+and join, isolated TLS and errno, thread-specific data destructors, detached
+threads, deferred cancellation, and allocations from multiple threads.
+The runtime uses the kernel's page size
+to align stacks and guard regions. The complete standalone archive still
+needs the remaining architecture-specific routines.
 
 Run `make smoke-signal-aarch64-gcc NELUA=/path/to/nelua` to link the Nelibc
 signal functions and thread-local errno into a static test. It checks public

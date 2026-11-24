@@ -491,6 +491,35 @@ smoke-signal-aarch64-gcc: $(OUT)/signal-aarch64-gcc
 	@undefined=$$($(NM) -u $<) && test -z "$$undefined"
 	$<
 
+AARCH64_PTHREAD_NELUA_OBJECTS := $(OUT)/thread-aarch64-gcc.o $(OUT)/alloc-aarch64-gcc.o
+AARCH64_PTHREAD_ADAPTERS := $(OUT)/environment_adapter-aarch64-gcc.o $(OUT)/credential_adapter-aarch64-gcc.o
+
+$(AARCH64_PTHREAD_NELUA_OBJECTS): $(OUT)/%-aarch64-gcc.o: src/%.nelua Makefile | $(OUT)
+	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_NELUA_FLAGS) -mno-outline-atomics' -o $@ $<
+
+$(AARCH64_PTHREAD_ADAPTERS): $(OUT)/%-aarch64-gcc.o: src/%.c src/sys/thread_linux_aarch64.h Makefile | $(OUT)
+	gcc -O2 $(AARCH64_NELUA_FLAGS) -mno-outline-atomics -DNELIBC_STANDALONE -Iinclude -c $< -o $@
+
+$(OUT)/alloc-exports-aarch64-gcc.o: src/alloc/standalone_exports.c Makefile | $(OUT)
+	gcc -O2 $(AARCH64_NELUA_FLAGS) -mno-outline-atomics -DNELIBC_STANDALONE -Iinclude -c $< -o $@
+
+$(OUT)/allocator-linux-aarch64.o: src/sys/allocator_linux_aarch64.c | $(OUT)
+	gcc -O2 $(AARCH64_NELUA_FLAGS) -mno-outline-atomics -c $< -o $@
+
+$(OUT)/pthread-aarch64-gcc: tools/pthread_aarch64_smoke.c $(OUT)/start-linux-aarch64.o \
+	$(OUT)/boot-linux-aarch64.o $(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o \
+	$(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o $(OUT)/unistd-aarch64-gcc.o \
+	$(OUT)/errno-aarch64-gcc.o $(OUT)/stdlib-exit-aarch64-gcc.o $(OUT)/memory-aarch64-gcc.o \
+	$(AARCH64_PTHREAD_NELUA_OBJECTS) $(AARCH64_PTHREAD_ADAPTERS) $(OUT)/alloc-exports-aarch64-gcc.o \
+	$(OUT)/allocator-linux-aarch64.o include/pthread.h
+	gcc -O2 -Wall -Wextra -Werror $(AARCH64_NELUA_FLAGS) -mno-outline-atomics -no-pie \
+		-DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-e,_start,--gc-sections \
+		$(filter-out %.h,$^) -o $@
+
+.PHONY: smoke-pthread-aarch64-gcc
+smoke-pthread-aarch64-gcc: $(OUT)/pthread-aarch64-gcc
+	@undefined=$$($(NM) -u $<) && test -z "$$undefined"
+	$<
 
 float-diff-zig: zig
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin tools/float_diff.c $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-zig.o $(OUT)/errno-host-zig.o -o $(OUT)/float-diff-zig

@@ -82,9 +82,16 @@ static long credential_sync_arguments[3];
 static long credential_sync_result;
 extern int nelibc_thread_current_context_detached(void);
 
+#ifdef __aarch64__
+#include "sys/thread_linux_aarch64.h"
+#endif
+
 static int credential_sync_is_detached_thread(void) {
-  void *thread_pointer = __builtin_thread_pointer();
-  return ((void **)thread_pointer)[3] != 0 ||
+  void **slots = __builtin_thread_pointer();
+#ifdef __aarch64__
+  slots = nelibc_aarch64_thread_slots(slots);
+#endif
+  return slots[3] != 0 ||
          nelibc_thread_current_context_detached();
 }
 

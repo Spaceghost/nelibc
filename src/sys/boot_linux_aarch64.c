@@ -32,6 +32,12 @@ extern long nelibc_raw_syscall6(unsigned long, unsigned long, unsigned long,
                                 unsigned long);
 extern int main(int, char **, char **);
 char **environ;
+unsigned long nelibc_aarch64_pagesize = 4096;
+
+void **nelibc_aarch64_thread_slots(void *tp) {
+  return (void **)((uintptr_t)tp - NELIBC_AARCH64_THREAD_SLOTS * sizeof(void *));
+}
+
 static const Elf64_Phdr *tls_template;
 
 static int find_tls_template(const Elf64_auxv_t *auxv) {
@@ -40,6 +46,11 @@ static int find_tls_template(const Elf64_auxv_t *auxv) {
   unsigned long entry_size = 0;
   for (; auxv->a_type != AT_NULL; ++auxv) {
     switch (auxv->a_type) {
+      case AT_PAGESZ:
+        if (auxv->a_un.a_val < 4096 || (auxv->a_un.a_val & (auxv->a_un.a_val - 1)))
+          return -1;
+        nelibc_aarch64_pagesize = auxv->a_un.a_val;
+        break;
       case AT_PHDR: ph = (const Elf64_Phdr *)auxv->a_un.a_val; break;
       case AT_PHNUM: count = auxv->a_un.a_val; break;
       case AT_PHENT: entry_size = auxv->a_un.a_val; break;
@@ -69,14 +80,15 @@ long nelibc_aarch64_allocate_tls(struct nelibc_aarch64_tls *result) {
    * ELF template's alignment residue when computing the padding. */
   unsigned long padding = (address - TCB_SIZE) & (align - 1);
   if (align < TCB_SIZE) align = TCB_SIZE;
+  const unsigned long prefix = NELIBC_AARCH64_THREAD_SLOTS * sizeof(void *);
   unsigned long overhead, allocation;
-  if (__builtin_add_overflow(TCB_SIZE + padding, align - 1, &overhead) ||
+  if (__builtin_add_overflow(prefix + TCB_SIZE + padding, align - 1, &overhead) ||
       __builtin_add_overflow(overhead, size, &allocation)) return -ENOMEM;
   long mapped = nelibc_raw_syscall6(__NR_mmap, 0, allocation,
       PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1UL, 0);
   if ((unsigned long)mapped >= -4095UL) return mapped;
   uintptr_t mapping = (uintptr_t)mapped;
-  uintptr_t tp = (mapping + align - 1) & ~(align - 1);
+  uintptr_t tp = (mapping + prefix + align - 1) & ~(align - 1);
   unsigned char *image = (unsigned char *)(tp + TCB_SIZE + padding);
   const unsigned char *template = (const unsigned char *)address;
   /* Anonymous mappings arrive zero-filled, including the TCB and .tbss. */

@@ -25,13 +25,17 @@ local SYS_TGKILL: culong <comptime> = 155
 local SYS_SET_ROBUST_LIST: culong <comptime> = 178
 -- (end nelibc_sys operations)
 
--- Experimental Linux x86_64 thread runtime for the standalone profile.
+-- Linux thread runtime for the standalone profile.
+## if ccinfo.is_arm64 then
+local Aarch64TLS: type = @record{mapping: pointer, size: csize, tp: pointer}
+## else
 local TLSLayout: type = @record{
   image_start: pointer,
   image_filesz: csize,
   image_memsz: csize,
   image_align: csize
 }
+## end
 local ThreadContext: type = @record{
   start: function(pointer): cint,
   arg: pointer,
@@ -220,7 +224,11 @@ local Timespec: type = @record{
   tv_nsec: clong
 }
 local STACK_SIZE: csize <comptime> = 1048576
+## if ccinfo.is_arm64 then
+local PAGE_SIZE: culong <cimport 'nelibc_aarch64_pagesize'>
+## else
 local PAGE_SIZE: csize <comptime> = 4096
+## end
 local PTHREAD_STACK_MINIMUM: csize <comptime> = 16384
 local CLEANUP_STACK_SIZE: csize <comptime> = 16384
 local PTHREAD_ATTR_MAGIC: culong <comptime> = 0x4E454C4154545231
@@ -295,7 +303,12 @@ local MAX_CSIZE: csize <comptime> = ~0_csize
 local function nelibc_sys3(op: culong, arg1: culong, arg2: culong, arg3: culong): clong <cimport> end
 local function nelibc_sys6(op: culong, arg1: culong, arg2: culong, arg3: culong, arg4: culong, arg5: culong, arg6: culong): clong <cimport> end
 local function nelibc_errno_location(): *[0]cint <cimport> end
+## if ccinfo.is_arm64 then
+local function nelibc_aarch64_allocate_tls(layout: *Aarch64TLS): clong <cimport> end
+local function nelibc_aarch64_thread_slots(tp: pointer): *[0]pointer <cimport> end
+## else
 local function nelibc_tls_layout(layout: *TLSLayout): void <cimport> end
+## end
 local function nelibc_clone_thread(start: pointer, arg: pointer, stack_top: pointer, tls_tp: pointer, tid: *[0]cint): clong <cimport> end
 local function nelibc_credential_sync_begin(): cint <cimport> end
 local function nelibc_credential_sync_serve(): void <cimport> end
@@ -762,6 +775,20 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
     end
   end
 
+## if ccinfo.is_arm64 then
+  local layout: Aarch64TLS
+  local result = nelibc_aarch64_allocate_tls(&layout)
+  if result < 0 then
+    if cleanup_stack ~= nilptr then unmap(cleanup_stack, CLEANUP_STACK_SIZE) end
+    if mapping_size > 0 then unmap(stack, mapping_size) end
+    nelibc_errno_location()[0] = (@cint)(-result)
+    return -1
+  end
+  local tls_map = layout.mapping
+  local tls_map_size = layout.size
+  local tp_address = (@usize)(layout.tp)
+  local tcb = nelibc_aarch64_thread_slots(layout.tp)
+## else
   local layout: TLSLayout
   nelibc_tls_layout(&layout)
   local align: csize = layout.image_align
@@ -816,6 +843,7 @@ local function thread_spawn(handle: *ThreadHandle, start: pointer, arg: pointer,
     i = i + 1
   end
   local tcb: *[0]pointer = (@*[0]pointer)(tp_address)
+## end
   tcb[0] = (@pointer)(tp_address)
   tcb[1] = identity
   tcb[2] = (@pointer)(pthread_context)

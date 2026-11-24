@@ -1,6 +1,11 @@
 #ifndef NELIBC_THREAD_LINUX_AARCH64_H
 #define NELIBC_THREAD_LINUX_AARCH64_H
 
+/* Keep pthread state before the ABI thread pointer and TLS image. */
+#define NELIBC_AARCH64_THREAD_SLOTS 5
+extern unsigned long nelibc_aarch64_pagesize;
+void **nelibc_aarch64_thread_slots(void *tp);
+
 struct nelibc_aarch64_tls {
   void *mapping;
   unsigned long size;

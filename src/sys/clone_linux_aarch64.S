@@ -27,4 +27,26 @@ nelibc_clone_thread:
   brk #0
 .size nelibc_clone_thread, .-nelibc_clone_thread
 
+/* Switch stacks before releasing both the worker stack and TLS. */
+.globl nelibc_thread_detached_exit
+.type nelibc_thread_detached_exit, %function
+nelibc_thread_detached_exit:
+  add x6, x4, x5
+  mov sp, x6
+  mov x8, #__NR_munmap
+  svc #0
+  mov x0, x2
+  mov x1, x3
+  mov x8, #__NR_munmap
+  svc #0
+  mov x0, x4
+  mov x1, x5
+  mov x8, #__NR_munmap
+  svc #0
+  mov x0, xzr
+  mov x8, #__NR_exit
+  svc #0
+  brk #0
+.size nelibc_thread_detached_exit, .-nelibc_thread_detached_exit
+
 .section .note.GNU-stack,"",%progbits
