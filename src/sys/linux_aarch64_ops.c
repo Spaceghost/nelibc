@@ -15,10 +15,22 @@ extern long nelibc_raw_syscall6(unsigned long number, unsigned long a1,
                                 unsigned long a4, unsigned long a5,
                                 unsigned long a6);
 
+long nelibc_aarch64_fstat(unsigned long fd, unsigned long out);
+long nelibc_aarch64_fstatat(unsigned long dir, unsigned long path,
+                            unsigned long out, unsigned long flags);
+
 long nelibc_sys6(unsigned long op, unsigned long a1, unsigned long a2,
                  unsigned long a3, unsigned long a4, unsigned long a5,
                  unsigned long a6) {
   switch (op) {
+    case NELIBC_SYS_FSTAT:
+      return nelibc_aarch64_fstat(a1, a2);
+    case NELIBC_SYS_NEWFSTATAT:
+      return nelibc_aarch64_fstatat(a1, a2, a3, a4);
+    case NELIBC_SYS_STAT:
+      return nelibc_aarch64_fstatat(AT_FDCWD, a1, a2, 0);
+    case NELIBC_SYS_LSTAT:
+      return nelibc_aarch64_fstatat(AT_FDCWD, a1, a2, AT_SYMLINK_NOFOLLOW);
     case NELIBC_SYS_OPEN:
       return nelibc_raw_syscall6(__NR_openat, AT_FDCWD, a1, a2, a3, 0, 0);
     case NELIBC_SYS_ACCESS:

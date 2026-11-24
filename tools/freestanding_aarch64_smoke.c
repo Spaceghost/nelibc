@@ -3,7 +3,8 @@
 #include <linux/futex.h>
 #include <linux/time_types.h>
 #include <linux/mman.h>
-#include <asm/poll.h>
+#include <poll.h>
+#include <sys/stat.h>
 
 #include "../include/nelibc_sys.h"
 #include "../src/sys/thread_linux_aarch64.h"
@@ -108,6 +109,22 @@ int main(int argc, char **argv, char **envp) {
   if (fd < 0) return 4;
   if (nelibc_sys6(NELIBC_SYS_PWRITE64, fd, (unsigned long)&value, 1,
                           offset, 0, 0) != 1) return 5;
+  struct stat metadata;
+  if (nelibc_sys3(NELIBC_SYS_FSTAT, fd, (unsigned long)&metadata, 0) ||
+      !S_ISREG(metadata.st_mode) || metadata.st_size != (long)offset + 1 ||
+      metadata.st_nlink != 0 || metadata.st_blksize <= 0) return 20;
+  if (nelibc_sys3(NELIBC_SYS_FSTAT, -1UL, (unsigned long)&metadata, 0) != -EBADF ||
+      metadata.st_size != (long)offset + 1 ||
+      nelibc_sys3(NELIBC_SYS_FSTAT, fd, 0, 0) != -EFAULT) return 21;
+  unsigned long dot = (unsigned long)".";
+  if (nelibc_sys3(NELIBC_SYS_STAT, dot, (unsigned long)&metadata, 0) ||
+      !S_ISDIR(metadata.st_mode)) return 22;
+  unsigned long link = (unsigned long)"link";
+  if (nelibc_sys3(NELIBC_SYS_LSTAT, link, (unsigned long)&metadata, 0) ||
+      !S_ISLNK(metadata.st_mode) || metadata.st_size != 1) return 23;
+  if (nelibc_sys6(NELIBC_SYS_NEWFSTATAT, AT_FDCWD, link,
+                  (unsigned long)&metadata, 0, 0, 0) ||
+      !S_ISDIR(metadata.st_mode)) return 24;
   /* A nonzero file offset exercises the sixth kernel argument. */
   long address = nelibc_sys6(NELIBC_SYS_MMAP, 0, 1, PROT_READ, MAP_PRIVATE,
                                      fd, offset);
@@ -131,7 +148,7 @@ int main(int argc, char **argv, char **envp) {
   if (nelibc_sys3(NELIBC_SYS_CLOSE, pipe[0], 0, 0) ||
       nelibc_sys3(NELIBC_SYS_CLOSE, pipe[1], 0, 0)) return 13;
   if (nelibc_sys3(NELIBC_SYS_COUNT, 0, 0, 0) != -ENOSYS ||
-      nelibc_sys3(NELIBC_SYS_FSTAT, 0, 0, 0) != -ENOSYS) return 14;
+      nelibc_sys3(NELIBC_SYS_EPOLL_WAIT, 0, 0, 0) != -ENOSYS) return 14;
   long child = nelibc_sys3(NELIBC_SYS_FORK, 0, 0, 0);
   if (child < 0) return 15;
   if (child == 0) return 42;

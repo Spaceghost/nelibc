@@ -418,20 +418,26 @@ $(OUT)/boot-linux-aarch64.o: src/sys/boot_linux_aarch64.c src/sys/thread_linux_a
 $(OUT)/clone-linux-aarch64.o: src/sys/clone_linux_aarch64.S | $(OUT)
 	gcc -c $< -o $@
 
+$(OUT)/stat-linux-aarch64.o: src/sys/stat_linux_aarch64.c include/sys/stat.h | $(OUT)
+	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
+		-fno-pie -DNELIBC_STANDALONE -Iinclude -c $< -o $@
+
 $(OUT)/linux-aarch64-ops.o: src/sys/linux_aarch64_ops.c src/sys/linux_aarch64_ops.h include/nelibc_sys.h | $(OUT)
 	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector -fno-pie -c $< -o $@
 
 $(OUT)/freestanding-aarch64-tls-gcc: private ARM_STARTUP_FIXTURE = -DNELIBC_ARM_TEST_TLS
 
-$(OUT)/freestanding-aarch64-gcc $(OUT)/freestanding-aarch64-tls-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/boot-linux-aarch64.o $(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o $(OUT)/linux-aarch64-ops.o include/nelibc_sys.h src/sys/thread_linux_aarch64.h
+$(OUT)/freestanding-aarch64-gcc $(OUT)/freestanding-aarch64-tls-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/boot-linux-aarch64.o $(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o $(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o include/nelibc_sys.h src/sys/thread_linux_aarch64.h include/sys/stat.h
 	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
-		-fno-pie -no-pie -ftls-model=local-exec -nostdlib -static -Wl,-e,_start \
+		-fno-pie -no-pie -ftls-model=local-exec -DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-e,_start \
 		$(ARM_STARTUP_FIXTURE) $(filter-out %.h,$^) -o $@
 
 smoke-freestanding-aarch64-gcc: $(OUT)/freestanding-aarch64-gcc $(OUT)/freestanding-aarch64-tls-gcc
-	@set -e; for binary in $^; do \
+	@set -e; fixture=$$(mktemp -d); trap 'rm -rf "$$fixture"' EXIT; \
+	ln -s . "$$fixture/link"; \
+	for binary in $(abspath $^); do \
 		undefined=$$($(NM) -u "$$binary"); test -z "$$undefined"; \
-		NELIBC_ARM_SMOKE=present "$$binary" a; \
+		(cd "$$fixture" && NELIBC_ARM_SMOKE=present "$$binary" a); \
 	done
 	@if NELIBC_ARM_SMOKE=present $<; then exit 1; else test "$$?" -eq 1; fi
 

@@ -408,13 +408,16 @@ also starts a kernel thread with a separate stack and fresh TLS, waits for
 Linux to clear its thread ID, and verifies that the worker’s TLS changes
 leave the main thread’s values intact. Both variants pass argument and environment vectors through startup and use the
 AArch64 platform-operation backend for file-backed mapping, pipes, polling,
-descriptor duplication, and a child process with a checked exit status.
+descriptor duplication, file metadata, and a child process with a checked
+exit status. The metadata checks cover file size and type, symlink
+following, and failed lookups.
 
 The dispatcher uses syscall numbers from Linux AArch64 headers. It adapts
 legacy operations such as `open`, `poll` and `fork` to their AArch64
-equivalents. Callers use AArch64 kernel flag values. Operations with
-pending ABI work, including file metadata, signal actions and epoll event
-records, return `-ENOSYS`. The standalone library still needs those ABI
+equivalents. Callers use AArch64 kernel flag values. File metadata
+operations translate the kernel result into Nelibc’s existing `struct stat`
+layout. Operations with pending ABI work, including signal actions and
+epoll event records, return `-ENOSYS`. The standalone library still needs those ABI
 adapters, integration with the public pthread implementation, and integration
 with the standalone exit path.
 
