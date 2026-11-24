@@ -381,6 +381,23 @@ syscall smoke targets. The sample program checks that selected Nelibc symbols
 are linked into each executable and exercises allocation, memory, strings,
 integer conversion, and the current Nelua math slice.
 
+## AArch64 memory archive
+
+On Linux AArch64, build the portable memory implementations with GCC and
+link the existing differential test against the archive:
+
+```sh
+make lib-memory-aarch64-gcc NELUA=/path/to/nelua
+make memory-diff-aarch64-gcc NELUA=/path/to/nelua
+```
+
+The archive is `build/libnelibc-memory-aarch64-gcc.a`. Link it in front of
+the host C library, using `-fno-builtin` when testing interposed memory
+functions. The host C library supplies allocation and wide character
+helpers. The full hybrid and standalone profiles still target x86-64.
+For an emulated build environment, see the
+[Fedora Incus guide](https://nelua.tech/compiler/#linux-arm64).
+
 ## Useful checks
 
 - `make smoke-matrix` exercises the compiler, libc, syscall, standalone, and

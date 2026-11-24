@@ -385,6 +385,24 @@ smoke-gcc: gcc
 	$(OUT)/memory-diff-gcc
 	$(OUT)/abi-smoke-gcc
 
+.PHONY: lib-memory-aarch64-gcc memory-diff-aarch64-gcc
+
+$(OUT)/memory-aarch64-gcc.o: src/memory.nelua Makefile | $(OUT)
+	@case "$$(gcc -dumpmachine)" in aarch64*-linux*) ;; \
+		*) echo 'Nelibc AArch64 memory requires Linux AArch64 GCC' >&2; exit 1 ;; esac
+	$(NELUA) -B -r --cc gcc --cflags='-fno-builtin -fno-tree-loop-distribute-patterns' -o $@ $<
+
+$(OUT)/libnelibc-memory-aarch64-gcc.a: $(OUT)/memory-aarch64-gcc.o
+	$(AR) rcs $@ $<
+
+lib-memory-aarch64-gcc: $(OUT)/libnelibc-memory-aarch64-gcc.a
+
+$(OUT)/memory-diff-aarch64-gcc: tools/memory_diff.c include/string.h $(OUT)/libnelibc-memory-aarch64-gcc.a
+	gcc -O2 -Iinclude -fno-builtin $< $(OUT)/libnelibc-memory-aarch64-gcc.a -o $@
+
+memory-diff-aarch64-gcc: $(OUT)/memory-diff-aarch64-gcc
+	$<
+
 float-diff-zig: zig
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin tools/float_diff.c $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-zig.o $(OUT)/errno-host-zig.o -o $(OUT)/float-diff-zig
 	$(OUT)/float-diff-zig
