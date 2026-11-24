@@ -403,6 +403,23 @@ $(OUT)/memory-diff-aarch64-gcc: tools/memory_diff.c include/string.h $(OUT)/libn
 memory-diff-aarch64-gcc: $(OUT)/memory-diff-aarch64-gcc
 	$<
 
+.PHONY: smoke-freestanding-aarch64-gcc
+
+$(OUT)/linux-aarch64-raw-syscall.o: src/sys/linux_aarch64.S | $(OUT)
+	gcc -c $< -o $@
+
+$(OUT)/start-linux-aarch64.o: src/sys/start_linux_aarch64.S | $(OUT)
+	gcc -c $< -o $@
+
+$(OUT)/freestanding-aarch64-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o
+	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
+		-fno-pie -no-pie -nostdlib -static -Wl,-e,_start $^ -o $@
+
+smoke-freestanding-aarch64-gcc: $(OUT)/freestanding-aarch64-gcc
+	@test -z "$$($(NM) -u $<)"
+	NELIBC_ARM_SMOKE=present $< a
+	@if NELIBC_ARM_SMOKE=present $<; then exit 1; else test "$$?" -eq 1; fi
+
 float-diff-zig: zig
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin tools/float_diff.c $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-zig.o $(OUT)/errno-host-zig.o -o $(OUT)/float-diff-zig
 	$(OUT)/float-diff-zig

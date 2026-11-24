@@ -398,6 +398,17 @@ helpers. The full hybrid and standalone profiles still target x86-64.
 For an emulated build environment, see the
 [Fedora Incus guide](https://nelua.tech/compiler/#linux-arm64).
 
+## AArch64 freestanding startup
+
+On Linux AArch64, run `make smoke-freestanding-aarch64-gcc`. It links a
+static executable without a C runtime, checks the argument and environment
+vectors, and exercises three- and six-argument Linux syscalls, including
+file-backed memory mapping with a nonzero file offset.
+
+This startup passes control directly to `main` and terminates the process
+with its return status. The standalone library still needs startup support
+for TLS and constructors, and a platform-operation backend for AArch64.
+
 ## Useful checks
 
 - `make smoke-matrix` exercises the compiler, libc, syscall, standalone, and
