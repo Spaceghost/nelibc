@@ -403,8 +403,10 @@ For an emulated build environment, see the
 On Linux AArch64, run `make smoke-freestanding-aarch64-gcc`. It links a
 two static executables without a C runtime, one with a TLS template and
 one without. The TLS fixture checks initialized storage, over-aligned
-zero-filled storage, and the order of preinit and init constructors. Both
-variants pass argument and environment vectors through startup and use the
+zero-filled storage, and the order of preinit and init constructors. It
+also starts a kernel thread with a separate stack and fresh TLS, waits for
+Linux to clear its thread ID, and verifies that the worker’s TLS changes
+leave the main thread’s values intact. Both variants pass argument and environment vectors through startup and use the
 AArch64 platform-operation backend for file-backed mapping, pipes, polling,
 descriptor duplication, and a child process with a checked exit status.
 
@@ -413,7 +415,8 @@ legacy operations such as `open`, `poll` and `fork` to their AArch64
 equivalents. Callers use AArch64 kernel flag values. Operations with
 pending ABI work, including file metadata, signal actions and epoll event
 records, return `-ENOSYS`. The standalone library still needs those ABI
-adapters, pthread TLS and integration with the standalone exit path.
+adapters, integration with the public pthread implementation, and integration
+with the standalone exit path.
 
 ## Useful checks
 

@@ -411,16 +411,19 @@ $(OUT)/linux-aarch64-raw-syscall.o: src/sys/linux_aarch64.S | $(OUT)
 $(OUT)/start-linux-aarch64.o: src/sys/start_linux_aarch64.S | $(OUT)
 	gcc -c $< -o $@
 
-$(OUT)/boot-linux-aarch64.o: src/sys/boot_linux_aarch64.c | $(OUT)
+$(OUT)/boot-linux-aarch64.o: src/sys/boot_linux_aarch64.c src/sys/thread_linux_aarch64.h | $(OUT)
 	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
 		-fno-tree-loop-distribute-patterns -fno-pie -c $< -o $@
+
+$(OUT)/clone-linux-aarch64.o: src/sys/clone_linux_aarch64.S | $(OUT)
+	gcc -c $< -o $@
 
 $(OUT)/linux-aarch64-ops.o: src/sys/linux_aarch64_ops.c src/sys/linux_aarch64_ops.h include/nelibc_sys.h | $(OUT)
 	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector -fno-pie -c $< -o $@
 
 $(OUT)/freestanding-aarch64-tls-gcc: private ARM_STARTUP_FIXTURE = -DNELIBC_ARM_TEST_TLS
 
-$(OUT)/freestanding-aarch64-gcc $(OUT)/freestanding-aarch64-tls-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/boot-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o $(OUT)/linux-aarch64-ops.o include/nelibc_sys.h
+$(OUT)/freestanding-aarch64-gcc $(OUT)/freestanding-aarch64-tls-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/boot-linux-aarch64.o $(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o $(OUT)/linux-aarch64-ops.o include/nelibc_sys.h src/sys/thread_linux_aarch64.h
 	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
 		-fno-pie -no-pie -ftls-model=local-exec -nostdlib -static -Wl,-e,_start \
 		$(ARM_STARTUP_FIXTURE) $(filter-out %.h,$^) -o $@

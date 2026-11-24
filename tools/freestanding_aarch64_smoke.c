@@ -1,9 +1,12 @@
 #include <asm/errno.h>
 #include <linux/fcntl.h>
+#include <linux/futex.h>
+#include <linux/time_types.h>
 #include <linux/mman.h>
 #include <asm/poll.h>
 
 #include "../include/nelibc_sys.h"
+#include "../src/sys/thread_linux_aarch64.h"
 
 extern char **environ;
 
@@ -32,6 +35,51 @@ static void (*const preinit_entry)(int, char **, char **)
     __attribute__((section(".preinit_array"), used)) = preinit;
 static void (*const init_entry)(int, char **, char **)
     __attribute__((section(".init_array"), used)) = init;
+struct thread_probe {
+  int tid;
+  int ready;
+  int result;
+};
+
+static int worker(void *arg) {
+  struct thread_probe *probe = arg;
+  while (!__atomic_load_n(&probe->ready, __ATOMIC_ACQUIRE))
+    nelibc_sys3(NELIBC_SYS_SCHED_YIELD, 0, 0, 0);
+  int valid = initialized == 0x1234 && zeroed == 0 &&
+              ((unsigned long)&zeroed & 127) == 0;
+  initialized = 0x9999;
+  zeroed = 123;
+  __atomic_store_n(&probe->result, valid, __ATOMIC_RELEASE);
+  return 0;
+}
+
+static int check_thread_tls(void) {
+  struct nelibc_aarch64_tls tls;
+  if (nelibc_aarch64_allocate_tls(&tls)) return 0;
+  const unsigned long stack_size = 256 * 1024;
+  long stack = nelibc_sys6(NELIBC_SYS_MMAP, 0, stack_size, PROT_READ | PROT_WRITE,
+                           MAP_PRIVATE | MAP_ANONYMOUS, -1UL, 0);
+  if ((unsigned long)stack >= -4095UL) return 0;
+  static struct thread_probe probe;
+  long child = nelibc_clone_thread(worker, &probe, (void *)(stack + stack_size),
+                                    tls.tp, &probe.tid);
+  if (child <= 0 || __atomic_load_n(&probe.tid, __ATOMIC_ACQUIRE) != child)
+    return 0;
+  __atomic_store_n(&probe.ready, 1, __ATOMIC_RELEASE);
+  const struct __kernel_timespec timeout = {.tv_sec = 2};
+  for (;;) {
+    int running = __atomic_load_n(&probe.tid, __ATOMIC_ACQUIRE);
+    if (!running) break;
+    long status = nelibc_sys6(NELIBC_SYS_FUTEX, (unsigned long)&probe.tid, FUTEX_WAIT,
+                              running, (unsigned long)&timeout, 0, 0);
+    if (status != 0 && status != -EAGAIN && status != -EINTR) return 0;
+  }
+  if (nelibc_sys3(NELIBC_SYS_MUNMAP, stack, stack_size, 0) ||
+      nelibc_sys3(NELIBC_SYS_MUNMAP, (unsigned long)tls.mapping, tls.size, 0))
+    return 0;
+  return __atomic_load_n(&probe.result, __ATOMIC_ACQUIRE) &&
+         initialized == 0x5678 && zeroed == 42;
+}
 #endif
 
 int main(int argc, char **argv, char **envp) {
@@ -43,6 +91,7 @@ int main(int argc, char **argv, char **envp) {
   if (envp != environ) return 17;
 #ifdef NELIBC_ARM_TEST_TLS
   if (stage != 2 || initialized != 0x5678 || zeroed != 42) return 18;
+  if (!check_thread_tls()) return 19;
 #endif
   if (argc != 2 || argv[1][0] != 'a' || argv[1][1] || argv[2]) return 1;
   while (*envp) {
