@@ -442,6 +442,19 @@ return from the handler and restoration of the previous action. It also
 checks the AArch64 `setjmp` family, including saved registers and jumping
 out of a signal handler with and without restoring the blocked signal mask.
 
+Run `make smoke-fenv-aarch64-gcc smoke-math-primitives-aarch64-gcc` with
+AArch64 GCC. The freestanding floating-point environment test checks
+rounding modes, exception flags, and saving and restoring FPCR and FPSR.
+The separate hosted test compares the binary64 remainder primitive
+against the system libm and exercises both hardware square-root widths.
+
+The standalone stdio formatter and scanner share a copied argument list
+through the C ABI. The mixed-argument fixture exercises narrow and wide
+formatting, scanning, and allocated output. Run it with
+`make smoke-stdio-cursor-standalone-gcc` on x86-64. The fixture also
+passed when linked into the AArch64 prototype. Full binary128
+formatting, scanning, and math are still in progress.
+
 ## Useful checks
 
 - `make smoke-matrix` exercises the compiler, libc, syscall, standalone, and

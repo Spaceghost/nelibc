@@ -521,6 +521,39 @@ smoke-pthread-aarch64-gcc: $(OUT)/pthread-aarch64-gcc
 	@undefined=$$($(NM) -u $<) && test -z "$$undefined"
 	$<
 
+$(OUT)/math-core-aarch64.o: src/math_core_aarch64.c | $(OUT)
+	gcc -O2 -Wall -Wextra -Werror $(AARCH64_NELUA_FLAGS) -c $< -o $@
+
+$(OUT)/math-primitives-aarch64-gcc: tools/math_primitives_aarch64_smoke.c $(OUT)/math-core-aarch64.o
+	gcc -O2 -Wall -Wextra -Werror -fno-builtin -no-pie $^ -lm -o $@
+
+$(OUT)/fenv-linux-aarch64.o: src/sys/fenv_linux_aarch64.c include/fenv.h | $(OUT)
+	gcc -O2 -Wall -Wextra -Werror $(AARCH64_NELUA_FLAGS) -DNELIBC_STANDALONE -Iinclude -c $< -o $@
+
+$(OUT)/fenv-aarch64-gcc: tools/fenv_aarch64_smoke.c $(OUT)/fenv-linux-aarch64.o \
+	$(OUT)/start-linux-aarch64.o $(OUT)/boot-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o include/fenv.h
+	gcc -O2 -Wall -Wextra -Werror $(AARCH64_NELUA_FLAGS) -frounding-math -no-pie \
+		-DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-e,_start \
+		$(filter-out %.h,$^) -o $@
+
+.PHONY: smoke-math-primitives-aarch64-gcc smoke-fenv-aarch64-gcc
+smoke-math-primitives-aarch64-gcc: $(OUT)/math-primitives-aarch64-gcc
+	$<
+
+smoke-fenv-aarch64-gcc: $(OUT)/fenv-aarch64-gcc
+	@undefined=$$($(NM) -u $<) && test -z "$$undefined"
+	$<
+
+$(OUT)/stdio-cursor-standalone-gcc: tools/stdio_cursor_smoke.c $(OUT)/libnelibc-standalone-gcc.a
+	gcc -O2 -Wall -Wextra -Werror -DNELIBC_STANDALONE -Iinclude -nostdlib -static -no-pie \
+		-ffreestanding -fno-builtin -fno-pie -fno-stack-protector -Wl,-e,_start \
+		$< -Wl,--whole-archive $(OUT)/libnelibc-standalone-gcc.a -Wl,--no-whole-archive -o $@
+
+.PHONY: smoke-stdio-cursor-standalone-gcc
+smoke-stdio-cursor-standalone-gcc: $(OUT)/stdio-cursor-standalone-gcc
+	@undefined=$$($(NM) -u $<) && test -z "$$undefined"
+	$<
+
 float-diff-zig: zig
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin tools/float_diff.c $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-zig.o $(OUT)/errno-host-zig.o -o $(OUT)/float-diff-zig
 	$(OUT)/float-diff-zig

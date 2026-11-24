@@ -9,21 +9,21 @@
 require 'C.stdarg'
 
 
-local function nelibc_va_arg_int(arguments: cvalist): cint <cimport> end
-local function nelibc_va_arg_pointer(arguments: cvalist): pointer <cimport> end
-local function nelibc_va_arg_long(arguments: cvalist): clong <cimport> end
-local function nelibc_va_arg_long_long(arguments: cvalist): clonglong <cimport> end
-local function nelibc_va_arg_unsigned_long(arguments: cvalist): culong <cimport> end
-local function nelibc_va_arg_unsigned_long_long(arguments: cvalist): culonglong <cimport> end
-local function nelibc_va_arg_size(arguments: cvalist): csize <cimport> end
-local function nelibc_va_arg_unsigned_int(arguments: cvalist): cuint <cimport> end
-local function nelibc_va_arg_double(arguments: cvalist): cdouble <cimport> end
-local function nelibc_va_arg_long_double_bits(arguments: cvalist, mantissa: *culonglong,
+local function nelibc_va_arg_int(arguments: *cvalist): cint <cimport> end
+local function nelibc_va_arg_pointer(arguments: *cvalist): pointer <cimport> end
+local function nelibc_va_arg_long(arguments: *cvalist): clong <cimport> end
+local function nelibc_va_arg_long_long(arguments: *cvalist): clonglong <cimport> end
+local function nelibc_va_arg_unsigned_long(arguments: *cvalist): culong <cimport> end
+local function nelibc_va_arg_unsigned_long_long(arguments: *cvalist): culonglong <cimport> end
+local function nelibc_va_arg_size(arguments: *cvalist): csize <cimport> end
+local function nelibc_va_arg_unsigned_int(arguments: *cvalist): cuint <cimport> end
+local function nelibc_va_arg_double(arguments: *cvalist): cdouble <cimport> end
+local function nelibc_va_arg_long_double_bits(arguments: *cvalist, mantissa: *culonglong,
     sign_exponent: *cuint): void <cimport> end
-local function nelibc_va_arg_long_double_as_double(arguments: cvalist, exact: *cint): cdouble <cimport> end
-local function nelibc_va_arg_long_double_parts(arguments: cvalist, exact: *cint,
+local function nelibc_va_arg_long_double_as_double(arguments: *cvalist, exact: *cint): cdouble <cimport> end
+local function nelibc_va_arg_long_double_parts(arguments: *cvalist, exact: *cint,
     mantissa: *culonglong, sign_exponent: *cuint): cdouble <cimport> end
-local function nelibc_va_arg_pointer_at(arguments: cvalist, position: csize): pointer <cimport> end
+local function nelibc_va_arg_pointer_at(arguments: *cvalist, position: csize): pointer <cimport> end
 local function isspace(character: cint): cint <cimport,cattribute '__pure__'> end
 local function nelibc_scan_strtoll(text: *const [0]cchar, end_text: **cchar,
     base: cint): clonglong <cimport> end
@@ -32,10 +32,10 @@ local function nelibc_scan_strtoull(text: *const [0]cchar, end_text: **cchar,
 local function nelibc_scan_strtof(text: *const [0]cchar, end_text: **cchar): cfloat <cimport> end
 local function nelibc_scan_strtod(text: *const [0]cchar, end_text: **cchar): cdouble <cimport> end
 local function nelibc_scan_strtold(text: *const [0]cchar, end_text: **cchar): clongdouble <cimport> end
-local function nelibc_va_copy(destination: cvalist, source: cvalist): void <cimport> end
+local function va_copy(destination: cvalist, source: cvalist): void <cimport 'va_copy', nodecl> end
 local function nelibc_store_format_count(pointer: pointer, length: cint, count: csize): void <cimport> end
 
-local function scan_argument_pointer(arguments: cvalist, position: csize): pointer <inline>
+local function scan_argument_pointer(arguments: *cvalist, position: csize): pointer <inline>
   if position == 0 then return nelibc_va_arg_pointer(arguments) end
   return nelibc_va_arg_pointer_at(arguments, position)
 end
@@ -773,8 +773,8 @@ local function fputws(input: *const [0]cint, stream: *FILE): cint <cexport, code
   return result
 end
 
-local function vfwscanf(stream: *FILE, format: *const [0]cint,
-    arguments: cvalist): cint <cexport, codename 'vfwscanf'>
+local function vfwscanf_cursor(stream: *FILE, format: *const [0]cint,
+    arguments: *cvalist): cint
   if stream == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -1449,6 +1449,16 @@ local function vfwscanf(stream: *FILE, format: *const [0]cint,
   return assignments
 end
 
+-- Own the cursor so the argument helpers advance the same va_list on both
+-- array and struct ABIs.
+local function vfwscanf(stream: *FILE, format: *const [0]cint, arguments: cvalist): cint <cexport, codename 'vfwscanf'>
+  local cursor: cvalist
+  va_copy(cursor, arguments)
+  local result = vfwscanf_cursor(stream, format, &cursor)
+  C.va_end(cursor)
+  return result
+end
+
 
 local function scan_wide_set_contains(format: *const [0]cchar, start: csize,
     finish: csize, invert: boolean, character: cint): boolean <inline>
@@ -1490,8 +1500,8 @@ local function scan_wide_set_contains(format: *const [0]cchar, start: csize,
   return in_set ~= invert
 end
 
-local function vfscanf(stream: *FILE, format: *const [0]cchar,
-    arguments: cvalist): cint <cexport, codename 'vfscanf'>
+local function vfscanf_cursor(stream: *FILE, format: *const [0]cchar,
+    arguments: *cvalist): cint
   if stream == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
     return -1
@@ -2225,6 +2235,14 @@ local function vfscanf(stream: *FILE, format: *const [0]cchar,
   stream_unlock(stream)
   if input_failure and assignments == 0 then return -1 end
   return assignments
+end
+
+local function vfscanf(stream: *FILE, format: *const [0]cchar, arguments: cvalist): cint <cexport, codename 'vfscanf'>
+  local cursor: cvalist
+  va_copy(cursor, arguments)
+  local result = vfscanf_cursor(stream, format, &cursor)
+  C.va_end(cursor)
+  return result
 end
 
 
@@ -3349,7 +3367,7 @@ local function format_wide_format(format: *const [0]cint,
   return true
 end
 
-local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvalist): cint <cexport, codename 'vfprintf'>
+local function vfprintf_cursor(stream: *FILE, format: *const [0]cchar, arguments: *cvalist): cint
   local format: *[0]cchar = (@*[0]cchar)(format)
   if stream == nilptr or format == nilptr then
     nelibc_errno_location()[0] = 22 -- EINVAL
@@ -4462,6 +4480,14 @@ local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvali
   return (@cint)(written)
 end
 
+local function vfprintf(stream: *FILE, format: *const [0]cchar, arguments: cvalist): cint <cexport, codename 'vfprintf'>
+  local cursor: cvalist
+  va_copy(cursor, arguments)
+  local result = vfprintf_cursor(stream, format, &cursor)
+  C.va_end(cursor)
+  return result
+end
+
 local function nelibc_vfprintf_host(host_stream: pointer,
     format: *const [0]cchar, arguments: cvalist): cint
     <cexport, codename 'nelibc_vfprintf_host'>
@@ -4543,7 +4569,7 @@ local function format_wide_output(format: *const [0]cint, arguments: cvalist,
   -- two-byte character, and the terminator would land past its end.
   local count_stream: FILE = {fd = -2, flags = WRITABLE | FORMAT_COUNT_ONLY | WIDE_FORMAT}
   local count_arguments: cvalist
-  nelibc_va_copy(count_arguments, arguments)
+  va_copy(count_arguments, arguments)
   local byte_count: cint = vfprintf(&count_stream, (@cstring)(format_bytes), count_arguments)
   C.va_end(count_arguments)
   if byte_count < 0 then
@@ -4563,7 +4589,7 @@ local function format_wide_output(format: *const [0]cint, arguments: cvalist,
     buffer_size = allocation_size, user_buffer = (@*byte)(output_bytes)
   }
   local write_arguments: cvalist
-  nelibc_va_copy(write_arguments, arguments)
+  va_copy(write_arguments, arguments)
   local byte_result: cint = vfprintf(&output_stream, (@cstring)(format_bytes), write_arguments)
   C.va_end(write_arguments)
   nelibc_free((@pointer)(format_bytes))
@@ -4708,7 +4734,7 @@ local function vasprintf(output: *[0]*[0]cchar, format: *const [0]cchar, argumen
   end
   output[0] = nilptr
   local count_arguments: cvalist
-  nelibc_va_copy(count_arguments, arguments)
+  va_copy(count_arguments, arguments)
   local count: cint = vsnprintf(nilptr, 0, format, count_arguments)
   C.va_end(count_arguments)
   if count < 0 then return -1 end
@@ -4716,7 +4742,7 @@ local function vasprintf(output: *[0]*[0]cchar, format: *const [0]cchar, argumen
   local output_buffer: pointer = malloc(size)
   if output_buffer == nilptr then return -1 end
   local write_arguments: cvalist
-  nelibc_va_copy(write_arguments, arguments)
+  va_copy(write_arguments, arguments)
   local result: cint = vsnprintf((@*[0]cchar)(output_buffer), size, format, write_arguments)
   C.va_end(write_arguments)
   if result < 0 then

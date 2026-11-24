@@ -3,35 +3,35 @@
 #include <stdint.h>
 
 
-/* A va_list parameter is already adjusted by the C ABI on array-based
- * implementations. Consume it in C so Nelua never takes its address. */
-int nelibc_va_arg_int(va_list arguments) { return va_arg(arguments, int); }
-void *nelibc_va_arg_pointer(va_list arguments) { return va_arg(arguments, void *); }
+/* Formatters own a va_list copy and share its address so helpers advance
+ * the same cursor whether va_list is an array or a struct. */
+int nelibc_va_arg_int(va_list *arguments) { return va_arg(*arguments, int); }
+void *nelibc_va_arg_pointer(va_list *arguments) { return va_arg(*arguments, void *); }
 __attribute__((no_stack_protector))
-void *nelibc_va_arg_pointer_at(va_list arguments, size_t position) {
+void *nelibc_va_arg_pointer_at(va_list *arguments, size_t position) {
   va_list copy;
-  va_copy(copy, arguments);
+  va_copy(copy, *arguments);
   void *value = NULL;
   for (size_t index = 0; index < position; ++index)
     value = va_arg(copy, void *);
   va_end(copy);
   return value;
 }
-long nelibc_va_arg_long(va_list arguments) { return va_arg(arguments, long); }
-long long nelibc_va_arg_long_long(va_list arguments) { return va_arg(arguments, long long); }
-unsigned long nelibc_va_arg_unsigned_long(va_list arguments) { return va_arg(arguments, unsigned long); }
-unsigned long long nelibc_va_arg_unsigned_long_long(va_list arguments) {
-  return va_arg(arguments, unsigned long long);
+long nelibc_va_arg_long(va_list *arguments) { return va_arg(*arguments, long); }
+long long nelibc_va_arg_long_long(va_list *arguments) { return va_arg(*arguments, long long); }
+unsigned long nelibc_va_arg_unsigned_long(va_list *arguments) { return va_arg(*arguments, unsigned long); }
+unsigned long long nelibc_va_arg_unsigned_long_long(va_list *arguments) {
+  return va_arg(*arguments, unsigned long long);
 }
-size_t nelibc_va_arg_size(va_list arguments) { return va_arg(arguments, size_t); }
-unsigned int nelibc_va_arg_unsigned_int(va_list arguments) { return va_arg(arguments, unsigned int); }
-double nelibc_va_arg_double(va_list arguments) { return va_arg(arguments, double); }
+size_t nelibc_va_arg_size(va_list *arguments) { return va_arg(*arguments, size_t); }
+unsigned int nelibc_va_arg_unsigned_int(va_list *arguments) { return va_arg(*arguments, unsigned int); }
+double nelibc_va_arg_double(va_list *arguments) { return va_arg(*arguments, double); }
 /* x87 80-bit layout: 64-bit mantissa with an explicit integer bit, then a
  * 16-bit sign+exponent word. Read the bytes so no classification happens. */
 __attribute__((no_stack_protector))
-void nelibc_va_arg_long_double_bits(va_list arguments, unsigned long long *mantissa,
+void nelibc_va_arg_long_double_bits(va_list *arguments, unsigned long long *mantissa,
                                     unsigned *sign_exponent) {
-  long double value = va_arg(arguments, long double);
+  long double value = va_arg(*arguments, long double);
   const unsigned char *raw = (const unsigned char *)&value;
   unsigned long long bits = 0;
   for (int index = 7; index >= 0; --index) bits = (bits << 8) | raw[index];
@@ -40,8 +40,8 @@ void nelibc_va_arg_long_double_bits(va_list arguments, unsigned long long *manti
 }
 /* The double a long double argument equals, with exact set when nothing was lost. */
 __attribute__((no_stack_protector))
-double nelibc_va_arg_long_double_as_double(va_list arguments, int *exact) {
-  long double value = va_arg(arguments, long double);
+double nelibc_va_arg_long_double_as_double(va_list *arguments, int *exact) {
+  long double value = va_arg(*arguments, long double);
   double narrowed = (double)value;
   *exact = (value != value) || ((long double)narrowed == value);
   return narrowed;
@@ -49,10 +49,10 @@ double nelibc_va_arg_long_double_as_double(va_list arguments, int *exact) {
 /* One read of a long double argument: the double it narrows to, whether that
  * is exact, and the raw x87 bits for the exact decimal path. */
 __attribute__((no_stack_protector))
-double nelibc_va_arg_long_double_parts(va_list arguments, int *exact,
+double nelibc_va_arg_long_double_parts(va_list *arguments, int *exact,
                                        unsigned long long *mantissa,
                                        unsigned *sign_exponent) {
-  long double value = va_arg(arguments, long double);
+  long double value = va_arg(*arguments, long double);
   const unsigned char *raw = (const unsigned char *)&value;
   unsigned long long bits = 0;
   for (int index = 7; index >= 0; --index) bits = (bits << 8) | raw[index];
