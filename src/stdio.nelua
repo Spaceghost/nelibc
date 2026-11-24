@@ -18,11 +18,13 @@ local function nelibc_va_arg_unsigned_long_long(arguments: *cvalist): culonglong
 local function nelibc_va_arg_size(arguments: *cvalist): csize <cimport> end
 local function nelibc_va_arg_unsigned_int(arguments: *cvalist): cuint <cimport> end
 local function nelibc_va_arg_double(arguments: *cvalist): cdouble <cimport> end
+local function nelibc_long_double_words(value: clongdouble, low: *culonglong,
+    high: *culonglong, sign_exponent: *cuint): void <cimport> end
 local function nelibc_va_arg_long_double_bits(arguments: *cvalist, mantissa: *culonglong,
-    sign_exponent: *cuint): void <cimport> end
+    high: *culonglong, sign_exponent: *cuint): void <cimport> end
 local function nelibc_va_arg_long_double_as_double(arguments: *cvalist, exact: *cint): cdouble <cimport> end
 local function nelibc_va_arg_long_double_parts(arguments: *cvalist, exact: *cint,
-    mantissa: *culonglong, sign_exponent: *cuint): cdouble <cimport> end
+    mantissa: *culonglong, high: *culonglong, sign_exponent: *cuint): cdouble <cimport> end
 local function nelibc_va_arg_pointer_at(arguments: *cvalist, position: csize): pointer <cimport> end
 local function isspace(character: cint): cint <cimport,cattribute '__pure__'> end
 local function nelibc_scan_strtoll(text: *const [0]cchar, end_text: **cchar,
@@ -57,7 +59,7 @@ local function nelibc_round_significant_double(value: cdouble, decimal_scale: ci
 local function nelibc_format_general_double(value: cdouble, precision: cint,
     exponent: cint, alternate: cint, uppercase: cint, radix: cint,
     output: *[0]byte, capacity: csize): csize <cimport> end
-local function nelibc_format_long_double_parts(mantissa: culonglong, sign_exponent: cuint,
+local function nelibc_format_long_double_parts(mantissa: culonglong, high: culonglong, sign_exponent: cuint,
     conversion: cint, precision: cint, alternate: cint, radix: cint,
     output: *[0]byte, capacity: csize): csize <cimport> end
 local function nelibc_grouping_size(position: cint): cint <cimport> end
@@ -3584,13 +3586,39 @@ local function vfprintf_cursor(stream: *FILE, format: *const [0]cchar, arguments
       if left_align then written = written + emit_padding(stream, 32, pad) end
     elseif conversion == 97 or conversion == 65 then -- a/A
       local negative: boolean = false
-      local fraction_bits: culonglong = 0
+      ## if ccinfo.is_arm64 then
+      local HexInteger: type = @uint128
+      local hex_storage_bits: cint <comptime> = 128
+      ## else
+      local HexInteger: type = @culonglong
+      local hex_storage_bits: cint <comptime> = 64
+      ## end
+      local fraction_bits: HexInteger = 0
       local fraction_width: cint = 52 -- fraction bits held below the leading digit
       local exponent: cint = 0
       local leading_digit: byte = 49
       local special_value: boolean = false
       local special_nan: boolean = false
       if length_mod == 6 then
+        ## if ccinfo.is_arm64 then
+        local low: culonglong = 0
+        local high: culonglong = 0
+        local sign_exponent: cuint = 0
+        nelibc_va_arg_long_double_bits(arguments, &low, &high, &sign_exponent)
+        negative = (sign_exponent & 0x8000) ~= 0
+        local exponent_field = (@cint)(sign_exponent & 0x7fff)
+        fraction_width = 112
+        fraction_bits = ((@HexInteger)(high & 0xffffffffffff_culonglong) << 64) | (@HexInteger)(low)
+        if exponent_field == 0x7fff then
+          special_value = true
+          special_nan = fraction_bits ~= 0
+        elseif exponent_field == 0 then
+          leading_digit = 48
+          if fraction_bits ~= 0 then exponent = -16382 end
+        else
+          exponent = exponent_field - 16383
+        end
+        ## else
         -- x87 80-bit long double: explicit integer bit, 15-bit exponent, no
         -- implicit normalization. Encodings the hardware never produces are
         -- classified the way the FPU treats them, which is what musl prints:
@@ -3599,7 +3627,8 @@ local function vfprintf_cursor(stream: *FILE, format: *const [0]cchar, arguments
         -- with a nonzero exponent) or a pseudo-infinity/NaN is a NaN.
         local mantissa: culonglong = 0
         local sign_exponent: cuint = 0
-        nelibc_va_arg_long_double_bits(arguments, &mantissa, &sign_exponent)
+        local high: culonglong = 0
+        nelibc_va_arg_long_double_bits(arguments, &mantissa, &high, &sign_exponent)
         negative = (sign_exponent & 32768) ~= 0
         local exponent_field: cint = (@cint)(sign_exponent & 32767)
         local integer_bit: boolean = (mantissa >> 63) ~= 0
@@ -3626,6 +3655,7 @@ local function vfprintf_cursor(stream: *FILE, format: *const [0]cchar, arguments
           fraction_bits = mantissa << 1
           exponent = exponent_field - 16383
         end
+        ## end
       else
         local bits: culonglong = nelibc_double_bits(nelibc_va_arg_double(arguments))
         negative = (bits >> 63) ~= 0
@@ -3675,13 +3705,13 @@ local function vfprintf_cursor(stream: *FILE, format: *const [0]cchar, arguments
         if hex_precision < digit_count then
           digit_count = hex_precision
           local discarded_bits: cint = fraction_width - 4 * hex_precision
-          local kept: culonglong = 0
-          local remainder: culonglong = fraction_bits
-          local halfway: culonglong = 1_culonglong << 63
-          if discarded_bits < 64 then
+          local kept: HexInteger = 0
+          local remainder: HexInteger = fraction_bits
+          local halfway: HexInteger = 0x8000000000000000_culonglong
+          if discarded_bits < hex_storage_bits then
             kept = fraction_bits >> discarded_bits
-            remainder = fraction_bits & ((1_culonglong << discarded_bits) - 1)
-            halfway = 1_culonglong << (discarded_bits - 1)
+            remainder = fraction_bits & (((@HexInteger)(1) << discarded_bits) - 1)
+            halfway = (@HexInteger)(1) << (discarded_bits - 1)
           end
           -- Ties round to even on the last kept digit; with no fraction digits
           -- that digit is the leading one (0x1.8p+0 with %.0a is 0x2p+0).
@@ -3690,14 +3720,14 @@ local function vfprintf_cursor(stream: *FILE, format: *const [0]cchar, arguments
           if remainder > halfway or (remainder == halfway and last_kept_odd) then
             kept = kept + 1
           end
-          local limit: culonglong = 1_culonglong << (4 * hex_precision)
+          local limit: HexInteger = (@HexInteger)(1) << (4 * hex_precision)
           if kept == limit then
             -- A carry out of the fraction bumps the leading digit (0x1.f8p+0
             -- with %.1a is 0x2.0p+0), the convention glibc and musl share.
             kept = 0
             leading_digit = leading_digit + 1
           end
-          if discarded_bits < 64 then fraction_bits = kept << discarded_bits
+          if discarded_bits < hex_storage_bits then fraction_bits = kept << discarded_bits
           else fraction_bits = 0 end
         end
         float_buffer[float_length] = leading_digit
@@ -3708,7 +3738,7 @@ local function vfprintf_cursor(stream: *FILE, format: *const [0]cchar, arguments
         end
         local emitted_digits: cint = 0
         while emitted_digits < digit_count do
-          local nibble: culonglong = (fraction_bits >> (fraction_width - 4 - 4 * emitted_digits)) & 15
+          local nibble: HexInteger = (fraction_bits >> (fraction_width - 4 - 4 * emitted_digits)) & 15
           local digit: byte = 0
           if nibble < 10 then digit = (@byte)(48 + nibble)
           elseif uppercase_hex then digit = (@byte)(55 + nibble)
@@ -3777,13 +3807,14 @@ local function vfprintf_cursor(stream: *FILE, format: *const [0]cchar, arguments
         conversion == 103 or conversion == 71 then -- f/F/e/E/g/G
       local value: cdouble = 0.0
       -- long double e/f/g: a value that is a double takes the double path
-      -- below; any other finite value is formatted exactly from its x87 bits.
+      -- below; any other finite value is formatted exactly from its native bits.
       local long_inexact: boolean = false
       local long_mantissa: culonglong = 0
+      local long_high: culonglong = 0
       local long_sign_exponent: cuint = 0
       if length_mod == 6 then
         local exact: cint = 0
-        value = nelibc_va_arg_long_double_parts(arguments, &exact, &long_mantissa, &long_sign_exponent)
+        value = nelibc_va_arg_long_double_parts(arguments, &exact, &long_mantissa, &long_high, &long_sign_exponent)
         long_inexact = exact == 0
       else
         value = nelibc_va_arg_double(arguments)
@@ -3810,9 +3841,7 @@ local function vfprintf_cursor(stream: *FILE, format: *const [0]cchar, arguments
           (((conversion == 101 or conversion == 69) and precision > 18) or
            ((conversion == 103 or conversion == 71) and precision > 17000)) then
         local wide: clongdouble = (@clongdouble)(value)
-        local wide_bits: *[2]culonglong = (@*[2]culonglong)(&wide)
-        long_mantissa = wide_bits[0]
-        long_sign_exponent = (@cuint)(wide_bits[1] & 0x7fff)
+        nelibc_long_double_words(wide, &long_mantissa, &long_high, &long_sign_exponent)
         if negative then long_sign_exponent = long_sign_exponent | 0x8000 end
         long_inexact = true
       end
@@ -3837,7 +3866,7 @@ local function vfprintf_cursor(stream: *FILE, format: *const [0]cchar, arguments
           stream_unlock(stream)
           return -1
         end
-        local long_length: csize = nelibc_format_long_double_parts(long_mantissa,
+        local long_length: csize = nelibc_format_long_double_parts(long_mantissa, long_high,
             long_sign_exponent, conversion, long_precision, (alternate and 1 or 0),
             nelibc_radix_character(), long_output, long_capacity)
         if long_length == 0 then

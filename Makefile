@@ -506,12 +506,15 @@ $(OUT)/alloc-exports-aarch64-gcc.o: src/alloc/standalone_exports.c Makefile | $(
 $(OUT)/allocator-linux-aarch64.o: src/sys/allocator_linux_aarch64.c | $(OUT)
 	gcc -O2 $(AARCH64_NELUA_FLAGS) -mno-outline-atomics -c $< -o $@
 
-$(OUT)/pthread-aarch64-gcc: tools/pthread_aarch64_smoke.c $(OUT)/start-linux-aarch64.o \
-	$(OUT)/boot-linux-aarch64.o $(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o \
+AARCH64_RUNTIME_OBJECTS := $(OUT)/start-linux-aarch64.o \
+	$(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o \
 	$(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o $(OUT)/unistd-aarch64-gcc.o \
 	$(OUT)/errno-aarch64-gcc.o $(OUT)/stdlib-exit-aarch64-gcc.o $(OUT)/memory-aarch64-gcc.o \
 	$(AARCH64_PTHREAD_NELUA_OBJECTS) $(AARCH64_PTHREAD_ADAPTERS) $(OUT)/alloc-exports-aarch64-gcc.o \
-	$(OUT)/allocator-linux-aarch64.o include/pthread.h
+	$(OUT)/allocator-linux-aarch64.o
+
+$(OUT)/pthread-aarch64-gcc: tools/pthread_aarch64_smoke.c $(OUT)/boot-linux-aarch64.o \
+	$(AARCH64_RUNTIME_OBJECTS) include/pthread.h
 	gcc -O2 -Wall -Wextra -Werror $(AARCH64_NELUA_FLAGS) -mno-outline-atomics -no-pie \
 		-DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-e,_start,--gc-sections \
 		$(filter-out %.h,$^) -o $@
@@ -543,6 +546,35 @@ smoke-math-primitives-aarch64-gcc: $(OUT)/math-primitives-aarch64-gcc
 smoke-fenv-aarch64-gcc: $(OUT)/fenv-aarch64-gcc
 	@undefined=$$($(NM) -u $<) && test -z "$$undefined"
 	$<
+
+AARCH64_STDIO_NELUA_OBJECTS := $(addprefix $(OUT)/,$(addsuffix -aarch64-gcc.o,\
+	ctype locale_standalone math_core stdio stdlib stdlib_float string))
+AARCH64_STDIO_ADAPTERS := $(addprefix $(OUT)/,$(addsuffix -aarch64-gcc.o,\
+	stdio_lock_standalone stdio_startup_stub stdio_varargs))
+
+$(AARCH64_STDIO_NELUA_OBJECTS): $(OUT)/%-aarch64-gcc.o: src/%.nelua Makefile | $(OUT)
+	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_NELUA_FLAGS) -DNELIBC_STANDALONE -mno-outline-atomics' -o $@ $<
+
+$(AARCH64_STDIO_ADAPTERS): $(OUT)/%-aarch64-gcc.o: src/%.c Makefile | $(OUT)
+	gcc -O2 $(AARCH64_NELUA_FLAGS) -DNELIBC_STANDALONE -mno-outline-atomics -Iinclude -c $< -o $@
+
+$(OUT)/binary128-stdio-aarch64-gcc: tools/binary128_stdio_smoke.c $(OUT)/boot-linux-aarch64-standalone.o \
+	$(AARCH64_RUNTIME_OBJECTS) $(AARCH64_STDIO_NELUA_OBJECTS) $(AARCH64_STDIO_ADAPTERS) \
+	$(OUT)/math-core-aarch64.o
+	gcc -O2 -Wall -Wextra -Werror $(AARCH64_NELUA_FLAGS) -mno-outline-atomics -no-pie \
+		-DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-e,_start,--gc-sections $^ -lgcc -o $@
+
+$(OUT)/binary128-stdio-reference-aarch64-gcc: tools/binary128_stdio_smoke.c | $(OUT)
+	gcc -O2 -Wall -Wextra -Werror -fno-builtin $< -o $@
+
+.PHONY: diff-binary128-stdio-aarch64-gcc
+diff-binary128-stdio-aarch64-gcc: $(OUT)/binary128-stdio-aarch64-gcc $(OUT)/binary128-stdio-reference-aarch64-gcc
+	@undefined=$$($(NM) -u $<) && test -z "$$undefined"
+	@set -e; fixture=$$(mktemp -d); trap 'rm -rf "$$fixture"' EXIT; \
+		LC_ALL=C $(OUT)/binary128-stdio-reference-aarch64-gcc > "$$fixture/reference"; \
+		LC_ALL=C $< > "$$fixture/nelibc"; \
+		cmp "$$fixture/reference" "$$fixture/nelibc"
+	@echo 'Nelibc AArch64 binary128 stdio matches the system libc'
 
 $(OUT)/stdio-cursor-standalone-gcc: tools/stdio_cursor_smoke.c $(OUT)/libnelibc-standalone-gcc.a
 	gcc -O2 -Wall -Wextra -Werror -DNELIBC_STANDALONE -Iinclude -nostdlib -static -no-pie \
@@ -835,11 +867,11 @@ $(OUT)/mqueue-adapter-zig-musl.o: src/mqueue_adapter.c include/mqueue.h
 	$(ZIG) cc $(ZIGFLAGS) -target x86_64-linux-musl -Iinclude -fno-builtin -c src/mqueue_adapter.c -o $(OUT)/mqueue-adapter-zig-musl.o
 $(OUT)/mqueue-adapter-tcc.o: src/mqueue_adapter.c include/mqueue.h
 	$(TCC) -Iinclude -fno-builtin -c src/mqueue_adapter.c -o $(OUT)/mqueue-adapter-tcc.o
-$(OUT)/mqueue-adapter-standalone-zig.o: src/mqueue_adapter.c include/mqueue.h
+$(OUT)/mqueue-adapter-standalone-zig.o: src/mqueue_adapter.c include/mqueue.h | $(OUT)
 	$(ZIG) cc $(ZIGFLAGS) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -Iinclude -c src/mqueue_adapter.c -o $(OUT)/mqueue-adapter-standalone-zig.o
-$(OUT)/mqueue-adapter-standalone-gcc.o: src/mqueue_adapter.c include/mqueue.h
+$(OUT)/mqueue-adapter-standalone-gcc.o: src/mqueue_adapter.c include/mqueue.h | $(OUT)
 	gcc -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -fno-tree-loop-distribute-patterns -Iinclude -c src/mqueue_adapter.c -o $(OUT)/mqueue-adapter-standalone-gcc.o
-$(OUT)/mqueue-adapter-standalone-tcc.o: src/mqueue_adapter.c include/mqueue.h
+$(OUT)/mqueue-adapter-standalone-tcc.o: src/mqueue_adapter.c include/mqueue.h | $(OUT)
 	$(TCC) -DNELIBC_STANDALONE -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -Iinclude -c src/mqueue_adapter.c -o $(OUT)/mqueue-adapter-standalone-tcc.o
 
 lib-zig: $(OUT)/libnelibc-zig.a
@@ -2799,7 +2831,7 @@ standalone-zig: $(OUT) $(OUT)/memory-x86_64-simd.o $(OUT)/setjmp-x86_64.o
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/unistd-standalone-zig.o src/unistd.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -D NELIBC_TESTING=true -o $(OUT)/unistd-standalone-smoke-zig.o src/unistd.nelua
 	$(NELUA) -B -r --cc '$(ZIG) cc $(ZIGFLAGS)' --cflags='-fno-builtin -ffreestanding -fno-stack-protector' -o $(OUT)/stdio-standalone-zig.o src/stdio.nelua
-	$(ZIG) cc $(ZIGFLAGS) -c -std=c11 -ffreestanding -fno-builtin -fno-sanitize=all src/stdio_varargs.c -o $(OUT)/stdio-varargs-standalone-zig.o
+	$(ZIG) cc $(ZIGFLAGS) -c -std=c11 -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all src/stdio_varargs.c -o $(OUT)/stdio-varargs-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/linux_x86_64.S -o $(OUT)/sys-linux-x86_64-standalone-zig-asm.o
 	$(ZIG) cc $(ZIGFLAGS) -ffreestanding -fno-builtin -fno-stack-protector -fno-sanitize=all -c src/sys/linux_x86_64_ops.c -o $(OUT)/sys-ops-standalone-zig.o
 	$(ZIG) cc $(ZIGFLAGS) -c src/sys/start_linux_x86_64_standalone.S -o $(OUT)/start-linux-x86_64-standalone-zig.o

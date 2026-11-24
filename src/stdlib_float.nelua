@@ -748,7 +748,7 @@ local function long_double_round(digits: *[0]byte, count: isize, keep: isize): i
   return count
 end
 
-local function nelibc_format_long_double_parts(mantissa: culonglong, sign_exponent: cuint,
+local function nelibc_format_long_double_parts(mantissa: culonglong, high: culonglong, sign_exponent: cuint,
     conversion: cint, precision: cint, alternate: cint, radix: cint,
     output: *[0]byte, capacity: csize): csize
     <cexport, codename 'nelibc_format_long_double_parts'>
@@ -757,22 +757,33 @@ local function nelibc_format_long_double_parts(mantissa: culonglong, sign_expone
   if capacity < (@csize)(precision) + 4960 then return 0 end
   local exponent_field: cint = (@cint)(sign_exponent & 0x7FFF)
   if exponent_field == 0x7FFF then return 0 end
+  ## if ccinfo.is_arm64 then
+  local fraction_width: cint <comptime> = 112
+  ## else
+  local fraction_width: cint <comptime> = 63
+  ## end
   local binary_exponent: cint
   if exponent_field == 0 then
-    binary_exponent = -16382 - 63
+    binary_exponent = -16382 - fraction_width
   else
-    binary_exponent = exponent_field - 16383 - 63
+    binary_exponent = exponent_field - 16383 - fraction_width
   end
   local digits: *[0]byte = (@*[0]byte)(malloc(11600 + (@csize)(precision) + 64))
   if digits == nilptr then return 0 end
   local count: isize = 0
   local scale: isize = 0 -- digits after the decimal point
-  if mantissa == 0 then
+  local zero = mantissa == 0 and high == 0
+  if zero then
     digits[0] = 48
     count = 1
   else
     local integer: BigUInt <noinit>
     big_set_u64(&integer, mantissa)
+    if high ~= 0 then
+      integer.limbs[2] = (@cuint)(high & 0xffffffff_culonglong)
+      integer.limbs[3] = (@cuint)(high >> 32)
+      if integer.limbs[3] ~= 0 then integer.used = 4 else integer.used = 3 end
+    end
     local scaled: boolean
     if binary_exponent >= 0 then
       scaled = big_shift_left(&integer, binary_exponent)
@@ -818,12 +829,12 @@ local function nelibc_format_long_double_parts(mantissa: culonglong, sign_expone
   if conversion == 103 or conversion == 71 then
     if fraction_digits == 0 then fraction_digits = 1 end
     local decimal_exponent: isize = lead_exponent
-    if mantissa ~= 0 and fraction_digits < count and
+    if not zero and fraction_digits < count and
         long_double_round_up(digits, count, fraction_digits) and
         long_double_all_nines(digits, fraction_digits) then
       decimal_exponent = decimal_exponent + 1
     end
-    if mantissa == 0 then decimal_exponent = 0 end
+    if zero then decimal_exponent = 0 end
     if fraction_digits > decimal_exponent and decimal_exponent >= -4 then
       fraction_digits = fraction_digits - 1 - decimal_exponent
     else
@@ -884,7 +895,7 @@ local function nelibc_format_long_double_parts(mantissa: culonglong, sign_expone
       decimal_exponent = decimal_exponent + 1
       kept = keep
     end
-    if mantissa == 0 then decimal_exponent = 0 end
+    if zero then decimal_exponent = 0 end
     output[length] = digits[0]
     length = length + 1
     if fraction_digits > 0 or alternate ~= 0 then
@@ -1581,6 +1592,68 @@ local function nelibc_format_general_double(value: cdouble, precision: cint,
   return length
 end
 
+## if ccinfo.is_arm64 then
+local LONG_DOUBLE_PRECISION: cint <comptime> = 113
+
+local function binary128_from_words(low: culonglong, high: culonglong,
+    negative: boolean): clongdouble <inline>
+  local result: clongdouble <noinit>
+  local words: *[2]culonglong = (@*[2]culonglong)(&result)
+  words[0] = low
+  if negative then high = high | 0x8000000000000000_culonglong end
+  words[1] = high
+  return result
+end
+
+local function rounded_binary128(numerator: *BigUInt, denominator: *BigUInt,
+    exponent: cint, negative: boolean, sticky: boolean, output: *clongdouble): boolean
+  local one: uint128 = 1
+  local hidden_bit = one << 112
+  local quotient: uint128 = 0
+  local bit: cint = big_bit_length(numerator) - big_bit_length(denominator)
+  if bit > 113 then return false end
+  while bit >= 0 do
+    if big_try_subtract_shifted(numerator, denominator, bit) then
+      quotient = quotient | (one << bit)
+    end
+    bit = bit - 1
+  end
+
+  local inexact = numerator.used ~= 0 or sticky
+  if not big_shift_left_one(numerator) then return false end
+  local comparison = big_compare(numerator, denominator)
+  if comparison > 0 or (comparison == 0 and (sticky or (quotient & 1) ~= 0)) then
+    quotient = quotient + 1
+  end
+
+  local exponent_field: cint = 0
+  if exponent >= -16382 then
+    if quotient == hidden_bit << 1 then
+      quotient = quotient >> 1
+      exponent = exponent + 1
+    end
+    if exponent > 16383 then
+      nelibc_errno_location()[0] = 34 -- ERANGE
+      $output = binary128_from_words(0, 0x7fff000000000000_culonglong, negative)
+      return true
+    end
+    exponent_field = exponent + 16383
+  else
+    -- AArch64 detects tininess before rounding, including a midpoint
+    -- that rounds up from the subnormal range to the smallest normal.
+    if inexact then nelibc_errno_location()[0] = 34 end -- ERANGE
+    if quotient == hidden_bit then exponent_field = 1 end
+  end
+
+  local upper: culonglong = ((@culonglong)(quotient >> 64) & 0xffffffffffff_culonglong) |
+    ((@culonglong)(exponent_field) << 48)
+  $output = binary128_from_words((@culonglong)(quotient), upper, negative)
+  return true
+end
+## else
+local LONG_DOUBLE_PRECISION: cint <comptime> = 64
+## end
+
 local function exact_rational_to_double(numerator_input: *BigUInt, denominator_input: *BigUInt,
     binary_scale: cint, negative: boolean,
     precision: cint, sticky_tail: boolean, output: *cdouble, long_output: *clongdouble): boolean <inline>
@@ -1590,7 +1663,7 @@ local function exact_rational_to_double(numerator_input: *BigUInt, denominator_i
   local long_output_pointer: *[0]clongdouble = (@*[0]clongdouble)(long_output)
   if numerator_pointer[0].used == 0 then
     output_pointer[0] = 0.0_cdouble
-    if precision == 64 then long_output_pointer[0] = 0.0_clongdouble end
+    if precision == LONG_DOUBLE_PRECISION then long_output_pointer[0] = 0.0_clongdouble end
     return true
   end
   local quotient_exponent: cint =
@@ -1602,11 +1675,11 @@ local function exact_rational_to_double(numerator_input: *BigUInt, denominator_i
   local maximum_exponent: cint = 1023
   local minimum_exponent: cint = -1022
   if precision == 24 then maximum_exponent = 127; minimum_exponent = -126 end
-  if precision == 64 then maximum_exponent = 16383; minimum_exponent = -16382 end
+  if precision == LONG_DOUBLE_PRECISION then maximum_exponent = 16383; minimum_exponent = -16382 end
   local minimum_subnormal_exponent: cint = minimum_exponent - precision + 1
   if binary_exponent > maximum_exponent then
     nelibc_errno_location()[0] = 34 -- ERANGE
-    if precision == 64 then
+    if precision == LONG_DOUBLE_PRECISION then
       local infinity: clongdouble = nelibc_scale_u64_to_long_double(1, maximum_exponent + 1, 1)
       if negative then long_output_pointer[0] = -infinity else long_output_pointer[0] = infinity end
       return true
@@ -1617,7 +1690,7 @@ local function exact_rational_to_double(numerator_input: *BigUInt, denominator_i
   end
   if binary_exponent < minimum_subnormal_exponent - 1 then
     nelibc_errno_location()[0] = 34 -- ERANGE
-    if precision == 64 then
+    if precision == LONG_DOUBLE_PRECISION then
       if negative then long_output_pointer[0] = -0.0_clongdouble else long_output_pointer[0] = 0.0_clongdouble end
       return true
     end
@@ -1632,13 +1705,19 @@ local function exact_rational_to_double(numerator_input: *BigUInt, denominator_i
   else
     if not big_shift_left(&denominator_pointer[0], -scale) then return false end
   end
+  ## if ccinfo.is_arm64 then
+  if precision == LONG_DOUBLE_PRECISION then
+    return rounded_binary128(&numerator_pointer[0], &denominator_pointer[0],
+      binary_exponent, negative, sticky_tail, long_output)
+  end
+  ## end
   local significand: culonglong = 0
   local quotient_carry: cint = 0
   if not big_divide_round(&numerator_pointer[0], &denominator_pointer[0], precision,
       sticky_tail, &significand, &quotient_carry) then
     return false
   end
-  if precision == 64 then
+  if precision == LONG_DOUBLE_PRECISION then
     if quotient_carry ~= 0 then
       significand = 0x8000000000000000_culonglong
       binary_exponent = binary_exponent + 1
@@ -1921,13 +2000,17 @@ local function strtod_impl(text: *const [0]cchar, end_text: **cchar, precision: 
       end
     end
     if end_text ~= nilptr then end_pointer[0] = (@*cchar)(&text[cursor]) end
-    if precision == 64 then
+    if precision == LONG_DOUBLE_PRECISION then
+      ## if ccinfo.is_arm64 then
+      return binary128_from_words(payload, 0x7fff800000000000_culonglong, negative)
+      ## else
       local quiet: clongdouble
       local quiet_bits: *[2]culonglong = (@*[2]culonglong)(&quiet)
       quiet_bits[0] = 0xC000000000000000_culonglong | (payload & 0x3FFFFFFFFFFFFFFF_culonglong)
       quiet_bits[1] = 0x7FFF_culonglong
       if negative then quiet_bits[1] = 0xFFFF_culonglong end
       return quiet
+      ## end
     end
     local nan_bits: culonglong = 0x7FF8000000000000_culonglong
     if precision == 53 then nan_bits = nan_bits | (payload & 0x0007FFFFFFFFFFFF_culonglong)
@@ -1970,7 +2053,7 @@ local function strtod_impl(text: *const [0]cchar, end_text: **cchar, precision: 
   local parsed_binary_exponent: cint = 0
   local significant_digits: csize = 0
   local maximum_decimal_digits: csize = 19
-  if precision == 64 then maximum_decimal_digits = 20 end
+  if precision == LONG_DOUBLE_PRECISION then maximum_decimal_digits = 20 end
   local decimal_exponent: cint = 0
   local binary_exponent: cint = 0
   local guard_digit: cint = -1
@@ -2320,13 +2403,13 @@ local function strtod_impl(text: *const [0]cchar, end_text: **cchar, precision: 
       if skipped_digits > 0 then exponent2 = exponent2 + 4 * (@cint)(skipped_digits) end
       if exact_binary_to_double(&exact_integer, exponent2, negative, precision,
           skipped_nonzero, &exact_result, &exact_long_result) then
-        if precision == 64 then return exact_long_result end
+        if precision == LONG_DOUBLE_PRECISION then return exact_long_result end
         return exact_result
       end
     end
     local maximum_binary_exponent: cint = 1100
     local minimum_binary_exponent: cint = -1200
-    if precision == 64 then maximum_binary_exponent = 16400; minimum_binary_exponent = -16500 end
+    if precision == LONG_DOUBLE_PRECISION then maximum_binary_exponent = 16400; minimum_binary_exponent = -16500 end
     if binary_exponent > maximum_binary_exponent then
       nelibc_errno_location()[0] = 34 -- ERANGE
       local infinity: cdouble = nelibc_double_from_bits(0x7FF0000000000000_culonglong)
@@ -2346,13 +2429,13 @@ local function strtod_impl(text: *const [0]cchar, end_text: **cchar, precision: 
       if exact_decimal_to_double(&exact_integer,
           exponent10, exact_decimal_trailing_zeroes, negative, precision, skipped_nonzero,
           &exact_result, &exact_long_result) then
-        if precision == 64 then return exact_long_result end
+        if precision == LONG_DOUBLE_PRECISION then return exact_long_result end
         return exact_result
       end
     end
     local maximum_decimal_exponent: cint = 400
     local minimum_decimal_exponent: cint = -400
-    if precision == 64 then maximum_decimal_exponent = 5000; minimum_decimal_exponent = -5000 end
+    if precision == LONG_DOUBLE_PRECISION then maximum_decimal_exponent = 5000; minimum_decimal_exponent = -5000 end
     if decimal_exponent > maximum_decimal_exponent then
       nelibc_errno_location()[0] = 34 -- ERANGE
       local infinity: cdouble = nelibc_double_from_bits(0x7FF0000000000000_culonglong)
@@ -2364,7 +2447,7 @@ local function strtod_impl(text: *const [0]cchar, end_text: **cchar, precision: 
       return 0.0_cdouble
     end
   end
-  if precision == 64 then
+  if precision == LONG_DOUBLE_PRECISION then
     local long_result: clongdouble
     if hexadecimal then long_result = nelibc_scale_u64_to_long_double(significand, binary_exponent, 1)
     else long_result = nelibc_scale_u64_to_long_double(significand, decimal_exponent, 0) end
@@ -2413,7 +2496,7 @@ end
 
 local function strtold(text: *const [0]cchar, end_text: **cchar): clongdouble <cexport, codename 'strtold'>
   local text: *[0]cchar = (@*[0]cchar)(text)
-  return strtod_impl(text, end_text, 64)
+  return strtod_impl(text, end_text, LONG_DOUBLE_PRECISION)
 end
 
 local function strtof_l(text: *const [0]cchar, end_text: **cchar, locale: C.locale_t): cfloat
@@ -2450,7 +2533,7 @@ local function strtold_l(text: *const [0]cchar, end_text: **cchar, locale: C.loc
     nelibc_errno_location()[0] = 22 -- EINVAL
     return 0.0_clongdouble
   end
-  local result: clongdouble = strtod_impl(text, end_text, 64)
+  local result: clongdouble = strtod_impl(text, end_text, LONG_DOUBLE_PRECISION)
   uselocale(previous)
   return result
 end

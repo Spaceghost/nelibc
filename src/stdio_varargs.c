@@ -1,3 +1,4 @@
+#include <float.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -26,17 +27,35 @@ unsigned long long nelibc_va_arg_unsigned_long_long(va_list *arguments) {
 size_t nelibc_va_arg_size(va_list *arguments) { return va_arg(*arguments, size_t); }
 unsigned int nelibc_va_arg_unsigned_int(va_list *arguments) { return va_arg(*arguments, unsigned int); }
 double nelibc_va_arg_double(va_list *arguments) { return va_arg(*arguments, double); }
-/* x87 80-bit layout: 64-bit mantissa with an explicit integer bit, then a
- * 16-bit sign+exponent word. Read the bytes so no classification happens. */
 __attribute__((no_stack_protector))
-void nelibc_va_arg_long_double_bits(va_list *arguments, unsigned long long *mantissa,
-                                    unsigned *sign_exponent) {
-  long double value = va_arg(*arguments, long double);
+static unsigned long long read_word(const unsigned char *raw) {
+  unsigned long long value = 0;
+  for (int index = 7; index >= 0; --index) value = (value << 8) | raw[index];
+  return value;
+}
+
+/* Return an explicit significand as two words on both supported LE ABIs. */
+__attribute__((no_stack_protector))
+void nelibc_long_double_words(long double value, unsigned long long *low,
+                              unsigned long long *high, unsigned *sign_exponent) {
   const unsigned char *raw = (const unsigned char *)&value;
-  unsigned long long bits = 0;
-  for (int index = 7; index >= 0; --index) bits = (bits << 8) | raw[index];
-  *mantissa = bits;
+  *low = read_word(raw);
+#if LDBL_MANT_DIG == 113
+  unsigned long long upper = read_word(raw + 8);
+  *sign_exponent = (unsigned)(upper >> 48);
+  *high = upper & 0x0000ffffffffffffULL;
+  unsigned exponent = *sign_exponent & 0x7fff;
+  if (exponent != 0 && exponent != 0x7fff) *high |= 1ULL << 48;
+#else
+  *high = 0;
   *sign_exponent = (unsigned)raw[8] | ((unsigned)raw[9] << 8);
+#endif
+}
+
+__attribute__((no_stack_protector))
+void nelibc_va_arg_long_double_bits(va_list *arguments, unsigned long long *low,
+                                    unsigned long long *high, unsigned *sign_exponent) {
+  nelibc_long_double_words(va_arg(*arguments, long double), low, high, sign_exponent);
 }
 /* The double a long double argument equals, with exact set when nothing was lost. */
 __attribute__((no_stack_protector))
@@ -46,21 +65,23 @@ double nelibc_va_arg_long_double_as_double(va_list *arguments, int *exact) {
   *exact = (value != value) || ((long double)narrowed == value);
   return narrowed;
 }
-/* One read of a long double argument: the double it narrows to, whether that
- * is exact, and the raw x87 bits for the exact decimal path. */
+/* Keep binary128 finite values on the exact path without a narrowing
+ * conversion that could raise inexact, overflow, or underflow. */
 __attribute__((no_stack_protector))
 double nelibc_va_arg_long_double_parts(va_list *arguments, int *exact,
-                                       unsigned long long *mantissa,
+                                       unsigned long long *low,
+                                       unsigned long long *high,
                                        unsigned *sign_exponent) {
   long double value = va_arg(*arguments, long double);
-  const unsigned char *raw = (const unsigned char *)&value;
-  unsigned long long bits = 0;
-  for (int index = 7; index >= 0; --index) bits = (bits << 8) | raw[index];
-  *mantissa = bits;
-  *sign_exponent = (unsigned)raw[8] | ((unsigned)raw[9] << 8);
+  nelibc_long_double_words(value, low, high, sign_exponent);
+#if LDBL_MANT_DIG == 113
+  *exact = (*sign_exponent & 0x7fff) == 0x7fff;
+  return *exact ? (double)value : 0.0;
+#else
   double narrowed = (double)value;
   *exact = (value != value) || ((long double)narrowed == value);
   return narrowed;
+#endif
 }
 void nelibc_va_copy(va_list destination, va_list source) {
   va_copy(destination, source);

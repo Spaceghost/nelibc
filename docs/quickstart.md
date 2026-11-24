@@ -452,8 +452,14 @@ The standalone stdio formatter and scanner share a copied argument list
 through the C ABI. The mixed-argument fixture exercises narrow and wide
 formatting, scanning, and allocated output. Run it with
 `make smoke-stdio-cursor-standalone-gcc` on x86-64. The fixture also
-passed when linked into the AArch64 prototype. Full binary128
-formatting, scanning, and math are still in progress.
+passed when linked into the AArch64 prototype.
+
+On AArch64, `make diff-binary128-stdio-aarch64-gcc NELUA=/path/to/nelua`
+compares Nelibc's binary128 formatting and parsing with the system libc.
+The fixture covers decimal and hexadecimal conversions, ties, range
+errors, narrow and wide scanning, and decimal round trips. It links the
+Nelibc runtime and GCC's compiler support library. Binary128 libm and the
+full standalone archive remain in progress.
 
 ## Useful checks
 
