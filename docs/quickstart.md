@@ -401,13 +401,17 @@ For an emulated build environment, see the
 ## AArch64 freestanding startup
 
 On Linux AArch64, run `make smoke-freestanding-aarch64-gcc`. It links a
-static executable without a C runtime, checks the argument and environment
-vectors, and exercises three- and six-argument Linux syscalls, including
-file-backed memory mapping with a nonzero file offset.
+static executable without a C runtime and checks the argument and environment
+vectors. The executable uses the AArch64 Linux platform-operation backend
+for file-backed memory mapping, pipes, polling, descriptor duplication,
+and a child process with a checked exit status.
 
-This startup passes control directly to `main` and terminates the process
-with its return status. The standalone library still needs startup support
-for TLS and constructors, and a platform-operation backend for AArch64.
+The dispatcher uses syscall numbers from Linux AArch64 headers. It adapts
+legacy operations such as `open`, `poll` and `fork` to their AArch64
+equivalents. Callers use AArch64 kernel flag values. Operations with
+pending ABI work, including file metadata, signal actions and epoll event
+records, return `-ENOSYS`. The standalone library still needs those ABI
+adapters, TLS setup, and constructor support.
 
 ## Useful checks
 

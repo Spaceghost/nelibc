@@ -1,17 +1,13 @@
 #include <asm/errno.h>
-#include <asm/unistd.h>
+#include <linux/fcntl.h>
 #include <linux/mman.h>
+#include <asm/poll.h>
 
-extern long nelibc_raw_syscall3(unsigned long number, unsigned long arg1,
-                                unsigned long arg2, unsigned long arg3);
-extern long nelibc_raw_syscall6(unsigned long number, unsigned long arg1,
-                                unsigned long arg2, unsigned long arg3,
-                                unsigned long arg4, unsigned long arg5,
-                                unsigned long arg6);
+#include "../include/nelibc_sys.h"
 
 int main(int argc, char **argv, char **envp) {
   static const char env[] = "NELIBC_ARM_SMOKE=present";
-  static const char ok[] = "Nelibc AArch64 startup and raw syscalls passed\n";
+  static const char ok[] = "Nelibc AArch64 startup and platform operations passed\n";
   static const unsigned long offset = 65536; /* aligned for all ARM64 page sizes */
   char value = 'N';
 
@@ -23,20 +19,43 @@ int main(int argc, char **argv, char **envp) {
     ++envp;
   }
   if (!*envp) return 2;
-  if (nelibc_raw_syscall3(__NR_getpid, 0, 0, 0) <= 0 ||
-      nelibc_raw_syscall3(__NR_close, -1UL, 0, 0) != -EBADF) return 3;
+  if (nelibc_sys3(NELIBC_SYS_GETPID, 0, 0, 0) <= 0 ||
+      nelibc_sys3(NELIBC_SYS_CLOSE, -1UL, 0, 0) != -EBADF) return 3;
 
-  long fd = nelibc_raw_syscall3(__NR_memfd_create, (unsigned long)"nelibc", 0, 0);
+  long fd = nelibc_sys3(NELIBC_SYS_MEMFD_CREATE, (unsigned long)"nelibc", 0, 0);
   if (fd < 0) return 4;
-  if (nelibc_raw_syscall6(__NR_pwrite64, fd, (unsigned long)&value, 1,
+  if (nelibc_sys6(NELIBC_SYS_PWRITE64, fd, (unsigned long)&value, 1,
                           offset, 0, 0) != 1) return 5;
   /* A nonzero file offset exercises the sixth kernel argument. */
-  long address = nelibc_raw_syscall6(__NR_mmap, 0, 1, PROT_READ, MAP_PRIVATE,
+  long address = nelibc_sys6(NELIBC_SYS_MMAP, 0, 1, PROT_READ, MAP_PRIVATE,
                                      fd, offset);
   if ((unsigned long)address >= -4095UL) return 6;
   if (*(const char *)address != value) return 7;
-  if (nelibc_raw_syscall3(__NR_munmap, address, 1, 0) ||
-      nelibc_raw_syscall3(__NR_close, fd, 0, 0)) return 8;
-  return nelibc_raw_syscall3(__NR_write, 1, (unsigned long)ok, sizeof ok - 1)
+  if (nelibc_sys3(NELIBC_SYS_MUNMAP, address, 1, 0) ||
+      nelibc_sys3(NELIBC_SYS_CLOSE, fd, 0, 0)) return 8;
+  long directory = nelibc_sys3(NELIBC_SYS_OPEN, (unsigned long)".",
+                               O_RDONLY | O_DIRECTORY, 0);
+  if (directory < 0 || nelibc_sys3(NELIBC_SYS_CLOSE, directory, 0, 0)) return 9;
+  int pipe[2];
+  if (nelibc_sys3(NELIBC_SYS_PIPE, (unsigned long)pipe, 0, 0)) return 10;
+  struct pollfd ready = {.fd = pipe[0], .events = POLLIN, .revents = 0};
+  if (nelibc_sys3(NELIBC_SYS_POLL, (unsigned long)&ready, 1, 0) != 0 ||
+      nelibc_sys3(NELIBC_SYS_WRITE, pipe[1], (unsigned long)&value, 1) != 1 ||
+      nelibc_sys3(NELIBC_SYS_POLL, (unsigned long)&ready, 1, 50) != 1 ||
+      !(ready.revents & POLLIN)) return 11;
+  if (nelibc_sys3(NELIBC_SYS_DUP2, pipe[0], pipe[0], 0) != pipe[0] ||
+      nelibc_sys3(NELIBC_SYS_DUP2, -1UL, -1UL, 0) != -EBADF ||
+      nelibc_sys3(NELIBC_SYS_DUP2, pipe[0], pipe[1], 0) != pipe[1]) return 12;
+  if (nelibc_sys3(NELIBC_SYS_CLOSE, pipe[0], 0, 0) ||
+      nelibc_sys3(NELIBC_SYS_CLOSE, pipe[1], 0, 0)) return 13;
+  if (nelibc_sys3(NELIBC_SYS_COUNT, 0, 0, 0) != -ENOSYS ||
+      nelibc_sys3(NELIBC_SYS_FSTAT, 0, 0, 0) != -ENOSYS) return 14;
+  long child = nelibc_sys3(NELIBC_SYS_FORK, 0, 0, 0);
+  if (child < 0) return 15;
+  if (child == 0) return 42;
+  int status = 0;
+  if (nelibc_sys6(NELIBC_SYS_WAIT4, child, (unsigned long)&status, 0, 0,
+                  0, 0) != child || status != (42 << 8)) return 16;
+  return nelibc_sys3(NELIBC_SYS_WRITE, 1, (unsigned long)ok, sizeof ok - 1)
          != sizeof ok - 1;
 }

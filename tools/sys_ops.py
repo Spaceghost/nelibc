@@ -12,6 +12,7 @@ never sees a Linux number.
 This script is the single source of the vocabulary. It writes:
   include/nelibc_sys.h          the enum and the entry points
   src/sys/linux_x86_64_ops.h    the Linux x86-64 number per operation
+  src/sys/linux_aarch64_ops.h   the AArch64 kernel-header mapping
   src/*.nelua                   the `SYS_*` constant block each module uses
                                 (between the two marker comments)
 Run it after editing OPERATIONS; `--check` fails if any output is stale.
@@ -177,6 +178,33 @@ def linux_table() -> str:
     return "\n".join(lines)
 
 
+# These operations need argument translations, or still use architecture-
+# specific Nelibc structs and calling conventions.
+AARCH64_SPECIAL_OPERATIONS = {
+    "open", "access", "pipe", "dup2", "readlink", "chmod", "getpgrp", "poll",
+    "stat", "lstat", "fstat", "newfstatat", "select", "pause", "alarm", "time",
+    "clone", "fork", "vfork", "rt_sigaction", "epoll_ctl", "epoll_wait",
+    "epoll_pwait", "epoll_pwait2",
+}
+
+
+def linux_aarch64_table() -> str:
+    lines = [
+        "/* AArch64 direct syscall numbers plus one. Zero denotes no mapping.",
+        f" * {GENERATED}",
+        " */",
+        "static const unsigned short linux_aarch64_numbers[NELIBC_SYS_COUNT] = {",
+    ]
+    for name, _ in OPERATIONS:
+        if name in AARCH64_SPECIAL_OPERATIONS:
+            continue
+        lines += [f"#ifdef __NR_{name}",
+                  f"  [NELIBC_SYS_{name.upper()}] = __NR_{name} + 1,",
+                  "#endif"]
+    lines += ["};", ""]
+    return "\n".join(lines)
+
+
 def module_block(text: str) -> str:
     known = {name.upper(): index for index, (name, _) in enumerate(OPERATIONS)}
     used = sorted({m for m in re.findall(r"\bSYS_([A-Z0-9_]+)\b", text) if m in known},
@@ -202,6 +230,7 @@ def outputs() -> dict[Path, str]:
     result = {
         ROOT / "include/nelibc_sys.h": header(),
         ROOT / "src/sys/linux_x86_64_ops.h": linux_table(),
+        ROOT / "src/sys/linux_aarch64_ops.h": linux_aarch64_table(),
     }
     for module in NELUA_MODULES:
         path = ROOT / module

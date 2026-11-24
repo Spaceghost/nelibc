@@ -411,9 +411,12 @@ $(OUT)/linux-aarch64-raw-syscall.o: src/sys/linux_aarch64.S | $(OUT)
 $(OUT)/start-linux-aarch64.o: src/sys/start_linux_aarch64.S | $(OUT)
 	gcc -c $< -o $@
 
-$(OUT)/freestanding-aarch64-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o
+$(OUT)/linux-aarch64-ops.o: src/sys/linux_aarch64_ops.c src/sys/linux_aarch64_ops.h include/nelibc_sys.h | $(OUT)
+	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector -fno-pie -c $< -o $@
+
+$(OUT)/freestanding-aarch64-gcc: tools/freestanding_aarch64_smoke.c $(OUT)/start-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o $(OUT)/linux-aarch64-ops.o include/nelibc_sys.h
 	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
-		-fno-pie -no-pie -nostdlib -static -Wl,-e,_start $^ -o $@
+		-fno-pie -no-pie -nostdlib -static -Wl,-e,_start $(filter-out %.h,$^) -o $@
 
 smoke-freestanding-aarch64-gcc: $(OUT)/freestanding-aarch64-gcc
 	@test -z "$$($(NM) -u $<)"
@@ -717,7 +720,7 @@ lib-tcc: $(OUT)/libnelibc-tcc.a
 # the Linux x86-64 table, and the SYS_* blocks in the Nelua modules.
 sys-ops-check:
 	python3 tools/sys_ops.py --check
-	@echo 'sys-ops-check: include/nelibc_sys.h, the Linux x86-64 table, and the module blocks match tools/sys_ops.py'
+	@echo 'sys-ops-check: include/nelibc_sys.h, the Linux syscall tables, and the module blocks match tools/sys_ops.py'
 
 api-coverage: $(OUT)/libnelibc-zig.a $(OUT)/libnelibc-gcc.a \
 	$(OUT)/libnelibc-zig-musl.a $(OUT)/libnelibc-tcc.a \
