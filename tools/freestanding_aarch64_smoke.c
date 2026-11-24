@@ -184,7 +184,7 @@ int main(int argc, char **argv, char **envp) {
   if (nelibc_sys3(NELIBC_SYS_CLOSE, pipe[0], 0, 0) ||
       nelibc_sys3(NELIBC_SYS_CLOSE, pipe[1], 0, 0)) return 13;
   if (nelibc_sys3(NELIBC_SYS_COUNT, 0, 0, 0) != -ENOSYS ||
-      nelibc_sys3(NELIBC_SYS_RT_SIGACTION, 0, 0, 0) != -ENOSYS) return 14;
+      nelibc_sys3(NELIBC_SYS_SELECT, 0, 0, 0) != -ENOSYS) return 14;
   long child = nelibc_sys3(NELIBC_SYS_FORK, 0, 0, 0);
   if (child < 0) return 15;
   if (child == 0) return 42;

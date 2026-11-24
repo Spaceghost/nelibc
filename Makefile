@@ -441,6 +441,31 @@ smoke-freestanding-aarch64-gcc: $(OUT)/freestanding-aarch64-gcc $(OUT)/freestand
 	done
 	@if NELIBC_ARM_SMOKE=present $<; then exit 1; else test "$$?" -eq 1; fi
 
+.PHONY: smoke-signal-aarch64-gcc
+
+AARCH64_SIGNAL_NELUA_FLAGS = -U_FORTIFY_SOURCE -fno-builtin -ffreestanding \
+	-fno-stack-protector -fno-tree-loop-distribute-patterns -ffunction-sections \
+	-fdata-sections -fno-pie -ftls-model=local-exec
+
+$(OUT)/unistd-aarch64-gcc.o: src/unistd.nelua Makefile | $(OUT)
+	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_SIGNAL_NELUA_FLAGS)' -o $@ $<
+
+$(OUT)/errno-aarch64-gcc.o: src/errno/standalone.nelua Makefile | $(OUT)
+	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_SIGNAL_NELUA_FLAGS)' -o $@ $<
+
+$(OUT)/signal-aarch64-gcc: tools/signal_aarch64_smoke.c $(OUT)/start-linux-aarch64.o \
+	$(OUT)/boot-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o \
+	$(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o \
+	$(OUT)/unistd-aarch64-gcc.o $(OUT)/errno-aarch64-gcc.o include/signal.h
+	gcc -O2 -Wall -Wextra -Werror -ffreestanding -fno-builtin -fno-stack-protector \
+		-fno-pie -no-pie -DNELIBC_STANDALONE -Iinclude -nostdlib -static \
+		-Wl,-e,_start,--gc-sections $(filter-out %.h,$^) -o $@
+
+smoke-signal-aarch64-gcc: $(OUT)/signal-aarch64-gcc
+	@undefined=$$($(NM) -u $<) && test -z "$$undefined"
+	$<
+
+
 float-diff-zig: zig
 	$(ZIG) cc $(ZIGFLAGS) -Iinclude -fno-builtin tools/float_diff.c $(OUT)/memory-zig.o $(OUT)/memory-x86_64-simd.o $(OUT)/stdlib-float-zig.o $(OUT)/errno-host-zig.o -o $(OUT)/float-diff-zig
 	$(OUT)/float-diff-zig

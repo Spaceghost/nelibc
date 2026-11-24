@@ -419,9 +419,14 @@ operations translate the kernel result into Nelibc’s existing `struct stat`
 layout. Epoll uses the native AArch64 event layout. The smoke checks two
 event records through `epoll_wait` and `epoll_pwait`, and reports when
 `epoll_pwait2` returns `ENOSYS` in the test environment. Operations with
-pending ABI work, including signal actions, return `-ENOSYS`. The standalone library still needs those ABI
+pending ABI work, such as the legacy `select` operation, return `-ENOSYS`. The standalone library still needs those ABI
 adapters, integration with the public pthread implementation, and integration
 with the standalone exit path.
+
+Run `make smoke-signal-aarch64-gcc NELUA=/path/to/nelua` to link the Nelibc
+signal functions and thread-local errno into a static test. It checks public
+`sigaction`, `sigprocmask` and `raise`, including delivery with `SA_SIGINFO`,
+return from the handler and restoration of the previous action.
 
 ## Useful checks
 

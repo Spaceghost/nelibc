@@ -183,7 +183,7 @@ def linux_table() -> str:
 AARCH64_SPECIAL_OPERATIONS = {
     "open", "access", "pipe", "dup2", "readlink", "chmod", "getpgrp", "poll",
     "stat", "lstat", "fstat", "newfstatat", "select", "pause", "alarm", "time",
-    "clone", "fork", "vfork", "rt_sigaction", "epoll_wait",
+    "clone", "fork", "vfork", "epoll_wait",
 }
 
 

@@ -26,6 +26,9 @@ static const unsigned short linux_aarch64_numbers[NELIBC_SYS_COUNT] = {
 #ifdef __NR_brk
   [NELIBC_SYS_BRK] = __NR_brk + 1,
 #endif
+#ifdef __NR_rt_sigaction
+  [NELIBC_SYS_RT_SIGACTION] = __NR_rt_sigaction + 1,
+#endif
 #ifdef __NR_rt_sigprocmask
   [NELIBC_SYS_RT_SIGPROCMASK] = __NR_rt_sigprocmask + 1,
 #endif

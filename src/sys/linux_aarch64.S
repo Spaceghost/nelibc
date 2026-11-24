@@ -1,3 +1,5 @@
+#include <asm/unistd.h>
+
 /* AAPCS64 passes the syscall number before the arguments. Linux expects
  * the number in x8 and arguments in x0 through x5. */
 .section .text.nelibc_raw_syscall,"ax",%progbits
@@ -29,5 +31,14 @@ nelibc_raw_syscall6_real:
 .size nelibc_raw_syscall6_real, .-nelibc_raw_syscall6_real
 .weak nelibc_raw_syscall6
 .set nelibc_raw_syscall6, nelibc_raw_syscall6_real
+
+.text
+.globl nelibc_rt_sigreturn
+.type nelibc_rt_sigreturn, %function
+nelibc_rt_sigreturn:
+  mov x8, #__NR_rt_sigreturn
+  svc #0
+  brk #0
+.size nelibc_rt_sigreturn, .-nelibc_rt_sigreturn
 
 .section .note.GNU-stack,"",%progbits
