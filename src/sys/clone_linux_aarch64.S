@@ -1,3 +1,4 @@
+#define __ASSEMBLY__ 1
 #include <asm/unistd.h>
 #include <linux/sched.h>
 
