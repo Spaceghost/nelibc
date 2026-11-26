@@ -574,7 +574,7 @@ $(OUT)/libnelibc-standalone-aarch64-gcc.a: $(OUT)/boot-linux-aarch64-standalone.
 	$(AARCH64_LIBC_NELUA_OBJECTS) $(AARCH64_LIBC_ADAPTERS) $(OUT)/math-core-aarch64.o \
 	$(OUT)/fenv-linux-aarch64.o $(OUT)/setjmp-aarch64.o
 	$(RM) $@.tmp
-	$(AR) rcs $@.tmp $^
+	$(AR) rcsD $@.tmp $^
 	mv $@.tmp $@
 
 $(OUT)/binary128-stdio-aarch64-gcc: tools/binary128_stdio_smoke.c $(OUT)/libnelibc-standalone-aarch64-gcc.a
