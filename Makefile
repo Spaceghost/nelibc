@@ -552,17 +552,34 @@ AARCH64_STDIO_NELUA_OBJECTS := $(addprefix $(OUT)/,$(addsuffix -aarch64-gcc.o,\
 AARCH64_STDIO_ADAPTERS := $(addprefix $(OUT)/,$(addsuffix -aarch64-gcc.o,\
 	stdio_lock_standalone stdio_startup_stub stdio_varargs))
 
-$(AARCH64_STDIO_NELUA_OBJECTS): $(OUT)/%-aarch64-gcc.o: src/%.nelua Makefile | $(OUT)
+AARCH64_LIBC_NELUA_OBJECTS := $(addprefix $(OUT)/,$(addsuffix -aarch64-gcc.o,\
+	string_locale_standalone inet search_standalone regex_standalone pwd_standalone \
+	termios_standalone wordexp_standalone crypt_standalone extras_standalone \
+	iconv_standalone spawn_standalone))
+AARCH64_LIBC_ADAPTERS := $(addprefix $(OUT)/,$(addsuffix -aarch64-gcc.o,\
+	fcntl_adapter exec_adapter ipc_adapter mqueue_adapter semaphore_adapter \
+	stdio_extras_adapter syscall_adapter))
+
+$(AARCH64_STDIO_NELUA_OBJECTS) $(AARCH64_LIBC_NELUA_OBJECTS): $(OUT)/%-aarch64-gcc.o: src/%.nelua Makefile | $(OUT)
 	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_NELUA_FLAGS) -DNELIBC_STANDALONE -mno-outline-atomics' -o $@ $<
 
-$(AARCH64_STDIO_ADAPTERS): $(OUT)/%-aarch64-gcc.o: src/%.c Makefile | $(OUT)
+$(AARCH64_STDIO_ADAPTERS) $(AARCH64_LIBC_ADAPTERS): $(OUT)/%-aarch64-gcc.o: src/%.c Makefile | $(OUT)
 	gcc -O2 $(AARCH64_NELUA_FLAGS) -DNELIBC_STANDALONE -mno-outline-atomics -Iinclude -c $< -o $@
 
-$(OUT)/binary128-stdio-aarch64-gcc: tools/binary128_stdio_smoke.c $(OUT)/boot-linux-aarch64-standalone.o \
+.PHONY: lib-standalone-aarch64-gcc
+lib-standalone-aarch64-gcc: $(OUT)/libnelibc-standalone-aarch64-gcc.a
+
+$(OUT)/libnelibc-standalone-aarch64-gcc.a: $(OUT)/boot-linux-aarch64-standalone.o \
 	$(AARCH64_RUNTIME_OBJECTS) $(AARCH64_STDIO_NELUA_OBJECTS) $(AARCH64_STDIO_ADAPTERS) \
-	$(OUT)/math-core-aarch64.o
+	$(AARCH64_LIBC_NELUA_OBJECTS) $(AARCH64_LIBC_ADAPTERS) $(OUT)/math-core-aarch64.o \
+	$(OUT)/fenv-linux-aarch64.o $(OUT)/setjmp-aarch64.o
+	$(RM) $@.tmp
+	$(AR) rcs $@.tmp $^
+	mv $@.tmp $@
+
+$(OUT)/binary128-stdio-aarch64-gcc: tools/binary128_stdio_smoke.c $(OUT)/libnelibc-standalone-aarch64-gcc.a
 	gcc -O2 -Wall -Wextra -Werror $(AARCH64_NELUA_FLAGS) -mno-outline-atomics -no-pie \
-		-DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-e,_start,--gc-sections $^ -lgcc -o $@
+		-DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-u,_start,-e,_start,--gc-sections $^ -lgcc -o $@
 
 $(OUT)/binary128-stdio-reference-aarch64-gcc: tools/binary128_stdio_smoke.c | $(OUT)
 	gcc -O2 -Wall -Wextra -Werror -fno-builtin $< -o $@

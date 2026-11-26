@@ -394,9 +394,28 @@ make memory-diff-aarch64-gcc NELUA=/path/to/nelua
 The archive is `build/libnelibc-memory-aarch64-gcc.a`. Link it in front of
 the host C library, using `-fno-builtin` when testing interposed memory
 functions. The host C library supplies allocation and wide character
-helpers. The full hybrid and standalone profiles still target x86-64.
+helpers. The full hybrid profile targets x86-64.
 For an emulated build environment, see the
 [Fedora Incus guide](https://nelua.tech/compiler/#linux-arm64).
+
+## AArch64 standalone archive
+
+Build and link with Linux AArch64 GCC and Nelua.
+
+```sh
+make lib-standalone-aarch64-gcc NELUA=/path/to/nelua
+gcc -O2 -DNELIBC_STANDALONE -Iinclude -ffreestanding -fno-builtin \
+    -fno-stack-protector -fno-pie -no-pie -nostdlib -static \
+    -Wl,-u,_start,-e,_start,--gc-sections program.c \
+    build/libnelibc-standalone-aarch64-gcc.a -lgcc -o program
+```
+
+The archive supplies process startup, TLS, system calls and the standalone
+C library modules. GCC supplies compiler arithmetic helpers. Section garbage
+collection is required while the architecture-specific math primitives are
+being ported. Programs that use an unported primitive will fail to link.
+Run `make diff-binary128-stdio-aarch64-gcc` to compare an archive-linked
+stdio consumer with the system libc.
 
 ## AArch64 freestanding startup
 
@@ -432,8 +451,7 @@ standalone pthread runtime into a static test. It exercises thread creation
 and join, isolated TLS and errno, thread-specific data destructors, detached
 threads, deferred cancellation, and allocations from multiple threads.
 The runtime uses the kernel's page size
-to align stacks and guard regions. The complete standalone archive still
-needs the remaining architecture-specific routines.
+to align stacks and guard regions.
 
 Run `make smoke-signal-aarch64-gcc NELUA=/path/to/nelua` to link the Nelibc
 signal functions and thread-local errno into a static test. It checks public
