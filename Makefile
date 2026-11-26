@@ -449,6 +449,9 @@ AARCH64_NELUA_FLAGS = -U_FORTIFY_SOURCE -fno-builtin -ffreestanding \
 	-fno-stack-protector -fno-tree-loop-distribute-patterns -ffunction-sections \
 	-fdata-sections -fno-pie -ftls-model=local-exec
 
+$(OUT)/memory-standalone-aarch64-gcc.o: src/memory.nelua Makefile | $(OUT)
+	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_NELUA_FLAGS) -mno-outline-atomics' -o $@ $<
+
 $(OUT)/unistd-aarch64-gcc.o: src/unistd.nelua Makefile | $(OUT)
 	$(NELUA) -B -r --cc gcc --cflags='$(AARCH64_NELUA_FLAGS)' -o $@ $<
 
@@ -509,7 +512,7 @@ $(OUT)/allocator-linux-aarch64.o: src/sys/allocator_linux_aarch64.c | $(OUT)
 AARCH64_RUNTIME_OBJECTS := $(OUT)/start-linux-aarch64.o \
 	$(OUT)/clone-linux-aarch64.o $(OUT)/linux-aarch64-raw-syscall.o \
 	$(OUT)/linux-aarch64-ops.o $(OUT)/stat-linux-aarch64.o $(OUT)/unistd-aarch64-gcc.o \
-	$(OUT)/errno-aarch64-gcc.o $(OUT)/stdlib-exit-aarch64-gcc.o $(OUT)/memory-aarch64-gcc.o \
+	$(OUT)/errno-aarch64-gcc.o $(OUT)/stdlib-exit-aarch64-gcc.o $(OUT)/memory-standalone-aarch64-gcc.o \
 	$(AARCH64_PTHREAD_NELUA_OBJECTS) $(AARCH64_PTHREAD_ADAPTERS) $(OUT)/alloc-exports-aarch64-gcc.o \
 	$(OUT)/allocator-linux-aarch64.o
 
