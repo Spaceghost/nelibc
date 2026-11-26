@@ -577,9 +577,15 @@ $(OUT)/libnelibc-standalone-aarch64-gcc.a: $(OUT)/boot-linux-aarch64-standalone.
 	$(AR) rcsD $@.tmp $^
 	mv $@.tmp $@
 
-$(OUT)/binary128-stdio-aarch64-gcc: tools/binary128_stdio_smoke.c $(OUT)/libnelibc-standalone-aarch64-gcc.a
+$(OUT)/dirent-aarch64-gcc: tools/dirent_aarch64_smoke.c
+$(OUT)/binary128-stdio-aarch64-gcc: tools/binary128_stdio_smoke.c
+$(OUT)/binary128-stdio-aarch64-gcc $(OUT)/dirent-aarch64-gcc: $(OUT)/libnelibc-standalone-aarch64-gcc.a
 	gcc -O2 -Wall -Wextra -Werror $(AARCH64_NELUA_FLAGS) -mno-outline-atomics -no-pie \
-		-DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-u,_start,-e,_start,--gc-sections $^ -lgcc -o $@
+		-DNELIBC_STANDALONE -Iinclude -nostdlib -static -Wl,-u,_start,-e,_start,--gc-sections $(filter %.c,$^) $(filter %.a,$^) -lgcc -o $@
+
+.PHONY: smoke-dirent-aarch64-gcc
+smoke-dirent-aarch64-gcc: $(OUT)/dirent-aarch64-gcc
+	$<
 
 $(OUT)/binary128-stdio-reference-aarch64-gcc: tools/binary128_stdio_smoke.c | $(OUT)
 	gcc -O2 -Wall -Wextra -Werror -fno-builtin $< -o $@

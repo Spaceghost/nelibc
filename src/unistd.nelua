@@ -5612,9 +5612,12 @@ local function fdopendir(fd: cint): pointer <cexport, codename 'fdopendir'>
   return nelibc_dir_stream_create(fd)
 end
 
+local O_DIRECTORY: cint <comptime> = #[ccinfo.is_arm64 and 0x4000 or 0x10000]#
+local O_CLOEXEC: cint <comptime> = 0x80000
+
 local function opendir(pathname: *const [0]cchar): pointer <cexport, codename 'opendir'>
   local pathname: *[0]cchar = (@*[0]cchar)(pathname)
-  local fd = open((@pointer)(pathname), 0x90000_cint, 0_cuint) -- O_DIRECTORY|O_CLOEXEC
+  local fd = open((@pointer)(pathname), O_DIRECTORY | O_CLOEXEC, 0_cuint)
   if fd < 0 then return nilptr end
   -- open's O_DIRECTORY|O_RDONLY flags already validate this descriptor.
   local stream = nelibc_dir_stream_create(fd)
@@ -5840,7 +5843,7 @@ local function scandirat(dirfd: cint, pathname: *const [0]cchar, namelist: *[0]p
     return -1
   end
   namelist[0] = nilptr
-  local fd = openat(dirfd, (@pointer)(pathname), 0x90000_cint, 0_cuint)
+  local fd = openat(dirfd, (@pointer)(pathname), O_DIRECTORY | O_CLOEXEC, 0_cuint)
   if fd < 0 then return -1 end
   local directory = fdopendir(fd)
   if directory == nilptr then
