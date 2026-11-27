@@ -71,6 +71,7 @@ _Static_assert(offsetof(struct epoll_event, data) == 4, "Linux x86_64 epoll_even
 #include <termios.h>
 #ifdef NELIBC_STANDALONE
 #include <iconv.h>
+#include <netinet/tcp.h>
 #include <resolv.h>
 #endif
 #include <setjmp.h>
@@ -1179,6 +1180,17 @@ int main(int argc, char **argv) {
   if (shutdown(socket_pair[0], SHUT_WR) != 0 || recv(socket_pair[1], socket_pair_received,
       sizeof socket_pair_received, 0) != 0 || close(socket_pair[0]) != 0 ||
       close(socket_pair[1]) != 0) return 532;
+
+  int tcp_socket = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, IPPROTO_TCP);
+  if (tcp_socket < 0) return 641;
+  int tcp_no_delay = 1;
+  socklen_t tcp_option_length = sizeof tcp_no_delay;
+  if (setsockopt(tcp_socket, IPPROTO_TCP, TCP_NODELAY, &tcp_no_delay, tcp_option_length) != 0)
+    return 641;
+  tcp_no_delay = 0;
+  if (getsockopt(tcp_socket, IPPROTO_TCP, TCP_NODELAY, &tcp_no_delay, &tcp_option_length) != 0 ||
+      tcp_option_length != sizeof tcp_no_delay || tcp_no_delay != 1 ||
+      close(tcp_socket) != 0) return 641;
 
   int server_socket = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
   if (server_socket < 0) return 533;
